@@ -38,8 +38,8 @@ const translations = {
       pricing: 'Tarifs',
       findArtisan: 'Trouver un artisan',
       about: 'À propos',
-      contact: 'Contact',
-      blog: 'Blog',
+      contact: 'Nous contacter',
+      blog: 'Le blog',
       login: 'Connexion',
       register: 'S\'inscrire',
       freeTrial: 'Essai Gratuit'
@@ -182,14 +182,26 @@ const translations = {
     contact: {
       title: 'Contactez-nous',
       subtitle: 'Des questions sur HAVITAM ? Notre équipe est là pour vous aider.',
+      projectTitle: 'Parlons de votre projet',
+      projectDescription: 'Que vous soyez un artisan qui souhaite découvrir Havitam ou un client ayant besoin d\'aide, nous sommes là pour vous accompagner.',
+      responseTime: 'Réponse sous 24h',
+      liveChat: 'Chat en direct',
+      availability: 'Disponible de 9h à 18h',
+      workDays: 'Du lundi au vendredi',
       form: {
+        title: 'Envoyez-nous un message',
         firstName: 'Prénom',
         lastName: 'Nom',
+        name: 'Nom',
+        namePlaceholder: 'Votre nom',
         email: 'Email',
+        emailPlaceholder: 'Votre email',
         phone: 'Téléphone (optionnel)',
         subject: 'Sujet',
         message: 'Message',
+        messagePlaceholder: 'Décrivez votre demande...',
         sendButton: 'Envoyer le message',
+        sending: 'Envoi en cours...',
         selectSubject: 'Sélectionnez un sujet'
       },
       info: {
@@ -699,14 +711,26 @@ const translations = {
     contact: {
       title: 'Contact us',
       subtitle: 'Questions about HAVITAM? Our team is here to help.',
+      projectTitle: 'Let\'s talk about your project',
+      projectDescription: 'Whether you\'re a craftsman looking to discover Havitam or a client needing help, we\'re here to support you.',
+      responseTime: 'Response within 24h',
+      liveChat: 'Live chat',
+      availability: 'Available 9am-6pm',
+      workDays: 'Mon-Fri',
       form: {
+        title: 'Send us a message',
         firstName: 'First name',
         lastName: 'Last name',
+        name: 'Name',
+        namePlaceholder: 'Your name',
         email: 'Email',
+        emailPlaceholder: 'Your email',
         phone: 'Phone (optional)',
         subject: 'Subject',
         message: 'Message',
+        messagePlaceholder: 'Describe your request...',
         sendButton: 'Send message',
+        sending: 'Sending...',
         selectSubject: 'Select a subject'
       },
       info: {
@@ -1068,7 +1092,7 @@ const translations = {
     
     // Common navigation
     nav: {
-      home: 'Home',
+      home: 'Thuis',
       pricing: 'Prijzen',
       findArtisan: 'Vind Vakman',
       about: 'Over Ons',
@@ -1169,7 +1193,7 @@ const translations = {
           profession: 'Plater, Lyon'
         },
         testimonial2: {
-          quote: 'Geen meer handmatige opvolging! HAVITAM beheert alles automatisch en mijn betalingspercentage binnen de termijn is gestegen van 60% naar 90%.',
+          quote: 'Geen meer handmatige opvolging! HAVITAM beheert alles automatiquement en mijn betalingspercentage binnen de termijn is gestegen van 60% naar 90%.',
           initials: 'SD',
           name: 'Sophie Dubois',
           profession: 'Elektricien, Parijs'
@@ -1216,14 +1240,26 @@ const translations = {
     contact: {
       title: 'Contact',
       subtitle: 'Vragen over HAVITAM? Ons team staat klaar om u te helpen.',
+      projectTitle: 'Parlons de uw project',
+      projectDescription: 'Of u nu een artisan bent die HAVITAM wil ontdekken of een klant die hulp nodig heeft, wij staan klaar om u te ondersteunen.',
+      responseTime: 'Reactie binnen 24 uur',
+      liveChat: 'Live chat',
+      availability: 'Beschikbaar van 9u tot 18u',
+      workDays: 'Van maandag tot vrijdag',
       form: {
+        title: 'Stuur ons een bericht',
         firstName: 'Voornaam',
         lastName: 'Achternaam',
+        name: 'Naam',
+        namePlaceholder: 'Uw naam',
         email: 'E-mail',
+        emailPlaceholder: 'Uw e-mailadres',
         phone: 'Telefoon (optioneel)',
         subject: 'Onderwerp',
         message: 'Bericht',
+        messagePlaceholder: 'Beschrijf uw vraag...',
         sendButton: 'Bericht versturen',
+        sending: 'Bericht verzenden...',
         selectSubject: 'Selecteer een onderwerp'
       },
       info: {

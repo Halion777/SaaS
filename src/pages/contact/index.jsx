@@ -109,27 +109,68 @@ const ContactPage = () => {
         <Header />
         
         {/* Main Content */}
-        <main className="container mx-auto px-4 py-12">
-          <div className="max-w-4xl mx-auto">
+        <main className="container mx-auto px-4 py-16">
+          <div className="max-w-6xl mx-auto">
             {/* Page Title */}
-            <div className="text-center mb-12">
-              <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">{t('contact.title')}</h1>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <div className="text-center mb-16">
+              <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">{t('contact.title')}</h1>
+              <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
                 {t('contact.subtitle')}
               </p>
             </div>
             
-            {/* Contact Form and Info */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 bg-white rounded-2xl shadow-lg overflow-hidden">
-              {/* Contact Form */}
-              <div className="lg:col-span-2 p-6 md:p-8">
+            {/* Contact Layout - Two Columns */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+              {/* Left Column - Contact Information */}
+              <div className="space-y-8">
+                <div>
+                  <h2 className="text-3xl font-bold text-foreground mb-4">{t('contact.projectTitle') || "Parlons de votre projet"}</h2>
+                  <p className="text-lg text-muted-foreground leading-relaxed">
+                    {t('contact.projectDescription') || "Que vous soyez un artisan qui souhaite découvrir Havitam ou un client ayant besoin d'aide, nous sommes là pour vous accompagner."}
+                  </p>
+                </div>
+                
+                {/* Contact Method Cards */}
+                <div className="space-y-6">
+                  {/* Email Card */}
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
+                    <div className="flex items-start">
+                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mr-4">
+                        <Icon name="Mail" size={20} className="text-gray-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-foreground text-lg mb-1">{t('contact.info.email')}</h3>
+                        <p className="text-muted-foreground mb-1">{t('contact.info.emailValue')}</p>
+                        <p className="text-sm text-muted-foreground/70">{t('contact.responseTime') || "Réponse sous 24h"}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Live Chat Card */}
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
+                    <div className="flex items-start">
+                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mr-4">
+                        <Icon name="MessageCircle" size={20} className="text-gray-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-foreground text-lg mb-1">{t('contact.liveChat') || "Chat en direct"}</h3>
+                        <p className="text-muted-foreground mb-1">{t('contact.availability') || "Disponible de 9h à 18h"}</p>
+                        <p className="text-sm text-muted-foreground/70">{t('contact.workDays') || "Du lundi au vendredi"}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Right Column - Contact Form */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
                 {isSubmitted ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center py-12">
-                    <div className="w-16 h-16 bg-success/20 rounded-full flex items-center justify-center mb-6">
-                      <Icon name="Check" size={32} color="var(--color-success)" />
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6 mx-auto">
+                      <Icon name="Check" size={32} className="text-green-600" />
                     </div>
                     <h2 className="text-2xl font-bold text-foreground mb-3">{t('contact.success.title')}</h2>
-                    <p className="text-muted-foreground mb-8">{t('contact.success.message')}</p>
+                    <p className="text-muted-foreground mb-6">{t('contact.success.message')}</p>
                     <Button 
                       onClick={() => setIsSubmitted(false)} 
                       variant="outline"
@@ -138,209 +179,105 @@ const ContactPage = () => {
                     </Button>
                   </div>
                 ) : (
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Name Fields */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Input 
-                          label={t('contact.form.firstName')}
-                          name="firstName"
-                          value={formData.firstName}
-                          onChange={handleInputChange}
-                          error={errors.firstName}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Input 
-                          label={t('contact.form.lastName')}
-                          name="lastName"
-                          value={formData.lastName}
-                          onChange={handleInputChange}
-                          error={errors.lastName}
-                          required
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Email and Phone */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Input 
-                          label={t('contact.form.email')}
-                          type="email"
-                          name="email"
-                          value={formData.email}
-                          onChange={handleInputChange}
-                          error={errors.email}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Input 
-                          label={t('contact.form.phone')}
-                          name="phone"
-                          value={formData.phone}
-                          onChange={handleInputChange}
-                          error={errors.phone}
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Subject */}
-                    <div>
-                      <Select
-                        label={t('contact.form.subject')}
-                        name="subject"
-                        value={formData.subject}
-                        onChange={handleInputChange}
-                        options={subjectOptions}
-                        error={errors.subject}
-                        required
-                      />
-                    </div>
-                    
-                    {/* Message */}
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        {t('contact.form.message')} <span className="text-error">*</span>
-                      </label>
-                      <textarea
-                        name="message"
-                        rows={5}
-                        className={`w-full px-4 py-2.5 rounded-lg border ${
-                          errors.message ? 'border-error' : 'border-border'
-                        } focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors`}
-                        value={formData.message}
-                        onChange={handleInputChange}
-                        required
-                      ></textarea>
-                      {errors.message && (
-                        <p className="mt-1 text-error text-sm">{errors.message}</p>
-                      )}
-                    </div>
-                    
-                    {/* Submit Button */}
-                    <div>
-                      <Button 
-                        type="submit"
-                        variant="primary"
-                        isLoading={isSubmitting}
-                        disabled={isSubmitting}
-                        fullWidth
-                      >
-                        {t('contact.form.sendButton')}
-                      </Button>
-                    </div>
-                  </form>
-                )}
-              </div>
-              
-              {/* Contact Information */}
-              <div className="bg-primary text-white p-6 md:p-8">
-                <h2 className="text-xl font-bold mb-6">{t('contact.info.title')}</h2>
-                
-                <div className="space-y-6">
-                  {/* Email */}
-                  <div className="flex items-start">
-                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4">
-                      <Icon name="Mail" size={20} color="white" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium">{t('contact.info.email')}</h3>
-                      <p className="mt-1">{t('contact.info.emailValue')}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Address */}
-                  <div className="flex items-start">
-                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4">
-                      <Icon name="MapPin" size={20} color="white" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium">{t('contact.info.address')}</h3>
-                      <p className="mt-1 whitespace-pre-line">{t('contact.info.addressValue')}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Hours */}
-                  <div className="flex items-start">
-                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4">
-                      <Icon name="Clock" size={20} color="white" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium">{t('contact.info.hours')}</h3>
-                      <p className="mt-1 whitespace-pre-line">{t('contact.info.hoursValue')}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Social Media Links */}
                   <div>
-                    <h3 className="font-medium mb-3">{t('contact.info.social')}</h3>
-                    <div className="flex space-x-4">
-                      <a href="#" className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors">
-                        <Icon name="Twitter" size={18} color="white" />
-                      </a>
-                      <a href="#" className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors">
-                        <Icon name="Linkedin" size={18} color="white" />
-                      </a>
-                      <a href="#" className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors">
-                        <Icon name="Facebook" size={18} color="white" />
-                      </a>
-                      <a href="#" className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors">
-                        <Icon name="Instagram" size={18} color="white" />
-                      </a>
-                    </div>
+                    <h2 className="text-2xl font-bold text-foreground mb-6">{t('contact.form.title') || "Envoyez-nous un message"}</h2>
+                    
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                      {/* Name and Email */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-foreground mb-2">
+                            {t('contact.form.name') || "Nom"} <span className="text-red-500">*</span>
+                          </label>
+                          <Input 
+                            name="firstName"
+                            value={formData.firstName}
+                            onChange={handleInputChange}
+                            error={errors.firstName}
+                            placeholder={t('contact.form.namePlaceholder') || "Votre nom"}
+                            required
+                            className="h-11"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-foreground mb-2">
+                            {t('contact.form.email')} <span className="text-red-500">*</span>
+                          </label>
+                          <Input 
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            error={errors.email}
+                            placeholder={t('contact.form.emailPlaceholder') || "Votre email"}
+                            required
+                            className="h-11"
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Subject */}
+                      <div>
+                        <label className="block text-sm font-semibold text-foreground mb-2">
+                          {t('contact.form.subject')} <span className="text-red-500">*</span>
+                        </label>
+                        <Select
+                          name="subject"
+                          value={formData.subject}
+                          onChange={handleInputChange}
+                          options={subjectOptions}
+                          error={errors.subject}
+                          required
+                          className="h-11"
+                        />
+                      </div>
+                      
+                      {/* Message */}
+                      <div>
+                        <label className="block text-sm font-semibold text-foreground mb-2">
+                          {t('contact.form.message')} <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                          name="message"
+                          rows={5}
+                          className={`w-full px-4 py-3 rounded-lg border resize-none transition-all duration-200 ${
+                            errors.message 
+                              ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
+                              : 'border-gray-200 focus:border-primary focus:ring-primary/20'
+                          } focus:outline-none focus:ring-2`}
+                          value={formData.message}
+                          onChange={handleInputChange}
+                          placeholder={t('contact.form.messagePlaceholder') || "Décrivez votre demande..."}
+                          required
+                        ></textarea>
+                        {errors.message && (
+                          <p className="text-red-500 text-sm font-medium mt-1">{errors.message}</p>
+                        )}
+                      </div>
+                      
+                      {/* Submit Button */}
+                      <div className="pt-2">
+                        <Button 
+                          type="submit"
+                          variant="primary"
+                          isLoading={isSubmitting}
+                          disabled={isSubmitting}
+                          fullWidth
+                          className="h-12 text-base font-semibold"
+                          iconName="Send"
+                          iconPosition="left"
+                        >
+                          {isSubmitting ? t('contact.form.sending') || "Envoi en cours..." : t('contact.form.sendButton')}
+                        </Button>
+                      </div>
+                    </form>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
         </main>
         
-        {/* FAQ */}
-        <section className="py-16 bg-muted">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-foreground mb-4">Questions fréquentes</h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Consultez notre FAQ pour obtenir des réponses rapides à vos questions.
-              </p>
-            </div>
-            
-            <div className="max-w-3xl mx-auto space-y-6">
-              {/* FAQ Item 1 */}
-              <div className="bg-card border border-border rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-3">
-                  Comment fonctionne l'essai gratuit ?
-                </h3>
-                <p className="text-muted-foreground">
-                  Notre essai gratuit de 14 jours vous donne un accès complet à toutes les fonctionnalités de HAVITAM. Vous pouvez l'annuler à tout moment sans frais.
-                </p>
-              </div>
-              
-              {/* FAQ Item 2 */}
-              <div className="bg-card border border-border rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-3">
-                  Comment puis-je contacter le support technique ?
-                </h3>
-                <p className="text-muted-foreground">
-                  Notre équipe de support est disponible par email à contact@havitam.com.
-                </p>
-              </div>
-              
-              {/* FAQ Item 3 */}
-              <div className="bg-card border border-border rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-3">
-                  Est-il possible d'obtenir une démonstration personnalisée ?
-                </h3>
-                <p className="text-muted-foreground">
-                  Oui, nous proposons des démonstrations personnalisées pour vous montrer comment HAVITAM peut répondre à vos besoins spécifiques. Contactez notre équipe commerciale pour prendre rendez-vous.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
         {/* Footer */}
         <Footer />
       </div>
