@@ -1,8 +1,11 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
 import Image from '../../../components/AppImage';
+import { useTranslation } from '../../../context/TranslationContext';
 
 const TestimonialCard = ({ testimonial }) => {
+  const { t } = useTranslation();
+  
   const renderStars = (rating) => {
     return Array.from({ length: 5 }, (_, index) => (
       <Icon
@@ -10,6 +13,8 @@ const TestimonialCard = ({ testimonial }) => {
         name="Star"
         size={16}
         color={index < rating ? "var(--color-accent)" : "var(--color-muted-foreground)"}
+        fill={index < rating ? "var(--color-accent)" : "none"}
+        strokeWidth={index < rating ? 1.5 : 2}
       />
     ));
   };

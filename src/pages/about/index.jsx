@@ -198,20 +198,38 @@ const AboutPage = () => {
         </section>
         
         {/* Stats */}
-        <section className="py-16 bg-primary">
-          <div className="container mx-auto px-4">
+        <section className="py-16 bg-gradient-to-br from-blue-700 to-blue-800 relative overflow-hidden">
+          {/* Decorative elements */}
+          <div className="absolute inset-0 overflow-hidden opacity-10">
+            <div className="absolute top-0 left-0 w-full h-32 bg-white/20 transform -skew-y-6"></div>
+            <div className="absolute -bottom-8 -left-8 w-64 h-64 bg-white/10 rounded-full blur-xl"></div>
+            <div className="absolute -top-12 -right-12 w-80 h-80 bg-white/10 rounded-full blur-xl"></div>
+            <div className="absolute top-1/2 left-1/4 w-12 h-12 bg-yellow-300/30 rounded-full blur-md animate-pulse"></div>
+            <div className="absolute bottom-1/4 right-1/3 w-8 h-8 bg-cyan-300/30 rounded-full blur-md animate-pulse" style={{animationDelay: '1s'}}></div>
+          </div>
+          
+          <div className="container mx-auto px-4 relative z-10">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <p className="text-4xl font-bold text-white mb-2">5,000+</p>
-                <p className="text-white/80">{t('about.stats.artisans')}</p>
+              <div className="text-center transform transition-all duration-300 hover:scale-105">
+                <p className="text-4xl font-bold text-white mb-2 flex items-center justify-center">
+                  <span className="mr-2">5,000</span>
+                  <span className="text-yellow-300 animate-pulse">+</span>
+                </p>
+                <p className="text-white/90">{t('about.stats.artisans')}</p>
               </div>
-              <div className="text-center">
-                <p className="text-4xl font-bold text-white mb-2">120,000+</p>
-                <p className="text-white/80">{t('about.stats.devis')}</p>
+              <div className="text-center transform transition-all duration-300 hover:scale-105">
+                <p className="text-4xl font-bold text-white mb-2 flex items-center justify-center">
+                  <span className="mr-2">120,000</span>
+                  <span className="text-yellow-300 animate-pulse">+</span>
+                </p>
+                <p className="text-white/90">{t('about.stats.devis')}</p>
               </div>
-              <div className="text-center">
-                <p className="text-4xl font-bold text-white mb-2">30M€+</p>
-                <p className="text-white/80">{t('about.stats.chiffreAffaires')}</p>
+              <div className="text-center transform transition-all duration-300 hover:scale-105">
+                <p className="text-4xl font-bold text-white mb-2 flex items-center justify-center">
+                  <span className="mr-2">30M€</span>
+                  <span className="text-yellow-300 animate-pulse">+</span>
+                </p>
+                <p className="text-white/90">{t('about.stats.chiffreAffaires')}</p>
               </div>
             </div>
           </div>

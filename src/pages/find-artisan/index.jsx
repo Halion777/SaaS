@@ -12,6 +12,7 @@ const FindArtisanPage = () => {
   const { t, language } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [formSubmitted, setFormSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     category: '',
     address: '',
@@ -31,6 +32,13 @@ const FindArtisanPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setFormSubmitted(true);
+    
+    // Check if category is selected before proceeding
+    if (formData.category === '') {
+      return;
+    }
+    
     // Handle form submission
     console.log('Form submitted:', formData);
   };
@@ -221,7 +229,7 @@ const FindArtisanPage = () => {
                     </div>
                     
                     {/* Error message if no category selected */}
-                    {formData.category === '' && (
+                    {formSubmitted && formData.category === '' && (
                       <p className="text-sm text-destructive mt-2">
                         {t('findArtisan.form.categoryRequired') || "Please select a work category"}
                       </p>

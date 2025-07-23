@@ -15,6 +15,7 @@ import { useTranslation } from '../../context/TranslationContext';
 const LoginPage = () => {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -44,6 +45,17 @@ const LoginPage = () => {
             <Icon name="Home" className="w-5 h-5" />
             <span className="text-sm font-medium">{t('nav.home')}</span>
           </Link>
+        </div>
+        
+        {/* Register Link */}
+        <div className="absolute top-4 right-4 z-20">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-muted-foreground">{t('login.noAccount') || 'Pas encore de compte ?'}</span>
+            <Link to="/register" className="text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center space-x-1">
+              <span>{t('nav.register') || 'S\'inscrire'}</span>
+              <Icon name="UserPlus" size={16} />
+            </Link>
+          </div>
         </div>
         
         <div className="max-w-md mx-auto my-16">
@@ -85,12 +97,15 @@ const LoginPage = () => {
                 <Checkbox
                   id="remember"
                   label={t('login.rememberMe')}
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
                 />
               </div>
               
               <Button 
                 type="submit" 
                 className="w-full"
+                variant="login"
                 loading={isLoading}
               >
                 {t('login.loginButton')}

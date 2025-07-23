@@ -20,7 +20,7 @@ const TrialCallToAction = () => {
         </div>
 
         <Button
-          variant="outline"
+          variant="trial"
           size="lg"
           fullWidth
           onClick={handleStartTrial}

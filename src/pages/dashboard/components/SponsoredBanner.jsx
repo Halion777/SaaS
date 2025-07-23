@@ -27,16 +27,21 @@ const SponsoredBanner = () => {
   };
 
   return (
-    <div className="bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 rounded-lg p-6 shadow-professional relative overflow-hidden">
+    <div className="bg-gradient-to-r from-blue-700/90 to-blue-800/90 border border-blue-600/30 rounded-lg p-6 shadow-lg relative overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:shadow-blue-700/20 group">
+      {/* Decorative elements */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -translate-y-16 translate-x-16 blur-xl"></div>
+      <div className="absolute bottom-0 left-0 w-24 h-24 bg-purple-500/10 rounded-full translate-y-12 -translate-x-12 blur-xl"></div>
+      <div className="absolute top-1/3 right-1/4 w-6 h-6 bg-yellow-300/20 rounded-full blur-md animate-pulse"></div>
+      
       <button
         onClick={handleClose}
-        className="absolute top-4 right-4 p-1 rounded-full hover:bg-background/50 transition-colors duration-150"
+        className="absolute top-4 right-4 p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors duration-150 z-10"
       >
-        <Icon name="X" size={16} color="var(--color-muted-foreground)" />
+        <Icon name="X" size={16} color="white" />
       </button>
       
-      <div className="flex items-center space-x-4">
-        <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+      <div className="flex items-center space-x-4 relative z-10">
+        <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 shadow-md transform transition-transform duration-300 group-hover:scale-105">
           <Image
             src={bannerData.image}
             alt="Premium features"
@@ -46,35 +51,33 @@ const SponsoredBanner = () => {
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center space-x-2 mb-2">
-            <h4 className="text-sm font-semibold text-foreground">{bannerData.title}</h4>
-            <span className="text-xs px-2 py-1 bg-accent text-accent-foreground rounded-full">
+            <h4 className="text-sm font-semibold text-white">{bannerData.title}</h4>
+            <span className="text-xs px-2 py-1 bg-yellow-500/90 text-white rounded-full animate-pulse">
               {bannerData.discount}
             </span>
           </div>
-          <p className="text-xs text-muted-foreground mb-3">{bannerData.description}</p>
+          <p className="text-xs text-white/80 mb-3">{bannerData.description}</p>
           
           <div className="flex items-center justify-between">
             <Button
-              variant="default"
+              variant="secondary"
               size="sm"
               onClick={handleCTAClick}
-              iconName="Sparkles"
-              iconPosition="left"
+              className="shadow-lg hover:shadow-xl transform transition-all duration-300 hover:scale-105 group"
             >
-              {bannerData.cta}
+              <span className="flex items-center">
+                <Icon name="Sparkles" size={16} className="mr-2 group-hover:animate-pulse" />
+                {bannerData.cta}
+              </span>
             </Button>
             
-            <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-              <Icon name="Star" size={12} color="var(--color-warning)" />
+            <div className="flex items-center space-x-1 text-xs text-white/70">
+              <Icon name="Star" size={12} color="rgb(250, 204, 21)" />
               <span>Sponsorisé</span>
             </div>
           </div>
         </div>
       </div>
-      
-      {/* Decorative elements */}
-      <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -translate-y-10 translate-x-10"></div>
-      <div className="absolute bottom-0 left-0 w-16 h-16 bg-accent/5 rounded-full translate-y-8 -translate-x-8"></div>
     </div>
   );
 };

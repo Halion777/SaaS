@@ -8,6 +8,7 @@ import { AuthProvider } from './context/AuthContext';
 import HomePage from './pages/home';
 import Login from './pages/login';
 import Register from './pages/register';
+import ForgotPasswordPage from './pages/forgot-password';
 import PricingPage from './pages/pricing';
 import FindArtisanPage from './pages/find-artisan';
 import AboutPage from './pages/about';
@@ -32,6 +33,7 @@ const AppRoutes = () => {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/find-artisan" element={<FindArtisanPage />} />
           <Route path="/about" element={<AboutPage />} />

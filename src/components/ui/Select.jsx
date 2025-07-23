@@ -72,9 +72,24 @@ const Select = React.forwardRef(({
             const updatedValue = newValue.includes(option.value)
                 ? newValue.filter(v => v !== option.value)
                 : [...newValue, option.value];
-            onChange?.(updatedValue);
+            
+            // Create a synthetic event object to mimic a native select
+            const syntheticEvent = {
+                target: {
+                    name,
+                    value: updatedValue
+                }
+            };
+            onChange?.(syntheticEvent);
         } else {
-            onChange?.(option.value);
+            // Create a synthetic event object to mimic a native select
+            const syntheticEvent = {
+                target: {
+                    name,
+                    value: option.value
+                }
+            };
+            onChange?.(syntheticEvent);
             setIsOpen(false);
             onOpenChange?.(false);
         }
@@ -189,7 +204,7 @@ const Select = React.forwardRef(({
                             </div>
                         )}
 
-                        <div className="py-1 max-h-60 overflow-auto">
+                        <div className="py-1 max-h-60 overflow-y-auto overflow-x-hidden scrollbar-hide">
                             {filteredOptions.length === 0 ? (
                                 <div className="px-3 py-2 text-sm text-muted-foreground">
                                     {searchTerm ? 'No options found' : 'No options available'}
@@ -199,12 +214,23 @@ const Select = React.forwardRef(({
                                     <div
                                         key={option.value}
                                         className={cn(
-                                            "relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
-                                            isSelected(option.value) && "bg-primary text-primary-foreground",
+                                            "relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-transform duration-200 hover:scale-[1.02]",
+                                            isSelected(option.value) && "bg-gray-100 text-foreground",
                                             option.disabled && "pointer-events-none opacity-50"
                                         )}
                                         onClick={() => !option.disabled && handleOptionSelect(option)}
                                     >
+                                        {option.icon && (
+                                            <div className={`w-6 h-6 rounded flex items-center justify-center mr-3 ${
+                                                isSelected(option.value) ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
+                                            }`}>
+                                                {typeof option.icon === 'string' ? (
+                                                    <span className="material-icons text-sm">{option.icon}</span>
+                                                ) : (
+                                                    option.icon
+                                                )}
+                                            </div>
+                                        )}
                                         <span className="flex-1">{option.label}</span>
                                         {multiple && isSelected(option.value) && (
                                             <Check className="h-4 w-4" />

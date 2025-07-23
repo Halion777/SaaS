@@ -346,36 +346,52 @@ const HomePage = () => {
         </section>
         
         {/* CTA Section */}
-        <section id="cta" className="py-24 bg-primary">
-          <div className="container mx-auto px-4">
+        <section id="cta" className="py-24 bg-gradient-to-br from-blue-700 to-blue-800 relative overflow-hidden">
+          {/* Decorative elements */}
+          <div className="absolute inset-0 overflow-hidden opacity-10">
+            <div className="absolute top-0 left-0 w-full h-32 bg-white/20 transform -skew-y-6"></div>
+            <div className="absolute -bottom-8 -left-8 w-64 h-64 bg-white/10 rounded-full blur-xl"></div>
+            <div className="absolute -top-12 -right-12 w-80 h-80 bg-white/10 rounded-full blur-xl"></div>
+            <div className="absolute top-1/2 left-1/4 w-12 h-12 bg-yellow-300/30 rounded-full blur-md animate-pulse"></div>
+            <div className="absolute bottom-1/4 right-1/3 w-8 h-8 bg-cyan-300/30 rounded-full blur-md animate-pulse" style={{animationDelay: '1s'}}></div>
+          </div>
+          
+          <div className="container mx-auto px-4 relative z-10">
             <div className="max-w-3xl mx-auto text-center">
-              <h2 className="text-3xl font-bold text-white mb-6">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 tracking-tight">
                 {t('home.cta.title')}
               </h2>
-              <p className="text-lg text-white/80 mb-8 max-w-2xl mx-auto">
+              <p className="text-lg text-white/90 mb-10 max-w-2xl mx-auto leading-relaxed">
                 {t('home.cta.subtitle')}
               </p>
-              <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-5">
                 <Link to="/register">
                   <Button 
-                    variant="secondary" 
+                    variant="outline" 
                     size="lg"
-                    className="shadow-lg"
+                    className="bg-white text-blue-800 border-white shadow-xl transform transition-all duration-300 hover:scale-105 hover:bg-white/90 hover:shadow-blue-900/50 group"
                   >
-                    {t('home.cta.startTrial')}
+                    <span className="flex items-center">
+                      <Icon name="Sparkles" size={20} className="mr-2 group-hover:animate-pulse text-blue-600" />
+                      {t('home.cta.startTrial')}
+                    </span>
                   </Button>
                 </Link>
                 <Link to="/contact">
                   <Button 
                     variant="outline" 
                     size="lg" 
-                    className="bg-transparent text-white border-white hover:bg-white/10"
+                    className="bg-transparent text-white border-white/70 transform transition-all duration-300 hover:scale-105"
                   >
-                    {t('home.cta.contactUs')}
+                    <span className="flex items-center">
+                      <Icon name="MessageCircle" size={20} className="mr-2" />
+                      {t('home.cta.contactUs')}
+                    </span>
                   </Button>
                 </Link>
               </div>
-              <p className="text-sm text-white/70 mt-6">
+              <p className="text-sm text-white/80 mt-8 flex items-center justify-center">
+                <Icon name="Info" size={16} className="mr-2 opacity-70" />
                 {t('home.cta.trialNote')}
               </p>
             </div>

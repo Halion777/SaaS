@@ -93,25 +93,31 @@ const QuickActionsSection = ({ onBulkOptimize, selectedCount }) => {
         </div>
 
         {/* AI Insights */}
-        <div className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg p-4 border border-primary/20">
-          <div className="flex items-start space-x-3">
-            <div className="bg-primary/10 rounded-full p-2">
-              <Icon name="Lightbulb" size={20} color="var(--color-primary)" />
+        <div className="bg-gradient-to-r from-blue-700/90 to-blue-800/90 rounded-lg p-5 border border-blue-600/30 shadow-md transform transition-all duration-300 hover:shadow-lg hover:shadow-blue-700/20 group relative overflow-hidden">
+          {/* Decorative elements */}
+          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full -translate-y-12 translate-x-12 blur-xl"></div>
+          <div className="absolute bottom-0 left-0 w-16 h-16 bg-purple-500/10 rounded-full translate-y-8 -translate-x-8 blur-xl"></div>
+          <div className="absolute top-1/3 right-1/4 w-4 h-4 bg-yellow-300/20 rounded-full blur-md animate-pulse"></div>
+          
+          <div className="flex items-start space-x-3 relative z-10">
+            <div className="bg-white/20 rounded-full p-2.5 shadow-inner">
+              <Icon name="Lightbulb" size={20} color="rgb(250, 204, 21)" className="animate-pulse" />
             </div>
             <div className="flex-1">
-              <h4 className="font-medium text-foreground mb-1">Conseil IA du jour</h4>
-              <p className="text-sm text-muted-foreground mb-3">
+              <h4 className="font-medium text-white mb-2">Conseil IA du jour</h4>
+              <p className="text-sm text-white/80 mb-3">
                 Les devis envoyés le mardi ont 23% plus de chances d'être signés. 
                 Planifiez vos envois pour optimiser vos conversions.
               </p>
               <Button
-                variant="link"
+                variant="outline"
                 size="sm"
-                iconName="ArrowRight"
-                iconPosition="right"
-                className="p-0 h-auto"
+                className="bg-transparent text-white border-white/50 hover:bg-white/20 hover:border-white p-0 h-auto transform transition-all duration-300 group-hover:translate-x-1"
               >
-                En savoir plus
+                <span className="flex items-center">
+                  En savoir plus
+                  <Icon name="ArrowRight" size={16} className="ml-2" />
+                </span>
               </Button>
             </div>
           </div>

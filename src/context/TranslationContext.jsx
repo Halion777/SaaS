@@ -62,7 +62,9 @@ const translations = {
         cancel: 'Annuler',
         save: 'Sauvegarder',
         confirm: 'Confirmer',
-        back: 'Retour'
+        back: 'Retour',
+        continue: 'Continuer',
+        loading: 'Chargement...'
       },
       benefits: {
         freeTrial: 'Essai gratuit de 14 jours',
@@ -83,7 +85,8 @@ const translations = {
       blog: 'Blog | HAVITAM - Plateforme pour artisans',
       login: 'Connexion | HAVITAM - Plateforme pour artisans',
       register: 'Inscription | HAVITAM - Plateforme pour artisans',
-      findArtisan: 'Trouver un Artisan | HAVITAM - Plateforme pour artisans'
+      findArtisan: 'Trouver un Artisan | HAVITAM - Plateforme pour artisans',
+      forgotPassword: 'Mot de passe oublié | HAVITAM - Plateforme pour artisans'
     },
     
     // Home page
@@ -260,8 +263,45 @@ const translations = {
       }
     },
     
+    // Forgot password page
+    forgotPassword: {
+      title: 'Mot de passe oublié ?',
+      subtitle: 'Saisissez votre adresse e-mail pour réinitialiser votre mot de passe',
+      resetButton: 'Réinitialiser le mot de passe',
+      emailSent: 'Email envoyé !',
+      checkInbox: 'Veuillez vérifier votre boîte de réception pour les instructions de réinitialisation.',
+      backToLogin: 'Retour à la connexion',
+      rememberPassword: 'Vous vous souvenez de votre mot de passe ?'
+    },
+    
     // Registration form
     register: {
+      progressStep: 'Étape {current} sur {total}',
+      completed: 'terminé',
+      and: 'et la',
+      acceptTerms: 'J\'accepte les',
+      alreadyRegistered: 'Déjà un compte?',
+      benefits: {
+        title: 'Pourquoi choisir Havitam ?',
+        signatures: {
+          title: '+40% de signatures',
+          description: 'L\'IA optimise vos devis pour maximiser les conversions'
+        },
+        time: {
+          title: 'Gain de temps',
+          description: 'Automatisation des relances et optimisations'
+        },
+        analytics: {
+          title: 'Analytics avancés',
+          description: 'Suivez vos performances en temps réel'
+        }
+      },
+      testimonials: {
+        title: 'Ils nous font confiance'
+      },
+      security: {
+        title: 'Sécurité & Conformité'
+      },
       step1: {
         title: 'Créez votre compte',
         subtitle: 'Commencez votre essai gratuit de 14 jours dès aujourd\'hui',
@@ -276,7 +316,74 @@ const translations = {
         weak: 'Faible',
         medium: 'Moyen',
         good: 'Bon',
-        excellent: 'Excellent'
+        excellent: 'Excellent',
+        boostSignatures: 'Boostez vos signatures de 40%',
+        aiOptimization: 'Notre IA optimise automatiquement vos devis pour maximiser vos chances de signature.',
+        professions: {
+          electrician: 'Électricien',
+          plumber: 'Plombier',
+          painter: 'Peintre',
+          carpenter: 'Menuisier',
+          mason: 'Maçon',
+          tiling: 'Carreleur',
+          roofing: 'Couvreur',
+          heating: 'Chauffagiste',
+          gardening: 'Paysagiste',
+          locksmith: 'Serrurier',
+          other: 'Autre'
+        }
+      },
+      step2: {
+        title: 'Quelques informations supplémentaires',
+        subtitle: 'Personnalisez Havitam selon votre activité',
+        businessSizeLabel: 'Taille de l\'entreprise',
+        businessSizePlaceholder: 'Nombre d\'employés',
+        businessSizes: {
+          solo: 'Artisan seul',
+          small: '2-5 employés',
+          medium: '6-20 employés',
+          large: '20+ employés'
+        },
+        timeSavingTitle: 'Gain de temps',
+        timeSavingDescription: 'Automatisez vos relances et optimisez vos devis en quelques clics.',
+        moreSignaturesTitle: 'Plus de signatures',
+        moreSignaturesDescription: 'Notre IA analyse et améliore vos devis pour maximiser les conversions.',
+        dataSecurityTitle: 'Vos données sont sécurisées',
+        dataSecurityDescription: 'Toutes vos informations sont cryptées et stockées en toute sécurité conformément au RGPD.'
+      },
+      step3: {
+        title: 'Choisissez votre plan',
+        subtitle: 'Commencez avec 14 jours gratuits, sans engagement',
+        proFeatures: {
+          ai: 'IA complète et optimisations',
+          predictions: 'Prédictions de signature',
+          optimization: 'Optimisation des prix'
+        },
+        freeTrial: 'Essai gratuit de 14 jours',
+        freeTrialDescription: 'Testez toutes les fonctionnalités sans engagement. Aucune carte bancaire requise.',
+        certified: 'Certifié'
+      },
+      trustSignals: {
+        gdpr: {
+          title: 'Conformité GDPR',
+          description: 'Vos données sont protégées selon les standards européens'
+        },
+        ssl: {
+          title: 'Sécurité SSL',
+          description: 'Chiffrement de bout en bout pour toutes vos informations'
+        },
+        iso: {
+          title: 'Certifié ISO',
+          description: 'Standards de qualité et sécurité reconnus'
+        },
+        users: {
+          title: '2000+ Artisans',
+          description: 'Font déjà confiance à notre plateforme'
+        }
+      },
+      boostSignatures: {
+        title: 'Boostez vos signatures de 40%',
+        description: 'Notre IA optimise automatiquement vos devis pour maximiser vos chances de signature.'
       }
     },
     
@@ -404,29 +511,29 @@ const translations = {
       },
       story: {
         title: "Notre histoire",
-        description1: "HAVITAM a été fondé en 2020 par Pierre Durand, un ancien artisan plombier qui a constaté les difficultés rencontrées par les professionnels du bâtiment dans la gestion administrative de leur entreprise.",
-        description2: "Après 15 ans passés sur les chantiers, Pierre a décidé de créer une solution qui permettrait aux artisans de se concentrer sur leur cœur de métier tout en simplifiant la création de devis, la facturation et le suivi des paiements.",
-        description3: "Aujourd'hui, HAVITAM est utilisé par plus de 5 000 artisans en France et continue de se développer pour offrir toujours plus de fonctionnalités adaptées aux besoins spécifiques des professionnels du bâtiment.",
+        description1: "Havitam a été fondé par Haitam, un entrepreneur passionné qui a passé des années dans le secteur du bâtiment. Face à la charge administrative des artisans, il a créé une solution pour simplifier leur quotidien.",
+        description2: "Havitam, c'est l'outil qui combine puissance, simplicité et automatisation pour booster votre entreprise artisanale.",
+        description3: "Le nom 'Havitam' combine les initiales du fondateur ('HA' pour Haitam) et 'vitam' (vitamine en latin), exprimant notre vision : être la vitamine digitale de votre entreprise artisanale.",
         imageAlt: "L'équipe HAVITAM"
       },
       values: {
         title: "Nos valeurs",
         description: "Ces valeurs guident nos décisions et nos actions au quotidien pour offrir le meilleur service possible.",
         passion: {
-          title: "Passion",
-          description: "Nous sommes passionnés par notre mission d'aider les artisans à réussir et à se concentrer sur leur savoir-faire."
+          title: "Simplicité",
+          description: "Nous croyons que les outils professionnels doivent être simples à utiliser, même pour les moins technophiles."
         },
         trust: {
-          title: "Confiance",
-          description: "Nous construisons des relations de confiance avec nos utilisateurs en offrant des services fiables et transparents."
+          title: "Automatisation",
+          description: "Automatiser les tâches répétitives pour que vous puissiez vous concentrer sur votre métier."
         },
         excellence: {
-          title: "Excellence",
-          description: "Nous visons l'excellence dans tout ce que nous faisons, en améliorant constamment nos services pour nos utilisateurs."
+          title: "Accompagnement",
+          description: "Nous accompagnons chaque artisan dans sa transformation digitale avec un support dédié."
         },
         community: {
-          title: "Communauté",
-          description: "Nous croyons en la force de la communauté et au soutien mutuel entre artisans pour grandir ensemble."
+          title: "Notre mission",
+          description: "Simplifier la vie des artisans en leur offrant une plateforme tout-en-un qui automatise leur gestion administrative et les aide à développer leur activité."
         }
       },
       team: {
@@ -591,7 +698,9 @@ const translations = {
         cancel: 'Cancel',
         save: 'Save',
         confirm: 'Confirm',
-        back: 'Back'
+        back: 'Back',
+        continue: 'Continue',
+        loading: 'Loading...'
       },
       benefits: {
         freeTrial: '14 days free trial',
@@ -612,7 +721,8 @@ const translations = {
       blog: 'Blog | HAVITAM - Platform for craftsmen',
       login: 'Login | HAVITAM - Platform for craftsmen',
       register: 'Register | HAVITAM - Platform for craftsmen',
-      findArtisan: 'Find a Craftsman | HAVITAM - Platform for craftsmen'
+      findArtisan: 'Find a Craftsman | HAVITAM - Platform for craftsmen',
+      forgotPassword: 'Forgot Password | HAVITAM - Platform for craftsmen'
     },
     
     // Home page
@@ -789,8 +899,49 @@ const translations = {
       }
     },
     
+    // Forgot password page
+    forgotPassword: {
+      title: 'Forgot your password?',
+      subtitle: 'Enter your email address to reset your password',
+      resetButton: 'Reset password',
+      emailSent: 'Email sent!',
+      checkInbox: 'Please check your inbox for reset instructions.',
+      backToLogin: 'Back to login',
+      rememberPassword: 'Remember your password?'
+    },
+    
     // Registration form
     register: {
+      progressStep: 'Step {current} of {total}',
+      completed: 'completed',
+      and: 'and the',
+      acceptTerms: 'I accept the',
+      alreadyRegistered: 'Already have an account?',
+      boostSignatures: {
+        title: 'Boost your signatures by 40%',
+        description: 'Our AI automatically optimizes your quotes to maximize your chances of signing.'
+      },
+      benefits: {
+        title: 'Why choose Havitam?',
+        signatures: {
+          title: '+40% signatures',
+          description: 'AI optimizes your quotes to maximize conversions'
+        },
+        time: {
+          title: 'Time saving',
+          description: 'Automating follow-ups and optimizations'
+        },
+        analytics: {
+          title: 'Advanced analytics',
+          description: 'Track your performance in real-time'
+        }
+      },
+      testimonials: {
+        title: 'They trust us'
+      },
+      security: {
+        title: 'Security & Compliance'
+      },
       step1: {
         title: 'Create your account',
         subtitle: 'Start your 14-day free trial today',
@@ -805,7 +956,69 @@ const translations = {
         weak: 'Weak',
         medium: 'Medium',
         good: 'Good',
-        excellent: 'Excellent'
+        excellent: 'Excellent',
+        aiOptimization: 'Our AI automatically optimizes your quotes to maximize your chances of signing.',
+        professions: {
+          electrician: 'Electrician',
+          plumber: 'Plumber',
+          painter: 'Painter',
+          carpenter: 'Carpenter',
+          mason: 'Mason',
+          tiling: 'Tiler',
+          roofing: 'Roofer',
+          heating: 'Heating Engineer',
+          gardening: 'Landscaper',
+          locksmith: 'Locksmith',
+          other: 'Other'
+        }
+      },
+      step2: {
+        title: 'Some additional information',
+        subtitle: 'Personalize Havitam according to your activity',
+        businessSizeLabel: 'Business size',
+        businessSizePlaceholder: 'Number of employees',
+        businessSizes: {
+          solo: 'Solo craftsman',
+          small: '2-5 employees',
+          medium: '6-20 employees',
+          large: '20+'
+        },
+        timeSavingTitle: 'Time saving',
+        timeSavingDescription: 'Automate your follow-ups and optimize your quotes in just a few clicks.',
+        moreSignaturesTitle: 'More signatures',
+        moreSignaturesDescription: 'Our AI analyzes and improves your quotes to maximize conversions.',
+        dataSecurityTitle: 'Your data is secure',
+        dataSecurityDescription: 'All your information is encrypted and securely stored in accordance with GDPR.'
+      },
+      step3: {
+        title: 'Choose your plan',
+        subtitle: 'Start with 14 days free, no commitment',
+        proFeatures: {
+          ai: 'Complete AI and optimizations',
+          predictions: 'Signature predictions',
+          optimization: 'Price optimization'
+        },
+        freeTrial: '14-day free trial',
+        freeTrialDescription: 'Test all features without commitment. No credit card required.',
+        certified: 'Certified'
+      },
+      trustSignals: {
+        gdpr: {
+          title: 'GDPR Compliance',
+          description: 'Your data is protected according to European standards'
+        },
+        ssl: {
+          title: 'SSL Security',
+          description: 'End-to-end encryption for all your information'
+        },
+        iso: {
+          title: 'ISO Certified',
+          description: 'Recognized quality and security standards'
+        },
+        users: {
+          title: '2000+ Craftsmen',
+          description: 'Already trust our platform'
+        }
       }
     },
     
@@ -933,29 +1146,29 @@ const translations = {
       },
       story: {
         title: "Our story",
-        description1: "HAVITAM was founded in 2020 by Pierre Durand, an ex-plumber craftsman who noticed the difficulties encountered by craftsmen in administrative management of their business.",
-        description2: "After 15 years spent on construction sites, Pierre decided to create a solution that would allow craftsmen to focus on their core craft while simplifying the creation of quotes, invoicing, and payment tracking.",
-        description3: "Today, HAVITAM is used by over 5,000 craftsmen in France and continues to develop to offer ever more features tailored to the specific needs of craftsmen.",
+        description1: "Havitam was founded by Haitam, a passionate entrepreneur who spent years in the construction sector. Faced with the administrative burden of craftsmen, he created a solution to simplify their daily life.",
+        description2: "Havitam is the tool that combines power, simplicity and automation to boost your craft business.",
+        description3: "The name 'Havitam' combines the founder's initials ('HA' for Haitam) and 'vitam' (vitamin in Latin), expressing our vision: to be the digital vitamin of your craft business.",
         imageAlt: "The HAVITAM team"
       },
       values: {
         title: "Our values",
         description: "These values guide our daily decisions and actions to provide the best possible service.",
         passion: {
-          title: "Passion",
-          description: "We are passionate about our mission to help craftsmen succeed and focus on their craft."
+          title: "Simplicity",
+          description: "We believe professional tools should be simple to use, even for the less tech-savvy."
         },
         trust: {
-          title: "Trust",
-          description: "We build trust with our users by offering reliable and transparent services."
+          title: "Automation",
+          description: "Automate repetitive tasks so you can focus on your craft."
         },
         excellence: {
-          title: "Excellence",
-          description: "We strive for excellence in everything we do, constantly improving our services for our users."
+          title: "Support",
+          description: "We support every craftsman in their digital transformation with dedicated assistance."
         },
         community: {
-          title: "Community",
-          description: "We believe in the power of community and mutual support among craftsmen to grow together."
+          title: "Our mission",
+          description: "Simplify craftsmen's lives by offering them an all-in-one platform that automates their administrative management and helps them grow their business."
         }
       },
       team: {
@@ -1120,7 +1333,9 @@ const translations = {
         cancel: 'Annuleren',
         save: 'Opslaan',
         confirm: 'Bevestigen',
-        back: 'Terug'
+        back: 'Terug',
+        continue: 'Doorgaan',
+        loading: 'Bezig...'
       },
       benefits: {
         freeTrial: '14 dagen gratis proef',
@@ -1141,7 +1356,8 @@ const translations = {
       blog: 'Blog | HAVITAM - Platform voor vakmensen',
       login: 'Inloggen | HAVITAM - Platform voor vakmensen',
       register: 'Registreren | HAVITAM - Platform voor vakmensen',
-      findArtisan: 'Vind een Vakman | HAVITAM - Platform voor vakmensen'
+      findArtisan: 'Vind een Vakman | HAVITAM - Platform voor vakmensen',
+      forgotPassword: 'Wachtwoord vergeten | HAVITAM - Platform voor vakmensen'
     },
     
     // Home page
@@ -1318,8 +1534,49 @@ const translations = {
       }
     },
     
+    // Forgot password page
+    forgotPassword: {
+      title: 'Wachtwoord vergeten?',
+      subtitle: 'Voer uw e-mailadres in om uw wachtwoord opnieuw in te stellen',
+      resetButton: 'Wachtwoord resetten',
+      emailSent: 'E-mail verzonden!',
+      checkInbox: 'Controleer uw inbox voor instructies voor het opnieuw instellen.',
+      backToLogin: 'Terug naar inloggen',
+      rememberPassword: 'Herinnert u zich uw wachtwoord?'
+    },
+    
     // Registration form
     register: {
+      progressStep: 'Stap {current} van {total}',
+      completed: 'voltooid',
+      and: 'en de',
+      acceptTerms: 'Ik accepteer de',
+      alreadyRegistered: 'Heeft u al een account?',
+      boostSignatures: {
+        title: 'Versterk uw handtekeningen met 40%',
+        description: 'Onze AI optimaliseert automatisch uw offertes om uw kans op ondertekening te maximaliseren.'
+      },
+      benefits: {
+        title: 'Waarom Havitam kiezen?',
+        signatures: {
+          title: '+40% handtekeningen',
+          description: 'AI optimaliseert uw offertes om conversies te maximaliseren'
+        },
+        time: {
+          title: 'Tijd besparen',
+          description: 'Automatiseer uw opvolgingen en optimaliseer uw offertes in slechts enkele klikken'
+        },
+        analytics: {
+          title: 'Geavanceerde analyses',
+          description: 'Volg uw prestaties in real-time'
+        }
+      },
+      testimonials: {
+        title: 'Zij vertrouwen ons'
+      },
+      security: {
+        title: 'Veiligheid & Conformiteit'
+      },
       step1: {
         title: 'Maak uw account aan',
         subtitle: 'Start vandaag uw gratis proefperiode van 14 dagen',
@@ -1334,7 +1591,73 @@ const translations = {
         weak: 'Zwak',
         medium: 'Gemiddeld',
         good: 'Goed',
-        excellent: 'Uitstekend'
+        excellent: 'Uitstekend',
+        aiOptimization: 'Onze AI optimaliseert automatisch uw offertes om uw kans op ondertekening te maximaliseren.',
+        professions: {
+          electrician: 'Elektricien',
+          plumber: 'Loodgieter',
+          painter: 'Schilder',
+          carpenter: 'Timmerman',
+          mason: 'Metselaar',
+          tiling: 'Tegelzetter',
+          roofing: 'Dakdekker',
+          heating: 'Verwarmingsmonteur',
+          gardening: 'Hovenier',
+          locksmith: 'Slotenmaker',
+          other: 'Anders'
+        }
+      },
+      step2: {
+        title: 'Enkele aanvullende informatie',
+        subtitle: 'Persoonlijk uw Havitam aanpassen aan uw activiteit',
+        businessSizeLabel: 'Bedrijfsgrootte',
+        businessSizePlaceholder: 'Aantal medewerkers',
+        businessSizes: {
+          solo: 'Solo vakman',
+          small: '2-5 medewerkers',
+          medium: '6-20 medewerkers',
+          large: '20+'
+        },
+        timeSavingTitle: 'Tijd besparen',
+        timeSavingDescription: 'Automatiseer uw opvolgingen en optimaliseer uw offertes in slechts enkele klikken.',
+        moreSignaturesTitle: 'Meer handtekeningen',
+        moreSignaturesDescription: 'Onze AI analyseert en verbetert uw offertes om conversies te maximaliseren.',
+        dataSecurityTitle: 'Uw gegevens zijn veilig',
+        dataSecurityDescription: 'Alle uw informatie wordt versleuteld en veilig opgeslagen in overeenstemming met de AVG.'
+      },
+      step3: {
+        title: 'Kies uw plan',
+        subtitle: 'Begin met 14 dagen gratis, zonder verplichting',
+        proFeatures: {
+          ai: 'Volledige AI en optimalisaties',
+          predictions: 'Handtekeningvoorspellingen',
+          optimization: 'Prijsoptimalisatie'
+        },
+        freeTrial: '14-dagen gratis proef',
+        freeTrialDescription: 'Test alle functies zonder verplichting. Geen creditcard vereist.',
+        certified: 'Gecertificeerd'
+      },
+      trustSignals: {
+        gdpr: {
+          title: 'AVG-conformiteit',
+          description: 'Uw gegevens worden beschermd volgens Europese normen'
+        },
+        ssl: {
+          title: 'SSL-beveiliging',
+          description: 'Eind-tot-eind versleuteling voor alle uw informatie'
+        },
+        iso: {
+          title: 'ISO-gecertificeerd',
+          description: 'Erkenning van kwaliteit en veiligheid'
+        },
+        users: {
+          title: '2000+ Vakmensen',
+          description: 'Vertrouwen al onze platform'
+        }
+      },
+      boostSignatures: {
+        title: 'Boostez vos signatures de 40%',
+        description: 'Notre IA optimise automatiquement vos devis pour maximiser vos chances de signature.'
       }
     },
     
@@ -1462,29 +1785,29 @@ const translations = {
       },
       story: {
         title: "Onze geschiedenis",
-        description1: "HAVITAM werd in 2020 opgericht door Pierre Durand, een ex-vakman die de problemen waar vakmensen mee worstelden in het administratieve beheer van hun bedrijf opmerkte.",
-        description2: "Na 15 jaar doorgebracht op bouwplaatsen, besloot Pierre een oplossing te creëren die vakmensen zou toestaan om zich te concentreren op hun kernvak terwijl ze de creatie van offertes, facturen en betalingsvolging vereenvoudigden.",
-        description3: "Vandaag gebruikt HAVITAM meer dan 5.000 vakmensen in Frankrijk en blijft het ontwikkelen om steeds meer functies aan te bieden die aan de specifieke behoeften van vakmensen voldoen.",
-        imageAlt: "De HAVITAM-team"
+        description1: "Havitam werd opgericht door Haitam, een gepassioneerde ondernemer die jaren in de bouwsector heeft doorgebracht. Geconfronteerd met de administratieve last van vakmensen, creëerde hij een oplossing om hun dagelijks leven te vereenvoudigen.",
+        description2: "Havitam is het hulpmiddel dat kracht, eenvoud en automatisering combineert om uw ambachtelijke bedrijf te stimuleren.",
+        description3: "De naam 'Havitam' combineert de initialen van de oprichter ('HA' voor Haitam) en 'vitam' (vitamine in het Latijn), en drukt onze visie uit: de digitale vitamine van uw ambachtelijke bedrijf zijn.",
+        imageAlt: "Het HAVITAM-team"
       },
       values: {
         title: "Onze waarden",
         description: "Deze waarden leiden onze dagelijkse beslissingen en handelingen om het beste mogelijke service te bieden.",
         passion: {
-          title: "Passie",
-          description: "Wij zijn gepassioneerd door onze missie om vakmensen te helpen slagen en zich te concentreren op hun vak."
+          title: "Eenvoud",
+          description: "Wij geloven dat professionele tools eenvoudig te gebruiken moeten zijn, zelfs voor de minder technisch onderlegden."
         },
         trust: {
-          title: "Vertrouwen",
-          description: "Wij bouwen relaties van vertrouwen met onze gebruikers door betrouwbare en transparante diensten aan te bieden."
+          title: "Automatisering",
+          description: "Automatiseer repetitieve taken zodat u zich kunt concentreren op uw ambacht."
         },
         excellence: {
-          title: "Uitstekendheid",
-          description: "Wij streven naar uitstekendheid in alles wat we doen, door ons service continu te verbeteren voor onze gebruikers."
+          title: "Ondersteuning",
+          description: "We ondersteunen elke vakman in hun digitale transformatie met toegewijde hulp."
         },
         community: {
-          title: "Gemeenschap",
-          description: "Wij geloven in de kracht van de gemeenschap en het ondersteuningsverband tussen vakmensen om samen te groeien."
+          title: "Onze missie",
+          description: "Het leven van vakmensen vereenvoudigen door hen een alles-in-één platform te bieden dat hun administratief beheer automatiseert en hen helpt hun bedrijf te laten groeien."
         }
       },
       team: {

@@ -18,6 +18,9 @@ const buttonVariants = cva(
                 success: "bg-success text-success-foreground hover:bg-success/90",
                 warning: "bg-warning text-warning-foreground hover:bg-warning/90",
                 danger: "bg-error text-error-foreground hover:bg-error/90",
+                continue: "bg-gray-100 text-black hover:bg-green-600 hover:text-white transition-colors duration-300",
+                login: "bg-gray-100 text-black hover:bg-blue-600 hover:text-white transition-colors duration-300",
+                trial: "bg-green-600 text-white hover:bg-green-700 transition-colors duration-300",
             },
             size: {
                 default: "h-10 px-4 py-2",

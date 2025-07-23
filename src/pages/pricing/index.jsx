@@ -283,19 +283,37 @@ const PricingPage = () => {
         </section>
         
         {/* CTA Section */}
-        <section className="py-16 bg-primary">
-          <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl font-bold text-white mb-6">
-              {t('pricing.cta.title')}
-            </h2>
-            <p className="text-lg text-white/80 mb-8 max-w-2xl mx-auto">
-              {t('pricing.cta.description')}
-            </p>
-            <Link to="/register">
-              <Button variant="secondary" size="lg">
-                {t('pricing.cta.button')}
-              </Button>
-            </Link>
+        <section className="py-16 bg-gradient-to-br from-blue-700 to-blue-800 relative overflow-hidden">
+          {/* Decorative elements */}
+          <div className="absolute inset-0 overflow-hidden opacity-10">
+            <div className="absolute top-0 left-0 w-full h-32 bg-white/20 transform -skew-y-6"></div>
+            <div className="absolute -bottom-8 -left-8 w-64 h-64 bg-white/10 rounded-full blur-xl"></div>
+            <div className="absolute -top-12 -right-12 w-80 h-80 bg-white/10 rounded-full blur-xl"></div>
+            <div className="absolute top-1/2 left-1/4 w-12 h-12 bg-yellow-300/30 rounded-full blur-md animate-pulse"></div>
+            <div className="absolute bottom-1/4 right-1/3 w-8 h-8 bg-cyan-300/30 rounded-full blur-md animate-pulse" style={{animationDelay: '1s'}}></div>
+          </div>
+          
+          <div className="container mx-auto px-4 relative z-10">
+            <div className="text-center">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 tracking-tight">
+                {t('pricing.cta.title')}
+              </h2>
+              <p className="text-lg text-white/90 mb-10 max-w-2xl mx-auto leading-relaxed">
+                {t('pricing.cta.description')}
+              </p>
+              <Link to="/register">
+                <Button 
+                  variant="secondary" 
+                  size="lg"
+                  className="shadow-xl transform transition-all duration-300 hover:scale-105 hover:shadow-blue-900/50 group"
+                >
+                  <span className="flex items-center">
+                    <Icon name="Sparkles" size={20} className="mr-2 group-hover:animate-pulse" />
+                    {t('pricing.cta.button')}
+                  </span>
+                </Button>
+              </Link>
+            </div>
           </div>
         </section>
       </main>

@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import Input from '../../../components/ui/Input';
 import Icon from '../../../components/AppIcon';
 import Select from '../../../components/ui/Select';
+import { useTranslation } from '../../../context/TranslationContext';
 
 const StepOne = ({ formData, updateFormData, errors }) => {
+  const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
 
@@ -30,39 +32,98 @@ const StepOne = ({ formData, updateFormData, errors }) => {
   };
 
   const getStrengthText = () => {
-    if (passwordStrength < 25) return 'Faible';
-    if (passwordStrength < 50) return 'Moyen';
-    if (passwordStrength < 75) return 'Bon';
-    return 'Excellent';
+    if (passwordStrength < 25) return t('register.step1.weak') || 'Faible';
+    if (passwordStrength < 50) return t('register.step1.medium') || 'Moyen';
+    if (passwordStrength < 75) return t('register.step1.good') || 'Bon';
+    return t('register.step1.excellent') || 'Excellent';
   };
+  
+  // Profession options with icons
+  const professionOptions = [
+    { 
+      value: 'electrician', 
+      label: t('register.step1.professions.electrician') || 'Électricien',
+      icon: <Icon name="Zap" size={16} />
+    },
+    { 
+      value: 'plumber', 
+      label: t('register.step1.professions.plumber') || 'Plombier',
+      icon: <Icon name="Wrench" size={16} />
+    },
+    { 
+      value: 'painter', 
+      label: t('register.step1.professions.painter') || 'Peintre',
+      icon: <Icon name="Brush" size={16} />
+    },
+    { 
+      value: 'carpenter', 
+      label: t('register.step1.professions.carpenter') || 'Menuisier',
+      icon: <Icon name="Hammer" size={16} />
+    },
+    { 
+      value: 'mason', 
+      label: t('register.step1.professions.mason') || 'Maçon',
+      icon: <Icon name="Building" size={16} />
+    },
+    { 
+      value: 'tiling', 
+      label: t('register.step1.professions.tiling') || 'Carreleur',
+      icon: <Icon name="Grid" size={16} />
+    },
+    { 
+      value: 'roofing', 
+      label: t('register.step1.professions.roofing') || 'Couvreur',
+      icon: <Icon name="Home" size={16} />
+    },
+    { 
+      value: 'heating', 
+      label: t('register.step1.professions.heating') || 'Chauffagiste',
+      icon: <Icon name="Thermometer" size={16} />
+    },
+    { 
+      value: 'gardening', 
+      label: t('register.step1.professions.gardening') || 'Paysagiste',
+      icon: <Icon name="Flower" size={16} />
+    },
+    { 
+      value: 'locksmith', 
+      label: t('register.step1.professions.locksmith') || 'Serrurier',
+      icon: <Icon name="Lock" size={16} />
+    },
+    { 
+      value: 'other', 
+      label: t('register.step1.professions.other') || 'Autre',
+      icon: <Icon name="Tool" size={16} />
+    }
+  ];
   
   // Country options
   const countries = [
-    { value: 'FR', label: 'France' },
-    { value: 'BE', label: 'Belgique' },
-    { value: 'CH', label: 'Suisse' },
-    { value: 'LU', label: 'Luxembourg' },
-    { value: 'CA', label: 'Canada' },
-    { value: 'GB', label: 'Royaume-Uni' },
-    { value: 'DE', label: 'Allemagne' },
-    { value: 'IT', label: 'Italie' },
-    { value: 'ES', label: 'Espagne' },
+    { value: 'FR', label: 'France', icon: <Icon name="Flag" size={16} /> },
+    { value: 'BE', label: 'Belgique', icon: <Icon name="Flag" size={16} /> },
+    { value: 'CH', label: 'Suisse', icon: <Icon name="Flag" size={16} /> },
+    { value: 'LU', label: 'Luxembourg', icon: <Icon name="Flag" size={16} /> },
+    { value: 'CA', label: 'Canada', icon: <Icon name="Flag" size={16} /> },
+    { value: 'GB', label: 'Royaume-Uni', icon: <Icon name="Flag" size={16} /> },
+    { value: 'DE', label: 'Allemagne', icon: <Icon name="Flag" size={16} /> },
+    { value: 'IT', label: 'Italie', icon: <Icon name="Flag" size={16} /> },
+    { value: 'ES', label: 'Espagne', icon: <Icon name="Flag" size={16} /> },
   ];
 
   return (
     <div className="space-y-6">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-foreground mb-2">
-          Créez votre compte
+          {t('register.step1.title') || 'Créez votre compte'}
         </h2>
         <p className="text-muted-foreground">
-          Commencez votre essai gratuit de 14 jours dès aujourd'hui
+          {t('register.step1.subtitle') || 'Commencez votre essai gratuit de 14 jours dès aujourd\'hui'}
         </p>
       </div>
 
       <div className="space-y-4">
         <Input
-          label="Nom complet"
+          label={t('register.step1.fullName') || 'Nom complet'}
           type="text"
           placeholder="Jean Dupont"
           value={formData.fullName}
@@ -72,7 +133,7 @@ const StepOne = ({ formData, updateFormData, errors }) => {
         />
         
         <Input
-          label="Nom de l'entreprise"
+          label={t('register.step1.businessName') || 'Nom de l\'entreprise'}
           type="text"
           placeholder="Dupont Plomberie"
           value={formData.companyName}
@@ -82,14 +143,9 @@ const StepOne = ({ formData, updateFormData, errors }) => {
         />
         
         <Select
-          label="Profession / Type d'activité"
+          label={t('register.step1.profession') || 'Profession / Type d\'activité'}
           placeholder="Sélectionnez votre métier"
-          options={[
-            { value: 'electrician', label: 'Électricien' },
-            { value: 'plumber', label: 'Plombier' },
-            { value: 'painter', label: 'Peintre' },
-            { value: 'other', label: 'Autre' }
-          ]}
+          options={professionOptions}
           value={formData.profession}
           onChange={(e) => updateFormData('profession', e.target.value)}
           error={errors.profession}
@@ -97,7 +153,7 @@ const StepOne = ({ formData, updateFormData, errors }) => {
         />
 
         <Input
-          label="Adresse email"
+          label={t('register.step1.email') || 'Adresse email'}
           type="email"
           placeholder="jean@exemple.fr"
           value={formData.email}
@@ -109,7 +165,7 @@ const StepOne = ({ formData, updateFormData, errors }) => {
         <div className="space-y-2">
           <div className="relative">
             <Input
-              label="Mot de passe"
+              label={t('register.step1.password') || 'Mot de passe'}
               type={showPassword ? "text" : "password"}
               placeholder="Créez un mot de passe sécurisé"
               value={formData.password}
@@ -129,7 +185,7 @@ const StepOne = ({ formData, updateFormData, errors }) => {
           {formData.password && (
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Force du mot de passe:</span>
+                <span className="text-muted-foreground">{t('register.step1.passwordStrength') || 'Force du mot de passe:'}</span>
                 <span className={`font-medium ${
                   passwordStrength < 25 ? 'text-error' :
                   passwordStrength < 50 ? 'text-warning' :
@@ -149,7 +205,7 @@ const StepOne = ({ formData, updateFormData, errors }) => {
         </div>
 
         <Input
-          label="Numéro de téléphone"
+          label={t('register.step1.phone') || 'Numéro de téléphone'}
           type="tel"
           placeholder="+33 6 12 34 56 78"
           value={formData.phone}
@@ -159,7 +215,7 @@ const StepOne = ({ formData, updateFormData, errors }) => {
         />
         
         <Select
-          label="Pays"
+          label={t('register.step1.country') || 'Pays'}
           placeholder="Sélectionnez votre pays"
           options={countries}
           value={formData.country || 'FR'}
@@ -169,17 +225,17 @@ const StepOne = ({ formData, updateFormData, errors }) => {
         />
       </div>
 
-      <div className="bg-muted rounded-lg p-4">
+      <div className="bg-muted rounded-lg p-4 mt-6">
         <div className="flex items-start space-x-3">
           <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0 mt-1">
             <Icon name="Zap" size={16} color="white" />
           </div>
           <div>
             <h3 className="font-semibold text-foreground mb-1">
-              Boostez vos signatures de 40%
+              {t('register.boostSignatures.title') || 'Boostez vos signatures de 40%'}
             </h3>
             <p className="text-sm text-muted-foreground">
-              Notre IA optimise automatiquement vos devis pour maximiser vos chances de signature.
+              {t('register.step1.aiOptimization') || 'Notre IA optimise automatiquement vos devis pour maximiser vos chances de signature.'}
             </p>
           </div>
         </div>
