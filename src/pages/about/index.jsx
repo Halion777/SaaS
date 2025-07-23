@@ -84,7 +84,7 @@ const AboutPage = () => {
               <h1 className="text-4xl font-bold text-foreground mb-4">
                 {t('about.hero.title')}
               </h1>
-              <p className="text-lg text-muted-foreground mb-8">
+              <p className="text-base md:text-lg text-muted-foreground mb-8">
                 {t('about.hero.description')}
               </p>
               <div className="flex justify-center space-x-4">

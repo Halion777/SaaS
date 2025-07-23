@@ -61,7 +61,7 @@ const HomePage = () => {
                 {t('heroTitle.suffix') || ''}
               </h1>
               
-              <p className="text-lg md:text-xl text-muted-foreground mb-14 leading-relaxed max-w-3xl mx-auto">
+              <p className="text-base md:text-lg text-muted-foreground mb-14 leading-relaxed max-w-3xl mx-auto">
                 {t('home.hero.subtitle')}
               </p>
               

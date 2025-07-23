@@ -82,7 +82,7 @@ const PricingPage = () => {
             <h1 className="text-4xl font-bold text-foreground mb-4">
               {t('pricing.header.title')}
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
               {t('pricing.header.description')}
             </p>
             

@@ -114,7 +114,7 @@ const ContactPage = () => {
             {/* Page Title */}
             <div className="text-center mb-16">
               <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">{t('contact.title')}</h1>
-              <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
                 {t('contact.subtitle')}
               </p>
             </div>
@@ -125,7 +125,7 @@ const ContactPage = () => {
               <div className="space-y-8">
                 <div>
                   <h2 className="text-3xl font-bold text-foreground mb-4">{t('contact.projectTitle') || "Parlons de votre projet"}</h2>
-                  <p className="text-lg text-muted-foreground leading-relaxed">
+                  <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
                     {t('contact.projectDescription') || "Que vous soyez un artisan qui souhaite découvrir Havitam ou un client ayant besoin d'aide, nous sommes là pour vous accompagner."}
                   </p>
                 </div>

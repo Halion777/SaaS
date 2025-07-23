@@ -129,7 +129,7 @@ const FindArtisanPage = () => {
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
                 {t('findArtisan.hero.title') || "Trouvez un artisan qualifié"}
               </h1>
-              <p className="text-lg text-white/90 max-w-2xl mx-auto">
+              <p className="text-base md:text-lg text-white/90 max-w-2xl mx-auto">
                 {t('findArtisan.hero.description') || "Décrivez vos travaux et recevez rapidement des devis d'artisans près de chez vous"}
               </p>
             </div>
