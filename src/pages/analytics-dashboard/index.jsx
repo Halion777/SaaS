@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import MainSidebar from '../../components/ui/MainSidebar';
 import Icon from '../../components/AppIcon';
+import Button from '../../components/ui/Button';
 import KPICard from './components/KPICard';
 import RevenueChart from './components/RevenueChart';
 import ConversionChart from './components/ConversionChart';
@@ -23,6 +24,7 @@ const AnalyticsDashboard = () => {
   const [aiInsights, setAiInsights] = useState(null);
   const [pricingOptimization, setPricingOptimization] = useState(null);
   const [performanceAnalysis, setPerformanceAnalysis] = useState(null);
+  const [activeTab, setActiveTab] = useState('overview');
 
   // Mock business data for AI analysis
   const businessData = {
@@ -152,6 +154,106 @@ const AnalyticsDashboard = () => {
     projectsTarget: 67
   };
 
+  const renderTabContent = () => {
+    switch(activeTab) {
+      case 'overview':
+        return (
+          <>
+            {/* KPI Cards */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+            >
+              {kpiData.map((kpi, index) => (
+                <KPICard
+                  key={kpi.title}
+                  {...kpi}
+                  delay={index * 0.1}
+                />
+              ))}
+            </motion.div>
+
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+              {/* Revenue Forecasting */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <RevenueChart data={revenueData} />
+              </motion.div>
+
+              {/* Conversion Analysis */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <ConversionChart data={conversionData} />
+              </motion.div>
+            </div>
+          </>
+        );
+      case 'segments':
+        return (
+          <>
+            {/* Client Segments */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mb-8"
+            >
+              <ClientSegmentChart data={clientSegmentData} />
+            </motion.div>
+
+            {/* Real-time Progress */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+              className="mb-8"
+            >
+              <MetricsProgress metrics={currentMetrics} />
+            </motion.div>
+          </>
+        );
+      case 'ai':
+        return (
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
+            {/* AI Insights Panel */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="xl:col-span-2"
+            >
+              <AIInsightsPanel
+                insights={aiInsights}
+                pricingOptimization={pricingOptimization}
+                performanceAnalysis={performanceAnalysis}
+                isLoading={isLoading}
+              />
+            </motion.div>
+
+            {/* Comparative Analysis */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <ComparisonAnalytics />
+            </motion.div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <MainSidebar />
@@ -171,19 +273,86 @@ const AnalyticsDashboard = () => {
           <motion.div 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
+            className="mb-6"
           >
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border pb-6">
               <div>
-                <h1 className="text-3xl font-bold text-foreground flex items-center">
-                  <Icon name="BarChart3" size={32} color="var(--color-primary)" className="mr-3" />
-                  Tableau de bord analytique
-                </h1>
-                <p className="text-muted-foreground mt-2">
-                  Intelligence d'affaires et insights IA pour la prise de décision stratégique
-                </p>
+                <div className="flex items-center">
+                  <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center mr-4">
+                    <Icon name="BarChart3" size={28} className="text-blue-600" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold text-foreground">Analyses Détaillées</h1>
+                    <p className="text-muted-foreground mt-1">
+                      Explorez vos données en profondeur pour des décisions stratégiques
+                    </p>
+                  </div>
+                </div>
               </div>
-              <ExportControls />
+              <div className="flex items-center">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mr-3"
+                  onClick={() => window.location.href = '/dashboard'}
+                >
+                  <span className="flex items-center">
+                    <Icon name="LayoutDashboard" size={16} className="mr-2" />
+                    Retour à l'aperçu
+                  </span>
+                </Button>
+                <ExportControls />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Navigation Tabs */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mb-6"
+          >
+            <div className="flex flex-wrap border-b border-border">
+              <button
+                className={`px-6 py-3 font-medium text-sm transition-colors ${
+                  activeTab === 'overview' 
+                    ? 'text-primary border-b-2 border-primary' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+                onClick={() => setActiveTab('overview')}
+              >
+                <span className="flex items-center">
+                  <Icon name="PieChart" size={16} className="mr-2" />
+                  Vue d'ensemble
+                </span>
+              </button>
+              <button
+                className={`px-6 py-3 font-medium text-sm transition-colors ${
+                  activeTab === 'segments' 
+                    ? 'text-primary border-b-2 border-primary' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+                onClick={() => setActiveTab('segments')}
+              >
+                <span className="flex items-center">
+                  <Icon name="Users" size={16} className="mr-2" />
+                  Segments clients
+                </span>
+              </button>
+              <button
+                className={`px-6 py-3 font-medium text-sm transition-colors ${
+                  activeTab === 'ai' 
+                    ? 'text-primary border-b-2 border-primary' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+                onClick={() => setActiveTab('ai')}
+              >
+                <span className="flex items-center">
+                  <Icon name="Brain" size={16} className="mr-2" />
+                  Insights IA
+                </span>
+              </button>
             </div>
           </motion.div>
 
@@ -191,8 +360,8 @@ const AnalyticsDashboard = () => {
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="mb-8"
+            transition={{ delay: 0.15 }}
+            className="mb-8 bg-card border border-border p-4 rounded-lg"
           >
             <FilterControls
               dateRange={dateRange}
@@ -204,87 +373,8 @@ const AnalyticsDashboard = () => {
             />
           </motion.div>
 
-          {/* KPI Cards */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
-          >
-            {kpiData.map((kpi, index) => (
-              <KPICard
-                key={kpi.title}
-                {...kpi}
-                delay={index * 0.1}
-              />
-            ))}
-          </motion.div>
-
-          {/* Charts Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            {/* Revenue Forecasting */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <RevenueChart data={revenueData} />
-            </motion.div>
-
-            {/* Conversion Analysis */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <ConversionChart data={conversionData} />
-            </motion.div>
-
-            {/* Client Segments */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <ClientSegmentChart data={clientSegmentData} />
-            </motion.div>
-
-            {/* Real-time Progress */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.6 }}
-            >
-              <MetricsProgress metrics={currentMetrics} />
-            </motion.div>
-          </div>
-
-          {/* AI Insights and Comparison */}
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
-            {/* AI Insights Panel */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
-              className="xl:col-span-2"
-            >
-              <AIInsightsPanel
-                insights={aiInsights}
-                pricingOptimization={pricingOptimization}
-                performanceAnalysis={performanceAnalysis}
-                isLoading={isLoading}
-              />
-            </motion.div>
-
-            {/* Comparative Analysis */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
-            >
-              <ComparisonAnalytics />
-            </motion.div>
-          </div>
+          {/* Tab Content */}
+          {renderTabContent()}
         </div>
       </main>
     </div>

@@ -13,6 +13,12 @@ const ClientSelection = ({ selectedClient, onClientSelect, onNext }) => {
     address: '',
     company: ''
   });
+  const [projectInfo, setProjectInfo] = useState({
+    category: '',
+    estimatedAmount: '',
+    deadline: '',
+    description: ''
+  });
 
   const existingClients = [
     { value: '1', label: 'Jean Martin - Plomberie Martin', description: 'jean.martin@email.com • 06 12 34 56 78' },
@@ -20,6 +26,19 @@ const ClientSelection = ({ selectedClient, onClientSelect, onNext }) => {
     { value: '3', label: 'Pierre Leroy - Menuiserie Leroy', description: 'pierre.leroy@email.com • 06 11 22 33 44' },
     { value: '4', label: 'Sophie Bernard - Peinture Déco', description: 'sophie.bernard@email.com • 06 55 66 77 88' },
     { value: '5', label: 'Thomas Petit - Maçonnerie TP', description: 'thomas.petit@email.com • 06 99 88 77 66' }
+  ];
+
+  const categoryOptions = [
+    { value: 'plomberie', label: 'Plomberie' },
+    { value: 'electricite', label: 'Électricité' },
+    { value: 'menuiserie', label: 'Menuiserie' },
+    { value: 'peinture', label: 'Peinture' },
+    { value: 'maconnerie', label: 'Maçonnerie' },
+    { value: 'carrelage', label: 'Carrelage' },
+    { value: 'toiture', label: 'Toiture' },
+    { value: 'chauffage', label: 'Chauffage' },
+    { value: 'renovation', label: 'Rénovation générale' },
+    { value: 'autre', label: 'Autre' }
   ];
 
   const handleNewClientSubmit = (e) => {
@@ -41,6 +60,10 @@ const ClientSelection = ({ selectedClient, onClientSelect, onNext }) => {
     setNewClient(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleProjectChange = (field, value) => {
+    setProjectInfo(prev => ({ ...prev, [field]: value }));
+  };
+
   const isFormValid = selectedClient || (newClient.name && newClient.email);
 
   return (
@@ -60,8 +83,8 @@ const ClientSelection = ({ selectedClient, onClientSelect, onNext }) => {
               clearable
               options={existingClients}
               value={selectedClient?.value || ''}
-              onChange={(value) => {
-                const client = existingClients.find(c => c.value === value);
+              onChange={(e) => {
+                const client = existingClients.find(c => c.value === e.target.value);
                 onClientSelect(client);
               }}
               description="Tapez pour rechercher parmi vos clients existants"
@@ -162,6 +185,92 @@ const ClientSelection = ({ selectedClient, onClientSelect, onNext }) => {
           </div>
         </div>
       )}
+
+      {/* Project Information Section */}
+      <div className="bg-card border border-border rounded-lg p-6">
+        <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center">
+          <Icon name="FileText" size={24} color="var(--color-primary)" className="mr-3" />
+          Informations projet
+        </h2>
+        
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              label="Catégorie *"
+              placeholder="Sélectionner une catégorie"
+              options={categoryOptions}
+              value={projectInfo.category}
+              onChange={(e) => handleProjectChange('category', e.target.value)}
+              required
+            />
+            
+            <div className="relative">
+              <Input
+                label="Montant estimé *"
+                type="number"
+                placeholder="2500"
+                value={projectInfo.estimatedAmount}
+                onChange={(e) => handleProjectChange('estimatedAmount', e.target.value)}
+                required
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 mt-7 pointer-events-none">
+                <span className="text-muted-foreground">€</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Date limite
+              </label>
+              <div className="relative">
+                <input
+                  type="date"
+                  value={projectInfo.deadline}
+                  onChange={(e) => handleProjectChange('deadline', e.target.value)}
+                  className="w-full p-3 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <Icon name="Calendar" size={16} color="var(--color-muted-foreground)" />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Description du projet *
+            </label>
+            <div className="relative">
+              <textarea
+                value={projectInfo.description}
+                onChange={(e) => handleProjectChange('description', e.target.value)}
+                rows={4}
+                placeholder="Ex: Pose de parquet dans salon 20m²"
+                className="w-full p-3 border border-border rounded-lg bg-input text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <div className="absolute bottom-3 right-3 flex items-center space-x-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconName="Mic"
+                  title="Dicter la description"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconName="Sparkles"
+                  title="Enrichir avec l'IA"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Décrivez précisément le projet pour un devis adapté
+            </p>
+          </div>
+        </div>
+      </div>
       
       <div className="flex justify-end">
         <Button

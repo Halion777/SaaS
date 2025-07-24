@@ -85,7 +85,7 @@ const QuotePreview = ({
               <Select
                 options={templateOptions}
                 value={template}
-                onChange={setTemplate}
+                onChange={(e) => setTemplate(e.target.value)}
                 placeholder="Choisir un modèle"
               />
             </div>
@@ -95,7 +95,7 @@ const QuotePreview = ({
               <Select
                 options={colorOptions}
                 value={customization.primaryColor}
-                onChange={(value) => handleCustomizationChange('primaryColor', value)}
+                onChange={(e) => handleCustomizationChange('primaryColor', e.target.value)}
                 placeholder="Choisir une couleur"
               />
               <div className="mt-2 flex space-x-2">

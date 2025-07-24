@@ -7,6 +7,12 @@ import UserProfile from './UserProfile';
 const MainSidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [expandedSections, setExpandedSections] = useState({
+    quotes: true,
+    clients: false,
+    services: false,
+    business: false
+  });
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -38,41 +44,147 @@ const MainSidebar = () => {
     localStorage.setItem('sidebar-collapsed', JSON.stringify(newCollapsed));
   };
 
-  const navigationItems = [
+  const toggleSection = (sectionId) => {
+    setExpandedSections(prev => {
+      const newState = {
+        quotes: false,
+        clients: false,
+        services: false,
+        business: false
+      };
+      // If the section is already expanded, collapse it
+      if (prev[sectionId]) {
+        return newState;
+      }
+      // Otherwise, expand only the clicked section
+      newState[sectionId] = true;
+      return newState;
+    });
+  };
+
+  // Navigation items organized by categories with collapsible sections
+  const navigationCategories = [
     {
-      id: 'dashboard',
-      label: 'Tableau de bord',
-      path: '/dashboard',
-      icon: 'BarChart3',
-      notifications: 0
-    },
-    {
-      id: 'analytics',
-      label: 'Analytics',
-      path: '/analytics-dashboard',
-      icon: 'TrendingUp',
-      notifications: 0
+      id: 'main',
+      label: 'Principal',
+      items: [
+        {
+          id: 'dashboard',
+          label: 'Tableau de bord',
+          path: '/dashboard',
+          icon: 'LayoutDashboard',
+          notifications: 0
+        },
+        {
+          id: 'analytics',
+          label: 'Analytics',
+          path: '/analytics-dashboard',
+          icon: 'BarChart3',
+          notifications: 0
+        }
+      ]
     },
     {
       id: 'quotes',
       label: 'Devis',
-      path: '/quote-creation',
-      icon: 'FileText',
-      notifications: 2
+      isCollapsible: true,
+      isExpanded: expandedSections.quotes,
+      items: [
+        {
+          id: 'quote-creation',
+          label: 'Créer un devis',
+          path: '/quote-creation',
+          icon: 'FileText',
+          notifications: 2
+        },
+        {
+          id: 'quotes-management',
+          label: 'Gestion des devis',
+          path: '/quotes-management',
+          icon: 'FolderOpen',
+          notifications: 0
+        },
+        {
+          id: 'statistics',
+          label: 'Statistiques',
+          path: '/statistics',
+          icon: 'BarChart3',
+          notifications: 0
+        }
+      ]
     },
     {
-      id: 'quotes-management',
-      label: 'Gestion des devis',
-      path: '/quotes-management',
-      icon: 'FolderOpen',
-      notifications: 0
+      id: 'business',
+      label: 'Activité',
+      isCollapsible: true,
+      isExpanded: expandedSections.business,
+      items: [
+        {
+          id: 'invoices',
+          label: 'Factures',
+          path: '/invoices-management',
+          icon: 'Receipt',
+          notifications: 1
+        },
+        {
+          id: 'leads-management',
+          label: 'Gestion des Leads',
+          path: '/leads-management',
+          icon: 'Users',
+          notifications: 0
+        },
+        {
+          id: 'follow-up',
+          label: 'Relances',
+          path: '/follow-up-management',
+          icon: 'MessageCircle',
+          notifications: 0
+        }
+      ]
     },
     {
-      id: 'invoices',
-      label: 'Factures',
-      path: '/invoices-management',
-      icon: 'Receipt',
-      notifications: 1
+      id: 'clients',
+      label: 'Clients',
+      isCollapsible: true,
+      isExpanded: expandedSections.clients,
+      items: [
+        {
+          id: 'client-management',
+          label: 'Gestion clients',
+          path: '/client-management',
+          icon: 'Users',
+          notifications: 0
+        }
+      ]
+    },
+    {
+      id: 'services',
+      label: 'Services',
+      isCollapsible: true,
+      isExpanded: expandedSections.services,
+      items: [
+        {
+          id: 'peppol-network',
+          label: 'Peppol Network',
+          path: '/services/peppol',
+          icon: 'Network',
+          notifications: 0
+        },
+        {
+          id: 'assurance-credit',
+          label: 'Assurance Crédit',
+          path: '/services/assurance',
+          icon: 'Shield',
+          notifications: 0
+        },
+        {
+          id: 'recouvrement',
+          label: 'Recouvrement',
+          path: '/services/recouvrement',
+          icon: 'Banknote',
+          notifications: 0
+        }
+      ]
     }
   ];
 
@@ -87,11 +199,14 @@ const MainSidebar = () => {
     avatar: '/assets/images/avatar.jpg'
   };
 
+  // Flatten navigation items for mobile view
+  const flatNavigationItems = navigationCategories.flatMap(category => category.items);
+
   if (isMobile) {
     return (
       <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-100">
         <div className="flex justify-around items-center h-16 px-4">
-          {navigationItems.slice(0, 3).map((item) => (
+          {flatNavigationItems.slice(0, 5).map((item) => (
             <NavigationItem
               key={item.id}
               {...item}
@@ -109,25 +224,22 @@ const MainSidebar = () => {
     <aside 
       className={`fixed left-0 top-0 h-full bg-card border-r border-border z-100 transition-all duration-300 ease-out ${
         isCollapsed ? 'w-16' : 'w-72'
-      }`}
+      } overflow-y-auto`}
     >
       <div className="flex flex-col h-full">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           {!isCollapsed && (
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Icon name="Hammer" size={20} color="white" />
-              </div>
+              <img 
+                src="/assets/logo/logo.png" 
+                alt="Havitam Logo" 
+                className="w-8 h-8 object-contain"
+              />
               <div>
                 <h1 className="text-lg font-semibold text-foreground">Havitam</h1>
                 <p className="text-xs text-muted-foreground">Artisan Pro</p>
               </div>
-            </div>
-          )}
-          {isCollapsed && (
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center mx-auto">
-              <Icon name="Hammer" size={20} color="white" />
             </div>
           )}
           {!isMobile && (
@@ -145,24 +257,57 @@ const MainSidebar = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-3">
-          {navigationItems.map((item) => (
-            <NavigationItem
-              key={item.id}
-              {...item}
-              isActive={location.pathname === item.path}
-              isCollapsed={isCollapsed}
-            />
-          ))}
+        <nav className="flex-1 overflow-y-auto">
+          <div className="p-2 space-y-1">
+            {navigationCategories.map((category) => (
+              <div key={category.id} className="space-y-1">
+                {/* Category Header */}
+                {!isCollapsed && (
+                  <div className="px-3 py-2">
+                    <div className="flex items-center justify-between">
+                      <button
+                        onClick={() => category.isCollapsible && toggleSection(category.id)}
+                        className={`flex items-center justify-between w-full ${
+                          category.isCollapsible ? 'cursor-pointer hover:bg-muted rounded px-2 py-1' : ''
+                        }`}
+                      >
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          {category.label}
+                        </h3>
+                        {category.isCollapsible && (
+                          <Icon 
+                            name={category.isExpanded ? "ChevronDown" : "ChevronRight"} 
+                            size={12} 
+                            color="var(--color-muted-foreground)" 
+                          />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Category Items */}
+                {(!category.isCollapsible || category.isExpanded) && (
+                  <div className="space-y-1">
+                    {category.items.map((item) => (
+                      <NavigationItem
+                        key={item.id}
+                        {...item}
+                        isActive={location.pathname === item.path}
+                        isCollapsed={isCollapsed}
+                        isMobile={false}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </nav>
 
         {/* User Profile */}
-        <div className="border-t border-border">
-          <UserProfile 
-            user={mockUser} 
-            onLogout={handleLogout} 
-            isCollapsed={isCollapsed} 
-          />
+        <div className="mt-auto">
+          <UserProfile user={mockUser} isCollapsed={isCollapsed} onLogout={handleLogout} />
         </div>
       </div>
     </aside>

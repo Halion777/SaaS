@@ -14,7 +14,9 @@ const ClientModal = ({ client, onSave, onClose }) => {
     address: '',
     contactPerson: '',
     companySize: '',
-    preferences: []
+    preferences: [],
+    peppolId: '',
+    enablePeppol: false
   });
 
   const typeOptions = [
@@ -46,7 +48,9 @@ const ClientModal = ({ client, onSave, onClose }) => {
         address: client.address || '',
         contactPerson: client.contactPerson || '',
         companySize: client.companySize || '',
-        preferences: client.preferences || []
+        preferences: client.preferences || [],
+        peppolId: client.peppolId || '',
+        enablePeppol: client.enablePeppol || false
       });
     }
   }, [client]);
@@ -64,12 +68,28 @@ const ClientModal = ({ client, onSave, onClose }) => {
     }));
   };
 
+  const validatePeppolId = (peppolId) => {
+    // Basic Peppol ID validation: [Country Code]:[Identifier]
+    const peppolRegex = /^[0-9]{4}:[A-Z0-9]+$/;
+    return peppolRegex.test(peppolId);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Validate Peppol ID if enabled
+    if (formData.enablePeppol && formData.peppolId.trim()) {
+      if (!validatePeppolId(formData.peppolId.trim())) {
+        alert('Le format du Peppol ID n\'est pas valide. Utilisez le format: 0208:123456789');
+        return;
+      }
+    }
+    
     onSave(formData);
   };
 
-  const isFormValid = formData.name && formData.email && formData.phone;
+  const isFormValid = formData.name && formData.email && formData.phone && 
+    (!formData.enablePeppol || (formData.enablePeppol && formData.peppolId.trim()));
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
@@ -110,7 +130,7 @@ const ClientModal = ({ client, onSave, onClose }) => {
                 label="Type de client *"
                 options={typeOptions}
                 value={formData.type}
-                onChange={(value) => handleChange('type', value)}
+                onChange={(e) => handleChange('type', e.target.value)}
               />
             </div>
 
@@ -161,9 +181,75 @@ const ClientModal = ({ client, onSave, onClose }) => {
                   label="Taille de l'entreprise"
                   options={companySizeOptions}
                   value={formData.companySize}
-                  onChange={(value) => handleChange('companySize', value)}
+                  onChange={(e) => handleChange('companySize', e.target.value)}
                   placeholder="Sélectionner la taille"
                 />
+              </div>
+            </div>
+          )}
+
+          {/* Peppol Configuration */}
+          {formData.type === 'professional' && (
+            <div className="space-y-4 border-t border-border pt-4">
+              <h3 className="font-medium text-foreground">Configuration Peppol</h3>
+              
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    id="enablePeppol"
+                    checked={formData.enablePeppol}
+                    onChange={(e) => handleChange('enablePeppol', e.target.checked)}
+                    className="w-4 h-4 text-primary border-border rounded focus:ring-primary"
+                  />
+                  <label htmlFor="enablePeppol" className="text-sm font-medium">
+                    Activer l'envoi de factures via Peppol
+                  </label>
+                </div>
+                
+                {formData.enablePeppol && (
+                  <div className="space-y-4 pl-7">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <Icon name="Info" size={20} className="text-blue-600 mt-0.5" />
+                        <div>
+                          <h4 className="font-medium text-blue-900 mb-1">Facturation électronique Peppol</h4>
+                          <p className="text-sm text-blue-700">
+                            L'envoi de factures via Peppol nécessite un identifiant Peppol valide du client.
+                            Contactez votre client pour obtenir son Peppol ID.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Input
+                        label="Peppol ID du client *"
+                        type="text"
+                        value={formData.peppolId}
+                        onChange={(e) => handleChange('peppolId', e.target.value)}
+                        placeholder="Ex: 0208:123456789"
+                        helperText="Format: [Pays]:[Numéro d'identification] (ex: 0208:123456789 pour la France)"
+                        required={formData.enablePeppol}
+                      />
+                      {formData.peppolId.trim() && (
+                        <div className="flex items-center space-x-2 text-xs">
+                          {validatePeppolId(formData.peppolId.trim()) ? (
+                            <>
+                              <Icon name="CheckCircle" size={14} color="var(--color-green)" />
+                              <span className="text-green-600">Format Peppol ID valide</span>
+                            </>
+                          ) : (
+                            <>
+                              <Icon name="AlertCircle" size={14} color="var(--color-destructive)" />
+                              <span className="text-red-600">Format invalide. Utilisez: 0208:123456789</span>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

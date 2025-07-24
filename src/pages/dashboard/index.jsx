@@ -11,11 +11,13 @@ import TopClients from './components/TopClients';
 import QuickActions from './components/QuickActions';
 import SponsoredBanner from './components/SponsoredBanner';
 import AIPerformanceWidget from './components/AIPerformanceWidget';
+import DashboardTour from './components/DashboardTour';
 
 const Dashboard = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [sidebarOffset, setSidebarOffset] = useState(288); // Default sidebar width
+  const [runTour, setRunTour] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -88,6 +90,16 @@ const Dashboard = () => {
     });
   };
 
+  const startTour = () => {
+    setRunTour(true);
+  };
+
+  const endTour = () => {
+    setRunTour(false);
+    // Save that the user has seen the tour
+    localStorage.setItem('dashboard-tour-completed', 'true');
+  };
+
   const metricsData = [
     {
       title: 'Devis ce mois',
@@ -127,6 +139,9 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Tour Component */}
+      <DashboardTour run={runTour} onFinish={endTour} />
+      
       {/* Sidebar */}
       <MainSidebar />
       
@@ -141,9 +156,12 @@ const Dashboard = () => {
         <header className="bg-card border-b border-border px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Tableau de bord</h1>
-              <p className="text-sm text-muted-foreground">
-                {formatDate(currentTime)} • {formatTime(currentTime)}
+              <div className="flex items-center">
+                <Icon name="LayoutDashboard" size={24} className="text-primary mr-3" />
+                <h1 className="text-2xl font-bold text-foreground">Aperçu Rapide</h1>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                Vue d'ensemble de votre activité • {formatDate(currentTime)} • {formatTime(currentTime)}
               </p>
             </div>
             <div className="flex items-center space-x-4">
@@ -155,10 +173,21 @@ const Dashboard = () => {
               >
                 {isDarkMode ? 'Mode clair' : 'Mode sombre'}
               </Button>
-              <Button variant="outline" iconName="Download" iconPosition="left">
-                Exporter
+              <Button 
+                variant="outline" 
+                iconName="BarChart3" 
+                iconPosition="left"
+                onClick={() => window.location.href = '/analytics-dashboard'}
+                className="dashboard-analytics-button"
+              >
+                Analyses détaillées
               </Button>
-              <Button variant="default" iconName="Plus" iconPosition="left">
+              <Button 
+                variant="default" 
+                iconName="Plus" 
+                iconPosition="left"
+                className="dashboard-new-quote-button"
+              >
                 Nouveau devis
               </Button>
             </div>
@@ -167,146 +196,110 @@ const Dashboard = () => {
 
         {/* Main Content */}
         <main className="p-6 space-y-6">
+          {/* Welcome Banner */}
+          <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-6 shadow-md dashboard-welcome">
+            <div className="flex flex-col md:flex-row justify-between items-center">
+              <div>
+                <h2 className="text-xl font-semibold mb-2 text-white">Bienvenue sur votre tableau de bord</h2>
+                <p className="text-white/90">Voici un aperçu rapide de votre activité et des actions importantes</p>
+              </div>
+              <div className="mt-4 md:mt-0">
+                <Button 
+                  variant="outline" 
+                  className="bg-white/10 text-white border-white/20 hover:bg-white/20"
+                  onClick={startTour}
+                >
+                  <span className="flex items-center">
+                    <Icon name="Play" size={16} className="mr-2" />
+                    Visite guidée
+                  </span>
+                </Button>
+              </div>
+            </div>
+          </div>
+
           {/* Metrics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 dashboard-metrics">
             {metricsData.map((metric, index) => (
               <MetricsCard key={index} {...metric} />
             ))}
           </div>
 
-          {/* Sponsored Banner */}
-          <SponsoredBanner />
-
-          {/* Charts and Analytics */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <QuoteChart />
-            <AIPerformanceWidget />
-          </div>
-
-          {/* Main Dashboard Grid */}
+          {/* Main Dashboard Content - Two Column Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Tasks and Alerts */}
-            <div className="space-y-6">
-              <TaskList />
-              <AIAlerts />
-            </div>
-
-            {/* Center Column - Recent Quotes */}
-            <div className="space-y-6">
-              <RecentQuotes />
-              <QuickActions />
-            </div>
-
-            {/* Right Column - Top Clients */}
-            <div className="space-y-6">
-              <TopClients />
+            {/* Left Column - 2/3 width */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Quote Chart */}
+              <div className="dashboard-chart">
+                <QuoteChart />
+              </div>
               
-              {/* Weekly Summary Card */}
-              <div className="bg-card border border-border rounded-lg p-6 shadow-professional">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-foreground">Résumé hebdomadaire</h3>
-                  <Icon name="Calendar" size={20} color="var(--color-muted-foreground)" />
-                </div>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Devis créés</span>
-                    <span className="text-sm font-medium text-foreground">15</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Devis signés</span>
-                    <span className="text-sm font-medium text-success">12</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">CA généré</span>
-                    <span className="text-sm font-medium text-foreground">6.450€</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Taux de conversion</span>
-                    <span className="text-sm font-medium text-success">80%</span>
-                  </div>
-                </div>
-                <div className="mt-4 pt-4 border-t border-border">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Semaine du 14-20 Juillet</span>
-                    <span className="text-success">+5% vs semaine précédente</span>
-                  </div>
-                </div>
+              {/* Recent Quotes */}
+              <div className="dashboard-recent-quotes">
+                <RecentQuotes />
+              </div>
+              
+              {/* Quick Actions */}
+              <div className="dashboard-quick-actions">
+                <QuickActions />
+              </div>
+            </div>
+            
+            {/* Right Column - 1/3 width */}
+            <div className="space-y-6">
+              {/* Tasks and Alerts */}
+              <div className="dashboard-tasks">
+                <TaskList />
+              </div>
+              <div className="dashboard-ai-alerts">
+                <AIAlerts />
+              </div>
+              
+              {/* Top Clients */}
+              <div className="dashboard-top-clients">
+                <TopClients />
               </div>
             </div>
           </div>
-
-          {/* Bottom Section - Additional Insights */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* AI Recommendations */}
-            <div className="bg-card border border-border rounded-lg p-6 shadow-professional">
-              <div className="flex items-center space-x-2 mb-4">
-                <h3 className="text-lg font-semibold text-foreground">Recommandations IA</h3>
-                <div className="ai-indicator w-2 h-2 bg-primary rounded-full"></div>
-              </div>
-              <div className="space-y-3">
-                <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
-                  <p className="text-sm text-foreground font-medium">Optimiser les prix</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Augmentez vos tarifs de 8% selon l'analyse du marché
-                  </p>
+          
+          {/* AI Performance Insights */}
+          <div className="bg-card border border-border rounded-lg p-6 shadow-sm dashboard-ai-insights">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+                  <Icon name="Brain" size={20} className="text-primary" />
                 </div>
-                <div className="p-3 bg-warning/5 border border-warning/20 rounded-lg">
-                  <p className="text-sm text-foreground font-medium">Relancer Marie Dubois</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Probabilité de signature: 85% si relance aujourd'hui
-                  </p>
-                </div>
+                <h3 className="text-lg font-semibold text-foreground">Insights IA</h3>
               </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => window.location.href = '/analytics-dashboard'}
+              >
+                <span className="flex items-center">
+                  Voir l'analyse complète
+                  <Icon name="ArrowRight" size={16} className="ml-2" />
+                </span>
+              </Button>
             </div>
-
-            {/* Performance Trends */}
-            <div className="bg-card border border-border rounded-lg p-6 shadow-professional">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Tendances</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Icon name="TrendingUp" size={16} color="var(--color-success)" />
-                    <span className="text-sm text-foreground">Meilleur jour</span>
-                  </div>
-                  <span className="text-sm font-medium text-foreground">Mardi</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Icon name="Clock" size={16} color="var(--color-primary)" />
-                    <span className="text-sm text-foreground">Heure optimale</span>
-                  </div>
-                  <span className="text-sm font-medium text-foreground">14h-16h</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Icon name="Target" size={16} color="var(--color-warning)" />
-                    <span className="text-sm text-foreground">Service populaire</span>
-                  </div>
-                  <span className="text-sm font-medium text-foreground">Plomberie</span>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                <h4 className="text-sm font-medium text-foreground mb-2">Optimisation des prix</h4>
+                <p className="text-xs text-muted-foreground">
+                  Augmentez vos tarifs de 8% selon l'analyse du marché pour optimiser votre rentabilité
+                </p>
               </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="bg-card border border-border rounded-lg p-6 shadow-professional">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Statistiques rapides</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-primary">24</p>
-                  <p className="text-xs text-muted-foreground">Clients actifs</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-success">156</p>
-                  <p className="text-xs text-muted-foreground">Devis total</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-warning">4.2</p>
-                  <p className="text-xs text-muted-foreground">Note moyenne</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-error">3</p>
-                  <p className="text-xs text-muted-foreground">En retard</p>
-                </div>
+              <div className="p-4 bg-success/5 border border-success/20 rounded-lg">
+                <h4 className="text-sm font-medium text-foreground mb-2">Meilleur jour de conversion</h4>
+                <p className="text-xs text-muted-foreground">
+                  Les mardis et jeudis ont un taux de conversion 23% plus élevé que les autres jours
+                </p>
+              </div>
+              <div className="p-4 bg-warning/5 border border-warning/20 rounded-lg">
+                <h4 className="text-sm font-medium text-foreground mb-2">Opportunité de relance</h4>
+                <p className="text-xs text-muted-foreground">
+                  5 devis non signés depuis plus de 7 jours pourraient être convertis avec une relance
+                </p>
               </div>
             </div>
           </div>

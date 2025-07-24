@@ -18,9 +18,15 @@ import Dashboard from './pages/dashboard';
 import QuoteCreation from './pages/quote-creation';
 import QuotesManagement from './pages/quotes-management';
 import InvoicesManagement from './pages/invoices-management';
+
 import ClientManagement from './pages/client-management';
 import FollowUpManagement from './pages/follow-up-management';
 import AnalyticsDashboard from './pages/analytics-dashboard';
+import PeppolNetworkPage from './pages/services/peppol';
+import AssuranceCreditPage from './pages/services/assurance';
+import RecouvrementPage from './pages/services/recouvrement';
+import LeadsManagementPage from './pages/leads-management';
+import StatisticsPage from './pages/statistics';
 import NotFound from './pages/NotFound';
 
 const AppRoutes = () => {
@@ -66,6 +72,7 @@ const AppRoutes = () => {
             </ProtectedRoute>
           } />
           
+
           <Route path="/client-management" element={
             <ProtectedRoute>
               <ClientManagement />
@@ -81,6 +88,37 @@ const AppRoutes = () => {
           <Route path="/analytics-dashboard" element={
             <ProtectedRoute>
               <AnalyticsDashboard />
+            </ProtectedRoute>
+          } />
+          
+          {/* Service pages */}
+          <Route path="/services/peppol" element={
+            <ProtectedRoute>
+              <PeppolNetworkPage />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/services/assurance" element={
+            <ProtectedRoute>
+              <AssuranceCreditPage />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/services/recouvrement" element={
+            <ProtectedRoute>
+              <RecouvrementPage />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/leads-management" element={
+            <ProtectedRoute>
+              <LeadsManagementPage />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/statistics" element={
+            <ProtectedRoute>
+              <StatisticsPage />
             </ProtectedRoute>
           } />
           

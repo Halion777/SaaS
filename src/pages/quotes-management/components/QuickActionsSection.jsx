@@ -10,132 +10,160 @@ const QuickActionsSection = ({ onBulkOptimize, selectedCount }) => {
     navigate('/quote-creation');
   };
 
+  const handleTemplatesClick = () => {
+    navigate('/templates');
+  };
+
+  const handleExportClick = () => {
+    console.log('Export clicked');
+  };
+
+  const handleCustomersClick = () => {
+    navigate('/customers');
+  };
+
+  const handleSettingsClick = () => {
+    navigate('/settings');
+  };
+
   return (
-    <div className="bg-card border border-border rounded-lg p-6">
-      <h3 className="text-lg font-semibold text-foreground mb-6 flex items-center space-x-2">
-        <Icon name="Zap" size={20} color="var(--color-primary)" />
-        <span>Actions rapides</span>
-      </h3>
+    <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-border bg-muted/30">
+        <h3 className="text-base font-medium text-foreground flex items-center">
+          <Icon name="Zap" size={18} className="text-primary mr-2" />
+          Actions rapides
+        </h3>
+      </div>
 
-      <div className="space-y-4">
-        {/* Primary Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Button
-            variant="default"
-            fullWidth
-            onClick={handleCreateQuote}
-            iconName="Plus"
-            iconPosition="left"
-            className="h-12"
-          >
-            Nouveau devis
-          </Button>
-          
-          <Button
-            variant="outline"
-            fullWidth
-            onClick={onBulkOptimize}
-            disabled={selectedCount === 0}
-            iconName="Sparkles"
-            iconPosition="left"
-            className="h-12"
-          >
-            Optimisation IA
-            {selectedCount > 0 && (
-              <span className="ml-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
-                {selectedCount}
-              </span>
-            )}
-          </Button>
-        </div>
-
-        {/* Secondary Actions */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Button
-            variant="ghost"
-            fullWidth
-            iconName="FileText"
-            iconPosition="left"
-            size="sm"
-          >
-            Templates
-          </Button>
-          
-          <Button
-            variant="ghost"
-            fullWidth
-            iconName="Download"
-            iconPosition="left"
-            size="sm"
-          >
-            Exporter
-          </Button>
-          
-          <Button
-            variant="ghost"
-            fullWidth
-            iconName="Users"
-            iconPosition="left"
-            size="sm"
-          >
-            Clients
-          </Button>
-          
-          <Button
-            variant="ghost"
-            fullWidth
-            iconName="Settings"
-            iconPosition="left"
-            size="sm"
-          >
-            Paramètres
-          </Button>
-        </div>
-
-        {/* AI Insights */}
-        <div className="bg-gradient-to-r from-blue-700/90 to-blue-800/90 rounded-lg p-5 border border-blue-600/30 shadow-md transform transition-all duration-300 hover:shadow-lg hover:shadow-blue-700/20 group relative overflow-hidden">
-          {/* Decorative elements */}
-          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full -translate-y-12 translate-x-12 blur-xl"></div>
-          <div className="absolute bottom-0 left-0 w-16 h-16 bg-purple-500/10 rounded-full translate-y-8 -translate-x-8 blur-xl"></div>
-          <div className="absolute top-1/3 right-1/4 w-4 h-4 bg-yellow-300/20 rounded-full blur-md animate-pulse"></div>
-          
-          <div className="flex items-start space-x-3 relative z-10">
-            <div className="bg-white/20 rounded-full p-2.5 shadow-inner">
-              <Icon name="Lightbulb" size={20} color="rgb(250, 204, 21)" className="animate-pulse" />
-            </div>
-            <div className="flex-1">
-              <h4 className="font-medium text-white mb-2">Conseil IA du jour</h4>
-              <p className="text-sm text-white/80 mb-3">
-                Les devis envoyés le mardi ont 23% plus de chances d'être signés. 
-                Planifiez vos envois pour optimiser vos conversions.
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="bg-transparent text-white border-white/50 hover:bg-white/20 hover:border-white p-0 h-auto transform transition-all duration-300 group-hover:translate-x-1"
-              >
-                <span className="flex items-center">
-                  En savoir plus
-                  <Icon name="ArrowRight" size={16} className="ml-2" />
+      <div className="p-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Left Column - Primary Actions */}
+          <div className="space-y-3">
+            <Button
+              variant="default"
+              fullWidth
+              onClick={handleCreateQuote}
+              iconName="Plus"
+              iconPosition="left"
+              className="h-10"
+            >
+              Nouveau devis
+            </Button>
+            
+            <Button
+              variant="outline"
+              fullWidth
+              onClick={onBulkOptimize}
+              disabled={selectedCount === 0}
+              iconName="Sparkles"
+              iconPosition="left"
+              className="h-10"
+            >
+              Optimisation IA
+              {selectedCount > 0 && (
+                <span className="ml-2 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
+                  {selectedCount}
                 </span>
+              )}
+            </Button>
+
+            {/* Quick Links */}
+            <div className="grid grid-cols-4 gap-2 pt-3 border-t border-border">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleTemplatesClick}
+                className="flex flex-col items-center justify-center h-16 text-xs"
+              >
+                <Icon name="FileText" size={18} className="mb-1" />
+                Templates
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleExportClick}
+                className="flex flex-col items-center justify-center h-16 text-xs"
+              >
+                <Icon name="Download" size={18} className="mb-1" />
+                Exporter
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCustomersClick}
+                className="flex flex-col items-center justify-center h-16 text-xs"
+              >
+                <Icon name="Users" size={18} className="mb-1" />
+                Clients
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSettingsClick}
+                className="flex flex-col items-center justify-center h-16 text-xs"
+              >
+                <Icon name="Settings" size={18} className="mb-1" />
+                Paramètres
               </Button>
             </div>
           </div>
-        </div>
 
-        {/* Performance Metrics */}
-        <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-primary mb-1">+40%</div>
-            <div className="text-xs text-muted-foreground">Taux de signature</div>
+          {/* Middle Column - AI Tip Card */}
+          <div>
+            <div className="bg-gradient-to-r from-blue-700/90 to-blue-800/90 rounded-lg p-3 border border-blue-600/30 shadow-sm h-full relative overflow-hidden">
+              {/* Decorative elements */}
+              <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full -translate-y-10 translate-x-10 blur-xl"></div>
+              <div className="absolute bottom-0 left-0 w-12 h-12 bg-purple-500/10 rounded-full translate-y-6 -translate-x-6 blur-xl"></div>
+              
+              <div className="relative z-10 h-full flex flex-col">
+                <div className="flex items-center mb-2">
+                  <div className="bg-white/20 rounded-full p-1.5 mr-2">
+                    <Icon name="Lightbulb" size={14} className="text-yellow-300" />
+                  </div>
+                  <h4 className="font-medium text-white text-sm">Conseil IA du jour</h4>
+                </div>
+                <p className="text-xs text-white/90 mb-2 flex-grow">
+                  Les devis envoyés le mardi sont 23% plus susceptibles d'être signés. Planifiez vos envois pour optimiser vos conversions.
+                </p>
+                <div className="flex items-center justify-between mt-auto">
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="text-white/90 hover:text-white p-0 h-auto"
+                  >
+                    <span className="flex items-center text-xs">
+                      En savoir plus
+                      <Icon name="ArrowRight" size={12} className="ml-1" />
+                    </span>
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-success mb-1">-60%</div>
-            <div className="text-xs text-muted-foreground">Temps de création</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-accent mb-1">+25%</div>
-            <div className="text-xs text-muted-foreground">Revenus moyens</div>
+
+          {/* Right Column - Performance Metrics */}
+          <div className="grid grid-cols-1 gap-4">
+            <div className="bg-card border border-border rounded-lg p-3 h-full">
+              <h4 className="text-sm font-medium text-foreground mb-3">Performance</h4>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="text-center py-2">
+                  <div className="text-lg font-bold text-primary">+40%</div>
+                  <div className="text-xs text-muted-foreground">Taux signature</div>
+                </div>
+                <div className="text-center py-2">
+                  <div className="text-lg font-bold text-success">-60%</div>
+                  <div className="text-xs text-muted-foreground">Temps création</div>
+                </div>
+                <div className="text-center py-2">
+                  <div className="text-lg font-bold text-accent">+25%</div>
+                  <div className="text-xs text-muted-foreground">Revenu moyen</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

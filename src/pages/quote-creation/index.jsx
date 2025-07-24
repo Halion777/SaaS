@@ -206,9 +206,9 @@ const QuoteCreation = () => {
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Création de devis</h1>
+              <h1 className="text-3xl font-bold text-foreground">Créer un devis</h1>
               <p className="text-muted-foreground mt-2">
-                Créez un devis professionnel en 4 étapes simples avec l'assistance de l'IA
+                Remplissez les informations ci-dessous pour générer automatiquement un devis professionnel
               </p>
             </div>
             

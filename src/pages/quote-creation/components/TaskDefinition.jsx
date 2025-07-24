@@ -18,6 +18,34 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
 
+  // Predefined tasks from the images
+  const predefinedTasks = [
+    {
+      id: 'task-1',
+      title: 'Pose de lavabo',
+      description: 'Installation complète d\'un lavabo avec robinetterie',
+      duration: '2',
+      price: 150,
+      icon: 'Droplet'
+    },
+    {
+      id: 'task-2',
+      title: 'Installation prise électrique',
+      description: 'Pose d\'une prise électrique standard avec raccordement',
+      duration: '0.5',
+      price: 45,
+      icon: 'Zap'
+    },
+    {
+      id: 'task-3',
+      title: 'Pose carrelage sol',
+      description: 'Pose de carrelage au sol avec préparation du support',
+      duration: '1',
+      price: 35,
+      icon: 'Grid'
+    }
+  ];
+
   const durationOptions = [
     { value: '0.5', label: '30 minutes' },
     { value: '1', label: '1 heure' },
@@ -117,6 +145,17 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious }) => {
     }
   };
 
+  const addPredefinedTask = (predefinedTask) => {
+    const task = {
+      id: Date.now(),
+      description: predefinedTask.title + ' - ' + predefinedTask.description,
+      duration: predefinedTask.duration,
+      price: predefinedTask.price,
+      materials: []
+    };
+    onTasksChange([...tasks, task]);
+  };
+
   const removeTask = (taskId) => {
     onTasksChange(tasks.filter(t => t.id !== taskId));
   };
@@ -161,6 +200,40 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious }) => {
 
   return (
     <div className="space-y-6">
+      {/* Predefined Tasks Section */}
+      <div className="bg-card border border-border rounded-lg p-6">
+        <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center">
+          <Icon name="Package" size={24} color="var(--color-primary)" className="mr-3" />
+          Tâches prédéfinies
+        </h2>
+        <p className="text-muted-foreground mb-4">Ajoutez rapidement des tâches courantes avec tarifs recommandés</p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {predefinedTasks.map(task => (
+            <div 
+              key={task.id} 
+              className="border border-border rounded-lg p-4 hover:shadow-md transition-all cursor-pointer"
+              onClick={() => addPredefinedTask(task)}
+            >
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex items-center">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+                    <Icon name={task.icon} size={16} color="var(--color-primary)" />
+                  </div>
+                  <h3 className="font-medium">{task.title}</h3>
+                </div>
+                <div className="text-lg font-semibold">{task.price}€</div>
+              </div>
+              <p className="text-sm text-muted-foreground">{task.description}</p>
+              <div className="flex items-center mt-2 text-xs text-muted-foreground">
+                <Icon name="Clock" size={12} className="mr-1" />
+                <span>{task.duration}h</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="bg-card border border-border rounded-lg p-6">
         <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center">
           <Icon name="Wrench" size={24} color="var(--color-primary)" className="mr-3" />
@@ -264,7 +337,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious }) => {
                   placeholder="Sélectionner la durée"
                   options={durationOptions}
                   value={currentTask.duration}
-                  onChange={(value) => handleTaskChange('duration', value)}
+                  onChange={(e) => handleTaskChange('duration', e.target.value)}
                 />
                 <Input
                   label="Prix (€)"
@@ -308,7 +381,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious }) => {
                     placeholder="Unité"
                     options={unitOptions}
                     value={newMaterial.unit}
-                    onChange={(value) => handleMaterialChange('unit', value)}
+                    onChange={(e) => handleMaterialChange('unit', e.target.value)}
                   />
                   <div className="flex items-end space-x-2">
                     <Input

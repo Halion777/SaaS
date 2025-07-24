@@ -1,322 +1,233 @@
 import React, { useState, useEffect } from 'react';
-
-import Button from '../../components/ui/Button';
-
-import Select from '../../components/ui/Select';
 import Icon from '../../components/AppIcon';
-import FollowUpTimeline from './components/FollowUpTimeline';
-import AutomationRules from './components/AutomationRules';
-import FollowUpModal from './components/FollowUpModal';
-import PerformanceAnalytics from './components/PerformanceAnalytics';
-import { generateFollowUpContent } from '../../services/openaiService';
+import Button from '../../components/ui/Button';
+import MainSidebar from '../../components/ui/MainSidebar';
 
 const FollowUpManagement = () => {
+  const [sidebarOffset, setSidebarOffset] = useState(288);
   const [followUps, setFollowUps] = useState([
     {
       id: 1,
-      clientName: 'Jean Dupont',
-      clientId: 1,
-      type: 'quote_followup',
-      status: 'pending',
-      scheduledDate: '2025-07-20',
-      subject: 'Suivi devis cuisine',
-      content: 'Bonjour Jean, j\'espère que vous allez bien. Je me permets de revenir vers vous concernant...',
+      name: 'Pierre Leblanc',
+      project: 'DEV-2024-003 - Pose de parquet',
+      daysAgo: 5,
+      nextFollowUp: '2024-01-20',
+      potentialRevenue: 2800,
       priority: 'high',
-      channel: 'email',
-      createdAt: '2025-07-18'
+      status: 'pending'
     },
     {
       id: 2,
-      clientName: 'SARL Construction Plus',
-      clientId: 2,
-      type: 'payment_reminder',
-      status: 'sent',
-      scheduledDate: '2025-07-19',
-      subject: 'Rappel facture #2025-001',
-      content: 'Madame, Monsieur, Nous vous rappelons que la facture...',
-      priority: 'medium',
-      channel: 'email',
-      createdAt: '2025-07-15',
-      sentAt: '2025-07-19T10:30:00'
-    }
-  ]);
-
-  const [automationRules, setAutomationRules] = useState([
+      name: 'Sophie Durand',
+      project: 'DEV-2024-004 - Rénovation cuisine',
+      daysAgo: 3,
+      nextFollowUp: '2024-01-18',
+      potentialRevenue: 8500,
+      priority: 'high',
+      status: 'scheduled'
+    },
     {
-      id: 1,
-      name: 'Suivi devis automatique',
-      trigger: 'quote_sent',
-      delay: 3,
-      delayUnit: 'days',
-      action: 'send_followup',
-      template: 'quote_followup_template',
-      isActive: true
+      id: 3,
+      name: 'Michel Bernard',
+      project: 'DEV-2024-005 - Installation électrique',
+      daysAgo: 8,
+      nextFollowUp: '2024-01-22',
+      potentialRevenue: 1200,
+      priority: 'medium',
+      status: 'pending'
     }
   ]);
 
-  const [selectedFollowUp, setSelectedFollowUp] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [filters, setFilters] = useState({
-    status: 'all',
-    type: 'all',
-    priority: 'all'
-  });
-  const [isGeneratingContent, setIsGeneratingContent] = useState(false);
+  // Handle sidebar offset for responsive layout
+  useEffect(() => {
+    const savedCollapsed = localStorage.getItem('sidebar-collapsed');
+    const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
+    setSidebarOffset(isCollapsed ? 64 : 288);
+    
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768;
+      if (isMobile) {
+        setSidebarOffset(0);
+      } else {
+        const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+    
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
-  const typeOptions = [
-    { value: 'all', label: 'Tous les types' },
-    { value: 'quote_followup', label: 'Suivi de devis' },
-    { value: 'payment_reminder', label: 'Rappel de paiement' },
-    { value: 'project_update', label: 'Mise à jour projet' },
-    { value: 'satisfaction_survey', label: 'Enquête satisfaction' }
-  ];
-
-  const statusOptions = [
-    { value: 'all', label: 'Tous les statuts' },
-    { value: 'pending', label: 'En attente' },
-    { value: 'sent', label: 'Envoyé' },
-    { value: 'opened', label: 'Ouvert' },
-    { value: 'replied', label: 'Répondu' }
-  ];
-
-  const priorityOptions = [
-    { value: 'all', label: 'Toutes les priorités' },
-    { value: 'high', label: 'Haute' },
-    { value: 'medium', label: 'Moyenne' },
-    { value: 'low', label: 'Basse' }
-  ];
-
-  const channelOptions = [
-    { value: 'email', label: 'Email' },
-    { value: 'sms', label: 'SMS' },
-    { value: 'phone', label: 'Téléphone' },
-    { value: 'mail', label: 'Courrier' }
-  ];
-
-  const filteredFollowUps = followUps.filter(followUp => {
-    return (
-      (filters.status === 'all' || followUp.status === filters.status) &&
-      (filters.type === 'all' || followUp.type === filters.type) &&
-      (filters.priority === 'all' || followUp.priority === filters.priority)
-    );
-  });
-
-  const handleFollowUpSelect = (followUp) => {
-    setSelectedFollowUp(followUp);
-    setIsModalOpen(true);
-  };
-
-  const handleFollowUpSave = async (followUpData) => {
-    if (selectedFollowUp) {
-      // Update existing follow-up
-      setFollowUps(prev => prev.map(fu => 
-        fu.id === selectedFollowUp.id 
-          ? { ...fu, ...followUpData }
-          : fu
-      ));
-    } else {
-      // Add new follow-up
-      const newFollowUp = {
-        id: Date.now(),
-        ...followUpData,
-        status: 'pending',
-        createdAt: new Date().toISOString().split('T')[0]
-      };
-      setFollowUps(prev => [...prev, newFollowUp]);
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'high': return 'bg-red-100 text-red-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'low': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
-    setIsModalOpen(false);
-    setSelectedFollowUp(null);
-  };
-
-  const handleGenerateContent = async (clientInfo, type) => {
-    setIsGeneratingContent(true);
-    try {
-      const context = `Type: ${type}, Client: ${clientInfo?.name || 'Client'}`;
-      const content = await generateFollowUpContent(clientInfo, context);
-      return content;
-    } catch (error) {
-      console.error('Content generation error:', error);
-      return `Bonjour ${clientInfo?.name || 'Client'}, nous vous contactons pour faire le point sur votre projet...`;
-    } finally {
-      setIsGeneratingContent(false);
-    }
-  };
-
-  const handleSendFollowUp = (followUpId) => {
-    setFollowUps(prev => prev.map(fu => 
-      fu.id === followUpId 
-        ? { ...fu, status: 'sent', sentAt: new Date().toISOString() }
-        : fu
-    ));
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending': return 'text-yellow-600 bg-yellow-100';
-      case 'sent': return 'text-blue-600 bg-blue-100';
-      case 'opened': return 'text-green-600 bg-green-100';
-      case 'replied': return 'text-purple-600 bg-purple-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case 'pending': return 'bg-gray-100 text-gray-800';
+      case 'scheduled': return 'bg-blue-100 text-blue-800';
+      case 'sent': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getPriorityColor = (priority) => {
+  const getPriorityLabel = (priority) => {
     switch (priority) {
-      case 'high': return 'text-red-600 bg-red-100';
-      case 'medium': return 'text-yellow-600 bg-yellow-100';
-      case 'low': return 'text-green-600 bg-green-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case 'high': return 'Haute';
+      case 'medium': return 'Moyenne';
+      case 'low': return 'Basse';
+      default: return 'Normale';
     }
   };
 
-  const getTypeLabel = (type) => {
-    const typeOption = typeOptions.find(option => option.value === type);
-    return typeOption?.label || type;
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'pending': return 'En attente';
+      case 'scheduled': return 'Programmée';
+      case 'sent': return 'Envoyée';
+      default: return 'Inconnu';
+    }
   };
+
+  const handleFollowUp = (id) => {
+    console.log('Follow up for:', id);
+    // Handle follow up action
+  };
+
+  const handleQuickAI = (id) => {
+    console.log('Quick AI for:', id);
+    // Handle AI quick action
+  };
+
+  const pendingCount = followUps.filter(fu => fu.status === 'pending').length;
+  const highPriorityCount = followUps.filter(fu => fu.priority === 'high').length;
+  const totalPotentialRevenue = followUps.reduce((sum, fu) => sum + fu.potentialRevenue, 0);
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Gestion des Suivis</h1>
-          <p className="text-muted-foreground">
-            Orchestrez vos communications clients avec intelligence artificielle
-          </p>
-        </div>
-        <Button
-          onClick={() => {
-            setSelectedFollowUp(null);
-            setIsModalOpen(true);
-          }}
-          iconName="Plus"
-          iconPosition="left"
-        >
-          Nouveau Suivi
-        </Button>
-      </div>
+    <div className="flex min-h-screen bg-background">
+      <MainSidebar />
+      
+      <div
+        className="flex-1 flex flex-col"
+        style={{ marginLeft: `${sidebarOffset}px` }}
+      >
+        <main className="flex-1 p-6 space-y-6">
+          {/* Header */}
+          <div>
+            <div className="flex items-center space-x-3 mb-2">
+              <Icon name="MessageCircle" size={24} color="var(--color-primary)" />
+              <h1 className="text-2xl font-bold text-foreground">Relances</h1>
+            </div>
+            <p className="text-muted-foreground">
+              Relancez vos prospects automatiquement et intelligemment
+            </p>
+          </div>
 
-      {/* Filters */}
-      <div className="bg-card border border-border rounded-lg p-4">
-        <div className="flex flex-col lg:flex-row gap-4">
-          <Select
-            placeholder="Statut"
-            options={statusOptions}
-            value={filters.status}
-            onChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
-            className="min-w-[150px]"
-          />
-          <Select
-            placeholder="Type"
-            options={typeOptions}
-            value={filters.type}
-            onChange={(value) => setFilters(prev => ({ ...prev, type: value }))}
-            className="min-w-[150px]"
-          />
-          <Select
-            placeholder="Priorité"
-            options={priorityOptions}
-            value={filters.priority}
-            onChange={(value) => setFilters(prev => ({ ...prev, priority: value }))}
-            className="min-w-[150px]"
-          />
-        </div>
-      </div>
+          {/* KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-card border border-border rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-medium text-muted-foreground">Relances en attente</h3>
+                <Icon name="Clock" size={20} color="var(--color-muted-foreground)" />
+              </div>
+              <div className="text-2xl font-bold text-red-600 mb-1">{pendingCount}</div>
+              <p className="text-sm text-muted-foreground">À traiter</p>
+            </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        {/* Main Content */}
-        <div className="xl:col-span-3 space-y-6">
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-card border border-border rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Suivis actifs</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {followUps.filter(fu => fu.status === 'pending').length}
-                  </p>
-                </div>
-                <Icon name="Clock" size={24} color="var(--color-primary)" />
+            <div className="bg-card border border-border rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-medium text-muted-foreground">Priorité haute</h3>
+                <Icon name="MessageCircle" size={20} color="var(--color-muted-foreground)" />
               </div>
+              <div className="text-2xl font-bold text-red-600 mb-1">{highPriorityCount}</div>
+              <p className="text-sm text-muted-foreground">Urgent</p>
             </div>
-            
-            <div className="bg-card border border-border rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Envoyés</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {followUps.filter(fu => fu.status === 'sent').length}
-                  </p>
-                </div>
-                <Icon name="Send" size={24} color="var(--color-blue)" />
+
+            <div className="bg-card border border-border rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-medium text-muted-foreground">CA potentiel</h3>
+                <Icon name="FileText" size={20} color="var(--color-muted-foreground)" />
               </div>
-            </div>
-            
-            <div className="bg-card border border-border rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Taux d'ouverture</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {followUps.length > 0 ? Math.round((followUps.filter(fu => fu.status === 'opened').length / followUps.length) * 100) : 0}%
-                  </p>
-                </div>
-                <Icon name="Eye" size={24} color="var(--color-green)" />
-              </div>
-            </div>
-            
-            <div className="bg-card border border-border rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Réponses</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {followUps.filter(fu => fu.status === 'replied').length}
-                  </p>
-                </div>
-                <Icon name="MessageCircle" size={24} color="var(--color-purple)" />
-              </div>
+              <div className="text-2xl font-bold text-green-600 mb-1">{totalPotentialRevenue.toLocaleString()}€</div>
+              <p className="text-sm text-muted-foreground">En attente</p>
             </div>
           </div>
 
-          {/* Follow-ups Timeline */}
-          <FollowUpTimeline 
-            followUps={filteredFollowUps}
-            onFollowUpSelect={handleFollowUpSelect}
-            onSendFollowUp={handleSendFollowUp}
-            getStatusColor={getStatusColor}
-            getPriorityColor={getPriorityColor}
-            getTypeLabel={getTypeLabel}
-          />
-        </div>
+          {/* Follow-up Items */}
+          <div className="space-y-4">
+            {followUps.map((followUp) => (
+              <div key={followUp.id} className="bg-card border border-border rounded-lg p-6">
+                <div className="flex items-start justify-between">
+                  {/* Left side - Client info */}
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <h3 className="font-semibold text-foreground">{followUp.name}</h3>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(followUp.priority)}`}>
+                        {getPriorityLabel(followUp.priority)}
+                      </span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(followUp.status)}`}>
+                        {getStatusLabel(followUp.status)}
+                      </span>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                        <Icon name="FileText" size={14} />
+                        <span>{followUp.project}</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                        <Icon name="Clock" size={14} />
+                        <span>Il y a {followUp.daysAgo} jours</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                        <Icon name="Calendar" size={14} />
+                        <span>Prochaine relance: {followUp.nextFollowUp}</span>
+                      </div>
+                    </div>
+                  </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Automation Rules */}
-          <AutomationRules 
-            rules={automationRules}
-            onRulesChange={setAutomationRules}
-          />
-          
-          {/* Performance Analytics */}
-          <PerformanceAnalytics followUps={followUps} />
-        </div>
+                  {/* Right side - Revenue and actions */}
+                  <div className="flex flex-col items-end space-y-4">
+                    <div className="text-lg font-bold text-green-600">
+                      {followUp.potentialRevenue.toLocaleString()}€
+                    </div>
+                    
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleFollowUp(followUp.id)}
+                        iconName="Mail"
+                        iconPosition="left"
+                      >
+                        Relancer
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleQuickAI(followUp.id)}
+                        iconName="Zap"
+                        iconPosition="left"
+                      >
+                        IA Rapide
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </main>
       </div>
-
-      {/* Follow-up Modal */}
-      {isModalOpen && (
-        <FollowUpModal
-          followUp={selectedFollowUp}
-          onSave={handleFollowUpSave}
-          onClose={() => {
-            setIsModalOpen(false);
-            setSelectedFollowUp(null);
-          }}
-          onGenerateContent={handleGenerateContent}
-          isGeneratingContent={isGeneratingContent}
-          channelOptions={channelOptions}
-          typeOptions={typeOptions.filter(option => option.value !== 'all')}
-          priorityOptions={priorityOptions.filter(option => option.value !== 'all')}
-        />
-      )}
     </div>
   );
 };
