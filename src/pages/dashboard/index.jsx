@@ -15,7 +15,6 @@ import DashboardTour from './components/DashboardTour';
 
 const Dashboard = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [sidebarOffset, setSidebarOffset] = useState(288); // Default sidebar width
   const [runTour, setRunTour] = useState(false);
 
@@ -28,11 +27,6 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      setIsDarkMode(savedTheme === 'dark');
-    }
-    
     // Check sidebar state for layout adjustment
     const savedCollapsed = localStorage.getItem('sidebar-collapsed');
     const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
@@ -67,12 +61,6 @@ const Dashboard = () => {
       window.removeEventListener('resize', handleResize);
     };
   }, []);
-
-  const toggleTheme = () => {
-    const newTheme = !isDarkMode;
-    setIsDarkMode(newTheme);
-    localStorage.setItem('theme', newTheme ? 'dark' : 'light');
-  };
 
   const formatTime = (date) => {
     return date.toLocaleTimeString('fr-FR', { 
@@ -165,14 +153,6 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleTheme}
-                iconName={isDarkMode ? "Sun" : "Moon"}
-              >
-                {isDarkMode ? 'Mode clair' : 'Mode sombre'}
-              </Button>
               <Button 
                 variant="outline" 
                 iconName="BarChart3" 

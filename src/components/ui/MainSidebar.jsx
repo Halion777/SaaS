@@ -222,7 +222,7 @@ const MainSidebar = () => {
 
   return (
     <aside 
-      className={`fixed left-0 top-0 h-full bg-card border-r border-border z-100 transition-all duration-300 ease-out ${
+      className={`fixed left-0 top-0 h-full bg-card border-r border-border z-100 transition-all duration-300 ease-out sidebar-container ${
         isCollapsed ? 'w-16' : 'w-72'
       } overflow-y-auto`}
     >

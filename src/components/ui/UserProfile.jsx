@@ -32,7 +32,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false }) => {
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative overflow-hidden" ref={dropdownRef}>
       <button
         onClick={toggleDropdown}
         className={`
