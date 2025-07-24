@@ -113,6 +113,87 @@ const HomePage = () => {
           </div>
         </section>
         
+        {/* Craftsmen Images Showcase */}
+        <section className="py-16 bg-white">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-foreground mb-4">
+                {t('home.showcase.title') || "Artisans en action"}
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                {t('home.showcase.subtitle') || "Découvrez le travail de qualité de nos artisans partenaires"}
+              </p>
+            </div>
+            
+            <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="group overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-300 relative">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
+                  <div className="p-6">
+                    <h3 className="text-white font-semibold text-lg">{t('home.showcase.card1.title') || "Travaux de construction"}</h3>
+                    <p className="text-white/90 text-sm mt-1">{t('home.showcase.card1.description') || "Expertise et précision dans chaque projet"}</p>
+                  </div>
+                </div>
+                <img 
+                  src="/assets/images/craftsman-working-1.jpg" 
+                  alt="Artisan au travail" 
+                  className="w-full h-72 object-cover transform group-hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+              
+              <div className="group overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-300 relative">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
+                  <div className="p-6">
+                    <h3 className="text-white font-semibold text-lg">{t('home.showcase.card2.title') || "Collaboration d'équipe"}</h3>
+                    <p className="text-white/90 text-sm mt-1">{t('home.showcase.card2.description') || "Des professionnels qui travaillent ensemble"}</p>
+                  </div>
+                </div>
+                <img 
+                  src="/assets/images/craftsman-working-2.jpg" 
+                  alt="Équipe d'artisans" 
+                  className="w-full h-72 object-cover transform group-hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+              
+              <div className="group overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-300 relative">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
+                  <div className="p-6">
+                    <h3 className="text-white font-semibold text-lg">{t('home.showcase.card3.title') || "Expertise professionnelle"}</h3>
+                    <p className="text-white/90 text-sm mt-1">{t('home.showcase.card3.description') || "Des artisans qualifiés à votre service"}</p>
+                  </div>
+                </div>
+                <img 
+                  src="/assets/images/craftsman-working-3.jpg" 
+                  alt="Artisan professionnel" 
+                  className="w-full h-72 object-cover transform group-hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+              
+              <div className="group overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-300 relative">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
+                  <div className="p-6">
+                    <h3 className="text-white font-semibold text-lg">{t('home.showcase.card4.title') || "Atelier de travail"}</h3>
+                    <p className="text-white/90 text-sm mt-1">{t('home.showcase.card4.description') || "Des espaces équipés pour un travail de qualité"}</p>
+                  </div>
+                </div>
+                <img 
+                  src="/assets/images/craftsman-workshop.jpg" 
+                  alt="Atelier d'artisan" 
+                  className="w-full h-72 object-cover transform group-hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+            </div>
+            
+            <div className="mt-12 text-center">
+              <Link to="/find-artisan">
+                <Button variant="outline" size="lg" className="hover:bg-primary hover:text-white transition-colors">
+                  {t('home.showcase.findArtisan') || "Trouver un artisan"}
+                  <Icon name="ArrowRight" size={16} className="ml-2" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+        
         {/* Features Section - Enhanced with more details */}
         <section id="features" className="py-24">
           <div className="container mx-auto px-4">
@@ -262,6 +343,81 @@ const HomePage = () => {
           </div>
         </section>
         
+        {/* Dashboard & Mobile App Preview Section */}
+        <section className="py-24 bg-gradient-to-br from-blue-50 to-white overflow-hidden">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl font-bold text-foreground mb-4">
+                {t('home.app.title') || "Gérez votre entreprise où que vous soyez"}
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                {t('home.app.subtitle') || "Accédez à votre tableau de bord depuis votre ordinateur ou en déplacement avec notre application mobile"}
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              {/* Dashboard Preview */}
+              <div className="rounded-lg overflow-hidden shadow-xl border border-gray-200 bg-white">
+                <div className="p-4 bg-gray-50 border-b border-gray-200 flex items-center">
+                  <div className="flex space-x-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  </div>
+                  <div className="mx-auto text-sm font-medium text-gray-500">Dashboard Preview</div>
+                </div>
+                <div className="p-6 bg-white flex items-center justify-center">
+                  <div className="text-center text-muted-foreground">
+                    <Icon name="LayoutDashboard" size={64} className="mx-auto mb-4 opacity-50" />
+                    <p className="text-sm">Dashboard image will be placed here</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Mobile App Preview */}
+              <div className="flex justify-center">
+                <div className="relative mx-auto border-gray-800 dark:border-gray-800 bg-gray-800 border-[14px] rounded-[2.5rem] h-[600px] w-[300px] shadow-xl">
+                  <div className="w-[148px] h-[18px] bg-gray-800 top-0 rounded-b-[1rem] left-1/2 -translate-x-1/2 absolute"></div>
+                  <div className="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[124px] rounded-l-lg"></div>
+                  <div className="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[178px] rounded-l-lg"></div>
+                  <div className="h-[64px] w-[3px] bg-gray-800 absolute -right-[17px] top-[142px] rounded-r-lg"></div>
+                  <div className="rounded-[2rem] overflow-hidden w-[272px] h-[572px] bg-white">
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center text-muted-foreground">
+                        <Icon name="Smartphone" size={64} className="mx-auto mb-4 opacity-50" />
+                        <p className="text-sm">Mobile app image will be placed here</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* App Store Buttons */}
+                <div className="absolute mt-[620px] flex flex-col sm:flex-row gap-4">
+                  {/* Google Play Button */}
+                  <a 
+                    href="#" 
+                    className="flex items-center justify-center bg-black text-white px-6 py-3 rounded-full hover:bg-white hover:text-black border border-transparent hover:border-black transition-all duration-300 shadow-md hover:shadow-lg min-w-[160px]"
+                    onClick={(e) => { e.preventDefault(); }}
+                  >
+                    <Icon name="Play" size={20} className="mr-2" />
+                    <span className="font-medium">{t('home.app.googlePlay')}</span>
+                  </a>
+                  
+                  {/* App Store Button */}
+                  <a 
+                    href="#" 
+                    className="flex items-center justify-center bg-white text-black px-6 py-3 rounded-full hover:bg-black hover:text-white border border-black transition-all duration-300 shadow-md hover:shadow-lg min-w-[160px]"
+                    onClick={(e) => { e.preventDefault(); }}
+                  >
+                    <Icon name="Apple" size={20} className="mr-2" />
+                    <span className="font-medium">{t('home.app.appStore')}</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        
         {/* Testimonials Section */}
         <section id="testimonials" className="py-24 bg-muted">
           <div className="container mx-auto px-4">
@@ -393,7 +549,12 @@ const HomePage = () => {
               <p className="text-sm text-white/80 mt-8 flex items-center justify-center">
                 <Icon name="Info" size={16} className="mr-2 opacity-70" />
                 {t('home.cta.trialNote')}
+                {/* Temporary direct dashboard access */}
+                <Link to="/dashboard" className="ml-4 underline text-white/90 hover:text-white">
+                  Direct Dashboard Access (Dev)
+                </Link>
               </p>
+              
             </div>
           </div>
         </section>

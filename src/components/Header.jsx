@@ -18,11 +18,12 @@ const Header = () => {
     <header className="sticky top-0 border-b border-border bg-card z-50">
       <div className="container mx-auto px-4 flex items-center justify-between h-16">
         {/* Logo */}
-        <Link to="/" className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-            <Icon name="Hammer" size={24} color="white" />
-          </div>
-          <span className="text-xl font-bold text-foreground">Havitam</span>
+        <Link to="/" className="flex items-center">
+          <img 
+            src="/assets/logo/logo.png" 
+            alt="Havitam Logo" 
+            className="w-auto h-12 object-contain"
+          />
         </Link>
         
         {/* Navigation Links */}

@@ -13,11 +13,12 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-12">
           {/* Brand Column */}
           <div className="lg:col-span-2">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <Icon name="Hammer" size={20} color="white" />
-              </div>
-              <span className="text-xl font-bold text-foreground">Havitam</span>
+            <div className="mb-6">
+              <img 
+                src="/assets/logo/logo.png" 
+                alt="Havitam Logo" 
+                className="w-auto h-14 object-contain"
+              />
             </div>
             <p className="text-muted-foreground mb-6 max-w-md">
               {t('footer.description') || 'La solution tout-en-un pour les artisans qui souhaitent simplifier leur gestion administrative et développer leur clientèle.'}

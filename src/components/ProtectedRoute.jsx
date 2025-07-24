@@ -12,8 +12,11 @@ const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
   const location = useLocation();
   
+  // TEMPORARY: Bypass authentication check for development
+  const bypassAuth = true; // Set to false to re-enable authentication
+  
   // Show loading state while checking authentication
-  if (loading) {
+  if (loading && !bypassAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
@@ -24,12 +27,12 @@ const ProtectedRoute = ({ children }) => {
     );
   }
   
-  // Redirect to login if not authenticated
-  if (!isAuthenticated) {
+  // Redirect to login if not authenticated (bypassed if bypassAuth is true)
+  if (!isAuthenticated && !bypassAuth) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
   
-  // Render children if authenticated
+  // Render children if authenticated or bypassing auth
   return children;
 };
 

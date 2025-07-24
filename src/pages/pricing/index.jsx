@@ -303,12 +303,12 @@ const PricingPage = () => {
               </p>
               <Link to="/register">
                 <Button 
-                  variant="secondary" 
+                  variant="outline" 
                   size="lg"
-                  className="shadow-xl transform transition-all duration-300 hover:scale-105 hover:shadow-blue-900/50 group"
+                  className="bg-white text-blue-800 border-white shadow-xl transform transition-all duration-300 hover:scale-105 hover:bg-white/90 hover:shadow-blue-900/50 group"
                 >
                   <span className="flex items-center">
-                    <Icon name="Sparkles" size={20} className="mr-2 group-hover:animate-pulse" />
+                    <Icon name="Sparkles" size={20} className="mr-2 group-hover:animate-pulse text-blue-600" />
                     {t('pricing.cta.button')}
                   </span>
                 </Button>

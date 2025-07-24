@@ -10,34 +10,6 @@ import { useTranslation } from '../../context/TranslationContext';
 const AboutPage = () => {
   const { t, language } = useTranslation();
   
-  // Team members data with translations
-  const getTeamMembers = () => [
-    {
-      name: t('about.team.member1.name') || "Pierre Durand",
-      role: t('about.team.member1.role') || "Fondateur & CEO",
-      image: "https://randomuser.me/api/portraits/men/32.jpg",
-      bio: t('about.team.member1.bio') || "Ancien artisan avec 15 ans d'expérience dans le bâtiment, Pierre a créé HAVITAM pour simplifier le quotidien des artisans."
-    },
-    {
-      name: t('about.team.member2.name') || "Marie Lefevre",
-      role: t('about.team.member2.role') || "Directrice Produit",
-      image: "https://randomuser.me/api/portraits/women/44.jpg",
-      bio: t('about.team.member2.bio') || "Expert en UX/UI, Marie travaille à rendre l'application intuitive et adaptée aux besoins spécifiques des artisans."
-    },
-    {
-      name: t('about.team.member3.name') || "Thomas Bernard",
-      role: t('about.team.member3.role') || "CTO",
-      image: "https://randomuser.me/api/portraits/men/67.jpg",
-      bio: t('about.team.member3.bio') || "Ingénieur en informatique passionné par les nouvelles technologies, Thomas dirige le développement technique de la plateforme."
-    },
-    {
-      name: t('about.team.member4.name') || "Julie Moreau",
-      role: t('about.team.member4.role') || "Responsable Marketing",
-      image: "https://randomuser.me/api/portraits/women/17.jpg",
-      bio: t('about.team.member4.bio') || "Avec une solide expérience en marketing digital, Julie aide les artisans à se faire connaître et à développer leur activité."
-    }
-  ];
-
   // Company values with translations
   const getCompanyValues = () => [
     {
@@ -62,7 +34,6 @@ const AboutPage = () => {
     }
   ];
   
-  const teamMembers = getTeamMembers();
   const companyValues = getCompanyValues();
 
   return (
@@ -125,12 +96,9 @@ const AboutPage = () => {
               </div>
               <div className="rounded-lg overflow-hidden shadow-lg">
                 <img 
-                  src="/public/assets/images/about-story.jpg" 
+                  src="/assets/images/craftsman-working-invoice.jpg" 
                   alt={t('about.story.imageAlt')} 
                   className="w-full h-auto"
-                  onError={(e) => {
-                    e.target.src = "https://images.unsplash.com/photo-1552664730-d307ca884978?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80";
-                  }}
                 />
               </div>
             </div>
@@ -163,36 +131,44 @@ const AboutPage = () => {
           </div>
         </section>
         
-        {/* Meet the Team */}
+        {/* Founder Section */}
         <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-foreground mb-4">
-                {t('about.team.title')}
+                {t('about.founder.title') || "Notre Fondateur"}
               </h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                {t('about.team.description')}
+                {t('about.founder.subtitle') || "Découvrez la vision qui a donné naissance à Havitam"}
               </p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {teamMembers.map((member, index) => (
-                <div key={index} className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+            <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+              <div className="md:col-span-1">
+                <div className="rounded-lg overflow-hidden shadow-lg">
                   <img 
-                    src={member.image} 
-                    alt={member.name} 
-                    className="w-full h-80 object-cover rounded-lg shadow-md"
-                    onError={(e) => {
-                      e.target.src = "/assets/images/no_image.png";
-                    }}
+                    src="/assets/images/CEO.jpeg" 
+                    alt={t('about.founder.name') || "Pierre Durand"} 
+                    className="w-full h-auto"
                   />
-                  <div className="p-6">
-                    <h3 className="text-xl font-semibold text-foreground">{member.name}</h3>
-                    <p className="text-primary font-medium text-sm mb-3">{member.role}</p>
-                    <p className="text-muted-foreground text-sm">{member.bio}</p>
-                  </div>
                 </div>
-              ))}
+              </div>
+              <div className="md:col-span-2">
+                <h3 className="text-2xl font-bold text-foreground mb-2">
+                  {t('about.founder.name') || "Pierre Durand"}
+                </h3>
+                <p className="text-primary font-medium mb-4">
+                  {t('about.founder.role') || "Fondateur & CEO"}
+                </p>
+                <div className="prose prose-lg text-muted-foreground">
+                  <p>
+                    {t('about.founder.bio') || "Ancien artisan avec 15 ans d'expérience dans le bâtiment, Pierre a créé HAVITAM pour répondre aux défis quotidiens rencontrés par les professionnels du secteur. Après avoir lui-même été confronté aux difficultés administratives et à la gestion complexe des devis et factures, il a décidé de développer une solution simple et efficace pour tous les artisans."}
+                  </p>
+                  <p className="mt-4">
+                    {t('about.founder.vision') || "Sa vision est de permettre aux artisans de se concentrer sur leur cœur de métier tout en bénéficiant d'outils modernes pour développer leur activité et améliorer leur rentabilité."}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </section>

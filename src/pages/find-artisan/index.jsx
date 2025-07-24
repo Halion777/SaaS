@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import Button from '../../components/ui/Button';
@@ -12,21 +12,44 @@ const FindArtisanPage = () => {
   const { t, language } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [priceDropdownOpen, setPriceDropdownOpen] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     category: '',
     address: '',
+    zipCode: '',
     description: '',
+    priceRange: '',
     completionDate: '',
     fullName: '',
     phone: '',
-    email: ''
+    email: '',
+    projectImages: []
   });
+  const fileInputRef = useRef(null);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
+    }));
+  };
+
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      // Store the file objects in the state
+      setFormData(prev => ({
+        ...prev,
+        projectImages: [...prev.projectImages, ...files]
+      }));
+    }
+  };
+
+  const removeImage = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      projectImages: prev.projectImages.filter((_, i) => i !== index)
     }));
   };
 
@@ -42,6 +65,17 @@ const FindArtisanPage = () => {
     // Handle form submission
     console.log('Form submitted:', formData);
   };
+
+  const priceRanges = [
+    { value: '0-500', label: '0–500€' },
+    { value: '500-1000', label: '500–1,000€' },
+    { value: '1000-2500', label: '1,000–2,500€' },
+    { value: '2500-5000', label: '2,500–5,000€' },
+    { value: '5000-7000', label: '5,000–7,000€' },
+    { value: '7000-10000', label: '7,000–10,000€' },
+    { value: '10000-20000', label: '10,000–20,000€' },
+    { value: '20000+', label: '20,000+€' }
+  ];
 
   const workCategories = [
     { 
@@ -250,6 +284,20 @@ const FindArtisanPage = () => {
                     />
                   </div>
 
+                  {/* Zip Code */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      {t('findArtisan.form.zipCode') || "Code postal"} *
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder={t('findArtisan.form.zipCodePlaceholder') || "Ex: 75001"}
+                      value={formData.zipCode}
+                      onChange={(e) => handleInputChange('zipCode', e.target.value)}
+                      required
+                    />
+                  </div>
+
                   {/* Project Description */}
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
@@ -262,6 +310,108 @@ const FindArtisanPage = () => {
                       className="w-full h-32 px-4 py-3 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
                       required
                     />
+                  </div>
+
+                  {/* Price Range */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      {t('findArtisan.form.priceRange') || "Fourchette de prix"}
+                    </label>
+                    <div className="relative">
+                      {/* Custom Dropdown Button */}
+                      <button
+                        type="button"
+                        onClick={() => setPriceDropdownOpen(!priceDropdownOpen)}
+                        className="w-full h-11 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left flex items-center"
+                      >
+                        <div className="absolute left-3 text-muted-foreground">
+                          <Icon name="Euro" className="w-5 h-5" />
+                        </div>
+                        <span className={formData.priceRange ? 'text-foreground' : 'text-muted-foreground'}>
+                          {formData.priceRange 
+                            ? priceRanges.find(range => range.value === formData.priceRange)?.label
+                            : t('findArtisan.form.selectPriceRange') || "Select price range"
+                          }
+                        </span>
+                        <div className="absolute right-3 text-muted-foreground">
+                          <Icon name="ChevronDown" className={`w-4 h-4 transition-transform ${priceDropdownOpen ? 'rotate-180' : ''}`} />
+                        </div>
+                      </button>
+                      
+                      {/* Dropdown Options */}
+                      {priceDropdownOpen && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                          {priceRanges.map(range => (
+                            <button
+                              key={range.value}
+                              type="button"
+                              onClick={() => {
+                                handleInputChange('priceRange', range.value);
+                                setPriceDropdownOpen(false);
+                              }}
+                              className={`w-full px-4 py-3 text-left hover:bg-muted/50 transition-colors flex items-center ${
+                                formData.priceRange === range.value ? 'bg-primary/10 text-primary' : 'text-foreground'
+                              }`}
+                            >
+                              <span className="text-sm">{range.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Image Upload */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      {t('findArtisan.form.projectImages') || "Photos du projet"} <span className="text-muted-foreground text-xs">{t('findArtisan.form.optional') || "(Optionnel)"}</span>
+                    </label>
+                    <div className="space-y-3">
+                      <div 
+                        className="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer hover:bg-muted/20 transition-colors"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Icon name="Upload" className="w-6 h-6 mx-auto text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          {t('findArtisan.form.uploadInstructions') || "Cliquez pour ajouter des photos"}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {t('findArtisan.form.uploadFormats') || "JPG, PNG ou PDF jusqu'à 5 MB"}
+                        </p>
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          className="hidden"
+                          accept="image/*"
+                          multiple
+                          onChange={handleFileChange}
+                        />
+                      </div>
+                      
+                      {/* Preview uploaded images */}
+                      {formData.projectImages.length > 0 && (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
+                          {formData.projectImages.map((file, index) => (
+                            <div key={index} className="relative group">
+                              <div className="aspect-video rounded-md overflow-hidden bg-muted">
+                                <img 
+                                  src={URL.createObjectURL(file)} 
+                                  alt={`Project ${index}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removeImage(index)}
+                                className="absolute top-1 right-1 bg-background/80 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Icon name="X" className="w-4 h-4 text-destructive" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Completion Date */}

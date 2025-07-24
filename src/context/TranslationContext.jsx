@@ -178,6 +178,33 @@ const translations = {
             answer: 'Oui, HAVITAM vous permet d\'importer facilement votre base de clients existante via CSV ou Excel. Notre assistant d\'importation vous guidera à chaque étape pour assurer une transition en douceur vers notre plateforme.'
           }
         ]
+      },
+      showcase: {
+        title: "Artisans en action",
+        subtitle: "Découvrez le travail de qualité de nos artisans partenaires",
+        findArtisan: "Trouver un artisan",
+        card1: {
+          title: "Travaux de construction",
+          description: "Expertise et précision dans chaque projet"
+        },
+        card2: {
+          title: "Collaboration d'équipe",
+          description: "Des professionnels qui travaillent ensemble"
+        },
+        card3: {
+          title: "Expertise professionnelle",
+          description: "Des artisans qualifiés à votre service"
+        },
+        card4: {
+          title: "Atelier de travail",
+          description: "Des espaces équipés pour un travail de qualité"
+        }
+      },
+      app: {
+        title: "Gérez votre entreprise où que vous soyez",
+        subtitle: "Accédez à votre tableau de bord depuis votre ordinateur ou en déplacement avec notre application mobile",
+        googlePlay: "Google Play",
+        appStore: "App Store"
       }
     },
     
@@ -502,8 +529,8 @@ const translations = {
     about: {
       metaDescription: "Découvrez l'histoire et les valeurs d'HAVITAM, la plateforme innovante pour les artisans du bâtiment.",
       hero: {
-        title: "Notre mission est de simplifier la vie des artisans",
-        description: "HAVITAM est né de la volonté de permettre aux artisans de se concentrer sur leur savoir-faire plutôt que sur les tâches administratives.",
+        title: "À propos d'HAVITAM",
+        description: "Nous simplifions le quotidien des artisans avec des outils numériques adaptés à leurs besoins.",
         cta: {
           freeTrial: "Essayer gratuitement",
           contactUs: "Nous contacter"
@@ -511,10 +538,18 @@ const translations = {
       },
       story: {
         title: "Notre histoire",
-        description1: "Havitam a été fondé par Haitam, un entrepreneur passionné qui a passé des années dans le secteur du bâtiment. Face à la charge administrative des artisans, il a créé une solution pour simplifier leur quotidien.",
-        description2: "Havitam, c'est l'outil qui combine puissance, simplicité et automatisation pour booster votre entreprise artisanale.",
-        description3: "Le nom 'Havitam' combine les initiales du fondateur ('HA' pour Haitam) et 'vitam' (vitamine en latin), exprimant notre vision : être la vitamine digitale de votre entreprise artisanale.",
-        imageAlt: "L'équipe HAVITAM"
+        description1: "HAVITAM est né d'un constat simple : les artisans passent trop de temps sur des tâches administratives au lieu de se concentrer sur leur cœur de métier.",
+        description2: "Fondée en 2020 par un ancien artisan, notre plateforme a été conçue pour répondre aux besoins spécifiques des professionnels du bâtiment.",
+        description3: "Aujourd'hui, nous accompagnons des milliers d'artisans dans la digitalisation de leur activité et la simplification de leur gestion quotidienne.",
+        imageAlt: "L'équipe HAVITAM au travail"
+      },
+      founder: {
+        title: "Notre Fondateur",
+        subtitle: "Découvrez la vision qui a donné naissance à Havitam",
+        name: "Pierre Durand",
+        role: "Fondateur & CEO",
+        bio: "Ancien artisan avec 15 ans d'expérience dans le bâtiment, Pierre a créé HAVITAM pour répondre aux défis quotidiens rencontrés par les professionnels du secteur. Après avoir lui-même été confronté aux difficultés administratives et à la gestion complexe des devis et factures, il a décidé de développer une solution simple et efficace pour tous les artisans.",
+        vision: "Sa vision est de permettre aux artisans de se concentrer sur leur cœur de métier tout en bénéficiant d'outils modernes pour développer leur activité et améliorer leur rentabilité."
       },
       values: {
         title: "Nos valeurs",
@@ -604,8 +639,16 @@ const translations = {
         selectCategory: "Sélectionnez une catégorie",
         address: "Adresse ou ville du chantier",
         addressPlaceholder: "Ex: 123 Rue de la Paix, Paris",
+        zipCode: "Code postal",
+        zipCodePlaceholder: "Ex: 75001",
         description: "Description du projet",
         descriptionPlaceholder: "Décrivez vos travaux en détail : nature, dimensions, matériaux souhaités...",
+        priceRange: "Fourchette de prix",
+        selectPriceRange: "Sélectionnez une fourchette de prix",
+        projectImages: "Photos du projet",
+        optional: "(Optionnel)",
+        uploadInstructions: "Cliquez pour ajouter des photos",
+        uploadFormats: "JPG, PNG ou PDF jusqu'à 5 MB",
         completionDate: "Date souhaitée de réalisation",
         datePlaceholder: "Sélectionnez une date",
         contactInfo: "Vos coordonnées",
@@ -814,6 +857,33 @@ const translations = {
             answer: 'Yes, HAVITAM allows you to easily import your existing client base via CSV or Excel. Our import assistant will guide you through each step to ensure a smooth transition to our platform.'
           }
         ]
+      },
+      showcase: {
+        title: "Artisans in action",
+        subtitle: "Discover the quality work of our partner artisans",
+        findArtisan: "Find an artisan",
+        card1: {
+          title: "Construction Works",
+          description: "Expertise and precision in every project"
+        },
+        card2: {
+          title: "Team Collaboration",
+          description: "Professional teams working together"
+        },
+        card3: {
+          title: "Professional Expertise",
+          description: "Qualified artisans at your service"
+        },
+        card4: {
+          title: "Workshop Space",
+          description: "Equipped spaces for high-quality work"
+        }
+      },
+      app: {
+        title: "Manage your business wherever you are",
+        subtitle: "Access your dashboard from your computer or on the go with our mobile app",
+        googlePlay: "Google Play",
+        appStore: "App Store"
       }
     },
     
@@ -1137,8 +1207,8 @@ const translations = {
     about: {
       metaDescription: "Discover HAVITAM's story and values, the innovative platform for craftsmen.",
       hero: {
-        title: "Our mission is to simplify the lives of craftsmen",
-        description: "HAVITAM was born out of a desire to allow craftsmen to focus on their craft rather than administrative tasks.",
+        title: "About HAVITAM",
+        description: "We simplify the daily life of craftsmen with digital tools adapted to their needs.",
         cta: {
           freeTrial: "Try for free",
           contactUs: "Contact us"
@@ -1146,10 +1216,18 @@ const translations = {
       },
       story: {
         title: "Our story",
-        description1: "Havitam was founded by Haitam, a passionate entrepreneur who spent years in the construction sector. Faced with the administrative burden of craftsmen, he created a solution to simplify their daily life.",
-        description2: "Havitam is the tool that combines power, simplicity and automation to boost your craft business.",
-        description3: "The name 'Havitam' combines the founder's initials ('HA' for Haitam) and 'vitam' (vitamin in Latin), expressing our vision: to be the digital vitamin of your craft business.",
-        imageAlt: "The HAVITAM team"
+        description1: "HAVITAM was born from a simple observation: craftsmen spend too much time on administrative tasks instead of focusing on their core business.",
+        description2: "Founded in 2020 by a former craftsman, our platform was designed to meet the specific needs of building professionals.",
+        description3: "Today, we support thousands of craftsmen in digitalizing their business and simplifying their daily management.",
+        imageAlt: "The HAVITAM team at work"
+      },
+      founder: {
+        title: "Our Founder",
+        subtitle: "Discover the vision that gave birth to Havitam",
+        name: "Pierre Durand",
+        role: "Founder & CEO",
+        bio: "A former craftsman with 15 years of experience in the construction industry, Pierre created HAVITAM to address the daily challenges faced by professionals in the sector. After experiencing administrative difficulties and complex quote and invoice management himself, he decided to develop a simple and effective solution for all craftsmen.",
+        vision: "His vision is to allow craftsmen to focus on their core business while benefiting from modern tools to develop their activity and improve their profitability."
       },
       values: {
         title: "Our values",
@@ -1239,8 +1317,16 @@ const translations = {
         selectCategory: "Select a category",
         address: "Worksite address or city",
         addressPlaceholder: "Ex: 123 Peace Street, Paris",
+        zipCode: "Zip Code",
+        zipCodePlaceholder: "Ex: 75001",
         description: "Project description",
         descriptionPlaceholder: "Describe your work in detail: nature, dimensions, desired materials...",
+        priceRange: "Price Range",
+        selectPriceRange: "Select a price range",
+        projectImages: "Project Images",
+        optional: "(Optional)",
+        uploadInstructions: "Click to add photos",
+        uploadFormats: "JPG, PNG or PDF up to 5 MB",
         completionDate: "Desired completion date",
         datePlaceholder: "Select a date",
         contactInfo: "Your contact details",
@@ -1449,6 +1535,33 @@ const translations = {
             answer: 'Ja, HAVITAM staat u toe om uw bestaande klantenbasis eenvoudig te importeren via CSV of Excel. Onze importassistent zal u bij elke stap helpen om een soepele overgang naar onze platform te garanderen.'
           }
         ]
+      },
+      showcase: {
+        title: "Vakmensen aan het werk",
+        subtitle: "Ontdek het kwaliteitswerk van onze partnervakmannen",
+        findArtisan: "Vind een vakman",
+        card1: {
+          title: "Bouwprojecten",
+          description: "Expertise en precisie in elk project"
+        },
+        card2: {
+          title: "Teamcollaboratie",
+          description: "Professionals die samenwerken"
+        },
+        card3: {
+          title: "Professionele expertise",
+          description: "Gekwalificeerde vakmannen op uw service"
+        },
+        card4: {
+          title: "Werkplekken",
+          description: "Gequipte ruimten voor een kwalitatief werk"
+        }
+      },
+      app: {
+        title: "Beheer uw bedrijf waar u ook bent",
+        subtitle: "Toegang tot uw dashboard vanaf uw computer of onderweg met onze mobiele app",
+        googlePlay: "Google Play",
+        appStore: "App Store"
       }
     },
     
@@ -1790,6 +1903,14 @@ const translations = {
         description3: "De naam 'Havitam' combineert de initialen van de oprichter ('HA' voor Haitam) en 'vitam' (vitamine in het Latijn), en drukt onze visie uit: de digitale vitamine van uw ambachtelijke bedrijf zijn.",
         imageAlt: "Het HAVITAM-team"
       },
+      founder: {
+        title: "Onze oprichter",
+        subtitle: "Ontdek de visie die Havitam heeft geboren",
+        name: "Pierre Durand",
+        role: "Oprichter & CEO",
+        bio: "Ex-vakman met 15 jaar ervaring in de bouw, Pierre heeft HAVITAM gecreëerd om de dagelijkse leven van vakmensen te vereenvoudigen. Hij heeft zichzelf ervaren in de administratieve last van vakmensen en de complexe verwerking van devis en facturen. Daarom heeft hij besloten om een eenvoudige en effectieve oplossing te ontwikkelen voor alle vakmensen.",
+        vision: "Zijn visie is om vakmensen te helpen zich te concentreren op hun vak in plaats van administratieve taken, terwijl ze profiteren van moderne tools om hun activiteit te ontwikkelen en hun winstgevendheid te verbeteren."
+      },
       values: {
         title: "Onze waarden",
         description: "Deze waarden leiden onze dagelijkse beslissingen en handelingen om het beste mogelijke service te bieden.",
@@ -1878,8 +1999,16 @@ const translations = {
         selectCategory: "Selecteer een categorie",
         address: "Werkplaatsadres of stad",
         addressPlaceholder: "Bijv: 123 Vredesstraat, Parijs",
+        zipCode: "Postcode",
+        zipCodePlaceholder: "Bijv: 75001",
         description: "Projectbeschrijving",
         descriptionPlaceholder: "Beschrijf uw werk in detail: aard, afmetingen, gewenste materialen...",
+        priceRange: "Prijsrange",
+        selectPriceRange: "Selecteer een prijsrange",
+        projectImages: "Projectafbeeldingen",
+        optional: "(Optioneel)",
+        uploadInstructions: "Klik om foto's toe te voegen",
+        uploadFormats: "JPG, PNG of PDF tot 5 MB",
         completionDate: "Gewenste voltooiingsdatum",
         datePlaceholder: "Selecteer een datum",
         contactInfo: "Uw contactgegevens",
