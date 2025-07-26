@@ -116,7 +116,8 @@ const Select = React.forwardRef(({
 
     const handleClear = (e) => {
         e.stopPropagation();
-        onChange?.(multiple ? [] : '');
+        e.preventDefault();
+        onChange?.({ target: { name, value: multiple ? [] : '' } });
     };
 
     const handleSearchChange = (e) => {

@@ -60,8 +60,8 @@ const ForgotPasswordPage = () => {
         <div className="max-w-md mx-auto my-16">
           {/* Logo */}
           <div className="flex items-center justify-center mb-8">
-            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center mr-3">
-              <Icon name="Hammer" size={28} color="white" />
+            <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center mr-3">
+              <Icon name="Hammer" size={36} color="white" />
             </div>
             <div className="text-left">
               <h1 className="text-2xl font-bold text-foreground">Havitam</h1>

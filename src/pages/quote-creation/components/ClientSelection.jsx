@@ -84,8 +84,14 @@ const ClientSelection = ({ selectedClient, onClientSelect, onNext }) => {
               options={existingClients}
               value={selectedClient?.value || ''}
               onChange={(e) => {
-                const client = existingClients.find(c => c.value === e.target.value);
-                onClientSelect(client);
+                if (e.target.value === '') {
+                  // Clear selection
+                  onClientSelect(null);
+                } else {
+                  // Select a client
+                  const client = existingClients.find(c => c.value === e.target.value);
+                  onClientSelect(client);
+                }
               }}
               description="Tapez pour rechercher parmi vos clients existants"
             />

@@ -19,7 +19,9 @@ const AutomationRules = ({ rules, onRulesChange }) => {
   const triggerOptions = [
     { value: 'quote_sent', label: 'Devis envoyé' },
     { value: 'quote_viewed', label: 'Devis consulté' },
-    { value: 'invoice_overdue', label: 'Facture en retard' },
+    { value: 'invoice_overdue', label: 'Facture client en retard' },
+    { value: 'supplier_invoice_due', label: 'Facture fournisseur à échéance' },
+    { value: 'supplier_invoice_overdue', label: 'Facture fournisseur en retard' },
     { value: 'project_completed', label: 'Projet terminé' }
   ];
 
@@ -37,7 +39,9 @@ const AutomationRules = ({ rules, onRulesChange }) => {
 
   const templateOptions = [
     { value: 'quote_followup_template', label: 'Modèle suivi devis' },
-    { value: 'payment_reminder_template', label: 'Modèle rappel paiement' },
+    { value: 'payment_reminder_template', label: 'Modèle rappel paiement client' },
+    { value: 'supplier_payment_reminder_template', label: 'Modèle rappel paiement fournisseur' },
+    { value: 'supplier_invoice_due_template', label: 'Modèle facture fournisseur à échéance' },
     { value: 'satisfaction_survey_template', label: 'Modèle enquête satisfaction' }
   ];
 

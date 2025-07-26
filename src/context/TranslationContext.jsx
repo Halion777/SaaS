@@ -91,6 +91,9 @@ const translations = {
     
     // Home page
     home: {
+      notification: {
+        peppolMessage: 'Havitam est intégré Peppol — Votre abonnement est déductible à 120% grâce à l\'incitation gouvernementale.'
+      },
       hero: {
         title: 'La plateforme tout-en-un pour artisans',
         subtitle: 'Devis, factures et paiements en un seul endroit. Simplifiez la gestion de votre entreprise artisanale.',
@@ -770,6 +773,9 @@ const translations = {
     
     // Home page
     home: {
+      notification: {
+        peppolMessage: 'Havitam is Peppol-integrated — Your subscription is 120% tax-deductible thanks to the government incentive.'
+      },
       hero: {
         title: 'The all-in-one platform for craftsmen',
         subtitle: 'Quotes, invoices and payments in one place. Simplify your craft business management.',
@@ -1448,6 +1454,9 @@ const translations = {
     
     // Home page
     home: {
+      notification: {
+        peppolMessage: 'Havitam is Peppol-geïntegreerd — Uw abonnement is 120% fiscaal aftrekbaar dankzij de overheidsstimulans.'
+      },
       hero: {
         title: 'Het alles-in-één platform voor vakmensen',
         subtitle: 'Maak offertes, verstuur facturen, volg betalingen en ontvang leads. Vereenvoudig het beheer van uw ambachtelijk bedrijf met HAVITAM.',

@@ -17,7 +17,7 @@ const Footer = () => {
               <img 
                 src="/assets/logo/logo.png" 
                 alt="Havitam Logo" 
-                className="w-auto h-14 object-contain"
+                className="w-auto h-20 object-contain"
               />
             </div>
             <p className="text-muted-foreground mb-6 max-w-md">

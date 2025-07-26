@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import Routes from "./Routes";
 import { TranslationProvider } from "./context/TranslationContext";
+import { MultiUserProvider } from "./context/MultiUserContext";
 
 function App() {
   useEffect(() => {
@@ -16,7 +17,9 @@ function App() {
   
   return (
     <TranslationProvider>
-      <Routes />
+      <MultiUserProvider>
+        <Routes />
+      </MultiUserProvider>
     </TranslationProvider>
   );
 }

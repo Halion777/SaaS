@@ -22,7 +22,7 @@ const Header = () => {
           <img 
             src="/assets/logo/logo.png" 
             alt="Havitam Logo" 
-            className="w-auto h-12 object-contain"
+            className="w-auto h-16 object-contain"
           />
         </Link>
         

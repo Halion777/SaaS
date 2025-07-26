@@ -18,6 +18,7 @@ import Dashboard from './pages/dashboard';
 import QuoteCreation from './pages/quote-creation';
 import QuotesManagement from './pages/quotes-management';
 import InvoicesManagement from './pages/invoices-management';
+import SupplierInvoicesManagement from './pages/supplier-invoices';
 
 import ClientManagement from './pages/client-management';
 import FollowUpManagement from './pages/follow-up-management';
@@ -27,6 +28,7 @@ import AssuranceCreditPage from './pages/services/assurance';
 import RecouvrementPage from './pages/services/recouvrement';
 import LeadsManagementPage from './pages/leads-management';
 import StatisticsPage from './pages/statistics';
+import MultiUserProfilesPage from './pages/multi-user-profiles';
 import NotFound from './pages/NotFound';
 
 const AppRoutes = () => {
@@ -69,6 +71,12 @@ const AppRoutes = () => {
           <Route path="/invoices-management" element={
             <ProtectedRoute>
               <InvoicesManagement />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/supplier-invoices" element={
+            <ProtectedRoute>
+              <SupplierInvoicesManagement />
             </ProtectedRoute>
           } />
           
@@ -119,6 +127,12 @@ const AppRoutes = () => {
           <Route path="/statistics" element={
             <ProtectedRoute>
               <StatisticsPage />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/multi-user-profiles" element={
+            <ProtectedRoute>
+              <MultiUserProfilesPage />
             </ProtectedRoute>
           } />
           

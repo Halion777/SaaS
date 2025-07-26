@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import Button from '../../components/ui/Button';
@@ -10,6 +10,7 @@ import Footer from '../../components/Footer';
 
 const HomePage = () => {
   const { t, language } = useTranslation();
+  const [showNotification, setShowNotification] = useState(true);
   
   // Scroll to top on page load
   useEffect(() => {
@@ -37,6 +38,27 @@ const HomePage = () => {
       
       <div className="min-h-screen bg-background flex flex-col">
         <Header />
+        
+        {/* Notification Banner */}
+        {showNotification && (
+          <div className="bg-gradient-to-r from-green-500 to-blue-600 text-white py-3 px-4 relative">
+            <div className="container mx-auto flex items-center justify-center text-center">
+              <Icon name="CheckCircle" size={20} className="mr-3 text-white" />
+              <span className="font-medium">
+                ✅ {t('home.notification.peppolMessage')}
+              </span>
+            </div>
+            
+            {/* Close Button */}
+            <button
+              onClick={() => setShowNotification(false)}
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 p-1 hover:bg-white/20 rounded-full transition-colors duration-200"
+              aria-label="Close notification"
+            >
+              <Icon name="X" size={16} className="text-white" />
+            </button>
+          </div>
+        )}
         
         {/* Hero Section - Redesigned with enhanced UI but original colors */}
         <section className="py-28 bg-gradient-to-br from-primary/5 via-background to-accent/5 overflow-hidden relative">

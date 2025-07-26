@@ -38,6 +38,26 @@ const MainSidebar = () => {
     }
   }, []);
 
+  // Auto-expand the correct section based on current route
+  useEffect(() => {
+    const path = location.pathname;
+    
+    // Determine which section should be expanded based on the current path
+    if (path.startsWith('/quote-creation') || path.startsWith('/quotes-management') || path.startsWith('/statistics')) {
+      setExpandedSections(prev => ({ ...prev, quotes: true, clients: false, services: false, business: false }));
+    } else if (path.startsWith('/client-management')) {
+      setExpandedSections(prev => ({ ...prev, quotes: false, clients: true, services: false, business: false }));
+    } else if (path.startsWith('/services/')) {
+      setExpandedSections(prev => ({ ...prev, quotes: false, clients: false, services: true, business: false }));
+    } else if (path.startsWith('/invoices-management') || path.startsWith('/supplier-invoices') || path.startsWith('/leads-management') || path.startsWith('/follow-up-management')) {
+      setExpandedSections(prev => ({ ...prev, quotes: false, clients: false, services: false, business: true }));
+
+    } else if (path.startsWith('/dashboard') || path.startsWith('/analytics-dashboard')) {
+      // Keep all sections collapsed for main pages
+      setExpandedSections(prev => ({ ...prev, quotes: false, clients: false, services: false, business: false }));
+    }
+  }, [location.pathname]);
+
   const toggleSidebar = () => {
     const newCollapsed = !isCollapsed;
     setIsCollapsed(newCollapsed);
@@ -46,19 +66,20 @@ const MainSidebar = () => {
 
   const toggleSection = (sectionId) => {
     setExpandedSections(prev => {
-      const newState = {
-        quotes: false,
-        clients: false,
-        services: false,
-        business: false
-      };
       // If the section is already expanded, collapse it
       if (prev[sectionId]) {
-        return newState;
+        return {
+          ...prev,
+          [sectionId]: false
+        };
       }
-      // Otherwise, expand only the clicked section
-      newState[sectionId] = true;
-      return newState;
+      // Otherwise, expand only the clicked section and collapse others
+      return {
+        quotes: sectionId === 'quotes',
+        clients: sectionId === 'clients',
+        services: sectionId === 'services',
+        business: sectionId === 'business'
+      };
     });
   };
 
@@ -121,10 +142,17 @@ const MainSidebar = () => {
       items: [
         {
           id: 'invoices',
-          label: 'Factures',
+          label: 'Factures clients',
           path: '/invoices-management',
           icon: 'Receipt',
           notifications: 1
+        },
+        {
+          id: 'supplier-invoices',
+          label: 'Factures fournisseurs',
+          path: '/supplier-invoices',
+          icon: 'FileText',
+          notifications: 2
         },
         {
           id: 'leads-management',
@@ -157,35 +185,35 @@ const MainSidebar = () => {
         }
       ]
     },
-    {
-      id: 'services',
-      label: 'Services',
-      isCollapsible: true,
-      isExpanded: expandedSections.services,
-      items: [
-        {
-          id: 'peppol-network',
-          label: 'Peppol Network',
-          path: '/services/peppol',
-          icon: 'Network',
-          notifications: 0
-        },
-        {
-          id: 'assurance-credit',
-          label: 'Assurance Crédit',
-          path: '/services/assurance',
-          icon: 'Shield',
-          notifications: 0
-        },
-        {
-          id: 'recouvrement',
-          label: 'Recouvrement',
-          path: '/services/recouvrement',
-          icon: 'Banknote',
-          notifications: 0
+            {
+          id: 'services',
+          label: 'Services',
+          isCollapsible: true,
+          isExpanded: expandedSections.services,
+          items: [
+            {
+              id: 'peppol-network',
+              label: 'Peppol Network',
+              path: '/services/peppol',
+              icon: 'Network',
+              notifications: 0
+            },
+            {
+              id: 'assurance-credit',
+              label: 'Assurance Crédit',
+              path: '/services/assurance',
+              icon: 'Shield',
+              notifications: 0
+            },
+            {
+              id: 'recouvrement',
+              label: 'Recouvrement',
+              path: '/services/recouvrement',
+              icon: 'Banknote',
+              notifications: 0
+            }
+          ]
         }
-      ]
-    }
   ];
 
   const handleLogout = () => {
@@ -234,7 +262,7 @@ const MainSidebar = () => {
               <img 
                 src="/assets/logo/logo.png" 
                 alt="Havitam Logo" 
-                className="w-8 h-8 object-contain"
+                className="w-12 h-12 object-contain"
               />
               <div>
                 <h1 className="text-lg font-semibold text-foreground">Havitam</h1>
@@ -266,7 +294,12 @@ const MainSidebar = () => {
                   <div className="px-3 py-2">
                     <div className="flex items-center justify-between">
                       <button
-                        onClick={() => category.isCollapsible && toggleSection(category.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (category.isCollapsible) {
+                            toggleSection(category.id);
+                          }
+                        }}
                         className={`flex items-center justify-between w-full ${
                           category.isCollapsible ? 'cursor-pointer hover:bg-muted rounded px-2 py-1' : ''
                         }`}

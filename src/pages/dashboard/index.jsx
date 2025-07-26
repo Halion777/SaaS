@@ -12,11 +12,27 @@ import QuickActions from './components/QuickActions';
 import SponsoredBanner from './components/SponsoredBanner';
 import AIPerformanceWidget from './components/AIPerformanceWidget';
 import DashboardTour from './components/DashboardTour';
+import InvoiceOverviewWidget from './components/InvoiceOverviewWidget';
+import PeppolWidget from './components/PeppolWidget';
+import DashboardPersonalization from './components/DashboardPersonalization';
 
 const Dashboard = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [sidebarOffset, setSidebarOffset] = useState(288); // Default sidebar width
   const [runTour, setRunTour] = useState(false);
+  const [widgetSettings, setWidgetSettings] = useState({
+    metricsCards: true,
+    invoiceOverview: true,
+    recentQuotes: true,
+    topClients: true,
+    taskList: true,
+    quickActions: true,
+    aiPerformance: true,
+    peppolWidget: true,
+    sponsoredBanner: true,
+    aiAlerts: true
+  });
+  const [isPersonalizationOpen, setIsPersonalizationOpen] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -88,6 +104,25 @@ const Dashboard = () => {
     localStorage.setItem('dashboard-tour-completed', 'true');
   };
 
+  // Load widget settings on component mount
+  useEffect(() => {
+    const loadWidgetSettings = () => {
+      try {
+        const savedSettings = localStorage.getItem('dashboard-widget-settings');
+        if (savedSettings) {
+          setWidgetSettings(JSON.parse(savedSettings));
+        }
+      } catch (error) {
+        console.error('Error loading widget settings:', error);
+      }
+    };
+    loadWidgetSettings();
+  }, []);
+
+  const handleWidgetSettingsSave = (newSettings) => {
+    setWidgetSettings(newSettings);
+  };
+
   const metricsData = [
     {
       title: 'Devis ce mois',
@@ -155,6 +190,15 @@ const Dashboard = () => {
             <div className="flex items-center space-x-4">
               <Button 
                 variant="outline" 
+                iconName="Settings" 
+                iconPosition="left"
+                onClick={() => setIsPersonalizationOpen(true)}
+                className="dashboard-personalization-button"
+              >
+                Personnaliser
+              </Button>
+              <Button 
+                variant="outline" 
                 iconName="BarChart3" 
                 iconPosition="left"
                 onClick={() => window.location.href = '/analytics-dashboard'}
@@ -199,11 +243,27 @@ const Dashboard = () => {
           </div>
 
           {/* Metrics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 dashboard-metrics">
-            {metricsData.map((metric, index) => (
-              <MetricsCard key={index} {...metric} />
-            ))}
-          </div>
+          {widgetSettings.metricsCards && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 dashboard-metrics">
+              {metricsData.map((metric, index) => (
+                <MetricsCard key={index} {...metric} />
+              ))}
+            </div>
+          )}
+
+          {/* Invoice Overview Widget */}
+          {widgetSettings.invoiceOverview && (
+            <div className="mb-6">
+              <InvoiceOverviewWidget />
+            </div>
+          )}
+
+          {/* Peppol Widget */}
+          {widgetSettings.peppolWidget && (
+            <div className="mb-6">
+              <PeppolWidget />
+            </div>
+          )}
 
           {/* Main Dashboard Content - Two Column Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -215,76 +275,102 @@ const Dashboard = () => {
               </div>
               
               {/* Recent Quotes */}
-              <div className="dashboard-recent-quotes">
-                <RecentQuotes />
-              </div>
+              {widgetSettings.recentQuotes && (
+                <div className="dashboard-recent-quotes">
+                  <RecentQuotes />
+                </div>
+              )}
               
               {/* Quick Actions */}
-              <div className="dashboard-quick-actions">
-                <QuickActions />
-              </div>
+              {widgetSettings.quickActions && (
+                <div className="dashboard-quick-actions">
+                  <QuickActions />
+                </div>
+              )}
             </div>
             
             {/* Right Column - 1/3 width */}
             <div className="space-y-6">
               {/* Tasks and Alerts */}
-              <div className="dashboard-tasks">
-                <TaskList />
-              </div>
-              <div className="dashboard-ai-alerts">
-                <AIAlerts />
-              </div>
+              {widgetSettings.taskList && (
+                <div className="dashboard-tasks">
+                  <TaskList />
+                </div>
+              )}
+              {widgetSettings.aiAlerts && (
+                <div className="dashboard-ai-alerts">
+                  <AIAlerts />
+                </div>
+              )}
               
               {/* Top Clients */}
-              <div className="dashboard-top-clients">
-                <TopClients />
-              </div>
+              {widgetSettings.topClients && (
+                <div className="dashboard-top-clients">
+                  <TopClients />
+                </div>
+              )}
             </div>
           </div>
           
           {/* AI Performance Insights */}
-          <div className="bg-card border border-border rounded-lg p-6 shadow-sm dashboard-ai-insights">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-3">
-                  <Icon name="Brain" size={20} className="text-primary" />
+          {widgetSettings.aiPerformance && (
+            <div className="bg-card border border-border rounded-lg p-6 shadow-sm dashboard-ai-insights">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+                    <Icon name="Brain" size={20} className="text-primary" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground">Insights IA</h3>
                 </div>
-                <h3 className="text-lg font-semibold text-foreground">Insights IA</h3>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => window.location.href = '/analytics-dashboard'}
+                >
+                  <span className="flex items-center">
+                    Voir l'analyse complète
+                    <Icon name="ArrowRight" size={16} className="ml-2" />
+                  </span>
+                </Button>
               </div>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => window.location.href = '/analytics-dashboard'}
-              >
-                <span className="flex items-center">
-                  Voir l'analyse complète
-                  <Icon name="ArrowRight" size={16} className="ml-2" />
-                </span>
-              </Button>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                  <h4 className="text-sm font-medium text-foreground mb-2">Optimisation des prix</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Augmentez vos tarifs de 8% selon l'analyse du marché pour optimiser votre rentabilité
+                  </p>
+                </div>
+                <div className="p-4 bg-success/5 border border-success/20 rounded-lg">
+                  <h4 className="text-sm font-medium text-foreground mb-2">Meilleur jour de conversion</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Les mardis et jeudis ont un taux de conversion 23% plus élevé que les autres jours
+                  </p>
+                </div>
+                <div className="p-4 bg-warning/5 border border-warning/20 rounded-lg">
+                  <h4 className="text-sm font-medium text-foreground mb-2">Opportunité de relance</h4>
+                  <p className="text-xs text-muted-foreground">
+                    5 devis non signés depuis plus de 7 jours pourraient être convertis avec une relance
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                <h4 className="text-sm font-medium text-foreground mb-2">Optimisation des prix</h4>
-                <p className="text-xs text-muted-foreground">
-                  Augmentez vos tarifs de 8% selon l'analyse du marché pour optimiser votre rentabilité
-                </p>
-              </div>
-              <div className="p-4 bg-success/5 border border-success/20 rounded-lg">
-                <h4 className="text-sm font-medium text-foreground mb-2">Meilleur jour de conversion</h4>
-                <p className="text-xs text-muted-foreground">
-                  Les mardis et jeudis ont un taux de conversion 23% plus élevé que les autres jours
-                </p>
-              </div>
-              <div className="p-4 bg-warning/5 border border-warning/20 rounded-lg">
-                <h4 className="text-sm font-medium text-foreground mb-2">Opportunité de relance</h4>
-                <p className="text-xs text-muted-foreground">
-                  5 devis non signés depuis plus de 7 jours pourraient être convertis avec une relance
-                </p>
-              </div>
+          )}
+
+          {/* Sponsored Banner */}
+          {widgetSettings.sponsoredBanner && (
+            <div className="dashboard-sponsored-banner">
+              <SponsoredBanner />
             </div>
-          </div>
+                    )}
         </main>
       </div>
+
+      {/* Dashboard Personalization Modal */}
+      <DashboardPersonalization
+        isOpen={isPersonalizationOpen}
+        onClose={() => setIsPersonalizationOpen(false)}
+        onSave={handleWidgetSettingsSave}
+      />
     </div>
   );
 };
