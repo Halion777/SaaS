@@ -46,6 +46,16 @@
     transform: translateZ(0);
     backface-visibility: hidden;
   }
+
+  /* Hide scrollbars for modal content */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Safari and Chrome */
+  }
 }
 
 @layer components {

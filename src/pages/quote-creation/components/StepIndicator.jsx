@@ -3,10 +3,10 @@ import Icon from '../../../components/AppIcon';
 
 const StepIndicator = ({ currentStep, totalSteps = 4 }) => {
   const steps = [
-    { id: 1, title: 'Informations de base', icon: 'FileText' },
-    { id: 2, title: 'Calcul par tâches', icon: 'Calculator' },
-    { id: 3, title: 'Photos & Plans', icon: 'Image' },
-    { id: 4, title: 'Aperçu', icon: 'Eye' }
+    { id: 1, title: 'Client', icon: 'User' },
+    { id: 2, title: 'Tâches', icon: 'Calculator' },
+    { id: 3, title: 'Fichiers', icon: 'Image' },
+    { id: 4, title: 'Aperçu & Envoi', icon: 'Eye' }
   ];
 
   return (

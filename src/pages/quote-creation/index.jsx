@@ -17,6 +17,7 @@ const QuoteCreation = () => {
   const [tasks, setTasks] = useState([]);
   const [files, setFiles] = useState([]);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [companyInfo, setCompanyInfo] = useState(null);
 
   // Auto-save functionality
   useEffect(() => {
@@ -28,6 +29,7 @@ const QuoteCreation = () => {
           tasks,
           files,
           currentStep,
+          companyInfo,
           lastSaved: new Date().toISOString()
         };
         localStorage.setItem('quote-draft', JSON.stringify(quoteData));
@@ -40,7 +42,7 @@ const QuoteCreation = () => {
 
     const interval = setInterval(autoSave, 30000); // Auto-save every 30 seconds
     return () => clearInterval(interval);
-  }, [selectedClient, tasks, files, currentStep]);
+  }, [selectedClient, tasks, files, currentStep, companyInfo]);
 
   // Load draft on component mount
   useEffect(() => {
@@ -52,6 +54,7 @@ const QuoteCreation = () => {
         setTasks(draftData.tasks || []);
         setFiles(draftData.files || []);
         setCurrentStep(draftData.currentStep || 1);
+        setCompanyInfo(draftData.companyInfo);
       } catch (error) {
         console.error('Error loading draft:', error);
       }
@@ -82,14 +85,16 @@ const QuoteCreation = () => {
     setFiles(newFiles);
   };
 
-  const handleSave = (customization) => {
+  const handleSave = (data) => {
     const quoteData = {
       id: Date.now(),
       number: `DEV-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`,
       client: selectedClient,
       tasks,
       files,
-      customization,
+      customization: data.customization,
+      financialConfig: data.financialConfig,
+      companyInfo: data.companyInfo,
       status: 'draft',
       createdAt: new Date().toISOString(),
       totalAmount: tasks.reduce((sum, task) => {
@@ -112,14 +117,16 @@ const QuoteCreation = () => {
     navigate('/quotes-management');
   };
 
-  const handleSend = (customization) => {
+  const handleSend = (data) => {
     const quoteData = {
       id: Date.now(),
       number: `DEV-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`,
       client: selectedClient,
       tasks,
       files,
-      customization,
+      customization: data.customization,
+      financialConfig: data.financialConfig,
+      companyInfo: data.companyInfo,
       status: 'sent',
       sentAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),
