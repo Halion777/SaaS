@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
-import { Checkbox } from '../../../components/ui/Checkbox';
 
 const DashboardPersonalization = ({ isOpen, onClose, onSave }) => {
   const [widgetSettings, setWidgetSettings] = useState({
@@ -33,10 +32,10 @@ const DashboardPersonalization = ({ isOpen, onClose, onSave }) => {
     }
   };
 
-  const handleWidgetToggle = (widgetKey, checked) => {
+  const handleWidgetToggle = (widgetKey) => {
     setWidgetSettings(prev => ({
       ...prev,
-      [widgetKey]: checked
+      [widgetKey]: !prev[widgetKey]
     }));
   };
 
@@ -194,18 +193,14 @@ const DashboardPersonalization = ({ isOpen, onClose, onSave }) => {
                   {widgets.map((widget) => (
                     <div
                       key={widget.key}
-                      className={`p-4 border rounded-lg transition-colors ${
+                      className={`p-4 border rounded-lg transition-colors cursor-pointer ${
                         widgetSettings[widget.key]
                           ? 'border-primary/20 bg-primary/5'
                           : 'border-border bg-muted/30'
                       }`}
+                      onClick={() => handleWidgetToggle(widget.key)}
                     >
-                      <div className="flex items-start space-x-3">
-                        <Checkbox
-                          checked={widgetSettings[widget.key]}
-                          onCheckedChange={(checked) => handleWidgetToggle(widget.key, checked)}
-                          className="mt-1"
-                        />
+                      <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-2">
                             <Icon name={widget.icon} size={16} className="text-muted-foreground" />
@@ -214,6 +209,25 @@ const DashboardPersonalization = ({ isOpen, onClose, onSave }) => {
                           <p className="text-sm text-muted-foreground">
                             {widget.description}
                           </p>
+                        </div>
+                        {/* Toggle Switch */}
+                        <div className="ml-4">
+                          <button
+                            type="button"
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+                              widgetSettings[widget.key] ? 'bg-primary' : 'bg-gray-200'
+                            }`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleWidgetToggle(widget.key);
+                            }}
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                widgetSettings[widget.key] ? 'translate-x-6' : 'translate-x-1'
+                              }`}
+                            />
+                          </button>
                         </div>
                       </div>
                     </div>

@@ -6,7 +6,7 @@ const StepIndicator = ({ currentStep, totalSteps = 4 }) => {
     { id: 1, title: 'Client', icon: 'User' },
     { id: 2, title: 'Tâches', icon: 'Calculator' },
     { id: 3, title: 'Fichiers', icon: 'Image' },
-    { id: 4, title: 'Aperçu & Envoi', icon: 'Eye' }
+    { id: 4, title: 'Aperçu', icon: 'Eye' }
   ];
 
   return (

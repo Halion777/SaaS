@@ -106,40 +106,38 @@ const RecouvrementPage = () => {
       <div className="bg-card border border-border rounded-lg p-8">
         <div className="flex items-start space-x-4 mb-6">
           <div className="w-16 h-16 bg-red-100 rounded-lg flex items-center justify-center">
-            <Icon name="DollarSign" size={32} color="var(--color-red)" />
+            <Icon name="Handshake" size={32} color="var(--color-red)" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Recouvrement de Créances</h1>
-            <p className="text-lg text-muted-foreground">
-              Récupérez vos impayés sans risque avec notre service à la performance
-            </p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Recouvrement</h1>
+            <p className="text-lg text-muted-foreground">Recover your unpaid invoices efficiently.</p>
           </div>
         </div>
 
-        {/* Feature Highlights */}
+        {/* Highlight Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="text-center p-4">
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-              <Icon name="TrendingUp" size={24} color="var(--color-green)" />
+              <Icon name="Target" size={24} color="var(--color-green)" />
             </div>
-            <h3 className="font-bold text-lg text-foreground">Paiement performance</h3>
-            <p className="text-sm text-muted-foreground">Payé que si récupéré</p>
+            <h3 className="font-bold text-lg text-foreground">Success Rate 85%</h3>
+            <p className="text-sm text-muted-foreground">Of invoices recovered</p>
           </div>
           
           <div className="text-center p-4">
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
               <Icon name="Clock" size={24} color="var(--color-blue)" />
             </div>
-            <h3 className="font-bold text-lg text-foreground">Rapidité</h3>
-            <p className="text-sm text-muted-foreground">Action sous 48h</p>
+            <h3 className="font-bold text-lg text-foreground">Fast Recovery</h3>
+            <p className="text-sm text-muted-foreground">Average 15 days</p>
           </div>
           
           <div className="text-center p-4">
             <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-              <Icon name="CheckCircle" size={24} color="var(--color-purple)" />
+              <Icon name="Shield" size={24} color="var(--color-purple)" />
             </div>
-            <h3 className="font-bold text-lg text-foreground">Expertise</h3>
-            <p className="text-sm text-muted-foreground">Équipe spécialisée</p>
+            <h3 className="font-bold text-lg text-foreground">Legal Protection</h3>
+            <p className="text-sm text-muted-foreground">Full legal support</p>
           </div>
         </div>
 

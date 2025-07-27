@@ -53,7 +53,7 @@ const InvoiceOverviewWidget = () => {
           <Button
             variant="outline"
             size="sm"
-            iconName="FileText"
+            iconName="Truck"
             iconPosition="left"
             onClick={() => navigate('/supplier-invoices')}
           >
@@ -104,7 +104,7 @@ const InvoiceOverviewWidget = () => {
         <div className="space-y-4">
           <div className="flex items-center space-x-2">
             <div className="p-2 bg-orange-100 rounded-lg">
-              <Icon name="FileText" size={16} color="var(--color-orange-600)" />
+              <Icon name="Truck" size={16} color="var(--color-orange-600)" />
             </div>
             <h4 className="font-medium text-foreground">Factures fournisseurs</h4>
           </div>

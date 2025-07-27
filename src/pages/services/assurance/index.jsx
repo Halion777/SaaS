@@ -74,7 +74,7 @@ const AssuranceCreditPage = () => {
       <div className="bg-card border border-border rounded-lg p-8">
         <div className="flex items-start space-x-4 mb-6">
           <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center">
-            <Icon name="Shield" size={32} color="var(--color-blue)" />
+            <Icon name="Umbrella" size={32} color="var(--color-blue)" />
           </div>
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Credit Insurance</h1>
@@ -86,7 +86,7 @@ const AssuranceCreditPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="text-center p-4">
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-              <Icon name="Shield" size={24} color="var(--color-green)" />
+              <Icon name="Percent" size={24} color="var(--color-green)" />
             </div>
             <h3 className="font-bold text-lg text-foreground">Coverage 90%</h3>
             <p className="text-sm text-muted-foreground">Of the unpaid amount</p>
@@ -102,10 +102,10 @@ const AssuranceCreditPage = () => {
           
           <div className="text-center p-4">
             <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-              <Icon name="CheckCircle" size={24} color="var(--color-purple)" />
+              <Icon name="Zap" size={24} color="var(--color-purple)" />
             </div>
-            <h3 className="font-bold text-lg text-foreground">Protection totale</h3>
-            <p className="text-sm text-muted-foreground">Bankruptcy & unpaid debts</p>
+            <h3 className="font-bold text-lg text-foreground">Quick Claims</h3>
+            <p className="text-sm text-muted-foreground">Processed in 48h</p>
           </div>
         </div>
 
