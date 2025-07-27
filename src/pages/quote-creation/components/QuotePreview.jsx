@@ -60,6 +60,17 @@ const QuotePreview = ({
     if (savedCompanyInfo) {
       setCompanyInfo(savedCompanyInfo);
     }
+    
+    // Load saved signature data if available
+    const savedSignatureData = localStorage.getItem('quote-signature-data');
+    if (savedSignatureData) {
+      try {
+        const parsedSignatureData = JSON.parse(savedSignatureData);
+        setSignatureData(parsedSignatureData);
+      } catch (error) {
+        console.error('Error loading saved signature data:', error);
+      }
+    }
   }, []);
 
   const handleCompanyInfoSave = (info) => {
@@ -125,7 +136,13 @@ const QuotePreview = ({
   const handleSignature = (signatureData) => {
     console.log('Quote signed:', signatureData);
     setSignatureData(signatureData);
-    // Here you would typically save the signature data
+    
+    // Save signature data to localStorage for persistence
+    try {
+      localStorage.setItem('quote-signature-data', JSON.stringify(signatureData));
+    } catch (error) {
+      console.error('Error saving signature data to localStorage:', error);
+    }
   };
 
   // Calculate totals
@@ -501,7 +518,7 @@ const QuotePreview = ({
         <div className="flex space-x-2">
           <Button
             variant="outline"
-            onClick={() => onSave({ customization, financialConfig, companyInfo })}
+            onClick={() => onSave({ customization, financialConfig, companyInfo, signatureData })}
             iconName="Save"
             iconPosition="left"
             size="sm"
@@ -509,7 +526,7 @@ const QuotePreview = ({
             Brouillon
           </Button>
           <Button
-            onClick={() => onSend({ customization, financialConfig, companyInfo })}
+            onClick={() => onSend({ customization, financialConfig, companyInfo, signatureData })}
             iconName="Send"
             iconPosition="left"
             size="sm"
