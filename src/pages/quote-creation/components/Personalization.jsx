@@ -1,244 +1,162 @@
-import React, { useState } from 'react';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
-import Icon from '../../../components/AppIcon';
+import React from 'react';
 
-const Personalization = ({ customization, onCustomizationChange }) => {
-  const [activeTab, setActiveTab] = useState('colors');
+const QuoteTemplates = [
+  { 
+    id: 'moderne', 
+    name: 'Moderne', 
+    color: 'bg-gradient-to-r from-[#3b82f6] to-[#1e40af]' 
+  },
+  { 
+    id: 'professionnel', 
+    name: 'Professionnel', 
+    color: 'bg-green-600' 
+  },
+  { 
+    id: 'elegant', 
+    name: 'Élégant', 
+    color: 'bg-purple-600' 
+  },
+  { 
+    id: 'classique', 
+    name: 'Classique', 
+    color: 'bg-red-600' 
+  },
+  { 
+    id: 'minimaliste', 
+    name: 'Minimaliste', 
+    color: 'bg-gray-600' 
+  },
+  { 
+    id: 'blanc', 
+    name: 'Blanc', 
+    color: 'bg-white border-2 border-gray-300' 
+  },
+  { 
+    id: 'noir', 
+    name: 'Noir', 
+    color: 'bg-black' 
+  }
+];
 
-  const colorOptions = [
-    { value: '#3b82f6', label: 'Bleu principal' },
-    { value: '#1e40af', label: 'Bleu secondaire' },
-    { value: '#059669', label: 'Vert émeraude' },
-    { value: '#DC2626', label: 'Rouge cardinal' },
-    { value: '#7C3AED', label: 'Violet royal' },
-    { value: '#EA580C', label: 'Orange énergique' },
-    { value: '#1F2937', label: 'Gris anthracite' }
-  ];
-
-  const templateOptions = [
-    { value: 'modern', label: 'Moderne', color: '#3b82f6' },
-    { value: 'professional', label: 'Professionnel', color: '#059669' },
-    { value: 'elegant', label: 'Élégant', color: '#7C3AED' },
-    { value: 'classic', label: 'Classique', color: '#DC2626' },
-    { value: 'minimalist', label: 'Minimaliste', color: '#1F2937' }
-  ];
-
-  const handleColorChange = (type, color) => {
-    onCustomizationChange('colors', {
-      ...customization.colors,
-      [type]: color
-    });
+const Personalization = ({ 
+  selectedTemplate, 
+  onTemplateChange, 
+  primaryColor, 
+  secondaryColor, 
+  onColorChange 
+}) => {
+  const handleTemplateChange = (templateId) => {
+    onTemplateChange(templateId);
+    
+    // Automatically set appropriate text colors based on template
+    switch (templateId) {
+      case 'blanc':
+        // For white template, set dark text colors
+        onColorChange('primary', '#000000'); // Black
+        onColorChange('secondary', '#6b7280'); // Gray
+        break;
+      default:
+        // For all other templates, set white text colors
+        onColorChange('primary', '#ffffff'); // White
+        onColorChange('secondary', '#ffffff'); // Light white
+        break;
+    }
   };
 
-  const handleTemplateChange = (template) => {
-    onCustomizationChange('template', template);
-  };
-
-  const handleVATChange = (field, value) => {
-    onCustomizationChange('vat', {
-      ...customization.vat,
-      [field]: value
-    });
+  const handleResetColors = () => {
+    // Reset template to blanc (white) as default
+    onTemplateChange('blanc');
+    // Reset colors to default for blanc template
+    onColorChange('primary', '#000000');
+    onColorChange('secondary', '#6b7280');
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-6">
-      <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-        <Icon name="Palette" size={20} className="mr-2" />
-        Personnalisation
-      </h3>
-
-      {/* Tab Navigation */}
-      <div className="flex space-x-1 mb-6 bg-muted rounded-lg p-1">
-        <button
-          onClick={() => setActiveTab('colors')}
-          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'colors'
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          Couleurs
-        </button>
-        <button
-          onClick={() => setActiveTab('vat')}
-          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'vat'
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          TVA
-        </button>
-        <button
-          onClick={() => setActiveTab('templates')}
-          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'templates'
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          Modèles
-        </button>
+    <div className="space-y-6">
+      {/* Quote Templates Section */}
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Modèles de devis</h3>
+        <div className="flex flex-wrap gap-3">
+          {QuoteTemplates.map((template) => (
+            <div 
+              key={template.id}
+              className={`
+                ${template.color} 
+                rounded-lg p-3 cursor-pointer relative min-w-[100px] text-center
+                ${selectedTemplate === template.id ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
+              `}
+              onClick={() => handleTemplateChange(template.id)}
+            >
+              <div className={`text-sm font-medium ${template.id === 'blanc' ? 'text-gray-800' : 'text-white'}`}>
+                {template.name}
+                {selectedTemplate === template.id && (
+                  <div className="absolute top-1 right-1 bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
+                    ✓
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Colors Tab */}
-      {activeTab === 'colors' && (
-        <div className="space-y-6">
+      {/* Color Customization Section */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Couleurs personnalisées</h3>
+          <button
+            onClick={handleResetColors}
+            className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Reset template and colors to default"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <h4 className="font-medium text-foreground mb-3">Couleurs personnalisées</h4>
-            
-            {/* Primary Color */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Couleur principale
-              </label>
-              <div className="flex items-center space-x-3">
-                <div
-                  className="w-8 h-8 rounded border border-border"
-                  style={{ backgroundColor: customization.colors?.primary || '#3b82f6' }}
-                />
-                <Input
-                  type="text"
-                  value={customization.colors?.primary || '#3b82f6'}
-                  onChange={(e) => handleColorChange('primary', e.target.value)}
-                  className="flex-1"
-                  placeholder="#3b82f6"
-                />
-              </div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Couleur principale
+            </label>
+            <div className="flex items-center space-x-2">
+              <input 
+                type="color" 
+                value={primaryColor}
+                onChange={(e) => onColorChange('primary', e.target.value)}
+                className="w-12 h-12 p-1 border rounded-lg"
+              />
+              <input 
+                type="text" 
+                value={primaryColor}
+                onChange={(e) => onColorChange('primary', e.target.value)}
+                className="flex-1 p-2 text-sm border rounded-lg"
+                placeholder="#3b82f6"
+              />
             </div>
-
-            {/* Secondary Color */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Couleur secondaire
-              </label>
-              <div className="flex items-center space-x-3">
-                <div
-                  className="w-8 h-8 rounded border border-border"
-                  style={{ backgroundColor: customization.colors?.secondary || '#1e40af' }}
-                />
-                <Input
-                  type="text"
-                  value={customization.colors?.secondary || '#1e40af'}
-                  onChange={(e) => handleColorChange('secondary', e.target.value)}
-                  className="flex-1"
-                  placeholder="#1e40af"
-                />
-              </div>
-            </div>
-
-            {/* Color Presets */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Couleurs prédéfinies
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {colorOptions.map((color) => (
-                  <button
-                    key={color.value}
-                    onClick={() => handleColorChange('primary', color.value)}
-                    className={`w-8 h-8 rounded-full border-2 transition-all ${
-                      customization.colors?.primary === color.value
-                        ? 'border-foreground scale-110'
-                        : 'border-border hover:border-foreground'
-                    }`}
-                    style={{ backgroundColor: color.value }}
-                    title={color.label}
-                  />
-                ))}
-              </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Couleur secondaire
+            </label>
+            <div className="flex items-center space-x-2">
+              <input 
+                type="color" 
+                value={secondaryColor}
+                onChange={(e) => onColorChange('secondary', e.target.value)}
+                className="w-12 h-12 p-1 border rounded-lg"
+              />
+              <input 
+                type="text" 
+                value={secondaryColor}
+                onChange={(e) => onColorChange('secondary', e.target.value)}
+                className="flex-1 p-2 text-sm border rounded-lg"
+                placeholder="#1e40af"
+              />
             </div>
           </div>
         </div>
-      )}
-
-      {/* VAT Tab */}
-      {activeTab === 'vat' && (
-        <div className="space-y-6">
-          <div>
-            <h4 className="font-medium text-foreground mb-3">Configuration TVA</h4>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className="block text-sm font-medium text-foreground">
-                    Afficher la TVA
-                  </label>
-                  <p className="text-xs text-muted-foreground">
-                    Calcul automatique TVA {customization.vat?.rate || 21}%
-                  </p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={customization.vat?.enabled || false}
-                    onChange={(e) => handleVATChange('enabled', e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-              </div>
-
-              {customization.vat?.enabled && (
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Taux de TVA (%)
-                  </label>
-                  <Input
-                    type="number"
-                    value={customization.vat?.rate || 21}
-                    onChange={(e) => handleVATChange('rate', parseFloat(e.target.value))}
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    placeholder="21"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Templates Tab */}
-      {activeTab === 'templates' && (
-        <div className="space-y-6">
-          <div>
-            <h4 className="font-medium text-foreground mb-3">Modèles de devis</h4>
-            
-            <div className="grid grid-cols-1 gap-3">
-              {templateOptions.map((template) => (
-                <button
-                  key={template.value}
-                  onClick={() => handleTemplateChange(template.value)}
-                  className={`p-4 border rounded-lg text-left transition-all ${
-                    customization.template === template.value
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-border hover:border-blue-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div
-                        className="w-4 h-4 rounded"
-                        style={{ backgroundColor: template.color }}
-                      />
-                      <span className="font-medium text-foreground">{template.label}</span>
-                    </div>
-                    {customization.template === template.value && (
-                      <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded">
-                        Sélectionné
-                      </span>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };
