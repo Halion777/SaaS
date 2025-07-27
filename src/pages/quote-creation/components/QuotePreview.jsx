@@ -20,6 +20,7 @@ const QuotePreview = ({
   const [showCompanyModal, setShowCompanyModal] = useState(false);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [previewMode, setPreviewMode] = useState('desktop'); // desktop or mobile
+  const [signatureData, setSignatureData] = useState(null);
   
   // Company Information
   const [companyInfo, setCompanyInfo] = useState(getDefaultCompanyInfo());
@@ -123,6 +124,7 @@ const QuotePreview = ({
 
   const handleSignature = (signatureData) => {
     console.log('Quote signed:', signatureData);
+    setSignatureData(signatureData);
     // Here you would typically save the signature data
   };
 
@@ -436,14 +438,31 @@ const QuotePreview = ({
                 <div className={`border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50 flex items-center justify-center ${previewMode === 'mobile' ? 'p-3 min-h-[60px]' : 'p-4 min-h-[80px]'}`}>
                   <p className={`text-gray-500 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm'}`} style={{ color: customization.colors.secondary }}>Zone de signature électronique</p>
                 </div>
-                <p className={`text-gray-600 mt-2 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm'}`} style={{ color: customization.colors.secondary }}>Date: _______________</p>
+                <p className={`text-gray-600 mt-2 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm'}`} style={{ color: customization.colors.secondary }}>
+                  Date: _______________
+                </p>
               </div>
               <div>
                 <h4 className={`font-semibold text-gray-800 mb-2 ${previewMode === 'mobile' ? 'text-sm' : ''}`} style={{ color: customization.colors.primary }}>Bon pour accord client:</h4>
                 <div className={`border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50 flex items-center justify-center ${previewMode === 'mobile' ? 'p-3 min-h-[60px]' : 'p-4 min-h-[80px]'}`}>
-                  <p className={`text-gray-500 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm'}`} style={{ color: customization.colors.secondary }}>Signature du client</p>
+                  {signatureData?.signature ? (
+                    <div className="w-full">
+                      <img 
+                        src={signatureData.signature} 
+                        alt="Signature du client" 
+                        className="max-h-12 max-w-full mx-auto"
+                      />
+                      <p className={`text-xs text-gray-500 mt-1 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm'}`} style={{ color: customization.colors.secondary }}>
+                        Signé le {new Date(signatureData.signedAt).toLocaleDateString('fr-FR')}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className={`text-gray-500 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm'}`} style={{ color: customization.colors.secondary }}>Signature du client</p>
+                  )}
                 </div>
-                <p className={`text-gray-600 mt-2 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm'}`} style={{ color: customization.colors.secondary }}>Date: _______________</p>
+                <p className={`text-gray-600 mt-2 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm'}`} style={{ color: customization.colors.secondary }}>
+                  Date: {signatureData?.signedAt ? new Date(signatureData.signedAt).toLocaleDateString('fr-FR') : '_______________'}
+                </p>
               </div>
             </div>
           </div>

@@ -123,3 +123,12 @@
     @apply flex items-center p-6 pt-0;
   }
 } 
+
+/* Signature canvas styles */
+.react-signature-canvas {
+  touch-action: none;
+}
+
+.react-signature-canvas canvas {
+  border-radius: 0.5rem;
+} 
