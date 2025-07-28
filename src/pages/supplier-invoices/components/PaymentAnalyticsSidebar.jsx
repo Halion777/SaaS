@@ -13,9 +13,9 @@ const PaymentAnalyticsSidebar = ({ analyticsData, isVisible, onToggle }) => {
     return (
       <button
         onClick={onToggle}
-        className="fixed right-4 top-1/2 transform -translate-y-1/2 bg-primary text-primary-foreground p-3 rounded-l-lg shadow-professional-lg z-50 hover:bg-primary/90 transition-colors duration-150"
+        className="fixed right-2 top-28 bg-primary text-primary-foreground p-2 rounded-l-md shadow-lg z-50 hover:bg-primary/90 transition-colors duration-150 md:hidden"
       >
-        <Icon name="ChevronLeft" size={20} color="currentColor" />
+        <Icon name="ChevronLeft" size={16} color="currentColor" />
       </button>
     );
   }

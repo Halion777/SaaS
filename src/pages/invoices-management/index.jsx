@@ -427,6 +427,15 @@ const InvoicesManagement = () => {
               </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
                 <Button
+                  variant="outline"
+                  iconName="BarChart3"
+                  iconPosition="left"
+                  onClick={() => setIsAnalyticsSidebarVisible(!isAnalyticsSidebarVisible)}
+                  className="text-xs sm:text-sm"
+                >
+                  Analyses
+                </Button>
+                <Button
                   iconName="Plus"
                   iconPosition="left"
                   onClick={() => setIsQuickCreateOpen(true)}
@@ -434,7 +443,6 @@ const InvoicesManagement = () => {
                 >
                   Nouvelle facture
                 </Button>
-                
               </div>
             </div>
           </header>

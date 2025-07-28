@@ -5,6 +5,24 @@ import { Checkbox } from '../../../components/ui/Checkbox';
 
 const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSelectionChange }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'issueDate', direction: 'desc' });
+  const [viewMode, setViewMode] = useState(() => {
+    // Default to card view on mobile/tablet, table view on desktop
+    return window.innerWidth < 1024 ? 'card' : 'table';
+  }); // 'table' or 'card'
+
+  // Auto-switch to card view on mobile/tablet
+  React.useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024 && viewMode === 'table') {
+        setViewMode('card');
+      } else if (window.innerWidth >= 1024 && viewMode === 'card') {
+        setViewMode('table');
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [viewMode]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -81,124 +99,273 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
     </th>
   );
 
+  const renderCardView = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+      {invoices.map((invoice) => {
+        const daysOverdue = getDaysOverdue(invoice.dueDate, invoice.status);
+        return (
+          <div key={invoice.id} className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow duration-150">
+            {/* Header with checkbox and invoice number */}
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  checked={selectedInvoices.includes(invoice.id)}
+                  onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
+                />
+                <div>
+                  <div className="text-sm font-medium text-foreground">{invoice.number}</div>
+                  {invoice.quoteNumber && (
+                    <div className="text-xs text-muted-foreground">Devis: {invoice.quoteNumber}</div>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconName="Eye"
+                  onClick={() => onInvoiceAction('view', invoice)}
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconName="Edit"
+                  onClick={() => onInvoiceAction('edit', invoice)}
+                />
+              </div>
+            </div>
+
+            {/* Client Info */}
+            <div className="mb-3">
+              <div className="text-sm font-medium text-foreground">{invoice.clientName}</div>
+              <div className="text-xs text-muted-foreground">{invoice.clientEmail}</div>
+            </div>
+
+            {/* Amount and Payment Method */}
+            <div className="mb-3">
+              <div className="text-lg font-bold text-foreground">{formatCurrency(invoice.amount)}</div>
+              {invoice.paymentMethod && (
+                <div className="text-xs text-muted-foreground">{invoice.paymentMethod}</div>
+              )}
+            </div>
+
+            {/* Status */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex flex-col space-y-1">
+                {getStatusBadge(invoice.status)}
+                {daysOverdue && (
+                  <span className="text-xs text-error">+{daysOverdue} jours</span>
+                )}
+              </div>
+            </div>
+
+            {/* Dates */}
+            <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-3">
+              <div>
+                <div className="font-medium">Émission:</div>
+                <div>{formatDate(invoice.issueDate)}</div>
+              </div>
+              <div>
+                <div className="font-medium">Échéance:</div>
+                <div className={`${invoice.status === 'overdue' ? 'text-error font-medium' : ''}`}>
+                  {formatDate(invoice.dueDate)}
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-between pt-3 border-t border-border">
+              <Button
+                variant="outline"
+                size="sm"
+                iconName="Copy"
+                onClick={() => onInvoiceAction('duplicate', invoice)}
+                className="text-xs"
+              >
+                Dupliquer
+              </Button>
+              {invoice.status !== 'paid' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  iconName="Mail"
+                  onClick={() => onInvoiceAction('sendReminder', invoice)}
+                  className="text-xs"
+                >
+                  Rappel
+                </Button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-border">
-          <thead className="bg-muted/30">
-            <tr>
-              <th className="px-6 py-3 text-left">
-                <Checkbox
-                  checked={selectedInvoices.length === invoices.length && invoices.length > 0}
-                  onChange={(e) => handleSelectAll(e.target.checked)}
-                />
-              </th>
-              <SortableHeader label="N° Facture" sortKey="number" />
-              <SortableHeader label="Client" sortKey="clientName" />
-              <SortableHeader label="Montant" sortKey="amount" />
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Statut
-              </th>
-              <SortableHeader label="Date émission" sortKey="issueDate" />
-              <SortableHeader label="Date échéance" sortKey="dueDate" />
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-card divide-y divide-border">
-            {invoices.map((invoice) => {
-              const daysOverdue = getDaysOverdue(invoice.dueDate, invoice.status);
-              return (
-                <tr key={invoice.id} className="hover:bg-muted/30 transition-colors duration-150">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <Checkbox
-                      checked={selectedInvoices.includes(invoice.id)}
-                      onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
-                    />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-foreground">{invoice.number}</div>
-                    {invoice.quoteNumber && (
-                      <div className="text-xs text-muted-foreground">Devis: {invoice.quoteNumber}</div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-foreground">{invoice.clientName}</div>
-                    <div className="text-xs text-muted-foreground">{invoice.clientEmail}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-foreground">{formatCurrency(invoice.amount)}</div>
-                    {invoice.paymentMethod && (
-                      <div className="text-xs text-muted-foreground">{invoice.paymentMethod}</div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex flex-col space-y-1">
-                      {getStatusBadge(invoice.status)}
-                      {daysOverdue && (
-                        <span className="text-xs text-error">+{daysOverdue} jours</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                    {formatDate(invoice.issueDate)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                    <div className={`${invoice.status === 'overdue' ? 'text-error font-medium' : ''}`}>
-                      {formatDate(invoice.dueDate)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        iconName="Eye"
-                        onClick={() => onInvoiceAction('view', invoice)}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        iconName="Edit"
-                        onClick={() => onInvoiceAction('edit', invoice)}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        iconName="Copy"
-                        onClick={() => onInvoiceAction('duplicate', invoice)}
-                      />
-                      {invoice.status !== 'paid' && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            iconName="Mail"
-                            onClick={() => onInvoiceAction('sendReminder', invoice)}
-                          />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            iconName="CheckCircle"
-                            onClick={() => onInvoiceAction('markPaid', invoice)}
-                          />
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      {/* View Toggle */}
+      <div className="flex items-center justify-between p-4 border-b border-border">
+        <div className="flex items-center space-x-2">
+          <span className="text-sm font-medium text-muted-foreground">Vue:</span>
+          <div className="flex bg-muted rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('table')}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                viewMode === 'table'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Icon name="Table" size={14} className="mr-1" />
+              Tableau
+            </button>
+            <button
+              onClick={() => setViewMode('card')}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                viewMode === 'card'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Icon name="Grid" size={14} className="mr-1" />
+              Cartes
+            </button>
+          </div>
+        </div>
+        <div className="text-xs text-muted-foreground">
+          {invoices.length} facture(s)
+        </div>
       </div>
 
-      {invoices.length === 0 && (
+      {/* Content */}
+      {invoices.length === 0 ? (
         <div className="text-center py-12">
           <Icon name="FileText" size={48} color="var(--color-muted-foreground)" className="mx-auto mb-4" />
           <h3 className="text-lg font-medium text-foreground mb-2">Aucune facture trouvée</h3>
           <p className="text-muted-foreground">Commencez par créer votre première facture ou ajustez vos filtres.</p>
+        </div>
+      ) : viewMode === 'card' ? (
+        renderCardView()
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-border">
+            <thead className="bg-muted/30">
+              <tr>
+                <th className="px-6 py-3 text-left">
+                  <Checkbox
+                    checked={selectedInvoices.length === invoices.length && invoices.length > 0}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                  />
+                </th>
+                <SortableHeader label="N° Facture" sortKey="number" />
+                <SortableHeader label="Client" sortKey="clientName" />
+                <SortableHeader label="Montant" sortKey="amount" />
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Statut
+                </th>
+                <SortableHeader label="Date émission" sortKey="issueDate" />
+                <SortableHeader label="Date échéance" sortKey="dueDate" />
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-card divide-y divide-border">
+              {invoices.map((invoice) => {
+                const daysOverdue = getDaysOverdue(invoice.dueDate, invoice.status);
+                return (
+                  <tr key={invoice.id} className="hover:bg-muted/30 transition-colors duration-150">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Checkbox
+                        checked={selectedInvoices.includes(invoice.id)}
+                        onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-foreground">{invoice.number}</div>
+                      {invoice.quoteNumber && (
+                        <div className="text-xs text-muted-foreground">Devis: {invoice.quoteNumber}</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-foreground">{invoice.clientName}</div>
+                      <div className="text-xs text-muted-foreground">{invoice.clientEmail}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-foreground">{formatCurrency(invoice.amount)}</div>
+                      {invoice.paymentMethod && (
+                        <div className="text-xs text-muted-foreground">{invoice.paymentMethod}</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-col space-y-1">
+                        {getStatusBadge(invoice.status)}
+                        {daysOverdue && (
+                          <span className="text-xs text-error">+{daysOverdue} jours</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                      {formatDate(invoice.issueDate)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                      <div className={`${invoice.status === 'overdue' ? 'text-error font-medium' : ''}`}>
+                        {formatDate(invoice.dueDate)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          iconName="Eye"
+                          onClick={() => onInvoiceAction('view', invoice)}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          iconName="Edit"
+                          onClick={() => onInvoiceAction('edit', invoice)}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          iconName="Copy"
+                          onClick={() => onInvoiceAction('duplicate', invoice)}
+                        />
+                        {invoice.status !== 'paid' && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              iconName="Mail"
+                              onClick={() => onInvoiceAction('sendReminder', invoice)}
+                              title="Envoyer un rappel"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              iconName="CheckCircle"
+                              onClick={() => onInvoiceAction('markPaid', invoice)}
+                              title="Marquer comme payée"
+                            />
+                          </>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          iconName="MoreHorizontal"
+                          onClick={() => onInvoiceAction('more', invoice)}
+                          title="Plus d'actions"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
