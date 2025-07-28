@@ -40,10 +40,10 @@ const AssuranceCreditPage = () => {
         setSidebarOffset(80);
       } else {
         // On desktop, respond to sidebar state
-        setSidebarOffset(isCollapsed ? 64 : 288);
+    setSidebarOffset(isCollapsed ? 64 : 288);
       }
     };
-
+    
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
       const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
@@ -73,7 +73,7 @@ const AssuranceCreditPage = () => {
         setSidebarOffset(isCollapsed ? 64 : 288);
       }
     };
-
+    
     handleResize();
     window.addEventListener('resize', handleResize);
     window.addEventListener('storage', handleStorage);
@@ -381,37 +381,37 @@ const AssuranceCreditPage = () => {
           {/* Header */}
           <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-              <div>
+            <div>
                 <div className="flex items-center">
                   <Icon name="Umbrella" size={24} className="text-primary mr-3" />
                   <h1 className="text-xl sm:text-2xl font-bold text-foreground">Assurance Crédit</h1>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Protégez votre trésorerie contre les impayés clients
-                </p>
-              </div>
+                Protégez votre trésorerie contre les impayés clients
+              </p>
+            </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant={activeTab === 'overview' ? 'default' : 'outline'}
-                    onClick={() => setActiveTab('overview')}
+            <div className="flex items-center gap-2">
+              <Button 
+                variant={activeTab === 'overview' ? 'default' : 'outline'}
+                onClick={() => setActiveTab('overview')}
                     size="sm"
                     className="text-xs sm:text-sm"
-                  >
+              >
                     Aperçu
-                  </Button>
-                  <Button 
-                    variant={activeTab === 'application' ? 'default' : 'outline'}
-                    onClick={() => setActiveTab('application')}
+              </Button>
+              <Button 
+                variant={activeTab === 'application' ? 'default' : 'outline'}
+                onClick={() => setActiveTab('application')}
                     size="sm"
                     className="text-xs sm:text-sm"
-                  >
-                    Application
-                  </Button>
+              >
+                Application
+              </Button>
                 </div>
 
-              </div>
             </div>
+          </div>
           </header>
 
           {/* Content */}

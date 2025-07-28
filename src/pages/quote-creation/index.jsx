@@ -202,10 +202,13 @@ const QuoteCreation = () => {
   const clearDraft = () => {
     if (confirm('Êtes-vous sûr de vouloir effacer ce brouillon ?')) {
       localStorage.removeItem('quote-draft');
+      localStorage.removeItem('quote-signature-data');
+      localStorage.removeItem('company-info');
       setSelectedClient(null);
       setTasks([]);
       setFiles([]);
       setCurrentStep(1);
+      setCompanyInfo(null);
     }
   };
 
@@ -268,35 +271,35 @@ const QuoteCreation = () => {
           {/* Header */}
           <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-              <div>
+            <div>
                 <div className="flex items-center">
                   <Icon name="FileText" size={24} className="text-primary mr-3" />
                   <h1 className="text-xl sm:text-2xl font-bold text-foreground">Créer un devis</h1>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Remplissez les informations ci-dessous pour générer automatiquement un devis professionnel
-                </p>
-              </div>
+                Remplissez les informations ci-dessous pour générer automatiquement un devis professionnel
+              </p>
+            </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
-                {isAutoSaving && (
+              {isAutoSaving && (
                   <div className="flex items-center text-xs sm:text-sm text-muted-foreground">
                     <Icon name="Save" size={14} className="sm:w-4 sm:h-4 mr-2" />
-                    Sauvegarde automatique...
-                  </div>
-                )}
-                
-                <Button
-                  variant="outline"
-                  onClick={clearDraft}
-                  iconName="Trash2"
-                  iconPosition="left"
+                  Sauvegarde automatique...
+                </div>
+              )}
+              
+              <Button
+                variant="outline"
+                onClick={clearDraft}
+                iconName="Trash2"
+                iconPosition="left"
                   size="sm"
                   className="w-auto"
-                >
+              >
                   <span className="hidden sm:inline">Effacer le brouillon</span>
                   <span className="sm:hidden">Effacer</span>
-                </Button>
-                
+              </Button>
+              
 
               </div>
             </div>

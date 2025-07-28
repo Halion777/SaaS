@@ -46,10 +46,10 @@ const LeadsManagementPage = () => {
         setSidebarOffset(80);
       } else {
         // On desktop, respond to sidebar state
-        setSidebarOffset(isCollapsed ? 64 : 288);
+    setSidebarOffset(isCollapsed ? 64 : 288);
       }
     };
-
+    
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
       const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
@@ -79,7 +79,7 @@ const LeadsManagementPage = () => {
         setSidebarOffset(isCollapsed ? 64 : 288);
       }
     };
-
+    
     handleResize();
     window.addEventListener('resize', handleResize);
     window.addEventListener('storage', handleStorage);
@@ -172,8 +172,8 @@ const LeadsManagementPage = () => {
         <h3 className="text-sm sm:text-base font-medium text-foreground mb-3 sm:mb-4">Catégories de travaux</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {/* Column 1 */}
-                      <div className="space-y-3">
-              <div className="flex items-center justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
                 <span className="text-xs sm:text-sm text-foreground">Plomberie</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
@@ -342,7 +342,7 @@ const LeadsManagementPage = () => {
           {/* Header */}
           <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-              <div>
+          <div>
                 <div className="flex items-center">
                   <Icon name="Target" size={24} className="text-primary mr-3" />
                   <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des Leads</h1>
@@ -350,7 +350,7 @@ const LeadsManagementPage = () => {
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                   Gérez vos prospects et convertissez-les en clients
                 </p>
-              </div>
+          </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
                 
               </div>

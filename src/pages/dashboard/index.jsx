@@ -204,50 +204,50 @@ const Dashboard = () => {
         }}
       >
         <div className="px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
-          {/* Header */}
+        {/* Header */}
           <div className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-              <div>
-                <div className="flex items-center">
-                  <Icon name="LayoutDashboard" size={24} className="text-primary mr-3" />
+            <div>
+              <div className="flex items-center">
+                <Icon name="LayoutDashboard" size={24} className="text-primary mr-3" />
                   <h1 className="text-xl sm:text-2xl font-bold text-foreground">Aperçu Rapide</h1>
-                </div>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Vue d'ensemble de votre activité • {formatDate(currentTime)} • {formatTime(currentTime)}
-                </p>
               </div>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                Vue d'ensemble de votre activité • {formatDate(currentTime)} • {formatTime(currentTime)}
+              </p>
+            </div>
               <div className="flex items-center justify-between sm:justify-end space-x-2 sm:space-x-4 w-full sm:w-auto">
                 <div className="flex items-center space-x-2">
-                <Button 
-                  variant="outline" 
+              <Button 
+                variant="outline" 
                     size="icon"
-                  iconName="Settings" 
-                  iconPosition="left"
-                  onClick={() => setIsPersonalizationOpen(true)}
+                iconName="Settings" 
+                iconPosition="left"
+                onClick={() => setIsPersonalizationOpen(true)}
                     className="dashboard-personalization-button sm:h-9 sm:px-3 sm:w-auto"
-                >
+              >
                     <span className="hidden sm:inline">Personnaliser</span>
-                </Button>
-                <Button 
-                  variant="outline" 
+              </Button>
+              <Button 
+                variant="outline" 
                     size="icon"
-                  iconName="BarChart3" 
-                  iconPosition="left"
-                  onClick={() => window.location.href = '/analytics-dashboard'}
+                iconName="BarChart3" 
+                iconPosition="left"
+                onClick={() => window.location.href = '/analytics-dashboard'}
                     className="dashboard-analytics-button sm:h-9 sm:px-3 sm:w-auto"
-                >
+              >
                     <span className="hidden sm:inline">Analyses détaillées</span>
-                </Button>
+              </Button>
                 </div>
-                <Button 
-                  variant="default" 
+              <Button 
+                variant="default" 
                   size="icon"
-                  iconName="Plus" 
-                  iconPosition="left"
+                iconName="Plus" 
+                iconPosition="left"
                   className="dashboard-new-quote-button sm:h-9 sm:px-3 sm:w-auto bg-blue-600 hover:bg-blue-700 text-white [&>svg]:mx-auto sm:[&>svg]:mx-0"
-                >
+              >
                   <span className="hidden sm:inline">Nouveau devis</span>
-                </Button>
+              </Button>
               </div>
             </div>
           </div>
@@ -397,7 +397,7 @@ const Dashboard = () => {
             </div>
                     )}
         </div>
-      </main>
+        </main>
 
       {/* Dashboard Personalization Modal */}
       <DashboardPersonalization

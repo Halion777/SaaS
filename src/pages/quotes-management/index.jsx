@@ -8,7 +8,6 @@ import FilterBar from './components/FilterBar';
 import BulkActionsToolbar from './components/BulkActionsToolbar';
 import AIAnalyticsPanel from './components/AIAnalyticsPanel';
 import QuickActionsSection from './components/QuickActionsSection';
-import Tooltip from '../../components/ui/Tooltip';
 
 const QuotesManagement = () => {
   const navigate = useNavigate();
@@ -133,7 +132,7 @@ const QuotesManagement = () => {
       const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
       setIsMobile(mobile);
       setIsTablet(tablet);
-
+      
       if (mobile) {
         setSidebarOffset(0);
       } else if (tablet) {
@@ -263,53 +262,17 @@ const QuotesManagement = () => {
           {/* Header */}
           <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-              <div>
-                <div className="flex items-center">
+            <div>
+              <div className="flex items-center">
                   <Icon name="FileText" size={24} className="text-primary mr-3" />
                   <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des devis</h1>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Gérez et optimisez vos devis avec l'intelligence artificielle
-                </p>
-              </div>
+                    Gérez et optimisez vos devis avec l'intelligence artificielle
+                  </p>
+            </div>
             
             <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-              {/* Action Icons with Tooltips */}
-              <div className="hidden md:flex items-center justify-center gap-6 mr-4">
-                <Tooltip content="Exporter" position="bottom">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 rounded-full hover:bg-muted flex-shrink-0"
-                    onClick={() => console.log('Export clicked')}
-                  >
-                    <Icon name="Download" size={18} />
-                  </Button>
-                </Tooltip>
-                
-                <Tooltip content="Clients" position="bottom">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 rounded-full hover:bg-muted flex-shrink-0"
-                    onClick={() => navigate('/customers')}
-                  >
-                    <Icon name="Users" size={18} />
-                  </Button>
-                </Tooltip>
-                
-                <Tooltip content="Paramètres" position="bottom">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 rounded-full hover:bg-muted flex-shrink-0"
-                    onClick={() => navigate('/settings')}
-                  >
-                    <Icon name="Settings" size={18} />
-                </Button>
-                </Tooltip>
-              </div>
-
               <Button
                 variant="outline"
                 onClick={() => setShowAIPanel(!showAIPanel)}
@@ -327,52 +290,12 @@ const QuotesManagement = () => {
                 iconPosition="left"
                 className="flex-1 sm:flex-none text-xs sm:text-sm"
               >
-                Nouveau devis
-              </Button>
-
-            </div>
-          </div>
-
-          {/* Mobile Action Icons */}
-          <div className="flex md:hidden items-center justify-between border-b border-border pb-3">
-            <div className="flex items-center justify-center gap-6">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-12 w-12 hover:bg-muted flex-shrink-0"
-                onClick={() => console.log('Export clicked')}
-              >
-                <div className="flex flex-col items-center">
-                  <Icon name="Download" size={18} />
-                  <span className="text-xs mt-1">Exporter</span>
-                </div>
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-12 w-12 hover:bg-muted flex-shrink-0"
-                onClick={() => navigate('/customers')}
-              >
-                <div className="flex flex-col items-center">
-                  <Icon name="Users" size={18} />
-                  <span className="text-xs mt-1">Clients</span>
-                </div>
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-12 w-12 hover:bg-muted flex-shrink-0"
-                onClick={() => navigate('/settings')}
-              >
-                <div className="flex flex-col items-center">
-                  <Icon name="Settings" size={18} />
-                  <span className="text-xs mt-1">Paramètres</span>
-                </div>
+                <span className="hidden sm:inline">Nouveau devis</span>
               </Button>
             </div>
           </div>
+
+
         </header>
 
           {/* Stats Cards */}
@@ -531,6 +454,6 @@ const QuotesManagement = () => {
       )}
     </div>
   );
-};
-
+  };
+  
 export default QuotesManagement;

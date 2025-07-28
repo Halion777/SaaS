@@ -198,29 +198,29 @@ const MultiUserProfilesPage = () => {
         className="pb-20 md:pb-6"
       >
         <main className="px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
-          {/* Header */}
+        {/* Header */}
           <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-              <div>
-                <div className="flex items-center">
-                  <Icon name="Users" size={24} className="text-primary mr-3" />
+            <div>
+              <div className="flex items-center">
+                <Icon name="Users" size={24} className="text-primary mr-3" />
                   <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des profils utilisateurs</h1>
-                </div>
+              </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Gérez les profils de votre équipe et leurs permissions
-                </p>
-              </div>
-              <div className="flex items-center space-x-2 sm:space-x-3">
-                {isPremium && (
-                  <Button onClick={() => setShowInviteModal(true)}>
-                    <Icon name="Mail" size={16} className="mr-2" />
-                    Inviter un utilisateur
-                  </Button>
-                )}
-                
-              </div>
+                Gérez les profils de votre équipe et leurs permissions
+              </p>
             </div>
-          </header>
+              <div className="flex items-center space-x-2 sm:space-x-3">
+              {isPremium && (
+                <Button onClick={() => setShowInviteModal(true)}>
+                  <Icon name="Mail" size={16} className="mr-2" />
+                  Inviter un utilisateur
+                </Button>
+              )}
+                
+            </div>
+          </div>
+        </header>
           {/* Subscription Status */}
         {isPremium && (
           <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-6 mb-8 shadow-md">

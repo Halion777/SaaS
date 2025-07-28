@@ -416,35 +416,35 @@ const InvoicesManagement = () => {
           {/* Header */}
           <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-              <div>
+            <div>
                 <div className="flex items-center">
                   <Icon name="FileText" size={24} className="text-primary mr-3" />
                   <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des factures</h1>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Gérez vos factures, suivez les paiements et analysez vos performances
-                </p>
-              </div>
-              <div className="flex items-center space-x-2 sm:space-x-3">
-                <Button
-                  variant="outline"
-                  iconName="BarChart3"
-                  iconPosition="left"
-                  onClick={() => setIsAnalyticsSidebarVisible(!isAnalyticsSidebarVisible)}
-                  className="text-xs sm:text-sm"
-                >
-                  Analyses
-                </Button>
-                <Button
-                  iconName="Plus"
-                  iconPosition="left"
-                  onClick={() => setIsQuickCreateOpen(true)}
-                  className="text-xs sm:text-sm"
-                >
-                  Nouvelle facture
-                </Button>
-              </div>
+                Gérez vos factures, suivez les paiements et analysez vos performances
+              </p>
             </div>
+              <div className="flex items-center space-x-2 sm:space-x-3">
+              <Button
+                variant="outline"
+                iconName="BarChart3"
+                iconPosition="left"
+                onClick={() => setIsAnalyticsSidebarVisible(!isAnalyticsSidebarVisible)}
+                  className="text-xs sm:text-sm"
+              >
+                Analyses
+              </Button>
+              <Button
+                iconName="Plus"
+                iconPosition="left"
+                onClick={() => setIsQuickCreateOpen(true)}
+                  className="text-xs sm:text-sm"
+              >
+                Nouvelle facture
+              </Button>
+            </div>
+          </div>
           </header>
 
           {/* Summary Bar */}

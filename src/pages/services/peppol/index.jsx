@@ -47,10 +47,10 @@ const PeppolNetworkPage = () => {
         setSidebarOffset(80);
       } else {
         // On desktop, respond to sidebar state
-        setSidebarOffset(isCollapsed ? 64 : 288);
+    setSidebarOffset(isCollapsed ? 64 : 288);
       }
     };
-
+    
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
       const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
@@ -80,7 +80,7 @@ const PeppolNetworkPage = () => {
         setSidebarOffset(isCollapsed ? 64 : 288);
       }
     };
-
+    
     handleResize();
     window.addEventListener('resize', handleResize);
     window.addEventListener('storage', handleStorage);
@@ -391,18 +391,18 @@ const PeppolNetworkPage = () => {
           {/* Header */}
           <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-              <div>
+            <div>
                 <div className="flex items-center">
                   <Icon name="Network" size={24} className="text-primary mr-3" />
                   <h1 className="text-xl sm:text-2xl font-bold text-foreground">Réseau Peppol</h1>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Factures envoyées et reçues via le réseau Peppol
-                </p>
-              </div>
+                Factures envoyées et reçues via le réseau Peppol
+              </p>
+            </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
                 
-              </div>
+          </div>
             </div>
           </header>
 

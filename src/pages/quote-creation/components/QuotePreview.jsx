@@ -242,10 +242,10 @@ const QuotePreview = ({
             
                 <Button
                   variant="outline"
-                  onClick={() => setShowSignatureModal(true)}
-                  iconName="PenTool"
+              onClick={() => setShowSignatureModal(true)}
+              iconName="PenTool"
                   iconPosition="left"
-                  size="sm"
+              size="sm"
                   className="text-xs sm:text-sm"
                 >
                   <span className="hidden sm:inline">Signature électronique</span>
@@ -255,15 +255,15 @@ const QuotePreview = ({
           
           {/* Desktop/Mobile Toggle - Hidden on mobile and tablet */}
           <div className="hidden lg:flex space-x-1">
-            <button
+                  <button
               onClick={() => setPreviewMode(previewMode === 'desktop' ? 'mobile' : 'desktop')}
               className="p-2 rounded bg-gray-200 text-gray-600 hover:bg-gray-300 transition-colors"
             >
               <Icon name={previewMode === 'mobile' ? "Monitor" : "Smartphone"} size={14} />
             </button>
-          </div>
-        </div>
-      </div>
+                  </div>
+              </div>
+            </div>
             
       {/* Quote Preview - Full Width */}
       <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
@@ -326,33 +326,33 @@ const QuotePreview = ({
                 ) : (
                   <div className="w-12 h-12 sm:w-20 sm:h-20 bg-gray-200 rounded-lg flex items-center justify-center text-xs sm:text-sm">
                     LOGO
-                  </div>
-                )}
-                <div>
-                  <h1 
+                      </div>
+                    )}
+                    <div>
+                      <h1 
                     className={`font-bold ${previewMode === 'mobile' ? 'text-lg' : 'text-xl sm:text-2xl lg:text-3xl'}`}
                     style={{ color: customization.colors.primary }}
-                  >
+                      >
                     {companyInfo.name}
-                  </h1>
+                      </h1>
                   <p className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.secondary }}>Artisan professionnel</p>
                   {financialConfig.marketingBannerConfig.enabled && financialConfig.marketingBannerConfig.message && (
                     <p className={`text-sm font-medium mt-2 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.secondary }}>
                       {financialConfig.marketingBannerConfig.message}
                     </p>
                   )}
-                </div>
-              </div>
+                    </div>
+                  </div>
               <div className={`text-right ${previewMode === 'mobile' ? 'text-center w-full' : 'text-right'}`}>
-                <h2 
+                    <h2 
                   className={`font-semibold ${previewMode === 'mobile' ? 'text-base' : 'text-lg sm:text-xl lg:text-2xl'}`}
                   style={{ color: customization.colors.primary }}
-                >
+                    >
                   DEVIS N° {quoteNumber}
-                </h2>
+                    </h2>
                 <p className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.secondary }}>Date: {currentDate}</p>
                 <p className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.secondary }}>Valable jusqu'au: {validUntil}</p>
-              </div>
+                  </div>
                 </div>
                 
             {/* Company Information */}
@@ -360,16 +360,16 @@ const QuotePreview = ({
               previewMode === 'mobile' ? 'grid-cols-1 px-4' : 
               'grid-cols-1 sm:grid-cols-2 px-4 sm:px-8 lg:px-10'
             }`}>
-              <div>
+                  <div>
                 <h3 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>CLIENT</h3>
                 <div className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
-                  <p className="font-medium">{selectedClient?.label?.split(' - ')[0] || 'Client'}</p>
-                  {selectedClient?.company && <p>{selectedClient.company}</p>}
-                  <p>{selectedClient?.email || 'email@client.com'}</p>
-                  <p>{selectedClient?.phone || '06 12 34 56 78'}</p>
-                  {selectedClient?.address && <p>{selectedClient.address}</p>}
-                </div>
-              </div>
+                      <p className="font-medium">{selectedClient?.label?.split(' - ')[0] || 'Client'}</p>
+                      {selectedClient?.company && <p>{selectedClient.company}</p>}
+                      <p>{selectedClient?.email || 'email@client.com'}</p>
+                      <p>{selectedClient?.phone || '06 12 34 56 78'}</p>
+                      {selectedClient?.address && <p>{selectedClient.address}</p>}
+                    </div>
+                  </div>
               <div className={`${previewMode === 'mobile' ? 'text-left' : 'text-right'}`}>
                 <h3 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>VOTRE ENTREPRISE</h3>
                 <div className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
@@ -378,17 +378,17 @@ const QuotePreview = ({
                   <p>{companyInfo.email}</p>
                   <p>{companyInfo.phone}</p>
                   <p>TVA: {companyInfo.vatNumber}</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
             {/* Project Info */}
             <div className={`mb-8 sm:mb-10 ${previewMode === 'mobile' ? 'px-4' : 'px-4 sm:px-8 lg:px-10'}`}>
               <h3 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>PROJET: d</h3>
               <p className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>ddd</p>
             </div>
-
-            {/* Tasks Table */}
+                
+                {/* Tasks Table */}
             <div className={`mb-8 sm:mb-10 ${previewMode === 'mobile' ? 'px-4' : 'px-4 sm:px-8 lg:px-10'}`}>
               <h3 className={`font-semibold text-gray-800 mb-4 sm:mb-6 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>DÉTAIL DES PRESTATIONS</h3>
                               <div className={`${previewMode === 'mobile' ? 'overflow-x-auto' : 'overflow-x-auto'}`}>
@@ -417,7 +417,7 @@ const QuotePreview = ({
                             <td className={`border border-gray-300 text-right ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ color: customization.colors.secondary }}>{task.price}€/h</td>
                             <td className={`border border-gray-300 text-center ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ color: customization.colors.secondary }}>
                               {task.materials.length > 0 ? task.materials.map(m => m.name).join(', ') : '-'}
-                            </td>
+                              </td>
                             <td className={`border border-gray-300 text-right font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ color: customization.colors.secondary }}>{taskTotal.toFixed(2)}€</td>
                             </tr>
                         );
@@ -467,16 +467,16 @@ const QuotePreview = ({
 
             {/* Signatures */}
             <div className={`grid gap-8 sm:gap-12 ${previewMode === 'mobile' ? 'grid-cols-1 px-4 pb-4' : 'grid-cols-1 sm:grid-cols-2 px-4 sm:px-8 lg:px-10 pb-4 sm:pb-8 lg:pb-10'}`}>
-                              <div>
+              <div>
                   <h4 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>Signature de l'entreprise:</h4>
                   <div className={`border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50 flex items-center justify-center ${previewMode === 'mobile' ? 'p-3 min-h-[60px]' : 'p-4 sm:p-6 min-h-[80px] sm:min-h-[100px]'}`}>
                     <p className={`text-gray-500 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>Zone de signature électronique</p>
-                  </div>
-                  <p className={`text-gray-600 mt-2 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
-                    Date: _______________
-                  </p>
                 </div>
-                <div>
+                  <p className={`text-gray-600 mt-2 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
+                  Date: _______________
+                </p>
+              </div>
+              <div>
                   <h4 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>Bon pour accord client:</h4>
                   <div className={`border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50 flex items-center justify-center ${previewMode === 'mobile' ? 'p-3 min-h-[60px]' : 'p-4 sm:p-6 min-h-[80px] sm:min-h-[100px]'}`}>
                   {signatureData?.signature ? (

@@ -15,6 +15,16 @@ const AIScoring = ({ selectedClient, tasks, currentStep }) => {
   useEffect(() => {
     if (tasks.length > 0 || selectedClient) {
       analyzeQuote();
+    } else {
+      // Reset scores to 0 when there's no data
+      setScores({
+        readability: 0,
+        followUpRate: 0,
+        openingLevel: 0,
+        signatureProbability: 0
+      });
+      setRecommendations([]);
+      setIsAnalyzing(false);
     }
   }, [tasks, selectedClient, currentStep]);
 
@@ -171,68 +181,81 @@ const AIScoring = ({ selectedClient, tasks, currentStep }) => {
         )}
       </div>
 
-      {/* Scores */}
-      <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
-        <div className="space-y-2 sm:space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs sm:text-sm font-medium text-foreground">Lisibilité</span>
-            <span className={`text-xs sm:text-sm font-bold ${getScoreColor(scores.readability)}`}>
-              {scores.readability}%
-            </span>
-          </div>
-          <div className="w-full bg-muted rounded-full h-1.5 sm:h-2">
-            <div 
-              className={`h-1.5 sm:h-2 rounded-full transition-all duration-500 ${getScoreBackground(scores.readability)}`}
-              style={{ width: `${scores.readability}%` }}
-            />
-          </div>
+      {/* No Data State */}
+      {!selectedClient && tasks.length === 0 && (
+        <div className="text-center py-6">
+          <Icon name="Sparkles" size={32} className="text-muted-foreground mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground mb-2">Aucune donnée à analyser</p>
+          <p className="text-xs text-muted-foreground">
+            Commencez par sélectionner un client et définir vos tâches
+          </p>
         </div>
+      )}
 
-        <div className="space-y-2 sm:space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs sm:text-sm font-medium text-foreground">Taux de suivi</span>
-            <span className={`text-xs sm:text-sm font-bold ${getScoreColor(scores.followUpRate)}`}>
-              {scores.followUpRate}%
-            </span>
+      {/* Scores - Only show when there's data */}
+      {(selectedClient || tasks.length > 0) && (
+        <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+          <div className="space-y-2 sm:space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs sm:text-sm font-medium text-foreground">Lisibilité</span>
+              <span className={`text-xs sm:text-sm font-bold ${getScoreColor(scores.readability)}`}>
+                {scores.readability}%
+              </span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-1.5 sm:h-2">
+              <div 
+                className={`h-1.5 sm:h-2 rounded-full transition-all duration-500 ${getScoreBackground(scores.readability)}`}
+                style={{ width: `${scores.readability}%` }}
+              />
+            </div>
           </div>
-          <div className="w-full bg-muted rounded-full h-1.5 sm:h-2">
-            <div 
-              className={`h-1.5 sm:h-2 rounded-full transition-all duration-500 ${getScoreBackground(scores.followUpRate)}`}
-              style={{ width: `${scores.followUpRate}%` }}
-            />
-          </div>
-        </div>
 
-        <div className="space-y-2 sm:space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs sm:text-sm font-medium text-foreground">Niveau d'ouverture</span>
-            <span className={`text-xs sm:text-sm font-bold ${getScoreColor(scores.openingLevel)}`}>
-              {scores.openingLevel}%
-            </span>
+          <div className="space-y-2 sm:space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs sm:text-sm font-medium text-foreground">Taux de suivi</span>
+              <span className={`text-xs sm:text-sm font-bold ${getScoreColor(scores.followUpRate)}`}>
+                {scores.followUpRate}%
+              </span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-1.5 sm:h-2">
+              <div 
+                className={`h-1.5 sm:h-2 rounded-full transition-all duration-500 ${getScoreBackground(scores.followUpRate)}`}
+                style={{ width: `${scores.followUpRate}%` }}
+              />
+            </div>
           </div>
-          <div className="w-full bg-muted rounded-full h-1.5 sm:h-2">
-            <div 
-              className={`h-1.5 sm:h-2 rounded-full transition-all duration-500 ${getScoreBackground(scores.openingLevel)}`}
-              style={{ width: `${scores.openingLevel}%` }}
-            />
-          </div>
-        </div>
 
-        <div className="border-t border-border pt-2 sm:pt-3">
-          <div className="flex items-center justify-between mb-1 sm:mb-2">
-            <span className="text-sm sm:text-base font-medium text-foreground">Probabilité de signature</span>
-            <span className={`text-base sm:text-lg font-bold ${getScoreColor(scores.signatureProbability)}`}>
-              {scores.signatureProbability}%
-            </span>
+          <div className="space-y-2 sm:space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs sm:text-sm font-medium text-foreground">Niveau d'ouverture</span>
+              <span className={`text-xs sm:text-sm font-bold ${getScoreColor(scores.openingLevel)}`}>
+                {scores.openingLevel}%
+              </span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-1.5 sm:h-2">
+              <div 
+                className={`h-1.5 sm:h-2 rounded-full transition-all duration-500 ${getScoreBackground(scores.openingLevel)}`}
+                style={{ width: `${scores.openingLevel}%` }}
+              />
+            </div>
           </div>
-          <div className="w-full bg-muted rounded-full h-2 sm:h-3">
-            <div 
-              className={`h-2 sm:h-3 rounded-full transition-all duration-500 ${getScoreBackground(scores.signatureProbability)}`}
-              style={{ width: `${scores.signatureProbability}%` }}
-            />
+
+          <div className="border-t border-border pt-2 sm:pt-3">
+            <div className="flex items-center justify-between mb-1 sm:mb-2">
+              <span className="text-sm sm:text-base font-medium text-foreground">Probabilité de signature</span>
+              <span className={`text-base sm:text-lg font-bold ${getScoreColor(scores.signatureProbability)}`}>
+                {scores.signatureProbability}%
+              </span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-2 sm:h-3">
+              <div 
+                className={`h-2 sm:h-3 rounded-full transition-all duration-500 ${getScoreBackground(scores.signatureProbability)}`}
+                style={{ width: `${scores.signatureProbability}%` }}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Recommendations */}
       {recommendations.length > 0 && (
@@ -270,20 +293,22 @@ const AIScoring = ({ selectedClient, tasks, currentStep }) => {
         </div>
       )}
 
-      {/* AI Insights */}
-      <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-primary/10 border border-primary/20 rounded-lg">
-        <div className="flex items-center mb-1 sm:mb-2">
-          <Icon name="TrendingUp" size={14} className="sm:w-4 sm:h-4 text-primary mr-2" />
-          <span className="text-xs sm:text-sm font-medium text-foreground">Insight IA</span>
+      {/* AI Insights - Only show when there's data */}
+      {(selectedClient || tasks.length > 0) && (
+        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-primary/10 border border-primary/20 rounded-lg">
+          <div className="flex items-center mb-1 sm:mb-2">
+            <Icon name="TrendingUp" size={14} className="sm:w-4 sm:h-4 text-primary mr-2" />
+            <span className="text-xs sm:text-sm font-medium text-foreground">Insight IA</span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {scores.signatureProbability >= 80 
+              ? "Excellent ! Ce devis est optimisé pour la conversion."
+              : scores.signatureProbability >= 60
+              ? "Bon potentiel. Quelques améliorations peuvent augmenter vos chances." :"Des améliorations sont nécessaires pour optimiser ce devis."
+            }
+          </p>
         </div>
-        <p className="text-xs text-muted-foreground">
-          {scores.signatureProbability >= 80 
-            ? "Excellent ! Ce devis est optimisé pour la conversion."
-            : scores.signatureProbability >= 60
-            ? "Bon potentiel. Quelques améliorations peuvent augmenter vos chances." :"Des améliorations sont nécessaires pour optimiser ce devis."
-          }
-        </p>
-      </div>
+      )}
     </div>
   );
 };

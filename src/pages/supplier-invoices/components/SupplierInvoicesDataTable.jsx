@@ -265,113 +265,113 @@ const SupplierInvoicesDataTable = ({ supplierInvoices, onSupplierInvoiceAction, 
       ) : viewMode === 'card' ? (
         renderCardView()
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-border">
-            <thead className="bg-muted/30">
-              <tr>
-                <th className="px-6 py-3 text-left">
-                  <Checkbox
-                    checked={selectedSupplierInvoices.length === supplierInvoices.length && supplierInvoices.length > 0}
-                    onChange={(e) => handleSelectAll(e.target.checked)}
-                  />
-                </th>
-                <SortableHeader label="N° Facture" sortKey="number" />
-                <SortableHeader label="Fournisseur" sortKey="supplierName" />
-                <SortableHeader label="Montant" sortKey="amount" />
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Catégorie
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Statut
-                </th>
-                <SortableHeader label="Date émission" sortKey="issueDate" />
-                <SortableHeader label="Date échéance" sortKey="dueDate" />
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-card divide-y divide-border">
-              {supplierInvoices.map((invoice) => {
-                const daysOverdue = getDaysOverdue(invoice.dueDate, invoice.status);
-                return (
-                  <tr key={invoice.id} className="hover:bg-muted/30 transition-colors duration-150">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Checkbox
-                        checked={selectedSupplierInvoices.includes(invoice.id)}
-                        onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-foreground">{invoice.number}</div>
-                      <div className="text-xs text-muted-foreground">{invoice.invoiceFile}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-foreground">{invoice.supplierName}</div>
-                      <div className="text-xs text-muted-foreground">{invoice.supplierEmail}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-foreground">{formatCurrency(invoice.amount)}</div>
-                      {invoice.paymentMethod && (
-                        <div className="text-xs text-muted-foreground">{invoice.paymentMethod}</div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-border">
+          <thead className="bg-muted/30">
+            <tr>
+              <th className="px-6 py-3 text-left">
+                <Checkbox
+                  checked={selectedSupplierInvoices.length === supplierInvoices.length && supplierInvoices.length > 0}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                />
+              </th>
+              <SortableHeader label="N° Facture" sortKey="number" />
+              <SortableHeader label="Fournisseur" sortKey="supplierName" />
+              <SortableHeader label="Montant" sortKey="amount" />
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Catégorie
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Statut
+              </th>
+              <SortableHeader label="Date émission" sortKey="issueDate" />
+              <SortableHeader label="Date échéance" sortKey="dueDate" />
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-card divide-y divide-border">
+            {supplierInvoices.map((invoice) => {
+              const daysOverdue = getDaysOverdue(invoice.dueDate, invoice.status);
+              return (
+                <tr key={invoice.id} className="hover:bg-muted/30 transition-colors duration-150">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <Checkbox
+                      checked={selectedSupplierInvoices.includes(invoice.id)}
+                      onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
+                    />
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-foreground">{invoice.number}</div>
+                    <div className="text-xs text-muted-foreground">{invoice.invoiceFile}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-foreground">{invoice.supplierName}</div>
+                    <div className="text-xs text-muted-foreground">{invoice.supplierEmail}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-foreground">{formatCurrency(invoice.amount)}</div>
+                    {invoice.paymentMethod && (
+                      <div className="text-xs text-muted-foreground">{invoice.paymentMethod}</div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {getCategoryBadge(invoice.category)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex flex-col space-y-1">
+                      {getStatusBadge(invoice.status)}
+                      {daysOverdue && (
+                        <span className="text-xs text-error">+{daysOverdue} jours</span>
                       )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getCategoryBadge(invoice.category)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-col space-y-1">
-                        {getStatusBadge(invoice.status)}
-                        {daysOverdue && (
-                          <span className="text-xs text-error">+{daysOverdue} jours</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                      {formatDate(invoice.issueDate)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                      <div className={`${invoice.status === 'overdue' ? 'text-error font-medium' : ''}`}>
-                        {formatDate(invoice.dueDate)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-2">
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                    {formatDate(invoice.issueDate)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                    <div className={`${invoice.status === 'overdue' ? 'text-error font-medium' : ''}`}>
+                      {formatDate(invoice.dueDate)}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        iconName="Eye"
+                        onClick={() => onSupplierInvoiceAction('view', invoice)}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        iconName="Download"
+                        onClick={() => onSupplierInvoiceAction('download', invoice)}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        iconName="Send"
+                        onClick={() => onSupplierInvoiceAction('send_to_accountant', invoice)}
+                        title="Envoyer au comptable"
+                      />
+                      {invoice.status !== 'paid' && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          iconName="Eye"
-                          onClick={() => onSupplierInvoiceAction('view', invoice)}
+                          iconName="CheckCircle"
+                          onClick={() => onSupplierInvoiceAction('markPaid', invoice)}
+                          title="Marquer comme payée"
                         />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          iconName="Download"
-                          onClick={() => onSupplierInvoiceAction('download', invoice)}
-                        />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          iconName="Send"
-                          onClick={() => onSupplierInvoiceAction('send_to_accountant', invoice)}
-                          title="Envoyer au comptable"
-                        />
-                        {invoice.status !== 'paid' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            iconName="CheckCircle"
-                            onClick={() => onSupplierInvoiceAction('markPaid', invoice)}
-                            title="Marquer comme payée"
-                          />
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
         </div>
       )}
     </div>
