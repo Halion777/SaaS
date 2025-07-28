@@ -2,11 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Icon from './AppIcon';
 import Button from './ui/Button';
-import LanguageDropdown from './LanguageDropdown';
-import { useTranslation } from '../context/TranslationContext';
 
 const Header = () => {
-  const { t } = useTranslation();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -96,7 +93,7 @@ const Header = () => {
                   isActive('/about') ? 'text-[#0036ab]' : ''
                 }`}
               >
-                {t('nav.about') || 'À propos'}
+                À propos
               </Link>
               <Link 
                 to="/pricing"
@@ -104,7 +101,7 @@ const Header = () => {
                   isActive('/pricing') ? 'text-[#0036ab]' : ''
                 }`}
               >
-                {t('nav.pricing') || 'Tarifs'}
+                Tarifs
               </Link>
               <Link 
                 to="/find-artisan"
@@ -112,7 +109,7 @@ const Header = () => {
                   isActive('/find-artisan') ? 'text-[#0036ab]' : ''
                 }`}
               >
-                {t('nav.findArtisan') || 'Trouver un artisan'}
+                Trouver un artisan
               </Link>
               <Link 
                 to="/contact"
@@ -120,7 +117,7 @@ const Header = () => {
                   isActive('/contact') ? 'text-[#0036ab]' : ''
                 }`}
               >
-                {t('nav.contact') || 'Contact'}
+                Contact
               </Link>
               <Link 
                 to="/blog"
@@ -128,13 +125,20 @@ const Header = () => {
                   isActive('/blog') ? 'text-[#0036ab]' : ''
                 }`}
               >
-                {t('nav.blog') || 'Blog'}
+                Blog
               </Link>
             </nav>
             
             {/* Desktop Right Section */}
             <div className="hidden lg:flex items-center space-x-4">
-              <LanguageDropdown />
+              {/* Dashboard Link */}
+              <Link 
+                to="/dashboard" 
+                className="p-2 text-gray-700 hover:text-[#0036ab] transition-colors rounded-lg hover:bg-gray-50"
+                title="Dashboard"
+              >
+                <Icon name="LayoutDashboard" size={20} />
+              </Link>
               
               {/* Show profile only on dashboard pages */}
               {isDashboardPage() && (
@@ -151,11 +155,11 @@ const Header = () => {
               
               {/* Auth Buttons */}
               <Link to="/login" className="text-gray-700 hover:text-[#0036ab] transition-colors px-3 py-2 font-medium">
-                {t('nav.login') || 'Connexion'}
+                Connexion
               </Link>
               <Link to="/register">
                 <Button variant="primary" size="sm" className="bg-[#0036ab] hover:bg-[#0036ab]/90 text-white font-medium">
-                  {t('nav.freeTrial') || 'Essai gratuit'}
+                  Essai gratuit
                 </Button>
               </Link>
             </div>
@@ -183,7 +187,7 @@ const Header = () => {
                     isActive('/about') ? 'bg-[#0036ab]/5 text-[#0036ab]' : ''
                   }`}
                 >
-                  {t('nav.about') || 'À propos'}
+                  À propos
                 </Link>
                 <Link 
                   to="/pricing"
@@ -191,7 +195,7 @@ const Header = () => {
                     isActive('/pricing') ? 'bg-[#0036ab]/5 text-[#0036ab]' : ''
                   }`}
                 >
-                  {t('nav.pricing') || 'Tarifs'}
+                  Tarifs
                 </Link>
                 <Link 
                   to="/find-artisan"
@@ -199,7 +203,7 @@ const Header = () => {
                     isActive('/find-artisan') ? 'bg-[#0036ab]/5 text-[#0036ab]' : ''
                   }`}
                 >
-                  {t('nav.findArtisan') || 'Trouver un artisan'}
+                  Trouver un artisan
                 </Link>
                 <Link 
                   to="/contact"
@@ -207,7 +211,7 @@ const Header = () => {
                     isActive('/contact') ? 'bg-[#0036ab]/5 text-[#0036ab]' : ''
                   }`}
                 >
-                  {t('nav.contact') || 'Contact'}
+                  Contact
                 </Link>
                 <Link 
                   to="/blog"
@@ -215,21 +219,27 @@ const Header = () => {
                     isActive('/blog') ? 'bg-[#0036ab]/5 text-[#0036ab]' : ''
                   }`}
                 >
-                  {t('nav.blog') || 'Blog'}
+                  Blog
                 </Link>
               </nav>
               
-              {/* Mobile Language and Authentication */}
+              {/* Mobile Dashboard and Authentication */}
               <div className="flex flex-col space-y-3 px-4">
                 <div className="flex items-center justify-between">
-                  <LanguageDropdown />
+                  <Link 
+                    to="/dashboard" 
+                    className="p-2 text-gray-700 hover:text-[#0036ab] transition-colors rounded-lg hover:bg-gray-50"
+                    title="Dashboard"
+                  >
+                    <Icon name="LayoutDashboard" size={20} />
+                  </Link>
                   <Link to="/login" className="text-gray-700 hover:text-[#0036ab] transition-colors font-medium">
-                    {t('nav.login') || 'Connexion'}
+                    Connexion
                   </Link>
                 </div>
                 <Link to="/register" className="w-full">
                   <Button variant="primary" size="sm" className="w-full bg-[#0036ab] hover:bg-[#0036ab]/90 text-white font-medium">
-                    {t('nav.freeTrial') || 'Essai gratuit'}
+                    Essai gratuit
                   </Button>
                 </Link>
               </div>
