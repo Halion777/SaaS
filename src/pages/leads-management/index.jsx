@@ -3,12 +3,14 @@ import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import MainSidebar from '../../components/ui/MainSidebar';
+import { useScrollPosition } from '../../utils/useScrollPosition';
 
 const LeadsManagementPage = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [activeTab, setActiveTab] = useState('leads');
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+  const tabsScrollRef = useScrollPosition('leads-tabs-scroll');
   const [settings, setSettings] = useState({
     receiveQuotes: false,
     professionalAddress: '123 Rue de la République, 75001 Paris',
@@ -356,7 +358,7 @@ const LeadsManagementPage = () => {
           </header>
 
           {/* Tab Navigation */}
-          <div className="flex space-x-1 bg-muted p-1 rounded-lg overflow-x-auto scrollbar-hide">
+          <div ref={tabsScrollRef} className="flex space-x-1 bg-muted p-1 rounded-lg overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setActiveTab('leads')}
               className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${

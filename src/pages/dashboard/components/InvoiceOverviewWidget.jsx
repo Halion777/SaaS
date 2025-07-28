@@ -40,7 +40,7 @@ const InvoiceOverviewWidget = () => {
           <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg flex items-center justify-center">
             <Icon name="Receipt" size={16} className="sm:w-5 sm:h-5 text-blue-600" />
           </div>
-          <div>
+        <div>
             <h3 className="text-base sm:text-lg font-semibold text-foreground">Vue d'ensemble des factures</h3>
             <p className="text-xs sm:text-sm text-muted-foreground">Suivi de vos entrées et sorties de trésorerie</p>
           </div>
@@ -177,7 +177,7 @@ const InvoiceOverviewWidget = () => {
               <span className="text-xs sm:text-sm font-medium text-foreground">
                 {Math.round((invoiceData.supplierInvoices.paidExpenses / invoiceData.supplierInvoices.totalExpenses) * 100)}%
               </span>
-            </div>
+              </div>
             <div className="flex justify-between items-center">
               <span className="text-xs sm:text-sm text-muted-foreground">Solde disponible</span>
               <span className="text-xs sm:text-sm font-medium text-foreground">
@@ -197,28 +197,28 @@ const InvoiceOverviewWidget = () => {
             <span>{invoiceData.clientInvoices.recentCount + invoiceData.supplierInvoices.recentCount} factures récentes</span>
           </div>
           <div className="flex space-x-2 justify-end">
-            <Button
-              variant="outline"
+          <Button
+            variant="outline"
               size="xs"
-              iconName="Plus"
-              iconPosition="left"
-              onClick={() => navigate('/invoices-management')}
+            iconName="Plus"
+            iconPosition="left"
+            onClick={() => navigate('/invoices-management')}
               className="text-xs h-8 sm:h-9"
-            >
+          >
               <span className="hidden sm:inline">Nouvelle facture</span>
               <span className="sm:hidden">Nouvelle</span>
-            </Button>
-            <Button
+          </Button>
+          <Button
               variant="default"
               size="xs"
-              iconName="BarChart3"
-              iconPosition="left"
-              onClick={() => navigate('/analytics-dashboard')}
+            iconName="BarChart3"
+            iconPosition="left"
+            onClick={() => navigate('/analytics-dashboard')}
               className="text-xs h-8 sm:h-9"
-            >
+          >
               <span className="hidden sm:inline">Voir analyses</span>
               <span className="sm:hidden">Analyses</span>
-            </Button>
+          </Button>
           </div>
         </div>
       </div>

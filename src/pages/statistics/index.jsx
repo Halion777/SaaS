@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import MainSidebar from '../../components/ui/MainSidebar';
+import { useScrollPosition } from '../../utils/useScrollPosition';
 
 const StatisticsPage = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [activeTab, setActiveTab] = useState('overview');
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+  const tabsScrollRef = useScrollPosition('statistics-tabs-scroll');
 
   // Handle sidebar offset for responsive layout
   React.useEffect(() => {
@@ -359,7 +361,7 @@ const StatisticsPage = () => {
           </header>
 
           {/* Tab Navigation */}
-          <div className="flex space-x-1 bg-muted p-1 rounded-lg overflow-x-auto scrollbar-hide">
+          <div ref={tabsScrollRef} className="flex space-x-1 bg-muted p-1 rounded-lg overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setActiveTab('overview')}
               className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${

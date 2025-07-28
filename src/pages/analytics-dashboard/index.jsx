@@ -13,6 +13,7 @@ import ComparisonAnalytics from './components/ComparisonAnalytics';
 import FilterControls from './components/FilterControls';
 import ExportControls from './components/ExportControls';
 import { generateBusinessInsights, generatePricingOptimization, analyzePerformancePatterns } from '../../services/openaiService';
+import { useScrollPosition } from '../../utils/useScrollPosition';
 
 const AnalyticsDashboard = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
@@ -25,6 +26,7 @@ const AnalyticsDashboard = () => {
   const [pricingOptimization, setPricingOptimization] = useState(null);
   const [performanceAnalysis, setPerformanceAnalysis] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const tabsScrollRef = useScrollPosition('analytics-tabs-scroll');
 
   // Mock business data for AI analysis
   const businessData = {
@@ -324,7 +326,7 @@ const AnalyticsDashboard = () => {
             transition={{ delay: 0.1 }}
             className="mb-4 sm:mb-6"
           >
-            <div className="flex border-b border-border overflow-x-auto scrollbar-hide">
+            <div ref={tabsScrollRef} className="flex border-b border-border overflow-x-auto scrollbar-hide">
               <button
                 className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-3 font-medium text-sm transition-colors whitespace-nowrap flex-shrink-0 min-w-fit ${
                   activeTab === 'overview' 

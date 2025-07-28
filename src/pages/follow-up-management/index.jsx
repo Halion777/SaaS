@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import MainSidebar from '../../components/ui/MainSidebar';
+import { useScrollPosition } from '../../utils/useScrollPosition';
 
 const FollowUpManagement = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+  const filterScrollRef = useScrollPosition('followup-filter-scroll');
   const [followUps, setFollowUps] = useState([
     {
       id: 1,
@@ -221,7 +223,7 @@ const FollowUpManagement = () => {
           </header>
 
           {/* Filter Tabs */}
-          <div className="flex space-x-1 bg-muted/50 rounded-lg p-1 overflow-x-auto scrollbar-hide">
+          <div ref={filterScrollRef} className="flex space-x-1 bg-muted/50 rounded-lg p-1 overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setActiveFilter('all')}
               className={`flex-1 py-2 px-3 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${

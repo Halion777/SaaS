@@ -3,6 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Icon from '../AppIcon';
 import NavigationItem from './NavigationItem';
 import UserProfile from './UserProfile';
+import ProfileSwitcher from './ProfileSwitcher';
+import MultiUserProfile from './MultiUserProfile';
+import { useScrollPosition } from '../../utils/useScrollPosition';
 
 const MainSidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -16,6 +19,7 @@ const MainSidebar = () => {
   });
   const location = useLocation();
   const navigate = useNavigate();
+  const mobileNavRef = useScrollPosition('mobile-nav-scroll', isMobile);
 
   useEffect(() => {
     const handleResize = () => {
@@ -260,7 +264,7 @@ const MainSidebar = () => {
   if (isMobile) {
     return (
       <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-100">
-        <div className="flex overflow-x-auto scrollbar-hide h-16 px-4">
+        <div ref={mobileNavRef} className="flex overflow-x-auto scrollbar-hide h-16 px-4">
           <div className="flex items-center space-x-2 min-w-full">
             {flatNavigationItems.map((item) => (
               <NavigationItem
