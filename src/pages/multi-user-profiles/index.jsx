@@ -18,7 +18,9 @@ const MultiUserProfilesPage = () => {
     role: 'viewer',
     permissions: ['quotes', 'invoices']
   });
-  const [sidebarOffset, setSidebarOffset] = useState(288); // Default sidebar width
+  const [sidebarOffset, setSidebarOffset] = useState(288);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
 
   // Use global context instead of local state
   const { currentProfile, companyProfiles, switchProfile, addProfile, updateProfile, deleteProfile } = useMultiUser();
@@ -30,39 +32,63 @@ const MultiUserProfilesPage = () => {
     loadData();
   }, []);
 
+  // Handle sidebar offset for responsive layout
   useEffect(() => {
-    // Check sidebar state for layout adjustment
-    const savedCollapsed = localStorage.getItem('sidebar-collapsed');
-    const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
-    setSidebarOffset(isCollapsed ? 64 : 288); // 64px for collapsed, 288px (72*4) for expanded
-    
-    // Listen for sidebar collapse/expand events
-    const handleStorage = (e) => {
-      if (e.key === 'sidebar-collapsed') {
-        const isCollapsed = JSON.parse(e.newValue);
+    const handleSidebarToggle = (e) => {
+      const { isCollapsed } = e.detail;
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setIsTablet(tablet);
+
+      if (mobile) {
+        setSidebarOffset(0);
+      } else if (tablet) {
+        // On tablet, sidebar is always collapsed
+        setSidebarOffset(80);
+      } else {
+        // On desktop, respond to sidebar state
         setSidebarOffset(isCollapsed ? 64 : 288);
       }
     };
-    
-    window.addEventListener('storage', handleStorage);
-    
-    // Check for mobile
+
     const handleResize = () => {
-      const isMobile = window.innerWidth < 768;
-      if (isMobile) {
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setIsTablet(tablet);
+
+      if (mobile) {
         setSidebarOffset(0);
+      } else if (tablet) {
+        // On tablet, sidebar is always collapsed
+        setSidebarOffset(80);
       } else {
+        // On desktop, check localStorage for sidebar state
         const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
         setSidebarOffset(isCollapsed ? 64 : 288);
       }
     };
-    
-    handleResize();
+
+    const handleStorage = () => {
+      const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+      if (!isMobile && !isTablet) {
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+
+    // Add event listeners
+    window.addEventListener('sidebar-toggle', handleSidebarToggle);
     window.addEventListener('resize', handleResize);
-    
+    window.addEventListener('storage', handleStorage);
+
+    // Initial setup
+    handleResize();
+
     return () => {
-      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('sidebar-toggle', handleSidebarToggle);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('storage', handleStorage);
     };
   }, []);
 
@@ -182,190 +208,188 @@ const MultiUserProfilesPage = () => {
     );
   }
 
-  const isMobile = window.innerWidth < 768;
-
   return (
     <div className="min-h-screen bg-background">
-      {/* Sidebar */}
       <MainSidebar />
       
-      {/* Main Content */}
-      <div 
+      <main 
+        className={`transition-all duration-300 ease-out ${
+          isMobile ? 'pb-16 pt-4' : ''
+        }`}
         style={{ 
           marginLeft: isMobile ? 0 : `${sidebarOffset}px`,
-          transition: 'margin-left 0.3s ease-out'
         }}
-        className="pb-20 md:pb-6"
       >
-        <main className="px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
-        {/* Header */}
+        <div className="px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
+          {/* Header */}
           <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-            <div>
-              <div className="flex items-center">
-                <Icon name="Users" size={24} className="text-primary mr-3" />
-                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des profils utilisateurs</h1>
-              </div>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                Gérez les profils de votre équipe et leurs permissions
-              </p>
-            </div>
-              <div className="flex items-center space-x-2 sm:space-x-3">
-              {isPremium && (
-                <Button onClick={() => setShowInviteModal(true)}>
-                  <Icon name="Mail" size={16} className="mr-2" />
-                  Inviter un utilisateur
-                </Button>
-              )}
-                
-            </div>
-          </div>
-        </header>
-          {/* Subscription Status */}
-        {isPremium && (
-          <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-6 mb-8 shadow-md">
-            <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-semibold mb-2 text-white">Compte Premium</h3>
-                <p className="opacity-90">
-                  Vous pouvez créer jusqu'à {subscriptionLimits.maxProfiles} profils utilisateurs
+                <div className="flex items-center">
+                  <Icon name="Users" size={24} className="text-primary mr-3" />
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des profils utilisateurs</h1>
+                </div>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  Gérez les profils de votre équipe et leurs permissions
                 </p>
               </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold">{companyUsers.length}/{subscriptionLimits.maxProfiles}</div>
-                <div className="text-sm opacity-90">Profils créés</div>
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                {isPremium && (
+                  <Button onClick={() => setShowInviteModal(true)}>
+                    <Icon name="Mail" size={16} className="mr-2" />
+                    Inviter un utilisateur
+                  </Button>
+                )}
               </div>
             </div>
-          </div>
-        )}
+          </header>
 
-        {/* Multi-User Profile Component */}
-        <MultiUserProfile
-          currentUser={currentProfile}
-          companyUsers={companyProfiles}
-          onProfileSwitch={handleProfileSwitch}
-          onAddProfile={handleAddProfile}
-          onEditProfile={handleEditProfile}
-          onDeleteProfile={handleDeleteProfile}
-          isPremium={isPremium}
-          maxProfiles={subscriptionLimits.maxProfiles}
-        />
+          {/* Subscription Status */}
+          {isPremium && (
+            <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-6 mb-8 shadow-md">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-semibold mb-2 text-white">Compte Premium</h3>
+                  <p className="opacity-90">
+                    Vous pouvez créer jusqu'à {subscriptionLimits.maxProfiles} profils utilisateurs
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold">{companyUsers.length}/{subscriptionLimits.maxProfiles}</div>
+                  <div className="text-sm opacity-90">Profils créés</div>
+                </div>
+              </div>
+            </div>
+          )}
 
-        {/* Pending Invitations */}
-        {isPremium && invitations.length > 0 && (
-          <div className="mt-8">
-            <h3 className="text-xl font-semibold mb-4">Invitations en attente</h3>
-            <div className="bg-card border border-border rounded-lg overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <th className="text-left p-4 font-medium">Email</th>
-                      <th className="text-left p-4 font-medium">Rôle</th>
-                      <th className="text-left p-4 font-medium">Date d'invitation</th>
-                      <th className="text-left p-4 font-medium">Expire le</th>
-                      <th className="text-left p-4 font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invitations.map((invitation) => (
-                      <tr key={invitation.id} className="border-t border-border">
-                        <td className="p-4">{invitation.email}</td>
-                        <td className="p-4">
-                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {invitation.role}
-                          </span>
-                        </td>
-                        <td className="p-4 text-sm text-muted-foreground">
-                          {new Date(invitation.createdAt).toLocaleDateString('fr-FR')}
-                        </td>
-                        <td className="p-4 text-sm text-muted-foreground">
-                          {new Date(invitation.expiresAt).toLocaleDateString('fr-FR')}
-                        </td>
-                        <td className="p-4">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleCancelInvitation(invitation.id)}
-                          >
-                            Annuler
-                          </Button>
-                        </td>
+          {/* Multi-User Profile Component */}
+          <MultiUserProfile
+            currentUser={currentProfile}
+            companyUsers={companyProfiles}
+            onProfileSwitch={handleProfileSwitch}
+            onAddProfile={handleAddProfile}
+            onEditProfile={handleEditProfile}
+            onDeleteProfile={handleDeleteProfile}
+            isPremium={isPremium}
+            maxProfiles={subscriptionLimits.maxProfiles}
+          />
+
+          {/* Pending Invitations */}
+          {isPremium && invitations.length > 0 && (
+            <div className="mt-8">
+              <h3 className="text-xl font-semibold mb-4">Invitations en attente</h3>
+              <div className="bg-card border border-border rounded-lg overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        <th className="text-left p-4 font-medium">Email</th>
+                        <th className="text-left p-4 font-medium">Rôle</th>
+                        <th className="text-left p-4 font-medium">Date d'invitation</th>
+                        <th className="text-left p-4 font-medium">Expire le</th>
+                        <th className="text-left p-4 font-medium">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {invitations.map((invitation) => (
+                        <tr key={invitation.id} className="border-t border-border">
+                          <td className="p-4">{invitation.email}</td>
+                          <td className="p-4">
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {invitation.role}
+                            </span>
+                          </td>
+                          <td className="p-4 text-sm text-muted-foreground">
+                            {new Date(invitation.createdAt).toLocaleDateString('fr-FR')}
+                          </td>
+                          <td className="p-4 text-sm text-muted-foreground">
+                            {new Date(invitation.expiresAt).toLocaleDateString('fr-FR')}
+                          </td>
+                          <td className="p-4">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleCancelInvitation(invitation.id)}
+                            >
+                              Annuler
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Invite Modal */}
-        {showInviteModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md mx-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium">Inviter un utilisateur</h3>
-                <button
-                  onClick={() => setShowInviteModal(false)}
-                  className="p-1 rounded hover:bg-muted transition-colors"
-                >
-                  <Icon name="X" size={20} />
-                </button>
-              </div>
-
-              <form onSubmit={handleInviteUser} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={inviteForm.email}
-                    onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
-                    className="w-full p-2 border border-border rounded-md bg-background text-foreground"
-                    placeholder="email@exemple.com"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Rôle
-                  </label>
-                  <select
-                    value={inviteForm.role}
-                    onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value })}
-                    className="w-full p-2 border border-border rounded-md bg-background text-foreground"
-                  >
-                    <option value="viewer">Lecteur</option>
-                    <option value="sales">Commercial</option>
-                    <option value="accountant">Comptable</option>
-                    <option value="manager">Gestionnaire</option>
-                    <option value="admin">Administrateur</option>
-                  </select>
-                </div>
-
-                <div className="flex justify-end space-x-2 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
+          {/* Invite Modal */}
+          {showInviteModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md mx-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium">Inviter un utilisateur</h3>
+                  <button
                     onClick={() => setShowInviteModal(false)}
+                    className="p-1 rounded hover:bg-muted transition-colors"
                   >
-                    Annuler
-                  </Button>
-                  <Button type="submit">
-                    Envoyer l'invitation
-                  </Button>
+                    <Icon name="X" size={20} />
+                  </button>
                 </div>
-              </form>
+
+                <form onSubmit={handleInviteUser} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={inviteForm.email}
+                      onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                      className="w-full p-2 border border-border rounded-md bg-background text-foreground"
+                      placeholder="email@exemple.com"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Rôle
+                    </label>
+                    <select
+                      value={inviteForm.role}
+                      onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value })}
+                      className="w-full p-2 border border-border rounded-md bg-background text-foreground"
+                    >
+                      <option value="viewer">Lecteur</option>
+                      <option value="sales">Commercial</option>
+                      <option value="accountant">Comptable</option>
+                      <option value="manager">Gestionnaire</option>
+                      <option value="admin">Administrateur</option>
+                    </select>
+                  </div>
+
+                  <div className="flex justify-end space-x-2 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowInviteModal(false)}
+                    >
+                      Annuler
+                    </Button>
+                    <Button type="submit">
+                      Envoyer l'invitation
+                    </Button>
+                  </div>
+                </form>
+              </div>
             </div>
-          </div>
-        )}
-        </main>
-      </div>
+          )}
+        </div>
+      </main>
     </div>
   );
 };
+
 
 export default MultiUserProfilesPage; 
