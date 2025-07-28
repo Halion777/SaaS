@@ -7,6 +7,7 @@ import UserProfile from './UserProfile';
 const MainSidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     quotes: true,
     clients: false,
@@ -19,10 +20,14 @@ const MainSidebar = () => {
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
-      const tablet = window.innerWidth < 1024;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
       setIsMobile(mobile);
-      if (tablet && !mobile) {
+      setIsTablet(tablet);
+      
+      // On tablet, always keep sidebar collapsed
+      if (tablet) {
         setIsCollapsed(true);
+        localStorage.setItem('sidebar-collapsed', 'true');
       }
     };
 
@@ -33,10 +38,14 @@ const MainSidebar = () => {
 
   useEffect(() => {
     const savedCollapsed = localStorage.getItem('sidebar-collapsed');
-    if (savedCollapsed !== null) {
+    // On tablet, always start collapsed regardless of saved state
+    if (isTablet) {
+      setIsCollapsed(true);
+      localStorage.setItem('sidebar-collapsed', 'true');
+    } else if (savedCollapsed !== null) {
       setIsCollapsed(JSON.parse(savedCollapsed));
     }
-  }, []);
+  }, [isTablet]);
 
   // Auto-expand the correct section based on current route
   useEffect(() => {
@@ -59,9 +68,20 @@ const MainSidebar = () => {
   }, [location.pathname]);
 
   const toggleSidebar = () => {
+    // On tablet, prevent sidebar toggle - always stay collapsed
+    if (isTablet) {
+      return;
+    }
+    
     const newCollapsed = !isCollapsed;
     setIsCollapsed(newCollapsed);
     localStorage.setItem('sidebar-collapsed', JSON.stringify(newCollapsed));
+    
+    // Dispatch custom event to notify pages of sidebar state change
+    const event = new CustomEvent('sidebar-toggle', { 
+      detail: { isCollapsed: newCollapsed } 
+    });
+    window.dispatchEvent(event);
   };
 
   const toggleSection = (sectionId) => {
@@ -82,6 +102,8 @@ const MainSidebar = () => {
       };
     });
   };
+
+
 
   // Navigation items organized by categories with collapsible sections
   const navigationCategories = [
@@ -233,16 +255,18 @@ const MainSidebar = () => {
   if (isMobile) {
     return (
       <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-100">
-        <div className="flex justify-around items-center h-16 px-4">
-          {flatNavigationItems.slice(0, 5).map((item) => (
-            <NavigationItem
-              key={item.id}
-              {...item}
-              isActive={location.pathname === item.path}
-              isCollapsed={true}
-              isMobile={true}
-            />
-          ))}
+        <div className="flex overflow-x-auto scrollbar-hide h-16 px-4">
+          <div className="flex items-center space-x-2 min-w-full">
+            {flatNavigationItems.map((item) => (
+              <NavigationItem
+                key={item.id}
+                {...item}
+                isActive={location.pathname === item.path}
+                isCollapsed={true}
+                isMobile={true}
+              />
+            ))}
+          </div>
         </div>
       </nav>
     );
@@ -251,13 +275,23 @@ const MainSidebar = () => {
   return (
     <aside 
       className={`fixed left-0 top-0 h-full bg-card border-r border-border z-100 transition-all duration-300 ease-out sidebar-container ${
-        isCollapsed ? 'w-16' : 'w-72'
+        isTablet ? 'w-20' : (isCollapsed ? 'w-16' : 'w-72')
       } overflow-y-auto`}
     >
       <div className="flex flex-col h-full">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
-          {!isCollapsed && (
+          {(isCollapsed || isTablet) ? (
+            // Collapsed header - show just logo
+            <div className="flex items-center justify-center w-full">
+              <img 
+                src="/assets/logo/logo.png" 
+                alt="Havitam Logo" 
+                className="w-8 h-8 object-contain"
+              />
+            </div>
+          ) : (
+            // Expanded header - show full branding
             <div className="flex items-center space-x-3">
               <img 
                 src="/assets/logo/logo.png" 
@@ -270,7 +304,7 @@ const MainSidebar = () => {
               </div>
             </div>
           )}
-          {!isMobile && (
+          {!isMobile && !isTablet && (
             <button
               onClick={toggleSidebar}
               className="p-1.5 rounded-md hover:bg-muted transition-colors duration-150"
@@ -287,10 +321,24 @@ const MainSidebar = () => {
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto">
           <div className="p-2 space-y-1">
-            {navigationCategories.map((category) => (
-              <div key={category.id} className="space-y-1">
-                {/* Category Header */}
-                {!isCollapsed && (
+            {(isCollapsed || isTablet) ? (
+              // Collapsed view - show all items as icons
+              <div className="space-y-1">
+                {flatNavigationItems.map((item) => (
+                  <NavigationItem
+                    key={item.id}
+                    {...item}
+                    isActive={location.pathname === item.path}
+                    isCollapsed={true}
+                    isMobile={false}
+                  />
+                ))}
+              </div>
+            ) : (
+              // Expanded view - show categorized navigation
+              navigationCategories.map((category) => (
+                <div key={category.id} className="space-y-1">
+                  {/* Category Header */}
                   <div className="px-3 py-2">
                     <div className="flex items-center justify-between">
                       <button
@@ -317,12 +365,11 @@ const MainSidebar = () => {
                       </button>
                     </div>
                   </div>
-                )}
 
-                {/* Category Items */}
-                {(!category.isCollapsible || category.isExpanded) && (
-                  <div className="space-y-1">
-                    {category.items.map((item) => (
+                  {/* Category Items */}
+                  {(!category.isCollapsible || category.isExpanded) && (
+                    <div className="space-y-1">
+                                          {category.items.map((item) => (
                       <NavigationItem
                         key={item.id}
                         {...item}
@@ -331,16 +378,22 @@ const MainSidebar = () => {
                         isMobile={false}
                       />
                     ))}
-                  </div>
-                )}
-              </div>
-            ))}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </nav>
 
         {/* User Profile */}
         <div className="mt-auto">
-          <UserProfile user={mockUser} isCollapsed={isCollapsed} onLogout={handleLogout} />
+          <UserProfile 
+            user={mockUser} 
+            isCollapsed={isCollapsed} 
+            onLogout={handleLogout}
+            isTablet={isTablet}
+          />
         </div>
       </div>
     </aside>

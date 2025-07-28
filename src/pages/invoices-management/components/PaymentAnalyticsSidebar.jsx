@@ -52,16 +52,19 @@ const PaymentAnalyticsSidebar = ({ analyticsData, isVisible, onToggle }) => {
   }
 
   return (
-    <div className="fixed right-0 top-0 h-full w-80 bg-card border-l border-border shadow-professional-xl z-40 overflow-y-auto">
+    <div 
+      className="fixed right-0 top-0 h-full w-80 bg-card border-l border-border shadow-professional-xl z-50 overflow-y-auto"
+      onClick={(e) => e.stopPropagation()}
+    >
       <div className="p-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 sticky top-0 bg-card pt-2 pb-4 z-10">
           <h2 className="text-lg font-semibold text-foreground">Analyses de paiement</h2>
           <button
             onClick={onToggle}
-            className="p-2 hover:bg-muted rounded-lg transition-colors duration-150"
+            className="p-2 hover:bg-muted rounded-lg transition-colors duration-150 flex-shrink-0"
           >
-            <Icon name="X" size={20} color="var(--color-muted-foreground)" />
+            <Icon name="X" size={20} className="text-muted-foreground" />
           </button>
         </div>
 

@@ -18,24 +18,24 @@ const KPICard = ({ title, value, change, trend, icon, color, description, delay 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
-      className="bg-card border border-border rounded-lg p-6 hover:shadow-md transition-all duration-300"
+      className="bg-card border border-border rounded-lg p-4 sm:p-6 hover:shadow-md transition-all duration-300"
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
-              <Icon name={icon} size={24} />
+          <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+            <div className={`p-2 sm:p-3 rounded-lg ${colorClasses[color]}`}>
+              <Icon name={icon} size={20} className="sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
-              <p className="text-2xl font-bold text-foreground">{value}</p>
+              <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">{title}</h3>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{value}</p>
             </div>
           </div>
           
           <div className="flex items-center justify-between">
             <div className={`flex items-center space-x-1 ${trendColor}`}>
-              <Icon name={trendIcon} size={16} />
-              <span className="text-sm font-medium">{change}</span>
+              <Icon name={trendIcon} size={14} className="sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm font-medium">{change}</span>
             </div>
             <span className="text-xs text-muted-foreground">{description}</span>
           </div>

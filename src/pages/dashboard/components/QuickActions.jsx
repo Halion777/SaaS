@@ -37,9 +37,9 @@ const QuickActions = () => {
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-6 shadow-professional">
-      <h3 className="text-lg font-semibold text-foreground mb-6">Actions rapides</h3>
-      <div className="space-y-4">
+    <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-professional">
+      <h3 className="text-base sm:text-lg font-semibold text-foreground mb-4 sm:mb-6">Actions rapides</h3>
+      <div className="space-y-3 sm:space-y-4">
         {actions.map((action) => (
           <Button
             key={action.id}
@@ -48,7 +48,7 @@ const QuickActions = () => {
             iconName={action.icon}
             iconPosition="left"
             onClick={() => handleActionClick(action.path)}
-            className="justify-start h-auto p-4"
+            className="justify-start h-auto p-3 sm:p-4 text-sm"
           >
             <div className="text-left">
               <div className="font-medium">{action.label}</div>
@@ -57,13 +57,13 @@ const QuickActions = () => {
           </Button>
         ))}
       </div>
-      <div className="mt-6 pt-4 border-t border-border">
+      <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-border">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>Raccourcis clavier</span>
-          <div className="flex items-center space-x-2">
-            <kbd className="px-2 py-1 bg-muted rounded text-xs">Ctrl</kbd>
+          <div className="flex items-center space-x-1 sm:space-x-2">
+            <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-muted rounded text-xs">Ctrl</kbd>
             <span>+</span>
-            <kbd className="px-2 py-1 bg-muted rounded text-xs">N</kbd>
+            <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-muted rounded text-xs">N</kbd>
           </div>
         </div>
       </div>

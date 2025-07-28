@@ -199,32 +199,32 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious }) => {
   const isFormValid = tasks.length > 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Predefined Tasks Section */}
-      <div className="bg-card border border-border rounded-lg p-6">
-        <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center">
-          <Icon name="Package" size={24} color="var(--color-primary)" className="mr-3" />
+      <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
+          <Icon name="Package" size={20} className="sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3" />
           Tâches prédéfinies
         </h2>
-        <p className="text-muted-foreground mb-4">Ajoutez rapidement des tâches courantes avec tarifs recommandés</p>
+        <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4">Ajoutez rapidement des tâches courantes avec tarifs recommandés</p>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {predefinedTasks.map(task => (
             <div 
               key={task.id} 
-              className="border border-border rounded-lg p-4 hover:shadow-md transition-all cursor-pointer"
+              className="border border-border rounded-lg p-3 sm:p-4 hover:shadow-md transition-all cursor-pointer"
               onClick={() => addPredefinedTask(task)}
             >
               <div className="flex justify-between items-start mb-2">
                 <div className="flex items-center">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mr-3">
-                    <Icon name={task.icon} size={16} color="var(--color-primary)" />
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center mr-2 sm:mr-3">
+                    <Icon name={task.icon} size={14} className="sm:w-4 sm:h-4 text-primary" />
                   </div>
-                  <h3 className="font-medium">{task.title}</h3>
+                  <h3 className="text-sm sm:text-base font-medium">{task.title}</h3>
                 </div>
-                <div className="text-lg font-semibold">{task.price}€</div>
+                <div className="text-base sm:text-lg font-semibold">{task.price}€</div>
               </div>
-              <p className="text-sm text-muted-foreground">{task.description}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">{task.description}</p>
               <div className="flex items-center mt-2 text-xs text-muted-foreground">
                 <Icon name="Clock" size={12} className="mr-1" />
                 <span>{task.duration}h</span>
@@ -234,17 +234,17 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious }) => {
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-lg p-6">
-        <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center">
-          <Icon name="Wrench" size={24} color="var(--color-primary)" className="mr-3" />
+      <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
+          <Icon name="Wrench" size={20} className="sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3" />
           Définition des tâches avec assistance IA
         </h2>
         
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Enhanced Task Form with Voice Integration */}
-          <div className="border border-border rounded-lg p-4 bg-muted/30">
-            <h3 className="font-medium text-foreground mb-4 flex items-center justify-between">
-              Nouvelle tâche
+          <div className="border border-border rounded-lg p-3 sm:p-4 bg-muted/30">
+            <h3 className="font-medium text-foreground mb-3 sm:mb-4 flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
+              <span>Nouvelle tâche</span>
               <div className="flex space-x-2">
                 <VoiceInput
                   onTranscription={handleVoiceTranscription}
@@ -267,11 +267,11 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious }) => {
             
             {/* Voice Status Indicator */}
             {isVoiceActive && (
-              <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                  <Icon name="Mic" size={16} color="var(--color-primary)" />
-                  <span className="text-sm text-primary font-medium">
+              <div className="mb-3 sm:mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full animate-pulse"></div>
+                  <Icon name="Mic" size={14} className="sm:w-4 sm:h-4 text-primary" />
+                  <span className="text-xs sm:text-sm text-primary font-medium">
                     Parlez maintenant... L'IA va générer une description complète de votre tâche
                   </span>
                 </div>
@@ -283,10 +283,10 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious }) => {
 
             {/* AI Processing Indicator */}
             {isGenerating && (
-              <div className="mb-4 p-3 bg-success/10 border border-success/20 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <Icon name="Brain" size={16} color="var(--color-success)" className="animate-pulse" />
-                  <span className="text-sm text-success font-medium">
+              <div className="mb-3 sm:mb-4 p-3 bg-success/10 border border-success/20 rounded-lg">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <Icon name="Brain" size={14} className="sm:w-4 sm:h-4 text-success animate-pulse" />
+                  <span className="text-xs sm:text-sm text-success font-medium">
                     L'IA génère une description professionnelle...
                   </span>
                 </div>
@@ -302,7 +302,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious }) => {
               </div>
             )}
             
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div className="space-y-2">
                 <Input
                   label="Description de la tâche"
@@ -331,7 +331,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious }) => {
                 )}
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <Select
                   label="Durée estimée"
                   placeholder="Sélectionner la durée"
@@ -350,9 +350,9 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious }) => {
               </div>
               
               {/* Enhanced Materials Section */}
-              <div className="border-t border-border pt-4">
+              <div className="border-t border-border pt-3 sm:pt-4">
                 <h4 className="font-medium text-foreground mb-3 flex items-center">
-                  <Icon name="Package" size={16} color="var(--color-primary)" className="mr-2" />
+                  <Icon name="Package" size={14} className="sm:w-4 sm:h-4 text-primary mr-2" />
                   Matériaux nécessaires
                   {currentTask.materials.length > 0 && (
                     <span className="ml-2 px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
@@ -361,7 +361,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious }) => {
                   )}
                 </h4>
                 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
                   <Input
                     label="Nom du matériau"
                     type="text"

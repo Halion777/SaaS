@@ -158,76 +158,76 @@ const AIScoring = ({ selectedClient, tasks, currentStep }) => {
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-6 sticky top-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-foreground flex items-center">
-          <Icon name="Sparkles" size={20} color="var(--color-primary)" className="mr-2" />
+    <div className="bg-card border border-border rounded-lg p-4 sm:p-6 lg:sticky lg:top-4 lg:top-6">
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <h3 className="text-base sm:text-lg font-semibold text-foreground flex items-center">
+          <Icon name="Sparkles" size={18} className="sm:w-5 sm:h-5 text-primary mr-2" />
           Score IA
         </h3>
         {isAnalyzing && (
           <div className="ai-indicator">
-            <Icon name="Loader2" size={16} color="var(--color-primary)" className="animate-spin" />
+            <Icon name="Loader2" size={14} className="sm:w-4 sm:h-4 text-primary animate-spin" />
           </div>
         )}
       </div>
 
       {/* Scores */}
-      <div className="space-y-4 mb-6">
-        <div className="space-y-3">
+      <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+        <div className="space-y-2 sm:space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-foreground">Lisibilité</span>
-            <span className={`text-sm font-bold ${getScoreColor(scores.readability)}`}>
+            <span className="text-xs sm:text-sm font-medium text-foreground">Lisibilité</span>
+            <span className={`text-xs sm:text-sm font-bold ${getScoreColor(scores.readability)}`}>
               {scores.readability}%
             </span>
           </div>
-          <div className="w-full bg-muted rounded-full h-2">
+          <div className="w-full bg-muted rounded-full h-1.5 sm:h-2">
             <div 
-              className={`h-2 rounded-full transition-all duration-500 ${getScoreBackground(scores.readability)}`}
+              className={`h-1.5 sm:h-2 rounded-full transition-all duration-500 ${getScoreBackground(scores.readability)}`}
               style={{ width: `${scores.readability}%` }}
             />
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-foreground">Taux de suivi</span>
-            <span className={`text-sm font-bold ${getScoreColor(scores.followUpRate)}`}>
+            <span className="text-xs sm:text-sm font-medium text-foreground">Taux de suivi</span>
+            <span className={`text-xs sm:text-sm font-bold ${getScoreColor(scores.followUpRate)}`}>
               {scores.followUpRate}%
             </span>
           </div>
-          <div className="w-full bg-muted rounded-full h-2">
+          <div className="w-full bg-muted rounded-full h-1.5 sm:h-2">
             <div 
-              className={`h-2 rounded-full transition-all duration-500 ${getScoreBackground(scores.followUpRate)}`}
+              className={`h-1.5 sm:h-2 rounded-full transition-all duration-500 ${getScoreBackground(scores.followUpRate)}`}
               style={{ width: `${scores.followUpRate}%` }}
             />
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-foreground">Niveau d'ouverture</span>
-            <span className={`text-sm font-bold ${getScoreColor(scores.openingLevel)}`}>
+            <span className="text-xs sm:text-sm font-medium text-foreground">Niveau d'ouverture</span>
+            <span className={`text-xs sm:text-sm font-bold ${getScoreColor(scores.openingLevel)}`}>
               {scores.openingLevel}%
             </span>
           </div>
-          <div className="w-full bg-muted rounded-full h-2">
+          <div className="w-full bg-muted rounded-full h-1.5 sm:h-2">
             <div 
-              className={`h-2 rounded-full transition-all duration-500 ${getScoreBackground(scores.openingLevel)}`}
+              className={`h-1.5 sm:h-2 rounded-full transition-all duration-500 ${getScoreBackground(scores.openingLevel)}`}
               style={{ width: `${scores.openingLevel}%` }}
             />
           </div>
         </div>
 
-        <div className="border-t border-border pt-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="font-medium text-foreground">Probabilité de signature</span>
-            <span className={`text-lg font-bold ${getScoreColor(scores.signatureProbability)}`}>
+        <div className="border-t border-border pt-2 sm:pt-3">
+          <div className="flex items-center justify-between mb-1 sm:mb-2">
+            <span className="text-sm sm:text-base font-medium text-foreground">Probabilité de signature</span>
+            <span className={`text-base sm:text-lg font-bold ${getScoreColor(scores.signatureProbability)}`}>
               {scores.signatureProbability}%
             </span>
           </div>
-          <div className="w-full bg-muted rounded-full h-3">
+          <div className="w-full bg-muted rounded-full h-2 sm:h-3">
             <div 
-              className={`h-3 rounded-full transition-all duration-500 ${getScoreBackground(scores.signatureProbability)}`}
+              className={`h-2 sm:h-3 rounded-full transition-all duration-500 ${getScoreBackground(scores.signatureProbability)}`}
               style={{ width: `${scores.signatureProbability}%` }}
             />
           </div>
@@ -237,28 +237,27 @@ const AIScoring = ({ selectedClient, tasks, currentStep }) => {
       {/* Recommendations */}
       {recommendations.length > 0 && (
         <div>
-          <h4 className="font-medium text-foreground mb-3 flex items-center">
-            <Icon name="Lightbulb" size={16} color="var(--color-primary)" className="mr-2" />
+          <h4 className="text-sm sm:text-base font-medium text-foreground mb-2 sm:mb-3 flex items-center">
+            <Icon name="Lightbulb" size={14} className="sm:w-4 sm:h-4 text-primary mr-2" />
             Recommandations
           </h4>
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             {recommendations.map((rec, index) => (
-              <div key={index} className="p-3 bg-muted/50 border border-border rounded-lg">
+              <div key={index} className="p-2 sm:p-3 bg-muted/50 border border-border rounded-lg">
                 <div className="flex items-start space-x-2">
                   <Icon 
                     name={getRecommendationIcon(rec.type)} 
-                    size={16} 
-                    color={`var(--color-${rec.type === 'info' ? 'primary' : rec.type})`}
-                    className="mt-0.5 flex-shrink-0"
+                    size={14} 
+                    className={`sm:w-4 sm:h-4 mt-0.5 flex-shrink-0 ${rec.type === 'info' ? 'text-primary' : `text-${rec.type}`}`}
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">{rec.title}</p>
+                    <p className="text-xs sm:text-sm font-medium text-foreground">{rec.title}</p>
                     <p className="text-xs text-muted-foreground mt-1">{rec.description}</p>
                     {rec.action && (
                       <Button
                         variant="ghost"
                         size="xs"
-                        className="mt-2 p-0 h-auto text-xs"
+                        className="mt-1 sm:mt-2 p-0 h-auto text-xs"
                       >
                         {rec.action}
                       </Button>
@@ -272,10 +271,10 @@ const AIScoring = ({ selectedClient, tasks, currentStep }) => {
       )}
 
       {/* AI Insights */}
-      <div className="mt-6 p-4 bg-primary/10 border border-primary/20 rounded-lg">
-        <div className="flex items-center mb-2">
-          <Icon name="TrendingUp" size={16} color="var(--color-primary)" className="mr-2" />
-          <span className="text-sm font-medium text-foreground">Insight IA</span>
+      <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-primary/10 border border-primary/20 rounded-lg">
+        <div className="flex items-center mb-1 sm:mb-2">
+          <Icon name="TrendingUp" size={14} className="sm:w-4 sm:h-4 text-primary mr-2" />
+          <span className="text-xs sm:text-sm font-medium text-foreground">Insight IA</span>
         </div>
         <p className="text-xs text-muted-foreground">
           {scores.signatureProbability >= 80 

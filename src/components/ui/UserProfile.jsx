@@ -4,7 +4,7 @@ import Image from '../AppImage';
 import Button from './Button';
 import { useMultiUser } from '../../context/MultiUserContext';
 
-const UserProfile = ({ user, onLogout, isCollapsed = false }) => {
+const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
   const [pinSettings, setPinSettings] = useState({
@@ -167,7 +167,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false }) => {
   };
 
   return (
-    <div className="relative overflow-hidden" ref={dropdownRef}>
+    <div className={`relative overflow-hidden ${isGlobal ? 'w-auto' : ''}`} ref={dropdownRef}>
       <button
         onClick={(e) => {
           e.preventDefault();
@@ -176,13 +176,14 @@ const UserProfile = ({ user, onLogout, isCollapsed = false }) => {
           toggleDropdown();
         }}
         className={`
-          w-full p-4 flex items-center transition-all duration-150 ease-in-out
-          hover:bg-muted hover-reveal cursor-pointer
-          ${isCollapsed ? 'justify-center' : 'justify-start space-x-3'}
-          ${isDropdownOpen ? 'bg-muted' : ''}
+          transition-all duration-150 ease-in-out hover:bg-muted hover-reveal cursor-pointer
+          ${isGlobal 
+            ? 'p-2 rounded-full bg-muted hover:bg-muted/80' 
+            : `w-full p-4 flex items-center ${isCollapsed ? 'justify-center' : 'justify-start space-x-3'} ${isDropdownOpen ? 'bg-muted' : ''}`
+          }
         `}
       >
-        <div className="relative w-8 h-8 rounded-full overflow-hidden bg-muted flex-shrink-0">
+        <div className={`relative rounded-full overflow-hidden bg-muted flex-shrink-0 ${isGlobal ? 'w-8 h-8' : 'w-8 h-8'}`}>
           {currentProfile ? (
             <div className="w-full h-full bg-primary flex items-center justify-center font-semibold text-sm text-primary-foreground">
               {getProfileAvatar(currentProfile)}
@@ -194,14 +195,14 @@ const UserProfile = ({ user, onLogout, isCollapsed = false }) => {
               className="w-full h-full object-cover"
             />
           )}
-          {isPremium && companyProfiles.length > 1 && (
+          {isPremium && companyProfiles.length > 1 && !isGlobal && (
             <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-primary border-2 border-background flex items-center justify-center">
               <Icon name="Users" size={8} className="text-primary-foreground" />
             </div>
           )}
         </div>
         
-        {!isCollapsed && (
+        {!isCollapsed && !isGlobal && (
           <>
             <div className="flex-1 text-left min-w-0">
               <p className="text-sm font-medium text-foreground truncate">
@@ -235,13 +236,16 @@ const UserProfile = ({ user, onLogout, isCollapsed = false }) => {
       {isDropdownOpen && (
         <div className={`
           fixed bg-popover border border-border rounded-lg shadow-professional-lg z-[9999]
-          ${isCollapsed ? 'left-16 w-48' : 'left-4 w-64'}
+          ${isGlobal 
+            ? 'right-4 w-64' 
+            : isCollapsed ? 'left-16 w-48' : 'left-4 w-64'
+          }
         `}
         style={{ 
           maxHeight: '400px', 
           overflowY: 'auto',
-          top: 'auto',
-          bottom: '80px'
+          top: isGlobal ? '72px' : 'auto',
+          bottom: isGlobal ? 'auto' : '80px'
         }}
         >
           <div className="py-2">
@@ -309,10 +313,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false }) => {
                               <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center font-semibold text-xs text-primary-foreground">
                                 {getProfileAvatar(profile)}
                               </div>
-                              <div className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full ${getRoleColor(profile.role)} border border-background`}></div>
-                              {hasPin && (
-                                <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-yellow-500 border border-background"></div>
-                              )}
+                              <div className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full ${hasPin ? 'bg-yellow-500' : getRoleColor(profile.role)} border border-background`}></div>
                             </div>
                             <div className="flex-1 flex items-center justify-between">
                               <span className="truncate">{profile.name}</span>

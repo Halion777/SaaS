@@ -35,13 +35,13 @@ const FilterControls = ({
   ];
 
   return (
-    <div className="bg-card border border-border rounded-lg p-4">
-      <div className="flex items-center space-x-3 mb-4">
-        <Icon name="Filter" size={20} color="var(--color-muted-foreground)" />
-        <h3 className="text-lg font-semibold text-foreground">Filtres d'analyse</h3>
+    <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
+      <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+        <Icon name="Filter" size={18} className="sm:w-5 sm:h-5" color="var(--color-muted-foreground)" />
+        <h3 className="text-base sm:text-lg font-semibold text-foreground">Filtres d'analyse</h3>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <Select
           label="Période d'analyse"
           placeholder="Sélectionner une période"
@@ -64,18 +64,14 @@ const FilterControls = ({
           options={serviceOptions}
           value={selectedService}
           onChange={onServiceChange}
+          className="sm:col-span-2 lg:col-span-1"
         />
       </div>
       
-      <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
-        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-          <Icon name="Clock" size={16} />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border space-y-2 sm:space-y-0">
+        <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground">
+          <Icon name="Clock" size={14} className="sm:w-4 sm:h-4" />
           <span>Dernière mise à jour: il y a 5 minutes</span>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-          <span className="text-xs text-muted-foreground">Données en temps réel</span>
         </div>
       </div>
     </div>

@@ -85,20 +85,20 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
       <div className="bg-card border border-border rounded-lg shadow-xl max-w-2xl w-full overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gray-50 flex-shrink-0">
-          <h2 className="text-xl font-semibold text-gray-800">Informations de l'entreprise</h2>
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Informations de l'entreprise</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 transition-colors p-1 rounded-full hover:bg-gray-100"
           >
-            <Icon name="X" size={20} />
+            <Icon name="X" size={18} className="sm:w-5 sm:h-5" />
           </button>
         </div>
 
-        <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-180px)]" onScroll={handleScroll}>
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto max-h-[calc(90vh-180px)]" onScroll={handleScroll}>
           {/* Company Logo */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">

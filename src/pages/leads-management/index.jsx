@@ -7,6 +7,8 @@ import MainSidebar from '../../components/ui/MainSidebar';
 const LeadsManagementPage = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [activeTab, setActiveTab] = useState('leads');
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
   const [settings, setSettings] = useState({
     receiveQuotes: false,
     professionalAddress: '123 Rue de la République, 75001 Paris',
@@ -28,25 +30,62 @@ const LeadsManagementPage = () => {
 
   // Handle sidebar offset for responsive layout
   React.useEffect(() => {
-    const savedCollapsed = localStorage.getItem('sidebar-collapsed');
-    const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
-    setSidebarOffset(isCollapsed ? 64 : 288);
-    
-    const handleResize = () => {
-      const isMobile = window.innerWidth < 768;
-      if (isMobile) {
+    const handleSidebarToggle = (e) => {
+      const { isCollapsed } = e.detail;
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setIsTablet(tablet);
+
+      if (mobile) {
         setSidebarOffset(0);
+      } else if (tablet) {
+        // On tablet, sidebar is always collapsed
+        setSidebarOffset(80);
       } else {
-        const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+        // On desktop, respond to sidebar state
         setSidebarOffset(isCollapsed ? 64 : 288);
       }
     };
-    
+
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setIsTablet(tablet);
+
+      if (mobile) {
+        setSidebarOffset(0);
+      } else if (tablet) {
+        // On tablet, sidebar is always collapsed
+        setSidebarOffset(80);
+      } else {
+        // On desktop, check sidebar state
+        const savedCollapsed = localStorage.getItem('sidebar-collapsed');
+        const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+
+    const handleStorage = () => {
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      
+      if (!mobile && !tablet) {
+        const savedCollapsed = localStorage.getItem('sidebar-collapsed');
+        const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+
     handleResize();
     window.addEventListener('resize', handleResize);
-    
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('sidebar-toggle', handleSidebarToggle);
     return () => {
+      window.removeEventListener('storage', handleStorage);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('sidebar-toggle', handleSidebarToggle);
     };
   }, []);
 
@@ -70,27 +109,27 @@ const LeadsManagementPage = () => {
   };
 
   const renderLeadsTab = () => (
-    <div className="bg-card border border-border rounded-lg p-6">
-      <h2 className="text-xl font-semibold text-foreground mb-4">Demandes de devis reçues</h2>
-      <div className="flex items-center justify-center py-12">
+    <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+      <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4">Demandes de devis reçues</h2>
+      <div className="flex items-center justify-center py-8 sm:py-12">
         <div className="text-center">
-          <Icon name="Inbox" size={48} color="var(--color-muted-foreground)" className="mx-auto mb-4" />
-          <p className="text-muted-foreground">Aucune demande de devis reçue pour le moment.</p>
+          <Icon name="Inbox" size={32} className="sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
+          <p className="text-xs sm:text-sm text-muted-foreground">Aucune demande de devis reçue pour le moment.</p>
         </div>
       </div>
     </div>
   );
 
   const renderSettingsTab = () => (
-    <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-foreground">Paramètres de réception des leads</h2>
+    <div className="space-y-4 sm:space-y-6">
+      <h2 className="text-lg sm:text-xl font-semibold text-foreground">Paramètres de réception des leads</h2>
       
       {/* Receive Quote Requests Toggle */}
-      <div className="bg-card border border-border rounded-lg p-6">
+      <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-medium text-foreground mb-1">Recevoir des demandes de devis</h3>
-            <p className="text-sm text-muted-foreground">Activez cette option pour recevoir des demandes de devis</p>
+            <h3 className="text-sm sm:text-base font-medium text-foreground mb-1">Recevoir des demandes de devis</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground">Activez cette option pour recevoir des demandes de devis</p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input
@@ -105,7 +144,7 @@ const LeadsManagementPage = () => {
       </div>
 
       {/* Professional Address */}
-      <div className="bg-card border border-border rounded-lg p-6">
+      <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
         <Input
           label="Adresse professionnelle"
           type="text"
@@ -116,7 +155,7 @@ const LeadsManagementPage = () => {
       </div>
 
       {/* Intervention Radius */}
-      <div className="bg-card border border-border rounded-lg p-6">
+      <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
         <Input
           label="Rayon d'intervention (km)"
           type="number"
@@ -127,13 +166,13 @@ const LeadsManagementPage = () => {
       </div>
 
       {/* Work Categories */}
-      <div className="bg-card border border-border rounded-lg p-6">
-        <h3 className="font-medium text-foreground mb-4">Catégories de travaux</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+        <h3 className="text-sm sm:text-base font-medium text-foreground mb-3 sm:mb-4">Catégories de travaux</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {/* Column 1 */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Plomberie</span>
+                      <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs sm:text-sm text-foreground">Plomberie</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -145,7 +184,7 @@ const LeadsManagementPage = () => {
               </label>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Toiture</span>
+              <span className="text-xs sm:text-sm text-foreground">Toiture</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -157,7 +196,7 @@ const LeadsManagementPage = () => {
               </label>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Peinture</span>
+              <span className="text-xs sm:text-sm text-foreground">Peinture</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -169,7 +208,7 @@ const LeadsManagementPage = () => {
               </label>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Nettoyage</span>
+              <span className="text-xs sm:text-sm text-foreground">Nettoyage</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -185,7 +224,7 @@ const LeadsManagementPage = () => {
           {/* Column 2 */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Électricité</span>
+              <span className="text-xs sm:text-sm text-foreground">Électricité</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -197,7 +236,7 @@ const LeadsManagementPage = () => {
               </label>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Maçonnerie</span>
+              <span className="text-xs sm:text-sm text-foreground">Maçonnerie</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -209,7 +248,7 @@ const LeadsManagementPage = () => {
               </label>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Menuiserie</span>
+              <span className="text-xs sm:text-sm text-foreground">Menuiserie</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -221,7 +260,7 @@ const LeadsManagementPage = () => {
               </label>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Autres</span>
+              <span className="text-xs sm:text-sm text-foreground">Autres</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -237,7 +276,7 @@ const LeadsManagementPage = () => {
           {/* Column 3 */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Chauffage</span>
+              <span className="text-xs sm:text-sm text-foreground">Chauffage</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -249,7 +288,7 @@ const LeadsManagementPage = () => {
               </label>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Carrelage</span>
+              <span className="text-xs sm:text-sm text-foreground">Carrelage</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -261,7 +300,7 @@ const LeadsManagementPage = () => {
               </label>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Jardinage</span>
+              <span className="text-xs sm:text-sm text-foreground">Jardinage</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -277,11 +316,11 @@ const LeadsManagementPage = () => {
       </div>
 
       {/* Save Button */}
-      <div className="flex justify-start">
+      <div className="flex justify-end">
         <Button
           onClick={handleSaveSettings}
           variant="default"
-          className="bg-blue-600 hover:bg-blue-700"
+          className="bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm"
         >
           Sauvegarder les paramètres
         </Button>
@@ -290,24 +329,24 @@ const LeadsManagementPage = () => {
   );
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       <MainSidebar />
       
       <div
-        className="flex-1 flex flex-col"
+        className="flex-1 flex flex-col pt-16 sm:pt-4 md:pt-0 pb-20 md:pb-6"
         style={{ marginLeft: `${sidebarOffset}px` }}
       >
-        <main className="flex-1 p-6 space-y-6">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
           {/* Header */}
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Gestion des Leads</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des Leads</h1>
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex space-x-1 bg-muted p-1 rounded-lg">
+          <div className="flex space-x-1 bg-muted p-1 rounded-lg overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setActiveTab('leads')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'leads'
                   ? 'bg-white text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -317,7 +356,7 @@ const LeadsManagementPage = () => {
             </button>
             <button
               onClick={() => setActiveTab('settings')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'settings'
                   ? 'bg-white text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'

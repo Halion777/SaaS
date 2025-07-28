@@ -65,18 +65,18 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious }) => {
   const isPDF = (type) => type === 'application/pdf';
 
   return (
-    <div className="space-y-6">
-      <div className="bg-card border border-border rounded-lg p-6">
-        <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center">
-          <Icon name="Upload" size={24} color="var(--color-primary)" className="mr-3" />
+    <div className="space-y-4 sm:space-y-6">
+      <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
+          <Icon name="Upload" size={20} className="sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3" />
           Fichiers et photos
         </h2>
         
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Upload Area */}
           <div
             className={`
-              relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200
+              relative border-2 border-dashed rounded-lg p-4 sm:p-8 text-center transition-all duration-200
               ${dragActive 
                 ? 'border-primary bg-primary/10' :'border-border hover:border-primary/50 hover:bg-muted/30'
               }
@@ -95,16 +95,16 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious }) => {
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
             
-            <div className="space-y-4">
-              <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
-                <Icon name="Upload" size={32} color="var(--color-primary)" />
+            <div className="space-y-3 sm:space-y-4">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+                <Icon name="Upload" size={24} className="sm:w-8 sm:h-8 text-primary" />
               </div>
               
               <div>
-                <p className="text-lg font-medium text-foreground">
+                <p className="text-base sm:text-lg font-medium text-foreground">
                   Glissez vos fichiers ici ou cliquez pour parcourir
                 </p>
-                <p className="text-sm text-muted-foreground mt-2">
+                <p className="text-xs sm:text-sm text-muted-foreground mt-2">
                   Formats acceptés: Images (JPG, PNG, GIF), PDF, Documents Word
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -130,12 +130,12 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious }) => {
                 Fichiers ajoutés ({files.length})
               </h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {files.map((file) => (
-                  <div key={file.id} className="relative group bg-background border border-border rounded-lg p-4 hover:shadow-professional transition-all duration-200">
-                    <div className="flex items-start space-x-3">
+                  <div key={file.id} className="relative group bg-background border border-border rounded-lg p-3 sm:p-4 hover:shadow-professional transition-all duration-200">
+                    <div className="flex items-start space-x-2 sm:space-x-3">
                       {/* File Preview */}
-                      <div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
+                      <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
                         {isImage(file.type) ? (
                           <Image
                             src={file.url}
@@ -143,15 +143,15 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious }) => {
                             className="w-full h-full object-cover"
                           />
                         ) : isPDF(file.type) ? (
-                          <Icon name="FileText" size={24} color="var(--color-error)" />
+                          <Icon name="FileText" size={20} className="sm:w-6 sm:h-6 text-error" />
                         ) : (
-                          <Icon name="File" size={24} color="var(--color-muted-foreground)" />
+                          <Icon name="File" size={20} className="sm:w-6 sm:h-6 text-muted-foreground" />
                         )}
                       </div>
                       
                       {/* File Info */}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">
+                        <p className="text-xs sm:text-sm font-medium text-foreground truncate">
                           {file.name}
                         </p>
                         <p className="text-xs text-muted-foreground">
@@ -169,9 +169,9 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious }) => {
                     {/* Remove Button */}
                     <button
                       onClick={() => removeFile(file.id)}
-                      className="absolute top-2 right-2 w-6 h-6 bg-error text-error-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-error/80"
+                      className="absolute top-1 sm:top-2 right-1 sm:right-2 w-5 h-5 sm:w-6 sm:h-6 bg-error text-error-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-error/80"
                     >
-                      <Icon name="X" size={14} color="currentColor" />
+                      <Icon name="X" size={12} className="sm:w-3.5 sm:h-3.5" />
                     </button>
                   </div>
                 ))}
@@ -180,12 +180,12 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious }) => {
           )}
           
           {/* File Types Info */}
-          <div className="bg-muted/50 border border-border rounded-lg p-4">
+          <div className="bg-muted/50 border border-border rounded-lg p-3 sm:p-4">
             <h4 className="font-medium text-foreground mb-2 flex items-center">
-              <Icon name="Info" size={16} color="var(--color-primary)" className="mr-2" />
+              <Icon name="Info" size={14} className="sm:w-4 sm:h-4 text-primary mr-2" />
               Types de fichiers recommandés
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
               <div>
                 <p className="font-medium text-foreground mb-1">Photos :</p>
                 <ul className="text-muted-foreground space-y-1">

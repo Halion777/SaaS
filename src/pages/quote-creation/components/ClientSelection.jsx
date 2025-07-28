@@ -67,15 +67,15 @@ const ClientSelection = ({ selectedClient, onClientSelect, onNext }) => {
   const isFormValid = selectedClient || (newClient.name && newClient.email);
 
   return (
-    <div className="space-y-6">
-      <div className="bg-card border border-border rounded-lg p-6">
-        <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center">
-          <Icon name="Users" size={24} color="var(--color-primary)" className="mr-3" />
+    <div className="space-y-4 sm:space-y-6">
+      <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
+          <Icon name="Users" size={20} className="sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3" />
           Sélection du client
         </h2>
         
         {!showNewClientForm ? (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <Select
               label="Choisir un client existant"
               placeholder="Rechercher un client..."
@@ -96,9 +96,9 @@ const ClientSelection = ({ selectedClient, onClientSelect, onNext }) => {
               description="Tapez pour rechercher parmi vos clients existants"
             />
             
-            <div className="flex items-center justify-center py-4">
+            <div className="flex items-center justify-center py-3 sm:py-4">
               <div className="flex-1 border-t border-border"></div>
-              <span className="px-4 text-sm text-muted-foreground">ou</span>
+              <span className="px-3 sm:px-4 text-xs sm:text-sm text-muted-foreground">ou</span>
               <div className="flex-1 border-t border-border"></div>
             </div>
             
@@ -113,8 +113,8 @@ const ClientSelection = ({ selectedClient, onClientSelect, onNext }) => {
             </Button>
           </div>
         ) : (
-          <form onSubmit={handleNewClientSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={handleNewClientSubmit} className="space-y-3 sm:space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               <Input
                 label="Nom complet"
                 type="text"
@@ -132,7 +132,7 @@ const ClientSelection = ({ selectedClient, onClientSelect, onNext }) => {
               />
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               <Input
                 label="Email"
                 type="email"
@@ -158,7 +158,7 @@ const ClientSelection = ({ selectedClient, onClientSelect, onNext }) => {
               onChange={(e) => handleInputChange('address', e.target.value)}
             />
             
-            <div className="flex space-x-3 pt-4">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-3 sm:pt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -181,26 +181,26 @@ const ClientSelection = ({ selectedClient, onClientSelect, onNext }) => {
       </div>
       
       {selectedClient && (
-        <div className="bg-success/10 border border-success/20 rounded-lg p-4">
+        <div className="bg-success/10 border border-success/20 rounded-lg p-3 sm:p-4">
           <div className="flex items-center">
-            <Icon name="CheckCircle" size={20} color="var(--color-success)" className="mr-3" />
+            <Icon name="CheckCircle" size={18} className="sm:w-5 sm:h-5 text-success mr-2 sm:mr-3" />
             <div>
-              <p className="font-medium text-foreground">{selectedClient.label}</p>
-              <p className="text-sm text-muted-foreground">{selectedClient.description}</p>
+              <p className="text-sm sm:text-base font-medium text-foreground">{selectedClient.label}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">{selectedClient.description}</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Project Information Section */}
-      <div className="bg-card border border-border rounded-lg p-6">
-        <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center">
-          <Icon name="FileText" size={24} color="var(--color-primary)" className="mr-3" />
+      <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
+          <Icon name="FileText" size={20} className="sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3" />
           Informations projet
         </h2>
         
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-3 sm:space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <Select
               label="Catégorie *"
               placeholder="Sélectionner une catégorie"
@@ -225,7 +225,7 @@ const ClientSelection = ({ selectedClient, onClientSelect, onNext }) => {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
                 Date limite
@@ -238,7 +238,7 @@ const ClientSelection = ({ selectedClient, onClientSelect, onNext }) => {
                   className="w-full p-3 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <Icon name="Calendar" size={16} color="var(--color-muted-foreground)" />
+                  <Icon name="Calendar" size={16} className="text-muted-foreground" />
                 </div>
               </div>
             </div>
@@ -256,16 +256,16 @@ const ClientSelection = ({ selectedClient, onClientSelect, onNext }) => {
                 placeholder="Ex: Pose de parquet dans salon 20m²"
                 className="w-full p-3 border border-border rounded-lg bg-input text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring"
               />
-              <div className="absolute bottom-3 right-3 flex items-center space-x-2">
+              <div className="absolute bottom-2 sm:bottom-3 right-2 sm:right-3 flex items-center space-x-1 sm:space-x-2">
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="xs"
                   iconName="Mic"
                   title="Dicter la description"
                 />
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="xs"
                   iconName="Sparkles"
                   title="Enrichir avec l'IA"
                 />
@@ -284,8 +284,11 @@ const ClientSelection = ({ selectedClient, onClientSelect, onNext }) => {
           disabled={!isFormValid}
           iconName="ArrowRight"
           iconPosition="right"
+          size="sm"
+          className="w-full sm:w-auto"
         >
-          Étape suivante
+          <span className="hidden sm:inline">Étape suivante</span>
+          <span className="sm:hidden">Suivant</span>
         </Button>
       </div>
     </div>

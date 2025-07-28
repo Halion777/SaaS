@@ -78,25 +78,25 @@ const TopClients = () => {
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-6 shadow-professional">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-foreground">Top clients</h3>
-        <div className="flex items-center space-x-2">
+    <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-professional">
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <h3 className="text-base sm:text-lg font-semibold text-foreground">Top clients</h3>
+        <div className="flex items-center space-x-1 sm:space-x-2">
           <span className="text-xs text-muted-foreground">Par CA</span>
-          <Icon name="TrendingUp" size={14} color="var(--color-success)" />
+          <Icon name="TrendingUp" size={12} className="sm:w-[14px] sm:h-[14px]" color="var(--color-success)" />
         </div>
       </div>
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {clients.map((client, index) => {
           const statusConfig = getStatusConfig(client.status);
           return (
-            <div key={client.id} className="flex items-center space-x-4 p-3 rounded-lg hover:bg-muted/50 transition-colors duration-150">
-              <div className="flex items-center space-x-3">
+            <div key={client.id} className="flex items-center space-x-3 sm:space-x-4 p-2.5 sm:p-3 rounded-lg hover:bg-muted/50 transition-colors duration-150">
+              <div className="flex items-center space-x-2 sm:space-x-3">
                 <div className="relative">
-                  <span className="absolute -top-2 -left-2 w-5 h-5 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -left-1 sm:-top-2 sm:-left-2 w-4 h-4 sm:w-5 sm:h-5 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center">
                     {index + 1}
                   </span>
-                  <div className="w-10 h-10 rounded-full overflow-hidden">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden">
                     <Image
                       src={client.avatar}
                       alt={client.name}
@@ -105,9 +105,9 @@ const TopClients = () => {
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-2 mb-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 mb-1 space-y-1 sm:space-y-0">
                     <p className="text-sm font-medium text-foreground truncate">{client.name}</p>
-                    <span className={`text-xs px-2 py-1 rounded-full ${statusConfig.bg} ${statusConfig.color}`}>
+                    <span className={`text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ${statusConfig.bg} ${statusConfig.color} w-fit`}>
                       {statusConfig.label}
                     </span>
                   </div>
@@ -116,9 +116,9 @@ const TopClients = () => {
               </div>
               <div className="text-right">
                 <p className="text-sm font-semibold text-foreground">{client.revenue}</p>
-                <div className="flex items-center space-x-2 mt-1">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 mt-1 space-y-0.5 sm:space-y-0">
                   <span className="text-xs text-muted-foreground">{client.quotes} devis</span>
-                  <span className="text-xs text-muted-foreground">•</span>
+                  <span className="hidden sm:inline text-xs text-muted-foreground">•</span>
                   <span className={`text-xs font-medium ${getSignatureRateColor(client.signatureRate)}`}>
                     {client.signatureRate}%
                   </span>
@@ -128,10 +128,10 @@ const TopClients = () => {
           );
         })}
       </div>
-      <div className="mt-6 pt-4 border-t border-border">
+      <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-border">
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">CA total: 36.250,00 €</span>
-          <Icon name="Users" size={14} color="var(--color-muted-foreground)" />
+          <Icon name="Users" size={12} className="sm:w-[14px] sm:h-[14px]" color="var(--color-muted-foreground)" />
         </div>
       </div>
     </div>

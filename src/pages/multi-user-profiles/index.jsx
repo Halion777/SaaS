@@ -195,6 +195,7 @@ const MultiUserProfilesPage = () => {
           marginLeft: isMobile ? 0 : `${sidebarOffset}px`,
           transition: 'margin-left 0.3s ease-out'
         }}
+        className="pt-4 md:pt-0"
       >
         {/* Header */}
         <header className="bg-card border-b border-border px-6 py-4">

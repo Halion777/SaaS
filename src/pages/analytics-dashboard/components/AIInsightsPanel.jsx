@@ -23,11 +23,11 @@ const AIInsightsPanel = ({ insights, pricingOptimization, performanceAnalysis, i
     if (isLoading) return <LoadingCard />;
     
     return (
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         <div>
-          <h4 className="font-semibold text-foreground mb-3 flex items-center">
-            <Icon name="Lightbulb" size={18} className="mr-2 text-yellow-500" />
-            Insights clés
+          <h4 className="font-semibold text-foreground mb-2 sm:mb-3 flex items-center">
+            <Icon name="Lightbulb" size={16} className="sm:w-[18px] sm:h-[18px] mr-2 text-yellow-500" />
+            <span className="text-sm sm:text-base">Insights clés</span>
           </h4>
           <div className="space-y-2">
             {insights?.insights?.map((insight, index) => (
@@ -36,18 +36,18 @@ const AIInsightsPanel = ({ insights, pricingOptimization, performanceAnalysis, i
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="p-3 bg-blue-50 border border-blue-200 rounded-lg"
+                className="p-2 sm:p-3 bg-blue-50 border border-blue-200 rounded-lg"
               >
-                <p className="text-sm text-blue-800">{insight}</p>
+                <p className="text-xs sm:text-sm text-blue-800">{insight}</p>
               </motion.div>
             ))}
           </div>
         </div>
 
         <div>
-          <h4 className="font-semibold text-foreground mb-3 flex items-center">
-            <Icon name="Target" size={18} className="mr-2 text-emerald-500" />
-            Recommandations
+          <h4 className="font-semibold text-foreground mb-2 sm:mb-3 flex items-center">
+            <Icon name="Target" size={16} className="sm:w-[18px] sm:h-[18px] mr-2 text-emerald-500" />
+            <span className="text-sm sm:text-base">Recommandations</span>
           </h4>
           <div className="space-y-2">
             {insights?.recommendations?.map((rec, index) => (
@@ -56,18 +56,18 @@ const AIInsightsPanel = ({ insights, pricingOptimization, performanceAnalysis, i
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 + 0.3 }}
-                className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg"
+                className="p-2 sm:p-3 bg-emerald-50 border border-emerald-200 rounded-lg"
               >
-                <p className="text-sm text-emerald-800">{rec}</p>
+                <p className="text-xs sm:text-sm text-emerald-800">{rec}</p>
               </motion.div>
             ))}
           </div>
         </div>
 
         <div>
-          <h4 className="font-semibold text-foreground mb-3 flex items-center">
-            <Icon name="TrendingUp" size={18} className="mr-2 text-purple-500" />
-            Prédictions
+          <h4 className="font-semibold text-foreground mb-2 sm:mb-3 flex items-center">
+            <Icon name="TrendingUp" size={16} className="sm:w-[18px] sm:h-[18px] mr-2 text-purple-500" />
+            <span className="text-sm sm:text-base">Prédictions</span>
           </h4>
           <div className="space-y-2">
             {insights?.predictions?.map((pred, index) => (
@@ -76,9 +76,9 @@ const AIInsightsPanel = ({ insights, pricingOptimization, performanceAnalysis, i
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 + 0.6 }}
-                className="p-3 bg-purple-50 border border-purple-200 rounded-lg"
+                className="p-2 sm:p-3 bg-purple-50 border border-purple-200 rounded-lg"
               >
-                <p className="text-sm text-purple-800">{pred}</p>
+                <p className="text-xs sm:text-sm text-purple-800">{pred}</p>
               </motion.div>
             ))}
           </div>
@@ -91,35 +91,39 @@ const AIInsightsPanel = ({ insights, pricingOptimization, performanceAnalysis, i
     if (isLoading) return <LoadingCard />;
     
     return (
-      <div className="space-y-4">
-        <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
-          <h4 className="font-semibold text-green-800 mb-2">Position marché</h4>
-          <p className="text-sm text-green-700">
+      <div className="space-y-3 sm:space-y-4">
+        <div className="p-3 sm:p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
+          <h4 className="font-semibold text-green-800 mb-2 text-sm sm:text-base">Position marché</h4>
+          <p className="text-xs sm:text-sm text-green-700">
             {pricingOptimization?.marketPosition || 'Position compétitive favorable'}
           </p>
         </div>
 
-        <div>
-          <h4 className="font-semibold text-foreground mb-3">Avantages concurrentiels</h4>
-          <div className="space-y-2">
-            {(pricingOptimization?.competitiveAdvantages || [
-              'Rapport qualité-prix optimal',
-              'Expertise reconnue',
-              'Service personnalisé'
-            ]).map((advantage, index) => (
-              <div key={index} className="flex items-center space-x-2">
-                <Icon name="CheckCircle" size={16} className="text-emerald-500" />
-                <span className="text-sm text-foreground">{advantage}</span>
-              </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <div className="p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 className="font-semibold text-blue-800 mb-2 text-sm sm:text-base">Prix recommandés</h4>
+            <div className="space-y-1 sm:space-y-2">
+              {(pricingOptimization?.recommendedPrices || [
+                'Plomberie: +15%',
+                'Électricité: +12%',
+                'Rénovation: +8%'
+              ]).map((price, index) => (
+                <p key={index} className="text-xs sm:text-sm text-blue-700">{price}</p>
             ))}
           </div>
         </div>
 
-        <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-          <h4 className="font-semibold text-orange-800 mb-2">Impact rentabilité</h4>
-          <p className="text-sm text-orange-700">
-            {pricingOptimization?.profitabilityImpact || 'Optimisation attendue de +15% sur la marge'}
-          </p>
+          <div className="p-3 sm:p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <h4 className="font-semibold text-orange-800 mb-2 text-sm sm:text-base">Risques identifiés</h4>
+            <div className="space-y-1 sm:space-y-2">
+              {(pricingOptimization?.risks || [
+                'Concurrence agressive',
+                'Coûts matériaux'
+              ]).map((risk, index) => (
+                <p key={index} className="text-xs sm:text-sm text-orange-700">{risk}</p>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -129,25 +133,18 @@ const AIInsightsPanel = ({ insights, pricingOptimization, performanceAnalysis, i
     if (isLoading) return <LoadingCard />;
     
     return (
-      <div className="space-y-4">
-        <div className="text-center p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
-          <div className="text-3xl font-bold text-blue-600 mb-2">
-            {performanceAnalysis?.efficiencyScore || 85}%
-          </div>
-          <p className="text-sm text-blue-700">Score d'efficacité global</p>
-        </div>
-
+      <div className="space-y-3 sm:space-y-4">
         <div>
-          <h4 className="font-semibold text-foreground mb-3 flex items-center">
-            <Icon name="AlertTriangle" size={18} className="mr-2 text-amber-500" />
-            Goulots d'étranglement
+          <h4 className="font-semibold text-foreground mb-2 sm:mb-3 flex items-center">
+            <Icon name="AlertTriangle" size={16} className="sm:w-[18px] sm:h-[18px] mr-2 text-amber-500" />
+            <span className="text-sm sm:text-base">Goulots d'étranglement</span>
           </h4>
           <div className="space-y-2">
             {(performanceAnalysis?.bottlenecks || [
               'Temps de réponse aux devis',
               'Processus de validation'
             ]).map((bottleneck, index) => (
-              <div key={index} className="p-2 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800">
+              <div key={index} className="p-2 sm:p-3 bg-amber-50 border border-amber-200 rounded text-xs sm:text-sm text-amber-800">
                 {bottleneck}
               </div>
             ))}
@@ -155,16 +152,16 @@ const AIInsightsPanel = ({ insights, pricingOptimization, performanceAnalysis, i
         </div>
 
         <div>
-          <h4 className="font-semibold text-foreground mb-3 flex items-center">
-            <Icon name="Zap" size={18} className="mr-2 text-blue-500" />
-            Améliorations suggérées
+          <h4 className="font-semibold text-foreground mb-2 sm:mb-3 flex items-center">
+            <Icon name="Zap" size={16} className="sm:w-[18px] sm:h-[18px] mr-2 text-blue-500" />
+            <span className="text-sm sm:text-base">Améliorations suggérées</span>
           </h4>
           <div className="space-y-2">
             {(performanceAnalysis?.improvements || [
               'Automatiser les suivis clients',
               'Optimiser la planification'
             ]).map((improvement, index) => (
-              <div key={index} className="p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+              <div key={index} className="p-2 sm:p-3 bg-blue-50 border border-blue-200 rounded text-xs sm:text-sm text-blue-800">
                 {improvement}
               </div>
             ))}
@@ -188,15 +185,15 @@ const AIInsightsPanel = ({ insights, pricingOptimization, performanceAnalysis, i
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg">
-            <Icon name="Sparkles" size={20} color="rgb(147 51 234)" />
+    <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0">
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="p-1.5 sm:p-2 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg">
+            <Icon name="Sparkles" size={18} className="sm:w-5 sm:h-5" color="rgb(147 51 234)" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Insights IA</h3>
-            <p className="text-sm text-muted-foreground">
+            <h3 className="text-base sm:text-lg font-semibold text-foreground">Insights IA</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Recommandations automatisées basées sur vos données
             </p>
           </div>
@@ -208,18 +205,18 @@ const AIInsightsPanel = ({ insights, pricingOptimization, performanceAnalysis, i
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-1 mb-6 bg-muted/30 p-1 rounded-lg">
+      <div className="flex space-x-1 mb-4 sm:mb-6 bg-muted/30 p-1 rounded-lg">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+            className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 ${
               activeTab === tab.id
                 ? 'bg-background text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <Icon name={tab.icon} size={16} />
+            <Icon name={tab.icon} size={14} className="sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">{tab.label}</span>
           </button>
         ))}

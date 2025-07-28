@@ -18,6 +18,8 @@ const QuoteCreation = () => {
   const [files, setFiles] = useState([]);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [companyInfo, setCompanyInfo] = useState(null);
+  const [sidebarOffset, setSidebarOffset] = useState(288);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Auto-save functionality
   useEffect(() => {
@@ -59,6 +61,53 @@ const QuoteCreation = () => {
         console.error('Error loading draft:', error);
       }
     }
+  }, []);
+
+  // Handle sidebar offset and responsive layout
+  useEffect(() => {
+    const handleSidebarToggle = (e) => {
+      const { isCollapsed } = e.detail;
+      const isMobile = window.innerWidth < 768;
+      const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      
+      if (isMobile) {
+        setSidebarOffset(0);
+      } else if (isTablet) {
+        // On tablet, sidebar auto-closes after navigation, so always use collapsed width
+        // But account for wider collapsed sidebar on tablet (80px instead of 64px)
+        setSidebarOffset(80);
+      } else {
+        // On desktop, respond to sidebar state
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768;
+      const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      
+      setIsMobile(isMobile);
+      
+      if (isMobile) {
+        setSidebarOffset(0);
+      } else if (isTablet) {
+        // On tablet, sidebar auto-closes after navigation, so always use collapsed width
+        // But account for wider collapsed sidebar on tablet (80px instead of 64px)
+        setSidebarOffset(80);
+      } else {
+        // On desktop, check sidebar state
+        const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('sidebar-toggle', handleSidebarToggle);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('sidebar-toggle', handleSidebarToggle);
+    };
   }, []);
 
   const handleNext = () => {
@@ -208,21 +257,27 @@ const QuoteCreation = () => {
     <div className="min-h-screen bg-background">
       <MainSidebar />
       
-      <div className="ml-16 lg:ml-72 min-h-screen">
-        <div className="container mx-auto px-6 py-8 max-w-7xl">
+      <div 
+        style={{ 
+          marginLeft: isMobile ? 0 : `${sidebarOffset}px`,
+          transition: 'margin-left 0.3s ease-out'
+        }}
+        className="min-h-screen pt-4 md:pt-0"
+      >
+        <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 pb-20 sm:pb-8 max-w-7xl">
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 space-y-4 sm:space-y-0">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Créer un devis</h1>
-              <p className="text-muted-foreground mt-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Créer un devis</h1>
+              <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">
                 Remplissez les informations ci-dessous pour générer automatiquement un devis professionnel
               </p>
             </div>
             
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-row items-center space-x-2 sm:space-x-3">
               {isAutoSaving && (
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Icon name="Save" size={16} color="currentColor" className="mr-2" />
+                <div className="flex items-center text-xs sm:text-sm text-muted-foreground">
+                  <Icon name="Save" size={14} className="sm:w-4 sm:h-4 mr-2" />
                   Sauvegarde automatique...
                 </div>
               )}
@@ -232,8 +287,11 @@ const QuoteCreation = () => {
                 onClick={clearDraft}
                 iconName="Trash2"
                 iconPosition="left"
+                size="sm"
+                className="w-auto"
               >
-                Effacer le brouillon
+                <span className="hidden sm:inline">Effacer le brouillon</span>
+                <span className="sm:hidden">Effacer</span>
               </Button>
               
               <Button
@@ -241,21 +299,24 @@ const QuoteCreation = () => {
                 onClick={() => navigate('/quotes-management')}
                 iconName="ArrowLeft"
                 iconPosition="left"
+                size="sm"
+                className="w-auto"
               >
-                Retour
+                <span className="hidden sm:inline">Retour</span>
+                <span className="sm:hidden">Retour</span>
               </Button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
             {/* Main Content */}
-            <div className="xl:col-span-3 space-y-6">
+            <div className="lg:col-span-3 space-y-4 sm:space-y-6">
               <StepIndicator currentStep={currentStep} />
               {renderCurrentStep()}
             </div>
 
             {/* AI Scoring Sidebar */}
-            <div className="xl:col-span-1">
+            <div className="lg:col-span-1">
               <AIScoring
                 selectedClient={selectedClient}
                 tasks={tasks}

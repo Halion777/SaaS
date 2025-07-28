@@ -71,18 +71,19 @@ const TaskList = () => {
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-6 shadow-professional">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-foreground">Tâches du jour</h3>
-        <span className="text-sm text-muted-foreground">{tasks.length} tâches</span>
+    <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-professional">
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <h3 className="text-base sm:text-lg font-semibold text-foreground">Tâches du jour</h3>
+        <span className="text-xs sm:text-sm text-muted-foreground">{tasks.length} tâches</span>
       </div>
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {tasks.map((task) => (
-          <div key={task.id} className="flex items-center space-x-4 p-3 rounded-lg hover:bg-muted/50 transition-colors duration-150">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getPriorityBg(task.priority)}`}>
+          <div key={task.id} className="flex items-center space-x-3 sm:space-x-4 p-2.5 sm:p-3 rounded-lg hover:bg-muted/50 transition-colors duration-150">
+            <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center ${getPriorityBg(task.priority)}`}>
               <Icon 
                 name={getTaskIcon(task.type)} 
-                size={16} 
+                size={14} 
+                className="sm:w-4 sm:h-4"
                 color="currentColor"
                 className={getPriorityColor(task.priority)}
               />
@@ -91,17 +92,17 @@ const TaskList = () => {
               <p className="text-sm font-medium text-foreground truncate">{task.title}</p>
               <p className="text-xs text-muted-foreground">{task.client} • {task.action}</p>
             </div>
-            <div className="flex items-center space-x-2">
-              <span className={`w-2 h-2 rounded-full ${getPriorityBg(task.priority)}`}></span>
-              <Button variant="ghost" size="sm">
-                <Icon name="ChevronRight" size={16} color="currentColor" />
+            <div className="flex items-center space-x-1.5 sm:space-x-2">
+              <span className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${getPriorityBg(task.priority)}`}></span>
+              <Button variant="ghost" size="sm" className="p-1 sm:p-1.5">
+                <Icon name="ChevronRight" size={14} className="sm:w-4 sm:h-4" color="currentColor" />
               </Button>
             </div>
           </div>
         ))}
       </div>
-      <div className="mt-6 pt-4 border-t border-border">
-        <Button variant="outline" fullWidth>
+      <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-border">
+        <Button variant="outline" fullWidth className="text-sm">
           Voir toutes les tâches
         </Button>
       </div>

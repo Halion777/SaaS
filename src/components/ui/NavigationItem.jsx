@@ -11,7 +11,7 @@ const NavigationItem = ({
   notifications = 0, 
   isActive = false, 
   isCollapsed = false,
-  isMobile = false 
+  isMobile = false
 }) => {
   const navigate = useNavigate();
 
@@ -24,9 +24,9 @@ const NavigationItem = ({
     <button
       onClick={handleClick}
       className={`
-        relative w-full flex items-center transition-all duration-150 ease-in-out
+        relative flex items-center transition-all duration-150 ease-in-out flex-shrink-0
         ${isMobile 
-          ? 'flex-col justify-center p-2 rounded-lg' 
+          ? 'flex-col justify-center p-2 rounded-lg min-w-[60px]' 
           : `p-3 rounded-lg ${isCollapsed ? 'justify-center' : 'justify-start space-x-3'}`
         }
         ${isActive 

@@ -15,6 +15,70 @@ const SupplierInvoicesManagement = () => {
   const [isAnalyticsSidebarVisible, setIsAnalyticsSidebarVisible] = useState(false);
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [sidebarOffset, setSidebarOffset] = useState(288);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+
+  // Handle sidebar offset for responsive layout
+  useEffect(() => {
+    const handleSidebarToggle = (e) => {
+      const { isCollapsed } = e.detail;
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setIsTablet(tablet);
+
+      if (mobile) {
+        setSidebarOffset(0);
+      } else if (tablet) {
+        // On tablet, sidebar is always collapsed
+        setSidebarOffset(80);
+      } else {
+        // On desktop, respond to sidebar state
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setIsTablet(tablet);
+
+      if (mobile) {
+        setSidebarOffset(0);
+      } else if (tablet) {
+        // On tablet, sidebar is always collapsed
+        setSidebarOffset(80);
+      } else {
+        // On desktop, check sidebar state
+        const savedCollapsed = localStorage.getItem('sidebar-collapsed');
+        const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+
+    const handleStorage = () => {
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      
+      if (!mobile && !tablet) {
+        const savedCollapsed = localStorage.getItem('sidebar-collapsed');
+        const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('sidebar-toggle', handleSidebarToggle);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('sidebar-toggle', handleSidebarToggle);
+    };
+  }, []);
 
   // Mock data for supplier invoices
   const mockSupplierInvoices = [
@@ -325,11 +389,14 @@ const SupplierInvoicesManagement = () => {
     return (
       <div className="min-h-screen bg-background">
         <MainSidebar />
-        <div className="ml-16 lg:ml-72 p-6">
+        <div 
+          className="pt-16 sm:pt-4 md:pt-0 p-3 sm:p-4 md:p-6"
+          style={{ marginLeft: `${sidebarOffset}px` }}
+        >
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
-              <Icon name="Loader2" size={48} color="var(--color-primary)" className="animate-spin mx-auto mb-4" />
-              <p className="text-muted-foreground">Chargement des factures fournisseurs...</p>
+              <Icon name="Loader2" size={32} className="sm:w-12 sm:h-12 animate-spin mx-auto mb-3 sm:mb-4 text-primary" />
+              <p className="text-xs sm:text-sm text-muted-foreground">Chargement des factures fournisseurs...</p>
             </div>
           </div>
         </div>
@@ -341,29 +408,25 @@ const SupplierInvoicesManagement = () => {
     <div className="min-h-screen bg-background">
       <MainSidebar />
       
-      <div className={`transition-all duration-300 ${isAnalyticsSidebarVisible ? 'mr-80' : 'mr-0'} ml-16 lg:ml-72`}>
-        <div className="p-6">
+      <div 
+        className="transition-all duration-300 pt-16 sm:pt-4 md:pt-0 pb-20 md:pb-6"
+        style={{ marginLeft: `${sidebarOffset}px` }}
+      >
+        <div className="p-3 sm:p-4 md:p-6">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Factures fournisseurs</h1>
-              <p className="text-muted-foreground">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Factures fournisseurs</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Gérez vos factures fournisseurs, suivez vos dépenses et envoyez-les à votre comptable
               </p>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <Button
-                variant="outline"
-                iconName="BarChart3"
-                iconPosition="left"
-                onClick={() => setIsAnalyticsSidebarVisible(!isAnalyticsSidebarVisible)}
-              >
-                Analyses
-              </Button>
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               <Button
                 iconName="Plus"
                 iconPosition="left"
                 onClick={() => setIsQuickCreateOpen(true)}
+                className="text-xs sm:text-sm"
               >
                 Ajouter facture
               </Button>
@@ -389,15 +452,15 @@ const SupplierInvoicesManagement = () => {
 
           {/* Pagination */}
           {filteredSupplierInvoices.length > 0 && (
-            <div className="flex items-center justify-between mt-6">
-              <p className="text-sm text-muted-foreground">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mt-4 sm:mt-6">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Affichage de {filteredSupplierInvoices.length} facture(s) sur {supplierInvoices.length}
               </p>
               <div className="flex items-center space-x-2">
-                <Button variant="outline" size="sm" iconName="ChevronLeft">
+                <Button variant="outline" size="sm" iconName="ChevronLeft" className="text-xs sm:text-sm">
                   Précédent
                 </Button>
-                <Button variant="outline" size="sm" iconName="ChevronRight">
+                <Button variant="outline" size="sm" iconName="ChevronRight" className="text-xs sm:text-sm">
                   Suivant
                 </Button>
               </div>
@@ -407,6 +470,12 @@ const SupplierInvoicesManagement = () => {
       </div>
 
       {/* Payment Analytics Sidebar */}
+      {isAnalyticsSidebarVisible && (
+        <div 
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40"
+          onClick={() => setIsAnalyticsSidebarVisible(false)}
+        />
+      )}
       <PaymentAnalyticsSidebar
         analyticsData={analyticsData}
         isVisible={isAnalyticsSidebarVisible}

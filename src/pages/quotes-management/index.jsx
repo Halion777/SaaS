@@ -23,6 +23,7 @@ const QuotesManagement = () => {
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
 
   // Mock quotes data
   const mockQuotes = [
@@ -109,13 +110,48 @@ const QuotesManagement = () => {
   ];
 
   useEffect(() => {
-    const handleResize = () => {
+    const handleSidebarToggle = (e) => {
+      const { isCollapsed } = e.detail;
       const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
       setIsMobile(mobile);
-      
+      setIsTablet(tablet);
+
       if (mobile) {
         setSidebarOffset(0);
+      } else if (tablet) {
+        // On tablet, sidebar is always collapsed
+        setSidebarOffset(80);
       } else {
+        // On desktop, respond to sidebar state
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setIsTablet(tablet);
+
+      if (mobile) {
+        setSidebarOffset(0);
+      } else if (tablet) {
+        // On tablet, sidebar is always collapsed
+        setSidebarOffset(80);
+      } else {
+        // On desktop, check sidebar state
+        const savedCollapsed = localStorage.getItem('sidebar-collapsed');
+        const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+
+    const handleStorage = () => {
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      
+      if (!mobile && !tablet) {
         const savedCollapsed = localStorage.getItem('sidebar-collapsed');
         const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
         setSidebarOffset(isCollapsed ? 64 : 288);
@@ -124,7 +160,13 @@ const QuotesManagement = () => {
 
     handleResize();
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('sidebar-toggle', handleSidebarToggle);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('sidebar-toggle', handleSidebarToggle);
+    };
   }, []);
 
   const handleSelectQuote = (quoteId) => {
@@ -210,36 +252,36 @@ const QuotesManagement = () => {
       <MainSidebar />
       
       <main 
-        className="transition-all duration-300 ease-out pb-20 md:pb-6"
+        className="transition-all duration-300 ease-out pb-20 md:pb-6 pt-16 sm:pt-4 md:pt-0"
         style={{ 
           marginLeft: isMobile ? 0 : `${sidebarOffset}px`,
         }}
       >
-        <div className="p-4 md:p-6 space-y-4 md:space-y-6 max-w-[1600px] mx-auto">
+        <div className="p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6 max-w-[1600px] mx-auto">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
             <div>
               <div className="flex items-center">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mr-3">
-                  <Icon name="FileText" size={20} className="text-primary" />
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center mr-2 sm:mr-3">
+                  <Icon name="FileText" size={16} className="sm:w-5 sm:h-5 text-primary" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-foreground">Gestion des devis</h1>
-                  <p className="text-sm text-muted-foreground">
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des devis</h1>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     Gérez et optimisez vos devis avec l'intelligence artificielle
                   </p>
                 </div>
               </div>
             </div>
             
-            <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
               {/* Action Icons with Tooltips */}
-              <div className="hidden md:flex items-center gap-2 mr-2">
+              <div className="hidden md:flex items-center justify-center gap-6 mr-4">
                 <Tooltip content="Exporter" position="bottom">
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-9 w-9 rounded-full hover:bg-muted"
+                    className="h-9 w-9 rounded-full hover:bg-muted flex-shrink-0"
                     onClick={() => console.log('Export clicked')}
                   >
                     <Icon name="Download" size={18} />
@@ -250,7 +292,7 @@ const QuotesManagement = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-9 w-9 rounded-full hover:bg-muted"
+                    className="h-9 w-9 rounded-full hover:bg-muted flex-shrink-0"
                     onClick={() => navigate('/customers')}
                   >
                     <Icon name="Users" size={18} />
@@ -261,11 +303,11 @@ const QuotesManagement = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-9 w-9 rounded-full hover:bg-muted"
+                    className="h-9 w-9 rounded-full hover:bg-muted flex-shrink-0"
                     onClick={() => navigate('/settings')}
                   >
                     <Icon name="Settings" size={18} />
-                  </Button>
+                </Button>
                 </Tooltip>
               </div>
 
@@ -274,7 +316,7 @@ const QuotesManagement = () => {
                 onClick={() => setShowAIPanel(!showAIPanel)}
                 iconName={showAIPanel ? "PanelRightClose" : "PanelRightOpen"}
                 iconPosition="left"
-                className="hidden md:flex"
+                className="hidden md:flex text-xs sm:text-sm"
               >
                 Analyse IA
               </Button>
@@ -284,7 +326,7 @@ const QuotesManagement = () => {
                 onClick={() => navigate('/quote-creation')}
                 iconName="Plus"
                 iconPosition="left"
-                className="flex-1 sm:flex-none"
+                className="flex-1 sm:flex-none text-xs sm:text-sm"
               >
                 Nouveau devis
               </Button>
@@ -293,15 +335,15 @@ const QuotesManagement = () => {
 
           {/* Mobile Action Icons */}
           <div className="flex md:hidden items-center justify-between border-b border-border pb-3">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center justify-center gap-6">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 hover:bg-muted"
+                className="h-12 w-12 hover:bg-muted flex-shrink-0"
                 onClick={() => console.log('Export clicked')}
               >
                 <div className="flex flex-col items-center">
-                  <Icon name="Download" size={16} />
+                  <Icon name="Download" size={18} />
                   <span className="text-xs mt-1">Exporter</span>
                 </div>
               </Button>
@@ -309,11 +351,11 @@ const QuotesManagement = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 hover:bg-muted"
+                className="h-12 w-12 hover:bg-muted flex-shrink-0"
                 onClick={() => navigate('/customers')}
               >
                 <div className="flex flex-col items-center">
-                  <Icon name="Users" size={16} />
+                  <Icon name="Users" size={18} />
                   <span className="text-xs mt-1">Clients</span>
                 </div>
               </Button>
@@ -321,11 +363,11 @@ const QuotesManagement = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 hover:bg-muted"
+                className="h-12 w-12 hover:bg-muted flex-shrink-0"
                 onClick={() => navigate('/settings')}
               >
                 <div className="flex flex-col items-center">
-                  <Icon name="Settings" size={16} />
+                  <Icon name="Settings" size={18} />
                   <span className="text-xs mt-1">Paramètres</span>
                 </div>
               </Button>
@@ -333,57 +375,57 @@ const QuotesManagement = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-            <div className="bg-card border border-border rounded-lg p-3 md:p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="bg-card border border-border rounded-lg p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs md:text-sm text-muted-foreground">Total devis</p>
-                  <p className="text-xl md:text-2xl font-bold text-foreground">{mockQuotes.length}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Total devis</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{mockQuotes.length}</p>
                 </div>
-                <div className="bg-primary/10 rounded-full p-2">
-                  <Icon name="FileText" size={18} className="text-primary" />
+                <div className="bg-primary/10 rounded-full p-2 sm:p-2.5">
+                  <Icon name="FileText" size={16} className="sm:w-5 sm:h-5 text-primary" />
                 </div>
               </div>
             </div>
             
-            <div className="bg-card border border-border rounded-lg p-3 md:p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-card border border-border rounded-lg p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs md:text-sm text-muted-foreground">Signés</p>
-                  <p className="text-xl md:text-2xl font-bold text-success">
+                  <p className="text-xs sm:text-sm text-muted-foreground">Signés</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-success">
                     {mockQuotes.filter(q => q.status === 'signed').length}
                   </p>
                 </div>
-                <div className="bg-success/10 rounded-full p-2">
-                  <Icon name="CheckCircle" size={18} className="text-success" />
+                <div className="bg-success/10 rounded-full p-2 sm:p-2.5">
+                  <Icon name="CheckCircle" size={16} className="sm:w-5 sm:h-5 text-success" />
                 </div>
               </div>
             </div>
             
-            <div className="bg-card border border-border rounded-lg p-3 md:p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-card border border-border rounded-lg p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs md:text-sm text-muted-foreground">En attente</p>
-                  <p className="text-xl md:text-2xl font-bold text-amber-600">
+                  <p className="text-xs sm:text-sm text-muted-foreground">En attente</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-amber-600">
                     {mockQuotes.filter(q => ['sent', 'viewed'].includes(q.status)).length}
                   </p>
                 </div>
-                <div className="bg-amber-100 rounded-full p-2">
-                  <Icon name="Clock" size={18} className="text-amber-600" />
+                <div className="bg-amber-100 rounded-full p-2 sm:p-2.5">
+                  <Icon name="Clock" size={16} className="sm:w-5 sm:h-5 text-amber-600" />
                 </div>
               </div>
             </div>
             
-            <div className="bg-card border border-border rounded-lg p-3 md:p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-card border border-border rounded-lg p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs md:text-sm text-muted-foreground">Score IA moyen</p>
-                  <p className="text-xl md:text-2xl font-bold text-primary">
+                  <p className="text-xs sm:text-sm text-muted-foreground">Score IA moyen</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-primary">
                     {Math.round(mockQuotes.reduce((acc, q) => acc + q.aiScore, 0) / mockQuotes.length)}%
                   </p>
                 </div>
-                <div className="bg-accent/10 rounded-full p-2">
-                  <Icon name="Sparkles" size={18} className="text-accent" />
+                <div className="bg-accent/10 rounded-full p-2 sm:p-2.5">
+                  <Icon name="Sparkles" size={16} className="sm:w-5 sm:h-5 text-accent" />
                 </div>
               </div>
             </div>
@@ -431,6 +473,7 @@ const QuotesManagement = () => {
               onClick={() => setShowAIPanel(!showAIPanel)}
               iconName="Sparkles"
               iconPosition="left"
+              className="text-xs sm:text-sm"
             >
               {showAIPanel ? 'Masquer' : 'Afficher'} l'analyse IA
             </Button>
@@ -438,15 +481,15 @@ const QuotesManagement = () => {
 
           {/* Mobile AI Panel */}
           {showAIPanel && (
-            <div className="md:hidden bg-card border border-border rounded-lg p-4 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-foreground">Analyse IA</h2>
+            <div className="md:hidden bg-card border border-border rounded-lg p-3 sm:p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <h2 className="text-base sm:text-lg font-semibold text-foreground">Analyse IA</h2>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowAIPanel(false)}
                 >
-                  <Icon name="X" size={20} />
+                  <Icon name="X" size={18} className="sm:w-5 sm:h-5" />
                 </Button>
               </div>
               <AIAnalyticsPanel
@@ -462,10 +505,10 @@ const QuotesManagement = () => {
       {/* Desktop AI Panel */}
       {showAIPanel && (
         <div className="hidden md:block fixed right-0 top-0 w-80 h-full bg-background border-l border-border overflow-y-auto z-50 shadow-lg">
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-foreground flex items-center">
-                <Icon name="Sparkles" size={18} className="text-primary mr-2" />
+          <div className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h2 className="text-base sm:text-lg font-semibold text-foreground flex items-center">
+                <Icon name="Sparkles" size={16} className="sm:w-[18px] sm:h-[18px] text-primary mr-2" />
                 Analyse IA
               </h2>
               <Button
@@ -473,7 +516,7 @@ const QuotesManagement = () => {
                 size="icon"
                 onClick={() => setShowAIPanel(false)}
               >
-                <Icon name="X" size={20} />
+                <Icon name="X" size={18} className="sm:w-5 sm:h-5" />
               </Button>
             </div>
             

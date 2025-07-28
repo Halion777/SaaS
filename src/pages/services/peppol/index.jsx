@@ -10,6 +10,8 @@ import peppolService from '../../../services/peppolService';
 const PeppolNetworkPage = () => {
   const navigate = useNavigate();
   const [sidebarOffset, setSidebarOffset] = useState(288);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
   const [activeTab, setActiveTab] = useState('setup');
   const [peppolSettings, setPeppolSettings] = useState({
     peppolId: '',
@@ -31,25 +33,62 @@ const PeppolNetworkPage = () => {
   const [filteredReceivedInvoices, setFilteredReceivedInvoices] = useState([]);
 
   React.useEffect(() => {
-    const savedCollapsed = localStorage.getItem('sidebar-collapsed');
-    const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
-    setSidebarOffset(isCollapsed ? 64 : 288);
-    
-    const handleResize = () => {
-      const isMobile = window.innerWidth < 768;
-      if (isMobile) {
+    const handleSidebarToggle = (e) => {
+      const { isCollapsed } = e.detail;
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setIsTablet(tablet);
+
+      if (mobile) {
         setSidebarOffset(0);
+      } else if (tablet) {
+        // On tablet, sidebar is always collapsed
+        setSidebarOffset(80);
       } else {
-        const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+        // On desktop, respond to sidebar state
         setSidebarOffset(isCollapsed ? 64 : 288);
       }
     };
-    
+
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setIsTablet(tablet);
+
+      if (mobile) {
+        setSidebarOffset(0);
+      } else if (tablet) {
+        // On tablet, sidebar is always collapsed
+        setSidebarOffset(80);
+      } else {
+        // On desktop, check sidebar state
+        const savedCollapsed = localStorage.getItem('sidebar-collapsed');
+        const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+
+    const handleStorage = () => {
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      
+      if (!mobile && !tablet) {
+        const savedCollapsed = localStorage.getItem('sidebar-collapsed');
+        const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+
     handleResize();
     window.addEventListener('resize', handleResize);
-    
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('sidebar-toggle', handleSidebarToggle);
     return () => {
+      window.removeEventListener('storage', handleStorage);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('sidebar-toggle', handleSidebarToggle);
     };
   }, []);
 
@@ -341,32 +380,32 @@ const PeppolNetworkPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       <MainSidebar />
       
       <div
-        className="flex-1 flex flex-col"
+        className="flex-1 flex flex-col pt-16 sm:pt-4 md:pt-0 pb-20 md:pb-6"
         style={{ marginLeft: `${sidebarOffset}px` }}
       >
-        <main className="flex-1 p-6 space-y-6">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
           {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Peppol Invoices</h1>
-              <p className="text-muted-foreground">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Peppol Invoices</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Factures envoyées et reçues via le réseau Peppol
               </p>
             </div>
           </div>
 
           {/* Connection Status */}
-          <div className="bg-card border border-border rounded-lg p-6">
+          <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Status Peppol</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Status Peppol</p>
                 <div className="flex items-center space-x-2 mt-1">
                   <div className={`w-2 h-2 rounded-full ${peppolSettings.isConfigured ? 'bg-success' : 'bg-error'}`}></div>
-                  <p className={`text-sm font-medium ${peppolSettings.isConfigured ? 'text-success' : 'text-error'}`}>
+                  <p className={`text-xs sm:text-sm font-medium ${peppolSettings.isConfigured ? 'text-success' : 'text-error'}`}>
                     {peppolSettings.isConfigured ? 'Connecté' : 'Non connecté'}
                   </p>
                 </div>
@@ -374,8 +413,8 @@ const PeppolNetworkPage = () => {
                   <p className="text-xs text-warning mt-1">Mode sandbox activé</p>
                 )}
               </div>
-              <div className="bg-primary/10 p-3 rounded-lg">
-                <Icon name="Network" size={24} className="text-primary" />
+              <div className="bg-primary/10 p-2 sm:p-3 rounded-lg">
+                <Icon name="Network" size={18} className="sm:w-6 sm:h-6 text-primary" />
               </div>
             </div>
             {peppolSettings.peppolId && (
@@ -398,52 +437,52 @@ const PeppolNetworkPage = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-card border border-border rounded-lg p-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+            <div className="bg-card border border-border rounded-lg p-3 sm:p-4 lg:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Factures envoyées</p>
-                  <p className="text-2xl font-bold">{sentInvoices.length}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Factures envoyées</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold">{sentInvoices.length}</p>
                 </div>
-                <div className="bg-primary/10 p-3 rounded-lg">
-                  <Icon name="Send" size={24} className="text-primary" />
+                <div className="bg-primary/10 p-2 sm:p-3 rounded-lg">
+                  <Icon name="Send" size={18} className="sm:w-6 sm:h-6 text-primary" />
                 </div>
               </div>
             </div>
-            <div className="bg-card border border-border rounded-lg p-6">
+            <div className="bg-card border border-border rounded-lg p-3 sm:p-4 lg:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Factures reçues</p>
-                  <p className="text-2xl font-bold">{receivedInvoices.length}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Factures reçues</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold">{receivedInvoices.length}</p>
                 </div>
-                <div className="bg-success/10 p-3 rounded-lg">
-                  <Icon name="Download" size={24} className="text-success" />
+                <div className="bg-success/10 p-2 sm:p-3 rounded-lg">
+                  <Icon name="Download" size={18} className="sm:w-6 sm:h-6 text-success" />
                 </div>
               </div>
             </div>
-            <div className="bg-card border border-border rounded-lg p-6">
+            <div className="bg-card border border-border rounded-lg p-3 sm:p-4 lg:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Total envoyé</p>
-                  <p className="text-2xl font-bold">
+                  <p className="text-xs sm:text-sm text-muted-foreground">Total envoyé</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold">
                     {sentInvoices.reduce((sum, inv) => sum + inv.amount, 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                   </p>
                 </div>
-                <div className="bg-warning/10 p-3 rounded-lg">
-                  <Icon name="Euro" size={24} className="text-warning" />
+                <div className="bg-warning/10 p-2 sm:p-3 rounded-lg">
+                  <Icon name="Euro" size={18} className="sm:w-6 sm:h-6 text-warning" />
                 </div>
               </div>
             </div>
-            <div className="bg-card border border-border rounded-lg p-6">
+            <div className="bg-card border border-border rounded-lg p-3 sm:p-4 lg:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Total reçu</p>
-                  <p className="text-2xl font-bold">
+                  <p className="text-xs sm:text-sm text-muted-foreground">Total reçu</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold">
                     {receivedInvoices.reduce((sum, inv) => sum + inv.amount, 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                   </p>
                 </div>
-                <div className="bg-info/10 p-3 rounded-lg">
-                  <Icon name="Euro" size={24} className="text-info" />
+                <div className="bg-info/10 p-2 sm:p-3 rounded-lg">
+                  <Icon name="Euro" size={18} className="sm:w-6 sm:h-6 text-info" />
                 </div>
               </div>
             </div>
@@ -451,9 +490,9 @@ const PeppolNetworkPage = () => {
 
           {/* Tabs Navigation */}
           <div className="border-b border-border">
-            <div className="flex space-x-8">
+            <div className="flex space-x-4 sm:space-x-8 overflow-x-auto scrollbar-hide">
               <button
-                className={`pb-2 px-1 ${
+                className={`pb-2 px-1 text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${
                   activeTab === 'setup'
                     ? 'border-b-2 border-primary text-foreground font-medium'
                     : 'text-muted-foreground'
@@ -463,7 +502,7 @@ const PeppolNetworkPage = () => {
                 Configuration
               </button>
               <button
-                className={`pb-2 px-1 ${
+                className={`pb-2 px-1 text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${
                   activeTab === 'sent'
                     ? 'border-b-2 border-primary text-foreground font-medium'
                     : 'text-muted-foreground'
@@ -473,7 +512,7 @@ const PeppolNetworkPage = () => {
                 Factures envoyées ({sentInvoices.length})
               </button>
               <button
-                className={`pb-2 px-1 ${
+                className={`pb-2 px-1 text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${
                   activeTab === 'received'
                     ? 'border-b-2 border-primary text-foreground font-medium'
                     : 'text-muted-foreground'
@@ -490,26 +529,26 @@ const PeppolNetworkPage = () => {
             {activeTab === 'setup' && (
               <div className="max-w-2xl">
                 {/* Peppol Integration Setup */}
-                <div className="bg-card border border-border rounded-lg p-6 space-y-6">
+                <div className="bg-card border border-border rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
                   {/* Header */}
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2 sm:space-x-3">
                     <div className="p-2 bg-primary/10 rounded-lg">
-                      <Icon name="Link" size={24} className="text-primary" />
+                      <Icon name="Link" size={20} className="sm:w-6 sm:h-6 text-primary" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-semibold text-foreground">Peppol Integration</h2>
-                      <p className="text-sm text-muted-foreground">
+                      <h2 className="text-lg sm:text-xl font-semibold text-foreground">Peppol Integration</h2>
+                      <p className="text-xs sm:text-sm text-muted-foreground">
                         Configure your Peppol connection to send and receive electronic invoices.
                       </p>
                     </div>
                   </div>
 
                   {/* Information Box */}
-                  <div className="bg-muted/30 border border-border rounded-lg p-4">
-                    <div className="flex items-start space-x-3">
-                      <Icon name="Info" size={20} className="text-muted-foreground mt-0.5" />
+                  <div className="bg-muted/30 border border-border rounded-lg p-3 sm:p-4">
+                    <div className="flex items-start space-x-2 sm:space-x-3">
+                      <Icon name="Info" size={16} className="sm:w-5 sm:h-5 text-muted-foreground mt-0.5" />
                       <div>
-                        <p className="text-sm text-foreground">
+                        <p className="text-xs sm:text-sm text-foreground">
                           Peppol (Pan-European Public Procurement On-Line) enables secure electronic document exchange. 
                           You need a valid Peppol ID to send and receive invoices through the network.
                         </p>
@@ -518,9 +557,9 @@ const PeppolNetworkPage = () => {
                   </div>
 
                   {/* Form Fields */}
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
+                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
                         Peppol ID (Participant Identifier)
                       </label>
                       <Input
@@ -535,7 +574,7 @@ const PeppolNetworkPage = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
+                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
                         Business Name
                       </label>
                       <Input
@@ -546,9 +585,9 @@ const PeppolNetworkPage = () => {
                     </div>
 
                     {/* Sandbox Mode Toggle */}
-                    <div className="flex items-center justify-between p-4 bg-muted/20 rounded-lg">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-muted/20 rounded-lg gap-3 sm:gap-0">
                       <div>
-                        <label className="text-sm font-medium text-foreground">
+                        <label className="text-xs sm:text-sm font-medium text-foreground">
                           Sandbox Mode (for testing)
                         </label>
                         <p className="text-xs text-muted-foreground mt-1">
@@ -571,13 +610,14 @@ const PeppolNetworkPage = () => {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex justify-center space-x-4 pt-4">
+                  <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4 pt-4">
                     <Button
                       onClick={handleTestConnection}
                       disabled={isTesting || !peppolSettings.peppolId}
                       variant="outline"
                       iconName={isTesting ? "Loader2" : "Wifi"}
                       iconPosition="left"
+                      className="w-full sm:w-auto"
                     >
                       {isTesting ? 'Testing...' : 'Test Connection'}
                     </Button>
@@ -586,21 +626,21 @@ const PeppolNetworkPage = () => {
                       disabled={isSaving}
                       iconName={isSaving ? "Loader2" : "Save"}
                       iconPosition="left"
-                      className="min-w-[200px]"
+                      className="w-full sm:min-w-[200px]"
                     >
                       {isSaving ? 'Saving...' : 'Save Settings'}
                     </Button>
                   </div>
 
                   {/* Help Information */}
-                  <div className="bg-muted/30 border border-border rounded-lg p-4">
-                    <div className="flex items-start space-x-3">
-                      <Icon name="Info" size={20} className="text-muted-foreground mt-0.5" />
+                  <div className="bg-muted/30 border border-border rounded-lg p-3 sm:p-4">
+                    <div className="flex items-start space-x-2 sm:space-x-3">
+                      <Icon name="Info" size={16} className="sm:w-5 sm:h-5 text-muted-foreground mt-0.5" />
                       <div>
-                        <p className="text-sm text-foreground font-medium mb-1">
+                        <p className="text-xs sm:text-sm text-foreground font-medium mb-1">
                           Don't have a Peppol ID?
                         </p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs sm:text-sm text-muted-foreground">
                           You need to register with a Peppol Access Point provider. Contact your local authority 
                           or a certified Peppol provider to get started.
                         </p>
@@ -614,11 +654,11 @@ const PeppolNetworkPage = () => {
             {activeTab === 'sent' && (
               <div>
                 {/* Filter Toolbar */}
-                <div className="bg-card border border-border rounded-lg p-4 mb-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-card border border-border rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     {/* Search */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Rechercher</label>
+                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Rechercher</label>
                       <Input
                         value={filters.search}
                         onChange={(e) => handleFilterChange('search', e.target.value)}
@@ -629,7 +669,7 @@ const PeppolNetworkPage = () => {
 
                     {/* Status Filter */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Statut</label>
+                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Statut</label>
                       <Select
                         value={filters.status}
                         onChange={(e) => handleFilterChange('status', e.target.value)}
@@ -645,7 +685,7 @@ const PeppolNetworkPage = () => {
 
                     {/* Date Range */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Période</label>
+                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Période</label>
                       <Select
                         value={filters.dateRange}
                         onChange={(e) => handleFilterChange('dateRange', e.target.value)}
@@ -662,7 +702,7 @@ const PeppolNetworkPage = () => {
 
                     {/* Amount Range */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Montant</label>
+                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Montant</label>
                       <Select
                         value={filters.amountRange}
                         onChange={(e) => handleFilterChange('amountRange', e.target.value)}
@@ -678,19 +718,20 @@ const PeppolNetworkPage = () => {
                   </div>
 
                   {/* Filter Actions */}
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-4 pt-4 border-t border-border gap-2 sm:gap-0">
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-xs sm:text-sm text-muted-foreground">
                         {filteredSentInvoices.length} facture(s) trouvée(s)
                       </span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Button
                         variant="outline"
-                        size="sm"
+                        size="xs"
                         onClick={clearFilters}
                         iconName="X"
                         iconPosition="left"
+                        className="h-8 sm:h-9"
                       >
                         Effacer les filtres
                       </Button>
@@ -701,15 +742,15 @@ const PeppolNetworkPage = () => {
                 {/* Invoices Table */}
                 <div className="bg-card border border-border rounded-lg overflow-hidden">
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full min-w-[800px]">
                       <thead className="bg-muted/50">
                         <tr>
-                          <th className="text-left p-4 font-medium">N° Facture</th>
-                          <th className="text-left p-4 font-medium">Destinataire</th>
-                          <th className="text-left p-4 font-medium">Peppol ID</th>
-                          <th className="text-left p-4 font-medium">Montant</th>
-                          <th className="text-left p-4 font-medium">Date</th>
-                          <th className="text-left p-4 font-medium">Statut</th>
+                          <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">N° Facture</th>
+                          <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">Destinataire</th>
+                          <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">Peppol ID</th>
+                          <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">Montant</th>
+                          <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">Date</th>
+                          <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">Statut</th>
                         </tr>
                       </thead>
                       <tbody>

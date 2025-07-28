@@ -13,24 +13,27 @@ const PaymentAnalyticsSidebar = ({ analyticsData, isVisible, onToggle }) => {
     return (
       <button
         onClick={onToggle}
-        className="fixed right-4 top-20 z-50 p-2 bg-primary text-primary-foreground rounded-full shadow-lg hover:bg-primary/90 transition-colors"
+        className="fixed right-4 top-1/2 transform -translate-y-1/2 bg-primary text-primary-foreground p-3 rounded-l-lg shadow-professional-lg z-50 hover:bg-primary/90 transition-colors duration-150"
       >
-        <Icon name="BarChart3" size={20} color="currentColor" />
+        <Icon name="ChevronLeft" size={20} color="currentColor" />
       </button>
     );
   }
 
   return (
-    <div className="fixed right-0 top-0 h-full w-80 bg-card border-l border-border shadow-xl z-40 overflow-y-auto">
+    <div 
+      className="fixed right-0 top-0 h-full w-80 bg-card border-l border-border shadow-professional-xl z-50 overflow-y-auto"
+      onClick={(e) => e.stopPropagation()}
+    >
       <div className="p-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 sticky top-0 bg-card pt-2 pb-4 z-10">
           <h2 className="text-lg font-semibold text-foreground">Analyses des paiements</h2>
           <button
             onClick={onToggle}
-            className="p-1 rounded-md hover:bg-muted transition-colors"
+            className="p-2 hover:bg-muted rounded-lg transition-colors duration-150 flex-shrink-0"
           >
-            <Icon name="X" size={20} color="var(--color-muted-foreground)" />
+            <Icon name="X" size={20} className="text-muted-foreground" />
           </button>
         </div>
 

@@ -9,6 +9,8 @@ import MainSidebar from '../../../components/ui/MainSidebar';
 const AssuranceCreditPage = () => {
   const navigate = useNavigate();
   const [sidebarOffset, setSidebarOffset] = useState(288);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [formData, setFormData] = useState({
     companyName: '',
@@ -24,25 +26,62 @@ const AssuranceCreditPage = () => {
 
   // Handle sidebar offset for responsive layout
   React.useEffect(() => {
-    const savedCollapsed = localStorage.getItem('sidebar-collapsed');
-    const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
-    setSidebarOffset(isCollapsed ? 64 : 288);
-    
-    const handleResize = () => {
-      const isMobile = window.innerWidth < 768;
-      if (isMobile) {
+    const handleSidebarToggle = (e) => {
+      const { isCollapsed } = e.detail;
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setIsTablet(tablet);
+
+      if (mobile) {
         setSidebarOffset(0);
+      } else if (tablet) {
+        // On tablet, sidebar is always collapsed
+        setSidebarOffset(80);
       } else {
-        const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+        // On desktop, respond to sidebar state
         setSidebarOffset(isCollapsed ? 64 : 288);
       }
     };
-    
+
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setIsTablet(tablet);
+
+      if (mobile) {
+        setSidebarOffset(0);
+      } else if (tablet) {
+        // On tablet, sidebar is always collapsed
+        setSidebarOffset(80);
+      } else {
+        // On desktop, check sidebar state
+        const savedCollapsed = localStorage.getItem('sidebar-collapsed');
+        const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+
+    const handleStorage = () => {
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      
+      if (!mobile && !tablet) {
+        const savedCollapsed = localStorage.getItem('sidebar-collapsed');
+        const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+
     handleResize();
     window.addEventListener('resize', handleResize);
-    
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('sidebar-toggle', handleSidebarToggle);
     return () => {
+      window.removeEventListener('storage', handleStorage);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('sidebar-toggle', handleSidebarToggle);
     };
   }, []);
 
@@ -69,62 +108,68 @@ const AssuranceCreditPage = () => {
   };
 
   const renderOverview = () => (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Credit Insurance Overview */}
-      <div className="bg-card border border-border rounded-lg p-8">
-        <div className="flex items-start space-x-4 mb-6">
-          <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center">
-            <Icon name="Umbrella" size={32} color="var(--color-blue)" />
+      <div className="bg-card border border-border rounded-lg p-4 sm:p-6 lg:p-8">
+        <div className="flex items-center space-x-3 sm:space-x-4 mb-4 sm:mb-6">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <Icon name="Umbrella" size={24} className="sm:w-8 sm:h-8 text-blue-500" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Credit Insurance</h1>
-            <p className="text-lg text-muted-foreground">Protect your cash flow against unpaid customers.</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Credit Insurance</h1>
+            <p className="text-sm sm:text-lg text-muted-foreground">Protect your cash flow against unpaid customers.</p>
           </div>
         </div>
 
         {/* Highlight Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="text-center p-4">
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-              <Icon name="Percent" size={24} color="var(--color-green)" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="flex items-center space-x-3 p-3 sm:p-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Icon name="Percent" size={20} className="sm:w-6 sm:h-6 text-green-500" />
             </div>
-            <h3 className="font-bold text-lg text-foreground">Coverage 90%</h3>
-            <p className="text-sm text-muted-foreground">Of the unpaid amount</p>
+            <div>
+              <h3 className="font-bold text-base sm:text-lg text-foreground">Coverage 90%</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">Of the unpaid amount</p>
+            </div>
           </div>
           
-          <div className="text-center p-4">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-              <Icon name="Building2" size={24} color="var(--color-blue)" />
+          <div className="flex items-center space-x-3 p-3 sm:p-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Icon name="Building" size={20} className="sm:w-6 sm:h-6 text-blue-500" />
             </div>
-            <h3 className="font-bold text-lg text-foreground">Clients B2B</h3>
-            <p className="text-sm text-muted-foreground">Businesses Only</p>
+            <div>
+              <h3 className="font-bold text-base sm:text-lg text-foreground">Clients B2B</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">Businesses Only</p>
+            </div>
           </div>
           
-          <div className="text-center p-4">
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-              <Icon name="Zap" size={24} color="var(--color-purple)" />
+          <div className="flex items-center space-x-3 p-3 sm:p-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Icon name="Zap" size={20} className="sm:w-6 sm:h-6 text-purple-500" />
             </div>
-            <h3 className="font-bold text-lg text-foreground">Quick Claims</h3>
-            <p className="text-sm text-muted-foreground">Processed in 48h</p>
+            <div>
+              <h3 className="font-bold text-base sm:text-lg text-foreground">Quick Claims</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">Processed in 48h</p>
+            </div>
           </div>
         </div>
 
         {/* Service Description */}
         <div>
-          <div className="flex items-center space-x-2 mb-4">
-            <Icon name="FileText" size={20} color="var(--color-primary)" />
-            <h2 className="text-xl font-semibold text-foreground">Service Description</h2>
+          <div className="flex items-center space-x-2 mb-3 sm:mb-4">
+            <Icon name="FileText" size={16} className="sm:w-5 sm:h-5 text-primary" />
+            <h2 className="text-lg sm:text-xl font-semibold text-foreground">Service Description</h2>
           </div>
 
           {/* Risk Protection */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
-            <div className="flex items-start space-x-3">
-              <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <Icon name="AlertTriangle" size={14} color="var(--color-orange)" />
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
+            <div className="flex items-start space-x-2 sm:space-x-3">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Icon name="AlertTriangle" size={12} className="sm:w-3.5 sm:h-3.5 text-orange-500" />
               </div>
               <div>
                 <h3 className="font-semibold text-foreground mb-2">Risk protection</h3>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   This insurance covers up to 90% of the outstanding amount in the event of bankruptcy or prolonged non-payment of a B2B customer. It allows you to maintain your cash flow and continue your activity serenely, even in the event of the failure of an important customer.
                 </p>
               </div>
@@ -132,53 +177,53 @@ const AssuranceCreditPage = () => {
           </div>
 
           {/* Benefits and Conditions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <Icon name="CheckCircle" size={20} color="var(--color-green)" />
+              <div className="flex items-center space-x-2 mb-3 sm:mb-4">
+                <Icon name="CheckCircle" size={16} className="sm:w-5 sm:h-5 text-green-500" />
                 <h3 className="font-semibold text-foreground">Benefits</h3>
               </div>
               <ul className="space-y-2">
                 <li className="flex items-center space-x-2">
-                  <Icon name="CheckCircle" size={16} color="var(--color-green)" />
-                  <span className="text-sm text-foreground">Coverage of up to 90% of receivables</span>
+                  <Icon name="CheckCircle" size={14} className="sm:w-4 sm:h-4 text-green-500" />
+                  <span className="text-xs sm:text-sm text-foreground">Coverage of up to 90% of receivables</span>
                 </li>
                 <li className="flex items-center space-x-2">
-                  <Icon name="CheckCircle" size={16} color="var(--color-green)" />
-                  <span className="text-sm text-foreground">Customer Bankruptcy Protection</span>
+                  <Icon name="CheckCircle" size={14} className="sm:w-4 sm:h-4 text-green-500" />
+                  <span className="text-xs sm:text-sm text-foreground">Customer Bankruptcy Protection</span>
                 </li>
                 <li className="flex items-center space-x-2">
-                  <Icon name="CheckCircle" size={16} color="var(--color-green)" />
-                  <span className="text-sm text-foreground">Legal support included</span>
+                  <Icon name="CheckCircle" size={14} className="sm:w-4 sm:h-4 text-green-500" />
+                  <span className="text-xs sm:text-sm text-foreground">Legal support included</span>
                 </li>
                 <li className="flex items-center space-x-2">
-                  <Icon name="CheckCircle" size={16} color="var(--color-green)" />
-                  <span className="text-sm text-foreground">Responsiveness in the event of a disaster</span>
+                  <Icon name="CheckCircle" size={14} className="sm:w-4 sm:h-4 text-green-500" />
+                  <span className="text-xs sm:text-sm text-foreground">Responsiveness in the event of a disaster</span>
                 </li>
               </ul>
             </div>
 
             <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <Icon name="FileText" size={20} color="var(--color-primary)" />
+              <div className="flex items-center space-x-2 mb-3 sm:mb-4">
+                <Icon name="FileText" size={16} className="sm:w-5 sm:h-5 text-primary" />
                 <h3 className="font-semibold text-foreground">Conditions</h3>
               </div>
               <ul className="space-y-2">
                 <li className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-foreground rounded-full"></div>
-                  <span className="text-sm text-foreground">B2B customers only (companies)</span>
+                  <Icon name="Building" size={14} className="sm:w-4 sm:h-4 text-blue-500" />
+                  <span className="text-xs sm:text-sm text-foreground">B2B customers only (companies)</span>
                 </li>
                 <li className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-foreground rounded-full"></div>
-                  <span className="text-sm text-foreground">Invoices over €500</span>
+                  <Icon name="Euro" size={14} className="sm:w-4 sm:h-4 text-green-500" />
+                  <span className="text-xs sm:text-sm text-foreground">Invoices over €500</span>
                 </li>
                 <li className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-foreground rounded-full"></div>
-                  <span className="text-sm text-foreground">Maximum payment term 90 days</span>
+                  <Icon name="Calendar" size={14} className="sm:w-4 sm:h-4 text-orange-500" />
+                  <span className="text-xs sm:text-sm text-foreground">Maximum payment term 90 days</span>
                 </li>
                 <li className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-foreground rounded-full"></div>
-                  <span className="text-sm text-foreground">Declaration within 30 days maximum</span>
+                  <Icon name="Clock" size={14} className="sm:w-4 sm:h-4 text-red-500" />
+                  <span className="text-xs sm:text-sm text-foreground">Declaration within 30 days maximum</span>
                 </li>
               </ul>
             </div>
@@ -189,20 +234,20 @@ const AssuranceCreditPage = () => {
   );
 
   const renderApplicationForm = () => (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Application Form */}
-      <div className="bg-card border border-border rounded-lg p-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground mb-2">Applying for credit insurance</h1>
-          <p className="text-muted-foreground">Fill out this form to receive a personalized proposal</p>
+      <div className="bg-card border border-border rounded-lg p-4 sm:p-6 lg:p-8">
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-2">Applying for credit insurance</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Fill out this form to receive a personalized proposal</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Company Contact Information */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-foreground">Company contact information</h2>
+          <div className="space-y-3 sm:space-y-4">
+            <h2 className="text-base sm:text-lg font-semibold text-foreground">Company contact information</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
               <Input
                 label="Company Name *"
                 type="text"
@@ -222,7 +267,7 @@ const AssuranceCreditPage = () => {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
               <Input
                 label="Email *"
                 type="email"
@@ -253,8 +298,8 @@ const AssuranceCreditPage = () => {
           </div>
 
           {/* Industry */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-foreground">Industry</h2>
+          <div className="space-y-3 sm:space-y-4">
+            <h2 className="text-base sm:text-lg font-semibold text-foreground">Industry</h2>
             
             <Select
               label="Main sector *"
@@ -276,8 +321,8 @@ const AssuranceCreditPage = () => {
           </div>
 
           {/* Financial Information */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-foreground">Financial Information</h2>
+          <div className="space-y-3 sm:space-y-4">
+            <h2 className="text-base sm:text-lg font-semibold text-foreground">Financial Information</h2>
             
             <div className="relative">
               <Input
@@ -314,9 +359,9 @@ const AssuranceCreditPage = () => {
         </form>
 
         {/* Security Message */}
-        <div className="flex items-center space-x-2 mt-6 pt-6 border-t border-border">
-          <Icon name="Shield" size={16} color="var(--color-muted-foreground)" />
-          <p className="text-sm text-muted-foreground">
+        <div className="flex items-center space-x-2 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-border">
+          <Icon name="Shield" size={14} className="sm:w-4 sm:h-4 text-muted-foreground" />
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Your data is secure and used only for the study of your file.
           </p>
         </div>
@@ -325,19 +370,19 @@ const AssuranceCreditPage = () => {
   );
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       <MainSidebar />
       
       <div
-        className="flex-1 flex flex-col"
+        className="flex-1 flex flex-col pt-16 sm:pt-4 md:pt-0 pb-20 md:pb-6"
         style={{ marginLeft: `${sidebarOffset}px` }}
       >
-        <main className="flex-1 p-6 space-y-6">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
           {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Assurance Crédit</h1>
-              <p className="text-muted-foreground">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Assurance Crédit</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Protégez votre trésorerie contre les impayés clients
               </p>
             </div>
@@ -345,12 +390,16 @@ const AssuranceCreditPage = () => {
               <Button 
                 variant={activeTab === 'overview' ? 'default' : 'outline'}
                 onClick={() => setActiveTab('overview')}
+                size="sm"
+                className="text-xs sm:text-sm"
               >
                 Overview
               </Button>
               <Button 
                 variant={activeTab === 'application' ? 'default' : 'outline'}
                 onClick={() => setActiveTab('application')}
+                size="sm"
+                className="text-xs sm:text-sm"
               >
                 Application
               </Button>

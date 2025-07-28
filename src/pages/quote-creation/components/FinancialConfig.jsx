@@ -28,13 +28,13 @@ const FinancialConfig = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* VAT Configuration */}
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
           <div>
-            <h3 className="text-lg font-semibold">Affichage de la TVA</h3>
-            <p className="text-sm text-gray-600">Afficher le calcul de TVA sur les devis</p>
+            <h3 className="text-sm sm:text-base lg:text-lg font-semibold">Affichage de la TVA</h3>
+            <p className="text-xs sm:text-sm lg:text-base text-gray-600">Afficher le calcul de TVA sur les devis</p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input 
@@ -49,7 +49,7 @@ const FinancialConfig = ({
         
         {vatConfig.display && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs sm:text-sm lg:text-base font-medium text-gray-700 mb-2">
               Taux de TVA (%)
             </label>
             <input 
@@ -61,7 +61,7 @@ const FinancialConfig = ({
               onChange={(e) => onVATConfigChange('rate', parseFloat(e.target.value))}
               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
             />
-            <div className="flex justify-between text-sm text-gray-600 mt-2">
+            <div className="flex justify-between text-xs sm:text-sm lg:text-base text-gray-600 mt-2">
               <span>0%</span>
               <span>{vatConfig.rate}%</span>
               <span>25%</span>
@@ -72,10 +72,10 @@ const FinancialConfig = ({
 
       {/* Advance Payment Configuration */}
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
           <div>
-            <h3 className="text-lg font-semibold">Acompte</h3>
-            <p className="text-sm text-gray-600">Demander un acompte</p>
+            <h3 className="text-sm sm:text-base lg:text-lg font-semibold">Acompte</h3>
+            <p className="text-xs sm:text-sm lg:text-base text-gray-600">Demander un acompte</p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input 
@@ -90,7 +90,7 @@ const FinancialConfig = ({
         
         {advanceConfig.enabled && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs sm:text-sm lg:text-base font-medium text-gray-700 mb-2">
               Montant de l'acompte (€)
             </label>
             <input 
@@ -98,7 +98,7 @@ const FinancialConfig = ({
               value={advanceConfig.amount}
               onChange={(e) => onAdvanceConfigChange('amount', parseFloat(e.target.value))}
               min="0"
-              className="w-full p-2 border rounded-lg"
+              className="w-full p-2 border rounded-lg text-xs sm:text-sm lg:text-base"
               placeholder="Montant de l'acompte"
             />
           </div>
@@ -107,10 +107,10 @@ const FinancialConfig = ({
 
       {/* Marketing Banner Configuration */}
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
           <div>
-            <h3 className="text-lg font-semibold">Bannière marketing</h3>
-            <p className="text-sm text-gray-600">Offre promotionnelle</p>
+            <h3 className="text-sm sm:text-base lg:text-lg font-semibold">Bannière marketing</h3>
+            <p className="text-xs sm:text-sm lg:text-base text-gray-600">Offre promotionnelle</p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input 
@@ -125,14 +125,14 @@ const FinancialConfig = ({
         
         {marketingBannerConfig.enabled && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs sm:text-sm lg:text-base font-medium text-gray-700 mb-2">
               Message marketing
             </label>
             <input 
               type="text"
               value={marketingBannerConfig.message}
               onChange={(e) => onMarketingBannerConfigChange('message', e.target.value)}
-              className="w-full p-2 border rounded-lg"
+              className="w-full p-2 border rounded-lg text-xs sm:text-sm lg:text-base"
               placeholder="Ex: -10% si signé avant 48h"
             />
           </div>
@@ -141,22 +141,22 @@ const FinancialConfig = ({
 
       {/* Default Conditions */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">Conditions générales par défaut</h3>
-        <div className="flex space-x-2 mb-4">
+        <h3 className="text-sm sm:text-base lg:text-lg font-semibold mb-3 sm:mb-4">Conditions générales par défaut</h3>
+        <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
           <button 
-            className={`px-4 py-2 rounded-lg ${defaultConditions.language === 'FR' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+            className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm lg:text-base ${defaultConditions.language === 'FR' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
             onClick={() => handleLanguageChange('FR')}
           >
             Modèle FR
           </button>
           <button 
-            className={`px-4 py-2 rounded-lg ${defaultConditions.language === 'NL' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+            className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm lg:text-base ${defaultConditions.language === 'NL' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
             onClick={() => handleLanguageChange('NL')}
           >
             Modèle NL
           </button>
           <button 
-            className={`px-4 py-2 rounded-lg ${defaultConditions.language === 'EN' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+            className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm lg:text-base ${defaultConditions.language === 'EN' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
             onClick={() => handleLanguageChange('EN')}
           >
             Modèle EN
@@ -166,8 +166,8 @@ const FinancialConfig = ({
         <textarea
           value={defaultConditions.text}
           onChange={(e) => onDefaultConditionsChange(defaultConditions.language, e.target.value)}
-          rows={8}
-          className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          rows={6}
+          className="w-full p-2 sm:p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs sm:text-sm lg:text-base"
           placeholder="Entrez vos conditions générales..."
         />
       </div>

@@ -183,19 +183,21 @@ const QuotePreview = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Top Navigation Bar */}
-      <div className="bg-card border border-border rounded-lg p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex space-x-2">
+      <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-3 sm:space-y-0">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               onClick={() => setShowCompanyModal(true)}
               iconName="Building"
               iconPosition="left"
               size="sm"
+              className="text-xs sm:text-sm"
             >
-              Info entreprise
+              <span className="hidden sm:inline">Info entreprise</span>
+              <span className="sm:hidden">Entreprise</span>
             </Button>
             
             <Button
@@ -211,6 +213,7 @@ const QuotePreview = ({
               iconName="Settings"
               iconPosition="left"
               size="sm"
+              className="text-xs sm:text-sm"
             >
               {activeTab === 'personalization' ? 'Masquer' : 'Personnaliser'}
             </Button>
@@ -220,8 +223,10 @@ const QuotePreview = ({
               iconName="Download"
               iconPosition="left"
               size="sm"
+              className="text-xs sm:text-sm"
             >
-              Télécharger PDF
+              <span className="hidden sm:inline">Télécharger PDF</span>
+              <span className="sm:hidden">PDF</span>
             </Button>
             
             <Button
@@ -229,36 +234,41 @@ const QuotePreview = ({
               iconName="Share"
               iconPosition="left"
               size="sm"
+              className="text-xs sm:text-sm"
             >
-              Créer lien public
+              <span className="hidden sm:inline">Créer lien public</span>
+              <span className="sm:hidden">Lien</span>
             </Button>
             
                 <Button
                   variant="outline"
-              onClick={() => setShowSignatureModal(true)}
-              iconName="PenTool"
+                  onClick={() => setShowSignatureModal(true)}
+                  iconName="PenTool"
                   iconPosition="left"
-              size="sm"
+                  size="sm"
+                  className="text-xs sm:text-sm"
                 >
-              Signature électronique
+                  <span className="hidden sm:inline">Signature électronique</span>
+                  <span className="sm:hidden">Signature</span>
                 </Button>
           </div>
           
-          <div className="flex space-x-1 ml-2">
-                  <button
+          {/* Desktop/Mobile Toggle - Hidden on mobile and tablet */}
+          <div className="hidden lg:flex space-x-1">
+            <button
               onClick={() => setPreviewMode(previewMode === 'desktop' ? 'mobile' : 'desktop')}
               className="p-2 rounded bg-gray-200 text-gray-600 hover:bg-gray-300 transition-colors"
             >
               <Icon name={previewMode === 'mobile' ? "Monitor" : "Smartphone"} size={14} />
             </button>
-                  </div>
-              </div>
-            </div>
+          </div>
+        </div>
+      </div>
             
       {/* Quote Preview - Full Width */}
-      <div className="bg-card border border-border rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-          <Icon name="Eye" size={20} className="mr-2" />
+      <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
+        <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
+          <Icon name="Eye" size={18} className="sm:w-5 sm:h-5 mr-2" />
           Aperçu du devis
         </h3>
         
@@ -266,7 +276,7 @@ const QuotePreview = ({
         
         {/* Configuration Panels - Hidden by default, shown when activeTab changes */}
         {(activeTab === 'personalization' || activeTab === 'financial') && (
-          <div className="mt-6 bg-card border border-border rounded-lg p-6">
+          <div className="mt-4 sm:mt-6 bg-card border border-border rounded-lg p-4 sm:p-6">
             {activeTab === 'personalization' && (
               <Personalization
                 selectedTemplate={customization.template}
@@ -298,91 +308,98 @@ const QuotePreview = ({
           </div>
         )}
 
-        <div className={`${getTemplateClasses()} rounded-lg shadow-lg ${previewMode === 'mobile' ? 'max-w-sm mx-auto p-4' : 'w-full p-8'}`}>
-          <div className={`w-full ${previewMode === 'mobile' ? 'text-sm' : ''}`}>
+        <div className={`${getTemplateClasses()} rounded-lg shadow-lg ${
+          previewMode === 'mobile' ? 'max-w-sm mx-auto p-4' : 
+          'w-full p-4 sm:p-8 lg:p-10'
+        }`}>
+          <div className={`w-full ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base lg:text-base'}`}>
                 {/* Header */}
-            <div className={`flex justify-between items-start mb-8 ${previewMode === 'mobile' ? 'p-4 flex-col space-y-4' : 'p-8'}`}>
-              <div className={`flex items-center space-x-4 ${previewMode === 'mobile' ? 'w-full' : ''}`}>
+            <div className={`flex justify-between items-start mb-8 sm:mb-10 ${
+              previewMode === 'mobile' ? 'p-4 flex-col space-y-4' : 
+              'p-4 sm:p-8 lg:p-10 flex-col sm:flex-row space-y-4 sm:space-y-0'
+            }`}>
+              <div className={`flex items-center space-x-3 sm:space-x-6 ${previewMode === 'mobile' ? 'w-full' : 'flex-1'}`}>
                 {companyInfo.logo ? (
-                  <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                  <div className="w-12 h-12 sm:w-20 sm:h-20 bg-gray-200 rounded-lg flex items-center justify-center text-xs sm:text-sm">
                     LOGO
                   </div>
                 ) : (
-                  <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                  <div className="w-12 h-12 sm:w-20 sm:h-20 bg-gray-200 rounded-lg flex items-center justify-center text-xs sm:text-sm">
                     LOGO
-                      </div>
-                    )}
-                    <div>
-                      <h1 
-                    className={`font-bold ${previewMode === 'mobile' ? 'text-lg' : 'text-2xl'}`}
+                  </div>
+                )}
+                <div>
+                  <h1 
+                    className={`font-bold ${previewMode === 'mobile' ? 'text-lg' : 'text-xl sm:text-2xl lg:text-3xl'}`}
                     style={{ color: customization.colors.primary }}
-                      >
+                  >
                     {companyInfo.name}
-                      </h1>
-                  <p className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : ''}`} style={{ color: customization.colors.secondary }}>Artisan professionnel</p>
+                  </h1>
+                  <p className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.secondary }}>Artisan professionnel</p>
                   {financialConfig.marketingBannerConfig.enabled && financialConfig.marketingBannerConfig.message && (
-                    <p className={`text-sm font-medium mt-2 ${previewMode === 'mobile' ? 'text-xs' : ''}`} style={{ color: customization.colors.secondary }}>
+                    <p className={`text-sm font-medium mt-2 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.secondary }}>
                       {financialConfig.marketingBannerConfig.message}
                     </p>
                   )}
-                    </div>
-                  </div>
-              <div className={`text-right ${previewMode === 'mobile' ? 'text-center w-full' : ''}`}>
-                    <h2 
-                  className={`font-semibold ${previewMode === 'mobile' ? 'text-base' : 'text-xl'}`}
+                </div>
+              </div>
+              <div className={`text-right ${previewMode === 'mobile' ? 'text-center w-full' : 'text-right'}`}>
+                <h2 
+                  className={`font-semibold ${previewMode === 'mobile' ? 'text-base' : 'text-lg sm:text-xl lg:text-2xl'}`}
                   style={{ color: customization.colors.primary }}
-                    >
+                >
                   DEVIS N° {quoteNumber}
-                    </h2>
-                <p className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : ''}`} style={{ color: customization.colors.secondary }}>Date: {currentDate}</p>
-                <p className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : ''}`} style={{ color: customization.colors.secondary }}>Valable jusqu'au: {validUntil}</p>
-                  </div>
+                </h2>
+                <p className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.secondary }}>Date: {currentDate}</p>
+                <p className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.secondary }}>Valable jusqu'au: {validUntil}</p>
+              </div>
                 </div>
                 
             {/* Company Information */}
-            <div className={`grid gap-8 mb-8 ${previewMode === 'mobile' ? 'grid-cols-1 px-4' : 'grid-cols-2 px-8'}`}>
-                  <div>
-                <h3 className={`font-semibold text-gray-800 mb-2 ${previewMode === 'mobile' ? 'text-sm' : ''}`} style={{ color: customization.colors.primary }}>CLIENT</h3>
-                <div className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : ''}`} style={{ color: customization.colors.secondary }}>
-                      <p className="font-medium">{selectedClient?.label?.split(' - ')[0] || 'Client'}</p>
-                      {selectedClient?.company && <p>{selectedClient.company}</p>}
-                      <p>{selectedClient?.email || 'email@client.com'}</p>
-                      <p>{selectedClient?.phone || '06 12 34 56 78'}</p>
-                      {selectedClient?.address && <p>{selectedClient.address}</p>}
-                    </div>
-                  </div>
+            <div className={`grid gap-8 sm:gap-12 mb-8 sm:mb-10 ${
+              previewMode === 'mobile' ? 'grid-cols-1 px-4' : 
+              'grid-cols-1 sm:grid-cols-2 px-4 sm:px-8 lg:px-10'
+            }`}>
+              <div>
+                <h3 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>CLIENT</h3>
+                <div className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
+                  <p className="font-medium">{selectedClient?.label?.split(' - ')[0] || 'Client'}</p>
+                  {selectedClient?.company && <p>{selectedClient.company}</p>}
+                  <p>{selectedClient?.email || 'email@client.com'}</p>
+                  <p>{selectedClient?.phone || '06 12 34 56 78'}</p>
+                  {selectedClient?.address && <p>{selectedClient.address}</p>}
+                </div>
+              </div>
               <div className={`${previewMode === 'mobile' ? 'text-left' : 'text-right'}`}>
-                <h3 className={`font-semibold text-gray-800 mb-2 ${previewMode === 'mobile' ? 'text-sm' : ''}`} style={{ color: customization.colors.primary }}>VOTRE ENTREPRISE</h3>
-                <div className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : ''}`} style={{ color: customization.colors.secondary }}>
+                <h3 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>VOTRE ENTREPRISE</h3>
+                <div className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
                   <p>{companyInfo.address}</p>
                   <p>{companyInfo.postalCode} {companyInfo.city}</p>
                   <p>{companyInfo.email}</p>
                   <p>{companyInfo.phone}</p>
                   <p>TVA: {companyInfo.vatNumber}</p>
-                    </div>
-                  </div>
                 </div>
-
-            {/* Project Info */}
-            <div className={`mb-8 ${previewMode === 'mobile' ? 'px-4' : 'px-8'}`}>
-              <h3 className={`font-semibold text-gray-800 mb-2 ${previewMode === 'mobile' ? 'text-sm' : ''}`} style={{ color: customization.colors.primary }}>PROJET: d</h3>
-              <p className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : ''}`} style={{ color: customization.colors.secondary }}>ddd</p>
+              </div>
             </div>
 
+            {/* Project Info */}
+            <div className={`mb-8 sm:mb-10 ${previewMode === 'mobile' ? 'px-4' : 'px-4 sm:px-8 lg:px-10'}`}>
+              <h3 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>PROJET: d</h3>
+              <p className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>ddd</p>
+            </div>
 
-                
-                {/* Tasks Table */}
-            <div className={`mb-8 ${previewMode === 'mobile' ? 'px-4' : 'px-8'}`}>
-              <h3 className={`font-semibold text-gray-800 mb-4 ${previewMode === 'mobile' ? 'text-sm' : ''}`} style={{ color: customization.colors.primary }}>DÉTAIL DES PRESTATIONS</h3>
-              <div className={`${previewMode === 'mobile' ? 'overflow-x-auto' : ''}`}>
-                <table className={`w-full border-collapse ${previewMode === 'mobile' ? 'text-xs min-w-[500px]' : ''}`}>
+            {/* Tasks Table */}
+            <div className={`mb-8 sm:mb-10 ${previewMode === 'mobile' ? 'px-4' : 'px-4 sm:px-8 lg:px-10'}`}>
+              <h3 className={`font-semibold text-gray-800 mb-4 sm:mb-6 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>DÉTAIL DES PRESTATIONS</h3>
+                              <div className={`${previewMode === 'mobile' ? 'overflow-x-auto' : 'overflow-x-auto'}`}>
+                <table className={`w-full border-collapse ${previewMode === 'mobile' ? 'text-xs min-w-[500px]' : 'text-xs sm:text-sm min-w-[600px]'}`}>
                     <thead>
                       <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
-                        <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-left' : 'p-3 text-left'}`} style={{ color: customization.colors.primary }}>Description</th>
-                        <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-center w-16' : 'p-3 text-center w-24'}`} style={{ color: customization.colors.primary }}>Durée (h)</th>
-                        <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-20' : 'p-3 text-right w-32'}`} style={{ color: customization.colors.primary }}>Prix unitaire</th>
-                        <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-center w-20' : 'p-3 text-center w-32'}`} style={{ color: customization.colors.primary }}>Matériaux</th>
-                        <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-20' : 'p-3 text-right w-32'}`} style={{ color: customization.colors.primary }}>Total</th>
+                        <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-left' : 'p-3 sm:p-4 text-left'}`} style={{ color: customization.colors.primary }}>Description</th>
+                        <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-center w-16' : 'p-3 sm:p-4 text-center w-20 sm:w-24'}`} style={{ color: customization.colors.primary }}>Durée (h)</th>
+                        <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-20' : 'p-3 sm:p-4 text-right w-24 sm:w-32'}`} style={{ color: customization.colors.primary }}>Prix unitaire</th>
+                        <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-center w-20' : 'p-3 sm:p-4 text-center w-24 sm:w-32'}`} style={{ color: customization.colors.primary }}>Matériaux</th>
+                        <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-20' : 'p-3 sm:p-4 text-right w-24 sm:w-32'}`} style={{ color: customization.colors.primary }}>Total</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -393,46 +410,46 @@ const QuotePreview = ({
                         
                         return (
                           <tr key={task.id}>
-                            <td className={`border border-gray-300 ${previewMode === 'mobile' ? 'p-2' : 'p-3'}`}>
+                            <td className={`border border-gray-300 ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>
                               <div className="font-medium" style={{ color: customization.colors.secondary }}>{task.description}</div>
                             </td>
-                            <td className={`border border-gray-300 text-center ${previewMode === 'mobile' ? 'p-2' : 'p-3'}`} style={{ color: customization.colors.secondary }}>{task.duration}</td>
-                            <td className={`border border-gray-300 text-right ${previewMode === 'mobile' ? 'p-2' : 'p-3'}`} style={{ color: customization.colors.secondary }}>{task.price}€/h</td>
-                            <td className={`border border-gray-300 text-center ${previewMode === 'mobile' ? 'p-2' : 'p-3'}`} style={{ color: customization.colors.secondary }}>
+                            <td className={`border border-gray-300 text-center ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ color: customization.colors.secondary }}>{task.duration}</td>
+                            <td className={`border border-gray-300 text-right ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ color: customization.colors.secondary }}>{task.price}€/h</td>
+                            <td className={`border border-gray-300 text-center ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ color: customization.colors.secondary }}>
                               {task.materials.length > 0 ? task.materials.map(m => m.name).join(', ') : '-'}
-                              </td>
-                            <td className={`border border-gray-300 text-right font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3'}`} style={{ color: customization.colors.secondary }}>{taskTotal.toFixed(2)}€</td>
+                            </td>
+                            <td className={`border border-gray-300 text-right font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ color: customization.colors.secondary }}>{taskTotal.toFixed(2)}€</td>
                             </tr>
                         );
                       })}
                     </tbody>
                     <tfoot>
                       <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
-                        <td className={`border border-gray-300 font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3'}`} colSpan="4" style={{ color: customization.colors.primary }}>SOUS-TOTAL HT:</td>
-                        <td className={`border border-gray-300 text-right font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3'}`} style={{ color: customization.colors.secondary }}>{totalPrice.toFixed(2)}€</td>
+                        <td className={`border border-gray-300 font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4" style={{ color: customization.colors.primary }}>SOUS-TOTAL HT:</td>
+                        <td className={`border border-gray-300 text-right font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ color: customization.colors.secondary }}>{totalPrice.toFixed(2)}€</td>
                       </tr>
                       {financialConfig.vatConfig.display && (
                         <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
-                          <td className={`border border-gray-300 font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3'}`} colSpan="4" style={{ color: customization.colors.primary }}>TOTAL HT:</td>
-                          <td className={`border border-gray-300 text-right font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3'}`} style={{ color: customization.colors.secondary }}>{totalPrice.toFixed(2)}€</td>
+                          <td className={`border border-gray-300 font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4" style={{ color: customization.colors.primary }}>TOTAL HT:</td>
+                          <td className={`border border-gray-300 text-right font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ color: customization.colors.secondary }}>{totalPrice.toFixed(2)}€</td>
                         </tr>
                       )}
                       {financialConfig.vatConfig.display && (
                         <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
-                          <td className={`border border-gray-300 font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3'}`} colSpan="4" style={{ color: customization.colors.primary }}>TVA ({financialConfig.vatConfig.rate}%):</td>
-                          <td className={`border border-gray-300 text-right font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3'}`} style={{ color: customization.colors.secondary }}>{vatAmount.toFixed(2)}€</td>
+                          <td className={`border border-gray-300 font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4" style={{ color: customization.colors.primary }}>TVA ({financialConfig.vatConfig.rate}%):</td>
+                          <td className={`border border-gray-300 text-right font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ color: customization.colors.secondary }}>{vatAmount.toFixed(2)}€</td>
                         </tr>
                       )}
                       {financialConfig.advanceConfig.enabled && (
                         <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
-                          <td className={`border border-gray-300 font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3'}`} colSpan="4" style={{ color: customization.colors.primary }}>ACOMPTE À LA COMMANDE:</td>
-                          <td className={`border border-gray-300 text-right font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3'}`} style={{ color: customization.colors.secondary }}>{advanceAmount.toFixed(2)}€</td>
+                          <td className={`border border-gray-300 font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4" style={{ color: customization.colors.primary }}>ACOMPTE À LA COMMANDE:</td>
+                          <td className={`border border-gray-300 text-right font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ color: customization.colors.secondary }}>{advanceAmount.toFixed(2)}€</td>
                         </tr>
                       )}
                       {financialConfig.advanceConfig.enabled && (
                         <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
-                          <td className={`border border-gray-300 font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3'}`} colSpan="4" style={{ color: customization.colors.primary }}>SOLDE À LA LIVRAISON:</td>
-                          <td className={`border border-gray-300 text-right font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3'}`} style={{ color: customization.colors.secondary }}>{balanceAmount.toFixed(2)}€</td>
+                          <td className={`border border-gray-300 font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4" style={{ color: customization.colors.primary }}>SOLDE À LA LIVRAISON:</td>
+                          <td className={`border border-gray-300 text-right font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ color: customization.colors.secondary }}>{balanceAmount.toFixed(2)}€</td>
                         </tr>
                       )}
                     </tfoot>
@@ -441,27 +458,27 @@ const QuotePreview = ({
             </div>
 
             {/* General Conditions */}
-            <div className={`mb-8 ${previewMode === 'mobile' ? 'px-4' : 'px-8'}`}>
-              <h3 className={`font-semibold text-gray-800 mb-4 ${previewMode === 'mobile' ? 'text-sm' : ''}`} style={{ color: customization.colors.primary }}>CONDITIONS GÉNÉRALES</h3>
-              <div className={`text-gray-600 whitespace-pre-wrap ${previewMode === 'mobile' ? 'text-xs' : 'text-sm'}`} style={{ color: customization.colors.secondary }}>
+            <div className={`mb-8 sm:mb-10 ${previewMode === 'mobile' ? 'px-4' : 'px-4 sm:px-8 lg:px-10'}`}>
+              <h3 className={`font-semibold text-gray-800 mb-4 sm:mb-6 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>CONDITIONS GÉNÉRALES</h3>
+              <div className={`text-gray-600 whitespace-pre-wrap ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
                 {financialConfig.defaultConditions.text}
               </div>
             </div>
 
             {/* Signatures */}
-            <div className={`grid gap-8 ${previewMode === 'mobile' ? 'grid-cols-1 px-4 pb-4' : 'grid-cols-2 px-8 pb-8'}`}>
-              <div>
-                <h4 className={`font-semibold text-gray-800 mb-2 ${previewMode === 'mobile' ? 'text-sm' : ''}`} style={{ color: customization.colors.primary }}>Signature de l'entreprise:</h4>
-                <div className={`border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50 flex items-center justify-center ${previewMode === 'mobile' ? 'p-3 min-h-[60px]' : 'p-4 min-h-[80px]'}`}>
-                  <p className={`text-gray-500 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm'}`} style={{ color: customization.colors.secondary }}>Zone de signature électronique</p>
+            <div className={`grid gap-8 sm:gap-12 ${previewMode === 'mobile' ? 'grid-cols-1 px-4 pb-4' : 'grid-cols-1 sm:grid-cols-2 px-4 sm:px-8 lg:px-10 pb-4 sm:pb-8 lg:pb-10'}`}>
+                              <div>
+                  <h4 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>Signature de l'entreprise:</h4>
+                  <div className={`border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50 flex items-center justify-center ${previewMode === 'mobile' ? 'p-3 min-h-[60px]' : 'p-4 sm:p-6 min-h-[80px] sm:min-h-[100px]'}`}>
+                    <p className={`text-gray-500 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>Zone de signature électronique</p>
+                  </div>
+                  <p className={`text-gray-600 mt-2 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
+                    Date: _______________
+                  </p>
                 </div>
-                <p className={`text-gray-600 mt-2 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm'}`} style={{ color: customization.colors.secondary }}>
-                  Date: _______________
-                </p>
-              </div>
-              <div>
-                <h4 className={`font-semibold text-gray-800 mb-2 ${previewMode === 'mobile' ? 'text-sm' : ''}`} style={{ color: customization.colors.primary }}>Bon pour accord client:</h4>
-                <div className={`border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50 flex items-center justify-center ${previewMode === 'mobile' ? 'p-3 min-h-[60px]' : 'p-4 min-h-[80px]'}`}>
+                <div>
+                  <h4 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>Bon pour accord client:</h4>
+                  <div className={`border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50 flex items-center justify-center ${previewMode === 'mobile' ? 'p-3 min-h-[60px]' : 'p-4 sm:p-6 min-h-[80px] sm:min-h-[100px]'}`}>
                   {signatureData?.signature ? (
                     <div className="w-full">
                       <img 
@@ -469,15 +486,15 @@ const QuotePreview = ({
                         alt="Signature du client" 
                         className="max-h-12 max-w-full mx-auto"
                       />
-                      <p className={`text-xs text-gray-500 mt-1 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm'}`} style={{ color: customization.colors.secondary }}>
+                      <p className={`text-xs text-gray-500 mt-1 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
                         Signé le {new Date(signatureData.signedAt).toLocaleDateString('fr-FR')}
                       </p>
                     </div>
                   ) : (
-                    <p className={`text-gray-500 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm'}`} style={{ color: customization.colors.secondary }}>Signature du client</p>
+                    <p className={`text-gray-500 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>Signature du client</p>
                   )}
                 </div>
-                <p className={`text-gray-600 mt-2 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm'}`} style={{ color: customization.colors.secondary }}>
+                <p className={`text-gray-600 mt-2 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
                   Date: {signatureData?.signedAt ? new Date(signatureData.signedAt).toLocaleDateString('fr-FR') : '_______________'}
                 </p>
               </div>

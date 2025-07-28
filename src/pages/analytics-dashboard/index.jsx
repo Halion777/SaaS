@@ -38,14 +38,37 @@ const AnalyticsDashboard = () => {
   };
 
   useEffect(() => {
-    const handleResize = () => {
+    const handleSidebarToggle = (e) => {
+      const { isCollapsed } = e.detail;
       const mobile = window.innerWidth < 768;
-      const tablet = window.innerWidth < 1024;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
       setIsMobile(mobile);
       
       if (mobile) {
         setSidebarOffset(0);
+      } else if (tablet) {
+        // On tablet, sidebar auto-closes after navigation, so always use collapsed width
+        // But account for wider collapsed sidebar on tablet (80px instead of 64px)
+        setSidebarOffset(80);
       } else {
+        // On desktop, respond to sidebar state
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsMobile(mobile);
+      
+      if (mobile) {
+        setSidebarOffset(0);
+      } else if (tablet) {
+        // On tablet, sidebar auto-closes after navigation, so always use collapsed width
+        // But account for wider collapsed sidebar on tablet (80px instead of 64px)
+        setSidebarOffset(80);
+      } else {
+        // On desktop, check sidebar state
         const savedCollapsed = localStorage.getItem('sidebar-collapsed');
         const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
         setSidebarOffset(isCollapsed ? 64 : 288);
@@ -54,7 +77,11 @@ const AnalyticsDashboard = () => {
 
     handleResize();
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener('sidebar-toggle', handleSidebarToggle);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('sidebar-toggle', handleSidebarToggle);
+    };
   }, []);
 
   useEffect(() => {
@@ -164,7 +191,7 @@ const AnalyticsDashboard = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8"
             >
               {kpiData.map((kpi, index) => (
                 <KPICard
@@ -176,7 +203,7 @@ const AnalyticsDashboard = () => {
             </motion.div>
 
             {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
               {/* Revenue Forecasting */}
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
@@ -205,7 +232,7 @@ const AnalyticsDashboard = () => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 }}
-              className="mb-8"
+              className="mb-6 sm:mb-8"
             >
               <ClientSegmentChart data={clientSegmentData} />
             </motion.div>
@@ -215,7 +242,7 @@ const AnalyticsDashboard = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 }}
-              className="mb-8"
+              className="mb-6 sm:mb-8"
             >
               <MetricsProgress metrics={currentMetrics} />
             </motion.div>
@@ -223,7 +250,7 @@ const AnalyticsDashboard = () => {
         );
       case 'ai':
         return (
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
             {/* AI Insights Panel */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -260,45 +287,40 @@ const AnalyticsDashboard = () => {
       
       <main 
         className={`transition-all duration-300 ease-out ${
-          isMobile ? 'pb-20' : ''
+          isMobile ? 'pb-16 pt-4' : ''
         }`}
         style={{ 
           marginLeft: isMobile ? 0 : `${sidebarOffset}px`,
-          paddingRight: isMobile ? '1rem' : '2rem',
-          paddingLeft: isMobile ? '1rem' : '2rem'
         }}
       >
-        <div className="py-8">
+        <div className="px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
           {/* Header */}
           <motion.div 
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6"
+            className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6"
           >
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border pb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
               <div>
                 <div className="flex items-center">
-                  <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center mr-4">
-                    <Icon name="BarChart3" size={28} className="text-blue-600" />
-                  </div>
-                  <div>
-                    <h1 className="text-3xl font-bold text-foreground">Analyses Détaillées</h1>
-                    <p className="text-muted-foreground mt-1">
-                      Explorez vos données en profondeur pour des décisions stratégiques
-                    </p>
-                  </div>
+                  <Icon name="BarChart3" size={24} className="text-primary mr-3" />
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Analyses Détaillées</h1>
                 </div>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  Explorez vos données en profondeur pour des décisions stratégiques
+                </p>
               </div>
-              <div className="flex items-center">
+              <div className="flex items-center space-x-2 sm:space-x-3">
                 <Button 
                   variant="outline" 
-                  size="sm" 
-                  className="mr-3"
+                  size="xs"
+                  className="h-8 sm:h-9 text-xs"
                   onClick={() => window.location.href = '/dashboard'}
                 >
                   <span className="flex items-center">
-                    <Icon name="LayoutDashboard" size={16} className="mr-2" />
-                    Retour à l'aperçu
+                    <Icon name="LayoutDashboard" size={14} className="sm:w-4 sm:h-4 mr-2" />
+                    <span className="hidden sm:inline">Retour à l'aperçu</span>
+                    <span className="sm:hidden">Retour</span>
                   </span>
                 </Button>
                 <ExportControls />
@@ -311,11 +333,11 @@ const AnalyticsDashboard = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="mb-6"
+            className="mb-4 sm:mb-6"
           >
-            <div className="flex flex-wrap border-b border-border">
+            <div className="flex border-b border-border overflow-x-auto scrollbar-hide">
               <button
-                className={`px-6 py-3 font-medium text-sm transition-colors ${
+                className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-3 font-medium text-sm transition-colors whitespace-nowrap flex-shrink-0 min-w-fit ${
                   activeTab === 'overview' 
                     ? 'text-primary border-b-2 border-primary' 
                     : 'text-muted-foreground hover:text-foreground'
@@ -324,11 +346,12 @@ const AnalyticsDashboard = () => {
               >
                 <span className="flex items-center">
                   <Icon name="PieChart" size={16} className="mr-2" />
-                  Vue d'ensemble
+                  <span className="hidden sm:inline">Vue d'ensemble</span>
+                  <span className="sm:hidden">Vue</span>
                 </span>
               </button>
               <button
-                className={`px-6 py-3 font-medium text-sm transition-colors ${
+                className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-3 font-medium text-sm transition-colors whitespace-nowrap flex-shrink-0 min-w-fit ${
                   activeTab === 'segments' 
                     ? 'text-primary border-b-2 border-primary' 
                     : 'text-muted-foreground hover:text-foreground'
@@ -337,11 +360,12 @@ const AnalyticsDashboard = () => {
               >
                 <span className="flex items-center">
                   <Icon name="Users" size={16} className="mr-2" />
-                  Segments clients
+                  <span className="hidden sm:inline">Segments clients</span>
+                  <span className="sm:hidden">Segments</span>
                 </span>
               </button>
               <button
-                className={`px-6 py-3 font-medium text-sm transition-colors ${
+                className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-3 font-medium text-sm transition-colors whitespace-nowrap flex-shrink-0 min-w-fit ${
                   activeTab === 'ai' 
                     ? 'text-primary border-b-2 border-primary' 
                     : 'text-muted-foreground hover:text-foreground'
@@ -350,7 +374,8 @@ const AnalyticsDashboard = () => {
               >
                 <span className="flex items-center">
                   <Icon name="Brain" size={16} className="mr-2" />
-                  Insights IA
+                  <span className="hidden sm:inline">Insights IA</span>
+                  <span className="sm:hidden">IA</span>
                 </span>
               </button>
             </div>
@@ -361,7 +386,7 @@ const AnalyticsDashboard = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="mb-8 bg-card border border-border p-4 rounded-lg"
+            className="mb-6 sm:mb-8 bg-card border border-border p-3 sm:p-4 rounded-lg"
           >
             <FilterControls
               dateRange={dateRange}

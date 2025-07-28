@@ -5,6 +5,8 @@ import MainSidebar from '../../components/ui/MainSidebar';
 
 const FollowUpManagement = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
   const [followUps, setFollowUps] = useState([
     {
       id: 1,
@@ -65,25 +67,62 @@ const FollowUpManagement = () => {
 
   // Handle sidebar offset for responsive layout
   useEffect(() => {
-    const savedCollapsed = localStorage.getItem('sidebar-collapsed');
-    const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
-    setSidebarOffset(isCollapsed ? 64 : 288);
-    
-    const handleResize = () => {
-      const isMobile = window.innerWidth < 768;
-      if (isMobile) {
+    const handleSidebarToggle = (e) => {
+      const { isCollapsed } = e.detail;
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setIsTablet(tablet);
+
+      if (mobile) {
         setSidebarOffset(0);
+      } else if (tablet) {
+        // On tablet, sidebar is always collapsed
+        setSidebarOffset(80);
       } else {
-        const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+        // On desktop, respond to sidebar state
         setSidebarOffset(isCollapsed ? 64 : 288);
       }
     };
-    
+
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setIsTablet(tablet);
+
+      if (mobile) {
+        setSidebarOffset(0);
+      } else if (tablet) {
+        // On tablet, sidebar is always collapsed
+        setSidebarOffset(80);
+      } else {
+        // On desktop, check sidebar state
+        const savedCollapsed = localStorage.getItem('sidebar-collapsed');
+        const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+
+    const handleStorage = () => {
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      
+      if (!mobile && !tablet) {
+        const savedCollapsed = localStorage.getItem('sidebar-collapsed');
+        const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+
     handleResize();
     window.addEventListener('resize', handleResize);
-    
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('sidebar-toggle', handleSidebarToggle);
     return () => {
+      window.removeEventListener('storage', handleStorage);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('sidebar-toggle', handleSidebarToggle);
     };
   }, []);
 
@@ -151,30 +190,30 @@ const FollowUpManagement = () => {
   const supplierPayments = Math.abs(filteredFollowUps.filter(fu => fu.type === 'supplier').reduce((sum, fu) => sum + fu.potentialRevenue, 0));
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       <MainSidebar />
       
       <div
-        className="flex-1 flex flex-col"
+        className="flex-1 flex flex-col pt-16 sm:pt-4 md:pt-0 pb-20 md:pb-6"
         style={{ marginLeft: `${sidebarOffset}px` }}
       >
-        <main className="flex-1 p-6 space-y-6">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
           {/* Header */}
           <div>
-            <div className="flex items-center space-x-3 mb-2">
-              <Icon name="MessageCircle" size={24} color="var(--color-primary)" />
-              <h1 className="text-2xl font-bold text-foreground">Relances</h1>
+            <div className="flex items-center space-x-2 sm:space-x-3 mb-2">
+              <Icon name="MessageCircle" size={20} className="sm:w-6 sm:h-6 text-primary" />
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Relances</h1>
             </div>
-            <p className="text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Relancez vos prospects automatiquement et intelligemment
             </p>
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex space-x-1 bg-muted/50 rounded-lg p-1">
+          <div className="flex space-x-1 bg-muted/50 rounded-lg p-1 overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setActiveFilter('all')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+              className={`flex-1 py-2 px-3 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeFilter === 'all'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -184,7 +223,7 @@ const FollowUpManagement = () => {
             </button>
             <button
               onClick={() => setActiveFilter('clients')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+              className={`flex-1 py-2 px-3 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeFilter === 'clients'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -194,7 +233,7 @@ const FollowUpManagement = () => {
             </button>
             <button
               onClick={() => setActiveFilter('suppliers')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+              className={`flex-1 py-2 px-3 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeFilter === 'suppliers'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -205,46 +244,46 @@ const FollowUpManagement = () => {
           </div>
 
           {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-card border border-border rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-muted-foreground">Relances en attente</h3>
-                <Icon name="Clock" size={20} color="var(--color-muted-foreground)" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="bg-card border border-border rounded-lg p-3 sm:p-4 md:p-6">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">Relances en attente</h3>
+                <Icon name="Clock" size={16} className="sm:w-5 sm:h-5 text-muted-foreground" />
               </div>
-              <div className="text-2xl font-bold text-red-600 mb-1">{pendingCount}</div>
-              <p className="text-sm text-muted-foreground">À traiter</p>
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600 mb-1">{pendingCount}</div>
+              <p className="text-xs sm:text-sm text-muted-foreground">À traiter</p>
             </div>
 
-            <div className="bg-card border border-border rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-muted-foreground">Priorité haute</h3>
-                <Icon name="MessageCircle" size={20} color="var(--color-muted-foreground)" />
+            <div className="bg-card border border-border rounded-lg p-3 sm:p-4 md:p-6">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">Priorité haute</h3>
+                <Icon name="MessageCircle" size={16} className="sm:w-5 sm:h-5 text-muted-foreground" />
               </div>
-              <div className="text-2xl font-bold text-red-600 mb-1">{highPriorityCount}</div>
-              <p className="text-sm text-muted-foreground">Urgent</p>
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600 mb-1">{highPriorityCount}</div>
+              <p className="text-xs sm:text-sm text-muted-foreground">Urgent</p>
             </div>
 
             {activeFilter !== 'suppliers' && (
-              <div className="bg-card border border-border rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-medium text-muted-foreground">CA potentiel</h3>
-                  <Icon name="FileText" size={20} color="var(--color-muted-foreground)" />
+              <div className="bg-card border border-border rounded-lg p-3 sm:p-4 md:p-6">
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">CA potentiel</h3>
+                  <Icon name="FileText" size={16} className="sm:w-5 sm:h-5 text-muted-foreground" />
                 </div>
-                <div className="text-2xl font-bold text-green-600 mb-1">{clientRevenue.toLocaleString()}€</div>
-                <p className="text-sm text-muted-foreground">
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 mb-1">{clientRevenue.toLocaleString()}€</div>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {activeFilter === 'all' ? 'Clients' : 'Total'}
                 </p>
               </div>
             )}
 
             {activeFilter !== 'clients' && (
-              <div className="bg-card border border-border rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-medium text-muted-foreground">Paiements à effectuer</h3>
-                  <Icon name="DollarSign" size={20} color="var(--color-muted-foreground)" />
+              <div className="bg-card border border-border rounded-lg p-3 sm:p-4 md:p-6">
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">Paiements à effectuer</h3>
+                  <Icon name="DollarSign" size={16} className="sm:w-5 sm:h-5 text-muted-foreground" />
                 </div>
-                <div className="text-2xl font-bold text-red-600 mb-1">{supplierPayments.toLocaleString()}€</div>
-                <p className="text-sm text-muted-foreground">
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600 mb-1">{supplierPayments.toLocaleString()}€</div>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {activeFilter === 'all' ? 'Fournisseurs' : 'Total'}
                 </p>
               </div>
@@ -252,26 +291,26 @@ const FollowUpManagement = () => {
           </div>
 
           {/* Follow-up Items */}
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
             {filteredFollowUps.map((followUp) => (
-              <div key={followUp.id} className="bg-card border border-border rounded-lg p-6">
-                <div className="flex items-start justify-between">
-                  {/* Left side - Client/Supplier info */}
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="flex items-center space-x-2">
-                        <Icon 
-                          name={followUp.type === 'supplier' ? 'Truck' : 'User'} 
-                          size={16} 
-                          className={followUp.type === 'supplier' ? 'text-orange-500' : 'text-blue-500'} 
-                        />
-                        <h3 className="font-semibold text-foreground">{followUp.name}</h3>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          followUp.type === 'supplier' ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {followUp.type === 'supplier' ? 'Fournisseur' : 'Client'}
-                        </span>
-                      </div>
+              <div key={followUp.id} className="bg-card border border-border rounded-lg p-4 sm:p-6">
+                <div className="flex flex-col gap-4">
+                  {/* Header with client info and tags */}
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Icon 
+                        name={followUp.type === 'supplier' ? 'Truck' : 'User'} 
+                        size={16} 
+                        className={`sm:w-5 sm:h-5 ${followUp.type === 'supplier' ? 'text-orange-500' : 'text-blue-500'}`}
+                      />
+                      <h3 className="text-sm sm:text-base font-semibold text-foreground">{followUp.name}</h3>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        followUp.type === 'supplier' ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {followUp.type === 'supplier' ? 'Fournisseur' : 'Client'}
+                      </span>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(followUp.priority)}`}>
                         {getPriorityLabel(followUp.priority)}
                       </span>
@@ -279,45 +318,48 @@ const FollowUpManagement = () => {
                         {getStatusLabel(followUp.status)}
                       </span>
                     </div>
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                        <Icon name="FileText" size={14} />
-                        <span>{followUp.project}</span>
-                      </div>
-                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                        <Icon name="Clock" size={14} />
-                        <span>Il y a {followUp.daysAgo} jours</span>
-                      </div>
-                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                        <Icon name="Calendar" size={14} />
-                        <span>Prochaine relance: {followUp.nextFollowUp}</span>
-                      </div>
+                  </div>
+
+                  {/* Project details */}
+                  <div className="space-y-2">
+                    <div className="flex items-start space-x-2 text-xs sm:text-sm text-muted-foreground">
+                      <Icon name="FileText" size={12} className="sm:w-3.5 sm:h-3.5 mt-0.5" />
+                      <span className="break-words">{followUp.project}</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground">
+                      <Icon name="Clock" size={12} className="sm:w-3.5 sm:h-3.5" />
+                      <span>Il y a {followUp.daysAgo} jours</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground">
+                      <Icon name="Calendar" size={12} className="sm:w-3.5 sm:h-3.5" />
+                      <span>Prochaine relance: {followUp.nextFollowUp}</span>
                     </div>
                   </div>
 
-                  {/* Right side - Revenue/Amount and actions */}
-                  <div className="flex flex-col items-end space-y-4">
-                    <div className={`text-lg font-bold ${followUp.type === 'supplier' ? 'text-red-600' : 'text-green-600'}`}>
+                  {/* Revenue and actions */}
+                  <div className="flex items-center justify-between">
+                    <div className={`text-lg sm:text-xl font-bold ${followUp.type === 'supplier' ? 'text-red-600' : 'text-green-600'}`}>
                       {followUp.type === 'supplier' ? '-' : '+'}{Math.abs(followUp.potentialRevenue).toLocaleString()}€
                     </div>
                     
-                    <div className="flex space-x-2">
+                    <div className="flex gap-2">
                       <Button
                         variant="outline"
-                        size="sm"
+                        size="xs"
                         onClick={() => handleFollowUp(followUp.id)}
                         iconName={followUp.type === 'supplier' ? 'DollarSign' : 'Mail'}
                         iconPosition="left"
+                        className="h-8 sm:h-9"
                       >
                         {followUp.type === 'supplier' ? 'Payer' : 'Relancer'}
                       </Button>
                       <Button
                         variant="outline"
-                        size="sm"
+                        size="xs"
                         onClick={() => handleQuickAI(followUp.id)}
                         iconName="Zap"
                         iconPosition="left"
+                        className="h-8 sm:h-9"
                       >
                         IA Rapide
                       </Button>
