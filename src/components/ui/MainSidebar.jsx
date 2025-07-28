@@ -49,6 +49,11 @@ const MainSidebar = () => {
 
   // Auto-expand the correct section based on current route
   useEffect(() => {
+    // Only auto-expand sections if sidebar is not collapsed and not on tablet
+    if (isCollapsed || isTablet) {
+      return;
+    }
+    
     const path = location.pathname;
     
     // Determine which section should be expanded based on the current path
@@ -65,7 +70,7 @@ const MainSidebar = () => {
       // Keep all sections collapsed for main pages
       setExpandedSections(prev => ({ ...prev, quotes: false, clients: false, services: false, business: false }));
     }
-  }, [location.pathname]);
+  }, [location.pathname, isCollapsed, isTablet]);
 
   const toggleSidebar = () => {
     // On tablet, prevent sidebar toggle - always stay collapsed
@@ -282,13 +287,9 @@ const MainSidebar = () => {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           {(isCollapsed || isTablet) ? (
-            // Collapsed header - show just logo
+            // Collapsed header - hide logo
             <div className="flex items-center justify-center w-full">
-              <img 
-                src="/assets/logo/logo.png" 
-                alt="Havitam Logo" 
-                className="w-8 h-8 object-contain"
-              />
+              {/* Logo hidden when collapsed */}
             </div>
           ) : (
             // Expanded header - show full branding

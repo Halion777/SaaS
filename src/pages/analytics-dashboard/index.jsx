@@ -311,18 +311,7 @@ const AnalyticsDashboard = () => {
                 </p>
               </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
-                <Button 
-                  variant="outline" 
-                  size="xs"
-                  className="h-8 sm:h-9 text-xs"
-                  onClick={() => window.location.href = '/dashboard'}
-                >
-                  <span className="flex items-center">
-                    <Icon name="LayoutDashboard" size={14} className="sm:w-4 sm:h-4 mr-2" />
-                    <span className="hidden sm:inline">Retour à l'aperçu</span>
-                    <span className="sm:hidden">Retour</span>
-                  </span>
-                </Button>
+
                 <ExportControls />
               </div>
             </div>

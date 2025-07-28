@@ -26,7 +26,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
 
     const config = statusConfig[status] || statusConfig.pending;
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
+      <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${config.color}`}>
         {config.label}
       </span>
     );

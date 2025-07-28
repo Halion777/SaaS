@@ -195,33 +195,32 @@ const MultiUserProfilesPage = () => {
           marginLeft: isMobile ? 0 : `${sidebarOffset}px`,
           transition: 'margin-left 0.3s ease-out'
         }}
-        className="pt-4 md:pt-0"
+        className="pb-20 md:pb-6"
       >
-        {/* Header */}
-        <header className="bg-card border-b border-border px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center">
-                <Icon name="Users" size={24} className="text-primary mr-3" />
-                <h1 className="text-2xl font-bold text-foreground">Gestion des profils utilisateurs</h1>
+        <main className="px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
+          {/* Header */}
+          <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+              <div>
+                <div className="flex items-center">
+                  <Icon name="Users" size={24} className="text-primary mr-3" />
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des profils utilisateurs</h1>
+                </div>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  Gérez les profils de votre équipe et leurs permissions
+                </p>
               </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                Gérez les profils de votre équipe et leurs permissions
-              </p>
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                {isPremium && (
+                  <Button onClick={() => setShowInviteModal(true)}>
+                    <Icon name="Mail" size={16} className="mr-2" />
+                    Inviter un utilisateur
+                  </Button>
+                )}
+                
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
-              {isPremium && (
-                <Button onClick={() => setShowInviteModal(true)}>
-                  <Icon name="Mail" size={16} className="mr-2" />
-                  Inviter un utilisateur
-                </Button>
-              )}
-            </div>
-          </div>
-        </header>
-
-        {/* Main Content */}
-        <main className="p-6 space-y-6">
+          </header>
           {/* Subscription Status */}
         {isPremium && (
           <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-6 mb-8 shadow-md">

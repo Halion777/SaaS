@@ -193,21 +193,32 @@ const FollowUpManagement = () => {
     <div className="min-h-screen bg-background">
       <MainSidebar />
       
-      <div
-        className="flex-1 flex flex-col pt-16 sm:pt-4 md:pt-0 pb-20 md:pb-6"
-        style={{ marginLeft: `${sidebarOffset}px` }}
+      <main 
+        className={`transition-all duration-300 ease-out ${
+          isMobile ? 'pb-16 pt-4' : ''
+        }`}
+        style={{ 
+          marginLeft: isMobile ? 0 : `${sidebarOffset}px`,
+        }}
       >
-        <main className="flex-1 p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
+        <div className="px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
           {/* Header */}
-          <div>
-            <div className="flex items-center space-x-2 sm:space-x-3 mb-2">
-              <Icon name="MessageCircle" size={20} className="sm:w-6 sm:h-6 text-primary" />
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Relances</h1>
+          <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+              <div>
+                <div className="flex items-center">
+                  <Icon name="MessageCircle" size={24} className="text-primary mr-3" />
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Relances</h1>
+                </div>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  Relancez vos prospects automatiquement et intelligemment
+                </p>
+              </div>
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                
+              </div>
             </div>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              Relancez vos prospects automatiquement et intelligemment
-            </p>
-          </div>
+          </header>
 
           {/* Filter Tabs */}
           <div className="flex space-x-1 bg-muted/50 rounded-lg p-1 overflow-x-auto scrollbar-hide">
@@ -306,15 +317,15 @@ const FollowUpManagement = () => {
                       <h3 className="text-sm sm:text-base font-semibold text-foreground">{followUp.name}</h3>
                     </div>
                     <div className="flex flex-wrap gap-1">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${
                         followUp.type === 'supplier' ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'
                       }`}>
                         {followUp.type === 'supplier' ? 'Fournisseur' : 'Client'}
                       </span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(followUp.priority)}`}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getPriorityColor(followUp.priority)}`}>
                         {getPriorityLabel(followUp.priority)}
                       </span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(followUp.status)}`}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getStatusColor(followUp.status)}`}>
                         {getStatusLabel(followUp.status)}
                       </span>
                     </div>
@@ -369,8 +380,8 @@ const FollowUpManagement = () => {
               </div>
             ))}
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 };

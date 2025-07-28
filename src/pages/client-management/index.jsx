@@ -251,30 +251,38 @@ const ClientManagement = () => {
       <MainSidebar />
       
       <div
-        className="flex-1 flex flex-col pt-16 sm:pt-4 md:pt-0 pb-20 md:pb-6"
+        className="flex-1 flex flex-col pb-20 md:pb-6"
         style={{ marginLeft: `${sidebarOffset}px` }}
       >
-        <main className="flex-1 p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des Clients</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            Gérez vos relations clients avec une vue d'ensemble complète
-          </p>
-        </div>
-        <Button
-          onClick={() => {
-            setSelectedClient(null);
-            setIsModalOpen(true);
-          }}
-          iconName="Plus"
-          iconPosition="left"
-          className="w-full sm:w-auto"
-        >
-          Nouveau Client
-        </Button>
-      </div>
+        <main className="flex-1 px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
+          {/* Header */}
+          <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+              <div>
+                <div className="flex items-center">
+                  <Icon name="Users" size={24} className="text-primary mr-3" />
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des Clients</h1>
+                </div>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  Gérez vos relations clients avec une vue d'ensemble complète
+                </p>
+              </div>
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <Button
+                  onClick={() => {
+                    setSelectedClient(null);
+                    setIsModalOpen(true);
+                  }}
+                  iconName="Plus"
+                  iconPosition="left"
+                  className="text-xs sm:text-sm"
+                >
+                  Nouveau Client
+                </Button>
+                
+              </div>
+            </div>
+          </header>
 
       {/* Search and Filters */}
       <div className="bg-card border border-border rounded-lg p-3 sm:p-4">

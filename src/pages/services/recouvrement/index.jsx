@@ -371,37 +371,45 @@ const RecouvrementPage = () => {
       <MainSidebar />
       
       <div
-        className="flex-1 flex flex-col pt-16 sm:pt-4 md:pt-0 pb-20 md:pb-6"
+        className="flex-1 flex flex-col pb-20 md:pb-6"
         style={{ marginLeft: `${sidebarOffset}px` }}
       >
-        <main className="flex-1 p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
+        <main className="flex-1 px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
           {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Recouvrement</h1>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Récupérez vos créances impayées avec efficacité et professionnalisme
-              </p>
+          <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+              <div>
+                <div className="flex items-center">
+                  <Icon name="Handshake" size={24} className="text-primary mr-3" />
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Recouvrement</h1>
+                </div>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  Récupérez vos créances impayées avec efficacité et professionnalisme
+                </p>
+              </div>
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant={activeTab === 'overview' ? 'default' : 'outline'}
+                    onClick={() => setActiveTab('overview')}
+                    size="sm"
+                    className="text-xs sm:text-sm"
+                  >
+                    Aperçu
+                  </Button>
+                  <Button 
+                    variant={activeTab === 'invoices' ? 'default' : 'outline'}
+                    onClick={() => setActiveTab('invoices')}
+                    size="sm"
+                    className="text-xs sm:text-sm"
+                  >
+                    Factures impayées
+                  </Button>
+                </div>
+                
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button 
-                variant={activeTab === 'overview' ? 'default' : 'outline'}
-                onClick={() => setActiveTab('overview')}
-                size="sm"
-                className="text-xs sm:text-sm"
-              >
-                Overview
-              </Button>
-              <Button 
-                variant={activeTab === 'invoices' ? 'default' : 'outline'}
-                onClick={() => setActiveTab('invoices')}
-                size="sm"
-                className="text-xs sm:text-sm"
-              >
-                Factures impayées
-              </Button>
-            </div>
-          </div>
+          </header>
 
           {/* Content */}
           {activeTab === 'overview' && renderOverview()}

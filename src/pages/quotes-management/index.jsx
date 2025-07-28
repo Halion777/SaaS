@@ -252,27 +252,26 @@ const QuotesManagement = () => {
       <MainSidebar />
       
       <main 
-        className="transition-all duration-300 ease-out pb-20 md:pb-6 pt-16 sm:pt-4 md:pt-0"
+        className={`transition-all duration-300 ease-out ${
+          isMobile ? 'pb-16 pt-4' : ''
+        }`}
         style={{ 
           marginLeft: isMobile ? 0 : `${sidebarOffset}px`,
         }}
       >
-        <div className="p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6 max-w-[1600px] mx-auto">
+        <div className="px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6 max-w-[1600px] mx-auto">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-            <div>
-              <div className="flex items-center">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center mr-2 sm:mr-3">
-                  <Icon name="FileText" size={16} className="sm:w-5 sm:h-5 text-primary" />
-                </div>
-                <div>
+          <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+              <div>
+                <div className="flex items-center">
+                  <Icon name="FileText" size={24} className="text-primary mr-3" />
                   <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des devis</h1>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    Gérez et optimisez vos devis avec l'intelligence artificielle
-                  </p>
                 </div>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  Gérez et optimisez vos devis avec l'intelligence artificielle
+                </p>
               </div>
-            </div>
             
             <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
               {/* Action Icons with Tooltips */}
@@ -330,6 +329,7 @@ const QuotesManagement = () => {
               >
                 Nouveau devis
               </Button>
+
             </div>
           </div>
 
@@ -373,6 +373,7 @@ const QuotesManagement = () => {
               </Button>
             </div>
           </div>
+        </header>
 
           {/* Stats Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

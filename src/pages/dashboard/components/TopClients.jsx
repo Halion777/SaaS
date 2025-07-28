@@ -107,7 +107,7 @@ const TopClients = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 mb-1 space-y-1 sm:space-y-0">
                     <p className="text-sm font-medium text-foreground truncate">{client.name}</p>
-                    <span className={`text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ${statusConfig.bg} ${statusConfig.color} w-fit`}>
+                    <span className={`text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ${statusConfig.bg} ${statusConfig.color} w-fit text-center`}>
                       {statusConfig.label}
                     </span>
                   </div>

@@ -328,24 +328,35 @@ const StatisticsPage = () => {
   );
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       <MainSidebar />
       
-      <div
-        className="flex-1 flex flex-col pt-16 sm:pt-4 md:pt-0"
-        style={{ marginLeft: `${sidebarOffset}px` }}
+      <main 
+        className={`transition-all duration-300 ease-out ${
+          isMobile ? 'pb-16 pt-4' : ''
+        }`}
+        style={{ 
+          marginLeft: isMobile ? 0 : `${sidebarOffset}px`,
+        }}
       >
-        <main className="flex-1 p-3 sm:p-4 md:p-6 pb-20 md:pb-6 space-y-4 sm:space-y-6">
+        <div className="px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
           {/* Header */}
-          <div>
-            <div className="flex items-center space-x-2 sm:space-x-3 mb-2">
-              <Icon name="BarChart3" size={20} className="sm:w-6 sm:h-6 text-primary" />
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Statistiques</h1>
+          <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+              <div>
+                <div className="flex items-center">
+                  <Icon name="BarChart3" size={24} className="text-primary mr-3" />
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Statistiques</h1>
+                </div>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  Analysez vos performances et optimisez votre activité
+                </p>
+              </div>
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                
+              </div>
             </div>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              Analysez vos performances et optimisez votre activité
-            </p>
-          </div>
+          </header>
 
           {/* Tab Navigation */}
           <div className="flex space-x-1 bg-muted p-1 rounded-lg overflow-x-auto scrollbar-hide">
@@ -396,8 +407,8 @@ const StatisticsPage = () => {
           {activeTab === 'performance' && renderPerformanceTab()}
           {activeTab === 'categories' && renderCategoriesTab()}
           {activeTab === 'ai-insights' && renderAIInsightsTab()}
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 };

@@ -264,49 +264,43 @@ const QuoteCreation = () => {
         }}
         className="min-h-screen pt-4 md:pt-0"
       >
-        <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 pb-20 sm:pb-8 max-w-7xl">
+        <div className="container mx-auto px-4 sm:px-6 pt-0 pb-4 sm:pb-8 max-w-7xl">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 space-y-4 sm:space-y-0">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Créer un devis</h1>
-              <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">
-                Remplissez les informations ci-dessous pour générer automatiquement un devis professionnel
-              </p>
-            </div>
-            
-            <div className="flex flex-row items-center space-x-2 sm:space-x-3">
-              {isAutoSaving && (
-                <div className="flex items-center text-xs sm:text-sm text-muted-foreground">
-                  <Icon name="Save" size={14} className="sm:w-4 sm:h-4 mr-2" />
-                  Sauvegarde automatique...
+          <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+              <div>
+                <div className="flex items-center">
+                  <Icon name="FileText" size={24} className="text-primary mr-3" />
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Créer un devis</h1>
                 </div>
-              )}
-              
-              <Button
-                variant="outline"
-                onClick={clearDraft}
-                iconName="Trash2"
-                iconPosition="left"
-                size="sm"
-                className="w-auto"
-              >
-                <span className="hidden sm:inline">Effacer le brouillon</span>
-                <span className="sm:hidden">Effacer</span>
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={() => navigate('/quotes-management')}
-                iconName="ArrowLeft"
-                iconPosition="left"
-                size="sm"
-                className="w-auto"
-              >
-                <span className="hidden sm:inline">Retour</span>
-                <span className="sm:hidden">Retour</span>
-              </Button>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  Remplissez les informations ci-dessous pour générer automatiquement un devis professionnel
+                </p>
+              </div>
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                {isAutoSaving && (
+                  <div className="flex items-center text-xs sm:text-sm text-muted-foreground">
+                    <Icon name="Save" size={14} className="sm:w-4 sm:h-4 mr-2" />
+                    Sauvegarde automatique...
+                  </div>
+                )}
+                
+                <Button
+                  variant="outline"
+                  onClick={clearDraft}
+                  iconName="Trash2"
+                  iconPosition="left"
+                  size="sm"
+                  className="w-auto"
+                >
+                  <span className="hidden sm:inline">Effacer le brouillon</span>
+                  <span className="sm:hidden">Effacer</span>
+                </Button>
+                
+
+              </div>
             </div>
-          </div>
+          </header>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
             {/* Main Content */}

@@ -195,65 +195,64 @@ const Dashboard = () => {
       <MainSidebar />
       
       {/* Main Content */}
-      <div 
+      <main 
+        className={`transition-all duration-300 ease-out ${
+          isMobile ? 'pb-16 pt-4' : ''
+        }`}
         style={{ 
           marginLeft: isMobile ? 0 : `${sidebarOffset}px`,
-          transition: 'margin-left 0.3s ease-out'
         }}
-        className="pb-16 md:pb-0 pt-4 md:pt-0" // Add bottom padding for mobile navigation and top padding for global profile
       >
-        {/* Header */}
-        <header className="bg-card border-b border-border px-4 sm:px-6 py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-            <div>
-              <div className="flex items-center">
-                <Icon name="LayoutDashboard" size={24} className="text-primary mr-3" />
-                <h1 className="text-xl sm:text-2xl font-bold text-foreground">Aperçu Rapide</h1>
+        <div className="px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
+          {/* Header */}
+          <div className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+              <div>
+                <div className="flex items-center">
+                  <Icon name="LayoutDashboard" size={24} className="text-primary mr-3" />
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Aperçu Rapide</h1>
+                </div>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  Vue d'ensemble de votre activité • {formatDate(currentTime)} • {formatTime(currentTime)}
+                </p>
               </div>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                Vue d'ensemble de votre activité • {formatDate(currentTime)} • {formatTime(currentTime)}
-              </p>
-            </div>
-            <div className="flex items-center justify-between sm:justify-end space-x-2 sm:space-x-4 w-full sm:w-auto">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-between sm:justify-end space-x-2 sm:space-x-4 w-full sm:w-auto">
+                <div className="flex items-center space-x-2">
                 <Button 
                   variant="outline" 
-                  size="icon"
+                    size="icon"
                   iconName="Settings" 
                   iconPosition="left"
                   onClick={() => setIsPersonalizationOpen(true)}
-                  className="dashboard-personalization-button sm:h-9 sm:px-3 sm:w-auto"
+                    className="dashboard-personalization-button sm:h-9 sm:px-3 sm:w-auto"
                 >
-                  <span className="hidden sm:inline">Personnaliser</span>
+                    <span className="hidden sm:inline">Personnaliser</span>
                 </Button>
                 <Button 
                   variant="outline" 
-                  size="icon"
+                    size="icon"
                   iconName="BarChart3" 
                   iconPosition="left"
                   onClick={() => window.location.href = '/analytics-dashboard'}
-                  className="dashboard-analytics-button sm:h-9 sm:px-3 sm:w-auto"
+                    className="dashboard-analytics-button sm:h-9 sm:px-3 sm:w-auto"
                 >
-                  <span className="hidden sm:inline">Analyses détaillées</span>
+                    <span className="hidden sm:inline">Analyses détaillées</span>
+                </Button>
+                </div>
+                <Button 
+                  variant="default" 
+                  size="icon"
+                  iconName="Plus" 
+                  iconPosition="left"
+                  className="dashboard-new-quote-button sm:h-9 sm:px-3 sm:w-auto bg-blue-600 hover:bg-blue-700 text-white [&>svg]:mx-auto sm:[&>svg]:mx-0"
+                >
+                  <span className="hidden sm:inline">Nouveau devis</span>
                 </Button>
               </div>
-              <Button 
-                variant="default" 
-                size="icon"
-                iconName="Plus" 
-                iconPosition="left"
-                className="dashboard-new-quote-button sm:h-9 sm:px-3 sm:w-auto bg-blue-600 hover:bg-blue-700 text-white [&>svg]:mx-auto sm:[&>svg]:mx-0"
-              >
-                <span className="hidden sm:inline">Nouveau devis</span>
-              </Button>
             </div>
           </div>
-        </header>
-
-        {/* Main Content */}
-        <main className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Welcome Banner */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-4 sm:p-6 shadow-md dashboard-welcome">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-4 sm:p-6 shadow-md dashboard-welcome mt-4 sm:mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
               <div>
                 <h2 className="text-lg sm:text-xl font-semibold mb-2 text-white">Bienvenue sur votre tableau de bord</h2>
@@ -396,9 +395,9 @@ const Dashboard = () => {
             <div className="dashboard-sponsored-banner">
               <SponsoredBanner />
             </div>
-          )}
-        </main>
-      </div>
+                    )}
+        </div>
+      </main>
 
       {/* Dashboard Personalization Modal */}
       <DashboardPersonalization

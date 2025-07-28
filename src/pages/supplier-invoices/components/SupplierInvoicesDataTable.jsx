@@ -26,7 +26,7 @@ const SupplierInvoicesDataTable = ({ supplierInvoices, onSupplierInvoiceAction, 
 
     const config = statusConfig[status] || statusConfig.pending;
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
+      <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${config.color}`}>
         {config.label}
       </span>
     );
@@ -44,7 +44,7 @@ const SupplierInvoicesDataTable = ({ supplierInvoices, onSupplierInvoiceAction, 
     };
 
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${categoryColors[category] || 'bg-gray-100 text-gray-800'}`}>
+      <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${categoryColors[category] || 'bg-gray-100 text-gray-800'}`}>
         {category}
       </span>
     );

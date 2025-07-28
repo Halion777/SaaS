@@ -404,30 +404,40 @@ const InvoicesManagement = () => {
     <div className="min-h-screen bg-background">
       <MainSidebar />
       
-      <div 
-        className="transition-all duration-300 pt-16 sm:pt-4 md:pt-0 pb-20 md:pb-6"
-        style={{ marginLeft: `${sidebarOffset}px` }}
+      <main 
+        className={`transition-all duration-300 ease-out ${
+          isMobile ? 'pb-16 pt-4' : ''
+        }`}
+        style={{ 
+          marginLeft: isMobile ? 0 : `${sidebarOffset}px`,
+        }}
       >
-        <div className="p-3 sm:p-4 md:p-6">
+        <div className="px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des factures</h1>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Gérez vos factures, suivez les paiements et analysez vos performances
-              </p>
+          <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+              <div>
+                <div className="flex items-center">
+                  <Icon name="FileText" size={24} className="text-primary mr-3" />
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des factures</h1>
+                </div>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  Gérez vos factures, suivez les paiements et analysez vos performances
+                </p>
+              </div>
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <Button
+                  iconName="Plus"
+                  iconPosition="left"
+                  onClick={() => setIsQuickCreateOpen(true)}
+                  className="text-xs sm:text-sm"
+                >
+                  Nouvelle facture
+                </Button>
+                
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2 sm:gap-3">
-              <Button
-                iconName="Plus"
-                iconPosition="left"
-                onClick={() => setIsQuickCreateOpen(true)}
-                className="text-xs sm:text-sm"
-              >
-                Nouvelle facture
-              </Button>
-            </div>
-          </div>
+          </header>
 
           {/* Summary Bar */}
           <InvoicesSummaryBar summaryData={summaryData} />
@@ -463,7 +473,7 @@ const InvoicesManagement = () => {
             </div>
           )}
         </div>
-      </div>
+      </main>
 
       {/* Payment Analytics Sidebar */}
       {isAnalyticsSidebarVisible && (
