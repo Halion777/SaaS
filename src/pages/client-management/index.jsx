@@ -20,6 +20,7 @@ const ClientManagement = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+  const [viewMode, setViewMode] = useState('table');
   const [clients, setClients] = useState([
     {
       id: 1,
@@ -92,6 +93,19 @@ const ClientManagement = () => {
   useEffect(() => {
     generateAnalytics();
   }, [clients]);
+
+  // Auto-switch to card view on smaller screens
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setViewMode('card');
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Handle sidebar offset for responsive layout
   useEffect(() => {
@@ -246,336 +260,405 @@ const ClientManagement = () => {
     return type === 'individual' ? 'User' : 'Building2';
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      <MainSidebar />
-      
-      <div
-        className="flex-1 flex flex-col pb-20 md:pb-6"
-        style={{ marginLeft: `${sidebarOffset}px` }}
-      >
-        <main className="flex-1 px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
-      {/* Header */}
-          <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-        <div>
-                <div className="flex items-center">
-                  <Icon name="Users" size={24} className="text-primary mr-3" />
-                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des Clients</h1>
-                </div>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            Gérez vos relations clients avec une vue d'ensemble complète
-          </p>
-        </div>
-              <div className="flex items-center space-x-2 sm:space-x-3">
-        <Button
-          onClick={() => {
-            setSelectedClient(null);
-            setIsModalOpen(true);
-          }}
-          iconName="Plus"
-          iconPosition="left"
-                  className="text-xs sm:text-sm"
-        >
-          Nouveau Client
-        </Button>
-                
-              </div>
-      </div>
-          </header>
-
-      {/* Search and Filters */}
-      <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
-        <div className="flex flex-col lg:flex-row gap-3 sm:gap-4">
-          <div className="flex-1">
-            <Input
-              placeholder="Rechercher un client..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              iconName="Search"
-            />
-          </div>
-          <FilterToolbar filters={filters} onFiltersChange={setFilters} />
-        </div>
-      </div>
-
-      {/* Stats Bar */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
-        <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs sm:text-sm text-muted-foreground">Total Clients</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{clients.length}</p>
-            </div>
-            <Icon name="Users" size={18} className="sm:w-6 sm:h-6 text-primary" />
-          </div>
-        </div>
-        
-        <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs sm:text-sm text-muted-foreground">Particuliers</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">
-                {clients.filter(c => c.type === 'individual').length}
-              </p>
-            </div>
-            <Icon name="User" size={18} className="sm:w-6 sm:h-6 text-blue-500" />
-          </div>
-        </div>
-        
-        <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs sm:text-sm text-muted-foreground">Professionnels</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">
-                {clients.filter(c => c.type === 'professional').length}
-              </p>
-            </div>
-            <Icon name="Building2" size={18} className="sm:w-6 sm:h-6 text-green-500" />
-          </div>
-        </div>
-        
-        <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs sm:text-sm text-muted-foreground">CA Total</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">
-                {clients.reduce((sum, client) => sum + client.totalRevenue, 0).toLocaleString()}€
-              </p>
-            </div>
-            <Icon name="Euro" size={18} className="sm:w-6 sm:h-6 text-primary" />
-          </div>
-        </div>
-
-        {/* Analytics Boxes - Top Row */}
-        <div className="col-span-2 lg:col-span-2">
-          <RevenueOverview analytics={analytics} isLoading={isAnalyzing} />
-        </div>
-      </div>
-
-      {/* Additional Analytics - Second Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
-        <TopClients analytics={analytics} isLoading={isAnalyzing} />
-        <div className="lg:col-span-2">
-          <QuickActions />
-        </div>
-      </div>
-
-      {/* Clients Table - Desktop */}
-      <div className="hidden lg:block bg-card border border-border rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px]">
-            <thead className="bg-muted/30">
-              <tr>
-                <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm text-foreground">Client</th>
-                <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm text-foreground">Type</th>
-                <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm text-foreground">Contact</th>
-                <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm text-foreground">Peppol</th>
-                <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm text-foreground">Projets</th>
-                <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm text-foreground">CA Total</th>
-                <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm text-foreground">Statut</th>
-                <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm text-foreground">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredClients.map((client) => (
-                <motion.tr
-                  key={client.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="border-t border-border hover:bg-muted/20 transition-colors"
-                >
-                  <td className="p-3 sm:p-4">
-                    <div className="flex items-center space-x-2 sm:space-x-3">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                        <Icon name={getTypeIcon(client.type)} size={16} className="sm:w-5 sm:h-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm sm:text-base font-medium text-foreground">{client.name}</p>
-                        {client.contactPerson && (
-                          <p className="text-xs sm:text-sm text-muted-foreground">Contact: {client.contactPerson}</p>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-3 sm:p-4">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      client.type === 'individual' ?'text-blue-600 bg-blue-100' :'text-green-600 bg-green-100'
-                    }`}>
-                      {client.type === 'individual' ? 'Particulier' : 'Professionnel'}
-                    </span>
-                  </td>
-                  <td className="p-3 sm:p-4">
-                    <div className="text-xs sm:text-sm">
-                      <p className="text-foreground">{client.email}</p>
-                      <p className="text-muted-foreground">{client.phone}</p>
-                    </div>
-                  </td>
-                  <td className="p-3 sm:p-4">
-                    {client.enablePeppol && client.peppolId ? (
-                      <div className="flex items-center space-x-2">
-                        <Icon name="Network" size={14} className="sm:w-4 sm:h-4 text-success" />
-                        <span className="text-xs text-muted-foreground font-mono">{client.peppolId}</span>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">Non configuré</span>
+  const renderTableView = () => (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[800px]">
+        <thead className="bg-muted/30">
+          <tr>
+            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm text-foreground">Client</th>
+            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm text-foreground">Type</th>
+            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm text-foreground">Contact</th>
+            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm text-foreground">Peppol</th>
+            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm text-foreground">Projets</th>
+            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm text-foreground">CA Total</th>
+            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm text-foreground">Statut</th>
+            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm text-foreground">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredClients.map((client) => (
+            <motion.tr
+              key={client.id}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="border-t border-border hover:bg-muted/20 transition-colors"
+            >
+              <td className="p-3 sm:p-4">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Icon name={getTypeIcon(client.type)} size={16} className="sm:w-5 sm:h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm sm:text-base font-medium text-foreground">{client.name}</p>
+                    {client.contactPerson && (
+                      <p className="text-xs sm:text-sm text-muted-foreground">Contact: {client.contactPerson}</p>
                     )}
-                  </td>
-                  <td className="p-3 sm:p-4">
-                    <span className="font-medium text-foreground">{client.projectsCount}</span>
-                  </td>
-                  <td className="p-3 sm:p-4">
-                    <span className="font-medium text-foreground">
-                      {client.totalRevenue.toLocaleString()}€
-                    </span>
-                  </td>
-                  <td className="p-3 sm:p-4">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(client.status)}`}>
-                      {client.status === 'active' ? 'Actif' : client.status === 'inactive' ? 'Inactif' : 'Prospect'}
-                    </span>
-                  </td>
-                  <td className="p-3 sm:p-4">
-                    <div className="flex items-center space-x-1 sm:space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        onClick={() => handleClientSelect(client)}
-                        iconName="Eye"
-                        className="h-8 w-8 sm:h-9 sm:w-9"
-                      />
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        onClick={() => handleClientDelete(client.id)}
-                        iconName="Trash2"
-                        className="h-8 w-8 sm:h-9 sm:w-9"
-                      />
-                    </div>
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                  </div>
+                </div>
+              </td>
+              <td className="p-3 sm:p-4">
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-center ${
+                  client.type === 'individual' ?'text-blue-600 bg-blue-100' :'text-green-600 bg-green-100'
+                }`}>
+                  {client.type === 'individual' ? 'Particulier' : 'Professionnel'}
+                </span>
+              </td>
+              <td className="p-3 sm:p-4">
+                <div className="text-xs sm:text-sm">
+                  <p className="text-foreground">{client.email}</p>
+                  <p className="text-muted-foreground">{client.phone}</p>
+                </div>
+              </td>
+              <td className="p-3 sm:p-4">
+                {client.enablePeppol && client.peppolId ? (
+                  <div className="flex items-center space-x-2">
+                    <Icon name="Network" size={14} className="sm:w-4 sm:h-4 text-success" />
+                    <span className="text-xs text-muted-foreground font-mono">{client.peppolId}</span>
+                  </div>
+                ) : (
+                  <span className="text-xs text-muted-foreground">Non configuré</span>
+                )}
+              </td>
+              <td className="p-3 sm:p-4">
+                <span className="font-medium text-foreground">{client.projectsCount}</span>
+              </td>
+              <td className="p-3 sm:p-4">
+                <span className="font-medium text-foreground">
+                  {client.totalRevenue.toLocaleString()}€
+                </span>
+              </td>
+              <td className="p-3 sm:p-4">
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-center ${getStatusColor(client.status)}`}>
+                  {client.status === 'active' ? 'Actif' : client.status === 'inactive' ? 'Inactif' : 'Prospect'}
+                </span>
+              </td>
+              <td className="p-3 sm:p-4">
+                <div className="flex items-center space-x-1 sm:space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => handleClientSelect(client)}
+                    iconName="Eye"
+                    className="h-8 w-8 sm:h-9 sm:w-9"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => handleClientDelete(client.id)}
+                    iconName="Trash2"
+                    className="h-8 w-8 sm:h-9 sm:w-9"
+                  />
+                </div>
+              </td>
+            </motion.tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 
-      {/* Clients Cards - Mobile/Tablet */}
-      <div className="lg:hidden space-y-2 sm:space-y-3">
+  const renderCardView = () => (
+    <div className="p-2 sm:p-3 md:p-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
         {filteredClients.map((client) => (
           <motion.div
             key={client.id}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="bg-card border border-border rounded-lg p-3 sm:p-4"
+            className="bg-card border border-border rounded-lg p-2 sm:p-3 md:p-4"
           >
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                  <Icon name={getTypeIcon(client.type)} size={16} className="text-primary" />
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Icon name={getTypeIcon(client.type)} size={12} className="sm:w-4 sm:h-4 text-primary" />
                 </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-foreground">{client.name}</h3>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-xs sm:text-sm font-semibold text-foreground truncate">{client.name}</h3>
                   {client.contactPerson && (
-                    <p className="text-xs text-muted-foreground">Contact: {client.contactPerson}</p>
+                    <p className="text-xs text-muted-foreground truncate">Contact: {client.contactPerson}</p>
                   )}
                 </div>
               </div>
-              <div className="flex items-center space-x-1">
-                <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${
+              <div className="flex items-center space-x-1 flex-shrink-0">
+                <span className={`inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium text-center ${
                   client.type === 'individual' ?'text-blue-600 bg-blue-100' :'text-green-600 bg-green-100'
                 }`}>
                   {client.type === 'individual' ? 'Particulier' : 'Professionnel'}
                 </span>
-                <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(client.status)}`}>
+                <span className={`inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium text-center ${getStatusColor(client.status)}`}>
                   {client.status === 'active' ? 'Actif' : client.status === 'inactive' ? 'Inactif' : 'Prospect'}
                 </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-2 sm:mb-3">
               <div>
                 <p className="text-xs text-muted-foreground mb-0.5">Contact</p>
-                <p className="text-xs text-foreground">{client.email}</p>
-                <p className="text-xs text-muted-foreground">{client.phone}</p>
+                <p className="text-xs text-foreground truncate">{client.email}</p>
+                <p className="text-xs text-muted-foreground truncate">{client.phone}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-0.5">Projets</p>
                 <p className="text-xs font-medium text-foreground">{client.projectsCount}</p>
-                <p className="text-xs text-muted-foreground">CA: {client.totalRevenue.toLocaleString()}€</p>
+                <p className="text-xs text-muted-foreground truncate">CA: {client.totalRevenue.toLocaleString()}€</p>
               </div>
             </div>
 
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1 sm:space-x-2 min-w-0 flex-1">
                 {client.enablePeppol && client.peppolId ? (
                   <div className="flex items-center space-x-1">
-                    <Icon name="Network" size={12} className="text-success" />
-                    <span className="text-xs text-muted-foreground font-mono">{client.peppolId}</span>
+                    <Icon name="Network" size={10} className="sm:w-3 sm:h-3 text-success flex-shrink-0" />
+                    <span className="text-xs text-muted-foreground font-mono truncate">{client.peppolId}</span>
                   </div>
                 ) : (
-                  <span className="text-xs text-muted-foreground">Peppol: Non configuré</span>
+                  <span className="text-xs text-muted-foreground truncate">Peppol: Non configuré</span>
                 )}
               </div>
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center space-x-1 flex-shrink-0">
                 <Button
                   variant="ghost"
                   size="xs"
                   onClick={() => handleClientSelect(client)}
                   iconName="Eye"
-                  className="h-7 w-7"
+                  className="h-6 w-6 sm:h-7 sm:w-7"
                 />
                 <Button
                   variant="ghost"
                   size="xs"
                   onClick={() => handleClientDelete(client.id)}
                   iconName="Trash2"
-                  className="h-7 w-7"
+                  className="h-6 w-6 sm:h-7 sm:w-7"
                 />
               </div>
             </div>
           </motion.div>
         ))}
       </div>
+    </div>
+  );
 
-      {/* Analytics Section - Below Table */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
-        <AIRecommendations analytics={analytics} isLoading={isAnalyzing} />
-        <RiskFactors analytics={analytics} isLoading={isAnalyzing} />
-        <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
-          <div className="flex items-center space-x-2 mb-3">
-            <Icon name="BarChart3" size={14} className="sm:w-4 sm:h-4 text-primary" />
-            <h3 className="text-xs sm:text-sm font-medium text-foreground">Performance</h3>
+  return (
+    <div className="min-h-screen bg-background">
+      <MainSidebar />
+      
+      <main 
+        className={`transition-all duration-300 ease-out ${
+          isMobile ? 'pb-16 pt-4' : ''
+        }`}
+        style={{ 
+          marginLeft: isMobile ? 0 : `${sidebarOffset}px`,
+        }}
+      >
+        <div className="px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
+          {/* Header */}
+          <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+              <div>
+                <div className="flex items-center">
+                  <Icon name="Users" size={24} className="text-primary mr-3" />
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des Clients</h1>
+                </div>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  Gérez vos relations clients avec une vue d'ensemble complète
+                </p>
+              </div>
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <Button
+                  onClick={() => {
+                    setSelectedClient(null);
+                    setIsModalOpen(true);
+                  }}
+                  iconName="Plus"
+                  iconPosition="left"
+                  className="text-xs sm:text-sm"
+                >
+                  Nouveau Client
+                </Button>
+              </div>
+            </div>
+          </header>
+
+          {/* Search and Filters */}
+          <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
+            <div className="flex flex-col lg:flex-row gap-3 sm:gap-4">
+              <div className="flex-1">
+                <Input
+                  placeholder="Rechercher un client..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  iconName="Search"
+                />
+              </div>
+              <FilterToolbar filters={filters} onFiltersChange={setFilters} />
+            </div>
           </div>
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Taux de conversion</span>
-              <span className="font-medium">85%</span>
+
+          {/* Stats Bar */}
+          <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
+            <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Total Clients</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{clients.length}</p>
+                </div>
+                <Icon name="Users" size={18} className="sm:w-6 sm:h-6 text-primary" />
+              </div>
             </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Satisfaction client</span>
-              <span className="font-medium">4.8/5</span>
+            
+            <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Particuliers</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">
+                    {clients.filter(c => c.type === 'individual').length}
+                  </p>
+                </div>
+                <Icon name="User" size={18} className="sm:w-6 sm:h-6 text-blue-500" />
+              </div>
             </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Temps de réponse</span>
-              <span className="font-medium">2.4h</span>
+            
+            <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Professionnels</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">
+                    {clients.filter(c => c.type === 'professional').length}
+                  </p>
+                </div>
+                <Icon name="Building2" size={18} className="sm:w-6 sm:h-6 text-green-500" />
+              </div>
+            </div>
+            
+            <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">CA Total</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">
+                    {clients.reduce((sum, client) => sum + client.totalRevenue, 0).toLocaleString()}€
+                  </p>
+                </div>
+                <Icon name="Euro" size={18} className="sm:w-6 sm:h-6 text-primary" />
+              </div>
+            </div>
+
+            {/* Analytics Boxes - Top Row */}
+            <div className="col-span-2 lg:col-span-2">
+              <RevenueOverview analytics={analytics} isLoading={isAnalyzing} />
             </div>
           </div>
+
+          {/* Additional Analytics - Second Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
+            <TopClients analytics={analytics} isLoading={isAnalyzing} />
+            <div className="lg:col-span-2">
+              <QuickActions />
+            </div>
+          </div>
+
+          {/* Clients Data Display */}
+          <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+            {/* View Toggle */}
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium text-muted-foreground">Vue:</span>
+                <div className="flex bg-muted rounded-lg p-1">
+                  <button
+                    onClick={() => setViewMode('table')}
+                    className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                      viewMode === 'table'
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <Icon name="Table" size={14} className="mr-1" />
+                    Tableau
+                  </button>
+                  <button
+                    onClick={() => setViewMode('card')}
+                    className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                      viewMode === 'card'
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <Icon name="Grid" size={14} className="mr-1" />
+                    Cartes
+                  </button>
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {filteredClients.length} client(s)
+              </div>
+            </div>
+
+            {/* Content */}
+            {filteredClients.length === 0 ? (
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+                  <Icon name="Users" size={32} className="text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-medium text-foreground mb-2">Aucun client trouvé</h3>
+                <p className="text-muted-foreground text-sm max-w-md mx-auto">
+                  {searchTerm ? 'Aucun client ne correspond à votre recherche.' : 'Vous n\'avez pas encore ajouté de clients.'}
+                </p>
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => setSearchTerm('')}
+                  iconName="RotateCcw"
+                  iconPosition="left"
+                >
+                  {searchTerm ? 'Effacer la recherche' : 'Actualiser'}
+                </Button>
+              </div>
+            ) : (
+              <>
+                {viewMode === 'table' && renderTableView()}
+                {viewMode === 'card' && renderCardView()}
+              </>
+            )}
+          </div>
+
+          {/* Analytics Section - Below Table */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
+            <AIRecommendations analytics={analytics} isLoading={isAnalyzing} />
+            <RiskFactors analytics={analytics} isLoading={isAnalyzing} />
+            <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
+              <div className="flex items-center space-x-2 mb-3">
+                <Icon name="BarChart3" size={14} className="sm:w-4 sm:h-4 text-primary" />
+                <h3 className="text-xs sm:text-sm font-medium text-foreground">Performance</h3>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Taux de conversion</span>
+                  <span className="font-medium">85%</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Satisfaction client</span>
+                  <span className="font-medium">4.8/5</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Temps de réponse</span>
+                  <span className="font-medium">2.4h</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Client Modal */}
+          {isModalOpen && (
+            <ClientModal
+              client={selectedClient}
+              onSave={handleClientSave}
+              onClose={() => {
+                setIsModalOpen(false);
+                setSelectedClient(null);
+              }}
+            />
+          )}
         </div>
-      </div>
-
-      {/* Client Modal */}
-      {isModalOpen && (
-        <ClientModal
-          client={selectedClient}
-          onSave={handleClientSave}
-          onClose={() => {
-            setIsModalOpen(false);
-            setSelectedClient(null);
-          }}
-        />
-      )}
-        </main>
-      </div>
+      </main>
     </div>
   );
 };

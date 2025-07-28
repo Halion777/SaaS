@@ -31,6 +31,8 @@ const PeppolNetworkPage = () => {
   });
   const [filteredSentInvoices, setFilteredSentInvoices] = useState([]);
   const [filteredReceivedInvoices, setFilteredReceivedInvoices] = useState([]);
+  const [sentViewMode, setSentViewMode] = useState('table');
+  const [receivedViewMode, setReceivedViewMode] = useState('table');
 
   React.useEffect(() => {
     const handleSidebarToggle = (e) => {
@@ -101,6 +103,20 @@ const PeppolNetworkPage = () => {
       }
     };
     loadSettings();
+  }, []);
+
+  // Auto-switch to card view on smaller screens
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setSentViewMode('card');
+        setReceivedViewMode('card');
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Mock data for sent invoices
@@ -378,6 +394,182 @@ const PeppolNetworkPage = () => {
       sender: ''
     });
   };
+
+  const renderSentTableView = () => (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[800px]">
+        <thead className="bg-muted/50">
+          <tr>
+            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">N° Facture</th>
+            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">Destinataire</th>
+            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">Peppol ID</th>
+            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">Montant</th>
+            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">Date</th>
+            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredSentInvoices.map((invoice) => (
+            <tr key={invoice.id} className="border-t border-border hover:bg-muted/30">
+              <td className="p-4 font-medium">{invoice.id}</td>
+              <td className="p-4">
+                <div>
+                  <div className="font-medium">{invoice.recipient}</div>
+                  <div className="text-xs text-muted-foreground">{invoice.recipientEmail}</div>
+                </div>
+              </td>
+              <td className="p-4 text-sm text-muted-foreground font-mono">{invoice.peppolId}</td>
+              <td className="p-4 font-medium">
+                {invoice.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+              </td>
+              <td className="p-4 text-sm text-muted-foreground">
+                {new Date(invoice.date).toLocaleDateString('fr-FR')}
+              </td>
+              <td className="p-4">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getStatusColor(invoice.status)}`}>
+                  {getStatusText(invoice.status)}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  const renderSentCardView = () => (
+    <div className="p-2 sm:p-3 md:p-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
+        {filteredSentInvoices.map((invoice) => (
+          <div key={invoice.id} className="bg-card border border-border rounded-lg p-2 sm:p-3 md:p-4">
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex items-center space-x-2">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Icon name="Send" size={12} className="sm:w-4 sm:h-4 text-primary" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-xs sm:text-sm font-semibold text-foreground truncate">{invoice.id}</h3>
+                  <p className="text-xs text-muted-foreground truncate">{invoice.recipient}</p>
+                </div>
+              </div>
+              <span className={`inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium text-center flex-shrink-0 ${getStatusColor(invoice.status)}`}>
+                {getStatusText(invoice.status)}
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Email</p>
+                <p className="text-xs text-foreground truncate">{invoice.recipientEmail}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Montant</p>
+                <p className="text-xs font-medium text-foreground">{invoice.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-1 sm:space-x-2 min-w-0 flex-1">
+                <Icon name="Network" size={10} className="sm:w-3 sm:h-3 text-success flex-shrink-0" />
+                <span className="text-xs text-muted-foreground font-mono truncate">{invoice.peppolId}</span>
+              </div>
+              <div className="text-xs text-muted-foreground flex-shrink-0">
+                {new Date(invoice.date).toLocaleDateString('fr-FR')}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderReceivedTableView = () => (
+    <div className="overflow-x-auto">
+      <table className="w-full">
+        <thead className="bg-muted/50">
+          <tr>
+            <th className="text-left p-4 font-medium">N° Facture</th>
+            <th className="text-left p-4 font-medium">Expéditeur</th>
+            <th className="text-left p-4 font-medium">Peppol ID</th>
+            <th className="text-left p-4 font-medium">Montant</th>
+            <th className="text-left p-4 font-medium">Date</th>
+            <th className="text-left p-4 font-medium">Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredReceivedInvoices.map((invoice) => (
+            <tr key={invoice.id} className="border-t border-border hover:bg-muted/30">
+              <td className="p-4 font-medium">{invoice.id}</td>
+              <td className="p-4">
+                <div>
+                  <div className="font-medium">{invoice.sender}</div>
+                  <div className="text-xs text-muted-foreground">{invoice.senderEmail}</div>
+                </div>
+              </td>
+              <td className="p-4 text-sm text-muted-foreground font-mono">{invoice.peppolId}</td>
+              <td className="p-4 font-medium">
+                {invoice.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+              </td>
+              <td className="p-4 text-sm text-muted-foreground">
+                {new Date(invoice.date).toLocaleDateString('fr-FR')}
+              </td>
+              <td className="p-4">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getStatusColor(invoice.status)}`}>
+                  {getStatusText(invoice.status)}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  const renderReceivedCardView = () => (
+    <div className="p-2 sm:p-3 md:p-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
+        {filteredReceivedInvoices.map((invoice) => (
+          <div key={invoice.id} className="bg-card border border-border rounded-lg p-2 sm:p-3 md:p-4">
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex items-center space-x-2">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-success/10 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Icon name="Download" size={12} className="sm:w-4 sm:h-4 text-success" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-xs sm:text-sm font-semibold text-foreground truncate">{invoice.id}</h3>
+                  <p className="text-xs text-muted-foreground truncate">{invoice.sender}</p>
+                </div>
+              </div>
+              <span className={`inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium text-center flex-shrink-0 ${getStatusColor(invoice.status)}`}>
+                {getStatusText(invoice.status)}
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Email</p>
+                <p className="text-xs text-foreground truncate">{invoice.senderEmail}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Montant</p>
+                <p className="text-xs font-medium text-foreground">{invoice.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-1 sm:space-x-2 min-w-0 flex-1">
+                <Icon name="Network" size={10} className="sm:w-3 sm:h-3 text-success flex-shrink-0" />
+                <span className="text-xs text-muted-foreground font-mono truncate">{invoice.peppolId}</span>
+              </div>
+              <div className="text-xs text-muted-foreground flex-shrink-0">
+                {new Date(invoice.date).toLocaleDateString('fr-FR')}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -749,47 +941,42 @@ const PeppolNetworkPage = () => {
 
                 {/* Invoices Table */}
                 <div className="bg-card border border-border rounded-lg overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[800px]">
-                      <thead className="bg-muted/50">
-                        <tr>
-                          <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">N° Facture</th>
-                          <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">Destinataire</th>
-                          <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">Peppol ID</th>
-                          <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">Montant</th>
-                          <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">Date</th>
-                          <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">Statut</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredSentInvoices.map((invoice) => (
-                          <tr key={invoice.id} className="border-t border-border hover:bg-muted/30">
-                            <td className="p-4 font-medium">{invoice.id}</td>
-                            <td className="p-4">
-                              <div>
-                                <div className="font-medium">{invoice.recipient}</div>
-                                <div className="text-xs text-muted-foreground">{invoice.recipientEmail}</div>
-                              </div>
-                            </td>
-                            <td className="p-4 text-sm text-muted-foreground font-mono">{invoice.peppolId}</td>
-                            <td className="p-4 font-medium">
-                              {invoice.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                            </td>
-                            <td className="p-4 text-sm text-muted-foreground">
-                              {new Date(invoice.date).toLocaleDateString('fr-FR')}
-                            </td>
-                            <td className="p-4">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(invoice.status)}`}>
-                                {getStatusText(invoice.status)}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  {/* View Toggle */}
+                  <div className="flex items-center justify-between p-4 border-b border-border">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-muted-foreground">Vue:</span>
+                      <div className="flex bg-muted rounded-lg p-1">
+                        <button
+                          onClick={() => setSentViewMode('table')}
+                          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                            sentViewMode === 'table'
+                              ? 'bg-background text-foreground shadow-sm'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          <Icon name="Table" size={14} className="mr-1" />
+                          Tableau
+                        </button>
+                        <button
+                          onClick={() => setSentViewMode('card')}
+                          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                            sentViewMode === 'card'
+                              ? 'bg-background text-foreground shadow-sm'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          <Icon name="Grid" size={14} className="mr-1" />
+                          Cartes
+                        </button>
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {filteredSentInvoices.length} facture(s) envoyée(s)
+                    </div>
                   </div>
-                  
-                  {filteredSentInvoices.length === 0 && (
+
+                  {/* Content */}
+                  {filteredSentInvoices.length === 0 ? (
                     <div className="text-center py-12">
                       <Icon name="Send" size={48} className="text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-lg font-medium mb-2">
@@ -802,6 +989,11 @@ const PeppolNetworkPage = () => {
                         }
                       </p>
                     </div>
+                  ) : (
+                    <>
+                      {sentViewMode === 'table' && renderSentTableView()}
+                      {sentViewMode === 'card' && renderSentCardView()}
+                    </>
                   )}
                 </div>
               </div>
@@ -896,47 +1088,42 @@ const PeppolNetworkPage = () => {
 
                 {/* Invoices Table */}
                 <div className="bg-card border border-border rounded-lg overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-muted/50">
-                        <tr>
-                          <th className="text-left p-4 font-medium">N° Facture</th>
-                          <th className="text-left p-4 font-medium">Expéditeur</th>
-                          <th className="text-left p-4 font-medium">Peppol ID</th>
-                          <th className="text-left p-4 font-medium">Montant</th>
-                          <th className="text-left p-4 font-medium">Date</th>
-                          <th className="text-left p-4 font-medium">Statut</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredReceivedInvoices.map((invoice) => (
-                          <tr key={invoice.id} className="border-t border-border hover:bg-muted/30">
-                            <td className="p-4 font-medium">{invoice.id}</td>
-                            <td className="p-4">
-                              <div>
-                                <div className="font-medium">{invoice.sender}</div>
-                                <div className="text-xs text-muted-foreground">{invoice.senderEmail}</div>
-                              </div>
-                            </td>
-                            <td className="p-4 text-sm text-muted-foreground font-mono">{invoice.peppolId}</td>
-                            <td className="p-4 font-medium">
-                              {invoice.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                            </td>
-                            <td className="p-4 text-sm text-muted-foreground">
-                              {new Date(invoice.date).toLocaleDateString('fr-FR')}
-                            </td>
-                            <td className="p-4">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(invoice.status)}`}>
-                                {getStatusText(invoice.status)}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  {/* View Toggle */}
+                  <div className="flex items-center justify-between p-4 border-b border-border">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-muted-foreground">Vue:</span>
+                      <div className="flex bg-muted rounded-lg p-1">
+                        <button
+                          onClick={() => setReceivedViewMode('table')}
+                          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                            receivedViewMode === 'table'
+                              ? 'bg-background text-foreground shadow-sm'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          <Icon name="Table" size={14} className="mr-1" />
+                          Tableau
+                        </button>
+                        <button
+                          onClick={() => setReceivedViewMode('card')}
+                          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                            receivedViewMode === 'card'
+                              ? 'bg-background text-foreground shadow-sm'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          <Icon name="Grid" size={14} className="mr-1" />
+                          Cartes
+                        </button>
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {filteredReceivedInvoices.length} facture(s) reçue(s)
+                    </div>
                   </div>
-                  
-                  {filteredReceivedInvoices.length === 0 && (
+
+                  {/* Content */}
+                  {filteredReceivedInvoices.length === 0 ? (
                     <div className="text-center py-12">
                       <Icon name="Download" size={48} className="text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-lg font-medium mb-2">
@@ -949,6 +1136,11 @@ const PeppolNetworkPage = () => {
                         }
                       </p>
                     </div>
+                  ) : (
+                    <>
+                      {receivedViewMode === 'table' && renderReceivedTableView()}
+                      {receivedViewMode === 'card' && renderReceivedCardView()}
+                    </>
                   )}
                 </div>
               </div>

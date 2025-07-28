@@ -52,10 +52,10 @@ const GlobalProfile = () => {
   }
 
   return (
-    <div className={`fixed top-0 right-0 z-[9999] pointer-events-none transition-transform duration-300 ${
+    <div className={`fixed top-0 right-0 z-[9999] pointer-events-none transition-transform duration-100 ${
       isVisible ? 'translate-y-0' : '-translate-y-full'
     }`}>
-      <div className="p-4 pointer-events-auto">
+      <div className="p-4 pt-4 pointer-events-auto">
         <UserProfile 
           user={mockUser} 
           isCollapsed={false} 
