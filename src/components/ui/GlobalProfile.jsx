@@ -1,10 +1,26 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import UserProfile from './UserProfile';
 
 const GlobalProfile = () => {
+  const location = useLocation();
   const [isMobile, setIsMobile] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+
+  // Check if current page should show the global profile
+  const shouldShowProfile = () => {
+    // Dashboard pages where profile should be shown
+    const dashboardPages = [
+      '/dashboard', '/quotes-management', '/invoices-management', 
+      '/client-management', '/analytics-dashboard', '/follow-up-management',
+      '/leads-management', '/supplier-invoices', '/multi-user-profiles',
+      '/quote-creation'
+    ];
+    
+    // Check if current path starts with any dashboard page
+    return dashboardPages.some(page => location.pathname.startsWith(page));
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -46,8 +62,8 @@ const GlobalProfile = () => {
     window.location.href = '/login';
   };
 
-  // Only render on mobile
-  if (!isMobile) {
+  // Only render on mobile AND on dashboard pages
+  if (!isMobile || !shouldShowProfile()) {
     return null;
   }
 

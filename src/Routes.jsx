@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from './components/ProtectedRoute';
+import GlobalProfile from './components/ui/GlobalProfile';
 import { AuthProvider } from './context/AuthContext';
 
 // Import pages
@@ -36,6 +37,7 @@ const AppRoutes = () => {
     <Router>
       <AuthProvider>
         <ScrollToTop />
+        <GlobalProfile />
         <Routes>
           {/* Public pages */}
           <Route path="/" element={<HomePage />} />

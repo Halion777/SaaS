@@ -163,17 +163,51 @@ const FindArtisanPage = () => {
       
       <Header />
       
-      <main className="flex-grow">
-        {/* Hero Section */}
-        <section className="py-16 bg-primary">
-          <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
-                {t('findArtisan.hero.title') || "Trouvez un artisan qualifié"}
+      {/* Main Content */}
+      <main>
+        {/* Find Artisan Header */}
+        <section className="py-20 bg-gradient-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden">
+          {/* Animated Background Elements */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute top-20 left-10 w-72 h-72 bg-[#0036ab]/10 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute top-40 right-20 w-96 h-96 bg-[#12bf23]/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
+            <div className="absolute bottom-20 left-1/4 w-64 h-64 bg-[#0036ab]/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '4s'}}></div>
+          </div>
+
+          <div className="container mx-auto px-4 relative z-10">
+            <div className="text-center">
+              {/* Badge */}
+              <div className="inline-flex items-center bg-[#0036ab]/10 text-[#0036ab] px-4 py-2 rounded-full text-sm font-medium mb-6 animate-fadeIn">
+                <Icon name="Search" size={16} className="mr-2" />
+                Trouver un artisan
+              </div>
+              
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
+                Trouvez l'artisan{' '}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0036ab] to-[#12bf23]">
+                  idéal
+                </span>{' '}
+                pour votre projet
               </h1>
-              <p className="text-base md:text-lg text-white/90 max-w-2xl mx-auto">
-                {t('findArtisan.hero.description') || "Décrivez vos travaux et recevez rapidement des devis d'artisans près de chez vous"}
+              <p className="text-lg md:text-xl text-gray-600 mb-8 leading-relaxed max-w-3xl mx-auto">
+                Connectez-vous avec des artisans qualifiés et certifiés pour réaliser vos projets de construction et rénovation
               </p>
+              
+              {/* Key Benefits */}
+              <div className="flex flex-wrap justify-center gap-4 mb-8">
+                <div className="flex items-center text-sm text-gray-600">
+                  <Icon name="CheckCircle" size={16} className="mr-2 text-[#12bf23]" />
+                  <span>Artisans certifiés</span>
+                </div>
+                <div className="flex items-center text-sm text-gray-600">
+                  <Icon name="CheckCircle" size={16} className="mr-2 text-[#12bf23]" />
+                  <span>Devis gratuits</span>
+                </div>
+                <div className="flex items-center text-sm text-gray-600">
+                  <Icon name="CheckCircle" size={16} className="mr-2 text-[#12bf23]" />
+                  <span>Garantie qualité</span>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -182,10 +216,11 @@ const FindArtisanPage = () => {
         <section className="py-12 bg-white">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-start space-y-8 md:space-y-0 md:space-x-8">
+              {/* Desktop View */}
+              <div className="hidden md:flex flex-row justify-between items-start space-x-8">
                 {steps.map((step, index) => (
                   <div key={step.number} className="flex flex-col items-center text-center flex-1">
-                    <div className="flex items-center justify-center w-12 h-12 rounded-full text-white font-bold text-lg mb-4 bg-blue-600">
+                    <div className="flex items-center justify-center w-12 h-12 rounded-full text-white font-bold text-lg mb-4 bg-[#0036ab]">
                       {step.number}
                     </div>
                     <div className="flex-1">
@@ -195,12 +230,28 @@ const FindArtisanPage = () => {
                   </div>
                 ))}
               </div>
+              
+              {/* Mobile View - Compact with icons in one row */}
+              <div className="md:hidden">
+                <div className="flex justify-between items-center">
+                  {steps.map((step, index) => (
+                    <div key={step.number} className="flex flex-col items-center text-center">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full text-white font-bold text-sm bg-[#0036ab] mb-2">
+                        {step.number}
+                      </div>
+                      <div className="text-xs font-semibold text-gray-900 leading-tight max-w-16">
+                        {step.title}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
         {/* Main Form Section */}
-        <section className="py-12">
+        <section className="py-2">
           <div className="container mx-auto px-4">
             <div className="max-w-2xl mx-auto">
               <div className="bg-card border border-border rounded-lg shadow-sm p-8">

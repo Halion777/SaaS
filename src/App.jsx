@@ -2,7 +2,6 @@ import React, { useEffect } from "react";
 import Routes from "./Routes";
 import { TranslationProvider } from "./context/TranslationContext";
 import { MultiUserProvider } from "./context/MultiUserContext";
-import GlobalProfile from "./components/ui/GlobalProfile";
 
 function App() {
   useEffect(() => {
@@ -20,7 +19,6 @@ function App() {
     <TranslationProvider>
       <MultiUserProvider>
         <Routes />
-        <GlobalProfile />
       </MultiUserProvider>
     </TranslationProvider>
   );

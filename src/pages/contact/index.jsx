@@ -105,20 +105,65 @@ const ContactPage = () => {
       </Helmet>
       
       <div className="min-h-screen bg-background">
-        {/* Header/Navigation */}
         <Header />
         
         {/* Main Content */}
-        <main className="container mx-auto px-4 py-16">
-          <div className="max-w-6xl mx-auto">
-            {/* Page Title */}
-            <div className="text-center mb-16">
-              <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">{t('contact.title')}</h1>
-              <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-                {t('contact.subtitle')}
+        <main className="flex-grow">
+        {/* Contact Header */}
+        <section className="py-20 bg-gradient-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden">
+          {/* Animated Background Elements */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute top-20 left-10 w-72 h-72 bg-[#0036ab]/10 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute top-40 right-20 w-96 h-96 bg-[#12bf23]/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
+            <div className="absolute bottom-20 left-1/4 w-64 h-64 bg-[#0036ab]/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '4s'}}></div>
+          </div>
+
+          <div className="container mx-auto px-4 relative z-10">
+            <div className="text-center">
+              {/* Badge */}
+              <div className="inline-flex items-center bg-[#0036ab]/10 text-[#0036ab] px-4 py-2 rounded-full text-sm font-medium mb-6 animate-fadeIn">
+                <Icon name="MessageCircle" size={16} className="mr-2" />
+                Contactez-nous
+              </div>
+              
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
+                Parlons de votre{' '}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0036ab] to-[#12bf23]">
+                  projet
+                </span>
+              </h1>
+              <p className="text-lg md:text-xl text-gray-600 mb-8 leading-relaxed max-w-3xl mx-auto">
+                Notre équipe d'experts est là pour vous accompagner dans votre transformation digitale
               </p>
+              
+              {/* Key Benefits */}
+              <div className="flex flex-wrap justify-center gap-4 mb-8">
+                <div className="flex items-center text-sm text-gray-600">
+                  <Icon name="CheckCircle" size={16} className="mr-2 text-[#12bf23]" />
+                  <span>Réponse sous 24h</span>
+                </div>
+                <div className="flex items-center text-sm text-gray-600">
+                  <Icon name="CheckCircle" size={16} className="mr-2 text-[#12bf23]" />
+                  <span>Support français</span>
+                </div>
+                <div className="flex items-center text-sm text-gray-600">
+                  <Icon name="CheckCircle" size={16} className="mr-2 text-[#12bf23]" />
+                  <span>Accompagnement gratuit</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        
+        {/* Contact Form Section */}
+        <section className="py-20 bg-white relative overflow-hidden">
+          {/* Background Decorative Elements */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-20 right-10 w-64 h-64 bg-[#0036ab]/5 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-20 left-10 w-80 h-80 bg-[#12bf23]/5 rounded-full blur-3xl"></div>
             </div>
             
+          <div className="container mx-auto px-4 relative z-10">
             {/* Contact Layout - Two Columns */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
               {/* Left Column - Contact Information */}
@@ -146,16 +191,30 @@ const ContactPage = () => {
                     </div>
                   </div>
                   
-                  {/* Live Chat Card */}
+                  {/* Phone Card */}
                   <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
                     <div className="flex items-start">
                       <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mr-4">
-                        <Icon name="MessageCircle" size={20} className="text-gray-600" />
+                        <Icon name="Phone" size={20} className="text-gray-600" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-foreground text-lg mb-1">{t('contact.liveChat') || "Chat en direct"}</h3>
-                        <p className="text-muted-foreground mb-1">{t('contact.availability') || "Disponible de 9h à 18h"}</p>
-                        <p className="text-sm text-muted-foreground/70">{t('contact.workDays') || "Du lundi au vendredi"}</p>
+                        <h3 className="font-semibold text-foreground text-lg mb-1">{t('contact.info.phone')}</h3>
+                        <p className="text-muted-foreground mb-1">{t('contact.info.phoneValue')}</p>
+                        <p className="text-sm text-muted-foreground/70">{t('contact.phoneHours') || "Lun-Ven, 9h-18h"}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Address Card */}
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
+                    <div className="flex items-start">
+                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mr-4">
+                        <Icon name="MapPin" size={20} className="text-gray-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-foreground text-lg mb-1">{t('contact.info.address')}</h3>
+                        <p className="text-muted-foreground mb-1">{t('contact.info.addressValue')}</p>
+                        <p className="text-sm text-muted-foreground/70">{t('contact.addressInfo') || "Siège social"}</p>
                       </div>
                     </div>
                   </div>
@@ -259,11 +318,9 @@ const ContactPage = () => {
                       <div className="pt-2">
                         <Button 
                           type="submit"
-                          variant="primary"
                           isLoading={isSubmitting}
                           disabled={isSubmitting}
-                          fullWidth
-                          className="h-12 text-base font-semibold"
+                          className="w-full bg-[#0036ab] hover:bg-[#0036ab]/90 text-white py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
                           iconName="Send"
                           iconPosition="left"
                         >
@@ -276,6 +333,7 @@ const ContactPage = () => {
               </div>
             </div>
           </div>
+        </section>
         </main>
         
         {/* Footer */}
