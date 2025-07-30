@@ -11,39 +11,514 @@
     "freeTrial": "Gratis proefperiode",
     "dashboard": "Dashboard"
   },
+  "header": {
+    "notification": {
+      "text": "Nieuw: PEPPOL integratie voor elektronische facturering",
+      "close": "Melding sluiten"
+    }
+  },
   "ui": {
     "tagline": "Havitam - Je professionele digitale vitamine",
     "buttons": {
       "continue": "Doorgaan",
       "back": "Terug",
       "loading": "Laden...",
-      "startTrial": "Start gratis proefperiode"
+      "startTrial": "Start gratis proefperiode",
+      "sendMessage": "Bericht versturen",
+      "contactUs": "Neem contact op",
+      "getStarted": "Aan de slag",
+      "learnMore": "Meer informatie",
+      "viewDemo": "Demo bekijken",
+      "choosePlan": "Plan kiezen",
+      "startFreeTrial": "Gratis proefperiode – 14 dagen"
     }
   },
   "home": {
     "hero": {
-      "title": "Vereenvoudig je administratief beheer en ontwikkel je klantenbestand",
-      "subtitle": "De alles-in-één oplossing voor vakmensen die zich willen concentreren op hun expertise",
-      "cta": {
-        "primary": "Start gratis proefperiode",
-        "secondary": "Bekijk demo"
+      "badge": "Havitam - Je professionele digitale vitamine",
+      "title": {
+        "prefix": "De alles-in-één oplossing voor ",
+        "highlight": "bouwprofessionals"
+      },
+      "subtitle": "Bespaar tijd, verstuur je offertes, facturen en volg je betalingen – zonder stress.",
+      "benefits": {
+        "quotes": "Offertes & Facturen",
+        "clients": "Klantenbeheer",
+        "payments": "Geautomatiseerde betalingen"
+      },
+      "trust": {
+        "artisans": "500+ Vakmensen",
+        "rating": "4.9/5 Sterren"
+      }
+    },
+    "demo": {
+      "badge": "Snelle Demo",
+      "title": {
+        "prefix": "Leer met deze ",
+        "highlight": "demo",
+        "suffix": " hoe je ons systeem gebruikt"
+      },
+      "subtitle": "Ontdek in enkele minuten hoe HAVITAM je dagelijkse beheer kan transformeren",
+      "video": {
+        "placeholder": "VIDEO",
+        "clickToPlay": "Klik om de demo te starten"
+      }
+    },
+    "features": {
+      "badge": "Functies",
+      "title": "De 8 belangrijkste functies van Havitam",
+      "subtitle": "Boost je bedrijf met eenvoudige, snelle en intelligente tools",
+      "feature1": {
+        "title": "Offertes & facturen in 1 klik",
+        "description": "Maak je offertes en facturen in seconden met een ultra-intuïtieve interface. Snelle aanpassing inbegrepen."
+      },
+      "feature2": {
+        "title": "Real-time tracking & instant handtekening",
+        "description": "Volg de status van je offertes, verstuur ze en laat ze online ondertekenen. Hetzelfde voor je facturen: verzonden, bekeken, betaald — alles wordt bijgehouden."
+      },
+      "feature3": {
+        "title": "Automatische betalingsherinneringen",
+        "description": "Verminder vertragingen: verstuur geautomatiseerde herinneringen voor en na de vervaldatum. Minder stress, meer cashflow."
+      },
+      "feature4": {
+        "title": "Gecentraliseerd klant- & documentbeheer",
+        "description": "Al je gegevens (klanten, offertes, facturen, betalingen) zijn georganiseerd en toegankelijk vanaf één dashboard."
+      },
+      "feature5": {
+        "title": "Automatische ontvangst van gekwalificeerde leads",
+        "description": "Ontvang projectaanvragen in je geografische gebied volgens je specialiteiten. Reageer met een offerte in 1 klik, of ga naar de volgende."
+      },
+      "feature6": {
+        "title": "Stem-dicteerde offertes (Nieuw)",
+        "description": "Bespaar enorm veel tijd door je offertes te dicteren. Onze stemassistent schrijft ze voor je, direct."
+      },
+      "feature7": {
+        "title": "AI-aangedreven intelligente prijsstelling (Beta)",
+        "description": "Een AI helpt je je tarieven te schatten op basis van de markt, je eerdere offertes en klanttype. Meer nauwkeurigheid, meer conversies."
+      },
+      "feature8": {
+        "title": "Offerte-analyse & AI-aanbevelingen (Beta)",
+        "description": "Ontvang automatische feedback op elke offerte: te duur? te lang? onvolledig? AI begeleidt je om het te optimaliseren voordat je het verstuurt."
+      }
+    },
+    "services": {
+      "badge": "Aanvullende diensten",
+      "title": "Inkasso & Kredietverzekering",
+      "subtitle": "Beveilig je inkomsten, focus op je vak",
+      "recovery": {
+        "title": "Professioneel inkasso – €0 zonder resultaat",
+        "description": "Alleen voor je B2B klanten",
+        "bullet1": "Bij onbetaalde factuur starten wij de procedures namens u",
+        "bullet2": "Minnelijke en juridische procedures beheerd door onze gespecialiseerde partners",
+        "bullet3": "100% gratis zolang er geen bedrag wordt teruggevorderd",
+        "bullet4": "Commissie vanaf 4% over het teruggevorderde bedrag",
+        "bullet5": "Automatische melding zodra een vertraging wordt gedetecteerd",
+        "bullet6": "U blijft gefocust op uw projecten, wij zorgen voor de rest"
+      },
+      "insurance": {
+        "title": "Kredietverzekering – Gegarandeerde B2B facturen",
+        "description": "Dienst aangeboden via onze gecertificeerde partner",
+        "bullet1": "Beoordeling van B2B klant solvabiliteit voor offerte validatie",
+        "bullet2": "Activeer de garantie met één klik vanuit uw dashboard",
+        "bullet3": "Bij wanbetaling tot 90% van de factuur gedekt",
+        "bullet4": "Intelligent systeem dat waarschuwt voor risicovolle klanten",
+        "bullet5": "Real-time tracking van garanties, terugbetalingen en risico's",
+        "bullet6": "Eenvoudig, snel, geen papierwerk"
+      }
+    },
+    "mobile": {
+      "badge": "Multi-platform",
+      "title": "Beheer je bedrijf waar je ook bent",
+      "subtitle": "Toegang tot je dashboard vanaf je computer of onderweg met onze mobiele app",
+      "comingSoon": "Binnenkort beschikbaar",
+      "tags": {
+        "free": "Gratis",
+        "secure": "Veilig",
+        "fast": "Snel"
+      }
+    },
+    "stats": {
+      "badge": "Onze resultaten",
+      "title": "HAVITAM in cijfers",
+      "subtitle": "Ontdek de impact van ons platform op de bouwsector",
+      "artisans": "500+ vakmensen",
+      "quotes": "10.000+ gemaakte offertes",
+      "rating": "4.9 Sterren"
+    },
+    "craftsmen": {
+      "badge": "Onze klanten",
+      "title": "Vakprofielen",
+      "subtitle": "HAVITAM past zich aan alle bouwvakken aan",
+      "plumber": {
+        "title": "Loodgieter",
+        "description": "Installatie, storingen & sanitair onderhoud",
+        "benefit": "+35% winstgevendheid"
+      },
+      "mason": {
+        "title": "Metselaar",
+        "description": "Bouw, renovatie, funderingen",
+        "benefit": "+40% efficiëntie"
+      },
+      "cleaner": {
+        "title": "Professionele schoonmaker",
+        "description": "Terreinonderhoud, eindschoonmaak",
+        "benefit": "+50% tevreden klanten"
+      },
+      "energy": {
+        "title": "Energie-installateur",
+        "description": "Hernieuwbare energie, zonnepanelen",
+        "benefit": "+45% omzet"
+      },
+      "painter": {
+        "title": "Decoratieschilder",
+        "description": "Interieur, exterieur, afwerking, decoratie",
+        "benefit": "+50% klantzichtbaarheid"
+      },
+      "carpenter": {
+        "title": "Timmerman",
+        "description": "Op maat gemaakte creatie, inrichting & meubels",
+        "benefit": "+40% productiviteit"
+      },
+      "electrician": {
+        "title": "Elektricien",
+        "description": "Woningbouw & commerciële installatie",
+        "benefit": "+45% tijdoptimalisatie"
+      },
+      "others": {
+        "title": "Andere vakken",
+        "description": "Selecteer deze optie als je activiteit hierboven niet vermeld staat",
+        "benefit": "Havitam past zich aan alle specialiteiten aan"
       }
     },
     "testimonials": {
-      "title": "Ze vertrouwen ons",
-      "subtitle": "Ontdek wat onze gebruikers zeggen"
+      "badge": "Getuigenissen",
+      "title": "Wat onze klanten zeggen",
+      "subtitle": "Ontdek waarom vakmensen HAVITAM vertrouwen",
+      "testimonial1": {
+        "quote": "HAVITAM heeft mijn manier van werken revolutionair veranderd. Ik bespaar enorm veel tijd op administratieve taken en kan me concentreren op mijn bouwplaatsen.",
+        "name": "Jean Dupont",
+        "profession": "Elektricien"
+      },
+      "testimonial2": {
+        "quote": "Intuïtieve interface en responsieve ondersteuning. Ik raad HAVITAM aan aan al mijn vakmensen collega's.",
+        "name": "Marie Laurent",
+        "profession": "Loodgieter"
+      },
+      "testimonial3": {
+        "quote": "Sinds ik HAVITAM gebruik, is mijn facturering sneller en zijn mijn klanten tevredener.",
+        "name": "Pierre Martin",
+        "profession": "Schilder"
+      },
+      "testimonial4": {
+        "quote": "Offertebeheer is nu kinderspel. HAVITAM heeft me elke week uren bespaard.",
+        "name": "Sophie Leroy",
+        "profession": "Tegelzetter"
+      },
+      "testimonial5": {
+        "quote": "Uitzonderlijke ondersteuning en functies perfect aangepast aan de behoeften van vakmensen.",
+        "name": "Antoine Dubois",
+        "profession": "Timmerman"
+      },
+      "testimonial6": {
+        "quote": "HAVITAM heeft me in staat gesteld mijn bedrijf met 40% te ontwikkelen in één jaar dankzij betere organisatie.",
+        "name": "Claire Moreau",
+        "profession": "Elektricien"
+      }
     },
     "cta": {
-      "title": "Klaar om je bedrijf te transformeren?",
-      "description": "Sluit je aan bij duizenden vakmensen die HAVITAM vertrouwen om hun bedrijf te ontwikkelen",
+      "title": "Klaar om je bedrijf te boosten?",
+      "subtitle": "Sluit je aan bij 500+ vakmensen die hun beheer hebben geautomatiseerd en hun winstgevendheid hebben verhoogd.",
+      "trust": {
+        "freeTrial": "14 dagen gratis proefperiode",
+        "languages": "FR, NL, EN",
+        "setup": "5 minuten setup"
+      },
+      "metrics": {
+        "revenue": "Gemiddelde omzet",
+        "adminTime": "Admin tijd",
+        "satisfaction": "Tevredenheid"
+      },
+      "primaryButton": "Start gratis proefperiode",
+      "secondaryButton": "Praat met een expert"
+    },
+    "faq": {
+      "badge": "FAQ",
+      "title": "Veelgestelde vragen",
+      "subtitle": "Alles wat je moet weten over HAVITAM",
+      "pricing": {
+        "question": "Hoeveel kost HAVITAM?",
+        "intro": "HAVITAM biedt verschillende formules aan die aangepast zijn aan je behoeften:",
+        "starter": {
+          "title": "Starter (€19/maand)",
+          "description": "Essentiële functies om te beginnen"
+        },
+        "pro": {
+          "title": "Pro (€39/maand)",
+          "description": "Geavanceerde functies + prioriteitsondersteuning"
+        },
+        "business": {
+          "title": "Business (€59/maand)",
+          "description": "Multi-gebruikers + geavanceerde functies"
+        },
+        "trial": "14 dagen gratis proefperiode",
+        "trialNote": "geen verplichting op al onze formules!"
+      },
+      "setup": {
+        "question": "Hoe lang duurt het om HAVITAM in te stellen?",
+        "intro": "Het instellen van HAVITAM is heel eenvoudig en snel:",
+        "accountCreation": "Account aanmaken",
+        "basicConfig": "Basis configuratie",
+        "firstQuote": "Eerste offerte gemaakt",
+        "support": "Ons team begeleidt je gratis voor optimale onboarding!"
+      },
+      "security": {
+        "question": "Zijn mijn gegevens beveiligd?",
+        "intro": "De beveiliging van je gegevens is onze absolute prioriteit:",
+        "encryptedData": "Gegevens versleuteld tijdens transport",
+        "compliance": "Naleving van regelgeving",
+        "servers": "Servers in Frankrijk",
+        "conclusion": "Uw gegevens worden beschermd door de hoogste beveiligingsstandaarden in de markt."
+      },
+      "mobile": {
+        "question": "Is de mobiele app beschikbaar?",
+        "intro": "Onze mobiele app komt binnenkort! Het zal beschikbaar zijn op iOS en Android.",
+        "comingSoon": "Binnenkort beschikbaar",
+        "description": "We werken momenteel aan de mobiele app om je een optimale mobiele ervaring te bieden. Word op de hoogte gesteld zodra het uitkomt!",
+        "browserAccess": "In de tussentijd kun je HAVITAM benaderen vanuit je mobiele browser."
+      },
+      "support": {
+        "question": "Welke klantenservice bied je aan?",
+        "intro": "Ons supportteam staat klaar om je te helpen:",
+        "phone": {
+          "title": "Telefoonondersteuning",
+          "hours": "Ma-Vr 9u-18u (gratis)"
+        },
+        "email": {
+          "title": "E-mail ondersteuning",
+          "response": "Antwoord binnen 24u"
+        },
+        "conclusion": "Ons team van experts staat klaar om je te helpen het beste uit HAVITAM te halen!"
+      },
+      "leads": {
+        "question": "Kan ik automatisch gekwalificeerde leads ontvangen?",
+        "answer": "Ja, als je de functie \"verzoeken ontvangen\" activeert, ontvang je klantprojecten bij jou in de buurt.",
+        "geolocated": {
+          "title": "Geolokaliseerde Leads",
+          "description": "Ontvang automatisch projectverzoeken in uw geografische gebied volgens uw specialiteiten."
+        },
+        "conclusion": "Reageer met een offerte in 1 klik, of ga door naar de volgende volgens uw beschikbaarheid."
+      },
+      "contact": {
+        "title": "Heb je andere vragen?",
+        "subtitle": "Ons team van experts staat klaar om je te beantwoorden en je te begeleiden in je digitale transitie",
+        "supportButton": "Contact ondersteuning",
+        "callButton": "Nu bellen"
+      }
+    }
+  },
+  "about": {
+    "hero": {
+      "badge": "Over ons • Bouw vereenvoudigen",
+      "title": {
+        "prefix": "Havitam, je ",
+        "highlight": "digitale partner",
+        "suffix": " in de bouw"
+      },
+      "subtitle": "Eenvoudige, snelle en krachtige tools om je offertes, facturen en betalingen te automatiseren – terwijl je je focust op je vak.",
+      "benefits": {
+        "trust": "500+ vakmensen vertrouwen ons",
+        "support": "Ondersteuning in FR / NL / EN"
+      },
+      "floating": {
+        "rapid": "Snel",
+        "qualified": "Gekwalificeerd"
+      }
+    },
+    "story": {
+      "badge": "Ons verhaal",
+      "title": "Ons verhaal",
+      "subtitle": "Ontdek hoe HAVITAM geboren werd uit een eenvoudige visie"
+    },
+    "values": {
+      "badge": "Onze waarden",
+      "title": "Onze waarden",
+      "subtitle": "De principes die onze acties en onze betrokkenheid bij de vakmensen-gemeenschap leiden",
+      "simplicity": {
+        "title": "Eenvoud",
+        "description": "We creëren eenvoudige en intuïtieve tools zodat je je kunt concentreren op je vak zonder onnodige complexiteit."
+      },
+      "automation": {
+        "title": "Automatisering",
+        "description": "We automatiseren repetitieve taken om je tijd te besparen en je productiviteit te verhogen."
+      },
+      "support": {
+        "title": "Ondersteuning",
+        "description": "We ondersteunen je bij elke stap met gepersonaliseerde ondersteuning en oplossingen aangepast aan je behoeften."
+      },
+      "mission": {
+        "title": "Onze missie",
+        "description": "Onze missie is om de digitale vitamine van de bouw te worden, door het dagelijkse beheer van vakmensen te vergemakkelijken."
+      }
+    },
+    "founder": {
+      "badge": "Onze oprichter",
+      "title": "Onze oprichter",
+      "subtitle": "Ontdek de visie die HAVITAM heeft voortgebracht",
+      "name": "Haitam A.",
+      "role": "Oprichter & CEO"
+    },
+    "cta": {
+      "title": "Sluit je aan bij de bouwrevolutie",
+      "subtitle": "Ontdek hoe HAVITAM je bedrijf kan transformeren en je in staat kan stellen je te concentreren op wat je het beste doet.",
+      "trust": {
+        "trial": "14 dagen gratis proefperiode",
+        "noCommitment": "Geen verplichting",
+        "setup": "5 minuten setup",
+        "support": "Ondersteuning in FR / NL / EN"
+      },
+      "primaryButton": "Start gratis proefperiode",
+      "secondaryButton": "Praat met een expert"
+    }
+  },
+  "contact": {
+    "hero": {
+      "title": "Neem contact op",
+      "subtitle": "Ons team staat klaar om je te helpen",
+      "description": "Of je nu een vakman bent die Havitam wil ontdekken of een klant die hulp nodig heeft, we zijn er om je te ondersteunen."
+    },
+    "info": {
+      "email": {
+        "title": "E-mail",
+        "address": "support@havitam.com",
+        "response": "Antwoord binnen 24 uur"
+      },
+      "phone": {
+        "title": "Telefoon",
+        "number": "028846333",
+        "hours": "Ma-Vr, 9u-18u"
+      },
+      "address": {
+        "title": "Adres",
+        "location": "Brussel, België",
+        "type": "Hoofdkantoor"
+      }
+    },
+    "form": {
+      "title": "Stuur ons een bericht",
+      "firstName": "Voornaam",
+      "lastName": "Achternaam",
+      "email": "E-mail",
+      "phone": "Telefoon",
+      "subject": "Onderwerp",
+      "message": "Bericht",
+      "placeholders": {
+        "firstName": "Je voornaam",
+        "lastName": "Je achternaam",
+        "email": "Je e-mail",
+        "phone": "Je telefoon",
+        "message": "Je bericht"
+      },
+      "subjects": {
+        "demo": "Demo aanvraag",
+        "question": "Productvraag",
+        "support": "Technische ondersteuning",
+        "partnership": "Partnership voorstel",
+        "other": "Anders"
+      },
+      "success": {
+        "title": "Bericht verzonden!",
+        "description": "We nemen zo snel mogelijk contact met je op.",
+        "button": "Nog een bericht versturen"
+      }
+    }
+  },
+  "pricing": {
+    "hero": {
+      "badge": "Prijzen",
+      "title": "Eenvoudige en transparante prijzen",
+      "subtitle": "Kies het plan dat bij je behoeften past. Geen verborgen kosten, geen verrassingen."
+    },
+    "toggle": {
+      "monthly": "Maandelijks",
+      "yearly": "Jaarlijks",
+      "savings": "Bespaar 20%"
+    },
+    "plans": {
+      "starter": {
+        "name": "Starter",
+        "price": "€19",
+        "period": "/maand",
+        "description": "Perfect om te beginnen",
+        "features": [
+          "Tot 50 offertes/maand",
+          "Eenvoudige facturering",
+          "E-mail ondersteuning",
+          "Mobiele app"
+        ]
+      },
+      "pro": {
+        "name": "Pro",
+        "price": "€39",
+        "period": "/maand",
+        "description": "Voor groeiende vakmensen",
+        "features": [
+          "Onbeperkte offertes",
+          "Geavanceerde facturering",
+          "Prioriteit ondersteuning",
+          "Gedetailleerde rapporten",
+          "Integraties"
+        ]
+      },
+      "business": {
+        "name": "Business",
+        "price": "€59",
+        "period": "/maand",
+        "description": "Voor teams",
+        "features": [
+          "Alles van Pro plan",
+          "Teambeheer",
+          "Toegewijde ondersteuning",
+          "Aangepaste API",
+          "Aangepaste training"
+        ]
+      }
+    },
+    "cta": {
+      "title": "Klaar om te beginnen?",
+      "subtitle": "Probeer HAVITAM gratis 14 dagen",
       "button": "Start gratis proefperiode"
+    }
+  },
+  "findArtisan": {
+    "hero": {
+      "badge": "Vind een vakman",
+      "title": "Vind de vakman die je nodig hebt",
+      "subtitle": "Maak contact met gekwalificeerde professionals bij jou in de buurt"
+    },
+    "form": {
+      "title": "Beschrijf je project",
+      "description": "Vul dit formulier in om gepersonaliseerde offertes te ontvangen",
+      "projectType": "Projecttype",
+      "location": "Locatie",
+      "budget": "Geschatte begroting",
+      "timeline": "Gewenste tijdlijn",
+      "description": "Projectbeschrijving",
+      "contact": "Contactgegevens",
+      "submit": "Mijn aanvraag versturen"
+    }
+  },
+  "blog": {
+    "hero": {
+      "badge": "Blog",
+      "title": "Nieuws en tips",
+      "subtitle": "Blijf op de hoogte van het laatste nieuws en ontdek tips om je bedrijf te optimaliseren"
     }
   },
   "login": {
     "title": "Inloggen",
     "subtitle": "Verbind met je HAVITAM account",
     "welcome": "Welkom terug!",
-    "welcomeSubtitle": "Verbind met je vakman ruimte om je offertes en facturen te beheren",
+    "welcomeSubtitle": "Verbind met je vakmensen-ruimte om je offertes en facturen te beheren",
     "email": "E-mailadres",
     "emailPlaceholder": "jouw@email.com",
     "password": "Wachtwoord",
@@ -68,21 +543,57 @@
     },
     "step3": {
       "title": "Kies je plan",
-      "subtitle": "Start met 14 dagen gratis, zonder verplichting"
+      "subtitle": "Start met 14 dagen gratis, geen verplichting"
     }
   },
   "forgotPassword": {
-    "rememberPassword": "Wachtwoord onthouden?",
+    "rememberPassword": "Herinner je je wachtwoord?",
     "title": "Wachtwoord vergeten?",
     "subtitle": "Voer je e-mailadres in om je wachtwoord te resetten",
     "resetButton": "Wachtwoord resetten",
     "emailSent": "E-mail verzonden!",
-    "checkInbox": "Controleer je inbox voor reset instructies.",
+    "checkInbox": "Controleer je inbox voor reset-instructies.",
     "backToLogin": "Terug naar inloggen"
   },
   "errors": {
     "required": "Dit veld is verplicht",
     "invalidEmail": "Ongeldig e-mailadres",
     "tooShort": "Te kort"
+  },
+  "meta": {
+    "title": "HAVITAM - Je professionele digitale vitamine",
+    "description": "HAVITAM vereenvoudigt het administratieve beheer van bouwvakkers. Maak offertes, verstuur facturen en ontwikkel je klantenbestand.",
+    "keywords": "vakman, bouw, offertes, facturen, beheer, elektricien, loodgieter, schilder",
+    "ogTitle": "HAVITAM - Je professionele digitale vitamine",
+    "ogDescription": "Vereenvoudig je administratief beheer en ontwikkel je klantenbestand",
+    "schemaDescription": "Het alles-in-één platform voor bouwvakkers. Maak offertes, verstuur facturen, volg betalingen en ontvang prospects.",
+    "phone": "+33-1-23-45-67-89"
+  },
+  "footer": {
+    "description": "De alles-in-één oplossing voor vakmensen die hun administratief beheer willen vereenvoudigen en hun klantenbestand willen ontwikkelen.",
+    "product": {
+      "title": "Product",
+      "pricing": "Prijzen",
+      "features": "Functies",
+      "findArtisan": "Vakman vinden"
+    },
+    "company": {
+      "title": "Bedrijf",
+      "about": "Over ons",
+      "contact": "Contact",
+      "blog": "Blog"
+    },
+    "legal": {
+      "title": "Juridisch",
+      "terms": "Gebruiksvoorwaarden",
+      "privacy": "Privacybeleid",
+      "cookies": "Cookies"
+    },
+    "copyright": "Alle rechten voorbehouden.",
+    "links": {
+      "sitemap": "Sitemap",
+      "support": "Ondersteuning",
+      "status": "Status"
+    }
   }
 } 

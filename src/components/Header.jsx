@@ -56,13 +56,13 @@ const Header = () => {
               <div className="flex items-center justify-center flex-1">
                 <Icon name="CheckCircle" size={16} className="mr-2 text-[#12bf23] flex-shrink-0" />
                 <span className="font-medium text-sm">
-                  Nouveau : Intégration PEPPOL pour la facturation électronique
+                  {t('header.notification.text')}
                 </span>
               </div>
               <button 
                 onClick={() => setIsNotificationHidden(true)}
                 className="text-white hover:text-gray-200 transition-colors p-1 ml-4"
-                aria-label="Fermer la notification"
+                aria-label={t('header.notification.close')}
               >
                 <Icon name="X" size={16} />
               </button>

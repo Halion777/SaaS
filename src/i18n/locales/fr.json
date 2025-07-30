@@ -11,32 +11,507 @@
     "freeTrial": "Essai gratuit",
     "dashboard": "Tableau de bord"
   },
+  "header": {
+    "notification": {
+      "text": "Nouveau : Intégration PEPPOL pour la facturation électronique",
+      "close": "Fermer la notification"
+    }
+  },
   "ui": {
     "tagline": "Havitam - Votre vitamine digitale professionnelle",
     "buttons": {
       "continue": "Continuer",
       "back": "Retour",
       "loading": "Chargement...",
-      "startTrial": "Commencer l'essai gratuit"
+      "startTrial": "Commencer l'essai gratuit",
+      "sendMessage": "Envoyer le message",
+      "contactUs": "Nous contacter",
+      "getStarted": "Commencer",
+      "learnMore": "En savoir plus",
+      "viewDemo": "Voir la démo",
+      "choosePlan": "Choisir ce plan",
+      "startFreeTrial": "Essai gratuit – 14 jours"
     }
   },
   "home": {
     "hero": {
-      "title": "Simplifiez votre gestion administrative et développez votre clientèle",
-      "subtitle": "La solution tout-en-un pour les artisans qui souhaitent se concentrer sur leur savoir-faire",
-      "cta": {
-        "primary": "Commencer l'essai gratuit",
-        "secondary": "Voir la démo"
+      "badge": "Havitam - Votre vitamine digitale professionnelle",
+      "title": {
+        "prefix": "La solution tout-en-un pour les ",
+        "highlight": "pros du bâtiment"
+      },
+      "subtitle": "Gagnez du temps, envoyez vos devis, factures et suivez vos paiements – sans stress.",
+      "benefits": {
+        "quotes": "Devis & Factures",
+        "clients": "Gestion clients",
+        "payments": "Paiements automatisés"
+      },
+      "trust": {
+        "artisans": "500+ Artisans",
+        "rating": "4.9/5 Étoiles"
+      }
+    },
+    "demo": {
+      "badge": "Demo Rapide",
+      "title": {
+        "prefix": "Apprenez avec cette ",
+        "highlight": "demo",
+        "suffix": " rapide comment utiliser notre système"
+      },
+      "subtitle": "Découvrez en quelques minutes comment HAVITAM peut transformer votre gestion quotidienne",
+      "video": {
+        "placeholder": "VIDEO",
+        "clickToPlay": "Cliquez pour lancer la démo"
+      }
+    },
+    "features": {
+      "badge": "Fonctionnalités",
+      "title": "Les 8 fonctionnalités clés de Havitam",
+      "subtitle": "Boostez votre business avec des outils simples, rapides et intelligents",
+      "feature1": {
+        "title": "Devis & factures en 1 clic",
+        "description": "Créez vos devis et factures en quelques secondes grâce à une interface ultra-intuitive. Personnalisation rapide incluse."
+      },
+      "feature2": {
+        "title": "Suivi en temps réel & signature instantanée",
+        "description": "Suivez les statuts de vos devis, envoyez-les et faites-les signer en ligne. Même chose pour vos factures : envoyées, vues, payées — tout est tracé."
+      },
+      "feature3": {
+        "title": "Rappels automatiques de paiement",
+        "description": "Réduisez les retards : envoyez des rappels automatisés avant et après la date d'échéance. Moins de stress, plus de cash-flow."
+      },
+      "feature4": {
+        "title": "Gestion centralisée des clients & documents",
+        "description": "Toutes vos données (clients, devis, factures, paiements) sont organisées et accessibles depuis un seul tableau de bord."
+      },
+      "feature5": {
+        "title": "Réception de leads qualifiés automatiquement",
+        "description": "Recevez des demandes de projets dans votre zone géographique selon vos spécialités. Répondez avec un devis en 1 clic, ou passez au suivant."
+      },
+      "feature6": {
+        "title": "Devis dictés à la voix (Nouveau)",
+        "description": "Gagnez un temps fou en dictant vos devis à la voix. Notre assistant vocal les rédige pour vous, instantanément."
+      },
+      "feature7": {
+        "title": "Tarification intelligente par IA (Bêta)",
+        "description": "Une IA vous aide à estimer vos tarifs selon le marché, vos précédents devis, et le type de client. Plus de précision, plus de conversions."
+      },
+      "feature8": {
+        "title": "Analyse de devis & recommandations IA (Bêta)",
+        "description": "Recevez un feedback automatique sur chaque devis : trop cher ? trop long ? incomplet ? L'IA vous guide pour l'optimiser avant l'envoi."
+      }
+    },
+    "services": {
+      "badge": "Services complémentaires",
+      "title": "Recouvrement & Assurance crédit",
+      "subtitle": "Sécurisez vos revenus, concentrez-vous sur votre métier",
+          "recovery": {
+      "title": "Recouvrement professionnel – 0€ sans résultat",
+      "description": "Uniquement pour vos clients B2B",
+      "bullet1": "En cas de facture impayée, nous lançons les démarches à votre place",
+      "bullet2": "Procédures amiables et juridiques gérées par nos partenaires spécialisés",
+      "bullet3": "100% gratuit tant qu'aucune somme n'est récupérée",
+      "bullet4": "Commission à partir de 4% sur le montant recouvré",
+      "bullet5": "Notification automatique dès qu'un retard est détecté",
+      "bullet6": "Vous restez concentré sur vos chantiers, on s'occupe du reste"
+    },
+    "insurance": {
+      "title": "Assurance crédit – Factures B2B garanties",
+      "description": "Service proposé via notre partenaire certifié",
+      "bullet1": "Évaluation de la solvabilité du client B2B avant validation du devis",
+      "bullet2": "Activez la garantie en un clic depuis votre tableau de bord",
+      "bullet3": "En cas d'impayé, jusqu'à 90% de la facture couverte",
+      "bullet4": "Système intelligent qui alerte sur les clients à risque",
+      "bullet5": "Suivi des garanties, remboursements et risques en temps réel",
+      "bullet6": "Simple, rapide, sans paperasse"
+    }
+    },
+    "mobile": {
+      "badge": "Multi-plateforme",
+      "title": "Gérez votre entreprise où que vous soyez",
+      "subtitle": "Accédez à votre tableau de bord depuis votre ordinateur ou en déplacement avec notre application mobile",
+      "comingSoon": "Bientôt disponible",
+      "tags": {
+        "free": "Gratuit",
+        "secure": "Sécurisé",
+        "fast": "Rapide"
+      }
+    },
+    "stats": {
+      "badge": "Nos résultats",
+      "title": "HAVITAM en chiffres",
+      "subtitle": "Découvrez l'impact de notre plateforme sur le secteur du bâtiment",
+      "artisans": "500+ artisans",
+      "quotes": "10,000+ devis créés",
+      "rating": "4.9 Stars"
+    },
+    "craftsmen": {
+      "badge": "Nos clients",
+      "title": "Profils métiers",
+      "subtitle": "HAVITAM s'adapte à tous les métiers du bâtiment",
+      "plumber": {
+        "title": "Plombier",
+        "description": "Installation, dépannage & maintenance sanitaire",
+        "benefit": "+35% de rentabilité"
+      },
+      "mason": {
+        "title": "Maçon",
+        "description": "Construction, rénovation, fondations",
+        "benefit": "+40% d'efficacité"
+      },
+      "cleaner": {
+        "title": "Nettoyeur professionnel",
+        "description": "Entretien de chantiers, nettoyage fin de travaux",
+        "benefit": "+50% de clients satisfaits"
+      },
+      "energy": {
+        "title": "Installateur en énergies",
+        "description": "Énergies renouvelables, panneaux photovoltaïques",
+        "benefit": "+45% de CA"
+      },
+      "painter": {
+        "title": "Peintre décorateur",
+        "description": "Intérieur, extérieur, finition, décoration",
+        "benefit": "+50% de visibilité client"
+      },
+      "carpenter": {
+        "title": "Menuisier",
+        "description": "Création sur mesure, agencement & mobilier",
+        "benefit": "+40% de productivité"
+      },
+      "electrician": {
+        "title": "Électricien",
+        "description": "Installation résidentielle & commerciale",
+        "benefit": "+45% d'optimisation du temps"
+      },
+      "others": {
+        "title": "Autres métiers",
+        "description": "Sélectionnez cette option si votre activité ne figure pas ci-dessus",
+        "benefit": "Havitam s'adapte à toutes les spécialités"
       }
     },
     "testimonials": {
-      "title": "Ils nous font confiance",
-      "subtitle": "Découvrez ce que disent nos utilisateurs"
+      "badge": "Témoignages",
+      "title": "Ce que disent nos clients",
+      "subtitle": "Découvrez pourquoi les artisans font confiance à HAVITAM",
+      "testimonial1": {
+        "quote": "HAVITAM a révolutionné ma façon de travailler. Je gagne un temps fou sur l'administratif et je peux me concentrer sur mes chantiers.",
+        "name": "Jean Dupont",
+        "profession": "Électricien"
+      },
+      "testimonial2": {
+        "quote": "Interface intuitive et support réactif. Je recommande HAVITAM à tous mes collègues artisans.",
+        "name": "Marie Laurent",
+        "profession": "Plombière"
+      },
+      "testimonial3": {
+        "quote": "Depuis que j'utilise HAVITAM, ma facturation est plus rapide et mes clients sont plus satisfaits.",
+        "name": "Pierre Martin",
+        "profession": "Peintre"
+      },
+      "testimonial4": {
+        "quote": "La gestion des devis est maintenant un jeu d'enfant. HAVITAM m'a fait gagner des heures chaque semaine.",
+        "name": "Sophie Leroy",
+        "profession": "Carreleuse"
+      },
+      "testimonial5": {
+        "quote": "Support exceptionnel et fonctionnalités parfaitement adaptées aux besoins des artisans.",
+        "name": "Antoine Dubois",
+        "profession": "Menuisier"
+      },
+      "testimonial6": {
+        "quote": "HAVITAM m'a permis de développer mon activité de 40% en un an grâce à une meilleure organisation.",
+        "name": "Claire Moreau",
+        "profession": "Électricienne"
+      }
     },
     "cta": {
-      "title": "Prêt à transformer votre activité ?",
-      "description": "Rejoignez des milliers d'artisans qui font confiance à HAVITAM pour développer leur activité",
+      "title": "Prêt à booster votre activité ?",
+      "subtitle": "Rejoignez 500+ artisans qui ont automatisé leur gestion et augmenté leur rentabilité.",
+      "trust": {
+        "freeTrial": "Essai gratuit 14 jours",
+        "languages": "FR, NL, EN",
+        "setup": "Configuration en 5 minutes"
+      },
+      "metrics": {
+        "revenue": "CA moyen",
+        "adminTime": "Temps admin",
+        "satisfaction": "Satisfaction"
+      },
+      "primaryButton": "Commencer l'essai gratuit",
+      "secondaryButton": "Parler à un expert"
+    },
+    "faq": {
+      "badge": "FAQ",
+      "title": "Questions fréquentes",
+      "subtitle": "Tout ce que vous devez savoir sur HAVITAM",
+      "pricing": {
+        "question": "Combien coûte HAVITAM ?",
+        "intro": "HAVITAM propose plusieurs formules adaptées à vos besoins :",
+        "starter": {
+          "title": "Starter (19€/mois)",
+          "description": "Fonctionnalités essentielles pour débuter"
+        },
+        "pro": {
+          "title": "Pro (39€/mois)",
+          "description": "Fonctionnalités avancées + support prioritaire"
+        },
+        "business": {
+          "title": "Business (59€/mois)",
+          "description": "Multi-utilisateurs + fonctionnalités avancées"
+        },
+        "trial": "Essai gratuit de 14 jours",
+        "trialNote": "sans engagement sur toutes nos formules !"
+      },
+      "setup": {
+        "question": "Combien de temps faut-il pour configurer HAVITAM ?",
+        "intro": "La configuration de HAVITAM est très simple et rapide :",
+        "accountCreation": "Création du compte",
+        "basicConfig": "Configuration de base",
+        "firstQuote": "Premier devis créé",
+        "support": "Notre équipe vous accompagne gratuitement pour une prise en main optimale !"
+      },
+      "security": {
+        "question": "Mes données sont-elles sécurisées ?",
+        "intro": "La sécurité de vos données est notre priorité absolue :",
+        "encryptedData": "Données cryptées en transit",
+        "compliance": "Respect de la réglementation",
+        "servers": "Serveurs en France",
+        "conclusion": "Vos données sont protégées par les plus hauts standards de sécurité du marché."
+      },
+      "mobile": {
+        "question": "L'application mobile est-elle disponible ?",
+        "intro": "Notre application mobile arrive bientôt ! Elle sera disponible sur iOS et Android.",
+        "comingSoon": "Bientôt disponible",
+        "description": "Nous travaillons actuellement sur l'application mobile pour vous offrir une expérience optimale sur mobile. Soyez notifié dès sa sortie !",
+        "browserAccess": "En attendant, vous pouvez accéder à HAVITAM depuis votre navigateur mobile."
+      },
+      "support": {
+        "question": "Quel support client proposez-vous ?",
+        "intro": "Notre équipe support est disponible pour vous accompagner :",
+        "phone": {
+          "title": "Support téléphonique",
+          "hours": "Lun-Ven 9h-18h (gratuit)"
+        },
+        "email": {
+          "title": "Email support",
+          "response": "Réponse sous 24h"
+        },
+        "conclusion": "Notre équipe d'experts est là pour vous aider à tirer le meilleur parti de HAVITAM !"
+      },
+      "leads": {
+        "question": "Puis-je recevoir des leads qualifiés automatiquement ?",
+        "answer": "Oui, si vous activez la fonctionnalité \"recevoir des demandes\", vous recevrez des projets clients proches de chez vous.",
+        "geolocated": {
+          "title": "Leads géolocalisés",
+          "description": "Recevez automatiquement les demandes de projets dans votre zone géographique selon vos spécialités."
+        },
+        "conclusion": "Répondez avec un devis en 1 clic, ou passez au suivant selon vos disponibilités."
+      },
+      "contact": {
+        "title": "Vous avez d'autres questions ?",
+        "subtitle": "Notre équipe d'experts est là pour vous répondre et vous accompagner dans votre transition numérique",
+        "supportButton": "Contacter le support",
+        "callButton": "Appeler maintenant"
+      }
+    }
+  },
+  "about": {
+    "hero": {
+      "badge": "À propos de nous • Simplifier le bâtiment",
+      "title": {
+        "prefix": "Havitam, votre ",
+        "highlight": "partenaire digital",
+        "suffix": " dans le bâtiment"
+      },
+      "subtitle": "Des outils simples, rapides et puissants pour automatiser vos devis, factures et paiements – tout en vous concentrant sur votre métier.",
+      "benefits": {
+        "trust": "500+ artisans nous font confiance",
+        "support": "Support en FR / NL / EN"
+      },
+      "floating": {
+        "rapid": "Rapide",
+        "qualified": "Qualifié"
+      }
+    },
+    "story": {
+      "badge": "Notre histoire",
+      "title": "Notre histoire",
+      "subtitle": "Découvrez comment HAVITAM est né d'une vision simple"
+    },
+    "values": {
+      "badge": "Nos valeurs",
+      "title": "Nos valeurs",
+      "subtitle": "Les principes qui guident nos actions et notre engagement envers la communauté des artisans",
+      "simplicity": {
+        "title": "Simplicité",
+        "description": "Nous créons des outils simples et intuitifs pour que vous puissiez vous concentrer sur votre métier sans complexité inutile."
+      },
+      "automation": {
+        "title": "Automatisation",
+        "description": "Nous automatisons les tâches répétitives pour vous faire gagner du temps et augmenter votre productivité."
+      },
+      "support": {
+        "title": "Accompagnement",
+        "description": "Nous vous accompagnons à chaque étape avec un support personnalisé et des solutions adaptées à vos besoins."
+      },
+      "mission": {
+        "title": "Notre mission",
+        "description": "Notre mission est de devenir la vitamine digitale du bâtiment, en facilitant la gestion quotidienne des artisans."
+      }
+    },
+    "founder": {
+      "badge": "Notre fondateur",
+      "title": "Notre Fondateur",
+      "subtitle": "Découvrez la vision qui a donné naissance à HAVITAM",
+      "name": "Haitam A.",
+      "role": "Fondateur & CEO"
+    },
+    "cta": {
+      "title": "Rejoignez la révolution du bâtiment",
+      "subtitle": "Découvrez comment HAVITAM peut transformer votre activité et vous permettre de vous concentrer sur ce que vous faites de mieux.",
+      "trust": {
+        "trial": "14 jours d'essai gratuit",
+        "noCommitment": "Sans engagement",
+        "setup": "Configuration en 5 minutes",
+        "support": "Support en FR / NL / EN"
+      },
+      "primaryButton": "Commencer l'essai gratuit",
+      "secondaryButton": "Parler à un expert"
+    }
+  },
+  "contact": {
+    "hero": {
+      "title": "Contactez-nous",
+      "subtitle": "Notre équipe est là pour vous aider",
+      "description": "Que vous soyez un artisan qui souhaite découvrir Havitam ou un client ayant besoin d'aide, nous sommes là pour vous accompagner."
+    },
+    "info": {
+      "email": {
+        "title": "Email",
+        "address": "support@havitam.com",
+        "response": "Réponse sous 24h"
+      },
+      "phone": {
+        "title": "Téléphone",
+        "number": "028846333",
+        "hours": "Lun-Ven, 9h-18h"
+      },
+      "address": {
+        "title": "Adresse",
+        "location": "Bruxelles, Belgique",
+        "type": "Siège social"
+      }
+    },
+    "form": {
+      "title": "Envoyez-nous un message",
+      "firstName": "Nom",
+      "lastName": "Prénom",
+      "email": "Email",
+      "phone": "Téléphone",
+      "subject": "Sujet",
+      "message": "Message",
+      "placeholders": {
+        "firstName": "Votre nom",
+        "lastName": "Votre prénom",
+        "email": "Votre email",
+        "phone": "Votre téléphone",
+        "message": "Votre message"
+      },
+      "subjects": {
+        "demo": "Demande de démonstration",
+        "question": "Question sur le produit",
+        "support": "Assistance technique",
+        "partnership": "Proposition de partenariat",
+        "other": "Autre"
+      },
+      "success": {
+        "title": "Message envoyé !",
+        "description": "Nous vous répondrons dans les plus brefs délais.",
+        "button": "Envoyer un autre message"
+      }
+    }
+  },
+  "pricing": {
+    "hero": {
+      "badge": "Tarifs",
+      "title": "Des tarifs simples et transparents",
+      "subtitle": "Choisissez le plan qui correspond à vos besoins. Pas de frais cachés, pas de surprise."
+    },
+    "toggle": {
+      "monthly": "Mensuel",
+      "yearly": "Annuel",
+      "savings": "Économisez 20%"
+    },
+    "plans": {
+      "starter": {
+        "name": "Starter",
+        "price": "19€",
+        "period": "/mois",
+        "description": "Parfait pour commencer",
+        "features": [
+          "Jusqu'à 50 devis/mois",
+          "Facturation simple",
+          "Support email",
+          "Application mobile"
+        ]
+      },
+      "pro": {
+        "name": "Pro",
+        "price": "39€",
+        "period": "/mois",
+        "description": "Pour les artisans en croissance",
+        "features": [
+          "Devis illimités",
+          "Facturation avancée",
+          "Support prioritaire",
+          "Rapports détaillés",
+          "Intégrations"
+        ]
+      },
+      "business": {
+        "name": "Business",
+        "price": "59€",
+        "period": "/mois",
+        "description": "Pour les équipes",
+        "features": [
+          "Tout du plan Pro",
+          "Gestion d'équipe",
+          "Support dédié",
+          "API personnalisée",
+          "Formation sur mesure"
+        ]
+      }
+    },
+    "cta": {
+      "title": "Prêt à commencer ?",
+      "subtitle": "Essayez HAVITAM gratuitement pendant 14 jours",
       "button": "Commencer l'essai gratuit"
+    }
+  },
+  "findArtisan": {
+    "hero": {
+      "badge": "Trouver un artisan",
+      "title": "Trouvez l'artisan qu'il vous faut",
+      "subtitle": "Connectez-vous avec des professionnels qualifiés près de chez vous"
+    },
+    "form": {
+      "title": "Décrivez votre projet",
+      "description": "Remplissez ce formulaire pour recevoir des devis personnalisés",
+      "projectType": "Type de projet",
+      "location": "Localisation",
+      "budget": "Budget estimé",
+      "timeline": "Délai souhaité",
+      "description": "Description du projet",
+      "contact": "Informations de contact",
+      "submit": "Envoyer ma demande"
+    }
+  },
+  "blog": {
+    "hero": {
+      "badge": "Blog",
+      "title": "Actualités et conseils",
+      "subtitle": "Restez informé des dernières nouvelles et découvrez des conseils pour optimiser votre activité"
     }
   },
   "login": {
@@ -84,5 +559,41 @@
     "required": "Ce champ est requis",
     "invalidEmail": "Email invalide",
     "tooShort": "Trop court"
+  },
+  "meta": {
+    "title": "HAVITAM - Votre vitamine digitale professionnelle",
+    "description": "HAVITAM simplifie la gestion administrative des artisans du bâtiment. Créez des devis, envoyez des factures et développez votre clientèle.",
+    "keywords": "artisan, bâtiment, devis, facture, gestion, électricien, plombier, peintre",
+    "ogTitle": "HAVITAM - Votre vitamine digitale professionnelle",
+    "ogDescription": "Simplifiez votre gestion administrative et développez votre clientèle",
+    "schemaDescription": "La plateforme tout-en-un pour artisans du bâtiment. Créez des devis, envoyez des factures, suivez les paiements et recevez des prospects.",
+    "phone": "+33-1-23-45-67-89"
+  },
+  "footer": {
+    "description": "La solution tout-en-un pour les artisans qui souhaitent simplifier leur gestion administrative et développer leur clientèle.",
+    "product": {
+      "title": "Produit",
+      "pricing": "Tarifs",
+      "features": "Fonctionnalités",
+      "findArtisan": "Trouver un artisan"
+    },
+    "company": {
+      "title": "Entreprise",
+      "about": "À propos",
+      "contact": "Contact",
+      "blog": "Blog"
+    },
+    "legal": {
+      "title": "Légal",
+      "terms": "Conditions d'utilisation",
+      "privacy": "Politique de confidentialité",
+      "cookies": "Cookies"
+    },
+    "copyright": "Tous droits réservés.",
+    "links": {
+      "sitemap": "Plan du site",
+      "support": "Support",
+      "status": "Statut"
+    }
   }
 } 

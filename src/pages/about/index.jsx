@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
+import { useTranslation } from 'react-i18next';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 const AboutPage = () => {
+  const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState({});
   
   // Refs for scroll animations
@@ -93,18 +95,18 @@ const AboutPage = () => {
                   {/* Badge */}
                   <div className="inline-flex items-center bg-[#0036ab]/10 text-[#0036ab] px-4 py-2 rounded-full text-xs sm:text-sm font-medium mb-6 animate-fadeIn">
                     <Icon name="Building" size={16} className="mr-2" />
-                    À propos de nous • Simplifier le bâtiment
+                    {t('about.hero.badge')}
                   </div>
                   
-                  <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                    Havitam, votre{' '}
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
+                    {t('about.hero.title.prefix')}
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0036ab] to-[#12bf23]">
-                      partenaire digital
-                    </span>{' '}
-                    dans le bâtiment
+                      {t('about.hero.title.highlight')}
+                    </span>
+                    {t('about.hero.title.suffix')}
                   </h1>
                   <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-8 leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                    Des outils simples, rapides et puissants pour automatiser vos devis, factures et paiements – tout en vous concentrant sur votre métier.
+                    {t('about.hero.subtitle')}
                   </p>
                   
                   {/* Key Benefits */}
@@ -188,31 +190,79 @@ const AboutPage = () => {
               </p>
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* First Row: 2 paragraphs on left, image on right */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
               <div className={`transition-all duration-1000 ${isVisible.story ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-                                 <div className="space-y-6 text-gray-600 text-lg leading-relaxed">
-                   <p>
-                     L'idée de Havitam est née d'un constat simple : les artisans perdent énormément de temps sur les tâches administratives alors qu'ils devraient pouvoir se concentrer sur leur savoir-faire.
-                   </p>
-                   <p>
-                     Après avoir discuté avec de nombreux indépendants, nous avons réalisé qu'il manquait une solution simple, moderne et intuitive, pensée spécialement pour eux.
-                   </p>
-                   <p>
-                     Le nom HAVITAM vient de HA (les initiales du fondateur) et vitam, en référence à la "vitamine" qui donne un coup de boost à l'activité des artisans.
-                   </p>
-                   <p>
-                     Notre mission est de devenir la vitamine digitale du bâtiment, en facilitant la gestion quotidienne, en réduisant le temps administratif et en augmentant la rentabilité des professionnels du secteur.
-                   </p>
-                 </div>
+                <div className="space-y-8 text-gray-700 leading-relaxed">
+                  <div className="relative pl-8 border-l-4 border-[#0036ab] bg-gradient-to-r from-blue-50 to-transparent p-6 rounded-r-xl">
+                    <p className="text-lg">
+                      L'idée de Havitam est née d'un constat simple : les artisans perdent énormément de temps sur les tâches administratives alors qu'ils devraient pouvoir se concentrer sur leur savoir-faire.
+                    </p>
+                  </div>
+                  
+                  <div className="relative pl-8 border-l-4 border-[#12bf23] bg-gradient-to-r from-green-50 to-transparent p-6 rounded-r-xl">
+                    <p className="text-lg">
+                      Après avoir discuté avec de nombreux indépendants, nous avons réalisé qu'il manquait une solution simple, moderne et intuitive, pensée spécialement pour eux.
+                    </p>
+                  </div>
+                </div>
               </div>
               <div className={`transition-all duration-1000 delay-300 ${isVisible.story ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-                <div className="relative">
-                  <div className="bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 border border-gray-200 overflow-hidden">
-                    <img 
-                      src="/assets/images/our story.png" 
-                      alt="L'histoire de Havitam - Transformation digitale du bâtiment" 
-                      className="w-full h-auto object-cover rounded-xl"
-                    />
+                <div className="relative group">
+                  {/* Decorative background elements */}
+                  <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-br from-[#0036ab] to-[#12bf23] rounded-full opacity-10 animate-pulse"></div>
+                  <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-gradient-to-br from-[#12bf23] to-[#0036ab] rounded-full opacity-10 animate-pulse delay-1000"></div>
+                  
+                  {/* Main image container with tilt effect */}
+                  <div className="bg-white rounded-2xl p-6 shadow-2xl hover:shadow-3xl transition-all duration-500 border border-gray-200 overflow-hidden transform hover:rotate-2 hover:scale-105 group-hover:rotate-1">
+                    <div className="relative overflow-hidden rounded-xl">
+                      <img 
+                        src="/assets/images/our story 2.png" 
+                        alt="L'histoire de Havitam - Transformation digitale du bâtiment" 
+                        className="w-full h-64 sm:h-80 md:h-96 object-cover object-top rounded-xl transition-transform duration-700 group-hover:scale-110"
+                      />
+                      {/* Gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Second Row: 2 paragraphs on right, image on left */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div className={`transition-all duration-1000 delay-300 ${isVisible.story ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'} order-2 lg:order-1`}>
+                <div className="relative group">
+                  {/* Decorative background elements */}
+                  <div className="absolute -top-4 -left-4 w-20 h-20 bg-gradient-to-br from-[#12bf23] to-[#0036ab] rounded-full opacity-10 animate-pulse"></div>
+                  <div className="absolute -bottom-4 -right-4 w-12 h-12 bg-gradient-to-br from-[#0036ab] to-[#12bf23] rounded-full opacity-10 animate-pulse delay-1000"></div>
+                  
+                  {/* Main image container with opposite tilt effect */}
+                  <div className="bg-white rounded-2xl p-6 shadow-2xl hover:shadow-3xl transition-all duration-500 border border-gray-200 overflow-hidden transform hover:-rotate-2 hover:scale-105 group-hover:-rotate-1">
+                    <div className="relative overflow-hidden rounded-xl">
+                      <img 
+                        src="/assets/images/our story.png" 
+                        alt="L'histoire de Havitam - Transformation digitale du bâtiment" 
+                        className="w-full h-64 sm:h-80 md:h-96 object-cover rounded-xl transition-transform duration-700 group-hover:scale-110"
+                      />
+                      {/* Gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className={`transition-all duration-1000 ${isVisible.story ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'} order-1 lg:order-2`}>
+                <div className="space-y-8 text-gray-700 leading-relaxed">
+                  <div className="relative pl-8 border-l-4 border-[#12bf23] bg-gradient-to-r from-green-50 to-transparent p-6 rounded-r-xl">
+                    <p className="text-lg">
+                      Le nom <span className="font-bold text-[#0036ab]">HAVITAM</span> vient de <span className="font-semibold">HA</span> (les initiales du fondateur) et <span className="font-semibold">vitam</span>, en référence à la "vitamine" qui donne un coup de boost à l'activité des artisans.
+                    </p>
+                  </div>
+                  
+                  <div className="relative pl-8 border-l-4 border-[#0036ab] bg-gradient-to-r from-blue-50 to-transparent p-6 rounded-r-xl shadow-sm">
+                    <p className="text-lg">
+                      Notre mission est de devenir la <span className="font-semibold text-[#12bf23]">vitamine digitale du bâtiment</span>, en facilitant la gestion quotidienne, en réduisant le temps administratif et en augmentant la rentabilité des professionnels du secteur.
+                    </p>
                   </div>
                 </div>
               </div>

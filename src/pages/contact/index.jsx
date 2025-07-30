@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -9,6 +10,7 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 
 const ContactPage = () => {
+  const { t } = useTranslation();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -120,17 +122,14 @@ const ContactPage = () => {
               {/* Badge */}
               <div className="inline-flex items-center bg-[#0036ab]/10 text-[#0036ab] px-4 py-2 rounded-full text-sm font-medium mb-6 animate-fadeIn">
                 <Icon name="MessageCircle" size={16} className="mr-2" />
-                Contactez-nous
+                {t('contact.hero.title')}
               </div>
               
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-                Parlons de votre{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0036ab] to-[#12bf23]">
-                  projet
-                </span>
+                {t('contact.hero.subtitle')}
               </h1>
               <p className="text-lg md:text-xl text-gray-600 mb-8 leading-relaxed max-w-3xl mx-auto">
-                Notre équipe d'experts est là pour vous accompagner dans votre transformation digitale
+                {t('contact.hero.description')}
               </p>
               
               {/* Key Benefits */}
@@ -181,9 +180,9 @@ const ContactPage = () => {
                         <Icon name="Mail" size={20} className="text-gray-600" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-foreground text-lg mb-1">Email</h3>
-                        <p className="text-muted-foreground mb-1">support@havitam.com</p>
-                        <p className="text-sm text-muted-foreground/70">Réponse sous 24h</p>
+                        <h3 className="font-semibold text-foreground text-lg mb-1">{t('contact.info.email.title')}</h3>
+                        <p className="text-muted-foreground mb-1">{t('contact.info.email.address')}</p>
+                        <p className="text-sm text-muted-foreground/70">{t('contact.info.email.response')}</p>
                       </div>
                     </div>
                   </div>
@@ -195,9 +194,9 @@ const ContactPage = () => {
                         <Icon name="Phone" size={20} className="text-gray-600" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-foreground text-lg mb-1">Téléphone</h3>
-                        <p className="text-muted-foreground mb-1">028846333</p>
-                        <p className="text-sm text-muted-foreground/70">Lun-Ven, 9h-18h</p>
+                        <h3 className="font-semibold text-foreground text-lg mb-1">{t('contact.info.phone.title')}</h3>
+                        <p className="text-muted-foreground mb-1">{t('contact.info.phone.number')}</p>
+                        <p className="text-sm text-muted-foreground/70">{t('contact.info.phone.hours')}</p>
                       </div>
                     </div>
                   </div>
@@ -209,9 +208,9 @@ const ContactPage = () => {
                         <Icon name="MapPin" size={20} className="text-gray-600" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-foreground text-lg mb-1">Adresse</h3>
-                        <p className="text-muted-foreground mb-1">Bruxelles, Belgique</p>
-                        <p className="text-sm text-muted-foreground/70">Siège social</p>
+                        <h3 className="font-semibold text-foreground text-lg mb-1">{t('contact.info.address.title')}</h3>
+                        <p className="text-muted-foreground mb-1">{t('contact.info.address.location')}</p>
+                        <p className="text-sm text-muted-foreground/70">{t('contact.info.address.type')}</p>
                       </div>
                     </div>
                   </div>
