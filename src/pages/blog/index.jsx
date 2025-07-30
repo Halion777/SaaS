@@ -3,18 +3,16 @@ import { Helmet } from 'react-helmet';
 import Icon from '../../components/AppIcon';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
-import { useTranslation } from '../../context/TranslationContext';
 import { Link } from 'react-router-dom';
 
 const BlogPage = () => {
-  const { t, language } = useTranslation();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Helmet>
-        <title>{t('pageTitles.blog')}</title>
-        <meta name="description" content={t('blog.metaDescription') || "Découvrez nos articles sur l'actualité et les bonnes pratiques pour les artisans."} />
-        <html lang={language} />
+        <title>Blog - HAVITAM</title>
+        <meta name="description" content="Découvrez nos articles sur l'actualité et les bonnes pratiques pour les artisans." />
+        <html lang="fr" />
       </Helmet>
       
       <Header />
@@ -44,7 +42,7 @@ const BlogPage = () => {
                 </span>
               </h1>
               <p className="text-lg md:text-xl text-gray-600 mb-8 leading-relaxed max-w-3xl mx-auto">
-                {t('blog.comingSoon.description') || "Notre blog est en cours de création. Vous y trouverez bientôt des articles sur les meilleures pratiques et conseils pour les artisans."}
+                Notre blog est en cours de création. Vous y trouverez bientôt des articles sur les meilleures pratiques et conseils pour les artisans.
               </p>
               
               {/* Key Benefits */}
@@ -66,7 +64,7 @@ const BlogPage = () => {
               <div className="flex justify-center">
                 <Link to="/" className="inline-flex items-center bg-[#0036ab] hover:bg-[#0036ab]/90 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
                   <Icon name="ArrowLeft" size={20} className="mr-2" />
-                  {t('blog.comingSoon.backToHome') || "Retour à l'accueil"}
+                  Retour à l'accueil
                 </Link>
               </div>
             </div>

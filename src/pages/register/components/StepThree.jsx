@@ -1,45 +1,43 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
-import { useTranslation } from '../../../context/TranslationContext';
 
 const StepThree = ({ formData, updateFormData }) => {
-  const { t } = useTranslation();
   
   const plans = [
     {
       id: 'starter',
-      name: t('pricing.plans.starter.name') || 'Starter',
+      name: 'Starter',
       price: '29.99',
-      period: t('pricing.billing.period') || 'mois',
-      description: t('pricing.plans.starter.description') || 'Parfait pour débuter',
+      period: 'mois',
+      description: 'Parfait pour débuter',
       features: [
-        t('pricing.plans.starter.features.quotes') || '15 devis/factures par mois',
-        t('pricing.plans.starter.features.templates') || 'Templates de base',
-        t('pricing.plans.starter.features.invoices') || 'Suivi des paiements',
-        t('pricing.plans.starter.features.support') || 'Support email',
-        t('pricing.plans.starter.features.clients') || 'Gestion clients basique'
+        '15 devis/factures par mois',
+        'Templates de base',
+        'Suivi des paiements',
+        'Support email',
+        'Gestion clients basique'
       ],
       limitations: [
-        t('pricing.plans.starter.limitations.leads') || 'IA limitée',
-        t('pricing.plans.starter.limitations.reminders') || 'Pas de relances automatiques'
+        'IA limitée',
+        'Pas de relances automatiques'
       ],
       popular: false
     },
     {
       id: 'pro',
-      name: t('pricing.plans.pro.name') || 'Pro',
+      name: 'Pro',
       price: '49.99',
-      period: t('pricing.billing.period') || 'mois',
-      description: t('pricing.plans.pro.description') || 'Solution complète avec IA',
+      period: 'mois',
+      description: 'Solution complète avec IA',
       features: [
-        t('pricing.plans.pro.features.quotes') || 'Devis/factures illimités',
-        t('register.step3.proFeatures.ai') || 'IA complète et optimisations',
-        t('pricing.plans.pro.features.reminders') || 'Relances automatiques',
-        t('pricing.plans.pro.features.analytics') || 'Analytics avancés',
-        t('pricing.plans.pro.features.templates') || 'Templates premium',
-        t('pricing.plans.pro.features.support') || 'Support prioritaire',
-        t('register.step3.proFeatures.predictions') || 'Prédictions de signature',
-        t('register.step3.proFeatures.optimization') || 'Optimisation des prix'
+        'Devis/factures illimités',
+        'IA complète et optimisations',
+        'Relances automatiques',
+        'Analytics avancés',
+        'Templates premium',
+        'Support prioritaire',
+        'Prédictions de signature',
+        'Optimisation des prix'
       ],
       limitations: [],
       popular: true
@@ -50,10 +48,10 @@ const StepThree = ({ formData, updateFormData }) => {
     <div className="space-y-6">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-foreground mb-2">
-          {t('register.step3.title') || 'Choisissez votre plan'}
+          Choisissez votre plan
         </h2>
         <p className="text-muted-foreground">
-          {t('register.step3.subtitle') || 'Commencez avec 14 jours gratuits, sans engagement'}
+          Commencez avec 14 jours gratuits, sans engagement
         </p>
       </div>
 
@@ -70,7 +68,7 @@ const StepThree = ({ formData, updateFormData }) => {
             {plan.popular && (
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                 <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
-                  {t('pricing.popular') || 'Recommandé'}
+                  Recommandé
                 </span>
               </div>
             )}
@@ -120,10 +118,10 @@ const StepThree = ({ formData, updateFormData }) => {
           <Icon name="Gift" size={20} color="var(--color-accent)" />
           <div>
             <h3 className="font-semibold text-foreground mb-1">
-              {t('register.step3.freeTrial') || 'Essai gratuit de 14 jours'}
+              Essai gratuit de 14 jours
             </h3>
             <p className="text-sm text-muted-foreground">
-              {t('register.step3.freeTrialDescription') || 'Testez toutes les fonctionnalités sans engagement. Aucune carte bancaire requise.'}
+              Testez toutes les fonctionnalités sans engagement. Aucune carte bancaire requise.
             </p>
           </div>
         </div>
@@ -137,11 +135,11 @@ const StepThree = ({ formData, updateFormData }) => {
           </div>
           <div className="flex items-center space-x-1">
             <Icon name="Lock" size={16} />
-            <span>{t('login.security.secureData') || 'Sécurisé'}</span>
+            <span>Sécurisé</span>
           </div>
           <div className="flex items-center space-x-1">
             <Icon name="Award" size={16} />
-            <span>{t('register.step3.certified') || 'Certifié'}</span>
+            <span>Certifié</span>
           </div>
         </div>
       </div>

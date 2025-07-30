@@ -1,9 +1,7 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
-import { useTranslation } from '../../../context/TranslationContext';
 
 const LoginHeader = () => {
-  const { t } = useTranslation();
   
   return (
     <div className="text-center mb-8">
@@ -21,10 +19,10 @@ const LoginHeader = () => {
       {/* Welcome Text */}
       <div className="space-y-2">
         <h2 className="text-2xl font-semibold text-foreground">
-          {t('login.welcome') || 'Welcome back!'}
+          Bon retour !
         </h2>
         <p className="text-muted-foreground">
-          {t('login.welcomeSubtitle') || 'Connect to your craftsman space to manage your quotes and invoices'}
+          Connectez-vous à votre espace artisan pour gérer vos devis et factures
         </p>
       </div>
     </div>

@@ -10,10 +10,8 @@ import SecurityBadges from './components/SecurityBadges';
 import SocialProof from './components/SocialProof';
 import TrialCallToAction from './components/TrialCallToAction';
 import Footer from '../../components/Footer';
-import { useTranslation } from '../../context/TranslationContext';
 
 const LoginPage = () => {
-  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   
@@ -43,16 +41,16 @@ const LoginPage = () => {
         <div className="absolute top-4 left-4 z-20">
           <Link to="/" className="flex items-center space-x-2 text-foreground hover:text-primary transition-colors">
             <Icon name="Home" className="w-5 h-5" />
-            <span className="text-sm font-medium">{t('nav.home')}</span>
+            <span className="text-sm font-medium">Accueil</span>
           </Link>
         </div>
         
         {/* Register Link */}
         <div className="absolute top-4 right-4 z-20">
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-muted-foreground">{t('login.noAccount') || 'Pas encore de compte ?'}</span>
+            <span className="text-sm text-muted-foreground">Pas encore de compte ?</span>
             <Link to="/register" className="text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center space-x-1">
-              <span>{t('nav.register') || 'S\'inscrire'}</span>
+              <span>S'inscrire</span>
               <Icon name="UserPlus" size={16} />
             </Link>
           </div>
@@ -64,31 +62,31 @@ const LoginPage = () => {
           <div className="bg-white rounded-lg shadow-professional p-8">
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                {t('login.title')}
+                Connexion
               </h2>
               <p className="text-gray-600">
-                {t('login.subtitle')}
+                Connectez-vous à votre compte HAVITAM
               </p>
             </div>
             
             <form onSubmit={handleSubmit} className="space-y-6">
               <Input 
-                label={t('login.email')}
+                label="Adresse email"
                 type="email"
-                placeholder={t('login.emailPlaceholder')}
+                placeholder="votre@email.com"
                 required
               />
               
               <div>
                 <Input 
-                  label={t('login.password')}
+                  label="Mot de passe"
                   type="password"
-                  placeholder={t('login.passwordPlaceholder')}
+                  placeholder="Votre mot de passe"
                   required
                 />
                 <div className="flex justify-end">
                   <Link to="/forgot-password" className="text-sm text-primary hover:underline mt-2">
-                    {t('login.forgotPassword')}
+                    Mot de passe oublié ?
                   </Link>
                 </div>
               </div>
@@ -96,7 +94,7 @@ const LoginPage = () => {
               <div className="flex items-center">
                 <Checkbox
                   id="remember"
-                  label={t('login.rememberMe')}
+                  label="Se souvenir de moi"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                 />
@@ -108,15 +106,15 @@ const LoginPage = () => {
                 variant="login"
                 loading={isLoading}
               >
-                {t('login.loginButton')}
+                Se connecter
               </Button>
             </form>
             
             <div className="mt-6 text-center">
               <p className="text-gray-600 text-sm">
-                {t('login.noAccount')}{' '}
+                Pas encore de compte ?{' '}
                 <Link to="/register" className="text-primary hover:underline">
-                  {t('login.register')}
+                  S'inscrire
                 </Link>
               </p>
             </div>

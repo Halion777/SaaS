@@ -1,33 +1,31 @@
 import React from 'react';
 import Select from '../../../components/ui/Select';
 import Icon from '../../../components/AppIcon';
-import { useTranslation } from '../../../context/TranslationContext';
 
 const StepTwo = ({ formData, updateFormData, errors }) => {
-  const { t } = useTranslation();
   
   const businessSizes = [
-    { value: 'solo', label: t('register.step2.businessSizes.solo') || 'Artisan seul' },
-    { value: 'small', label: t('register.step2.businessSizes.small') || '2-5 employés' },
-    { value: 'medium', label: t('register.step2.businessSizes.medium') || '6-20 employés' },
-    { value: 'large', label: t('register.step2.businessSizes.large') || '20+ employés' }
+    { value: 'solo', label: 'Artisan seul' },
+    { value: 'small', label: '2-5 employés' },
+    { value: 'medium', label: '6-20 employés' },
+    { value: 'large', label: '20+ employés' }
   ];
 
   return (
     <div className="space-y-6">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-foreground mb-2">
-          {t('register.step2.title') || 'Quelques informations supplémentaires'}
+          Quelques informations supplémentaires
         </h2>
         <p className="text-muted-foreground">
-          {t('register.step2.subtitle') || 'Personnalisez Havitam selon votre activité'}
+          Personnalisez Havitam selon votre activité
         </p>
       </div>
 
       <div className="space-y-4">
         <Select
-          label={t('register.step2.businessSizeLabel') || 'Taille de l\'entreprise'}
-          placeholder={t('register.step2.businessSizePlaceholder') || 'Nombre d\'employés'}
+          label="Taille de l'entreprise"
+          placeholder="Nombre d'employés"
           options={businessSizes}
           value={formData.businessSize}
           onChange={(e) => updateFormData('businessSize', e.target.value)}
@@ -44,10 +42,10 @@ const StepTwo = ({ formData, updateFormData, errors }) => {
             </div>
             <div>
               <h3 className="font-semibold text-foreground mb-1">
-                {t('register.step2.timeSavingTitle') || 'Gain de temps'}
+                Gain de temps
               </h3>
               <p className="text-sm text-muted-foreground">
-                {t('register.step2.timeSavingDescription') || 'Automatisez vos relances et optimisez vos devis en quelques clics.'}
+                Automatisez vos relances et optimisez vos devis en quelques clics.
               </p>
             </div>
           </div>
@@ -60,10 +58,10 @@ const StepTwo = ({ formData, updateFormData, errors }) => {
             </div>
             <div>
               <h3 className="font-semibold text-foreground mb-1">
-                {t('register.step2.moreSignaturesTitle') || 'Plus de signatures'}
+                Plus de signatures
               </h3>
               <p className="text-sm text-muted-foreground">
-                {t('register.step2.moreSignaturesDescription') || 'Notre IA analyse et améliore vos devis pour maximiser les conversions.'}
+                Notre IA analyse et améliore vos devis pour maximiser les conversions.
               </p>
             </div>
           </div>
@@ -78,10 +76,10 @@ const StepTwo = ({ formData, updateFormData, errors }) => {
             </div>
             <div>
               <h3 className="font-semibold text-foreground mb-1">
-                {t('register.step2.dataSecurityTitle') || 'Vos données sont sécurisées'}
+                Vos données sont sécurisées
               </h3>
               <p className="text-sm text-muted-foreground">
-                {t('register.step2.dataSecurityDescription') || 'Toutes vos informations sont cryptées et stockées en toute sécurité conformément au RGPD.'}
+                Toutes vos informations sont cryptées et stockées en toute sécurité conformément au RGPD.
               </p>
             </div>
           </div>

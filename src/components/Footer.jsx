@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Icon from './AppIcon';
-import { useTranslation } from '../context/TranslationContext';
-
 const Footer = () => {
-  const { t } = useTranslation();
   const currentYear = new Date().getFullYear();
   const [expandedSections, setExpandedSections] = useState({});
   
@@ -29,7 +26,7 @@ const Footer = () => {
               />
             </div>
             <p className="text-gray-300 mb-6 max-w-md text-sm lg:text-base leading-relaxed">
-              {t('footer.description') || 'La solution tout-en-un pour les artisans qui souhaitent simplifier leur gestion administrative et développer leur clientèle.'}
+              La solution tout-en-un pour les artisans qui souhaitent simplifier leur gestion administrative et développer leur clientèle.
             </p>
             <div className="flex space-x-4">
               <a href="https://facebook.com/havitam" aria-label="Facebook" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg">
@@ -53,28 +50,28 @@ const Footer = () => {
               className="lg:hidden w-full flex items-center justify-between text-left mb-4"
               onClick={() => toggleSection('product')}
             >
-              <h3 className="text-lg font-semibold text-white">{t('footer.product') || 'Produit'}</h3>
+              <h3 className="text-lg font-semibold text-white">Produit</h3>
               <Icon 
                 name={expandedSections.product ? "ChevronUp" : "ChevronDown"} 
                 size={20} 
                 className="text-gray-400" 
               />
             </button>
-            <h3 className="hidden lg:block text-lg font-semibold text-white mb-6">{t('footer.product') || 'Produit'}</h3>
+            <h3 className="hidden lg:block text-lg font-semibold text-white mb-6">Produit</h3>
             <ul className={`space-y-3 lg:space-y-4 ${expandedSections.product ? 'block' : 'hidden lg:block'}`}>
               <li>
                 <Link to="/pricing" className="text-gray-300 hover:text-white transition-colors text-sm lg:text-base">
-                  {t('nav.pricing')}
+                  Tarifs
                 </Link>
               </li>
               <li>
                 <Link to="/features" className="text-gray-300 hover:text-white transition-colors text-sm lg:text-base">
-                  {t('footer.features') || 'Fonctionnalités'}
+                  Fonctionnalités
                 </Link>
               </li>
               <li>
                 <Link to="/find-artisan" className="text-gray-300 hover:text-white transition-colors text-sm lg:text-base">
-                  {t('nav.findArtisan')}
+                  Trouver un artisan
                 </Link>
               </li>
             </ul>
@@ -86,28 +83,28 @@ const Footer = () => {
               className="lg:hidden w-full flex items-center justify-between text-left mb-4"
               onClick={() => toggleSection('company')}
             >
-              <h3 className="text-lg font-semibold text-white">{t('footer.company') || 'Entreprise'}</h3>
+              <h3 className="text-lg font-semibold text-white">Entreprise</h3>
               <Icon 
                 name={expandedSections.company ? "ChevronUp" : "ChevronDown"} 
                 size={20} 
                 className="text-gray-400" 
               />
             </button>
-            <h3 className="hidden lg:block text-lg font-semibold text-white mb-6">{t('footer.company') || 'Entreprise'}</h3>
+            <h3 className="hidden lg:block text-lg font-semibold text-white mb-6">Entreprise</h3>
             <ul className={`space-y-3 lg:space-y-4 ${expandedSections.company ? 'block' : 'hidden lg:block'}`}>
               <li>
                 <Link to="/about" className="text-gray-300 hover:text-white transition-colors text-sm lg:text-base">
-                  {t('nav.about')}
+                  À propos
                 </Link>
               </li>
               <li>
                 <Link to="/contact" className="text-gray-300 hover:text-white transition-colors text-sm lg:text-base">
-                  {t('nav.contact')}
+                  Contact
                 </Link>
               </li>
               <li>
                 <Link to="/blog" className="text-gray-300 hover:text-white transition-colors text-sm lg:text-base">
-                  {t('nav.blog')}
+                  Blog
                 </Link>
               </li>
             </ul>
@@ -119,28 +116,28 @@ const Footer = () => {
               className="lg:hidden w-full flex items-center justify-between text-left mb-4"
               onClick={() => toggleSection('legal')}
             >
-              <h3 className="text-lg font-semibold text-white">{t('footer.legal.title') || 'Légal'}</h3>
+              <h3 className="text-lg font-semibold text-white">Légal</h3>
               <Icon 
                 name={expandedSections.legal ? "ChevronUp" : "ChevronDown"} 
                 size={20} 
                 className="text-gray-400" 
               />
             </button>
-            <h3 className="hidden lg:block text-lg font-semibold text-white mb-6">{t('footer.legal.title') || 'Légal'}</h3>
+            <h3 className="hidden lg:block text-lg font-semibold text-white mb-6">Légal</h3>
             <ul className={`space-y-3 lg:space-y-4 ${expandedSections.legal ? 'block' : 'hidden lg:block'}`}>
               <li>
                 <Link to="/terms" className="text-gray-300 hover:text-white transition-colors text-sm lg:text-base">
-                  {t('footer.legal.terms') || 'Conditions d\'utilisation'}
+                  Conditions d'utilisation
                 </Link>
               </li>
               <li>
                 <Link to="/privacy" className="text-gray-300 hover:text-white transition-colors text-sm lg:text-base">
-                  {t('footer.legal.privacy') || 'Politique de confidentialité'}
+                  Politique de confidentialité
                 </Link>
               </li>
               <li>
                 <Link to="/cookies" className="text-gray-300 hover:text-white transition-colors text-sm lg:text-base">
-                  {t('footer.legal.cookies') || 'Cookies'}
+                  Cookies
                 </Link>
               </li>
             </ul>

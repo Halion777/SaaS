@@ -2,10 +2,8 @@ import React, { useState } from 'react';
 import Input from '../../../components/ui/Input';
 import Icon from '../../../components/AppIcon';
 import Select from '../../../components/ui/Select';
-import { useTranslation } from '../../../context/TranslationContext';
 
 const StepOne = ({ formData, updateFormData, errors }) => {
-  const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
 
@@ -32,67 +30,67 @@ const StepOne = ({ formData, updateFormData, errors }) => {
   };
 
   const getStrengthText = () => {
-    if (passwordStrength < 25) return t('register.step1.weak') || 'Faible';
-    if (passwordStrength < 50) return t('register.step1.medium') || 'Moyen';
-    if (passwordStrength < 75) return t('register.step1.good') || 'Bon';
-    return t('register.step1.excellent') || 'Excellent';
+    if (passwordStrength < 25) return 'Faible';
+    if (passwordStrength < 50) return 'Moyen';
+    if (passwordStrength < 75) return 'Bon';
+    return 'Excellent';
   };
   
   // Profession options with icons
   const professionOptions = [
     { 
       value: 'electrician', 
-      label: t('register.step1.professions.electrician') || 'Électricien',
+      label: 'Électricien',
       icon: <Icon name="Zap" size={16} />
     },
     { 
       value: 'plumber', 
-      label: t('register.step1.professions.plumber') || 'Plombier',
+      label: 'Plombier',
       icon: <Icon name="Wrench" size={16} />
     },
     { 
       value: 'painter', 
-      label: t('register.step1.professions.painter') || 'Peintre',
+      label: 'Peintre',
       icon: <Icon name="Brush" size={16} />
     },
     { 
       value: 'carpenter', 
-      label: t('register.step1.professions.carpenter') || 'Menuisier',
+      label: 'Menuisier',
       icon: <Icon name="Hammer" size={16} />
     },
     { 
       value: 'mason', 
-      label: t('register.step1.professions.mason') || 'Maçon',
+      label: 'Maçon',
       icon: <Icon name="Building" size={16} />
     },
     { 
       value: 'tiling', 
-      label: t('register.step1.professions.tiling') || 'Carreleur',
+      label: 'Carreleur',
       icon: <Icon name="Grid" size={16} />
     },
     { 
       value: 'roofing', 
-      label: t('register.step1.professions.roofing') || 'Couvreur',
+      label: 'Couvreur',
       icon: <Icon name="Home" size={16} />
     },
     { 
       value: 'heating', 
-      label: t('register.step1.professions.heating') || 'Chauffagiste',
+      label: 'Chauffagiste',
       icon: <Icon name="Thermometer" size={16} />
     },
     { 
       value: 'gardening', 
-      label: t('register.step1.professions.gardening') || 'Paysagiste',
+      label: 'Paysagiste',
       icon: <Icon name="Flower" size={16} />
     },
     { 
       value: 'locksmith', 
-      label: t('register.step1.professions.locksmith') || 'Serrurier',
+      label: 'Serrurier',
       icon: <Icon name="Lock" size={16} />
     },
     { 
       value: 'other', 
-      label: t('register.step1.professions.other') || 'Autre',
+      label: 'Autre',
       icon: <Icon name="Tool" size={16} />
     }
   ];
@@ -114,16 +112,16 @@ const StepOne = ({ formData, updateFormData, errors }) => {
     <div className="space-y-6">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-foreground mb-2">
-          {t('register.step1.title') || 'Créez votre compte'}
+          Créez votre compte
         </h2>
         <p className="text-muted-foreground">
-          {t('register.step1.subtitle') || 'Commencez votre essai gratuit de 14 jours dès aujourd\'hui'}
+          Commencez votre essai gratuit de 14 jours dès aujourd'hui
         </p>
       </div>
 
       <div className="space-y-4">
         <Input
-          label={t('register.step1.fullName') || 'Nom complet'}
+          label="Nom complet"
           type="text"
           placeholder="Jean Dupont"
           value={formData.fullName}
@@ -133,7 +131,7 @@ const StepOne = ({ formData, updateFormData, errors }) => {
         />
         
         <Input
-          label={t('register.step1.businessName') || 'Nom de l\'entreprise'}
+          label="Nom de l'entreprise"
           type="text"
           placeholder="Dupont Plomberie"
           value={formData.companyName}
@@ -143,7 +141,7 @@ const StepOne = ({ formData, updateFormData, errors }) => {
         />
         
         <Select
-          label={t('register.step1.profession') || 'Profession / Type d\'activité'}
+          label="Profession / Type d'activité"
           placeholder="Sélectionnez votre métier"
           options={professionOptions}
           value={formData.profession}
@@ -153,7 +151,7 @@ const StepOne = ({ formData, updateFormData, errors }) => {
         />
 
         <Input
-          label={t('register.step1.email') || 'Adresse email'}
+          label="Adresse email"
           type="email"
           placeholder="jean@exemple.fr"
           value={formData.email}
@@ -165,7 +163,7 @@ const StepOne = ({ formData, updateFormData, errors }) => {
         <div className="space-y-2">
           <div className="relative">
             <Input
-              label={t('register.step1.password') || 'Mot de passe'}
+              label="Mot de passe"
               type={showPassword ? "text" : "password"}
               placeholder="Créez un mot de passe sécurisé"
               value={formData.password}
@@ -185,7 +183,7 @@ const StepOne = ({ formData, updateFormData, errors }) => {
           {formData.password && (
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">{t('register.step1.passwordStrength') || 'Force du mot de passe:'}</span>
+                <span className="text-muted-foreground">Force du mot de passe:</span>
                 <span className={`font-medium ${
                   passwordStrength < 25 ? 'text-error' :
                   passwordStrength < 50 ? 'text-warning' :
@@ -205,7 +203,7 @@ const StepOne = ({ formData, updateFormData, errors }) => {
         </div>
 
         <Input
-          label={t('register.step1.phone') || 'Numéro de téléphone'}
+          label="Numéro de téléphone"
           type="tel"
           placeholder="+33 6 12 34 56 78"
           value={formData.phone}
@@ -215,7 +213,7 @@ const StepOne = ({ formData, updateFormData, errors }) => {
         />
         
         <Select
-          label={t('register.step1.country') || 'Pays'}
+          label="Pays"
           placeholder="Sélectionnez votre pays"
           options={countries}
           value={formData.country || 'FR'}
@@ -232,10 +230,10 @@ const StepOne = ({ formData, updateFormData, errors }) => {
           </div>
           <div>
             <h3 className="font-semibold text-foreground mb-1">
-              {t('register.boostSignatures.title') || 'Boostez vos signatures de 40%'}
+              Boostez vos signatures de 40%
             </h3>
             <p className="text-sm text-muted-foreground">
-              {t('register.step1.aiOptimization') || 'Notre IA optimise automatiquement vos devis pour maximiser vos chances de signature.'}
+              Notre IA optimise automatiquement vos devis pour maximiser vos chances de signature.
             </p>
           </div>
         </div>

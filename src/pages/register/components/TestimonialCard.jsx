@@ -1,10 +1,8 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
 import Image from '../../../components/AppImage';
-import { useTranslation } from '../../../context/TranslationContext';
 
 const TestimonialCard = ({ testimonial }) => {
-  const { t } = useTranslation();
   
   const renderStars = (rating) => {
     return Array.from({ length: 5 }, (_, index) => (

@@ -1,0 +1,88 @@
+{
+  "nav": {
+    "home": "Home",
+    "about": "Over ons",
+    "pricing": "Prijzen",
+    "findArtisan": "Vind een vakman",
+    "contact": "Contact",
+    "blog": "Blog",
+    "login": "Inloggen",
+    "register": "Registreren",
+    "freeTrial": "Gratis proefperiode",
+    "dashboard": "Dashboard"
+  },
+  "ui": {
+    "tagline": "Havitam - Je professionele digitale vitamine",
+    "buttons": {
+      "continue": "Doorgaan",
+      "back": "Terug",
+      "loading": "Laden...",
+      "startTrial": "Start gratis proefperiode"
+    }
+  },
+  "home": {
+    "hero": {
+      "title": "Vereenvoudig je administratief beheer en ontwikkel je klantenbestand",
+      "subtitle": "De alles-in-één oplossing voor vakmensen die zich willen concentreren op hun expertise",
+      "cta": {
+        "primary": "Start gratis proefperiode",
+        "secondary": "Bekijk demo"
+      }
+    },
+    "testimonials": {
+      "title": "Ze vertrouwen ons",
+      "subtitle": "Ontdek wat onze gebruikers zeggen"
+    },
+    "cta": {
+      "title": "Klaar om je bedrijf te transformeren?",
+      "description": "Sluit je aan bij duizenden vakmensen die HAVITAM vertrouwen om hun bedrijf te ontwikkelen",
+      "button": "Start gratis proefperiode"
+    }
+  },
+  "login": {
+    "title": "Inloggen",
+    "subtitle": "Verbind met je HAVITAM account",
+    "welcome": "Welkom terug!",
+    "welcomeSubtitle": "Verbind met je vakman ruimte om je offertes en facturen te beheren",
+    "email": "E-mailadres",
+    "emailPlaceholder": "jouw@email.com",
+    "password": "Wachtwoord",
+    "passwordPlaceholder": "Je wachtwoord",
+    "forgotPassword": "Wachtwoord vergeten?",
+    "rememberMe": "Onthoud mij",
+    "loginButton": "Inloggen",
+    "noAccount": "Nog geen account?",
+    "register": "Registreren"
+  },
+  "register": {
+    "alreadyRegistered": "Al een account?",
+    "acceptTerms": "Ik accepteer de",
+    "and": "en de",
+    "step1": {
+      "title": "Maak je account aan",
+      "subtitle": "Start vandaag nog je 14-daagse gratis proefperiode"
+    },
+    "step2": {
+      "title": "Aanvullende informatie",
+      "subtitle": "Pas Havitam aan volgens je activiteit"
+    },
+    "step3": {
+      "title": "Kies je plan",
+      "subtitle": "Start met 14 dagen gratis, zonder verplichting"
+    }
+  },
+  "forgotPassword": {
+    "rememberPassword": "Wachtwoord onthouden?",
+    "title": "Wachtwoord vergeten?",
+    "subtitle": "Voer je e-mailadres in om je wachtwoord te resetten",
+    "resetButton": "Wachtwoord resetten",
+    "emailSent": "E-mail verzonden!",
+    "checkInbox": "Controleer je inbox voor reset instructies.",
+    "backToLogin": "Terug naar inloggen"
+  },
+  "errors": {
+    "required": "Dit veld is verplicht",
+    "invalidEmail": "Ongeldig e-mailadres",
+    "tooShort": "Te kort"
+  }
+} 

@@ -1,0 +1,88 @@
+{
+  "nav": {
+    "home": "Accueil",
+    "about": "À propos",
+    "pricing": "Tarifs",
+    "findArtisan": "Trouver un artisan",
+    "contact": "Contact",
+    "blog": "Blog",
+    "login": "Connexion",
+    "register": "S'inscrire",
+    "freeTrial": "Essai gratuit",
+    "dashboard": "Tableau de bord"
+  },
+  "ui": {
+    "tagline": "Havitam - Votre vitamine digitale professionnelle",
+    "buttons": {
+      "continue": "Continuer",
+      "back": "Retour",
+      "loading": "Chargement...",
+      "startTrial": "Commencer l'essai gratuit"
+    }
+  },
+  "home": {
+    "hero": {
+      "title": "Simplifiez votre gestion administrative et développez votre clientèle",
+      "subtitle": "La solution tout-en-un pour les artisans qui souhaitent se concentrer sur leur savoir-faire",
+      "cta": {
+        "primary": "Commencer l'essai gratuit",
+        "secondary": "Voir la démo"
+      }
+    },
+    "testimonials": {
+      "title": "Ils nous font confiance",
+      "subtitle": "Découvrez ce que disent nos utilisateurs"
+    },
+    "cta": {
+      "title": "Prêt à transformer votre activité ?",
+      "description": "Rejoignez des milliers d'artisans qui font confiance à HAVITAM pour développer leur activité",
+      "button": "Commencer l'essai gratuit"
+    }
+  },
+  "login": {
+    "title": "Connexion",
+    "subtitle": "Connectez-vous à votre compte HAVITAM",
+    "welcome": "Bon retour !",
+    "welcomeSubtitle": "Connectez-vous à votre espace artisan pour gérer vos devis et factures",
+    "email": "Adresse email",
+    "emailPlaceholder": "votre@email.com",
+    "password": "Mot de passe",
+    "passwordPlaceholder": "Votre mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
+    "rememberMe": "Se souvenir de moi",
+    "loginButton": "Se connecter",
+    "noAccount": "Pas encore de compte ?",
+    "register": "S'inscrire"
+  },
+  "register": {
+    "alreadyRegistered": "Déjà un compte?",
+    "acceptTerms": "J'accepte les",
+    "and": "et la",
+    "step1": {
+      "title": "Créez votre compte",
+      "subtitle": "Commencez votre essai gratuit de 14 jours dès aujourd'hui"
+    },
+    "step2": {
+      "title": "Quelques informations supplémentaires",
+      "subtitle": "Personnalisez Havitam selon votre activité"
+    },
+    "step3": {
+      "title": "Choisissez votre plan",
+      "subtitle": "Commencez avec 14 jours gratuits, sans engagement"
+    }
+  },
+  "forgotPassword": {
+    "rememberPassword": "Vous vous souvenez de votre mot de passe ?",
+    "title": "Mot de passe oublié ?",
+    "subtitle": "Saisissez votre adresse e-mail pour réinitialiser votre mot de passe",
+    "resetButton": "Réinitialiser le mot de passe",
+    "emailSent": "Email envoyé !",
+    "checkInbox": "Veuillez vérifier votre boîte de réception pour les instructions de réinitialisation.",
+    "backToLogin": "Retour à la connexion"
+  },
+  "errors": {
+    "required": "Ce champ est requis",
+    "invalidEmail": "Email invalide",
+    "tooShort": "Trop court"
+  }
+} 

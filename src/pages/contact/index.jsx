@@ -5,13 +5,10 @@ import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
-import LanguageDropdown from '../../components/LanguageDropdown';
-import { useTranslation } from '../../context/TranslationContext';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 
 const ContactPage = () => {
-  const { t, language } = useTranslation();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -45,17 +42,17 @@ const ContactPage = () => {
   // Validate form
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.firstName) newErrors.firstName = t('contact.form.firstName') + ' ' + t('errors.required');
-    if (!formData.lastName) newErrors.lastName = t('contact.form.lastName') + ' ' + t('errors.required');
+    if (!formData.firstName) newErrors.firstName = 'Prénom est requis';
+    if (!formData.lastName) newErrors.lastName = 'Nom est requis';
     
     if (!formData.email) {
-      newErrors.email = t('contact.form.email') + ' ' + t('errors.required');
+      newErrors.email = 'Email est requis';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = t('errors.invalidEmail');
+      newErrors.email = 'Email invalide';
     }
     
-    if (!formData.subject) newErrors.subject = t('contact.form.subject') + ' ' + t('errors.required');
-    if (!formData.message) newErrors.message = t('contact.form.message') + ' ' + t('errors.required');
+    if (!formData.subject) newErrors.subject = 'Sujet est requis';
+    if (!formData.message) newErrors.message = 'Message est requis';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -87,21 +84,21 @@ const ContactPage = () => {
 
   // Subject options
   const subjectOptions = [
-    { value: '', label: t('contact.form.selectSubject') },
-    { value: 'demo', label: t('subjectOptions.demo') || 'Demande de démonstration' },
-    { value: 'question', label: t('subjectOptions.question') || 'Question sur le produit' },
-    { value: 'support', label: t('subjectOptions.support') || 'Assistance technique' },
-    { value: 'partnership', label: t('subjectOptions.partnership') || 'Proposition de partenariat' },
-    { value: 'other', label: t('subjectOptions.other') || 'Autre' }
+    { value: '', label: 'Sélectionnez un sujet' },
+    { value: 'demo', label: 'Demande de démonstration' },
+    { value: 'question', label: 'Question sur le produit' },
+    { value: 'support', label: 'Assistance technique' },
+    { value: 'partnership', label: 'Proposition de partenariat' },
+    { value: 'other', label: 'Autre' }
   ];
 
   return (
     <>
       <Helmet>
-        <title>{t('pageTitles.contact')}</title>
+        <title>Contact - HAVITAM</title>
         <meta name="description" content="Contactez l'équipe HAVITAM pour toute question sur notre plateforme pour artisans, pour une démonstration ou un support technique." />
         <meta name="keywords" content="contact, support, artisans, devis, facture, gestion" />
-        <html lang={language} />
+        <html lang="fr" />
       </Helmet>
       
       <div className="min-h-screen bg-background">
@@ -169,9 +166,9 @@ const ContactPage = () => {
               {/* Left Column - Contact Information */}
               <div className="space-y-8">
                 <div>
-                  <h2 className="text-3xl font-bold text-foreground mb-4">{t('contact.projectTitle') || "Parlons de votre projet"}</h2>
+                  <h2 className="text-3xl font-bold text-foreground mb-4">Parlons de votre projet</h2>
                   <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
-                    {t('contact.projectDescription') || "Que vous soyez un artisan qui souhaite découvrir Havitam ou un client ayant besoin d'aide, nous sommes là pour vous accompagner."}
+                    Que vous soyez un artisan qui souhaite découvrir Havitam ou un client ayant besoin d'aide, nous sommes là pour vous accompagner.
                   </p>
                 </div>
                 
@@ -184,9 +181,9 @@ const ContactPage = () => {
                         <Icon name="Mail" size={20} className="text-gray-600" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-foreground text-lg mb-1">{t('contact.info.email')}</h3>
-                        <p className="text-muted-foreground mb-1">{t('contact.info.emailValue')}</p>
-                        <p className="text-sm text-muted-foreground/70">{t('contact.responseTime') || "Réponse sous 24h"}</p>
+                        <h3 className="font-semibold text-foreground text-lg mb-1">Email</h3>
+                        <p className="text-muted-foreground mb-1">contact@havitam.com</p>
+                        <p className="text-sm text-muted-foreground/70">Réponse sous 24h</p>
                       </div>
                     </div>
                   </div>
@@ -198,9 +195,9 @@ const ContactPage = () => {
                         <Icon name="Phone" size={20} className="text-gray-600" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-foreground text-lg mb-1">{t('contact.info.phone')}</h3>
-                        <p className="text-muted-foreground mb-1">{t('contact.info.phoneValue')}</p>
-                        <p className="text-sm text-muted-foreground/70">{t('contact.phoneHours') || "Lun-Ven, 9h-18h"}</p>
+                        <h3 className="font-semibold text-foreground text-lg mb-1">Téléphone</h3>
+                        <p className="text-muted-foreground mb-1">+33 1 23 45 67 89</p>
+                        <p className="text-sm text-muted-foreground/70">Lun-Ven, 9h-18h</p>
                       </div>
                     </div>
                   </div>
@@ -212,9 +209,9 @@ const ContactPage = () => {
                         <Icon name="MapPin" size={20} className="text-gray-600" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-foreground text-lg mb-1">{t('contact.info.address')}</h3>
-                        <p className="text-muted-foreground mb-1">{t('contact.info.addressValue')}</p>
-                        <p className="text-sm text-muted-foreground/70">{t('contact.addressInfo') || "Siège social"}</p>
+                        <h3 className="font-semibold text-foreground text-lg mb-1">Adresse</h3>
+                        <p className="text-muted-foreground mb-1">123 Rue de la Paix, 75001 Paris</p>
+                        <p className="text-sm text-muted-foreground/70">Siège social</p>
                       </div>
                     </div>
                   </div>
@@ -228,39 +225,39 @@ const ContactPage = () => {
                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6 mx-auto">
                       <Icon name="Check" size={32} className="text-green-600" />
                     </div>
-                    <h2 className="text-2xl font-bold text-foreground mb-3">{t('contact.success.title')}</h2>
-                    <p className="text-muted-foreground mb-6">{t('contact.success.message')}</p>
+                    <h2 className="text-2xl font-bold text-foreground mb-3">Message envoyé !</h2>
+                    <p className="text-muted-foreground mb-6">Nous vous répondrons dans les plus brefs délais.</p>
                     <Button 
                       onClick={() => setIsSubmitted(false)} 
                       variant="outline"
                     >
-                      {t('contact.success.button')}
+                      Envoyer un autre message
                     </Button>
                   </div>
                 ) : (
                   <div>
-                    <h2 className="text-2xl font-bold text-foreground mb-6">{t('contact.form.title') || "Envoyez-nous un message"}</h2>
+                    <h2 className="text-2xl font-bold text-foreground mb-6">Envoyez-nous un message</h2>
                     
                     <form onSubmit={handleSubmit} className="space-y-6">
                       {/* Name and Email */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-semibold text-foreground mb-2">
-                            {t('contact.form.name') || "Nom"} <span className="text-red-500">*</span>
+                            Nom <span className="text-red-500">*</span>
                           </label>
                           <Input 
                             name="firstName"
                             value={formData.firstName}
                             onChange={handleInputChange}
                             error={errors.firstName}
-                            placeholder={t('contact.form.namePlaceholder') || "Votre nom"}
+                            placeholder="Votre nom"
                             required
                             className="h-11"
                           />
                         </div>
                         <div>
                           <label className="block text-sm font-semibold text-foreground mb-2">
-                            {t('contact.form.email')} <span className="text-red-500">*</span>
+                            Email <span className="text-red-500">*</span>
                           </label>
                           <Input 
                             type="email"
@@ -268,7 +265,7 @@ const ContactPage = () => {
                             value={formData.email}
                             onChange={handleInputChange}
                             error={errors.email}
-                            placeholder={t('contact.form.emailPlaceholder') || "Votre email"}
+                            placeholder="Votre email"
                             required
                             className="h-11"
                           />
@@ -278,7 +275,7 @@ const ContactPage = () => {
                       {/* Subject */}
                       <div>
                         <label className="block text-sm font-semibold text-foreground mb-2">
-                          {t('contact.form.subject')} <span className="text-red-500">*</span>
+                          Sujet <span className="text-red-500">*</span>
                         </label>
                         <Select
                           name="subject"
@@ -294,7 +291,7 @@ const ContactPage = () => {
                       {/* Message */}
                       <div>
                         <label className="block text-sm font-semibold text-foreground mb-2">
-                          {t('contact.form.message')} <span className="text-red-500">*</span>
+                          Message <span className="text-red-500">*</span>
                         </label>
                         <textarea
                           name="message"
@@ -306,7 +303,7 @@ const ContactPage = () => {
                           } focus:outline-none focus:ring-2`}
                           value={formData.message}
                           onChange={handleInputChange}
-                          placeholder={t('contact.form.messagePlaceholder') || "Décrivez votre demande..."}
+                          placeholder="Décrivez votre demande..."
                           required
                         ></textarea>
                         {errors.message && (
@@ -324,7 +321,7 @@ const ContactPage = () => {
                           iconName="Send"
                           iconPosition="left"
                         >
-                          {isSubmitting ? t('contact.form.sending') || "Envoi en cours..." : t('contact.form.sendButton')}
+                          {isSubmitting ? "Envoi en cours..." : "Envoyer"}
                         </Button>
                       </div>
                     </form>

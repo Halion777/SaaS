@@ -1,0 +1,88 @@
+{
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "pricing": "Pricing",
+    "findArtisan": "Find Artisan",
+    "contact": "Contact",
+    "blog": "Blog",
+    "login": "Login",
+    "register": "Register",
+    "freeTrial": "Free Trial",
+    "dashboard": "Dashboard"
+  },
+  "ui": {
+    "tagline": "Havitam - Your professional digital vitamin",
+    "buttons": {
+      "continue": "Continue",
+      "back": "Back",
+      "loading": "Loading...",
+      "startTrial": "Start Free Trial"
+    }
+  },
+  "home": {
+    "hero": {
+      "title": "Simplify your administrative management and develop your customer base",
+      "subtitle": "The all-in-one solution for artisans who want to focus on their expertise",
+      "cta": {
+        "primary": "Start Free Trial",
+        "secondary": "See Demo"
+      }
+    },
+    "testimonials": {
+      "title": "They Trust Us",
+      "subtitle": "Discover what our users say"
+    },
+    "cta": {
+      "title": "Ready to transform your business?",
+      "description": "Join thousands of artisans who trust HAVITAM to develop their business",
+      "button": "Start Free Trial"
+    }
+  },
+  "login": {
+    "title": "Login",
+    "subtitle": "Connect to your HAVITAM account",
+    "welcome": "Welcome back!",
+    "welcomeSubtitle": "Connect to your craftsman space to manage your quotes and invoices",
+    "email": "Email address",
+    "emailPlaceholder": "your@email.com",
+    "password": "Password",
+    "passwordPlaceholder": "Your password",
+    "forgotPassword": "Forgot password?",
+    "rememberMe": "Remember me",
+    "loginButton": "Sign in",
+    "noAccount": "Don't have an account?",
+    "register": "Register"
+  },
+  "register": {
+    "alreadyRegistered": "Already have an account?",
+    "acceptTerms": "I accept the",
+    "and": "and the",
+    "step1": {
+      "title": "Create your account",
+      "subtitle": "Start your 14-day free trial today"
+    },
+    "step2": {
+      "title": "Additional information",
+      "subtitle": "Customize Havitam according to your activity"
+    },
+    "step3": {
+      "title": "Choose your plan",
+      "subtitle": "Start with 14 days free, no commitment"
+    }
+  },
+  "forgotPassword": {
+    "rememberPassword": "Remember your password?",
+    "title": "Forgot password?",
+    "subtitle": "Enter your email address to reset your password",
+    "resetButton": "Reset password",
+    "emailSent": "Email sent!",
+    "checkInbox": "Please check your inbox for reset instructions.",
+    "backToLogin": "Back to login"
+  },
+  "errors": {
+    "required": "This field is required",
+    "invalidEmail": "Invalid email",
+    "tooShort": "Too short"
+  }
+} 

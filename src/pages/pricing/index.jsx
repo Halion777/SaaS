@@ -5,10 +5,7 @@ import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
-import { useTranslation } from '../../context/TranslationContext';
-
 const PricingPage = () => {
-  const { t, language } = useTranslation();
   const [billingCycle, setBillingCycle] = useState('monthly');
 
   // Toggle billing cycle
@@ -16,50 +13,50 @@ const PricingPage = () => {
     setBillingCycle(cycle);
   };
 
-  // Get plans data with translations
+  // Get plans data
   const getPlans = () => [
     {
-      name: t('pricing.plans.starter.name') || "Starter",
-      description: t('pricing.plans.starter.description') || "Pour les débutants ou une utilisation à petite échelle",
+      name: "Starter",
+      description: "Pour les débutants ou une utilisation à petite échelle",
       price: {
         monthly: "29.99",
         annual: "24.99",
       },
       features: [
-        t('pricing.plans.starter.features.quotes') || "Jusqu'à 15 devis par mois",
-        t('pricing.plans.starter.features.invoices') || "Jusqu'à 15 factures par mois",
-        t('pricing.plans.starter.features.clients') || "Gestion des clients",
-        t('pricing.plans.starter.features.templates') || "Modèles professionnels",
-        t('pricing.plans.starter.features.support') || "Support par e-mail"
+        "Jusqu'à 15 devis par mois",
+        "Jusqu'à 15 factures par mois",
+        "Gestion des clients",
+        "Modèles professionnels",
+        "Support par e-mail"
       ],
       limitations: [
-        t('pricing.plans.starter.limitations.leads') || "Pas de génération de leads clients",
-        t('pricing.plans.starter.limitations.reminders') || "Pas de rappels automatiques",
-        t('pricing.plans.starter.limitations.users') || "Pas d'accès multi-utilisateurs",
-        t('pricing.plans.starter.limitations.analytics') || "Pas d'analyses avancées"
+        "Pas de génération de leads clients",
+        "Pas de rappels automatiques",
+        "Pas d'accès multi-utilisateurs",
+        "Pas d'analyses avancées"
       ],
-      cta: t('pricing.plans.starter.cta') || "Essai gratuit de 14 jours",
+      cta: "Essai gratuit de 14 jours",
       popular: false
     },
     {
-      name: t('pricing.plans.pro.name') || "Pro",
-      description: t('pricing.plans.pro.description') || "Pour les utilisateurs professionnels ou petites entreprises",
+      name: "Pro",
+      description: "Pour les utilisateurs professionnels ou petites entreprises",
       price: {
         monthly: "49.99",
         annual: "41.66",
       },
       features: [
-        t('pricing.plans.pro.features.quotes') || "Devis et factures illimités",
-        t('pricing.plans.pro.features.clients') || "Gestion des clients",
-        t('pricing.plans.pro.features.templates') || "Modèles professionnels",
-        t('pricing.plans.pro.features.leads') || "Génération de leads clients",
-        t('pricing.plans.pro.features.reminders') || "Rappels automatiques pour les factures impayées",
-        t('pricing.plans.pro.features.users') || "Support multi-utilisateurs",
-        t('pricing.plans.pro.features.support') || "Support prioritaire par e-mail et chat",
-        t('pricing.plans.pro.features.analytics') || "Outils d'analyse et de rapports avancés"
+        "Devis et factures illimités",
+        "Gestion des clients",
+        "Modèles professionnels",
+        "Génération de leads clients",
+        "Rappels automatiques pour les factures impayées",
+        "Support multi-utilisateurs",
+        "Support prioritaire par e-mail et chat",
+        "Outils d'analyse et de rapports avancés"
       ],
       limitations: [],
-      cta: t('pricing.plans.pro.cta') || "Essai gratuit de 14 jours",
+      cta: "Essai gratuit de 14 jours",
       popular: true
     }
   ];
@@ -69,8 +66,8 @@ const PricingPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>{t('pricing.title') || 'Tarifs - HAVITAM'}</title>
-        <meta name="description" content={t('pricing.description') || 'Choisissez le plan qui correspond le mieux à vos besoins. Tous les plans incluent un essai gratuit de 14 jours.'} />
+        <title>Tarifs - HAVITAM</title>
+        <meta name="description" content="Choisissez le plan qui correspond le mieux à vos besoins. Tous les plans incluent un essai gratuit de 14 jours." />
       </Helmet>
       <Header />
       
@@ -101,7 +98,7 @@ const PricingPage = () => {
                 et adaptés
               </h1>
               <p className="text-lg md:text-xl text-gray-600 mb-8 leading-relaxed max-w-3xl mx-auto">
-                {t('pricing.header.description') || 'Choisissez le plan qui correspond le mieux à vos besoins. Tous les plans incluent un essai gratuit de 14 jours.'}
+                Choisissez le plan qui correspond le mieux à vos besoins. Tous les plans incluent un essai gratuit de 14 jours.
               </p>
               
               {/* Key Benefits */}
@@ -141,7 +138,7 @@ const PricingPage = () => {
                   }`}
                   onClick={() => toggleBillingCycle('monthly')}
                 >
-                  {t('pricing.billing.monthly') || 'Mensuel'}
+                  Mensuel
                 </button>
                 <button
                   className={`relative flex-1 px-8 py-2 rounded-lg text-sm font-medium transition-all duration-500 ease-in-out z-10 ${
@@ -151,7 +148,7 @@ const PricingPage = () => {
                   }`}
                   onClick={() => toggleBillingCycle('annual')}
                 >
-                  {t('pricing.billing.annual') || 'Annuel'} 
+                  Annuel 
                   <span className="ml-2 bg-[#0036ab] text-white px-2 py-1 rounded-full text-xs">-20%</span>
                 </button>
               </div>
@@ -179,7 +176,7 @@ const PricingPage = () => {
                   {plan.popular && (
                     <div className="absolute top-0 inset-x-0 transform -translate-y-1/2">
                       <span className="bg-[#0036ab] text-white text-sm font-medium px-4 py-2 rounded-full shadow-lg">
-                        {t('pricing.popular') || 'Le plus populaire'}
+                        Le plus populaire
                       </span>
                     </div>
                   )}
@@ -195,7 +192,7 @@ const PricingPage = () => {
                       <span className="text-gray-600 ml-2 mb-2">/ {billingCycle === 'monthly' ? 'mois' : 'mois'}</span>
                     </div>
                     <p className="text-sm text-gray-500 mt-2">
-                      {t('pricing.price.vat') || 'HT, TVA applicable'}
+                      HT, TVA applicable
                     </p>
                     {billingCycle === 'annual' && (
                       <p className="text-sm text-[#12bf23] font-medium mt-2">
@@ -253,7 +250,7 @@ const PricingPage = () => {
                 <span className="text-sm font-medium text-[#0036ab]">Garanties</span>
               </div>
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-                {t('pricing.details.title') || 'Pourquoi choisir HAVITAM ?'}
+                Pourquoi choisir HAVITAM ?
               </h2>
               <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
                 Nous vous offrons la tranquillité d'esprit avec nos garanties et notre support
@@ -265,9 +262,9 @@ const PricingPage = () => {
                 <div className="w-16 h-16 bg-[#0036ab]/10 rounded-2xl flex items-center justify-center mb-6">
                   <Icon name="Calendar" size={32} className="text-[#0036ab]" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4">{t('pricing.details.trial.title') || 'Essai gratuit'}</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">Essai gratuit</h3>
                 <p className="text-gray-600 leading-relaxed">
-                  {t('pricing.details.trial.description') || 'Testez HAVITAM gratuitement pendant 14 jours sans engagement'}
+                  Testez HAVITAM gratuitement pendant 14 jours sans engagement
                 </p>
               </div>
               
@@ -275,9 +272,9 @@ const PricingPage = () => {
                 <div className="w-16 h-16 bg-[#12bf23]/10 rounded-2xl flex items-center justify-center mb-6">
                   <Icon name="Check" size={32} className="text-[#12bf23]" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4">{t('pricing.details.no_commitment.title') || 'Sans engagement'}</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">Sans engagement</h3>
                 <p className="text-gray-600 leading-relaxed">
-                  {t('pricing.details.no_commitment.description') || 'Annulez à tout moment, sans frais cachés ni pénalités'}
+                  Annulez à tout moment, sans frais cachés ni pénalités
                 </p>
               </div>
               
@@ -285,9 +282,9 @@ const PricingPage = () => {
                 <div className="w-16 h-16 bg-[#0036ab]/10 rounded-2xl flex items-center justify-center mb-6">
                   <Icon name="Shield" size={32} className="text-[#0036ab]" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4">{t('pricing.details.secure_payment.title') || 'Paiement sécurisé'}</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">Paiement sécurisé</h3>
                 <p className="text-gray-600 leading-relaxed">
-                  {t('pricing.details.secure_payment.description') || 'Vos informations de paiement sont traitées en toute sécurité'}
+                  Vos informations de paiement sont traitées en toute sécurité
                 </p>
               </div>
             </div>
@@ -299,10 +296,10 @@ const PricingPage = () => {
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-foreground mb-4">
-                {t('pricing.faqs.title')}
+                Questions fréquentes
               </h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                {t('pricing.faqs.description')}
+                Trouvez rapidement les réponses à vos questions sur nos tarifs
               </p>
             </div>
             
@@ -310,40 +307,40 @@ const PricingPage = () => {
               {/* FAQ Item 1 */}
               <div className="bg-card border border-border rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-foreground mb-3">
-                  {t('pricing.faqs.change_plan.question')}
+                  Puis-je changer de plan à tout moment ?
                 </h3>
                 <p className="text-muted-foreground">
-                  {t('pricing.faqs.change_plan.answer')}
+                  Oui, vous pouvez changer de plan à tout moment. La modification prendra effet à votre prochaine facturation.
                 </p>
               </div>
               
               {/* FAQ Item 2 */}
               <div className="bg-card border border-border rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-foreground mb-3">
-                  {t('pricing.faqs.trial_period.question')}
+                  Combien de temps dure l'essai gratuit ?
                 </h3>
                 <p className="text-muted-foreground">
-                  {t('pricing.faqs.trial_period.answer')}
+                  L'essai gratuit dure 14 jours. Vous pouvez annuler à tout moment sans frais.
                 </p>
               </div>
               
               {/* FAQ Item 3 */}
               <div className="bg-card border border-border rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-foreground mb-3">
-                  {t('pricing.faqs.payment_methods.question')}
+                  Quels moyens de paiement acceptez-vous ?
                 </h3>
                 <p className="text-muted-foreground">
-                  {t('pricing.faqs.payment_methods.answer')}
+                  Nous acceptons les cartes bancaires (Visa, Mastercard) et les virements SEPA.
                 </p>
               </div>
               
               {/* FAQ Item 4 */}
               <div className="bg-card border border-border rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-foreground mb-3">
-                  {t('pricing.faqs.lead_generation.question')}
+                  La génération de leads est-elle incluse ?
                 </h3>
                 <p className="text-muted-foreground">
-                  {t('pricing.faqs.lead_generation.answer')}
+                  La génération de leads est incluse dans le plan Pro et les plans supérieurs.
                 </p>
               </div>
             </div>
@@ -364,10 +361,10 @@ const PricingPage = () => {
           <div className="container mx-auto px-4 relative z-10">
             <div className="text-center">
               <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 tracking-tight">
-                {t('pricing.cta.title')}
+                Prêt à transformer votre activité ?
               </h2>
               <p className="text-lg text-white/90 mb-10 max-w-2xl mx-auto leading-relaxed">
-                {t('pricing.cta.description')}
+                Rejoignez des milliers d'artisans qui font confiance à HAVITAM pour développer leur activité
               </p>
               <Link to="/register">
                 <Button 
@@ -377,7 +374,7 @@ const PricingPage = () => {
                 >
                   <span className="flex items-center">
                     <Icon name="Sparkles" size={20} className="mr-2 group-hover:animate-pulse text-blue-600" />
-                    {t('pricing.cta.button')}
+                    Commencer l'essai gratuit
                   </span>
                 </Button>
               </Link>
