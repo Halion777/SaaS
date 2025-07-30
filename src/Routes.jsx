@@ -14,6 +14,10 @@ import PricingPage from './pages/pricing';
 import FindArtisanPage from './pages/find-artisan';
 import AboutPage from './pages/about';
 import ContactPage from './pages/contact';
+import FeaturesPage from './pages/features';
+import TermsPage from './pages/terms';
+import PrivacyPage from './pages/privacy';
+import CookiesPage from './pages/cookies';
 import BlogPage from './pages/blog';
 import Dashboard from './pages/dashboard';
 import QuoteCreation from './pages/quote-creation';
@@ -48,6 +52,10 @@ const AppRoutes = () => {
           <Route path="/find-artisan" element={<FindArtisanPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/features" element={<FeaturesPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/cookies" element={<CookiesPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/blog/:slug" element={<BlogPage />} />
           

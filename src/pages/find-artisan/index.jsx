@@ -1,12 +1,14 @@
 import React, { useState, useRef } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Icon from '../../components/AppIcon';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 const FindArtisanPage = () => {
+  const { t, i18n } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [priceDropdownOpen, setPriceDropdownOpen] = useState(false);
@@ -64,65 +66,65 @@ const FindArtisanPage = () => {
   };
 
   const priceRanges = [
-    { value: '0-500', label: '0–500€' },
-    { value: '500-1000', label: '500–1,000€' },
-    { value: '1000-2500', label: '1,000–2,500€' },
-    { value: '2500-5000', label: '2,500–5,000€' },
-    { value: '5000-7000', label: '5,000–7,000€' },
-    { value: '7000-10000', label: '7,000–10,000€' },
-    { value: '10000-20000', label: '10,000–20,000€' },
-    { value: '20000+', label: '20,000+€' }
+    { value: '0-500', label: t('findArtisan.priceRanges.range1') },
+    { value: '500-1000', label: t('findArtisan.priceRanges.range2') },
+    { value: '1000-2500', label: t('findArtisan.priceRanges.range3') },
+    { value: '2500-5000', label: t('findArtisan.priceRanges.range4') },
+    { value: '5000-7000', label: t('findArtisan.priceRanges.range5') },
+    { value: '7000-10000', label: t('findArtisan.priceRanges.range6') },
+    { value: '10000-20000', label: t('findArtisan.priceRanges.range7') },
+    { value: '20000+', label: t('findArtisan.priceRanges.range8') }
   ];
 
   const workCategories = [
     { 
       value: 'plumbing', 
-      label: 'Plomberie',
+      label: t('findArtisan.categories.plumbing'),
       icon: 'Wrench'
     },
     { 
       value: 'electrical', 
-      label: 'Électricité',
+      label: t('findArtisan.categories.electrical'),
       icon: 'Zap'
     },
     { 
       value: 'painting', 
-      label: 'Peinture',
+      label: t('findArtisan.categories.painting'),
       icon: 'Brush'
     },
     { 
       value: 'carpentry', 
-      label: 'Menuiserie',
+      label: t('findArtisan.categories.carpentry'),
       icon: 'Hammer'
     },
     { 
       value: 'tiling', 
-      label: 'Carrelage',
+      label: t('findArtisan.categories.tiling'),
       icon: 'Hammer'
     },
     { 
       value: 'roofing', 
-      label: 'Toiture',
+      label: t('findArtisan.categories.roofing'),
       icon: 'Hammer'
     },
     { 
       value: 'masonry', 
-      label: 'Maçonnerie',
+      label: t('findArtisan.categories.masonry'),
       icon: 'Hammer'
     },
     { 
       value: 'heating', 
-      label: 'Chauffage',
+      label: t('findArtisan.categories.heating'),
       icon: 'Zap'
     },
     { 
       value: 'gardening', 
-      label: 'Jardinage',
+      label: t('findArtisan.categories.gardening'),
       icon: 'Shovel'
     },
     { 
       value: 'other', 
-      label: 'Autre',
+      label: t('findArtisan.categories.other'),
       icon: 'Hammer'
     }
   ];
@@ -130,32 +132,32 @@ const FindArtisanPage = () => {
   const steps = [
     {
       number: 1,
-      title: 'Catégorie de travaux',
-      description: 'Sélectionnez le type de travaux'
+      title: t('findArtisan.steps.step1.title'),
+      description: t('findArtisan.steps.step1.description')
     },
     {
       number: 2,
-      title: 'Localisation',
-      description: 'Indiquez l\'adresse du chantier'
+      title: t('findArtisan.steps.step2.title'),
+      description: t('findArtisan.steps.step2.description')
     },
     {
       number: 3,
-      title: 'Description du projet',
-      description: 'Décrivez vos travaux en détail'
+      title: t('findArtisan.steps.step3.title'),
+      description: t('findArtisan.steps.step3.description')
     },
     {
       number: 4,
-      title: 'Vos coordonnées',
-      description: 'Pour que les artisans puissent vous contacter'
+      title: t('findArtisan.steps.step4.title'),
+      description: t('findArtisan.steps.step4.description')
     }
   ];
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Helmet>
-        <title>Trouver un artisan - HAVITAM</title>
-        <meta name="description" content="Trouvez un artisan qualifié près de chez vous pour vos projets de rénovation et construction." />
-        <html lang="fr" />
+        <title>{t('meta.findArtisan.title')}</title>
+        <meta name="description" content={t('meta.findArtisan.description')} />
+        <html lang={i18n.language} />
       </Helmet>
       
       <Header />
@@ -176,33 +178,33 @@ const FindArtisanPage = () => {
               {/* Badge */}
               <div className="inline-flex items-center bg-[#0036ab]/10 text-[#0036ab] px-4 py-2 rounded-full text-sm font-medium mb-6 animate-fadeIn">
                 <Icon name="Search" size={16} className="mr-2" />
-                Trouver un artisan
+                {t('findArtisan.hero.badge')}
               </div>
               
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-                Trouvez l'artisan{' '}
+                {t('findArtisan.hero.title.prefix')}{' '}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0036ab] to-[#12bf23]">
-                  idéal
+                  {t('findArtisan.hero.title.highlight')}
                 </span>{' '}
-                pour votre projet
+                {t('findArtisan.hero.title.suffix')}
               </h1>
               <p className="text-lg md:text-xl text-gray-600 mb-8 leading-relaxed max-w-3xl mx-auto">
-                Connectez-vous avec des artisans qualifiés et certifiés pour réaliser vos projets de construction et rénovation
+                {t('findArtisan.hero.subtitle')}
               </p>
               
               {/* Key Benefits */}
               <div className="flex flex-wrap justify-center gap-4 mb-8">
                 <div className="flex items-center text-sm text-gray-600">
                   <Icon name="CheckCircle" size={16} className="mr-2 text-[#12bf23]" />
-                  <span>Artisans certifiés</span>
+                  <span>{t('findArtisan.hero.benefits.certified')}</span>
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <Icon name="CheckCircle" size={16} className="mr-2 text-[#12bf23]" />
-                  <span>Devis gratuits</span>
+                  <span>{t('findArtisan.hero.benefits.freeQuotes')}</span>
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <Icon name="CheckCircle" size={16} className="mr-2 text-[#12bf23]" />
-                  <span>Garantie qualité</span>
+                  <span>{t('findArtisan.hero.benefits.qualityGuarantee')}</span>
                 </div>
               </div>
             </div>
@@ -253,14 +255,14 @@ const FindArtisanPage = () => {
             <div className="max-w-2xl mx-auto">
               <div className="bg-card border border-border rounded-lg shadow-sm p-8">
                 <h2 className="text-2xl font-bold text-foreground mb-8">
-                  Décrivez votre projet
+                  {t('findArtisan.form.title')}
                 </h2>
                 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Work Category */}
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      Catégorie de travaux *
+                      {t('findArtisan.form.category')} *
                     </label>
                     <div className="relative">
                       {/* Custom Dropdown Button */}
@@ -275,7 +277,7 @@ const FindArtisanPage = () => {
                         <span className={formData.category ? 'text-foreground' : 'text-muted-foreground'}>
                           {formData.category 
                             ? workCategories.find(cat => cat.value === formData.category)?.label
-                            : "Sélectionnez une catégorie"
+                            : t('findArtisan.form.selectCategory')
                           }
                         </span>
                         <div className="absolute right-3 text-muted-foreground">
@@ -313,7 +315,7 @@ const FindArtisanPage = () => {
                     {/* Error message if no category selected */}
                     {formSubmitted && formData.category === '' && (
                       <p className="text-sm text-destructive mt-2">
-                        Veuillez sélectionner une catégorie de travaux
+                        {t('findArtisan.form.categoryError')}
                       </p>
                     )}
                   </div>
@@ -321,11 +323,11 @@ const FindArtisanPage = () => {
                   {/* Address */}
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      Adresse ou ville du chantier *
+                      {t('findArtisan.form.address')} *
                     </label>
                     <Input
                       type="text"
-                      placeholder="Ex: 123 Rue de la Paix, Paris"
+                      placeholder={t('findArtisan.form.addressPlaceholder')}
                       value={formData.address}
                       onChange={(e) => handleInputChange('address', e.target.value)}
                       required
@@ -335,11 +337,11 @@ const FindArtisanPage = () => {
                   {/* Zip Code */}
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      Code postal *
+                      {t('findArtisan.form.zipCode')} *
                     </label>
                     <Input
                       type="text"
-                      placeholder="Ex: 75001"
+                      placeholder={t('findArtisan.form.zipCodePlaceholder')}
                       value={formData.zipCode}
                       onChange={(e) => handleInputChange('zipCode', e.target.value)}
                       required
@@ -349,12 +351,12 @@ const FindArtisanPage = () => {
                   {/* Project Description */}
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      Description du projet *
+                      {t('findArtisan.form.description')} *
                     </label>
                     <textarea
                       value={formData.description}
                       onChange={(e) => handleInputChange('description', e.target.value)}
-                      placeholder="Décrivez vos travaux en détail : nature, dimensions, matériaux souhaités..."
+                      placeholder={t('findArtisan.form.descriptionPlaceholder')}
                       className="w-full h-32 px-4 py-3 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
                       required
                     />
@@ -363,7 +365,7 @@ const FindArtisanPage = () => {
                   {/* Price Range */}
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      Fourchette de prix
+                      {t('findArtisan.form.priceRange')}
                     </label>
                     <div className="relative">
                       {/* Custom Dropdown Button */}
@@ -378,7 +380,7 @@ const FindArtisanPage = () => {
                         <span className={formData.priceRange ? 'text-foreground' : 'text-muted-foreground'}>
                           {formData.priceRange 
                             ? priceRanges.find(range => range.value === formData.priceRange)?.label
-                            : "Sélectionnez une fourchette"
+                            : t('findArtisan.form.selectPriceRange')
                           }
                         </span>
                         <div className="absolute right-3 text-muted-foreground">
@@ -412,7 +414,7 @@ const FindArtisanPage = () => {
                   {/* Image Upload */}
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      Photos du projet <span className="text-muted-foreground text-xs">(Optionnel)</span>
+                      {t('findArtisan.form.photos')} <span className="text-muted-foreground text-xs">({t('findArtisan.form.optional')})</span>
                     </label>
                     <div className="space-y-3">
                       <div 
@@ -421,10 +423,10 @@ const FindArtisanPage = () => {
                       >
                         <Icon name="Upload" className="w-6 h-6 mx-auto text-muted-foreground mb-2" />
                         <p className="text-sm text-muted-foreground">
-                          Cliquez pour ajouter des photos
+                          {t('findArtisan.form.clickToAddPhotos')}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          JPG, PNG ou PDF jusqu'à 5 MB
+                          {t('findArtisan.form.fileTypes')}
                         </p>
                         <input
                           type="file"
@@ -465,12 +467,12 @@ const FindArtisanPage = () => {
                   {/* Completion Date */}
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      Date souhaitée de réalisation
+                      {t('findArtisan.form.completionDate')}
                     </label>
                     <div className="relative">
                       <Input
                         type="text"
-                        placeholder="Sélectionnez une date"
+                        placeholder={t('findArtisan.form.selectDate')}
                         value={formData.completionDate}
                         onChange={(e) => handleInputChange('completionDate', e.target.value)}
                         icon="Calendar"
@@ -482,16 +484,16 @@ const FindArtisanPage = () => {
                   {/* Contact Information */}
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-4">
-                      Vos coordonnées
+                      {t('findArtisan.form.contactInfo')}
                     </label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-foreground mb-2">
-                          Nom / Prénom *
+                          {t('findArtisan.form.fullName')} *
                         </label>
                         <Input
                           type="text"
-                          placeholder="Votre nom complet"
+                          placeholder={t('findArtisan.form.fullNamePlaceholder')}
                           value={formData.fullName}
                           onChange={(e) => handleInputChange('fullName', e.target.value)}
                           required
@@ -499,11 +501,11 @@ const FindArtisanPage = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-foreground mb-2">
-                          Téléphone
+                          {t('findArtisan.form.phone')}
                         </label>
                         <Input
                           type="tel"
-                          placeholder="06 12 34 56 78"
+                          placeholder={t('findArtisan.form.phonePlaceholder')}
                           value={formData.phone}
                           onChange={(e) => handleInputChange('phone', e.target.value)}
                         />
@@ -514,11 +516,11 @@ const FindArtisanPage = () => {
                   {/* Email */}
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      Email *
+                      {t('findArtisan.form.email')} *
                     </label>
                     <Input
                       type="email"
-                      placeholder="votre@email.com"
+                      placeholder={t('findArtisan.form.emailPlaceholder')}
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
                       required
@@ -533,7 +535,7 @@ const FindArtisanPage = () => {
                       iconName="ArrowRight"
                       iconPosition="right"
                     >
-                      Envoyer ma demande
+                      {t('findArtisan.form.submit')}
                     </Button>
                   </div>
                 </form>

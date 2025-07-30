@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
+import { useTranslation } from 'react-i18next';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 const PricingPage = () => {
+  const { t, i18n } = useTranslation();
   const [billingCycle, setBillingCycle] = useState('monthly');
 
   // Toggle billing cycle
@@ -16,47 +18,47 @@ const PricingPage = () => {
   // Get plans data
   const getPlans = () => [
     {
-      name: "Starter",
-      description: "Pour les débutants ou une utilisation à petite échelle",
+      name: t('pricing.plans.starter.name'),
+      description: t('pricing.plans.starter.description'),
       price: {
         monthly: "29.99",
         annual: "24.99",
       },
       features: [
-        "Jusqu'à 15 devis par mois",
-        "Jusqu'à 15 factures par mois",
-        "Gestion des clients",
-        "Modèles professionnels",
-        "Support par e-mail"
+        t('pricing.plans.starter.features.feature1'),
+        t('pricing.plans.starter.features.feature2'),
+        t('pricing.plans.starter.features.feature3'),
+        t('pricing.plans.starter.features.feature4'),
+        t('pricing.plans.starter.features.feature5')
       ],
       limitations: [
-        "Pas de génération de leads clients",
-        "Pas de rappels automatiques",
-        "Pas d'accès multi-utilisateurs",
-        "Pas d'analyses avancées"
+        t('pricing.plans.starter.limitations.limitation1'),
+        t('pricing.plans.starter.limitations.limitation2'),
+        t('pricing.plans.starter.limitations.limitation3'),
+        t('pricing.plans.starter.limitations.limitation4')
       ],
-      cta: "Essai gratuit de 14 jours",
+      cta: t('pricing.plans.starter.cta'),
       popular: false
     },
     {
-      name: "Pro",
-      description: "Pour les utilisateurs professionnels ou petites entreprises",
+      name: t('pricing.plans.pro.name'),
+      description: t('pricing.plans.pro.description'),
       price: {
         monthly: "49.99",
         annual: "41.66",
       },
       features: [
-        "Devis et factures illimités",
-        "Gestion des clients",
-        "Modèles professionnels",
-        "Génération de leads clients",
-        "Rappels automatiques pour les factures impayées",
-        "Support multi-utilisateurs",
-        "Support prioritaire par e-mail et chat",
-        "Outils d'analyse et de rapports avancés"
+        t('pricing.plans.pro.features.feature1'),
+        t('pricing.plans.pro.features.feature2'),
+        t('pricing.plans.pro.features.feature3'),
+        t('pricing.plans.pro.features.feature4'),
+        t('pricing.plans.pro.features.feature5'),
+        t('pricing.plans.pro.features.feature6'),
+        t('pricing.plans.pro.features.feature7'),
+        t('pricing.plans.pro.features.feature8')
       ],
       limitations: [],
-      cta: "Essai gratuit de 14 jours",
+      cta: t('pricing.plans.pro.cta'),
       popular: true
     }
   ];
@@ -66,8 +68,9 @@ const PricingPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>Tarifs - HAVITAM</title>
-        <meta name="description" content="Choisissez le plan qui correspond le mieux à vos besoins. Tous les plans incluent un essai gratuit de 14 jours." />
+        <title>{t('meta.pricing.title')}</title>
+        <meta name="description" content={t('meta.pricing.description')} />
+        <html lang={i18n.language} />
       </Helmet>
       <Header />
       
@@ -86,34 +89,34 @@ const PricingPage = () => {
             <div className="text-center">
               {/* Badge */}
               <div className="inline-flex items-center bg-[#0036ab]/10 text-[#0036ab] px-4 py-2 rounded-full text-sm font-medium mb-6 animate-fadeIn">
-                <Icon name="Euro" size={16} className="mr-2" />
-                Nos tarifs
+                <Icon name="DollarSign" size={16} className="mr-2" />
+                {t('pricing.hero.badge')}
               </div>
               
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-                Des tarifs{' '}
+                {t('pricing.hero.title.prefix')}{' '}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0036ab] to-[#12bf23]">
-                  transparents
+                  {t('pricing.hero.title.highlight')}
                 </span>{' '}
-                et adaptés
+                {t('pricing.hero.title.suffix')}
               </h1>
               <p className="text-lg md:text-xl text-gray-600 mb-8 leading-relaxed max-w-3xl mx-auto">
-                Choisissez le plan qui correspond le mieux à vos besoins. Tous les plans incluent un essai gratuit de 14 jours.
+                {t('pricing.hero.subtitle')}
               </p>
               
               {/* Key Benefits */}
               <div className="flex flex-wrap justify-center gap-4 mb-8">
                 <div className="flex items-center text-sm text-gray-600">
                   <Icon name="CheckCircle" size={16} className="mr-2 text-[#12bf23]" />
-                  <span>14 jours d'essai gratuit</span>
+                  <span>{t('pricing.hero.benefits.trial')}</span>
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <Icon name="CheckCircle" size={16} className="mr-2 text-[#12bf23]" />
-                  <span>Sans engagement</span>
+                  <span>{t('pricing.hero.benefits.noCommitment')}</span>
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <Icon name="CheckCircle" size={16} className="mr-2 text-[#12bf23]" />
-                  <span>Annulation à tout moment</span>
+                  <span>{t('pricing.hero.benefits.cancelAnytime')}</span>
                 </div>
               </div>
             </div>
@@ -138,7 +141,7 @@ const PricingPage = () => {
                   }`}
                   onClick={() => toggleBillingCycle('monthly')}
                 >
-                  Mensuel
+                  {t('pricing.toggle.monthly')}
                 </button>
                 <button
                   className={`relative flex-1 px-8 py-2 rounded-lg text-sm font-medium transition-all duration-500 ease-in-out z-10 ${
@@ -148,8 +151,8 @@ const PricingPage = () => {
                   }`}
                   onClick={() => toggleBillingCycle('annual')}
                 >
-                  Annuel 
-                  <span className="ml-2 bg-[#0036ab] text-white px-2 py-1 rounded-full text-xs">-20%</span>
+                  {t('pricing.toggle.yearly')} 
+                  <span className="ml-2 bg-[#0036ab] text-white px-2 py-1 rounded-full text-xs">{t('pricing.toggle.savings')}</span>
                 </button>
               </div>
             </div>
@@ -176,7 +179,7 @@ const PricingPage = () => {
                   {plan.popular && (
                     <div className="absolute top-0 inset-x-0 transform -translate-y-1/2">
                       <span className="bg-[#0036ab] text-white text-sm font-medium px-4 py-2 rounded-full shadow-lg">
-                        Le plus populaire
+                        {t('pricing.popular')}
                       </span>
                     </div>
                   )}
@@ -189,16 +192,16 @@ const PricingPage = () => {
                       <span className="text-5xl font-bold text-gray-900">
                         {plan.price[billingCycle]}€
                       </span>
-                      <span className="text-gray-600 ml-2 mb-2">/ {billingCycle === 'monthly' ? 'mois' : 'mois'}</span>
-                    </div>
-                    <p className="text-sm text-gray-500 mt-2">
-                      HT, TVA applicable
+                                          <span className="text-gray-600 ml-2 mb-2">/ {t('pricing.period')}</span>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-2">
+                    {t('pricing.taxNote')}
+                  </p>
+                  {billingCycle === 'annual' && (
+                    <p className="text-sm text-[#12bf23] font-medium mt-2">
+                      {t('pricing.savings', { amount: ((plan.price.monthly * 12) - (plan.price.annual * 12)).toFixed(2) })}
                     </p>
-                    {billingCycle === 'annual' && (
-                      <p className="text-sm text-[#12bf23] font-medium mt-2">
-                        Économisez {((plan.price.monthly * 12) - (plan.price.annual * 12)).toFixed(2)}€ par an
-                      </p>
-                    )}
+                  )}
                   </div>
                   
                   <div className="mb-8">
@@ -247,13 +250,13 @@ const PricingPage = () => {
             <div className="text-center mb-16">
               <div className="inline-flex items-center bg-[#0036ab]/10 rounded-full px-6 py-3 shadow-lg border border-[#0036ab]/20 mb-6">
                 <Icon name="Shield" size={20} className="text-[#0036ab] mr-2" />
-                <span className="text-sm font-medium text-[#0036ab]">Garanties</span>
+                <span className="text-sm font-medium text-[#0036ab]">{t('pricing.guarantees.badge')}</span>
               </div>
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-                Pourquoi choisir HAVITAM ?
+                {t('pricing.guarantees.title')}
               </h2>
               <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                Nous vous offrons la tranquillité d'esprit avec nos garanties et notre support
+                {t('pricing.guarantees.subtitle')}
               </p>
             </div>
             
@@ -262,19 +265,19 @@ const PricingPage = () => {
                 <div className="w-16 h-16 bg-[#0036ab]/10 rounded-2xl flex items-center justify-center mb-6">
                   <Icon name="Calendar" size={32} className="text-[#0036ab]" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Essai gratuit</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">{t('pricing.guarantees.trial.title')}</h3>
                 <p className="text-gray-600 leading-relaxed">
-                  Testez HAVITAM gratuitement pendant 14 jours sans engagement
+                  {t('pricing.guarantees.trial.description')}
                 </p>
               </div>
               
               <div className="bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-200">
                 <div className="w-16 h-16 bg-[#12bf23]/10 rounded-2xl flex items-center justify-center mb-6">
-                  <Icon name="Check" size={32} className="text-[#12bf23]" />
+                  <Icon name="XCircle" size={32} className="text-[#12bf23]" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Sans engagement</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">{t('pricing.guarantees.noCommitment.title')}</h3>
                 <p className="text-gray-600 leading-relaxed">
-                  Annulez à tout moment, sans frais cachés ni pénalités
+                  {t('pricing.guarantees.noCommitment.description')}
                 </p>
               </div>
               
@@ -282,9 +285,9 @@ const PricingPage = () => {
                 <div className="w-16 h-16 bg-[#0036ab]/10 rounded-2xl flex items-center justify-center mb-6">
                   <Icon name="Shield" size={32} className="text-[#0036ab]" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Paiement sécurisé</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">{t('pricing.guarantees.securePayment.title')}</h3>
                 <p className="text-gray-600 leading-relaxed">
-                  Vos informations de paiement sont traitées en toute sécurité
+                  {t('pricing.guarantees.securePayment.description')}
                 </p>
               </div>
             </div>
@@ -296,10 +299,10 @@ const PricingPage = () => {
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-foreground mb-4">
-                Questions fréquentes
+                {t('pricing.faq.title')}
               </h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Trouvez rapidement les réponses à vos questions sur nos tarifs
+                {t('pricing.faq.subtitle')}
               </p>
             </div>
             
@@ -307,40 +310,40 @@ const PricingPage = () => {
               {/* FAQ Item 1 */}
               <div className="bg-card border border-border rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-foreground mb-3">
-                  Puis-je changer de plan à tout moment ?
+                  {t('pricing.faq.changePlan.question')}
                 </h3>
                 <p className="text-muted-foreground">
-                  Oui, vous pouvez changer de plan à tout moment. La modification prendra effet à votre prochaine facturation.
+                  {t('pricing.faq.changePlan.answer')}
                 </p>
               </div>
               
               {/* FAQ Item 2 */}
               <div className="bg-card border border-border rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-foreground mb-3">
-                  Combien de temps dure l'essai gratuit ?
+                  {t('pricing.faq.trialDuration.question')}
                 </h3>
                 <p className="text-muted-foreground">
-                  L'essai gratuit dure 14 jours. Vous pouvez annuler à tout moment sans frais.
+                  {t('pricing.faq.trialDuration.answer')}
                 </p>
               </div>
               
               {/* FAQ Item 3 */}
               <div className="bg-card border border-border rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-foreground mb-3">
-                  Quels moyens de paiement acceptez-vous ?
+                  {t('pricing.faq.paymentMethods.question')}
                 </h3>
                 <p className="text-muted-foreground">
-                  Nous acceptons les cartes bancaires (Visa, Mastercard) et les virements SEPA.
+                  {t('pricing.faq.paymentMethods.answer')}
                 </p>
               </div>
               
               {/* FAQ Item 4 */}
               <div className="bg-card border border-border rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-foreground mb-3">
-                  La génération de leads est-elle incluse ?
+                  {t('pricing.faq.leadsIncluded.question')}
                 </h3>
                 <p className="text-muted-foreground">
-                  La génération de leads est incluse dans le plan Pro et les plans supérieurs.
+                  {t('pricing.faq.leadsIncluded.answer')}
                 </p>
               </div>
             </div>
@@ -361,10 +364,10 @@ const PricingPage = () => {
           <div className="container mx-auto px-4 relative z-10">
             <div className="text-center">
               <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 tracking-tight">
-                Prêt à transformer votre activité ?
+                {t('pricing.cta.title')}
               </h2>
               <p className="text-lg text-white/90 mb-10 max-w-2xl mx-auto leading-relaxed">
-                Rejoignez des milliers d'artisans qui font confiance à HAVITAM pour développer leur activité
+                {t('pricing.cta.subtitle')}
               </p>
               <Link to="/register">
                 <Button 
@@ -373,8 +376,8 @@ const PricingPage = () => {
                   className="bg-white text-blue-800 border-white shadow-xl transform transition-all duration-300 hover:scale-105 hover:bg-white/90 hover:shadow-blue-900/50 group"
                 >
                   <span className="flex items-center">
-                    <Icon name="Sparkles" size={20} className="mr-2 group-hover:animate-pulse text-blue-600" />
-                    Commencer l'essai gratuit
+                    <Icon name="ArrowRight" size={20} className="mr-2 group-hover:animate-pulse text-blue-600" />
+                    {t('pricing.cta.button')}
                   </span>
                 </Button>
               </Link>

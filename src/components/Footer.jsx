@@ -66,6 +66,7 @@ const Footer = () => {
                   {t('footer.product.pricing')}
                 </Link>
               </li>
+
               <li>
                 <Link to="/features" className="text-gray-300 hover:text-white transition-colors text-sm lg:text-base">
                   {t('footer.product.features')}
@@ -155,15 +156,7 @@ const Footer = () => {
               </span>
             </div>
             <div className="flex flex-wrap justify-center md:justify-end space-x-4 lg:space-x-6">
-              <Link to="/sitemap" className="text-sm text-gray-400 hover:text-white transition-colors">
-                {t('footer.links.sitemap')}
-              </Link>
-              <Link to="/support" className="text-sm text-gray-400 hover:text-white transition-colors">
-                {t('footer.links.support')}
-              </Link>
-              <Link to="/status" className="text-sm text-gray-400 hover:text-white transition-colors">
-                {t('footer.links.status')}
-              </Link>
+              {/* Footer links removed - pages not implemented yet */}
             </div>
           </div>
         </div>

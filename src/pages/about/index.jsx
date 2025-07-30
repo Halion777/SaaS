@@ -7,7 +7,7 @@ import Icon from '../../components/AppIcon';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 const AboutPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [isVisible, setIsVisible] = useState({});
   
   // Refs for scroll animations
@@ -42,23 +42,23 @@ const AboutPage = () => {
   const getCompanyValues = () => [
     {
       icon: "Zap",
-      title: "Simplicité",
-      description: "Nous créons des outils simples et intuitifs pour que vous puissiez vous concentrer sur votre métier sans complexité inutile."
+      title: t('about.values.simplicity.title'),
+      description: t('about.values.simplicity.description')
     },
     {
       icon: "Settings",
-      title: "Automatisation",
-      description: "Nous automatisons les tâches répétitives pour vous faire gagner du temps et augmenter votre productivité."
+      title: t('about.values.automation.title'),
+      description: t('about.values.automation.description')
     },
     {
       icon: "Users",
-      title: "Accompagnement",
-      description: "Nous vous accompagnons à chaque étape avec un support personnalisé et des solutions adaptées à vos besoins."
+      title: t('about.values.support.title'),
+      description: t('about.values.support.description')
     },
     {
       icon: "Target",
-      title: "Notre mission",
-      description: "Notre mission est de devenir la vitamine digitale du bâtiment, en facilitant la gestion quotidienne des artisans."
+      title: t('about.values.mission.title'),
+      description: t('about.values.mission.description')
     }
   ];
   
@@ -69,9 +69,9 @@ const AboutPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>À propos - HAVITAM</title>
-        <meta name="description" content="Découvrez l'histoire et les valeurs d'HAVITAM, la plateforme innovante pour les artisans du bâtiment." />
-        <html lang="fr" />
+        <title>{t('meta.about.title')}</title>
+        <meta name="description" content={t('meta.about.description')} />
+        <html lang={i18n.language} />
       </Helmet>
       
       <Header />
@@ -113,23 +113,23 @@ const AboutPage = () => {
                   <div className="flex flex-wrap justify-center lg:justify-start gap-3 sm:gap-4 mb-8">
                     <div className="flex items-center text-xs sm:text-sm text-gray-600">
                       <Icon name="CheckCircle" size={14} className="sm:w-4 sm:h-4 w-3 h-3 mr-1 sm:mr-2 text-[#12bf23]" />
-                      <span>500+ artisans nous font confiance</span>
+                      <span>{t('about.hero.benefits.trust')}</span>
                     </div>
                     <div className="flex items-center text-xs sm:text-sm text-gray-600">
                       <Icon name="CheckCircle" size={14} className="sm:w-4 sm:h-4 w-3 h-3 mr-1 sm:mr-2 text-[#12bf23]" />
-                      <span>Support en FR / NL / EN</span>
+                      <span>{t('about.hero.benefits.support')}</span>
                     </div>
                   </div>
                   
                   <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                     <Link to="/register">
                       <Button variant="default" size="lg" className="bg-[#0036ab] hover:bg-[#0036ab]/90 px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
-                        Commencer l'essai gratuit
+                        {t('ui.buttons.startTrial')}
                       </Button>
                     </Link>
                     <Link to="/contact">
                       <Button variant="outline" size="lg" className="border-2 border-gray-200 hover:border-[#0036ab] px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
-                        Nous contacter
+                        {t('ui.buttons.contactUs')}
                       </Button>
                     </Link>
                   </div>
@@ -151,14 +151,14 @@ const AboutPage = () => {
                      <div className="absolute -top-4 -right-4 bg-white rounded-xl shadow-lg p-4 transform -rotate-6">
                        <div className="flex items-center space-x-2">
                          <Icon name="Zap" size={20} className="text-[#12bf23]" />
-                         <span className="text-sm font-medium text-gray-700">Rapide</span>
+                         <span className="text-sm font-medium text-gray-700">{t('about.hero.floating.rapid')}</span>
                        </div>
                      </div>
                      
                      <div className="absolute -bottom-4 -left-4 bg-white rounded-xl shadow-lg p-4 transform rotate-6">
                        <div className="flex items-center space-x-2">
                          <Icon name="Shield" size={20} className="text-[#0036ab]" />
-                         <span className="text-sm font-medium text-gray-700">Qualifié</span>
+                         <span className="text-sm font-medium text-gray-700">{t('about.hero.floating.qualified')}</span>
                        </div>
                      </div>
                   </div>
@@ -180,13 +180,13 @@ const AboutPage = () => {
             <div className="text-center mb-16">
               <div className="inline-flex items-center bg-[#0036ab]/10 rounded-full px-6 py-3 shadow-lg border border-[#0036ab]/20 mb-6">
                 <Icon name="BookOpen" size={20} className="text-[#0036ab] mr-2" />
-                <span className="text-sm font-medium text-[#0036ab]">Notre histoire</span>
+                <span className="text-sm font-medium text-[#0036ab]">{t('about.story.badge')}</span>
               </div>
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-                Notre histoire
+                {t('about.story.title')}
                 </h2>
               <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                Découvrez comment HAVITAM est né et comment nous aidons les artisans à réussir
+                {t('about.story.subtitle')}
               </p>
             </div>
             
@@ -196,13 +196,13 @@ const AboutPage = () => {
                 <div className="space-y-8 text-gray-700 leading-relaxed">
                   <div className="relative pl-8 border-l-4 border-[#0036ab] bg-gradient-to-r from-blue-50 to-transparent p-6 rounded-r-xl">
                     <p className="text-lg">
-                      L'idée de Havitam est née d'un constat simple : les artisans perdent énormément de temps sur les tâches administratives alors qu'ils devraient pouvoir se concentrer sur leur savoir-faire.
+                      {t('about.story.paragraph1')}
                     </p>
                   </div>
                   
                   <div className="relative pl-8 border-l-4 border-[#12bf23] bg-gradient-to-r from-green-50 to-transparent p-6 rounded-r-xl">
                     <p className="text-lg">
-                      Après avoir discuté avec de nombreux indépendants, nous avons réalisé qu'il manquait une solution simple, moderne et intuitive, pensée spécialement pour eux.
+                      {t('about.story.paragraph2')}
                     </p>
                   </div>
                 </div>
@@ -254,14 +254,12 @@ const AboutPage = () => {
               <div className={`transition-all duration-1000 ${isVisible.story ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'} order-1 lg:order-2`}>
                 <div className="space-y-8 text-gray-700 leading-relaxed">
                   <div className="relative pl-8 border-l-4 border-[#12bf23] bg-gradient-to-r from-green-50 to-transparent p-6 rounded-r-xl">
-                    <p className="text-lg">
-                      Le nom <span className="font-bold text-[#0036ab]">HAVITAM</span> vient de <span className="font-semibold">HA</span> (les initiales du fondateur) et <span className="font-semibold">vitam</span>, en référence à la "vitamine" qui donne un coup de boost à l'activité des artisans.
+                    <p className="text-lg" dangerouslySetInnerHTML={{ __html: t('about.story.paragraph3') }}>
                     </p>
                   </div>
                   
                   <div className="relative pl-8 border-l-4 border-[#0036ab] bg-gradient-to-r from-blue-50 to-transparent p-6 rounded-r-xl shadow-sm">
-                    <p className="text-lg">
-                      Notre mission est de devenir la <span className="font-semibold text-[#12bf23]">vitamine digitale du bâtiment</span>, en facilitant la gestion quotidienne, en réduisant le temps administratif et en augmentant la rentabilité des professionnels du secteur.
+                    <p className="text-lg" dangerouslySetInnerHTML={{ __html: t('about.story.paragraph4') }}>
                     </p>
                   </div>
                 </div>
@@ -282,13 +280,13 @@ const AboutPage = () => {
             <div className={`text-center mb-16 transition-all duration-1000 ${isVisible.values ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
               <div className="inline-flex items-center bg-[#0036ab]/10 rounded-full px-6 py-3 shadow-lg border border-[#0036ab]/20 mb-6">
                 <Icon name="Heart" size={20} className="text-[#0036ab] mr-2" />
-                <span className="text-sm font-medium text-[#0036ab]">Nos valeurs</span>
+                <span className="text-sm font-medium text-[#0036ab]">{t('about.values.badge')}</span>
               </div>
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-                Nos valeurs
+                {t('about.values.title')}
               </h2>
               <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                Les principes qui guident nos actions et notre engagement envers la communauté des artisans
+                {t('about.values.subtitle')}
               </p>
             </div>
             
@@ -320,13 +318,13 @@ const AboutPage = () => {
             <div className={`text-center mb-16 transition-all duration-1000 ${isVisible.founder ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
               <div className="inline-flex items-center bg-[#0036ab]/10 rounded-full px-6 py-3 shadow-lg border border-[#0036ab]/20 mb-6">
                 <Icon name="User" size={20} className="text-[#0036ab] mr-2" />
-                <span className="text-sm font-medium text-[#0036ab]">Notre fondateur</span>
+                <span className="text-sm font-medium text-[#0036ab]">{t('about.founder.badge')}</span>
               </div>
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-                Notre Fondateur
+                {t('about.founder.title')}
               </h2>
               <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                Découvrez la vision qui a donné naissance à HAVITAM
+                {t('about.founder.subtitle')}
               </p>
             </div>
             
@@ -343,26 +341,26 @@ const AboutPage = () => {
                   />
                       </div>
                       <div className="absolute -bottom-2 -right-2 bg-[#12bf23] text-white px-3 py-1 rounded-full text-sm font-medium">
-                        Fondateur & CEO
+                        {t('about.founder.role')}
                       </div>
                 </div>
               </div>
               <div className="md:col-span-2">
                     <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                  Haitam A.
+                  {t('about.founder.name')}
                 </h3>
                     <p className="text-[#0036ab] font-medium mb-6">
-                  Fondateur & CEO
+                  {t('about.founder.role')}
                 </p>
                     <div className="prose prose-lg text-gray-600 space-y-4">
                   <p>
-                        Haitam A. est passionné par la technologie et l'entrepreneuriat. Après des études en commerce international et plusieurs expériences dans la création d'entreprise, il a été confronté à la complexité de la gestion administrative, des devis, et de la facturation.
+                        {t('about.founder.bio.paragraph1')}
                   </p>
                       <p>
-                        C'est en discutant avec des amis artisans qu'il a compris que ce problème était largement partagé dans le secteur. Il a donc décidé de créer une solution simple et complète pour répondre à leurs besoins spécifiques.
+                        {t('about.founder.bio.paragraph2')}
                   </p>
                       <p>
-                        Sans venir du bâtiment, il a su s'entourer, observer, écouter — et bâtir une plateforme utile et efficace. Havitam est née de cette vision : offrir aux artisans les outils numériques qu'ils méritent.
+                        {t('about.founder.bio.paragraph3')}
                   </p>
                     </div>
                   </div>
@@ -380,41 +378,41 @@ const AboutPage = () => {
           <div className="container mx-auto px-4 relative z-10">
             <div className={`max-w-6xl mx-auto text-center transition-all duration-1000 ${isVisible.cta ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
               <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
-                Rejoignez la révolution du bâtiment
+                {t('about.cta.title')}
             </h2>
               <p className="text-xl text-white/90 mb-8 max-w-4xl mx-auto leading-relaxed">
-                Découvrez comment HAVITAM peut transformer votre activité et vous permettre de vous concentrer sur ce que vous faites de mieux.
+                {t('about.cta.subtitle')}
               </p>
               
               {/* Trust Indicators */}
               <div className="flex flex-wrap justify-center items-center gap-8 mb-12 text-white/90">
                 <div className="flex items-center">
                   <Icon name="CheckCircle" size={20} className="mr-2 text-[#12bf23]" />
-                  <span className="font-medium">14 jours d'essai gratuit</span>
+                  <span className="font-medium">{t('about.cta.trust.trial')}</span>
                 </div>
                 <div className="flex items-center">
                   <Icon name="Shield" size={20} className="mr-2 text-[#12bf23]" />
-                  <span className="font-medium">Sans engagement</span>
+                  <span className="font-medium">{t('about.cta.trust.noCommitment')}</span>
                 </div>
                 <div className="flex items-center">
                   <Icon name="Clock" size={20} className="mr-2 text-[#12bf23]" />
-                  <span className="font-medium">Configuration en 5 minutes</span>
+                  <span className="font-medium">{t('about.cta.trust.setup')}</span>
                 </div>
                 <div className="flex items-center">
                   <Icon name="Users" size={20} className="mr-2 text-[#12bf23]" />
-                  <span className="font-medium">Support en FR / NL / EN</span>
+                  <span className="font-medium">{t('about.cta.trust.support')}</span>
                 </div>
               </div>
               
               <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Link to="/register">
                   <Button variant="default" size="lg" className="bg-white text-[#0036ab] hover:bg-gray-50 px-10 py-5 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
-                    Commencer l'essai gratuit
+                    {t('about.cta.primaryButton')}
                 </Button>
               </Link>
               <Link to="/contact">
                   <Button variant="outline" size="lg" className="border-2 border-white text-white hover:bg-white hover:text-[#0036ab] px-10 py-5 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
-                    Parler à un expert
+                    {t('about.cta.secondaryButton')}
                 </Button>
               </Link>
               </div>

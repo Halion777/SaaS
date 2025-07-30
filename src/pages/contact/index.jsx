@@ -10,7 +10,7 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 
 const ContactPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -44,17 +44,17 @@ const ContactPage = () => {
   // Validate form
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.firstName) newErrors.firstName = 'Prénom est requis';
-    if (!formData.lastName) newErrors.lastName = 'Nom est requis';
+    if (!formData.firstName) newErrors.firstName = t('contact.form.errors.firstNameRequired');
+    if (!formData.lastName) newErrors.lastName = t('contact.form.errors.lastNameRequired');
     
     if (!formData.email) {
-      newErrors.email = 'Email est requis';
+      newErrors.email = t('contact.form.errors.emailRequired');
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email invalide';
+      newErrors.email = t('contact.form.errors.emailInvalid');
     }
     
-    if (!formData.subject) newErrors.subject = 'Sujet est requis';
-    if (!formData.message) newErrors.message = 'Message est requis';
+    if (!formData.subject) newErrors.subject = t('contact.form.errors.subjectRequired');
+    if (!formData.message) newErrors.message = t('contact.form.errors.messageRequired');
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -86,21 +86,21 @@ const ContactPage = () => {
 
   // Subject options
   const subjectOptions = [
-    { value: '', label: 'Sélectionnez un sujet' },
-    { value: 'demo', label: 'Demande de démonstration' },
-    { value: 'question', label: 'Question sur le produit' },
-    { value: 'support', label: 'Assistance technique' },
-    { value: 'partnership', label: 'Proposition de partenariat' },
-    { value: 'other', label: 'Autre' }
+    { value: '', label: t('contact.form.subject.select') },
+    { value: 'demo', label: t('contact.form.subject.demo') },
+    { value: 'question', label: t('contact.form.subject.question') },
+    { value: 'support', label: t('contact.form.subject.support') },
+    { value: 'partnership', label: t('contact.form.subject.partnership') },
+    { value: 'other', label: t('contact.form.subject.other') }
   ];
 
   return (
     <>
       <Helmet>
-        <title>Contact - HAVITAM</title>
-        <meta name="description" content="Contactez l'équipe HAVITAM pour toute question sur notre plateforme pour artisans, pour une démonstration ou un support technique." />
-        <meta name="keywords" content="contact, support, artisans, devis, facture, gestion" />
-        <html lang="fr" />
+        <title>{t('meta.contact.title')}</title>
+        <meta name="description" content={t('meta.contact.description')} />
+        <meta name="keywords" content={t('meta.contact.keywords')} />
+        <html lang={i18n.language} />
       </Helmet>
       
       <div className="min-h-screen bg-background">
@@ -122,29 +122,29 @@ const ContactPage = () => {
               {/* Badge */}
               <div className="inline-flex items-center bg-[#0036ab]/10 text-[#0036ab] px-4 py-2 rounded-full text-sm font-medium mb-6 animate-fadeIn">
                 <Icon name="MessageCircle" size={16} className="mr-2" />
-                {t('contact.hero.title')}
+                {t('contact.hero.badge')}
               </div>
               
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-                {t('contact.hero.subtitle')}
+                {t('contact.hero.title')}
               </h1>
               <p className="text-lg md:text-xl text-gray-600 mb-8 leading-relaxed max-w-3xl mx-auto">
-                {t('contact.hero.description')}
+                {t('contact.hero.subtitle')}
               </p>
               
               {/* Key Benefits */}
               <div className="flex flex-wrap justify-center gap-4 mb-8">
                 <div className="flex items-center text-sm text-gray-600">
                   <Icon name="CheckCircle" size={16} className="mr-2 text-[#12bf23]" />
-                  <span>Réponse sous 24h</span>
+                  <span>{t('contact.hero.benefits.response24h')}</span>
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <Icon name="CheckCircle" size={16} className="mr-2 text-[#12bf23]" />
-                  <span>Support français</span>
+                  <span>{t('contact.hero.benefits.frenchSupport')}</span>
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <Icon name="CheckCircle" size={16} className="mr-2 text-[#12bf23]" />
-                  <span>Accompagnement gratuit</span>
+                  <span>{t('contact.hero.benefits.freeSupport')}</span>
                 </div>
               </div>
             </div>
@@ -165,9 +165,9 @@ const ContactPage = () => {
               {/* Left Column - Contact Information */}
               <div className="space-y-8">
                 <div>
-                  <h2 className="text-3xl font-bold text-foreground mb-4">Parlons de votre projet</h2>
+                  <h2 className="text-3xl font-bold text-foreground mb-4">{t('contact.info.title')}</h2>
                   <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
-                    Que vous soyez un artisan qui souhaite découvrir Havitam ou un client ayant besoin d'aide, nous sommes là pour vous accompagner.
+                    {t('contact.info.description')}
                   </p>
                 </div>
                 
@@ -224,39 +224,39 @@ const ContactPage = () => {
                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6 mx-auto">
                       <Icon name="Check" size={32} className="text-green-600" />
                     </div>
-                    <h2 className="text-2xl font-bold text-foreground mb-3">Message envoyé !</h2>
-                    <p className="text-muted-foreground mb-6">Nous vous répondrons dans les plus brefs délais.</p>
+                    <h2 className="text-2xl font-bold text-foreground mb-3">{t('contact.form.success.title')}</h2>
+                    <p className="text-muted-foreground mb-6">{t('contact.form.success.message')}</p>
                     <Button 
                       onClick={() => setIsSubmitted(false)} 
                       variant="outline"
                     >
-                      Envoyer un autre message
+                      {t('contact.form.success.sendAnother')}
                     </Button>
                   </div>
                 ) : (
                   <div>
-                    <h2 className="text-2xl font-bold text-foreground mb-6">Envoyez-nous un message</h2>
+                    <h2 className="text-2xl font-bold text-foreground mb-6">{t('contact.form.title')}</h2>
                     
                     <form onSubmit={handleSubmit} className="space-y-6">
                       {/* Name and Email */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-semibold text-foreground mb-2">
-                            Nom <span className="text-red-500">*</span>
+                            {t('contact.form.fields.firstName')} <span className="text-red-500">*</span>
                           </label>
                           <Input 
                             name="firstName"
                             value={formData.firstName}
                             onChange={handleInputChange}
                             error={errors.firstName}
-                            placeholder="Votre nom"
+                            placeholder={t('contact.form.placeholders.firstName')}
                             required
                             className="h-11"
                           />
                         </div>
                         <div>
                           <label className="block text-sm font-semibold text-foreground mb-2">
-                            Email <span className="text-red-500">*</span>
+                            {t('contact.form.fields.email')} <span className="text-red-500">*</span>
                           </label>
                           <Input 
                             type="email"
@@ -264,7 +264,7 @@ const ContactPage = () => {
                             value={formData.email}
                             onChange={handleInputChange}
                             error={errors.email}
-                            placeholder="Votre email"
+                            placeholder={t('contact.form.placeholders.email')}
                             required
                             className="h-11"
                           />
@@ -274,7 +274,7 @@ const ContactPage = () => {
                       {/* Subject */}
                       <div>
                         <label className="block text-sm font-semibold text-foreground mb-2">
-                          Sujet <span className="text-red-500">*</span>
+                          {t('contact.form.fields.subject')} <span className="text-red-500">*</span>
                         </label>
                         <Select
                           name="subject"
@@ -290,7 +290,7 @@ const ContactPage = () => {
                       {/* Message */}
                       <div>
                         <label className="block text-sm font-semibold text-foreground mb-2">
-                          Message <span className="text-red-500">*</span>
+                          {t('contact.form.fields.message')} <span className="text-red-500">*</span>
                         </label>
                         <textarea
                           name="message"
@@ -302,7 +302,7 @@ const ContactPage = () => {
                           } focus:outline-none focus:ring-2`}
                           value={formData.message}
                           onChange={handleInputChange}
-                          placeholder="Décrivez votre demande..."
+                          placeholder={t('contact.form.placeholders.message')}
                           required
                         ></textarea>
                         {errors.message && (
@@ -320,7 +320,7 @@ const ContactPage = () => {
                           iconName="Send"
                           iconPosition="left"
                         >
-                          {isSubmitting ? "Envoi en cours..." : "Envoyer"}
+                          {isSubmitting ? t('contact.form.submitting') : t('contact.form.send')}
                         </Button>
                       </div>
                     </form>

@@ -337,7 +337,11 @@
     "story": {
       "badge": "Notre histoire",
       "title": "Notre histoire",
-      "subtitle": "Découvrez comment HAVITAM est né d'une vision simple"
+      "subtitle": "Découvrez comment HAVITAM est né d'une vision simple",
+      "paragraph1": "L'idée de Havitam est née d'un constat simple : les artisans perdent énormément de temps sur les tâches administratives alors qu'ils devraient pouvoir se concentrer sur leur savoir-faire.",
+      "paragraph2": "Après avoir discuté avec de nombreux indépendants, nous avons réalisé qu'il manquait une solution simple, moderne et intuitive, pensée spécialement pour eux.",
+      "paragraph3": "Le nom <span class=\"font-bold text-[#0036ab]\">HAVITAM</span> vient de <span class=\"font-semibold\">HA</span> (les initiales du fondateur) et <span class=\"font-semibold\">vitam</span>, en référence à la \"vitamine\" qui donne un coup de boost à l'activité des artisans.",
+      "paragraph4": "Notre mission est de devenir la <span class=\"font-semibold text-[#12bf23]\">vitamine digitale du bâtiment</span>, en facilitant la gestion quotidienne, en réduisant le temps administratif et en augmentant la rentabilité des professionnels du secteur."
     },
     "values": {
       "badge": "Nos valeurs",
@@ -365,7 +369,12 @@
       "title": "Notre Fondateur",
       "subtitle": "Découvrez la vision qui a donné naissance à HAVITAM",
       "name": "Haitam A.",
-      "role": "Fondateur & CEO"
+      "role": "Fondateur & CEO",
+      "bio": {
+        "paragraph1": "Haitam A. est passionné par la technologie et l'entrepreneuriat. Après des études en commerce international et plusieurs expériences dans la création d'entreprise, il a été confronté à la complexité de la gestion administrative, des devis, et de la facturation.",
+        "paragraph2": "C'est en discutant avec des amis artisans qu'il a compris que ce problème était largement partagé dans le secteur. Il a donc décidé de créer une solution simple et complète pour répondre à leurs besoins spécifiques.",
+        "paragraph3": "Sans venir du bâtiment, il a su s'entourer, observer, écouter — et bâtir une plateforme utile et efficace. Havitam est née de cette vision : offrir aux artisans les outils numériques qu'ils méritent."
+      }
     },
     "cta": {
       "title": "Rejoignez la révolution du bâtiment",
@@ -382,11 +391,18 @@
   },
   "contact": {
     "hero": {
-      "title": "Contactez-nous",
-      "subtitle": "Notre équipe est là pour vous aider",
-      "description": "Que vous soyez un artisan qui souhaite découvrir Havitam ou un client ayant besoin d'aide, nous sommes là pour vous accompagner."
+      "badge": "Contact",
+      "title": "Nous sommes là pour vous aider",
+      "subtitle": "Contactez notre équipe pour toute question sur HAVITAM",
+      "benefits": {
+        "response24h": "Réponse sous 24h",
+        "frenchSupport": "Support en FR / NL / EN",
+        "freeSupport": "Accompagnement gratuit"
+      }
     },
     "info": {
+      "title": "Parlons de votre projet",
+      "description": "Que vous soyez un artisan qui souhaite découvrir Havitam ou un client ayant besoin d'aide, nous sommes là pour vous accompagner.",
       "email": {
         "title": "Email",
         "address": "support@havitam.com",
@@ -405,105 +421,225 @@
     },
     "form": {
       "title": "Envoyez-nous un message",
-      "firstName": "Nom",
-      "lastName": "Prénom",
-      "email": "Email",
-      "phone": "Téléphone",
-      "subject": "Sujet",
-      "message": "Message",
+      "fields": {
+        "firstName": "Nom",
+        "email": "Email",
+        "subject": "Sujet",
+        "message": "Message"
+      },
       "placeholders": {
         "firstName": "Votre nom",
-        "lastName": "Votre prénom",
         "email": "Votre email",
-        "phone": "Votre téléphone",
-        "message": "Votre message"
+        "message": "Décrivez votre demande..."
       },
-      "subjects": {
+      "subject": {
+        "select": "Sélectionnez un sujet",
         "demo": "Demande de démonstration",
         "question": "Question sur le produit",
         "support": "Assistance technique",
         "partnership": "Proposition de partenariat",
         "other": "Autre"
       },
+      "errors": {
+        "firstNameRequired": "Prénom est requis",
+        "lastNameRequired": "Nom est requis",
+        "emailRequired": "Email est requis",
+        "emailInvalid": "Email invalide",
+        "subjectRequired": "Sujet est requis",
+        "messageRequired": "Message est requis"
+      },
       "success": {
         "title": "Message envoyé !",
-        "description": "Nous vous répondrons dans les plus brefs délais.",
-        "button": "Envoyer un autre message"
-      }
+        "message": "Nous vous répondrons dans les plus brefs délais.",
+        "sendAnother": "Envoyer un autre message"
+      },
+      "submitting": "Envoi en cours...",
+      "send": "Envoyer"
     }
   },
   "pricing": {
     "hero": {
-      "badge": "Tarifs",
-      "title": "Des tarifs simples et transparents",
-      "subtitle": "Choisissez le plan qui correspond à vos besoins. Pas de frais cachés, pas de surprise."
+      "badge": "Nos tarifs",
+      "title": {
+        "prefix": "Des tarifs ",
+        "highlight": "transparents",
+        "suffix": " et adaptés"
+      },
+      "subtitle": "Choisissez le plan qui correspond le mieux à vos besoins. Tous les plans incluent un essai gratuit de 14 jours.",
+      "benefits": {
+        "trial": "14 jours d'essai gratuit",
+        "noCommitment": "Sans engagement",
+        "cancelAnytime": "Annulation à tout moment"
+      }
     },
     "toggle": {
       "monthly": "Mensuel",
       "yearly": "Annuel",
-      "savings": "Économisez 20%"
+      "savings": "-20%"
     },
+    "popular": "Le plus populaire",
+    "period": "mois",
+    "taxNote": "HT, TVA applicable",
+    "savings": "Économisez {{amount}}€ par an",
     "plans": {
       "starter": {
         "name": "Starter",
-        "price": "19€",
-        "period": "/mois",
-        "description": "Parfait pour commencer",
-        "features": [
-          "Jusqu'à 50 devis/mois",
-          "Facturation simple",
-          "Support email",
-          "Application mobile"
-        ]
+        "description": "Pour les débutants ou une utilisation à petite échelle",
+        "features": {
+          "feature1": "Jusqu'à 15 devis par mois",
+          "feature2": "Jusqu'à 15 factures par mois",
+          "feature3": "Gestion des clients",
+          "feature4": "Modèles professionnels",
+          "feature5": "Support par e-mail"
+        },
+        "limitations": {
+          "limitation1": "Pas de génération de leads clients",
+          "limitation2": "Pas de rappels automatiques",
+          "limitation3": "Pas d'accès multi-utilisateurs",
+          "limitation4": "Pas d'analyses avancées"
+        },
+        "cta": "Essai gratuit de 14 jours"
       },
       "pro": {
         "name": "Pro",
-        "price": "39€",
-        "period": "/mois",
-        "description": "Pour les artisans en croissance",
-        "features": [
-          "Devis illimités",
-          "Facturation avancée",
-          "Support prioritaire",
-          "Rapports détaillés",
-          "Intégrations"
-        ]
+        "description": "Pour les utilisateurs professionnels ou petites entreprises",
+        "features": {
+          "feature1": "Devis et factures illimités",
+          "feature2": "Gestion des clients",
+          "feature3": "Modèles professionnels",
+          "feature4": "Génération de leads clients",
+          "feature5": "Rappels automatiques pour les factures impayées",
+          "feature6": "Support multi-utilisateurs",
+          "feature7": "Support prioritaire par e-mail et chat",
+          "feature8": "Outils d'analyse et de rapports avancés"
+        },
+        "cta": "Essai gratuit de 14 jours"
+      }
+    },
+    "guarantees": {
+      "badge": "Garanties",
+      "title": "Pourquoi choisir HAVITAM ?",
+      "subtitle": "Nous vous offrons la tranquillité d'esprit avec nos garanties et notre support",
+      "trial": {
+        "title": "Essai gratuit",
+        "description": "Testez HAVITAM gratuitement pendant 14 jours sans engagement"
       },
-      "business": {
-        "name": "Business",
-        "price": "59€",
-        "period": "/mois",
-        "description": "Pour les équipes",
-        "features": [
-          "Tout du plan Pro",
-          "Gestion d'équipe",
-          "Support dédié",
-          "API personnalisée",
-          "Formation sur mesure"
-        ]
+      "noCommitment": {
+        "title": "Sans engagement",
+        "description": "Annulez à tout moment, sans frais cachés ni pénalités"
+      },
+      "securePayment": {
+        "title": "Paiement sécurisé",
+        "description": "Vos informations de paiement sont traitées en toute sécurité"
+      }
+    },
+    "faq": {
+      "title": "Questions fréquentes",
+      "subtitle": "Trouvez rapidement les réponses à vos questions sur nos tarifs",
+      "changePlan": {
+        "question": "Puis-je changer de plan à tout moment ?",
+        "answer": "Oui, vous pouvez changer de plan à tout moment. La modification prendra effet à votre prochaine facturation."
+      },
+      "trialDuration": {
+        "question": "Combien de temps dure l'essai gratuit ?",
+        "answer": "L'essai gratuit dure 14 jours. Vous pouvez annuler à tout moment sans frais."
+      },
+      "paymentMethods": {
+        "question": "Quels moyens de paiement acceptez-vous ?",
+        "answer": "Nous acceptons les cartes bancaires (Visa, Mastercard) et les virements SEPA."
+      },
+      "leadsIncluded": {
+        "question": "La génération de leads est-elle incluse ?",
+        "answer": "La génération de leads est incluse dans le plan Pro et les plans supérieurs."
       }
     },
     "cta": {
-      "title": "Prêt à commencer ?",
-      "subtitle": "Essayez HAVITAM gratuitement pendant 14 jours",
+      "title": "Prêt à transformer votre activité ?",
+      "subtitle": "Rejoignez des milliers d'artisans qui font confiance à HAVITAM pour développer leur activité",
       "button": "Commencer l'essai gratuit"
     }
   },
   "findArtisan": {
     "hero": {
       "badge": "Trouver un artisan",
-      "title": "Trouvez l'artisan qu'il vous faut",
-      "subtitle": "Connectez-vous avec des professionnels qualifiés près de chez vous"
+      "title": {
+        "prefix": "Trouvez l'artisan ",
+        "highlight": "idéal",
+        "suffix": " pour votre projet"
+      },
+      "subtitle": "Connectez-vous avec des artisans qualifiés et certifiés pour réaliser vos projets de construction et rénovation",
+      "benefits": {
+        "certified": "Artisans certifiés",
+        "freeQuotes": "Devis gratuits",
+        "qualityGuarantee": "Garantie qualité"
+      }
+    },
+    "steps": {
+      "step1": {
+        "title": "Catégorie de travaux",
+        "description": "Sélectionnez le type de travaux"
+      },
+      "step2": {
+        "title": "Localisation",
+        "description": "Indiquez l'adresse du chantier"
+      },
+      "step3": {
+        "title": "Description du projet",
+        "description": "Décrivez vos travaux en détail"
+      },
+      "step4": {
+        "title": "Vos coordonnées",
+        "description": "Pour que les artisans puissent vous contacter"
+      }
+    },
+    "categories": {
+      "plumbing": "Plomberie",
+      "electrical": "Électricité",
+      "painting": "Peinture",
+      "carpentry": "Menuiserie",
+      "tiling": "Carrelage",
+      "roofing": "Toiture",
+      "masonry": "Maçonnerie",
+      "heating": "Chauffage",
+      "gardening": "Jardinage",
+      "other": "Autre"
+    },
+    "priceRanges": {
+      "range1": "0–500€",
+      "range2": "500–1,000€",
+      "range3": "1,000–2,500€",
+      "range4": "2,500–5,000€",
+      "range5": "5,000–7,000€",
+      "range6": "7,000–10,000€",
+      "range7": "10,000–20,000€",
+      "range8": "20,000+€"
     },
     "form": {
       "title": "Décrivez votre projet",
-      "description": "Remplissez ce formulaire pour recevoir des devis personnalisés",
-      "projectType": "Type de projet",
-      "location": "Localisation",
-      "budget": "Budget estimé",
-      "timeline": "Délai souhaité",
+      "category": "Catégorie de travaux",
+      "selectCategory": "Sélectionnez une catégorie",
+      "categoryError": "Veuillez sélectionner une catégorie de travaux",
+      "address": "Adresse ou ville du chantier",
+      "addressPlaceholder": "Ex: 123 Rue de la Paix, Paris",
+      "zipCode": "Code postal",
+      "zipCodePlaceholder": "Ex: 75001",
       "description": "Description du projet",
-      "contact": "Informations de contact",
+      "descriptionPlaceholder": "Décrivez vos travaux en détail : nature, dimensions, matériaux souhaités...",
+      "priceRange": "Fourchette de prix",
+      "selectPriceRange": "Sélectionnez une fourchette",
+      "photos": "Photos du projet",
+      "optional": "Optionnel",
+      "clickToAddPhotos": "Cliquez pour ajouter des photos",
+      "fileTypes": "JPG, PNG ou PDF jusqu'à 5 MB",
+      "completionDate": "Date souhaitée de réalisation",
+      "selectDate": "Sélectionnez une date",
+      "contactInfo": "Vos coordonnées",
+      "fullName": "Nom / Prénom",
+      "fullNamePlaceholder": "Votre nom complet",
+      "phone": "Téléphone",
+      "phonePlaceholder": "06 12 34 56 78",
+      "email": "Email",
+      "emailPlaceholder": "votre@email.com",
       "submit": "Envoyer ma demande"
     }
   },
@@ -567,7 +703,24 @@
     "ogTitle": "HAVITAM - Votre vitamine digitale professionnelle",
     "ogDescription": "Simplifiez votre gestion administrative et développez votre clientèle",
     "schemaDescription": "La plateforme tout-en-un pour artisans du bâtiment. Créez des devis, envoyez des factures, suivez les paiements et recevez des prospects.",
-    "phone": "+33-1-23-45-67-89"
+    "phone": "+33-1-23-45-67-89",
+    "about": {
+      "title": "À propos - HAVITAM",
+      "description": "Découvrez l'histoire et les valeurs d'HAVITAM, la plateforme innovante pour les artisans du bâtiment."
+    },
+    "pricing": {
+      "title": "Tarifs - HAVITAM",
+      "description": "Choisissez le plan qui correspond le mieux à vos besoins. Tous les plans incluent un essai gratuit de 14 jours."
+    },
+    "findArtisan": {
+      "title": "Trouver un artisan - HAVITAM",
+      "description": "Trouvez un artisan qualifié près de chez vous pour vos projets de rénovation et construction."
+    },
+    "contact": {
+      "title": "Contact - HAVITAM",
+      "description": "Contactez l'équipe HAVITAM pour toute question sur notre plateforme pour artisans, pour une démonstration ou un support technique.",
+      "keywords": "contact, support, artisans, devis, facture, gestion"
+    }
   },
   "footer": {
     "description": "La solution tout-en-un pour les artisans qui souhaitent simplifier leur gestion administrative et développer leur clientèle.",
@@ -594,6 +747,289 @@
       "sitemap": "Plan du site",
       "support": "Support",
       "status": "Statut"
+    }
+  },
+  "features": {
+    "hero": {
+      "badge": "Fonctionnalités",
+      "title": {
+        "prefix": "Découvrez nos ",
+        "highlight": "fonctionnalités",
+        "suffix": " innovantes"
+      },
+      "subtitle": "Des outils puissants et intuitifs conçus spécialement pour les artisans du bâtiment",
+      "benefits": {
+        "simple": "Simple à utiliser",
+        "fast": "Rapide et efficace",
+        "intelligent": "Intelligent"
+      }
+    },
+    "section": {
+      "badge": "Fonctionnalités",
+      "title": "Toutes nos fonctionnalités",
+      "subtitle": "Découvrez comment HAVITAM peut transformer votre gestion quotidienne"
+    },
+    "list": {
+      "feature1": {
+        "title": "Devis & factures en 1 clic",
+        "description": "Créez vos devis et factures en quelques secondes grâce à une interface ultra-intuitive. Personnalisation rapide incluse."
+      },
+      "feature2": {
+        "title": "Suivi en temps réel & signature instantanée",
+        "description": "Suivez les statuts de vos devis, envoyez-les et faites-les signer en ligne. Même chose pour vos factures : envoyées, vues, payées — tout est tracé."
+      },
+      "feature3": {
+        "title": "Rappels automatiques de paiement",
+        "description": "Réduisez les retards : envoyez des rappels automatisés avant et après la date d'échéance. Moins de stress, plus de cash-flow."
+      },
+      "feature4": {
+        "title": "Gestion centralisée des clients & documents",
+        "description": "Toutes vos données (clients, devis, factures, paiements) sont organisées et accessibles depuis un seul tableau de bord."
+      },
+      "feature5": {
+        "title": "Réception de leads qualifiés automatiquement",
+        "description": "Recevez des demandes de projets dans votre zone géographique selon vos spécialités. Répondez avec un devis en 1 clic, ou passez au suivant."
+      },
+      "feature6": {
+        "title": "Devis dictés à la voix (Nouveau)",
+        "description": "Gagnez un temps fou en dictant vos devis à la voix. Notre assistant vocal les rédige pour vous, instantanément."
+      },
+      "feature7": {
+        "title": "Tarification intelligente par IA (Bêta)",
+        "description": "Une IA vous aide à estimer vos tarifs selon le marché, vos précédents devis, et le type de client. Plus de précision, plus de conversions."
+      },
+      "feature8": {
+        "title": "Analyse de devis & recommandations IA (Bêta)",
+        "description": "Recevez un feedback automatique sur chaque devis : trop cher ? trop long ? incomplet ? L'IA vous guide pour l'optimiser avant l'envoi."
+      }
+    },
+    "benefits": {
+      "badge": "Avantages",
+      "title": "Pourquoi choisir HAVITAM ?",
+      "subtitle": "Rejoignez des centaines d'artisans qui ont déjà transformé leur gestion",
+      "benefit1": {
+        "title": "Augmentation du CA",
+        "description": "Nos utilisateurs voient en moyenne une augmentation de 45% de leur chiffre d'affaires"
+      },
+      "benefit2": {
+        "title": "Réduction du temps administratif",
+        "description": "Économisez jusqu'à 60% de votre temps sur les tâches administratives"
+      },
+      "benefit3": {
+        "title": "Satisfaction client",
+        "description": "98% de nos utilisateurs recommandent HAVITAM à leurs collègues"
+      }
+    },
+    "cta": {
+      "title": "Prêt à transformer votre gestion ?",
+      "subtitle": "Rejoignez des centaines d'artisans qui ont déjà simplifié leur quotidien",
+      "primaryButton": "Commencer l'essai gratuit",
+      "secondaryButton": "Parler à un expert"
+    }
+  },
+  "terms": {
+    "hero": {
+      "badge": "Conditions d'utilisation",
+      "title": "Conditions d'utilisation",
+      "subtitle": "Lisez attentivement ces conditions avant d'utiliser nos services",
+      "lastUpdated": "Dernière mise à jour",
+      "updateDate": "15 janvier 2024"
+    },
+    "toc": {
+      "title": "Table des matières"
+    },
+    "sections": {
+      "acceptance": {
+        "title": "Acceptation des conditions",
+        "content": "<p>En accédant et en utilisant HAVITAM, vous acceptez d'être lié par ces conditions d'utilisation. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser nos services.</p>"
+      },
+      "services": {
+        "title": "Description des services",
+        "content": "<p>HAVITAM fournit une plateforme de gestion administrative pour les artisans du bâtiment, incluant la création de devis, la gestion de factures, le suivi des paiements et d'autres outils de gestion d'entreprise.</p>"
+      },
+      "accounts": {
+        "title": "Comptes utilisateur",
+        "content": "<p>Vous êtes responsable de maintenir la confidentialité de votre compte et de votre mot de passe. Vous acceptez d'être responsable de toutes les activités qui se produisent sous votre compte.</p>"
+      },
+      "payment": {
+        "title": "Paiements et facturation",
+        "content": "<p>Les services sont facturés selon le plan choisi. Les paiements sont prélevés automatiquement. Vous pouvez annuler votre abonnement à tout moment.</p>"
+      },
+      "privacy": {
+        "title": "Confidentialité",
+        "content": "<p>Votre vie privée est importante pour nous. Consultez notre politique de confidentialité pour comprendre comment nous collectons et utilisons vos informations.</p>"
+      },
+      "intellectual": {
+        "title": "Propriété intellectuelle",
+        "content": "<p>HAVITAM et son contenu sont protégés par les droits de propriété intellectuelle. Vous ne pouvez pas copier, modifier ou distribuer notre contenu sans autorisation.</p>"
+      },
+      "liability": {
+        "title": "Limitation de responsabilité",
+        "content": "<p>HAVITAM est fourni \"tel quel\" sans garantie. Nous ne serons pas responsables des dommages indirects ou consécutifs résultant de l'utilisation de nos services.</p>"
+      },
+      "termination": {
+        "title": "Résiliation",
+        "content": "<p>Vous pouvez résilier votre compte à tout moment. Nous pouvons également suspendre ou résilier votre compte en cas de violation de ces conditions.</p>"
+      },
+      "changes": {
+        "title": "Modifications des conditions",
+        "content": "<p>Nous nous réservons le droit de modifier ces conditions à tout moment. Les modifications prendront effet immédiatement après leur publication.</p>"
+      },
+      "contact": {
+        "title": "Contact",
+        "content": "<p>Pour toute question concernant ces conditions, contactez-nous à support@havitam.com</p>"
+      }
+    },
+    "contact": {
+      "title": "Questions sur nos conditions ?",
+      "description": "Notre équipe est là pour vous aider à comprendre nos conditions d'utilisation",
+      "button": "Nous contacter"
+    }
+  },
+  "privacy": {
+    "hero": {
+      "badge": "Politique de confidentialité",
+      "title": "Politique de confidentialité",
+      "subtitle": "Découvrez comment nous protégeons et utilisons vos informations personnelles",
+      "lastUpdated": "Dernière mise à jour",
+      "updateDate": "15 janvier 2024"
+    },
+    "toc": {
+      "title": "Table des matières"
+    },
+    "sections": {
+      "introduction": {
+        "title": "Introduction",
+        "content": "<p>HAVITAM s'engage à protéger votre vie privée. Cette politique explique comment nous collectons, utilisons et protégeons vos informations personnelles.</p>"
+      },
+      "collection": {
+        "title": "Collecte d'informations",
+        "content": "<p>Nous collectons les informations que vous nous fournissez directement, ainsi que les informations collectées automatiquement lors de votre utilisation de nos services.</p>"
+      },
+      "usage": {
+        "title": "Utilisation des informations",
+        "content": "<p>Nous utilisons vos informations pour fournir nos services, améliorer notre plateforme et communiquer avec vous.</p>"
+      },
+      "sharing": {
+        "title": "Partage d'informations",
+        "content": "<p>Nous ne vendons pas vos informations personnelles. Nous pouvons les partager avec des tiers uniquement dans des circonstances limitées et spécifiques.</p>"
+      },
+      "security": {
+        "title": "Sécurité des données",
+        "content": "<p>Nous mettons en œuvre des mesures de sécurité appropriées pour protéger vos informations personnelles contre l'accès non autorisé, la modification ou la destruction.</p>"
+      },
+      "cookies": {
+        "title": "Cookies et technologies similaires",
+        "content": "<p>Nous utilisons des cookies et des technologies similaires pour améliorer votre expérience et analyser l'utilisation de notre site.</p>"
+      },
+      "rights": {
+        "title": "Vos droits",
+        "content": "<p>Vous avez le droit d'accéder, de corriger ou de supprimer vos informations personnelles. Contactez-nous pour exercer ces droits.</p>"
+      },
+      "children": {
+        "title": "Protection des enfants",
+        "content": "<p>Nos services ne sont pas destinés aux enfants de moins de 13 ans. Nous ne collectons pas sciemment d'informations personnelles d'enfants.</p>"
+      },
+      "changes": {
+        "title": "Modifications de cette politique",
+        "content": "<p>Nous pouvons mettre à jour cette politique de confidentialité de temps à autre. Nous vous informerons de tout changement important.</p>"
+      },
+      "contact": {
+        "title": "Contact",
+        "content": "<p>Pour toute question concernant cette politique de confidentialité, contactez-nous à privacy@havitam.com</p>"
+      }
+    },
+    "contact": {
+      "title": "Questions sur la confidentialité ?",
+      "description": "Notre équipe est là pour vous aider à comprendre notre politique de confidentialité",
+      "button": "Nous contacter"
+    }
+  },
+  "cookies": {
+    "hero": {
+      "badge": "Politique des cookies",
+      "title": "Politique des cookies",
+      "subtitle": "Découvrez comment nous utilisons les cookies pour améliorer votre expérience",
+      "lastUpdated": "Dernière mise à jour",
+      "updateDate": "15 janvier 2024"
+    },
+    "types": {
+      "badge": "Types de cookies",
+      "title": "Types de cookies que nous utilisons",
+      "subtitle": "Nous utilisons différents types de cookies pour améliorer votre expérience",
+      "examples": "Exemples",
+      "essential": {
+        "title": "Cookies essentiels",
+        "description": "Ces cookies sont nécessaires au fonctionnement du site web et ne peuvent pas être désactivés.",
+        "examples": "Authentification, panier d'achat, préférences de sécurité"
+      },
+      "functional": {
+        "title": "Cookies fonctionnels",
+        "description": "Ces cookies permettent d'améliorer les fonctionnalités et la personnalisation du site.",
+        "examples": "Préférences de langue, paramètres régionaux, historique de navigation"
+      },
+      "analytics": {
+        "title": "Cookies d'analyse",
+        "description": "Ces cookies nous aident à comprendre comment les visiteurs interagissent avec notre site.",
+        "examples": "Google Analytics, statistiques de visite, pages populaires"
+      },
+      "marketing": {
+        "title": "Cookies marketing",
+        "description": "Ces cookies sont utilisés pour diffuser des publicités pertinentes et mesurer leur efficacité.",
+        "examples": "Publicités ciblées, réseaux sociaux, campagnes publicitaires"
+      }
+    },
+    "toc": {
+      "title": "Table des matières"
+    },
+    "sections": {
+      "what": {
+        "title": "Que sont les cookies ?",
+        "content": "<p>Les cookies sont de petits fichiers texte stockés sur votre appareil qui nous aident à améliorer votre expérience sur notre site web.</p>"
+      },
+      "types": {
+        "title": "Types de cookies",
+        "content": "<p>Nous utilisons différents types de cookies pour différentes finalités, comme expliqué dans la section ci-dessus.</p>"
+      },
+      "management": {
+        "title": "Gestion des cookies",
+        "content": "<p>Vous pouvez contrôler et gérer les cookies via les paramètres de votre navigateur. Notez que la désactivation de certains cookies peut affecter le fonctionnement du site.</p>"
+      },
+      "thirdparty": {
+        "title": "Cookies tiers",
+        "content": "<p>Nous utilisons également des cookies de tiers pour l'analyse et le marketing. Ces tiers ont leurs propres politiques de confidentialité.</p>"
+      },
+      "updates": {
+        "title": "Mises à jour de cette politique",
+        "content": "<p>Cette politique des cookies peut être mise à jour de temps à autre. Nous vous informerons de tout changement important.</p>"
+      },
+      "contact": {
+        "title": "Contact",
+        "content": "<p>Pour toute question concernant notre utilisation des cookies, contactez-nous à cookies@havitam.com</p>"
+      }
+    },
+    "contact": {
+      "title": "Questions sur les cookies ?",
+      "description": "Notre équipe est là pour vous aider à comprendre notre politique des cookies",
+      "button": "Nous contacter"
+    }
+  },
+  "meta": {
+    "features": {
+      "title": "Fonctionnalités - HAVITAM",
+      "description": "Découvrez toutes les fonctionnalités d'HAVITAM conçues pour simplifier la gestion administrative des artisans du bâtiment."
+    },
+    "terms": {
+      "title": "Conditions d'utilisation - HAVITAM",
+      "description": "Lisez nos conditions d'utilisation pour comprendre les règles et obligations liées à l'utilisation de la plateforme HAVITAM."
+    },
+    "privacy": {
+      "title": "Politique de confidentialité - HAVITAM",
+      "description": "Découvrez comment HAVITAM protège et utilise vos informations personnelles conformément aux réglementations en vigueur."
+    },
+    "cookies": {
+      "title": "Politique des cookies - HAVITAM",
+      "description": "Comprenez comment HAVITAM utilise les cookies pour améliorer votre expérience sur notre plateforme."
     }
   }
 } 
