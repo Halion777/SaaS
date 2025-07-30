@@ -182,7 +182,7 @@ const ContactPage = () => {
                       </div>
                       <div>
                         <h3 className="font-semibold text-foreground text-lg mb-1">Email</h3>
-                        <p className="text-muted-foreground mb-1">contact@havitam.com</p>
+                        <p className="text-muted-foreground mb-1">support@havitam.com</p>
                         <p className="text-sm text-muted-foreground/70">Réponse sous 24h</p>
                       </div>
                     </div>
@@ -196,7 +196,7 @@ const ContactPage = () => {
                       </div>
                       <div>
                         <h3 className="font-semibold text-foreground text-lg mb-1">Téléphone</h3>
-                        <p className="text-muted-foreground mb-1">+33 1 23 45 67 89</p>
+                        <p className="text-muted-foreground mb-1">028846333</p>
                         <p className="text-sm text-muted-foreground/70">Lun-Ven, 9h-18h</p>
                       </div>
                     </div>
@@ -210,7 +210,7 @@ const ContactPage = () => {
                       </div>
                       <div>
                         <h3 className="font-semibold text-foreground text-lg mb-1">Adresse</h3>
-                        <p className="text-muted-foreground mb-1">123 Rue de la Paix, 75001 Paris</p>
+                        <p className="text-muted-foreground mb-1">Bruxelles, Belgique</p>
                         <p className="text-sm text-muted-foreground/70">Siège social</p>
                       </div>
                     </div>
