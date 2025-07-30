@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
+import { useTranslation } from 'react-i18next';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Icon from '../../components/AppIcon';
 import Footer from '../../components/Footer';
 
 const ForgotPasswordPage = () => {
+  const { t, i18n } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [email, setEmail] = useState('');
@@ -25,8 +27,9 @@ const ForgotPasswordPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50 relative overflow-hidden">
       <Helmet>
-        <title>Réinitialiser le mot de passe | HAVITAM</title>
-        <html lang="fr" />
+        <title>{t('meta.forgotPassword.title')}</title>
+        <meta name="description" content={t('meta.forgotPassword.description')} />
+        <html lang={i18n.language} />
       </Helmet>
 
       {/* Background Pattern */}
@@ -40,16 +43,16 @@ const ForgotPasswordPage = () => {
         <div className="absolute top-4 left-4 z-20">
           <Link to="/" className="flex items-center space-x-2 text-foreground hover:text-primary transition-colors">
             <Icon name="Home" className="w-5 h-5" />
-            <span className="text-sm font-medium">Accueil</span>
+            <span className="text-sm font-medium">{t('nav.home')}</span>
           </Link>
         </div>
         
         {/* Login Link */}
         <div className="absolute top-4 right-4 z-20">
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-muted-foreground">Vous vous souvenez de votre mot de passe ?</span>
+            <span className="text-sm text-muted-foreground">{t('forgotPassword.rememberPassword')}</span>
             <Link to="/login" className="text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center space-x-1">
-              <span>Connexion</span>
+              <span>{t('nav.login')}</span>
               <Icon name="LogIn" size={16} />
             </Link>
           </div>
@@ -70,20 +73,20 @@ const ForgotPasswordPage = () => {
           <div className="bg-white rounded-lg shadow-professional p-8">
             {!isSubmitted ? (
               <>
-                <div className="text-center mb-8">
-                  <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                    Mot de passe oublié ?
-                  </h2>
-                  <p className="text-gray-600">
-                    Saisissez votre adresse e-mail pour réinitialiser votre mot de passe
-                  </p>
-                </div>
+                            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                {t('forgotPassword.title')}
+              </h2>
+              <p className="text-gray-600">
+                {t('forgotPassword.subtitle')}
+              </p>
+            </div>
                 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <Input 
-                    label="Adresse email"
+                    label={t('login.email')}
                     type="email"
-                    placeholder="votre@email.com"
+                    placeholder={t('login.emailPlaceholder')}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -95,7 +98,7 @@ const ForgotPasswordPage = () => {
                     variant="login"
                     loading={isLoading}
                   >
-                    Réinitialiser le mot de passe
+                    {t('forgotPassword.resetButton')}
                   </Button>
                 </form>
               </>
@@ -105,14 +108,14 @@ const ForgotPasswordPage = () => {
                   <Icon name="Check" size={32} color="var(--color-success)" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                  Email envoyé !
+                  {t('forgotPassword.emailSent')}
                 </h2>
                 <p className="text-gray-600 mb-6">
-                  Veuillez vérifier votre boîte de réception pour les instructions de réinitialisation.
+                  {t('forgotPassword.checkInbox')}
                 </p>
                 <Link to="/login">
                   <Button variant="outline" size="sm">
-                    Retour à la connexion
+                    {t('forgotPassword.backToLogin')}
                   </Button>
                 </Link>
               </div>
@@ -120,9 +123,9 @@ const ForgotPasswordPage = () => {
             
             <div className="mt-6 text-center">
               <p className="text-gray-600 text-sm">
-                Pas encore de compte ?{' '}
+                {t('login.noAccount')}{' '}
                 <Link to="/register" className="text-primary hover:underline">
-                  S'inscrire
+                  {t('nav.register')}
                 </Link>
               </p>
             </div>

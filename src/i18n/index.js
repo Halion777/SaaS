@@ -26,6 +26,8 @@ i18n
     fallbackLng: 'fr',
     interpolation: {
       escapeValue: false, // React already escapes values
+      prefix: '{',
+      suffix: '}',
     },
     react: {
       useSuspense: false,

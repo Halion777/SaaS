@@ -1,9 +1,89 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Icon from './AppIcon';
 import Button from './ui/Button';
 import LanguageDropdown from './LanguageDropdown';
+
+// Mobile Language Selector Component
+const MobileLanguageSelector = () => {
+  const { t, i18n } = useTranslation();
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const languages = [
+    { code: 'fr', name: 'Français', flag: '🇫🇷' },
+    { code: 'en', name: 'English', flag: '🇬🇧' },
+    { code: 'nl', name: 'Nederlands', flag: '🇳🇱' }
+  ];
+
+  const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
+
+  const handleLanguageChange = (languageCode) => {
+    i18n.changeLanguage(languageCode);
+    localStorage.setItem('language', languageCode);
+    document.documentElement.setAttribute('lang', languageCode);
+    setIsOpen(false);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-colors duration-150"
+        aria-label={`${t('header.languageSelector.currentLanguage')}: ${currentLanguage.name}`}
+        title={`${t('header.languageSelector.selectLanguage')}`}
+      >
+        <span className="text-lg">{currentLanguage.flag}</span>
+      </button>
+
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          
+          {/* Dropdown */}
+          <div className="absolute top-full right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+            <div className="py-1">
+              {languages.map((language) => (
+                <button
+                  key={language.code}
+                  onClick={() => handleLanguageChange(language.code)}
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors duration-150 flex items-center space-x-2 ${
+                    i18n.language === language.code ? 'bg-[#0036ab]/5 text-[#0036ab]' : 'text-gray-700'
+                  }`}
+                >
+                  <span className="text-base">{language.flag}</span>
+                  <span className="text-xs">{language.name}</span>
+                  {i18n.language === language.code && (
+                    <Icon name="Check" size={12} className="ml-auto text-[#0036ab]" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 const Header = () => {
   const { t } = useTranslation();
@@ -170,14 +250,20 @@ const Header = () => {
               </Link>
             </div>
             
-            {/* Mobile Menu Button */}
-            <button 
-              className="lg:hidden text-gray-700 hover:text-[#0036ab] transition-colors p-2"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              aria-label="Toggle mobile menu"
-            >
-              <Icon name={isMobileMenuOpen ? "X" : "Menu"} size={24} />
-            </button>
+            {/* Mobile Right Section */}
+            <div className="lg:hidden flex items-center space-x-2">
+              {/* Mobile Language Selector */}
+              <MobileLanguageSelector />
+              
+              {/* Mobile Menu Button */}
+              <button 
+                className="text-gray-700 hover:text-[#0036ab] transition-colors p-2"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label="Toggle mobile menu"
+              >
+                <Icon name={isMobileMenuOpen ? "X" : "Menu"} size={24} />
+              </button>
+            </div>
           </div>
           
           {/* Mobile Menu */}

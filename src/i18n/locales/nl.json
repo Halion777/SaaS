@@ -15,6 +15,10 @@
     "notification": {
       "text": "Nieuw: PEPPOL integratie voor elektronische facturering",
       "close": "Melding sluiten"
+    },
+    "languageSelector": {
+      "currentLanguage": "Huidige taal",
+      "selectLanguage": "Taal selecteren"
     }
   },
   "ui": {
@@ -655,6 +659,7 @@
     "subtitle": "Verbind met je HAVITAM account",
     "welcome": "Welkom terug!",
     "welcomeSubtitle": "Verbind met je vakmensen-ruimte om je offertes en facturen te beheren",
+    "logoSubtitle": "Vakman Pro",
     "email": "E-mailadres",
     "emailPlaceholder": "jouw@email.com",
     "password": "Wachtwoord",
@@ -663,7 +668,168 @@
     "rememberMe": "Onthoud mij",
     "loginButton": "Inloggen",
     "noAccount": "Nog geen account?",
-    "register": "Registreren"
+    "register": "Registreren",
+    "security": {
+      "secureData": "Beveiligde gegevens",
+      "gdprCompliant": "GDPR-conform",
+      "frenchHosting": "Franse hosting"
+    },
+    "socialProof": {
+      "title": "Ze vertrouwen ons",
+      "activeArtisans": "Actieve vakmensen",
+      "moreSignatures": "Meer handtekeningen",
+      "availableSupport": "Beschikbare ondersteuning"
+    },
+    "trial": {
+      "noCommitment": "Geen verplichting",
+      "setupTime": "Setup in 5 min"
+    }
+  },
+  "registerForm": {
+    "step1": {
+      "title": "Maak je account aan",
+      "subtitle": "Start vandaag nog je 14-daagse gratis proefperiode",
+      "fullName": "Volledige naam",
+      "fullNamePlaceholder": "Jan Jansen",
+      "companyName": "Bedrijfsnaam",
+      "companyNamePlaceholder": "Jansen Loodgieterij",
+      "profession": "Beroep / Activiteitstype",
+      "professionPlaceholder": "Selecteer je vak",
+      "email": "E-mailadres",
+      "emailPlaceholder": "jan@voorbeeld.nl",
+      "password": "Wachtwoord",
+      "passwordPlaceholder": "Maak een veilig wachtwoord",
+      "passwordStrength": "Wachtwoordsterkte:",
+      "passwordWeak": "Zwak",
+      "passwordMedium": "Gemiddeld",
+      "passwordGood": "Goed",
+      "passwordExcellent": "Uitstekend",
+      "phone": "Telefoonnummer",
+      "phonePlaceholder": "+31 6 12345678",
+      "country": "Land",
+      "countryPlaceholder": "Selecteer je land",
+      "aiBoost": {
+        "title": "Boost je handtekeningen met 40%",
+        "description": "Onze AI optimaliseert automatisch je offertes om je kansen op ondertekening te maximaliseren."
+      }
+    },
+    "step2": {
+      "title": "Aanvullende informatie",
+      "subtitle": "Pas Havitam aan volgens je activiteit",
+      "businessSize": "Bedrijfsgrootte",
+      "businessSizePlaceholder": "Aantal werknemers",
+      "solo": "Solo vakman",
+      "small": "2-5 werknemers",
+      "medium": "6-20 werknemers",
+      "large": "20+ werknemers",
+      "benefits": {
+        "timeSaving": {
+          "title": "Tijdsbesparing",
+          "description": "Automatiseer je follow-ups en optimaliseer je offertes in enkele klikken."
+        },
+        "moreSignatures": {
+          "title": "Meer handtekeningen",
+          "description": "Onze AI analyseert en verbetert je offertes om conversies te maximaliseren."
+        },
+        "dataSecurity": {
+          "title": "Je gegevens zijn veilig",
+          "description": "Al je informatie is versleuteld en veilig opgeslagen in overeenstemming met de AVG."
+        }
+      }
+    },
+    "step3": {
+      "title": "Kies je plan",
+      "subtitle": "Start met 14 dagen gratis, geen verplichting",
+      "recommended": "Aanbevolen",
+      "perMonth": "maand",
+      "freeTrial": {
+        "title": "14-daagse gratis proefperiode",
+        "description": "Test alle functies zonder verplichting. Geen creditcard vereist."
+      },
+      "trustBadges": {
+        "gdpr": "AVG",
+        "secure": "Veilig",
+        "certified": "Gecertificeerd"
+      },
+      "plans": {
+        "starter": {
+          "name": "Starter",
+          "description": "Perfect voor beginners",
+          "features": [
+            "15 offertes/facturen per maand",
+            "Basis sjablonen",
+            "Betalingstracking",
+            "E-mail ondersteuning",
+            "Basis klantenbeheer"
+          ],
+          "limitations": [
+            "Beperkte AI",
+            "Geen automatische follow-ups"
+          ]
+        },
+        "pro": {
+          "name": "Pro",
+          "description": "Complete oplossing met AI",
+          "features": [
+            "Onbeperkte offertes/facturen",
+            "Complete AI en optimalisaties",
+            "Automatische follow-ups",
+            "Geavanceerde analytics",
+            "Premium sjablonen",
+            "Prioriteit ondersteuning",
+            "Handtekening voorspellingen",
+            "Prijsoptimalisatie"
+          ],
+          "limitations": []
+        }
+      }
+    },
+    "professions": {
+      "electrician": "Elektricien",
+      "plumber": "Loodgieter",
+      "painter": "Schilder",
+      "carpenter": "Timmerman",
+      "mason": "Metselaar",
+      "tiling": "Tegelzetter",
+      "roofing": "Dakdekker",
+      "heating": "Verwarmingsmonteur",
+      "gardening": "Hovenier",
+      "locksmith": "Sluisjesmaker",
+      "other": "Ander"
+    },
+    "countries": {
+      "FR": "Frankrijk",
+      "BE": "België",
+      "CH": "Zwitserland",
+      "LU": "Luxemburg",
+      "CA": "Canada",
+      "GB": "Verenigd Koninkrijk",
+      "DE": "Duitsland",
+      "IT": "Italië",
+      "ES": "Spanje"
+    },
+    "progress": {
+      "step": "Stap {current} van {total}",
+      "completed": "{percentage}% voltooid"
+    },
+    "trustSignals": {
+      "gdpr": {
+        "title": "AVG-conformiteit",
+        "description": "Je gegevens zijn beschermd volgens Europese normen"
+      },
+      "ssl": {
+        "title": "SSL-beveiliging",
+        "description": "End-to-end versleuteling voor al je informatie"
+      },
+      "iso": {
+        "title": "ISO-gecertificeerd",
+        "description": "Erkende kwaliteits- en veiligheidsnormen"
+      },
+      "artisans": {
+        "title": "2000+ Vakmensen",
+        "description": "Vertrouwen al op ons platform"
+      }
+    }
   },
   "register": {
     "alreadyRegistered": "Al een account?",
@@ -680,6 +846,37 @@
     "step3": {
       "title": "Kies je plan",
       "subtitle": "Start met 14 dagen gratis, geen verplichting"
+    },
+    "benefits": {
+      "title": "Waarom Havitam kiezen?",
+      "signatures": "+40% handtekeningen",
+      "signaturesDescription": "AI optimaliseert je offertes om conversies te maximaliseren",
+      "timeSaving": "Tijdsbesparing",
+      "timeSavingDescription": "Automatisering van follow-ups en optimalisaties",
+      "analytics": "Geavanceerde analytics",
+      "analyticsDescription": "Volg je prestaties in realtime"
+    },
+    "testimonials": {
+      "title": "Ze vertrouwen ons",
+      "testimonial1": {
+        "name": "Pierre Martin",
+        "trade": "Loodgieter",
+        "location": "Lyon",
+        "quote": "Mijn handtekeningen zijn met 45% gestegen in 2 maanden. De AI optimaliseert echt mijn offertes!"
+      },
+      "testimonial2": {
+        "name": "Sophie Dubois",
+        "trade": "Elektricien",
+        "location": "Parijs",
+        "quote": "Geen handmatige follow-ups meer! Havitam beheert alles automatisch."
+      }
+    },
+    "security": {
+      "title": "Veiligheid & Compliance"
+    },
+    "aiBoost": {
+      "title": "Boost je handtekeningen met 40%",
+      "description": "Onze AI optimaliseert automatisch je offertes om je kansen op ondertekening te maximaliseren."
     }
   },
   "forgotPassword": {
@@ -1013,6 +1210,95 @@
       "button": "Neem contact op"
     }
   },
+  "features": {
+    "hero": {
+      "badge": "Functies",
+      "title": {
+        "prefix": "Ontdek al onze",
+        "highlight": "functies",
+        "suffix": "innovatief"
+      },
+      "subtitle": "Krachtige tools ontworpen om je administratief beheer te vereenvoudigen en je productiviteit te verhogen.",
+      "benefits": {
+        "simple": "Eenvoudig te gebruiken",
+        "fast": "Snel en efficiënt",
+        "intelligent": "Intelligent"
+      }
+    },
+    "section": {
+      "badge": "Kernfuncties",
+      "title": "De 8 kernfuncties van HAVITAM",
+      "subtitle": "Boost je business met eenvoudige, snelle en intelligente tools"
+    },
+    "list": {
+      "feature1": {
+        "title": "Offertes & facturen in 1 klik",
+        "description": "Maak je offertes en facturen in seconden met een ultra-intuïtieve interface."
+      },
+      "feature2": {
+        "title": "Real-time tracking",
+        "description": "Volg de status van je offertes, stuur ze en laat ze online ondertekenen."
+      },
+      "feature3": {
+        "title": "Automatische herinneringen",
+        "description": "Verminder vertragingen: stuur geautomatiseerde herinneringen voor en na de vervaldatum."
+      },
+      "feature4": {
+        "title": "Gecentraliseerd beheer",
+        "description": "Al je gegevens zijn georganiseerd en toegankelijk vanaf één dashboard."
+      },
+      "feature5": {
+        "title": "Gekwalificeerde leads",
+        "description": "Ontvang projectaanvragen in je geografische gebied volgens je specialiteiten."
+      },
+      "feature6": {
+        "title": "Spraakgedicteerde offertes",
+        "description": "Bespaar veel tijd door je offertes te dicteren. Onze spraakassistent schrijft ze voor je."
+      },
+      "feature7": {
+        "title": "AI-aangedreven prijzen",
+        "description": "Een AI helpt je je tarieven te schatten op basis van de markt en je eerdere offertes."
+      },
+      "feature8": {
+        "title": "Offerte-analyse & AI-aanbevelingen",
+        "description": "Ontvang automatische feedback op elke offerte om deze te optimaliseren voordat je hem verstuurt."
+      }
+    },
+    "benefits": {
+      "badge": "Voordelen",
+      "title": "Waarom HAVITAM kiezen?",
+      "subtitle": "Sluit je aan bij honderden vakmensen die hun beheer al hebben getransformeerd",
+      "benefit1": {
+        "title": "Omzetstijging",
+        "description": "Onze gebruikers zien een gemiddelde stijging van 45% in hun omzet"
+      },
+      "benefit2": {
+        "title": "Verminderde administratieve tijd",
+        "description": "Bespaar tot 60% van je tijd op administratieve taken"
+      },
+      "benefit3": {
+        "title": "Klanttevredenheid",
+        "description": "98% van onze gebruikers beveelt HAVITAM aan bij hun collega's"
+      }
+    },
+    "cta": {
+      "badge": "Klaar om te beginnen",
+      "title": "Klaar om je beheer te transformeren?",
+      "subtitle": "Sluit je aan bij honderden vakmensen die hun dagelijkse routine al hebben vereenvoudigd",
+      "primaryButton": "Start gratis proefperiode",
+      "secondaryButton": "Praat met een expert",
+      "trust": {
+        "freeTrial": "14-daagse gratis proefperiode",
+        "languages": "FR, NL, EN",
+        "setup": "5-minuten setup"
+      },
+      "metrics": {
+        "revenue": "gemiddelde omzet",
+        "adminTime": "admin tijd",
+        "satisfaction": "tevredenheid"
+      }
+    }
+  },
   "meta": {
     "features": {
       "title": "Functies - HAVITAM",
@@ -1029,6 +1315,26 @@
     "cookies": {
       "title": "Cookiebeleid - HAVITAM",
       "description": "Begrijp hoe HAVITAM cookies gebruikt om je ervaring op ons platform te verbeteren."
+    },
+    "forgotPassword": {
+      "title": "Wachtwoord resetten - HAVITAM",
+      "description": "Reset je HAVITAM wachtwoord veilig om toegang te krijgen tot je vakmensen-account."
+    }
+  },
+  "register": {
+    "testimonials": {
+      "testimonial1": {
+        "name": "Pierre Martin",
+        "trade": "Loodgieter",
+        "location": "Lyon",
+        "quote": "Mijn handtekeningen zijn met 45% gestegen in 2 maanden. De AI optimaliseert echt mijn offertes!"
+      },
+      "testimonial2": {
+        "name": "Sophie Dubois",
+        "trade": "Elektricien",
+        "location": "Parijs",
+        "quote": "Geen handmatige opvolging meer! Havitam beheert alles automatisch."
+      }
     }
   }
 } 

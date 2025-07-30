@@ -1,10 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
 
 const TrialCallToAction = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleStartTrial = () => {
     navigate('/register');
@@ -14,7 +16,7 @@ const TrialCallToAction = () => {
     <div className="mt-8 text-center">
       <div className="space-y-4">
         <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
-          <span>Pas encore de compte ?</span>
+          <span>{t('login.noAccount')}</span>
         </div>
 
         <Button
@@ -25,17 +27,17 @@ const TrialCallToAction = () => {
           iconName="Sparkles"
           iconPosition="left"
         >
-          Commencer l'essai gratuit
+          {t('ui.buttons.startTrial')}
         </Button>
 
         <div className="flex items-center justify-center space-x-4 text-xs text-muted-foreground">
           <div className="flex items-center space-x-1">
             <Icon name="Check" size={14} color="var(--color-success)" />
-            <span>Sans engagement</span>
+            <span>{t('login.trial.noCommitment')}</span>
           </div>
           <div className="flex items-center space-x-1">
             <Icon name="Check" size={14} color="var(--color-success)" />
-            <span>Configuration en 5 min</span>
+            <span>{t('login.trial.setupTime')}</span>
           </div>
         </div>
       </div>

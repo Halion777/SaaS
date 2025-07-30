@@ -1,28 +1,30 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 
 const TrustSignals = () => {
+  const { t } = useTranslation();
   
   const signals = [
     {
       icon: 'Shield',
-      title: 'Conformité GDPR',
-      description: 'Vos données sont protégées selon les standards européens'
+      title: t('registerForm.trustSignals.gdpr.title'),
+      description: t('registerForm.trustSignals.gdpr.description')
     },
     {
       icon: 'Lock',
-      title: 'Sécurité SSL',
-      description: 'Chiffrement de bout en bout pour toutes vos informations'
+      title: t('registerForm.trustSignals.ssl.title'),
+      description: t('registerForm.trustSignals.ssl.description')
     },
     {
       icon: 'Award',
-      title: 'Certifié ISO',
-      description: 'Standards de qualité et sécurité reconnus'
+      title: t('registerForm.trustSignals.iso.title'),
+      description: t('registerForm.trustSignals.iso.description')
     },
     {
       icon: 'Users',
-      title: '2000+ Artisans',
-      description: 'Font déjà confiance à notre plateforme'
+      title: t('registerForm.trustSignals.artisans.title'),
+      description: t('registerForm.trustSignals.artisans.description')
     }
   ];
 

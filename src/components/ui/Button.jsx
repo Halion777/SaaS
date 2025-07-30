@@ -45,6 +45,7 @@ const Button = React.forwardRef(({
     asChild = false,
     children,
     loading = false,
+    isLoading = false,
     iconName = null,
     iconPosition = 'left',
     iconSize = null,
@@ -52,6 +53,8 @@ const Button = React.forwardRef(({
     disabled = false,
     ...props
 }, ref) => {
+    // Remove isLoading from props to prevent it from being passed to DOM
+    const { isLoading: _, ...domProps } = props;
     const Comp = asChild ? Slot : "button";
 
     // Icon size mapping based on button size
@@ -97,10 +100,10 @@ const Button = React.forwardRef(({
                 fullWidth && "w-full"
             )}
             ref={ref}
-            disabled={disabled || loading}
-            {...props}
+            disabled={disabled || loading || isLoading}
+            {...domProps}
         >
-            {loading && <LoadingSpinner />}
+            {(loading || isLoading) && <LoadingSpinner />}
             {iconName && iconPosition === 'left' && renderIcon()}
             {children}
             {iconName && iconPosition === 'right' && renderIcon()}

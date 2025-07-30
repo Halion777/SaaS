@@ -50,50 +50,42 @@ const FeaturesPage = () => {
     {
       icon: 'FileText',
       title: t('features.list.feature1.title'),
-      description: t('features.list.feature1.description'),
-      color: 'from-blue-500 to-blue-600'
+      description: t('features.list.feature1.description')
     },
     {
       icon: 'Clock',
       title: t('features.list.feature2.title'),
-      description: t('features.list.feature2.description'),
-      color: 'from-green-500 to-green-600'
+      description: t('features.list.feature2.description')
     },
     {
       icon: 'Bell',
       title: t('features.list.feature3.title'),
-      description: t('features.list.feature3.description'),
-      color: 'from-purple-500 to-purple-600'
+      description: t('features.list.feature3.description')
     },
     {
       icon: 'Users',
       title: t('features.list.feature4.title'),
-      description: t('features.list.feature4.description'),
-      color: 'from-orange-500 to-orange-600'
+      description: t('features.list.feature4.description')
     },
     {
       icon: 'MapPin',
       title: t('features.list.feature5.title'),
-      description: t('features.list.feature5.description'),
-      color: 'from-red-500 to-red-600'
+      description: t('features.list.feature5.description')
     },
     {
       icon: 'Mic',
       title: t('features.list.feature6.title'),
-      description: t('features.list.feature6.description'),
-      color: 'from-indigo-500 to-indigo-600'
+      description: t('features.list.feature6.description')
     },
     {
       icon: 'Brain',
       title: t('features.list.feature7.title'),
-      description: t('features.list.feature7.description'),
-      color: 'from-pink-500 to-pink-600'
+      description: t('features.list.feature7.description')
     },
     {
       icon: 'BarChart3',
       title: t('features.list.feature8.title'),
-      description: t('features.list.feature8.description'),
-      color: 'from-teal-500 to-teal-600'
+      description: t('features.list.feature8.description')
     }
   ];
 
@@ -194,30 +186,30 @@ const FeaturesPage = () => {
           </div>
 
           <div className="container mx-auto px-4 relative z-10">
-            <div className="text-center mb-16">
-              <div className={`inline-flex items-center bg-[#0036ab]/10 rounded-full px-6 py-3 shadow-lg border border-[#0036ab]/20 mb-6 transition-all duration-1000 ${isVisible.features ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-                <Icon name="Grid" size={20} className="text-[#0036ab] mr-2" />
+            <div className={`text-center mb-16 transition-all duration-1000 ${isVisible.features ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+              <div className="inline-flex items-center bg-[#0036ab]/10 rounded-full px-6 py-3 shadow-lg border border-[#0036ab]/20 mb-6">
+                <Icon name="Settings" size={20} className="text-[#0036ab] mr-2" />
                 <span className="text-sm font-medium text-[#0036ab]">{t('features.section.badge')}</span>
               </div>
-              <h2 className={`text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6 transition-all duration-1000 delay-300 ${isVisible.features ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
                 {t('features.section.title')}
               </h2>
-              <p className={`text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed transition-all duration-1000 delay-500 ${isVisible.features ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+              <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
                 {t('features.section.subtitle')}
               </p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {features.map((feature, index) => (
                 <div 
                   key={index}
-                  className={`bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-200 transition-all duration-1000 delay-${index * 100} ${isVisible.features ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+                  className={`bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-200 ${isVisible.features ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'} ${index > 0 ? `delay-${index * 100}` : ''}`}
                 >
-                  <div className={`w-16 h-16 bg-gradient-to-br ${feature.color} rounded-2xl flex items-center justify-center mb-6`}>
-                    <Icon name={feature.icon} size={32} className="text-white" />
+                  <div className={`w-12 h-12 ${index % 2 === 0 ? 'bg-[#0036ab]/10' : 'bg-[#12bf23]/10'} rounded-xl flex items-center justify-center mb-4 shadow-lg`}>
+                    <Icon name={feature.icon} size={24} className={index % 2 === 0 ? 'text-[#0036ab]' : 'text-[#12bf23]'} />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">{feature.title}</h3>
-                  <p className="text-gray-600 leading-relaxed">{feature.description}</p>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">{feature.title}</h3>
+                  <p className="text-gray-600 text-sm">{feature.description}</p>
                 </div>
               ))}
             </div>
@@ -237,15 +229,15 @@ const FeaturesPage = () => {
           </div>
 
           <div className="container mx-auto px-4 relative z-10">
-            <div className="text-center mb-16">
-              <div className={`inline-flex items-center bg-[#12bf23]/10 rounded-full px-6 py-3 shadow-lg border border-[#12bf23]/20 mb-6 transition-all duration-1000 ${isVisible.benefits ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <div className={`text-center mb-16 transition-all duration-1000 ${isVisible.benefits ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+              <div className="inline-flex items-center bg-[#12bf23]/10 rounded-full px-6 py-3 shadow-lg border border-[#12bf23]/20 mb-6">
                 <Icon name="TrendingUp" size={20} className="text-[#12bf23] mr-2" />
                 <span className="text-sm font-medium text-[#12bf23]">{t('features.benefits.badge')}</span>
               </div>
-              <h2 className={`text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6 transition-all duration-1000 delay-300 ${isVisible.benefits ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
                 {t('features.benefits.title')}
               </h2>
-              <p className={`text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed transition-all duration-1000 delay-500 ${isVisible.benefits ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+              <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
                 {t('features.benefits.subtitle')}
               </p>
             </div>
@@ -254,10 +246,10 @@ const FeaturesPage = () => {
               {benefits.map((benefit, index) => (
                 <div 
                   key={index}
-                  className={`bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-200 text-center transition-all duration-1000 delay-${index * 200} ${isVisible.benefits ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+                  className={`bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-200 text-center ${isVisible.benefits ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'} ${index > 0 ? `delay-${index * 200}` : ''}`}
                 >
-                  <div className="w-16 h-16 bg-gradient-to-br from-[#0036ab] to-[#12bf23] rounded-2xl flex items-center justify-center mb-6 mx-auto">
-                    <Icon name={benefit.icon} size={32} className="text-white" />
+                  <div className={`w-16 h-16 ${index % 2 === 0 ? 'bg-[#0036ab]/10' : 'bg-[#12bf23]/10'} rounded-2xl flex items-center justify-center mb-6 mx-auto shadow-lg`}>
+                    <Icon name={benefit.icon} size={32} className={index % 2 === 0 ? 'text-[#0036ab]' : 'text-[#12bf23]'} />
                   </div>
                   <div className="text-4xl font-bold text-[#0036ab] mb-4">{benefit.stat}</div>
                   <h3 className="text-xl font-bold text-gray-900 mb-4">{benefit.title}</h3>
@@ -272,44 +264,67 @@ const FeaturesPage = () => {
         <section 
           ref={ctaRef}
           data-section="cta"
-          className="py-20 bg-gradient-to-br from-[#0036ab] to-[#12bf23] relative overflow-hidden"
+          className="py-20 bg-[#0036ab] relative overflow-hidden"
         >
-          {/* Decorative elements */}
-          <div className="absolute inset-0 overflow-hidden opacity-10">
-            <div className="absolute top-0 left-0 w-full h-32 bg-white/20 transform -skew-y-6"></div>
-            <div className="absolute -bottom-8 -left-8 w-64 h-64 bg-white/10 rounded-full blur-xl"></div>
-            <div className="absolute -top-12 -right-12 w-80 h-80 bg-white/10 rounded-full blur-xl"></div>
-          </div>
-          
+          <div className="absolute inset-0 bg-black/10"></div>
           <div className="container mx-auto px-4 relative z-10">
-            <div className="text-center">
-              <h2 className={`text-3xl md:text-4xl font-bold text-white mb-6 tracking-tight transition-all duration-1000 ${isVisible.cta ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <div className={`max-w-6xl mx-auto text-center transition-all duration-1000 ${isVisible.cta ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+              <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
                 {t('features.cta.title')}
               </h2>
-              <p className={`text-lg text-white/90 mb-10 max-w-2xl mx-auto leading-relaxed transition-all duration-1000 delay-300 ${isVisible.cta ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+              <p className="text-xl text-white/90 mb-8 max-w-4xl mx-auto leading-relaxed">
                 {t('features.cta.subtitle')}
               </p>
-              <div className={`flex flex-col sm:flex-row gap-4 justify-center transition-all duration-1000 delay-500 ${isVisible.cta ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+              
+              {/* Trust Indicators */}
+              <div className="flex flex-wrap justify-center items-center gap-8 mb-12 text-white/90">
+                <div className="flex items-center">
+                  <Icon name="CheckCircle" size={20} className="mr-2 text-[#12bf23]" />
+                  <span className="font-medium">{t('features.cta.trust.freeTrial')}</span>
+                </div>
+                <div className="flex items-center">
+                  <Icon name="Globe" size={20} className="mr-2 text-[#12bf23]" />
+                  <span className="font-medium">{t('features.cta.trust.languages')}</span>
+                </div>
+                <div className="flex items-center">
+                  <Icon name="Clock" size={20} className="mr-2 text-[#12bf23]" />
+                  <span className="font-medium">{t('features.cta.trust.setup')}</span>
+                </div>
+              </div>
+
+              {/* Success Metrics */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                  <div className="text-3xl font-bold text-white mb-2">+45%</div>
+                  <div className="text-white/80 text-sm">{t('features.cta.metrics.revenue')}</div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                  <div className="text-3xl font-bold text-white mb-2">-60%</div>
+                  <div className="text-white/80 text-sm">{t('features.cta.metrics.adminTime')}</div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                  <div className="text-3xl font-bold text-white mb-2">98%</div>
+                  <div className="text-white/80 text-sm">{t('features.cta.metrics.satisfaction')}</div>
+                </div>
+              </div>
+
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
                 <Link to="/register">
-                  <Button 
-                    variant="outline" 
-                    size="lg"
-                    className="bg-white text-[#0036ab] border-white shadow-xl transform transition-all duration-300 hover:scale-105 hover:bg-white/90 hover:shadow-white/50 group"
-                  >
-                    <span className="flex items-center">
-                      <Icon name="ArrowRight" size={20} className="mr-2 group-hover:animate-pulse text-[#0036ab]" />
+                  <button className="bg-white text-[#0036ab] px-10 py-5 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 w-full sm:w-auto hover:bg-gray-50 group">
+                    <span className="flex items-center justify-center">
+                      <Icon name="Sparkles" size={20} className="mr-2 group-hover:animate-pulse" />
                       {t('features.cta.primaryButton')}
                     </span>
-                  </Button>
+                  </button>
                 </Link>
                 <Link to="/contact">
-                  <Button 
-                    variant="outline" 
-                    size="lg"
-                    className="bg-transparent text-white border-white shadow-xl transform transition-all duration-300 hover:scale-105 hover:bg-white/10 hover:shadow-white/50"
-                  >
-                    {t('features.cta.secondaryButton')}
-                  </Button>
+                  <button className="bg-transparent text-white border-2 border-white px-10 py-5 rounded-xl font-bold text-lg hover:bg-white hover:text-[#0036ab] transition-all duration-300 w-full sm:w-auto group">
+                    <span className="flex items-center justify-center">
+                      <Icon name="Phone" size={20} className="mr-2" />
+                      {t('features.cta.secondaryButton')}
+                    </span>
+                  </button>
                 </Link>
               </div>
             </div>

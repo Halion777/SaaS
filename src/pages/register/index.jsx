@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Button from '../../components/ui/Button';
 import { Checkbox } from '../../components/ui/Checkbox';
 import Icon from '../../components/AppIcon';
@@ -12,6 +13,7 @@ import TrustSignals from './components/TrustSignals';
 import Footer from '../../components/Footer';
 
 const Register = () => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -33,21 +35,21 @@ const Register = () => {
   const testimonials = [
     {
       id: 1,
-      name: "Pierre Martin",
-      trade: "Plombier",
-      location: "Lyon",
+      name: t('register.testimonials.testimonial1.name'),
+      trade: t('register.testimonials.testimonial1.trade'),
+      location: t('register.testimonials.testimonial1.location'),
       rating: 5,
-      quote: "Mes signatures ont augmenté de 45% en 2 mois. L'IA optimise vraiment mes devis !",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face"
+      quote: t('register.testimonials.testimonial1.quote'),
+      avatar: "/assets/images/no profile.jpg"
     },
     {
       id: 2,
-      name: "Sophie Dubois",
-      trade: "Électricienne",
-      location: "Paris",
+      name: t('register.testimonials.testimonial2.name'),
+      trade: t('register.testimonials.testimonial2.trade'),
+      location: t('register.testimonials.testimonial2.location'),
       rating: 5,
-      quote: "Fini les relances manuelles ! Havitam gère tout automatiquement.",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face"
+      quote: t('register.testimonials.testimonial2.quote'),
+      avatar: "/assets/images/no profile.jpg"
     }
   ];
 
@@ -62,24 +64,24 @@ const Register = () => {
     const newErrors = {};
 
     if (step === 1) {
-      if (!formData.fullName.trim()) newErrors.fullName = 'Ce champ est requis';
-      if (!formData.companyName.trim()) newErrors.companyName = 'Ce champ est requis';
-      if (!formData.profession) newErrors.profession = 'Ce champ est requis';
-      if (!formData.email.trim()) newErrors.email = 'Ce champ est requis';
-      else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email invalide';
-      if (!formData.password) newErrors.password = 'Ce champ est requis';
-      else if (formData.password.length < 8) newErrors.password = 'Trop court';
-      if (!formData.phone.trim()) newErrors.phone = 'Ce champ est requis';
-      if (!formData.country) newErrors.country = 'Ce champ est requis';
+      if (!formData.fullName.trim()) newErrors.fullName = t('errors.required');
+      if (!formData.companyName.trim()) newErrors.companyName = t('errors.required');
+      if (!formData.profession) newErrors.profession = t('errors.required');
+      if (!formData.email.trim()) newErrors.email = t('errors.required');
+      else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = t('errors.invalidEmail');
+      if (!formData.password) newErrors.password = t('errors.required');
+      else if (formData.password.length < 8) newErrors.password = t('errors.tooShort');
+      if (!formData.phone.trim()) newErrors.phone = t('errors.required');
+      if (!formData.country) newErrors.country = t('errors.required');
     }
 
     if (step === 2) {
-      if (!formData.businessSize) newErrors.businessSize = 'Ce champ est requis';
+      if (!formData.businessSize) newErrors.businessSize = t('errors.required');
     }
 
     if (step === 3) {
-      if (!formData.selectedPlan) newErrors.selectedPlan = 'Ce champ est requis';
-      if (!formData.acceptTerms) newErrors.acceptTerms = 'Ce champ est requis';
+      if (!formData.selectedPlan) newErrors.selectedPlan = t('errors.required');
+      if (!formData.acceptTerms) newErrors.acceptTerms = t('errors.required');
     }
 
     setErrors(newErrors);
@@ -122,8 +124,8 @@ const Register = () => {
   };
 
   const getButtonText = () => {
-    if (currentStep === 3) return 'Commencer l\'essai gratuit';
-    return 'Continuer';
+    if (currentStep === 3) return t('ui.buttons.startTrial');
+    return t('ui.buttons.continue');
   };
 
   return (
@@ -139,16 +141,16 @@ const Register = () => {
         <div className="absolute top-4 left-4 z-20">
           <Link to="/" className="flex items-center space-x-2 text-foreground hover:text-primary transition-colors">
             <Icon name="Home" className="w-5 h-5" />
-            <span className="text-sm font-medium">Accueil</span>
+            <span className="text-sm font-medium">{t('nav.home')}</span>
           </Link>
         </div>
         
         {/* Login Link */}
         <div className="absolute top-4 right-4 z-20">
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-muted-foreground">Déjà un compte?</span>
+            <span className="text-sm text-muted-foreground">{t('register.alreadyRegistered')}</span>
             <Link to="/login" className="text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center space-x-1">
-              <span>Connexion</span>
+              <span>{t('nav.login')}</span>
               <Icon name="LogIn" size={16} />
             </Link>
           </div>
@@ -170,13 +172,13 @@ const Register = () => {
                       <Checkbox
                         label={
                           <span className="text-sm">
-                            J'accepte les{' '}
+                            {t('register.acceptTerms')}{' '}
                             <Link to="/terms" className="text-primary hover:underline">
-                              conditions d'utilisation
+                              {t('footer.legal.terms')}
                             </Link>{' '}
-                            et la{' '}
+                            {t('register.and')}{' '}
                             <Link to="/privacy" className="text-primary hover:underline">
-                              politique de confidentialité
+                              {t('footer.legal.privacy')}
                             </Link>
                           </span>
                         }
@@ -189,23 +191,6 @@ const Register = () => {
                   )}
 
                   {/* Boost signatures message for Step 1 */}
-                  {currentStep === 1 && (
-                    <div className="mt-6 pt-6 border-t border-border">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex-shrink-0">
-                          <Icon name="Zap" size={20} className="text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-foreground">
-                            Boost your signatures by 40%
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Our AI automatically optimizes your quotes to maximize your chances of signing.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
 
                   {/* Navigation Buttons */}
                   <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
@@ -216,7 +201,7 @@ const Register = () => {
                         iconName="ChevronLeft"
                         iconPosition="left"
                       >
-                        Retour
+                        {t('ui.buttons.back')}
                       </Button>
                     ) : (
                       <div />
@@ -230,7 +215,7 @@ const Register = () => {
                       disabled={isLoading}
                       isLoading={isLoading}
                     >
-                      {isLoading ? 'Chargement...' : getButtonText()}
+                      {isLoading ? t('ui.buttons.loading') : getButtonText()}
                     </Button>
                   </div>
                 </div>
@@ -243,7 +228,7 @@ const Register = () => {
                 {/* Benefits */}
                 <div className="bg-card rounded-lg border border-border p-6 shadow-sm">
                   <h3 className="text-lg font-semibold text-foreground mb-4">
-                    Pourquoi choisir Havitam ?
+                    {t('register.benefits.title')}
                   </h3>
                   <div className="space-y-4">
                     <div className="flex items-start space-x-3">
@@ -251,9 +236,9 @@ const Register = () => {
                         <Icon name="TrendingUp" size={16} color="var(--color-success)" />
                       </div>
                       <div>
-                        <h4 className="font-medium text-foreground">+40% de signatures</h4>
+                        <h4 className="font-medium text-foreground">{t('register.benefits.signatures')}</h4>
                         <p className="text-sm text-muted-foreground">
-                          L'IA optimise vos devis pour maximiser les conversions
+                          {t('register.benefits.signaturesDescription')}
                         </p>
                       </div>
                     </div>
@@ -262,9 +247,9 @@ const Register = () => {
                         <Icon name="Clock" size={16} color="var(--color-primary)" />
                       </div>
                       <div>
-                        <h4 className="font-medium text-foreground">Gain de temps</h4>
+                        <h4 className="font-medium text-foreground">{t('register.benefits.timeSaving')}</h4>
                         <p className="text-sm text-muted-foreground">
-                          Automatisation des relances et optimisations
+                          {t('register.benefits.timeSavingDescription')}
                         </p>
                       </div>
                     </div>
@@ -273,9 +258,9 @@ const Register = () => {
                         <Icon name="BarChart3" size={16} color="var(--color-accent)" />
                       </div>
                       <div>
-                        <h4 className="font-medium text-foreground">Analytics avancés</h4>
+                        <h4 className="font-medium text-foreground">{t('register.benefits.analytics')}</h4>
                         <p className="text-sm text-muted-foreground">
-                          Suivez vos performances en temps réel
+                          {t('register.benefits.analyticsDescription')}
                         </p>
                       </div>
                     </div>
@@ -285,7 +270,7 @@ const Register = () => {
                 {/* Testimonials */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-foreground">
-                    Ils nous font confiance
+                    {t('register.testimonials.title')}
                   </h3>
                   {testimonials.map((testimonial) => (
                     <TestimonialCard key={testimonial.id} testimonial={testimonial} />
@@ -295,7 +280,7 @@ const Register = () => {
                 {/* Trust Signals */}
                 <div className="bg-card rounded-lg border border-border p-6 shadow-sm">
                   <h3 className="text-lg font-semibold text-foreground mb-4 text-center">
-                    Sécurité & Conformité
+                    {t('register.security.title')}
                   </h3>
                   <TrustSignals />
                 </div>

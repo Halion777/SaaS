@@ -1,20 +1,22 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 
 const SecurityBadges = () => {
+  const { t } = useTranslation();
   
   const securityFeatures = [
     {
       icon: 'Shield',
-      text: 'Données sécurisées'
+      text: t('login.security.secureData')
     },
     {
       icon: 'Lock',
-      text: 'Conforme GDPR'
+      text: t('login.security.gdprCompliant')
     },
     {
       icon: 'Server',
-      text: 'Hébergement français'
+      text: t('login.security.frenchHosting')
     }
   ];
 

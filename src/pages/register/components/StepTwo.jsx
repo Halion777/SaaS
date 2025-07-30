@@ -1,31 +1,33 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Select from '../../../components/ui/Select';
 import Icon from '../../../components/AppIcon';
 
 const StepTwo = ({ formData, updateFormData, errors }) => {
+  const { t } = useTranslation();
   
   const businessSizes = [
-    { value: 'solo', label: 'Artisan seul' },
-    { value: 'small', label: '2-5 employés' },
-    { value: 'medium', label: '6-20 employés' },
-    { value: 'large', label: '20+ employés' }
+    { value: 'solo', label: t('registerForm.step2.solo') },
+    { value: 'small', label: t('registerForm.step2.small') },
+    { value: 'medium', label: t('registerForm.step2.medium') },
+    { value: 'large', label: t('registerForm.step2.large') }
   ];
 
   return (
     <div className="space-y-6">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-foreground mb-2">
-          Quelques informations supplémentaires
+          {t('registerForm.step2.title')}
         </h2>
         <p className="text-muted-foreground">
-          Personnalisez Havitam selon votre activité
+          {t('registerForm.step2.subtitle')}
         </p>
       </div>
 
       <div className="space-y-4">
         <Select
-          label="Taille de l'entreprise"
-          placeholder="Nombre d'employés"
+          label={t('registerForm.step2.businessSize')}
+          placeholder={t('registerForm.step2.businessSizePlaceholder')}
           options={businessSizes}
           value={formData.businessSize}
           onChange={(e) => updateFormData('businessSize', e.target.value)}
@@ -42,10 +44,10 @@ const StepTwo = ({ formData, updateFormData, errors }) => {
             </div>
             <div>
               <h3 className="font-semibold text-foreground mb-1">
-                Gain de temps
+                {t('registerForm.step2.benefits.timeSaving.title')}
               </h3>
               <p className="text-sm text-muted-foreground">
-                Automatisez vos relances et optimisez vos devis en quelques clics.
+                {t('registerForm.step2.benefits.timeSaving.description')}
               </p>
             </div>
           </div>
@@ -58,10 +60,10 @@ const StepTwo = ({ formData, updateFormData, errors }) => {
             </div>
             <div>
               <h3 className="font-semibold text-foreground mb-1">
-                Plus de signatures
+                {t('registerForm.step2.benefits.moreSignatures.title')}
               </h3>
               <p className="text-sm text-muted-foreground">
-                Notre IA analyse et améliore vos devis pour maximiser les conversions.
+                {t('registerForm.step2.benefits.moreSignatures.description')}
               </p>
             </div>
           </div>
@@ -76,10 +78,10 @@ const StepTwo = ({ formData, updateFormData, errors }) => {
             </div>
             <div>
               <h3 className="font-semibold text-foreground mb-1">
-                Vos données sont sécurisées
+                {t('registerForm.step2.benefits.dataSecurity.title')}
               </h3>
               <p className="text-sm text-muted-foreground">
-                Toutes vos informations sont cryptées et stockées en toute sécurité conformément au RGPD.
+                {t('registerForm.step2.benefits.dataSecurity.description')}
               </p>
             </div>
           </div>

@@ -15,6 +15,10 @@
     "notification": {
       "text": "Nouveau : Intégration PEPPOL pour la facturation électronique",
       "close": "Fermer la notification"
+    },
+    "languageSelector": {
+      "currentLanguage": "Langue actuelle",
+      "selectLanguage": "Sélectionner une langue"
     }
   },
   "ui": {
@@ -655,6 +659,7 @@
     "subtitle": "Connectez-vous à votre compte HAVITAM",
     "welcome": "Bon retour !",
     "welcomeSubtitle": "Connectez-vous à votre espace artisan pour gérer vos devis et factures",
+    "logoSubtitle": "Artisan Pro",
     "email": "Adresse email",
     "emailPlaceholder": "votre@email.com",
     "password": "Mot de passe",
@@ -663,7 +668,168 @@
     "rememberMe": "Se souvenir de moi",
     "loginButton": "Se connecter",
     "noAccount": "Pas encore de compte ?",
-    "register": "S'inscrire"
+    "register": "S'inscrire",
+    "security": {
+      "secureData": "Données sécurisées",
+      "gdprCompliant": "Conforme GDPR",
+      "frenchHosting": "Hébergement français"
+    },
+    "socialProof": {
+      "title": "Ils nous font confiance",
+      "activeArtisans": "Artisans actifs",
+      "moreSignatures": "Signatures en plus",
+      "availableSupport": "Support disponible"
+    },
+    "trial": {
+      "noCommitment": "Sans engagement",
+      "setupTime": "Configuration en 5 min"
+    }
+  },
+  "registerForm": {
+    "step1": {
+      "title": "Créez votre compte",
+      "subtitle": "Commencez votre essai gratuit de 14 jours dès aujourd'hui",
+      "fullName": "Nom complet",
+      "fullNamePlaceholder": "Jean Dupont",
+      "companyName": "Nom de l'entreprise",
+      "companyNamePlaceholder": "Dupont Plomberie",
+      "profession": "Profession / Type d'activité",
+      "professionPlaceholder": "Sélectionnez votre métier",
+      "email": "Adresse email",
+      "emailPlaceholder": "jean@exemple.fr",
+      "password": "Mot de passe",
+      "passwordPlaceholder": "Créez un mot de passe sécurisé",
+      "passwordStrength": "Force du mot de passe:",
+      "passwordWeak": "Faible",
+      "passwordMedium": "Moyen",
+      "passwordGood": "Bon",
+      "passwordExcellent": "Excellent",
+      "phone": "Numéro de téléphone",
+      "phonePlaceholder": "+33 6 12 34 56 78",
+      "country": "Pays",
+      "countryPlaceholder": "Sélectionnez votre pays",
+      "aiBoost": {
+        "title": "Boostez vos signatures de 40%",
+        "description": "Notre IA optimise automatiquement vos devis pour maximiser vos chances de signature."
+      }
+    },
+    "step2": {
+      "title": "Quelques informations supplémentaires",
+      "subtitle": "Personnalisez Havitam selon votre activité",
+      "businessSize": "Taille de l'entreprise",
+      "businessSizePlaceholder": "Nombre d'employés",
+      "solo": "Artisan seul",
+      "small": "2-5 employés",
+      "medium": "6-20 employés",
+      "large": "20+ employés",
+      "benefits": {
+        "timeSaving": {
+          "title": "Gain de temps",
+          "description": "Automatisez vos relances et optimisez vos devis en quelques clics."
+        },
+        "moreSignatures": {
+          "title": "Plus de signatures",
+          "description": "Notre IA analyse et améliore vos devis pour maximiser les conversions."
+        },
+        "dataSecurity": {
+          "title": "Vos données sont sécurisées",
+          "description": "Toutes vos informations sont cryptées et stockées en toute sécurité conformément au RGPD."
+        }
+      }
+    },
+    "step3": {
+      "title": "Choisissez votre plan",
+      "subtitle": "Commencez avec 14 jours gratuits, sans engagement",
+      "recommended": "Recommandé",
+      "perMonth": "mois",
+      "freeTrial": {
+        "title": "Essai gratuit de 14 jours",
+        "description": "Testez toutes les fonctionnalités sans engagement. Aucune carte bancaire requise."
+      },
+      "trustBadges": {
+        "gdpr": "GDPR",
+        "secure": "Sécurisé",
+        "certified": "Certifié"
+      },
+      "plans": {
+        "starter": {
+          "name": "Starter",
+          "description": "Parfait pour débuter",
+          "features": [
+            "15 devis/factures par mois",
+            "Templates de base",
+            "Suivi des paiements",
+            "Support email",
+            "Gestion clients basique"
+          ],
+          "limitations": [
+            "IA limitée",
+            "Pas de relances automatiques"
+          ]
+        },
+        "pro": {
+          "name": "Pro",
+          "description": "Solution complète avec IA",
+          "features": [
+            "Devis/factures illimités",
+            "IA complète et optimisations",
+            "Relances automatiques",
+            "Analytics avancés",
+            "Templates premium",
+            "Support prioritaire",
+            "Prédictions de signature",
+            "Optimisation des prix"
+          ],
+          "limitations": []
+        }
+      }
+    },
+    "professions": {
+      "electrician": "Électricien",
+      "plumber": "Plombier",
+      "painter": "Peintre",
+      "carpenter": "Menuisier",
+      "mason": "Maçon",
+      "tiling": "Carreleur",
+      "roofing": "Couvreur",
+      "heating": "Chauffagiste",
+      "gardening": "Paysagiste",
+      "locksmith": "Serrurier",
+      "other": "Autre"
+    },
+    "countries": {
+      "FR": "France",
+      "BE": "Belgique",
+      "CH": "Suisse",
+      "LU": "Luxembourg",
+      "CA": "Canada",
+      "GB": "Royaume-Uni",
+      "DE": "Allemagne",
+      "IT": "Italie",
+      "ES": "Espagne"
+    },
+    "progress": {
+      "step": "Étape {current} sur {total}",
+      "completed": "{percentage}% terminé"
+    },
+    "trustSignals": {
+      "gdpr": {
+        "title": "Conformité GDPR",
+        "description": "Vos données sont protégées selon les standards européens"
+      },
+      "ssl": {
+        "title": "Sécurité SSL",
+        "description": "Chiffrement de bout en bout pour toutes vos informations"
+      },
+      "iso": {
+        "title": "Certifié ISO",
+        "description": "Standards de qualité et sécurité reconnus"
+      },
+      "artisans": {
+        "title": "2000+ Artisans",
+        "description": "Font déjà confiance à notre plateforme"
+      }
+    }
   },
   "register": {
     "alreadyRegistered": "Déjà un compte?",
@@ -680,6 +846,37 @@
     "step3": {
       "title": "Choisissez votre plan",
       "subtitle": "Commencez avec 14 jours gratuits, sans engagement"
+    },
+    "benefits": {
+      "title": "Pourquoi choisir Havitam ?",
+      "signatures": "+40% de signatures",
+      "signaturesDescription": "L'IA optimise vos devis pour maximiser les conversions",
+      "timeSaving": "Gain de temps",
+      "timeSavingDescription": "Automatisation des relances et optimisations",
+      "analytics": "Analytics avancés",
+      "analyticsDescription": "Suivez vos performances en temps réel"
+    },
+    "testimonials": {
+      "title": "Ils nous font confiance",
+      "testimonial1": {
+        "name": "Pierre Martin",
+        "trade": "Plombier",
+        "location": "Lyon",
+        "quote": "Mes signatures ont augmenté de 45% en 2 mois. L'IA optimise vraiment mes devis !"
+      },
+      "testimonial2": {
+        "name": "Sophie Dubois",
+        "trade": "Électricienne",
+        "location": "Paris",
+        "quote": "Fini les relances manuelles ! Havitam gère tout automatiquement."
+      }
+    },
+    "security": {
+      "title": "Sécurité & Conformité"
+    },
+    "aiBoost": {
+      "title": "Boostez vos signatures de 40%",
+      "description": "Notre IA optimise automatiquement vos devis pour maximiser vos chances de signature."
     }
   },
   "forgotPassword": {
@@ -1014,6 +1211,95 @@
       "button": "Nous contacter"
     }
   },
+  "features": {
+    "hero": {
+      "badge": "Fonctionnalités",
+      "title": {
+        "prefix": "Découvrez toutes nos",
+        "highlight": "fonctionnalités",
+        "suffix": "innovantes"
+      },
+      "subtitle": "Des outils puissants conçus pour simplifier votre gestion administrative et booster votre productivité.",
+      "benefits": {
+        "simple": "Simple à utiliser",
+        "fast": "Rapide et efficace",
+        "intelligent": "Intelligent"
+      }
+    },
+    "section": {
+      "badge": "Fonctionnalités clés",
+      "title": "Les 8 fonctionnalités clés de HAVITAM",
+      "subtitle": "Boostez votre business avec des outils simples, rapides et intelligents"
+    },
+    "list": {
+      "feature1": {
+        "title": "Devis & factures en 1 clic",
+        "description": "Créez vos devis et factures en quelques secondes grâce à une interface ultra-intuitive."
+      },
+      "feature2": {
+        "title": "Suivi en temps réel",
+        "description": "Suivez les statuts de vos devis, envoyez-les et faites-les signer en ligne."
+      },
+      "feature3": {
+        "title": "Rappels automatiques",
+        "description": "Réduisez les retards : envoyez des rappels automatisés avant et après la date d'échéance."
+      },
+      "feature4": {
+        "title": "Gestion centralisée",
+        "description": "Toutes vos données sont organisées et accessibles depuis un seul tableau de bord."
+      },
+      "feature5": {
+        "title": "Leads qualifiés",
+        "description": "Recevez des demandes de projets dans votre zone géographique selon vos spécialités."
+      },
+      "feature6": {
+        "title": "Devis dictés à la voix",
+        "description": "Gagnez un temps fou en dictant vos devis à la voix. Notre assistant vocal les rédige pour vous."
+      },
+      "feature7": {
+        "title": "Tarification intelligente par IA",
+        "description": "Une IA vous aide à estimer vos tarifs selon le marché et vos précédents devis."
+      },
+      "feature8": {
+        "title": "Analyse de devis & recommandations IA",
+        "description": "Recevez un feedback automatique sur chaque devis pour l'optimiser avant l'envoi."
+      }
+    },
+    "benefits": {
+      "badge": "Avantages",
+      "title": "Pourquoi choisir HAVITAM ?",
+      "subtitle": "Rejoignez des centaines d'artisans qui ont déjà transformé leur gestion",
+      "benefit1": {
+        "title": "Augmentation du chiffre d'affaires",
+        "description": "Nos utilisateurs voient une augmentation moyenne de 45% de leur chiffre d'affaires"
+      },
+      "benefit2": {
+        "title": "Réduction du temps administratif",
+        "description": "Économisez jusqu'à 60% de votre temps sur les tâches administratives"
+      },
+      "benefit3": {
+        "title": "Satisfaction client",
+        "description": "98% de nos utilisateurs recommandent HAVITAM à leurs collègues"
+      }
+    },
+    "cta": {
+      "badge": "Prêt à commencer",
+      "title": "Prêt à transformer votre gestion ?",
+      "subtitle": "Rejoignez des centaines d'artisans qui ont déjà simplifié leur routine quotidienne",
+      "primaryButton": "Commencer l'essai gratuit",
+      "secondaryButton": "Parler à un expert",
+      "trust": {
+        "freeTrial": "Essai gratuit 14 jours",
+        "languages": "FR, NL, EN",
+        "setup": "Configuration en 5 minutes"
+      },
+      "metrics": {
+        "revenue": "CA moyen",
+        "adminTime": "temps admin",
+        "satisfaction": "satisfaction"
+      }
+    }
+  },
   "meta": {
     "features": {
       "title": "Fonctionnalités - HAVITAM",
@@ -1030,6 +1316,10 @@
     "cookies": {
       "title": "Politique des cookies - HAVITAM",
       "description": "Comprenez comment HAVITAM utilise les cookies pour améliorer votre expérience sur notre plateforme."
+    },
+    "forgotPassword": {
+      "title": "Réinitialiser le mot de passe - HAVITAM",
+      "description": "Réinitialisez votre mot de passe HAVITAM en toute sécurité pour accéder à votre compte artisan."
     }
   }
 } 

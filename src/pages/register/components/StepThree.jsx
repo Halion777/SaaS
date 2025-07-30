@@ -1,45 +1,29 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 
 const StepThree = ({ formData, updateFormData }) => {
+  const { t } = useTranslation();
   
   const plans = [
     {
       id: 'starter',
-      name: 'Starter',
+      name: t('registerForm.step3.plans.starter.name'),
       price: '29.99',
-      period: 'mois',
-      description: 'Parfait pour débuter',
-      features: [
-        '15 devis/factures par mois',
-        'Templates de base',
-        'Suivi des paiements',
-        'Support email',
-        'Gestion clients basique'
-      ],
-      limitations: [
-        'IA limitée',
-        'Pas de relances automatiques'
-      ],
+      period: t('registerForm.step3.perMonth'),
+      description: t('registerForm.step3.plans.starter.description'),
+      features: t('registerForm.step3.plans.starter.features', { returnObjects: true }),
+      limitations: t('registerForm.step3.plans.starter.limitations', { returnObjects: true }),
       popular: false
     },
     {
       id: 'pro',
-      name: 'Pro',
+      name: t('registerForm.step3.plans.pro.name'),
       price: '49.99',
-      period: 'mois',
-      description: 'Solution complète avec IA',
-      features: [
-        'Devis/factures illimités',
-        'IA complète et optimisations',
-        'Relances automatiques',
-        'Analytics avancés',
-        'Templates premium',
-        'Support prioritaire',
-        'Prédictions de signature',
-        'Optimisation des prix'
-      ],
-      limitations: [],
+      period: t('registerForm.step3.perMonth'),
+      description: t('registerForm.step3.plans.pro.description'),
+      features: t('registerForm.step3.plans.pro.features', { returnObjects: true }),
+      limitations: t('registerForm.step3.plans.pro.limitations', { returnObjects: true }),
       popular: true
     }
   ];
@@ -48,10 +32,10 @@ const StepThree = ({ formData, updateFormData }) => {
     <div className="space-y-6">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-foreground mb-2">
-          Choisissez votre plan
+          {t('registerForm.step3.title')}
         </h2>
         <p className="text-muted-foreground">
-          Commencez avec 14 jours gratuits, sans engagement
+          {t('registerForm.step3.subtitle')}
         </p>
       </div>
 
@@ -68,7 +52,7 @@ const StepThree = ({ formData, updateFormData }) => {
             {plan.popular && (
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                 <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
-                  Recommandé
+                  {t('registerForm.step3.recommended')}
                 </span>
               </div>
             )}
@@ -118,10 +102,10 @@ const StepThree = ({ formData, updateFormData }) => {
           <Icon name="Gift" size={20} color="var(--color-accent)" />
           <div>
             <h3 className="font-semibold text-foreground mb-1">
-              Essai gratuit de 14 jours
+              {t('registerForm.step3.freeTrial.title')}
             </h3>
             <p className="text-sm text-muted-foreground">
-              Testez toutes les fonctionnalités sans engagement. Aucune carte bancaire requise.
+              {t('registerForm.step3.freeTrial.description')}
             </p>
           </div>
         </div>
@@ -131,15 +115,15 @@ const StepThree = ({ formData, updateFormData }) => {
         <div className="flex items-center justify-center space-x-4 text-sm text-muted-foreground">
           <div className="flex items-center space-x-1">
             <Icon name="Shield" size={16} />
-            <span>GDPR</span>
+            <span>{t('registerForm.step3.trustBadges.gdpr')}</span>
           </div>
           <div className="flex items-center space-x-1">
             <Icon name="Lock" size={16} />
-            <span>Sécurisé</span>
+            <span>{t('registerForm.step3.trustBadges.secure')}</span>
           </div>
           <div className="flex items-center space-x-1">
             <Icon name="Award" size={16} />
-            <span>Certifié</span>
+            <span>{t('registerForm.step3.trustBadges.certified')}</span>
           </div>
         </div>
       </div>

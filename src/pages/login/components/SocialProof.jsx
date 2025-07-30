@@ -1,7 +1,9 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 
 const SocialProof = () => {
+  const { t } = useTranslation();
   
   const icons = [
     'Users',
@@ -10,16 +12,16 @@ const SocialProof = () => {
   ];
 
   const stats = [
-    { value: '2000+', label: 'Artisans actifs' },
-    { value: '+40%', label: 'Signatures en plus' },
-    { value: '24/7', label: 'Support disponible' }
+    { value: '2000+', label: t('login.socialProof.activeArtisans') },
+    { value: '+40%', label: t('login.socialProof.moreSignatures') },
+    { value: '24/7', label: t('login.socialProof.availableSupport') }
   ];
 
   return (
     <div className="mt-12 pt-8 border-t border-border">
       <div className="text-center mb-6">
         <p className="text-sm font-medium text-foreground mb-4">
-          Ils nous font confiance
+          {t('login.socialProof.title')}
         </p>
       </div>
 

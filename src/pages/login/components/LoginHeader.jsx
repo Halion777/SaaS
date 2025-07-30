@@ -1,7 +1,9 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 
 const LoginHeader = () => {
+  const { t } = useTranslation();
   
   return (
     <div className="text-center mb-8">
@@ -12,19 +14,11 @@ const LoginHeader = () => {
         </div>
         <div className="text-left">
           <h1 className="text-2xl font-bold text-foreground">Havitam</h1>
-          <p className="text-sm text-muted-foreground">Artisan Pro</p>
+          <p className="text-sm text-muted-foreground">{t('login.logoSubtitle')}</p>
         </div>
       </div>
 
-      {/* Welcome Text */}
-      <div className="space-y-2">
-        <h2 className="text-2xl font-semibold text-foreground">
-          Bon retour !
-        </h2>
-        <p className="text-muted-foreground">
-          Connectez-vous à votre espace artisan pour gérer vos devis et factures
-        </p>
-      </div>
+
     </div>
   );
 };
