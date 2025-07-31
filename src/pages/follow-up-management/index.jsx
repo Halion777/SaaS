@@ -568,13 +568,6 @@ const FollowUpManagement = () => {
             </button>
           </div>
 
-          {/* Filter Toolbar */}
-          <FilterToolbar 
-            filters={filters} 
-            onFiltersChange={handleFiltersChange} 
-            filteredCount={filteredFollowUps.length}
-          />
-
           {/* KPI Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <div className="bg-card border border-border rounded-lg p-3 sm:p-4 md:p-6">
@@ -606,6 +599,13 @@ const FollowUpManagement = () => {
               </p>
             </div>
           </div>
+
+          {/* Filter Toolbar */}
+          <FilterToolbar 
+            filters={filters} 
+            onFiltersChange={handleFiltersChange} 
+            filteredCount={filteredFollowUps.length}
+          />
 
           {/* Follow-up Items */}
           {filteredFollowUps.length === 0 ? (

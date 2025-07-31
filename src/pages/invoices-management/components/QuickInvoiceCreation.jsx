@@ -156,7 +156,7 @@ const QuickInvoiceCreation = ({ isOpen, onClose, onCreateInvoice }) => {
                 placeholder="Sélectionner un devis"
                 options={signedQuoteOptions}
                 value={invoiceData.quoteId}
-                onChange={(value) => handleInputChange('quoteId', value)}
+                onChange={(e) => handleInputChange('quoteId', e.target.value)}
                 required
               />
             ) : (
@@ -166,7 +166,7 @@ const QuickInvoiceCreation = ({ isOpen, onClose, onCreateInvoice }) => {
                   placeholder="Sélectionner un client"
                   options={clientOptions}
                   value={invoiceData.clientId}
-                  onChange={(value) => handleInputChange('clientId', value)}
+                  onChange={(e) => handleInputChange('clientId', e.target.value)}
                   required
                 />
 
@@ -206,7 +206,7 @@ const QuickInvoiceCreation = ({ isOpen, onClose, onCreateInvoice }) => {
                 placeholder="Sélectionner"
                 options={paymentMethodOptions}
                 value={invoiceData.paymentMethod}
-                onChange={(value) => handleInputChange('paymentMethod', value)}
+                onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
               />
             </div>
 

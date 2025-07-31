@@ -135,7 +135,7 @@ const FollowUpModal = ({
               label="Client *"
               options={clientOptions}
               value={formData.clientId}
-              onChange={(value) => handleChange('clientId', value)}
+              onChange={(e) => handleChange('clientId', e.target.value)}
               placeholder="Sélectionner un client"
               required
             />
@@ -144,7 +144,7 @@ const FollowUpModal = ({
               label="Type de suivi *"
               options={typeOptions}
               value={formData.type}
-              onChange={(value) => handleChange('type', value)}
+              onChange={(e) => handleChange('type', e.target.value)}
               required
             />
           </div>
@@ -201,14 +201,14 @@ const FollowUpModal = ({
               label="Priorité"
               options={priorityOptions}
               value={formData.priority}
-              onChange={(value) => handleChange('priority', value)}
+              onChange={(e) => handleChange('priority', e.target.value)}
             />
             
             <Select
               label="Canal de communication"
               options={channelOptions}
               value={formData.channel}
-              onChange={(value) => handleChange('channel', value)}
+              onChange={(e) => handleChange('channel', e.target.value)}
             />
           </div>
 

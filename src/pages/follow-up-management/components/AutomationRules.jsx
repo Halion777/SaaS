@@ -141,7 +141,7 @@ const AutomationRules = ({ rules, onRulesChange }) => {
                   label="Déclencheur"
                   options={triggerOptions}
                   value={newRule.trigger}
-                  onChange={(value) => setNewRule(prev => ({ ...prev, trigger: value }))}
+                  onChange={(e) => setNewRule(prev => ({ ...prev, trigger: e.target.value }))}
                   size="sm"
                 />
                 
@@ -149,7 +149,7 @@ const AutomationRules = ({ rules, onRulesChange }) => {
                   label="Modèle"
                   options={templateOptions}
                   value={newRule.template}
-                  onChange={(value) => setNewRule(prev => ({ ...prev, template: value }))}
+                  onChange={(e) => setNewRule(prev => ({ ...prev, template: e.target.value }))}
                   size="sm"
                 />
               </div>
@@ -167,7 +167,7 @@ const AutomationRules = ({ rules, onRulesChange }) => {
                   label="Unité"
                   options={delayUnitOptions}
                   value={newRule.delayUnit}
-                  onChange={(value) => setNewRule(prev => ({ ...prev, delayUnit: value }))}
+                  onChange={(e) => setNewRule(prev => ({ ...prev, delayUnit: e.target.value }))}
                   size="sm"
                 />
               </div>

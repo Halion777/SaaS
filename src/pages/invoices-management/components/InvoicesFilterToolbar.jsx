@@ -132,7 +132,7 @@ const InvoicesFilterToolbar = ({ onFiltersChange }) => {
             label="Statut"
           options={statusOptions}
           value={filters.status}
-          onChange={(value) => handleFilterChange('status', value)}
+          onChange={(e) => handleFilterChange('status', e.target.value)}
             placeholder="Sélectionner un statut"
         />
 
@@ -140,7 +140,7 @@ const InvoicesFilterToolbar = ({ onFiltersChange }) => {
             label="Période"
           options={dateRangeOptions}
           value={filters.dateRange}
-          onChange={(value) => handleFilterChange('dateRange', value)}
+          onChange={(e) => handleFilterChange('dateRange', e.target.value)}
             placeholder="Sélectionner une période"
         />
 
@@ -148,7 +148,7 @@ const InvoicesFilterToolbar = ({ onFiltersChange }) => {
             label="Paiement"
           options={paymentMethodOptions}
           value={filters.paymentMethod}
-          onChange={(value) => handleFilterChange('paymentMethod', value)}
+          onChange={(e) => handleFilterChange('paymentMethod', e.target.value)}
             placeholder="Sélectionner un moyen"
         />
 
@@ -156,7 +156,7 @@ const InvoicesFilterToolbar = ({ onFiltersChange }) => {
             label="Montant"
           options={amountRangeOptions}
           value={filters.amountRange}
-          onChange={(value) => handleFilterChange('amountRange', value)}
+          onChange={(e) => handleFilterChange('amountRange', e.target.value)}
             placeholder="Sélectionner un montant"
           />
         </div>
@@ -247,7 +247,7 @@ const InvoicesFilterToolbar = ({ onFiltersChange }) => {
               label="Statut"
               options={statusOptions}
               value={filters.status}
-              onChange={(value) => handleFilterChange('status', value)}
+              onChange={(e) => handleFilterChange('status', e.target.value)}
               placeholder="Tous les statuts"
             />
 
@@ -255,7 +255,7 @@ const InvoicesFilterToolbar = ({ onFiltersChange }) => {
               label="Période"
               options={dateRangeOptions}
               value={filters.dateRange}
-              onChange={(value) => handleFilterChange('dateRange', value)}
+              onChange={(e) => handleFilterChange('dateRange', e.target.value)}
               placeholder="Toutes les dates"
             />
 
@@ -263,7 +263,7 @@ const InvoicesFilterToolbar = ({ onFiltersChange }) => {
               label="Paiement"
               options={paymentMethodOptions}
               value={filters.paymentMethod}
-              onChange={(value) => handleFilterChange('paymentMethod', value)}
+              onChange={(e) => handleFilterChange('paymentMethod', e.target.value)}
               placeholder="Tous les moyens"
             />
 
@@ -271,7 +271,7 @@ const InvoicesFilterToolbar = ({ onFiltersChange }) => {
               label="Montant"
               options={amountRangeOptions}
               value={filters.amountRange}
-              onChange={(value) => handleFilterChange('amountRange', value)}
+              onChange={(e) => handleFilterChange('amountRange', e.target.value)}
               placeholder="Tous les montants"
             />
           </div>

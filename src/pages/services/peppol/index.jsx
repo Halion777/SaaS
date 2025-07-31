@@ -33,6 +33,8 @@ const PeppolNetworkPage = () => {
   const [filteredReceivedInvoices, setFilteredReceivedInvoices] = useState([]);
   const [sentViewMode, setSentViewMode] = useState('table');
   const [receivedViewMode, setReceivedViewMode] = useState('table');
+  const [isSentFiltersExpanded, setIsSentFiltersExpanded] = useState(false);
+  const [isReceivedFiltersExpanded, setIsReceivedFiltersExpanded] = useState(false);
 
   React.useEffect(() => {
     const handleSidebarToggle = (e) => {
@@ -858,91 +860,193 @@ const PeppolNetworkPage = () => {
             {activeTab === 'sent' && (
               <div>
                 {/* Filter Toolbar */}
-                <div className="bg-card border border-border rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                    {/* Search */}
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Rechercher</label>
-                      <Input
-                        value={filters.search}
-                        onChange={(e) => handleFilterChange('search', e.target.value)}
-                        placeholder="N° facture, destinataire, Peppol ID..."
-                        iconName="Search"
-                      />
-                    </div>
-
-                    {/* Status Filter */}
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Statut</label>
-                      <Select
-                        value={filters.status}
-                        onChange={(e) => handleFilterChange('status', e.target.value)}
-                        placeholder="Tous les statuts"
-                        options={[
-                          { value: '', label: 'Tous les statuts' },
-                          { value: 'delivered', label: 'Livré' },
-                          { value: 'pending', label: 'En attente' },
-                          { value: 'failed', label: 'Échoué' }
-                        ]}
-                      />
-                    </div>
-
-                    {/* Date Range */}
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Période</label>
-                      <Select
-                        value={filters.dateRange}
-                        onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-                        placeholder="Toutes les dates"
-                        options={[
-                          { value: '', label: 'Toutes les dates' },
-                          { value: 'today', label: 'Aujourd\'hui' },
-                          { value: 'week', label: '7 derniers jours' },
-                          { value: 'month', label: '30 derniers jours' },
-                          { value: 'quarter', label: '3 derniers mois' }
-                        ]}
-                      />
-                    </div>
-
-                    {/* Amount Range */}
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Montant</label>
-                      <Select
-                        value={filters.amountRange}
-                        onChange={(e) => handleFilterChange('amountRange', e.target.value)}
-                        placeholder="Tous les montants"
-                        options={[
-                          { value: '', label: 'Tous les montants' },
-                          { value: 'low', label: 'Moins de 1000€' },
-                          { value: 'medium', label: '1000€ - 5000€' },
-                          { value: 'high', label: 'Plus de 5000€' }
-                        ]}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Filter Actions */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-4 pt-4 border-t border-border gap-2 sm:gap-0">
+                <div className="bg-card border border-border rounded-lg shadow-sm">
+                  {/* Filter Header */}
+                  <div className="flex items-center justify-between p-3 md:p-4">
                     <div className="flex items-center space-x-2">
-                      <span className="text-xs sm:text-sm text-muted-foreground">
-                        {filteredSentInvoices.length} facture(s) trouvée(s)
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
+                      <Icon name="Filter" size={18} className="text-muted-foreground" />
+                      <h3 className="text-base font-medium text-foreground">Filtres</h3>
                       {hasActiveFilters() && (
-                        <Button
-                          variant="outline"
-                          size="xs"
-                          onClick={clearFilters}
-                          iconName="X"
-                          iconPosition="left"
-                          className="h-8 sm:h-9"
-                        >
-                          Effacer
-                        </Button>
+                        <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
+                          {Object.values(filters).filter(v => v !== '').length}
+                        </span>
                       )}
                     </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
+                        {filteredSentInvoices.length} facture(s) trouvée(s)
+                      </span>
+                      {hasActiveFilters() && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={clearFilters}
+                          className="h-8"
+                        >
+                          <span className="flex items-center">
+                            <Icon name="X" size={14} className="mr-1" />
+                            Effacer
+                          </span>
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIsSentFiltersExpanded(!isSentFiltersExpanded)}
+                        className="md:hidden h-8 w-8"
+                        aria-label={isSentFiltersExpanded ? "Masquer les filtres" : "Afficher les filtres"}
+                      >
+                        <Icon name={isSentFiltersExpanded ? "ChevronUp" : "ChevronDown"} size={16} />
+                      </Button>
+                    </div>
                   </div>
+
+                  {/* Desktop Filters - Always visible on md+ screens */}
+                  <div className="hidden md:block p-4 space-y-4 border-t border-border">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                      {/* Search */}
+                      <div>
+                        <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Rechercher</label>
+                        <Input
+                          value={filters.search}
+                          onChange={(e) => handleFilterChange('search', e.target.value)}
+                          placeholder="N° facture, destinataire, Peppol ID..."
+                          iconName="Search"
+                        />
+                      </div>
+
+                      {/* Status Filter */}
+                      <div>
+                        <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Statut</label>
+                        <Select
+                          value={filters.status}
+                          onChange={(e) => handleFilterChange('status', e.target.value)}
+                          placeholder="Tous les statuts"
+                          options={[
+                            { value: '', label: 'Tous les statuts' },
+                            { value: 'delivered', label: 'Livré' },
+                            { value: 'pending', label: 'En attente' },
+                            { value: 'failed', label: 'Échoué' }
+                          ]}
+                        />
+                      </div>
+
+                      {/* Date Range */}
+                      <div>
+                        <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Période</label>
+                        <Select
+                          value={filters.dateRange}
+                          onChange={(e) => handleFilterChange('dateRange', e.target.value)}
+                          placeholder="Toutes les dates"
+                          options={[
+                            { value: '', label: 'Toutes les dates' },
+                            { value: 'today', label: 'Aujourd\'hui' },
+                            { value: 'week', label: '7 derniers jours' },
+                            { value: 'month', label: '30 derniers jours' },
+                            { value: 'quarter', label: '3 derniers mois' }
+                          ]}
+                        />
+                      </div>
+
+                      {/* Amount Range */}
+                      <div>
+                        <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Montant</label>
+                        <Select
+                          value={filters.amountRange}
+                          onChange={(e) => handleFilterChange('amountRange', e.target.value)}
+                          placeholder="Tous les montants"
+                          options={[
+                            { value: '', label: 'Tous les montants' },
+                            { value: 'low', label: 'Moins de 1000€' },
+                            { value: 'medium', label: '1000€ - 5000€' },
+                            { value: 'high', label: 'Plus de 5000€' }
+                          ]}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mobile Filters - Expandable */}
+                  {isSentFiltersExpanded && (
+                    <div className="md:hidden p-3 space-y-4 border-t border-border">
+                      <div className="space-y-3">
+                        {/* Search */}
+                        <div>
+                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Rechercher</label>
+                          <Input
+                            value={filters.search}
+                            onChange={(e) => handleFilterChange('search', e.target.value)}
+                            placeholder="N° facture, destinataire, Peppol ID..."
+                            iconName="Search"
+                          />
+                        </div>
+
+                        {/* Status Filter */}
+                        <div>
+                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Statut</label>
+                          <Select
+                            value={filters.status}
+                            onChange={(e) => handleFilterChange('status', e.target.value)}
+                            placeholder="Tous les statuts"
+                            options={[
+                              { value: '', label: 'Tous les statuts' },
+                              { value: 'delivered', label: 'Livré' },
+                              { value: 'pending', label: 'En attente' },
+                              { value: 'failed', label: 'Échoué' }
+                            ]}
+                          />
+                        </div>
+
+                        {/* Date Range */}
+                        <div>
+                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Période</label>
+                          <Select
+                            value={filters.dateRange}
+                            onChange={(e) => handleFilterChange('dateRange', e.target.value)}
+                            placeholder="Toutes les dates"
+                            options={[
+                              { value: '', label: 'Toutes les dates' },
+                              { value: 'today', label: 'Aujourd\'hui' },
+                              { value: 'week', label: '7 derniers jours' },
+                              { value: 'month', label: '30 derniers jours' },
+                              { value: 'quarter', label: '3 derniers mois' }
+                            ]}
+                          />
+                        </div>
+
+                        {/* Amount Range */}
+                        <div>
+                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Montant</label>
+                          <Select
+                            value={filters.amountRange}
+                            onChange={(e) => handleFilterChange('amountRange', e.target.value)}
+                            placeholder="Tous les montants"
+                            options={[
+                              { value: '', label: 'Tous les montants' },
+                              { value: 'low', label: 'Moins de 1000€' },
+                              { value: 'medium', label: '1000€ - 5000€' },
+                              { value: 'high', label: 'Plus de 5000€' }
+                            ]}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Mobile Active Filters Summary (when collapsed) */}
+                  {!isSentFiltersExpanded && hasActiveFilters() && (
+                    <div className="md:hidden p-3 border-t border-border">
+                      <div className="text-sm text-muted-foreground">
+                        <span className="font-medium">{Object.values(filters).filter(v => v !== '').length} filtre{Object.values(filters).filter(v => v !== '').length > 1 ? 's' : ''} actif{Object.values(filters).filter(v => v !== '').length > 1 ? 's' : ''}</span>
+                        <span className="text-xs ml-2">
+                          {filters.search && '• Recherche'}
+                          {filters.status && ' • Statut'}
+                          {filters.dateRange && ' • Période'}
+                          {filters.amountRange && ' • Montant'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Invoices Table */}
@@ -1008,90 +1112,193 @@ const PeppolNetworkPage = () => {
             {activeTab === 'received' && (
               <div>
                 {/* Filter Toolbar */}
-                <div className="bg-card border border-border rounded-lg p-4 mb-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Search */}
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Rechercher</label>
-                      <Input
-                        value={filters.search}
-                        onChange={(e) => handleFilterChange('search', e.target.value)}
-                        placeholder="N° facture, expéditeur, Peppol ID..."
-                        iconName="Search"
-                      />
-                    </div>
-
-                    {/* Status Filter */}
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Statut</label>
-                      <Select
-                        value={filters.status}
-                        onChange={(e) => handleFilterChange('status', e.target.value)}
-                        placeholder="Tous les statuts"
-                        options={[
-                          { value: '', label: 'Tous les statuts' },
-                          { value: 'received', label: 'Reçu' },
-                          { value: 'processed', label: 'Traité' },
-                          { value: 'pending', label: 'En attente' }
-                        ]}
-                      />
-                    </div>
-
-                    {/* Date Range */}
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Période</label>
-                      <Select
-                        value={filters.dateRange}
-                        onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-                        placeholder="Toutes les dates"
-                        options={[
-                          { value: '', label: 'Toutes les dates' },
-                          { value: 'today', label: 'Aujourd\'hui' },
-                          { value: 'week', label: '7 derniers jours' },
-                          { value: 'month', label: '30 derniers jours' },
-                          { value: 'quarter', label: '3 derniers mois' }
-                        ]}
-                      />
-                    </div>
-
-                    {/* Amount Range */}
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Montant</label>
-                      <Select
-                        value={filters.amountRange}
-                        onChange={(e) => handleFilterChange('amountRange', e.target.value)}
-                        placeholder="Tous les montants"
-                        options={[
-                          { value: '', label: 'Tous les montants' },
-                          { value: 'low', label: 'Moins de 1000€' },
-                          { value: 'medium', label: '1000€ - 5000€' },
-                          { value: 'high', label: 'Plus de 5000€' }
-                        ]}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Filter Actions */}
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+                <div className="bg-card border border-border rounded-lg shadow-sm">
+                  {/* Filter Header */}
+                  <div className="flex items-center justify-between p-3 md:p-4">
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm text-muted-foreground">
-                        {filteredReceivedInvoices.length} facture(s) trouvée(s)
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
+                      <Icon name="Filter" size={18} className="text-muted-foreground" />
+                      <h3 className="text-base font-medium text-foreground">Filtres</h3>
                       {hasActiveFilters() && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={clearFilters}
-                          iconName="X"
-                          iconPosition="left"
-                        >
-                          Effacer
-                        </Button>
+                        <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
+                          {Object.values(filters).filter(v => v !== '').length}
+                        </span>
                       )}
                     </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
+                        {filteredReceivedInvoices.length} facture(s) trouvée(s)
+                      </span>
+                      {hasActiveFilters() && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={clearFilters}
+                          className="h-8"
+                        >
+                          <span className="flex items-center">
+                            <Icon name="X" size={14} className="mr-1" />
+                            Effacer
+                          </span>
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIsReceivedFiltersExpanded(!isReceivedFiltersExpanded)}
+                        className="md:hidden h-8 w-8"
+                        aria-label={isReceivedFiltersExpanded ? "Masquer les filtres" : "Afficher les filtres"}
+                      >
+                        <Icon name={isReceivedFiltersExpanded ? "ChevronUp" : "ChevronDown"} size={16} />
+                      </Button>
+                    </div>
                   </div>
+
+                  {/* Desktop Filters - Always visible on md+ screens */}
+                  <div className="hidden md:block p-4 space-y-4 border-t border-border">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {/* Search */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">Rechercher</label>
+                        <Input
+                          value={filters.search}
+                          onChange={(e) => handleFilterChange('search', e.target.value)}
+                          placeholder="N° facture, expéditeur, Peppol ID..."
+                          iconName="Search"
+                        />
+                      </div>
+
+                      {/* Status Filter */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">Statut</label>
+                        <Select
+                          value={filters.status}
+                          onChange={(e) => handleFilterChange('status', e.target.value)}
+                          placeholder="Tous les statuts"
+                          options={[
+                            { value: '', label: 'Tous les statuts' },
+                            { value: 'received', label: 'Reçu' },
+                            { value: 'processed', label: 'Traité' },
+                            { value: 'pending', label: 'En attente' }
+                          ]}
+                        />
+                      </div>
+
+                      {/* Date Range */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">Période</label>
+                        <Select
+                          value={filters.dateRange}
+                          onChange={(e) => handleFilterChange('dateRange', e.target.value)}
+                          placeholder="Toutes les dates"
+                          options={[
+                            { value: '', label: 'Toutes les dates' },
+                            { value: 'today', label: 'Aujourd\'hui' },
+                            { value: 'week', label: '7 derniers jours' },
+                            { value: 'month', label: '30 derniers jours' },
+                            { value: 'quarter', label: '3 derniers mois' }
+                          ]}
+                        />
+                      </div>
+
+                      {/* Amount Range */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">Montant</label>
+                        <Select
+                          value={filters.amountRange}
+                          onChange={(e) => handleFilterChange('amountRange', e.target.value)}
+                          placeholder="Tous les montants"
+                          options={[
+                            { value: '', label: 'Tous les montants' },
+                            { value: 'low', label: 'Moins de 1000€' },
+                            { value: 'medium', label: '1000€ - 5000€' },
+                            { value: 'high', label: 'Plus de 5000€' }
+                          ]}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mobile Filters - Expandable */}
+                  {isReceivedFiltersExpanded && (
+                    <div className="md:hidden p-3 space-y-4 border-t border-border">
+                      <div className="space-y-3">
+                        {/* Search */}
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">Rechercher</label>
+                          <Input
+                            value={filters.search}
+                            onChange={(e) => handleFilterChange('search', e.target.value)}
+                            placeholder="N° facture, expéditeur, Peppol ID..."
+                            iconName="Search"
+                          />
+                        </div>
+
+                        {/* Status Filter */}
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">Statut</label>
+                          <Select
+                            value={filters.status}
+                            onChange={(e) => handleFilterChange('status', e.target.value)}
+                            placeholder="Tous les statuts"
+                            options={[
+                              { value: '', label: 'Tous les statuts' },
+                              { value: 'received', label: 'Reçu' },
+                              { value: 'processed', label: 'Traité' },
+                              { value: 'pending', label: 'En attente' }
+                            ]}
+                          />
+                        </div>
+
+                        {/* Date Range */}
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">Période</label>
+                          <Select
+                            value={filters.dateRange}
+                            onChange={(e) => handleFilterChange('dateRange', e.target.value)}
+                            placeholder="Toutes les dates"
+                            options={[
+                              { value: '', label: 'Toutes les dates' },
+                              { value: 'today', label: 'Aujourd\'hui' },
+                              { value: 'week', label: '7 derniers jours' },
+                              { value: 'month', label: '30 derniers jours' },
+                              { value: 'quarter', label: '3 derniers mois' }
+                            ]}
+                          />
+                        </div>
+
+                        {/* Amount Range */}
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">Montant</label>
+                          <Select
+                            value={filters.amountRange}
+                            onChange={(e) => handleFilterChange('amountRange', e.target.value)}
+                            placeholder="Tous les montants"
+                            options={[
+                              { value: '', label: 'Tous les montants' },
+                              { value: 'low', label: 'Moins de 1000€' },
+                              { value: 'medium', label: '1000€ - 5000€' },
+                              { value: 'high', label: 'Plus de 5000€' }
+                            ]}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Mobile Active Filters Summary (when collapsed) */}
+                  {!isReceivedFiltersExpanded && hasActiveFilters() && (
+                    <div className="md:hidden p-3 border-t border-border">
+                      <div className="text-sm text-muted-foreground">
+                        <span className="font-medium">{Object.values(filters).filter(v => v !== '').length} filtre{Object.values(filters).filter(v => v !== '').length > 1 ? 's' : ''} actif{Object.values(filters).filter(v => v !== '').length > 1 ? 's' : ''}</span>
+                        <span className="text-xs ml-2">
+                          {filters.search && '• Recherche'}
+                          {filters.status && ' • Statut'}
+                          {filters.dateRange && ' • Période'}
+                          {filters.amountRange && ' • Montant'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Invoices Table */}

@@ -99,7 +99,7 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters }) => {
             label="Statut"
             options={statusOptions}
             value={filters.status || ''}
-            onChange={(value) => onFiltersChange({ ...filters, status: value })}
+            onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
             placeholder="Sélectionner un statut"
           />
 
@@ -107,7 +107,7 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters }) => {
             label="Client"
             options={clientOptions}
             value={filters.client || ''}
-            onChange={(value) => onFiltersChange({ ...filters, client: value })}
+            onChange={(e) => onFiltersChange({ ...filters, client: e.target.value })}
             placeholder="Sélectionner un client"
             searchable
           />
@@ -225,7 +225,7 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters }) => {
               label="Statut"
               options={statusOptions}
               value={filters.status || ''}
-              onChange={(value) => onFiltersChange({ ...filters, status: value })}
+              onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
               placeholder="Tous les statuts"
             />
 
@@ -233,7 +233,7 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters }) => {
               label="Client"
               options={clientOptions}
               value={filters.client || ''}
-              onChange={(value) => onFiltersChange({ ...filters, client: value })}
+              onChange={(e) => onFiltersChange({ ...filters, client: e.target.value })}
               placeholder="Tous les clients"
               searchable
             />

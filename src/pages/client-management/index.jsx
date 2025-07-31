@@ -479,7 +479,7 @@ const ClientManagement = () => {
             </div>
           </header>
 
-          {/* Search and Filters */}
+          {/* Search */}
           <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
             <div className="flex flex-col lg:flex-row gap-3 sm:gap-4">
               <div className="flex-1">
@@ -492,13 +492,6 @@ const ClientManagement = () => {
               </div>
             </div>
           </div>
-
-          {/* Filter Toolbar */}
-          <FilterToolbar 
-            filters={filters} 
-            onFiltersChange={setFilters} 
-            filteredCount={filteredClients.length}
-          />
 
           {/* Stats Cards - First Row (Full Width) */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -547,7 +540,6 @@ const ClientManagement = () => {
                 <Icon name="Euro" size={18} className="sm:w-6 sm:h-6 text-primary" />
               </div>
             </div>
-
           </div>
 
           {/* Analytics Cards - Second Row (3 Equal Cards) */}
@@ -556,6 +548,13 @@ const ClientManagement = () => {
             <RevenueOverview analytics={analytics} isLoading={isAnalyzing} />
             <QuickActions />
           </div>
+
+          {/* Filter Toolbar */}
+          <FilterToolbar 
+            filters={filters} 
+            onFiltersChange={setFilters} 
+            filteredCount={filteredClients.length}
+          />
 
           {/* Clients Data Display */}
           <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">

@@ -148,7 +148,7 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
             label="Statut"
             options={statusOptions}
             value={filters.status}
-            onChange={(value) => handleFilterChange('status', value)}
+            onChange={(e) => handleFilterChange('status', e.target.value)}
             placeholder="Sélectionner un statut"
           />
 
@@ -156,7 +156,7 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
             label="Catégorie"
             options={categoryOptions}
             value={filters.category}
-            onChange={(value) => handleFilterChange('category', value)}
+            onChange={(e) => handleFilterChange('category', e.target.value)}
             placeholder="Sélectionner une catégorie"
           />
 
@@ -164,7 +164,7 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
             label="Période"
             options={dateRangeOptions}
             value={filters.dateRange}
-            onChange={(value) => handleFilterChange('dateRange', value)}
+            onChange={(e) => handleFilterChange('dateRange', e.target.value)}
             placeholder="Sélectionner une période"
           />
 
@@ -172,7 +172,7 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
             label="Paiement"
             options={paymentMethodOptions}
             value={filters.paymentMethod}
-            onChange={(value) => handleFilterChange('paymentMethod', value)}
+            onChange={(e) => handleFilterChange('paymentMethod', e.target.value)}
             placeholder="Sélectionner un moyen"
           />
 
@@ -180,7 +180,7 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
             label="Montant"
             options={amountRangeOptions}
             value={filters.amountRange}
-            onChange={(value) => handleFilterChange('amountRange', value)}
+            onChange={(e) => handleFilterChange('amountRange', e.target.value)}
             placeholder="Sélectionner un montant"
           />
         </div>
@@ -284,7 +284,7 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
               label="Statut"
               options={statusOptions}
               value={filters.status}
-              onChange={(value) => handleFilterChange('status', value)}
+              onChange={(e) => handleFilterChange('status', e.target.value)}
               placeholder="Tous les statuts"
             />
 
@@ -292,7 +292,7 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
               label="Catégorie"
               options={categoryOptions}
               value={filters.category}
-              onChange={(value) => handleFilterChange('category', value)}
+              onChange={(e) => handleFilterChange('category', e.target.value)}
               placeholder="Toutes les catégories"
             />
 
@@ -300,7 +300,7 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
               label="Période"
               options={dateRangeOptions}
               value={filters.dateRange}
-              onChange={(value) => handleFilterChange('dateRange', value)}
+              onChange={(e) => handleFilterChange('dateRange', e.target.value)}
               placeholder="Toutes les dates"
             />
 
@@ -308,7 +308,7 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
               label="Paiement"
               options={paymentMethodOptions}
               value={filters.paymentMethod}
-              onChange={(value) => handleFilterChange('paymentMethod', value)}
+              onChange={(e) => handleFilterChange('paymentMethod', e.target.value)}
               placeholder="Toutes les méthodes"
             />
 
@@ -316,7 +316,7 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
               label="Montant"
               options={amountRangeOptions}
               value={filters.amountRange}
-              onChange={(value) => handleFilterChange('amountRange', value)}
+              onChange={(e) => handleFilterChange('amountRange', e.target.value)}
               placeholder="Tous les montants"
             />
           </div>
