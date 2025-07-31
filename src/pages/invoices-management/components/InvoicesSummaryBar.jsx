@@ -13,47 +13,88 @@ const InvoicesSummaryBar = ({ summaryData }) => {
     return `${value.toFixed(1)}%`;
   };
 
+  const summaryItems = [
+    {
+      label: 'Chiffre d\'affaires total',
+      value: formatCurrency(summaryData.totalRevenue),
+      icon: 'TrendingUp',
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      trend: summaryData.revenueGrowth,
+      trendLabel: 'ce mois'
+    },
+    {
+      label: 'Montant encaissé',
+      value: formatCurrency(summaryData.paidRevenue),
+      icon: 'CheckCircle',
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+      percentage: (summaryData.paidRevenue / summaryData.totalRevenue) * 100
+    },
+    {
+      label: 'Montant en attente',
+      value: formatCurrency(summaryData.outstandingAmount),
+      icon: 'Clock',
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-50'
+    },
+    {
+      label: 'Factures en retard',
+      value: summaryData.overdueCount,
+      icon: 'AlertTriangle',
+      color: 'text-red-600',
+      bgColor: 'bg-red-50'
+    }
+  ];
+
   return (
-    <div className="bg-card border border-border rounded-lg p-6 mb-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Total Revenue */}
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-            <Icon name="TrendingUp" size={24} color="var(--color-primary)" />
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Chiffre d'affaires total</p>
-            <p className="text-2xl font-bold text-foreground">{formatCurrency(summaryData.totalRevenue)}</p>
-            <p className="text-xs text-success">+{formatPercentage(summaryData.revenueGrowth)} ce mois</p>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      {summaryItems.map((item, index) => (
+        <div key={index} className="bg-card border border-border rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-muted-foreground mb-1">
+                {item.label}
+              </p>
+              <p className="text-2xl font-bold text-foreground">
+                {item.value}
+              </p>
+              {item.trend !== undefined && (
+                <div className="flex items-center mt-1">
+                  <Icon 
+                    name={item.trend >= 0 ? 'TrendingUp' : 'TrendingDown'} 
+                    size={14} 
+                    color={item.trend >= 0 ? 'var(--color-success)' : 'var(--color-error)'} 
+                  />
+                  <span className={`text-xs ml-1 ${
+                    item.trend >= 0 ? 'text-success' : 'text-error'
+                  }`}>
+                    +{formatPercentage(item.trend)}
+                  </span>
+                  <span className="text-xs text-muted-foreground ml-1">
+                    {item.trendLabel}
+                  </span>
+                </div>
+              )}
+              {item.percentage !== undefined && (
+                <div className="flex items-center mt-1">
+                  <span className="text-xs text-muted-foreground">
+                    {formatPercentage(item.percentage)} du total
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className={`p-3 rounded-lg ${item.bgColor}`}>
+              <Icon 
+                name={item.icon} 
+                size={24} 
+                color="currentColor" 
+                className={item.color}
+              />
+            </div>
           </div>
         </div>
-
-        {/* Paid Revenue */}
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-success/10 rounded-lg flex items-center justify-center">
-            <Icon name="CheckCircle" size={24} color="var(--color-success)" />
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Montant encaissé</p>
-            <p className="text-2xl font-bold text-foreground">{formatCurrency(summaryData.paidRevenue)}</p>
-            <p className="text-xs text-muted-foreground">
-              {formatPercentage((summaryData.paidRevenue / summaryData.totalRevenue) * 100)} du total
-            </p>
-          </div>
-        </div>
-
-        {/* Outstanding Amount */}
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-warning/10 rounded-lg flex items-center justify-center">
-            <Icon name="Clock" size={24} color="var(--color-warning)" />
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">En attente</p>
-            <p className="text-2xl font-bold text-foreground">{formatCurrency(summaryData.outstandingAmount)}</p>
-            <p className="text-xs text-error">{summaryData.overdueCount} factures en retard</p>
-          </div>
-        </div>
-      </div>
+      ))}
     </div>
   );
 };
