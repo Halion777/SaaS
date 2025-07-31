@@ -7,6 +7,7 @@ import InvoicesFilterToolbar from './components/InvoicesFilterToolbar';
 import InvoicesDataTable from './components/InvoicesDataTable';
 import PaymentAnalyticsSidebar from './components/PaymentAnalyticsSidebar';
 import QuickInvoiceCreation from './components/QuickInvoiceCreation';
+import Select from '../../components/ui/Select';
 
 const InvoicesManagement = () => {
   const [invoices, setInvoices] = useState([]);
@@ -313,9 +314,6 @@ const InvoicesManagement = () => {
     }
 
     switch (action) {
-      case 'send_reminder':
-        alert(`Rappel envoyé pour ${selectedInvoices.length} facture(s)`);
-        break;
       case 'mark_paid':
         const updatedInvoices = invoices.map(invoice =>
           selectedInvoices.includes(invoice.id)
@@ -450,11 +448,88 @@ const InvoicesManagement = () => {
           {/* Summary Bar */}
           <InvoicesSummaryBar summaryData={summaryData} />
 
-          {/* Filter Toolbar */}
+          {/* Filters */}
           <InvoicesFilterToolbar
             onFiltersChange={handleFiltersChange}
             onBulkAction={handleBulkAction}
+            selectedCount={selectedInvoices.length}
           />
+
+          {/* Bulk Actions */}
+          {selectedInvoices.length > 0 && (
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-3 sm:space-y-0 sm:space-x-4">
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2">
+                    <Icon name="CheckSquare" size={20} color="var(--color-primary)" />
+                    <span className="font-medium text-primary">
+                      {selectedInvoices.length} facture{selectedInvoices.length > 1 ? 's' : ''} sélectionnée{selectedInvoices.length > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedInvoices([])}
+                    iconName="X"
+                    iconPosition="left"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    Désélectionner
+                  </Button>
+                </div>
+
+                <div className="flex items-center space-x-3 w-full sm:w-auto">
+                  <div className="flex-1 sm:flex-none sm:w-64">
+                    <Select
+                      options={[
+                        { value: '', label: 'Choisir une action...' },
+                        { value: 'mark_paid', label: 'Marquer comme payée' },
+                        { value: 'export', label: 'Exporter' },
+                        { value: 'delete', label: 'Supprimer' }
+                      ]}
+                      value=""
+                      onChange={(value) => value && handleBulkAction(value)}
+                      placeholder="Choisir une action..."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Action Buttons */}
+              <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-primary/20">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleBulkAction('mark_paid')}
+                  iconName="CheckCircle"
+                  iconPosition="left"
+                >
+                  Marquer payée
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleBulkAction('export')}
+                  iconName="Download"
+                  iconPosition="left"
+                >
+                  Exporter
+                </Button>
+                
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleBulkAction('delete')}
+                  iconName="Trash2"
+                  iconPosition="left"
+                >
+                  Supprimer
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Data Table */}
           <InvoicesDataTable

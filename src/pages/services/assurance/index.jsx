@@ -230,6 +230,26 @@ const AssuranceCreditPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Call to Action Section */}
+      <div className="bg-card border border-border rounded-lg p-6 sm:p-8">
+        <div className="text-center">
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-3">Demander un devis personnalisé</h2>
+          <p className="text-muted-foreground mb-6">
+            Obtenez une proposition d'assurance crédit adaptée à votre activité
+          </p>
+          <Button
+            onClick={() => setActiveTab('application')}
+            variant="default"
+            size="lg"
+            className="px-8 py-3"
+            iconName="ArrowRight"
+            iconPosition="right"
+          >
+            Demander mon devis
+          </Button>
+        </div>
+      </div>
     </div>
   );
 

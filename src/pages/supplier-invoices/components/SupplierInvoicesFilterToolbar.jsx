@@ -4,7 +4,7 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 
-const SupplierInvoicesFilterToolbar = ({ onFiltersChange, onBulkAction }) => {
+const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
   const [filters, setFilters] = useState({
     search: '',
     status: '',
@@ -13,6 +13,7 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange, onBulkAction }) => {
     paymentMethod: '',
     amountRange: ''
   });
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const statusOptions = [
     { value: '', label: 'Tous les statuts' },
@@ -59,13 +60,6 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange, onBulkAction }) => {
     { value: '5000+', label: '5000€ et plus' }
   ];
 
-  const bulkActions = [
-    { value: 'send_to_accountant', label: 'Envoyer au comptable', icon: 'Send' },
-    { value: 'mark_paid', label: 'Marquer comme payée', icon: 'CheckCircle' },
-    { value: 'export', label: 'Exporter', icon: 'Download' },
-    { value: 'delete', label: 'Supprimer', icon: 'Trash2' }
-  ];
-
   const handleFilterChange = (key, value) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
@@ -85,123 +79,343 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange, onBulkAction }) => {
     onFiltersChange(clearedFilters);
   };
 
-  const hasActiveFilters = Object.values(filters).some(value => value !== '');
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (filters.search) count++;
+    if (filters.status) count++;
+    if (filters.category) count++;
+    if (filters.dateRange) count++;
+    if (filters.paymentMethod) count++;
+    if (filters.amountRange) count++;
+    return count;
+  };
+
+  const activeFiltersCount = getActiveFiltersCount();
 
   return (
-    <div className="bg-card border border-border rounded-lg p-4 mb-6">
-      <div className="space-y-4">
-        {/* Search and Quick Actions */}
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Icon 
-                name="Search" 
-                size={16} 
-                color="var(--color-muted-foreground)" 
-                className="absolute left-3 top-1/2 transform -translate-y-1/2"
-              />
-              <Input
-                type="text"
-                placeholder="Rechercher par numéro, fournisseur, email..."
-                value={filters.search}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
-                className="pl-10"
-              />
+    <div className="bg-card border border-border rounded-lg shadow-sm">
+      {/* Filter Header */}
+      <div className="flex items-center justify-between p-3 md:p-4">
+        <div className="flex items-center space-x-2">
+          <Icon name="Filter" size={18} className="text-muted-foreground" />
+          <h3 className="text-base font-medium text-foreground">Filtres</h3>
+          {activeFiltersCount > 0 && (
+            <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
+              {activeFiltersCount}
+            </span>
+          )}
             </div>
-          </div>
-          <div className="flex gap-2">
+        <div className="flex items-center space-x-2">
+          {activeFiltersCount > 0 && (
             <Button
-              variant="outline"
-              iconName="Filter"
-              iconPosition="left"
-              onClick={() => {}} // Toggle advanced filters
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="h-8"
             >
-              Filtres avancés
-            </Button>
-            {hasActiveFilters && (
-              <Button
-                variant="outline"
-                iconName="X"
-                iconPosition="left"
-                onClick={clearFilters}
-              >
+              <span className="flex items-center">
+                <Icon name="X" size={14} className="mr-1" />
                 Effacer
+              </span>
               </Button>
             )}
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="md:hidden h-8 w-8"
+            aria-label={isExpanded ? "Masquer les filtres" : "Afficher les filtres"}
+          >
+            <Icon name={isExpanded ? "ChevronUp" : "ChevronDown"} size={16} />
+          </Button>
+        </div>
         </div>
 
-        {/* Filter Row */}
+      {/* Desktop Filters - Always visible on md+ screens */}
+      <div className="hidden md:block p-4 space-y-4 border-t border-border">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          <div className="lg:col-span-2">
+            <Input
+              type="search"
+              placeholder="Rechercher par numéro, fournisseur..."
+              value={filters.search}
+              onChange={(e) => handleFilterChange('search', e.target.value)}
+              className="w-full"
+            />
+          </div>
+
           <Select
-            value={filters.status}
-            onValueChange={(value) => handleFilterChange('status', value)}
+            label="Statut"
             options={statusOptions}
-            placeholder="Statut"
+            value={filters.status}
+            onChange={(value) => handleFilterChange('status', value)}
+            placeholder="Sélectionner un statut"
           />
+
           <Select
-            value={filters.category}
-            onValueChange={(value) => handleFilterChange('category', value)}
+            label="Catégorie"
             options={categoryOptions}
-            placeholder="Catégorie"
+            value={filters.category}
+            onChange={(value) => handleFilterChange('category', value)}
+            placeholder="Sélectionner une catégorie"
           />
+
           <Select
-            value={filters.dateRange}
-            onValueChange={(value) => handleFilterChange('dateRange', value)}
+            label="Période"
             options={dateRangeOptions}
-            placeholder="Période"
+            value={filters.dateRange}
+            onChange={(value) => handleFilterChange('dateRange', value)}
+            placeholder="Sélectionner une période"
           />
+
           <Select
-            value={filters.paymentMethod}
-            onValueChange={(value) => handleFilterChange('paymentMethod', value)}
+            label="Paiement"
             options={paymentMethodOptions}
-            placeholder="Méthode de paiement"
+            value={filters.paymentMethod}
+            onChange={(value) => handleFilterChange('paymentMethod', value)}
+            placeholder="Sélectionner un moyen"
           />
+
           <Select
-            value={filters.amountRange}
-            onValueChange={(value) => handleFilterChange('amountRange', value)}
+            label="Montant"
             options={amountRangeOptions}
-            placeholder="Montant"
+            value={filters.amountRange}
+            onChange={(value) => handleFilterChange('amountRange', value)}
+            placeholder="Sélectionner un montant"
           />
         </div>
 
-        {/* Bulk Actions */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-border">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-muted-foreground">Actions groupées :</span>
+        {/* Active Filter Chips */}
+        {activeFiltersCount > 0 && (
+          <div className="flex flex-wrap gap-2 pt-3 border-t border-border">
+            {filters.search && (
+              <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
+                <span>Recherche: {filters.search}</span>
+                <button
+                  onClick={() => handleFilterChange('search', '')}
+                  className="hover:bg-primary/20 rounded-full p-0.5"
+                  aria-label="Supprimer la recherche"
+                >
+                  <Icon name="X" size={12} />
+                </button>
+              </div>
+            )}
+            
+            {filters.status && (
+              <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
+                <span>Statut: {statusOptions.find(opt => opt.value === filters.status)?.label}</span>
+                <button
+                  onClick={() => handleFilterChange('status', '')}
+                  className="hover:bg-primary/20 rounded-full p-0.5"
+                  aria-label="Supprimer le filtre de statut"
+                >
+                  <Icon name="X" size={12} />
+                </button>
+              </div>
+            )}
+            
+            {filters.category && (
+              <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
+                <span>Catégorie: {categoryOptions.find(opt => opt.value === filters.category)?.label}</span>
+                <button
+                  onClick={() => handleFilterChange('category', '')}
+                  className="hover:bg-primary/20 rounded-full p-0.5"
+                  aria-label="Supprimer le filtre de catégorie"
+                >
+                  <Icon name="X" size={12} />
+                </button>
+              </div>
+            )}
+            
+            {filters.dateRange && (
+              <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
+                <span>Période: {dateRangeOptions.find(opt => opt.value === filters.dateRange)?.label}</span>
+                <button
+                  onClick={() => handleFilterChange('dateRange', '')}
+                  className="hover:bg-primary/20 rounded-full p-0.5"
+                  aria-label="Supprimer le filtre de période"
+                >
+                  <Icon name="X" size={12} />
+                </button>
+              </div>
+            )}
+            
+            {filters.paymentMethod && (
+              <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
+                <span>Paiement: {paymentMethodOptions.find(opt => opt.value === filters.paymentMethod)?.label}</span>
+                <button
+                  onClick={() => handleFilterChange('paymentMethod', '')}
+                  className="hover:bg-primary/20 rounded-full p-0.5"
+                  aria-label="Supprimer le filtre de paiement"
+                >
+                  <Icon name="X" size={12} />
+                </button>
+              </div>
+            )}
+            
+            {filters.amountRange && (
+              <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
+                <span>Montant: {amountRangeOptions.find(opt => opt.value === filters.amountRange)?.label}</span>
+                <button
+                  onClick={() => handleFilterChange('amountRange', '')}
+                  className="hover:bg-primary/20 rounded-full p-0.5"
+                  aria-label="Supprimer le filtre de montant"
+                >
+                  <Icon name="X" size={12} />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Mobile Filters - Expandable */}
+      {isExpanded && (
+        <div className="md:hidden p-3 space-y-4 border-t border-border">
+          <div className="space-y-3">
+            <Input
+              type="search"
+              placeholder="Rechercher par numéro, fournisseur..."
+              value={filters.search}
+              onChange={(e) => handleFilterChange('search', e.target.value)}
+            />
+
             <Select
-              value=""
-              onValueChange={(value) => {
-                if (value) {
-                  onBulkAction(value);
-                }
-              }}
-              options={bulkActions}
-              placeholder="Sélectionner une action"
-              className="w-48"
+              label="Statut"
+              options={statusOptions}
+              value={filters.status}
+              onChange={(value) => handleFilterChange('status', value)}
+              placeholder="Tous les statuts"
+            />
+
+            <Select
+              label="Catégorie"
+              options={categoryOptions}
+              value={filters.category}
+              onChange={(value) => handleFilterChange('category', value)}
+              placeholder="Toutes les catégories"
+            />
+
+            <Select
+              label="Période"
+              options={dateRangeOptions}
+              value={filters.dateRange}
+              onChange={(value) => handleFilterChange('dateRange', value)}
+              placeholder="Toutes les dates"
+            />
+
+            <Select
+              label="Paiement"
+              options={paymentMethodOptions}
+              value={filters.paymentMethod}
+              onChange={(value) => handleFilterChange('paymentMethod', value)}
+              placeholder="Toutes les méthodes"
+            />
+
+            <Select
+              label="Montant"
+              options={amountRangeOptions}
+              value={filters.amountRange}
+              onChange={(value) => handleFilterChange('amountRange', value)}
+              placeholder="Tous les montants"
             />
           </div>
           
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              iconName="RefreshCw"
-              onClick={() => window.location.reload()}
-            >
-              Actualiser
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              iconName="Download"
-              onClick={() => onBulkAction('export')}
-            >
-              Exporter
-            </Button>
+          {/* Active Filter Chips - Mobile */}
+          {activeFiltersCount > 0 && (
+            <div className="flex flex-wrap gap-2 pt-3 border-t border-border">
+              {filters.search && (
+                <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
+                  <span>Recherche: {filters.search}</span>
+                  <button
+                    onClick={() => handleFilterChange('search', '')}
+                    className="hover:bg-primary/20 rounded-full p-0.5"
+                  >
+                    <Icon name="X" size={12} />
+                  </button>
+                </div>
+              )}
+              
+              {filters.status && (
+                <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
+                  <span>Statut: {statusOptions.find(opt => opt.value === filters.status)?.label}</span>
+                  <button
+                    onClick={() => handleFilterChange('status', '')}
+                    className="hover:bg-primary/20 rounded-full p-0.5"
+                  >
+                    <Icon name="X" size={12} />
+                  </button>
+                </div>
+              )}
+              
+              {filters.category && (
+                <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
+                  <span>Catégorie: {categoryOptions.find(opt => opt.value === filters.category)?.label}</span>
+                  <button
+                    onClick={() => handleFilterChange('category', '')}
+                    className="hover:bg-primary/20 rounded-full p-0.5"
+                  >
+                    <Icon name="X" size={12} />
+                  </button>
+                </div>
+              )}
+              
+              {filters.dateRange && (
+                <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
+                  <span>Période: {dateRangeOptions.find(opt => opt.value === filters.dateRange)?.label}</span>
+                  <button
+                    onClick={() => handleFilterChange('dateRange', '')}
+                    className="hover:bg-primary/20 rounded-full p-0.5"
+                  >
+                    <Icon name="X" size={12} />
+                  </button>
+                </div>
+              )}
+              
+              {filters.paymentMethod && (
+                <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
+                  <span>Paiement: {paymentMethodOptions.find(opt => opt.value === filters.paymentMethod)?.label}</span>
+                  <button
+                    onClick={() => handleFilterChange('paymentMethod', '')}
+                    className="hover:bg-primary/20 rounded-full p-0.5"
+                  >
+                    <Icon name="X" size={12} />
+                  </button>
+                </div>
+              )}
+              
+              {filters.amountRange && (
+                <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
+                  <span>Montant: {amountRangeOptions.find(opt => opt.value === filters.amountRange)?.label}</span>
+                  <button
+                    onClick={() => handleFilterChange('amountRange', '')}
+                    className="hover:bg-primary/20 rounded-full p-0.5"
+                  >
+                    <Icon name="X" size={12} />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Mobile Active Filters Summary (when collapsed) */}
+      {!isExpanded && activeFiltersCount > 0 && (
+        <div className="md:hidden p-3 border-t border-border">
+          <div className="text-sm text-muted-foreground">
+            <span className="font-medium">{activeFiltersCount} filtre{activeFiltersCount > 1 ? 's' : ''} actif{activeFiltersCount > 1 ? 's' : ''}</span>
+            <span className="text-xs ml-2">
+              {filters.search && '• Recherche'}
+              {filters.status && ` • ${statusOptions.find(opt => opt.value === filters.status)?.label}`}
+              {filters.category && ` • ${categoryOptions.find(opt => opt.value === filters.category)?.label}`}
+              {filters.dateRange && ` • ${dateRangeOptions.find(opt => opt.value === filters.dateRange)?.label}`}
+              {filters.paymentMethod && ` • ${paymentMethodOptions.find(opt => opt.value === filters.paymentMethod)?.label}`}
+              {filters.amountRange && ` • ${amountRangeOptions.find(opt => opt.value === filters.amountRange)?.label}`}
+            </span>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

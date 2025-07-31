@@ -2,39 +2,32 @@ import React from 'react';
 
 const QuoteTemplates = [
   { 
-    id: 'moderne', 
-    name: 'Moderne', 
-    color: 'bg-gradient-to-r from-[#3b82f6] to-[#1e40af]' 
-  },
-  { 
-    id: 'professionnel', 
-    name: 'Professionnel', 
-    color: 'bg-green-600' 
-  },
-  { 
-    id: 'elegant', 
-    name: 'Élégant', 
-    color: 'bg-purple-600' 
-  },
-  { 
-    id: 'classique', 
-    name: 'Classique', 
-    color: 'bg-red-600' 
-  },
-  { 
     id: 'minimaliste', 
     name: 'Minimaliste', 
-    color: 'bg-gray-600' 
+    primaryColor: '#374151',
+    secondaryColor: '#1f2937',
+    description: 'Gris minimaliste et épuré'
   },
   { 
     id: 'blanc', 
     name: 'Blanc', 
-    color: 'bg-white border-2 border-gray-300' 
+    primaryColor: '#000000',
+    secondaryColor: '#6b7280',
+    description: 'Noir et gris sur fond blanc'
   },
   { 
-    id: 'noir', 
-    name: 'Noir', 
-    color: 'bg-black' 
+    id: 'navy', 
+    name: 'Navy', 
+    primaryColor: '#1e3a8a',
+    secondaryColor: '#3b82f6',
+    description: 'Bleu marine élégant et professionnel'
+  },
+  { 
+    id: 'forest', 
+    name: 'Forest', 
+    primaryColor: '#166534',
+    secondaryColor: '#22c55e',
+    description: 'Vert forêt naturel et apaisant'
   }
 ];
 
@@ -46,51 +39,62 @@ const Personalization = ({
   onColorChange 
 }) => {
   const handleTemplateChange = (templateId) => {
-    onTemplateChange(templateId);
-    
-    // Automatically set appropriate text colors based on template
-    switch (templateId) {
-      case 'blanc':
-        // For white template, set dark text colors
-        onColorChange('primary', '#000000'); // Black
-        onColorChange('secondary', '#6b7280'); // Gray
-        break;
-      default:
-        // For all other templates, set white text colors
-        onColorChange('primary', '#ffffff'); // White
-        onColorChange('secondary', '#ffffff'); // Light white
-        break;
+    const template = QuoteTemplates.find(t => t.id === templateId);
+    if (template) {
+      onTemplateChange(templateId);
+      onColorChange('primary', template.primaryColor);
+      onColorChange('secondary', template.secondaryColor);
     }
   };
 
   const handleResetColors = () => {
     // Reset template to blanc (white) as default
+    const blancTemplate = QuoteTemplates.find(t => t.id === 'blanc');
     onTemplateChange('blanc');
-    // Reset colors to default for blanc template
-    onColorChange('primary', '#000000');
-    onColorChange('secondary', '#6b7280');
+    onColorChange('primary', blancTemplate.primaryColor);
+    onColorChange('secondary', blancTemplate.secondaryColor);
   };
 
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Quote Templates Section */}
       <div>
-        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Modèles de devis</h3>
-        <div className="flex flex-wrap gap-2 sm:gap-3">
+        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Schémas de couleurs</h3>
+        <p className="text-sm text-muted-foreground mb-3 sm:mb-4">
+          Choisissez un schéma de couleurs pour les éléments de votre devis. Le fond restera blanc.
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {QuoteTemplates.map((template) => (
             <div 
               key={template.id}
               className={`
-                ${template.color} 
-                rounded-lg p-2 sm:p-3 cursor-pointer relative min-w-[80px] sm:min-w-[100px] text-center
-                ${selectedTemplate === template.id ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
+                bg-white border-2 rounded-lg p-3 sm:p-4 cursor-pointer relative
+                ${selectedTemplate === template.id ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200 hover:border-gray-300'}
+                transition-all duration-200
               `}
               onClick={() => handleTemplateChange(template.id)}
             >
-              <div className={`text-xs sm:text-sm font-medium ${template.id === 'blanc' ? 'text-gray-800' : 'text-white'}`}>
-                {template.name}
+              {/* Color Preview */}
+              <div className="flex space-x-1 mb-2">
+                <div 
+                  className="w-6 h-6 rounded-full border border-gray-200"
+                  style={{ backgroundColor: template.primaryColor }}
+                />
+                <div 
+                  className="w-6 h-6 rounded-full border border-gray-200"
+                  style={{ backgroundColor: template.secondaryColor }}
+                />
+              </div>
+              
+              <div className="text-center">
+                <div className="text-xs sm:text-sm font-medium text-gray-900 mb-1">
+                  {template.name}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {template.description}
+                </div>
                 {selectedTemplate === template.id && (
-                  <div className="absolute top-1 right-1 bg-blue-500 text-white rounded-full w-3 h-3 sm:w-4 sm:h-4 flex items-center justify-center text-xs">
+                  <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
                     ✓
                   </div>
                 )}
@@ -134,6 +138,9 @@ const Personalization = ({
                 placeholder="#3b82f6"
               />
             </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Utilisée pour les titres et éléments principaux
+            </p>
           </div>
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
@@ -154,6 +161,9 @@ const Personalization = ({
                 placeholder="#1e40af"
               />
             </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Utilisée pour les sous-titres et éléments secondaires
+            </p>
           </div>
         </div>
       </div>

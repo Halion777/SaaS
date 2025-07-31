@@ -145,8 +145,8 @@ const SupplierInvoicesDataTable = ({ supplierInvoices, onSupplierInvoiceAction, 
                 <Button
                   variant="ghost"
                   size="sm"
-                  iconName="Download"
-                  onClick={() => onSupplierInvoiceAction('download', invoice)}
+                  iconName="Edit"
+                  onClick={() => onSupplierInvoiceAction('edit', invoice)}
                 />
               </div>
             </div>
@@ -195,23 +195,12 @@ const SupplierInvoicesDataTable = ({ supplierInvoices, onSupplierInvoiceAction, 
               <Button
                 variant="outline"
                 size="sm"
-                iconName="Send"
-                onClick={() => onSupplierInvoiceAction('send_to_accountant', invoice)}
+                iconName="Copy"
+                onClick={() => onSupplierInvoiceAction('duplicate', invoice)}
                 className="text-xs"
               >
-                Comptable
+                Dupliquer
               </Button>
-              {invoice.status !== 'paid' && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  iconName="CheckCircle"
-                  onClick={() => onSupplierInvoiceAction('mark_paid', invoice)}
-                  className="text-xs"
-                >
-                  Marquer payée
-                </Button>
-              )}
             </div>
           </div>
         );
@@ -346,25 +335,15 @@ const SupplierInvoicesDataTable = ({ supplierInvoices, onSupplierInvoiceAction, 
                       <Button
                         variant="ghost"
                         size="sm"
-                        iconName="Download"
-                        onClick={() => onSupplierInvoiceAction('download', invoice)}
+                        iconName="Edit"
+                        onClick={() => onSupplierInvoiceAction('edit', invoice)}
                       />
                       <Button
                         variant="ghost"
                         size="sm"
-                        iconName="Send"
-                        onClick={() => onSupplierInvoiceAction('send_to_accountant', invoice)}
-                        title="Envoyer au comptable"
+                        iconName="Copy"
+                        onClick={() => onSupplierInvoiceAction('duplicate', invoice)}
                       />
-                      {invoice.status !== 'paid' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          iconName="CheckCircle"
-                          onClick={() => onSupplierInvoiceAction('markPaid', invoice)}
-                          title="Marquer comme payée"
-                        />
-                      )}
                     </div>
                   </td>
                 </tr>
@@ -376,6 +355,6 @@ const SupplierInvoicesDataTable = ({ supplierInvoices, onSupplierInvoiceAction, 
       )}
     </div>
   );
-};
-
+  };
+  
 export default SupplierInvoicesDataTable; 

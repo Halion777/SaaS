@@ -184,17 +184,6 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
               >
                 Dupliquer
               </Button>
-              {invoice.status !== 'paid' && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  iconName="Mail"
-                  onClick={() => onInvoiceAction('sendReminder', invoice)}
-                  className="text-xs"
-                >
-                  Rappel
-                </Button>
-              )}
             </div>
           </div>
         );
@@ -334,31 +323,6 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                         iconName="Copy"
                         onClick={() => onInvoiceAction('duplicate', invoice)}
                       />
-                      {invoice.status !== 'paid' && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            iconName="Mail"
-                            onClick={() => onInvoiceAction('sendReminder', invoice)}
-                              title="Envoyer un rappel"
-                          />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            iconName="CheckCircle"
-                            onClick={() => onInvoiceAction('markPaid', invoice)}
-                              title="Marquer comme payée"
-                          />
-                        </>
-                      )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          iconName="MoreHorizontal"
-                          onClick={() => onInvoiceAction('more', invoice)}
-                          title="Plus d'actions"
-                        />
                     </div>
                   </td>
                 </tr>

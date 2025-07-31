@@ -490,12 +490,18 @@ const ClientManagement = () => {
                   iconName="Search"
                 />
               </div>
-              <FilterToolbar filters={filters} onFiltersChange={setFilters} />
             </div>
           </div>
 
-          {/* Stats Bar */}
-          <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
+          {/* Filter Toolbar */}
+          <FilterToolbar 
+            filters={filters} 
+            onFiltersChange={setFilters} 
+            filteredCount={filteredClients.length}
+          />
+
+          {/* Stats Cards - First Row (Full Width) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -542,18 +548,13 @@ const ClientManagement = () => {
               </div>
             </div>
 
-            {/* Analytics Boxes - Top Row */}
-            <div className="col-span-2 lg:col-span-2">
-              <RevenueOverview analytics={analytics} isLoading={isAnalyzing} />
-            </div>
           </div>
 
-          {/* Additional Analytics - Second Row */}
+          {/* Analytics Cards - Second Row (3 Equal Cards) */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
             <TopClients analytics={analytics} isLoading={isAnalyzing} />
-            <div className="lg:col-span-2">
-              <QuickActions />
-            </div>
+            <RevenueOverview analytics={analytics} isLoading={isAnalyzing} />
+            <QuickActions />
           </div>
 
           {/* Clients Data Display */}
@@ -624,26 +625,7 @@ const ClientManagement = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
             <AIRecommendations analytics={analytics} isLoading={isAnalyzing} />
             <RiskFactors analytics={analytics} isLoading={isAnalyzing} />
-            <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
-              <div className="flex items-center space-x-2 mb-3">
-                <Icon name="BarChart3" size={14} className="sm:w-4 sm:h-4 text-primary" />
-                <h3 className="text-xs sm:text-sm font-medium text-foreground">Performance</h3>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Taux de conversion</span>
-                  <span className="font-medium">85%</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Satisfaction client</span>
-                  <span className="font-medium">4.8/5</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Temps de réponse</span>
-                  <span className="font-medium">2.4h</span>
-                </div>
-              </div>
-            </div>
+            <QuickActions />
           </div>
 
           {/* Client Modal */}

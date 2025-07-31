@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import MainSidebar from '../../components/ui/MainSidebar';
+import FilterToolbar from './components/FilterToolbar';
 import { useScrollPosition } from '../../utils/useScrollPosition';
 
 const FollowUpManagement = () => {
@@ -9,6 +10,13 @@ const FollowUpManagement = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const [viewMode, setViewMode] = useState('card'); // 'table' or 'card'
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [filters, setFilters] = useState({
+    type: 'all',
+    priority: 'all',
+    status: 'all',
+    days: 'all'
+  });
   const filterScrollRef = useScrollPosition('followup-filter-scroll');
   const [followUps, setFollowUps] = useState([
     {
@@ -20,7 +28,9 @@ const FollowUpManagement = () => {
       potentialRevenue: 2800,
       priority: 'high',
       status: 'pending',
-      type: 'client'
+      type: 'quote',
+      hasResponse: false,
+      isPaid: false
     },
     {
       id: 2,
@@ -31,7 +41,9 @@ const FollowUpManagement = () => {
       potentialRevenue: 8500,
       priority: 'high',
       status: 'scheduled',
-      type: 'client'
+      type: 'quote',
+      hasResponse: false,
+      isPaid: false
     },
     {
       id: 3,
@@ -42,29 +54,61 @@ const FollowUpManagement = () => {
       potentialRevenue: 1200,
       priority: 'medium',
       status: 'pending',
-      type: 'client'
+      type: 'quote',
+      hasResponse: false,
+      isPaid: false
     },
     {
       id: 4,
-      name: 'Fournitures BTP Plus',
-      project: 'FAC-2024-001 - Matériaux construction',
+      name: 'Marie Dubois',
+      project: 'FAC-2024-001 - Rénovation salle de bain',
       daysAgo: 2,
       nextFollowUp: '2024-01-15',
-      potentialRevenue: -4500,
+      potentialRevenue: 3200,
       priority: 'high',
       status: 'pending',
-      type: 'supplier'
+      type: 'invoice',
+      hasResponse: false,
+      isPaid: false
     },
     {
       id: 5,
-      name: 'Électricité Pro',
-      project: 'FAC-2024-002 - Composants électriques',
+      name: 'Jean Martin',
+      project: 'FAC-2024-002 - Peinture intérieure',
       daysAgo: 1,
       nextFollowUp: '2024-01-16',
-      potentialRevenue: -1200,
+      potentialRevenue: 1800,
       priority: 'medium',
       status: 'scheduled',
-      type: 'supplier'
+      type: 'invoice',
+      hasResponse: false,
+      isPaid: false
+    },
+    {
+      id: 6,
+      name: 'Claire Moreau',
+      project: 'DEV-2024-006 - Installation climatisation',
+      daysAgo: 2,
+      nextFollowUp: '2024-01-17',
+      potentialRevenue: 4500,
+      priority: 'medium',
+      status: 'completed',
+      type: 'quote',
+      hasResponse: true,
+      isPaid: false
+    },
+    {
+      id: 7,
+      name: 'Paul Durand',
+      project: 'FAC-2024-003 - Électricité complète',
+      daysAgo: 0,
+      nextFollowUp: '2024-01-20',
+      potentialRevenue: 2800,
+      priority: 'low',
+      status: 'completed',
+      type: 'invoice',
+      hasResponse: false,
+      isPaid: true
     }
   ]);
 
@@ -149,20 +193,60 @@ const FollowUpManagement = () => {
     return () => window.removeEventListener('resize', handleViewModeResize);
   }, [viewMode]);
 
-  const [activeFilter, setActiveFilter] = useState('all');
+  // Filter to only show items that need follow-up (no response or not paid)
+  const needsFollowUp = (followUp) => {
+    if (followUp.type === 'quote') {
+      return !followUp.hasResponse; // Quotes need follow-up if no response
+    } else if (followUp.type === 'invoice') {
+      return !followUp.isPaid; // Invoices need follow-up if not paid
+    }
+    return false;
+  };
+
+  const handleFiltersChange = (newFilters) => {
+    setFilters(newFilters);
+  };
+
+  const getDaysRange = (days) => {
+    switch (days) {
+      case '0-2': return [0, 2];
+      case '3-5': return [3, 5];
+      case '6-10': return [6, 10];
+      case '10+': return [10, Infinity];
+      default: return [0, Infinity];
+    }
+  };
 
   const filteredFollowUps = followUps.filter(followUp => {
-    if (activeFilter === 'clients') return followUp.type === 'client';
-    if (activeFilter === 'suppliers') return followUp.type === 'supplier';
+    if (!needsFollowUp(followUp)) return false; // Only show items that need follow-up
+    
+    // Filter by active tab (all, quotes, invoices)
+    if (activeFilter === 'quotes') return followUp.type === 'quote';
+    if (activeFilter === 'invoices') return followUp.type === 'invoice';
+    
+    // Filter by type
+    if (filters.type !== 'all' && followUp.type !== filters.type) return false;
+    
+    // Filter by priority
+    if (filters.priority !== 'all' && followUp.priority !== filters.priority) return false;
+    
+    // Filter by status
+    if (filters.status !== 'all' && followUp.status !== filters.status) return false;
+    
+    // Filter by days
+    if (filters.days !== 'all') {
+      const [minDays, maxDays] = getDaysRange(filters.days);
+      if (followUp.daysAgo < minDays || followUp.daysAgo > maxDays) return false;
+    }
+    
     return true;
   });
 
-  const clientFollowUps = followUps.filter(f => f.type === 'client');
-  const supplierFollowUps = followUps.filter(f => f.type === 'supplier');
+  const quoteFollowUps = followUps.filter(f => f.type === 'quote' && !f.hasResponse);
+  const invoiceFollowUps = followUps.filter(f => f.type === 'invoice' && !f.isPaid);
   const pendingCount = filteredFollowUps.filter(f => f.status === 'pending').length;
   const highPriorityCount = filteredFollowUps.filter(f => f.priority === 'high').length;
-  const clientRevenue = clientFollowUps.reduce((sum, f) => sum + f.potentialRevenue, 0);
-  const supplierPayments = supplierFollowUps.reduce((sum, f) => sum + Math.abs(f.potentialRevenue), 0);
+  const totalRevenue = filteredFollowUps.reduce((sum, f) => sum + f.potentialRevenue, 0);
 
   const getPriorityColor = (priority) => {
     const colors = {
@@ -200,6 +284,18 @@ const FollowUpManagement = () => {
     return labels[status] || 'En attente';
   };
 
+  const getTypeLabel = (type) => {
+    const labels = {
+      quote: 'Devis',
+      invoice: 'Facture'
+    };
+    return labels[type] || 'Devis';
+  };
+
+  const getTypeIcon = (type) => {
+    return type === 'invoice' ? 'Receipt' : 'FileText';
+  };
+
   const handleFollowUp = (id) => {
     console.log('Follow up for:', id);
   };
@@ -214,13 +310,14 @@ const FollowUpManagement = () => {
         <table className="w-full">
           <thead className="bg-muted/50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Contact</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Client</th>
               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Projet</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Type</th>
               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Délai</th>
               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Prochaine relance</th>
               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Montant</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Réponse/Paiement</th>
               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Priorité</th>
-              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Statut</th>
               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Actions</th>
             </tr>
           </thead>
@@ -230,9 +327,9 @@ const FollowUpManagement = () => {
                 <td className="px-4 py-3">
                   <div className="flex items-center space-x-2">
                     <Icon 
-                      name={followUp.type === 'supplier' ? 'Truck' : 'User'} 
+                      name="User" 
                       size={14} 
-                      className={`sm:w-4 sm:h-4 ${followUp.type === 'supplier' ? 'text-orange-500' : 'text-blue-500'}`}
+                      className="sm:w-4 sm:h-4 text-blue-500"
                     />
                     <span className="text-xs sm:text-sm font-medium text-foreground">{followUp.name}</span>
                   </div>
@@ -241,6 +338,18 @@ const FollowUpManagement = () => {
                   <span className="text-xs sm:text-sm text-muted-foreground max-w-[200px] truncate block">
                     {followUp.project}
                   </span>
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center space-x-1">
+                    <Icon 
+                      name={getTypeIcon(followUp.type)} 
+                      size={12} 
+                      className="text-muted-foreground"
+                    />
+                    <span className="text-xs sm:text-sm text-muted-foreground">
+                      {getTypeLabel(followUp.type)}
+                    </span>
+                  </div>
                 </td>
                 <td className="px-4 py-3">
                   <span className="text-xs sm:text-sm text-muted-foreground">
@@ -253,8 +362,20 @@ const FollowUpManagement = () => {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <span className={`text-xs sm:text-sm font-medium ${followUp.type === 'supplier' ? 'text-red-600' : 'text-green-600'}`}>
-                    {followUp.type === 'supplier' ? '-' : '+'}{Math.abs(followUp.potentialRevenue).toLocaleString()}€
+                  <span className="text-xs sm:text-sm font-medium text-green-600">
+                    +{followUp.potentialRevenue.toLocaleString()}€
+                  </span>
+                </td>
+                <td className="px-4 py-3">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${
+                    followUp.type === 'quote' 
+                      ? (followUp.hasResponse ? 'text-green-700 bg-green-100' : 'text-red-700 bg-red-100')
+                      : (followUp.isPaid ? 'text-green-700 bg-green-100' : 'text-red-700 bg-red-100')
+                  }`}>
+                    {followUp.type === 'quote' 
+                      ? (followUp.hasResponse ? 'Répondu' : 'Pas de réponse')
+                      : (followUp.isPaid ? 'Payé' : 'Non payé')
+                    }
                   </span>
                 </td>
                 <td className="px-4 py-3">
@@ -263,22 +384,17 @@ const FollowUpManagement = () => {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getStatusColor(followUp.status)}`}>
-                    {getStatusLabel(followUp.status)}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
                   <div className="flex gap-1">
                     <Button
                       variant="outline"
                       size="xs"
                       onClick={() => handleFollowUp(followUp.id)}
-                      iconName={followUp.type === 'supplier' ? 'DollarSign' : 'Mail'}
+                      iconName="Mail"
                       iconPosition="left"
                       className="h-7 sm:h-8 text-xs"
-                      title={followUp.type === 'supplier' ? 'Payer' : 'Relancer'}
+                      title="Relancer"
                     >
-                      {followUp.type === 'supplier' ? 'Payer' : 'Relancer'}
+                      Relancer
                     </Button>
                     <Button
                       variant="outline"
@@ -310,23 +426,28 @@ const FollowUpManagement = () => {
             <div className="flex items-start justify-between">
               <div className="flex items-center space-x-2">
                 <Icon 
-                  name={followUp.type === 'supplier' ? 'Truck' : 'User'} 
+                  name="User" 
                   size={16} 
-                  className={`sm:w-5 sm:h-5 ${followUp.type === 'supplier' ? 'text-orange-500' : 'text-blue-500'}`}
+                  className="sm:w-5 sm:h-5 text-blue-500"
                 />
                 <h3 className="text-sm sm:text-base font-semibold text-foreground">{followUp.name}</h3>
               </div>
               <div className="flex flex-wrap gap-1">
+                <span className="px-2 py-1 rounded-full text-xs font-medium text-center bg-blue-100 text-blue-800">
+                  {getTypeLabel(followUp.type)}
+                </span>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${
-                  followUp.type === 'supplier' ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'
+                  followUp.type === 'quote' 
+                    ? (followUp.hasResponse ? 'text-green-700 bg-green-100' : 'text-red-700 bg-red-100')
+                    : (followUp.isPaid ? 'text-green-700 bg-green-100' : 'text-red-700 bg-red-100')
                 }`}>
-                  {followUp.type === 'supplier' ? 'Fournisseur' : 'Client'}
+                  {followUp.type === 'quote' 
+                    ? (followUp.hasResponse ? 'Répondu' : 'Pas de réponse')
+                    : (followUp.isPaid ? 'Payé' : 'Non payé')
+                  }
                 </span>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getPriorityColor(followUp.priority)}`}>
                   {getPriorityLabel(followUp.priority)}
-                </span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getStatusColor(followUp.status)}`}>
-                  {getStatusLabel(followUp.status)}
                 </span>
               </div>
             </div>
@@ -349,8 +470,8 @@ const FollowUpManagement = () => {
 
             {/* Revenue and actions */}
             <div className="flex items-center justify-between">
-              <div className={`text-lg sm:text-xl font-bold ${followUp.type === 'supplier' ? 'text-red-600' : 'text-green-600'}`}>
-                {followUp.type === 'supplier' ? '-' : '+'}{Math.abs(followUp.potentialRevenue).toLocaleString()}€
+              <div className="text-lg sm:text-xl font-bold text-green-600">
+                +{followUp.potentialRevenue.toLocaleString()}€
               </div>
               
               <div className="flex gap-2">
@@ -358,11 +479,11 @@ const FollowUpManagement = () => {
                   variant="outline"
                   size="xs"
                   onClick={() => handleFollowUp(followUp.id)}
-                  iconName={followUp.type === 'supplier' ? 'DollarSign' : 'Mail'}
+                  iconName="Mail"
                   iconPosition="left"
                   className="h-8 sm:h-9"
                 >
-                  {followUp.type === 'supplier' ? 'Payer' : 'Relancer'}
+                  Relancer
                 </Button>
                 <Button
                   variant="outline"
@@ -404,7 +525,7 @@ const FollowUpManagement = () => {
                   <h1 className="text-xl sm:text-2xl font-bold text-foreground">Relances</h1>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Relancez vos prospects automatiquement et intelligemment
+                  Relancez vos devis sans réponse et factures non payées
                 </p>
               </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
@@ -426,29 +547,36 @@ const FollowUpManagement = () => {
               Tous ({followUps.length})
             </button>
             <button
-              onClick={() => setActiveFilter('clients')}
+              onClick={() => setActiveFilter('quotes')}
               className={`flex-1 py-2 px-3 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
-                activeFilter === 'clients'
+                activeFilter === 'quotes'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Clients ({clientFollowUps.length})
+              Devis ({quoteFollowUps.length})
             </button>
             <button
-              onClick={() => setActiveFilter('suppliers')}
+              onClick={() => setActiveFilter('invoices')}
               className={`flex-1 py-2 px-3 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
-                activeFilter === 'suppliers'
+                activeFilter === 'invoices'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Fournisseurs ({supplierFollowUps.length})
+              Factures ({invoiceFollowUps.length})
             </button>
           </div>
 
+          {/* Filter Toolbar */}
+          <FilterToolbar 
+            filters={filters} 
+            onFiltersChange={handleFiltersChange} 
+            filteredCount={filteredFollowUps.length}
+          />
+
           {/* KPI Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <div className="bg-card border border-border rounded-lg p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between mb-3 sm:mb-4">
                 <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">Relances en attente</h3>
@@ -467,40 +595,25 @@ const FollowUpManagement = () => {
               <p className="text-xs sm:text-sm text-muted-foreground">Urgent</p>
             </div>
 
-            {activeFilter !== 'suppliers' && (
-              <div className="bg-card border border-border rounded-lg p-3 sm:p-4 md:p-6">
-                <div className="flex items-center justify-between mb-3 sm:mb-4">
-                  <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">CA potentiel</h3>
-                  <Icon name="FileText" size={16} className="sm:w-5 sm:h-5 text-muted-foreground" />
-                </div>
-                <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 mb-1">{clientRevenue.toLocaleString()}€</div>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  {activeFilter === 'all' ? 'Clients' : 'Total'}
-                </p>
+            <div className="bg-card border border-border rounded-lg p-3 sm:p-4 md:p-6">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">CA potentiel</h3>
+                <Icon name="FileText" size={16} className="sm:w-5 sm:h-5 text-muted-foreground" />
               </div>
-            )}
-
-            {activeFilter !== 'clients' && (
-              <div className="bg-card border border-border rounded-lg p-3 sm:p-4 md:p-6">
-                <div className="flex items-center justify-between mb-3 sm:mb-4">
-                  <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">Paiements à effectuer</h3>
-                  <Icon name="DollarSign" size={16} className="sm:w-5 sm:h-5 text-muted-foreground" />
-                </div>
-                <div className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600 mb-1">{supplierPayments.toLocaleString()}€</div>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  {activeFilter === 'all' ? 'Fournisseurs' : 'Total'}
-                </p>
-              </div>
-            )}
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 mb-1">{totalRevenue.toLocaleString()}€</div>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                {activeFilter === 'all' ? 'Total' : activeFilter === 'quotes' ? 'Devis' : 'Factures'}
+              </p>
+            </div>
           </div>
 
           {/* Follow-up Items */}
           {filteredFollowUps.length === 0 ? (
             <div className="bg-card border border-border rounded-lg p-8 text-center">
               <Icon name="MessageCircle" size={48} className="text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">Aucune relance trouvée</h3>
+              <h3 className="text-lg font-medium text-foreground mb-2">Aucune relance nécessaire</h3>
               <p className="text-muted-foreground">
-                Aucune relance ne correspond aux filtres sélectionnés
+                Tous vos devis ont reçu une réponse et toutes vos factures sont payées
               </p>
             </div>
           ) : (

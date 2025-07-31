@@ -15,7 +15,7 @@ const MainSidebar = () => {
     quotes: true,
     clients: false,
     services: false,
-    business: false
+    invoices: false
   });
   const location = useLocation();
   const navigate = useNavigate();
@@ -61,18 +61,17 @@ const MainSidebar = () => {
     const path = location.pathname;
     
     // Determine which section should be expanded based on the current path
-    if (path.startsWith('/quote-creation') || path.startsWith('/quotes-management') || path.startsWith('/statistics')) {
-      setExpandedSections(prev => ({ ...prev, quotes: true, clients: false, services: false, business: false }));
+    if (path.startsWith('/quote-creation') || path.startsWith('/quotes-management') || path.startsWith('/quotes-follow-up')) {
+      setExpandedSections(prev => ({ ...prev, quotes: true, clients: false, services: false, invoices: false }));
     } else if (path.startsWith('/client-management')) {
-      setExpandedSections(prev => ({ ...prev, quotes: false, clients: true, services: false, business: false }));
+      setExpandedSections(prev => ({ ...prev, quotes: false, clients: true, services: false, invoices: false }));
     } else if (path.startsWith('/services/')) {
-      setExpandedSections(prev => ({ ...prev, quotes: false, clients: false, services: true, business: false }));
-    } else if (path.startsWith('/invoices-management') || path.startsWith('/supplier-invoices') || path.startsWith('/leads-management') || path.startsWith('/follow-up-management')) {
-      setExpandedSections(prev => ({ ...prev, quotes: false, clients: false, services: false, business: true }));
-
-    } else if (path.startsWith('/dashboard') || path.startsWith('/analytics-dashboard')) {
+      setExpandedSections(prev => ({ ...prev, quotes: false, clients: false, services: true, invoices: false }));
+    } else if (path.startsWith('/invoices-management') || path.startsWith('/supplier-invoices') || path.startsWith('/invoices-follow-up')) {
+      setExpandedSections(prev => ({ ...prev, quotes: false, clients: false, services: false, invoices: true }));
+    } else if (path.startsWith('/dashboard') || path.startsWith('/analytics-dashboard') || path.startsWith('/peppol-access-point') || path.startsWith('/leads-management')) {
       // Keep all sections collapsed for main pages
-      setExpandedSections(prev => ({ ...prev, quotes: false, clients: false, services: false, business: false }));
+      setExpandedSections(prev => ({ ...prev, quotes: false, clients: false, services: false, invoices: false }));
     }
   }, [location.pathname, isCollapsed, isTablet]);
 
@@ -107,7 +106,7 @@ const MainSidebar = () => {
         quotes: sectionId === 'quotes',
         clients: sectionId === 'clients',
         services: sectionId === 'services',
-        business: sectionId === 'business'
+        invoices: sectionId === 'invoices'
       };
     });
   };
@@ -118,7 +117,7 @@ const MainSidebar = () => {
   const navigationCategories = [
     {
       id: 'main',
-      label: 'Principal',
+      label: 'Principales',
       items: [
         {
           id: 'dashboard',
@@ -128,10 +127,24 @@ const MainSidebar = () => {
           notifications: 0
         },
         {
-          id: 'analytics',
+          id: 'analytics-dashboard',
           label: 'Analytics',
           path: '/analytics-dashboard',
           icon: 'BarChart3',
+          notifications: 0
+        },
+        {
+          id: 'peppol-access-point',
+          label: 'Point d\'accès PEPPOL',
+          path: '/peppol-access-point',
+          icon: 'Network',
+          notifications: 0
+        },
+        {
+          id: 'leads-management',
+          label: 'Gestion des Leads',
+          path: '/leads-management',
+          icon: 'Users',
           notifications: 0
         }
       ]
@@ -157,22 +170,22 @@ const MainSidebar = () => {
           notifications: 0
         },
         {
-          id: 'statistics',
-          label: 'Statistiques',
-          path: '/statistics',
-          icon: 'BarChart3',
+          id: 'quotes-follow-up',
+          label: 'Relances',
+          path: '/quotes-follow-up',
+          icon: 'MessageCircle',
           notifications: 0
         }
       ]
     },
     {
-      id: 'business',
-      label: 'Activité',
+      id: 'invoices',
+      label: 'Factures',
       isCollapsible: true,
-      isExpanded: expandedSections.business,
+      isExpanded: expandedSections.invoices,
       items: [
         {
-          id: 'invoices',
+          id: 'client-invoices',
           label: 'Factures clients',
           path: '/invoices-management',
           icon: 'Receipt',
@@ -184,20 +197,6 @@ const MainSidebar = () => {
           path: '/supplier-invoices',
           icon: 'FileText',
           notifications: 2
-        },
-        {
-          id: 'leads-management',
-          label: 'Gestion des Leads',
-          path: '/leads-management',
-          icon: 'Users',
-          notifications: 0
-        },
-        {
-          id: 'follow-up',
-          label: 'Relances',
-          path: '/follow-up-management',
-          icon: 'MessageCircle',
-          notifications: 0
         }
       ]
     },
@@ -213,38 +212,31 @@ const MainSidebar = () => {
           path: '/client-management',
           icon: 'Users',
           notifications: 0
-        }
+                }
       ]
     },
-            {
-          id: 'services',
-          label: 'Services',
-          isCollapsible: true,
-          isExpanded: expandedSections.services,
-          items: [
-            {
-              id: 'peppol-network',
-              label: 'Peppol Network',
-              path: '/services/peppol',
-              icon: 'Network',
-              notifications: 0
-            },
-            {
-              id: 'assurance-credit',
-              label: 'Assurance Crédit',
-              path: '/services/assurance',
-              icon: 'Shield',
-              notifications: 0
-            },
-            {
-              id: 'recouvrement',
-              label: 'Recouvrement',
-              path: '/services/recouvrement',
-              icon: 'Banknote',
-              notifications: 0
-            }
-          ]
+    {
+      id: 'services',
+      label: 'Services',
+      isCollapsible: true,
+      isExpanded: expandedSections.services,
+      items: [
+        {
+          id: 'assurance-credit',
+          label: 'Assurance crédit',
+          path: '/services/assurance',
+          icon: 'Shield',
+          notifications: 0
+        },
+        {
+          id: 'recouvrement',
+          label: 'Recouvrement',
+          path: '/services/recouvrement',
+          icon: 'Banknote',
+          notifications: 0
         }
+      ]
+    }
   ];
 
   const handleLogout = () => {
@@ -374,15 +366,15 @@ const MainSidebar = () => {
                   {/* Category Items */}
                   {(!category.isCollapsible || category.isExpanded) && (
                     <div className="space-y-1">
-                                          {category.items.map((item) => (
-                      <NavigationItem
-                        key={item.id}
-                        {...item}
-                        isActive={location.pathname === item.path}
-                        isCollapsed={isCollapsed}
-                        isMobile={false}
-                      />
-                    ))}
+                      {category.items.map((item) => (
+                        <NavigationItem
+                          key={item.id}
+                          {...item}
+                          isActive={location.pathname === item.path}
+                          isCollapsed={isCollapsed}
+                          isMobile={false}
+                        />
+                      ))}
                     </div>
                   )}
                 </div>

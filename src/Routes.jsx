@@ -134,6 +134,24 @@ const AppRoutes = () => {
             </ProtectedRoute>
           } />
           
+          <Route path="/quotes-follow-up" element={
+            <ProtectedRoute>
+              <FollowUpManagement />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/invoices-follow-up" element={
+            <ProtectedRoute>
+              <FollowUpManagement />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/peppol-access-point" element={
+            <ProtectedRoute>
+              <PeppolNetworkPage />
+            </ProtectedRoute>
+          } />
+          
           <Route path="/statistics" element={
             <ProtectedRoute>
               <StatisticsPage />

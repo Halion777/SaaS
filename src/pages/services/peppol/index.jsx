@@ -395,6 +395,10 @@ const PeppolNetworkPage = () => {
     });
   };
 
+  const hasActiveFilters = () => {
+    return filters.search || filters.status || filters.dateRange || filters.amountRange || filters.recipient || filters.sender;
+  };
+
   const renderSentTableView = () => (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[800px]">
@@ -925,16 +929,18 @@ const PeppolNetworkPage = () => {
                       </span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="xs"
-                        onClick={clearFilters}
-                        iconName="X"
-                        iconPosition="left"
-                        className="h-8 sm:h-9"
-                      >
-                        Effacer les filtres
-                      </Button>
+                      {hasActiveFilters() && (
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          onClick={clearFilters}
+                          iconName="X"
+                          iconPosition="left"
+                          className="h-8 sm:h-9"
+                        >
+                          Effacer
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1073,15 +1079,17 @@ const PeppolNetworkPage = () => {
                       </span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={clearFilters}
-                        iconName="X"
-                        iconPosition="left"
-                      >
-                        Effacer les filtres
-                      </Button>
+                      {hasActiveFilters() && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={clearFilters}
+                          iconName="X"
+                          iconPosition="left"
+                        >
+                          Effacer
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>

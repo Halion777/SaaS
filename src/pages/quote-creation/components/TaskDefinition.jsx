@@ -6,7 +6,7 @@ import Icon from '../../../components/AppIcon';
 import VoiceInput from '../../../components/VoiceInput';
 import { generateTaskDescription } from '../../../services/openaiService';
 
-const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious }) => {
+const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCategory }) => {
   const [currentTask, setCurrentTask] = useState({
     description: '',
     duration: '',
@@ -18,33 +18,558 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
 
-  // Predefined tasks from the images
-  const predefinedTasks = [
-    {
-      id: 'task-1',
-      title: 'Pose de lavabo',
-      description: 'Installation complète d\'un lavabo avec robinetterie',
-      duration: '2',
-      price: 150,
-      icon: 'Droplet'
-    },
-    {
-      id: 'task-2',
-      title: 'Installation prise électrique',
-      description: 'Pose d\'une prise électrique standard avec raccordement',
-      duration: '0.5',
-      price: 45,
-      icon: 'Zap'
-    },
-    {
-      id: 'task-3',
-      title: 'Pose carrelage sol',
-      description: 'Pose de carrelage au sol avec préparation du support',
-      duration: '1',
-      price: 35,
-      icon: 'Grid'
-    }
-  ];
+  // Predefined tasks based on category
+  const predefinedTasksByCategory = {
+    plomberie: [
+      {
+        id: 'plomb-1',
+        title: 'Installation robinetterie',
+        description: 'Installation complète d\'une robinetterie avec raccordement',
+        duration: '2',
+        price: 120,
+        icon: 'Droplet'
+      },
+      {
+        id: 'plomb-2',
+        title: 'Réparation fuite',
+        description: 'Diagnostic et réparation d\'une fuite d\'eau',
+        duration: '1.5',
+        price: 80,
+        icon: 'AlertTriangle'
+      },
+      {
+        id: 'plomb-3',
+        title: 'Installation chauffe-eau',
+        description: 'Installation d\'un chauffe-eau électrique ou thermodynamique',
+        duration: '4',
+        price: 200,
+        icon: 'Thermometer'
+      },
+      {
+        id: 'plomb-4',
+        title: 'Débouchage canalisation',
+        description: 'Débouchage de canalisation bouchée',
+        duration: '1',
+        price: 60,
+        icon: 'Zap'
+      },
+      {
+        id: 'plomb-5',
+        title: 'Installation WC',
+        description: 'Installation complète d\'un WC avec raccordement',
+        duration: '3',
+        price: 150,
+        icon: 'Home'
+      },
+      {
+        id: 'plomb-6',
+        title: 'Installation douche/baignoire',
+        description: 'Installation d\'une douche ou baignoire avec robinetterie',
+        duration: '4',
+        price: 180,
+        icon: 'Droplets'
+      }
+    ],
+    electricite: [
+      {
+        id: 'elec-1',
+        title: 'Installation prise électrique',
+        description: 'Installation d\'une prise électrique standard',
+        duration: '0.5',
+        price: 45,
+        icon: 'Zap'
+      },
+      {
+        id: 'elec-2',
+        title: 'Installation interrupteur',
+        description: 'Installation d\'un interrupteur simple ou double',
+        duration: '0.5',
+        price: 40,
+        icon: 'ToggleLeft'
+      },
+      {
+        id: 'elec-3',
+        title: 'Installation luminaire',
+        description: 'Installation d\'un luminaire au plafond ou au mur',
+        duration: '1',
+        price: 60,
+        icon: 'Lightbulb'
+      },
+      {
+        id: 'elec-4',
+        title: 'Mise aux normes électrique',
+        description: 'Mise aux normes d\'une installation électrique',
+        duration: '8',
+        price: 400,
+        icon: 'Shield'
+      },
+      {
+        id: 'elec-5',
+        title: 'Installation tableau électrique',
+        description: 'Installation ou remplacement d\'un tableau électrique',
+        duration: '6',
+        price: 300,
+        icon: 'Settings'
+      },
+      {
+        id: 'elec-6',
+        title: 'Installation système d\'alarme',
+        description: 'Installation d\'un système d\'alarme complet',
+        duration: '4',
+        price: 250,
+        icon: 'Bell'
+      }
+    ],
+    menuiserie: [
+      {
+        id: 'menu-1',
+        title: 'Installation porte',
+        description: 'Installation d\'une porte intérieure ou extérieure',
+        duration: '3',
+        price: 120,
+        icon: 'DoorOpen'
+      },
+      {
+        id: 'menu-2',
+        title: 'Installation fenêtre',
+        description: 'Installation d\'une fenêtre PVC, bois ou alu',
+        duration: '4',
+        price: 200,
+        icon: 'Window'
+      },
+      {
+        id: 'menu-3',
+        title: 'Installation placard',
+        description: 'Installation d\'un placard sur mesure',
+        duration: '6',
+        price: 300,
+        icon: 'Package'
+      },
+      {
+        id: 'menu-4',
+        title: 'Installation parquet',
+        description: 'Pose de parquet flottant ou massif',
+        duration: '8',
+        price: 400,
+        icon: 'Square'
+      },
+      {
+        id: 'menu-5',
+        title: 'Installation escalier',
+        description: 'Installation d\'un escalier en bois',
+        duration: '12',
+        price: 600,
+        icon: 'TrendingUp'
+      },
+      {
+        id: 'menu-6',
+        title: 'Installation meuble sur mesure',
+        description: 'Fabrication et installation de meubles sur mesure',
+        duration: '16',
+        price: 800,
+        icon: 'Box'
+      }
+    ],
+    peinture: [
+      {
+        id: 'peint-1',
+        title: 'Peinture mur intérieur',
+        description: 'Peinture complète d\'une pièce (murs et plafond)',
+        duration: '6',
+        price: 300,
+        icon: 'Palette'
+      },
+      {
+        id: 'peint-2',
+        title: 'Peinture façade',
+        description: 'Peinture de façade extérieure',
+        duration: '8',
+        price: 400,
+        icon: 'Home'
+      },
+      {
+        id: 'peint-3',
+        title: 'Peinture porte/fenêtre',
+        description: 'Peinture de portes et fenêtres',
+        duration: '2',
+        price: 80,
+        icon: 'Brush'
+      },
+      {
+        id: 'peint-4',
+        title: 'Application enduit',
+        description: 'Application d\'enduit décoratif',
+        duration: '4',
+        price: 200,
+        icon: 'Droplet'
+      },
+      {
+        id: 'peint-5',
+        title: 'Décoration murale',
+        description: 'Réalisation de décoration murale',
+        duration: '8',
+        price: 350,
+        icon: 'Image'
+      }
+    ],
+    maconnerie: [
+      {
+        id: 'macon-1',
+        title: 'Construction mur',
+        description: 'Construction d\'un mur en parpaings ou briques',
+        duration: '8',
+        price: 400,
+        icon: 'Square'
+      },
+      {
+        id: 'macon-2',
+        title: 'Réparation fissure',
+        description: 'Réparation de fissures dans les murs',
+        duration: '2',
+        price: 100,
+        icon: 'AlertTriangle'
+      },
+      {
+        id: 'macon-3',
+        title: 'Installation cheminée',
+        description: 'Installation d\'une cheminée complète',
+        duration: '12',
+        price: 600,
+        icon: 'Flame'
+      },
+      {
+        id: 'macon-4',
+        title: 'Création ouverture',
+        description: 'Création d\'une ouverture dans un mur porteur',
+        duration: '16',
+        price: 800,
+        icon: 'DoorOpen'
+      },
+      {
+        id: 'macon-5',
+        title: 'Installation terrasse',
+        description: 'Création d\'une terrasse en béton',
+        duration: '20',
+        price: 1000,
+        icon: 'Square'
+      }
+    ],
+    carrelage: [
+      {
+        id: 'carr-1',
+        title: 'Pose carrelage sol',
+        description: 'Pose de carrelage au sol avec préparation',
+        duration: '8',
+        price: 400,
+        icon: 'Grid'
+      },
+      {
+        id: 'carr-2',
+        title: 'Pose carrelage mural',
+        description: 'Pose de carrelage mural',
+        duration: '6',
+        price: 300,
+        icon: 'Square'
+      },
+      {
+        id: 'carr-3',
+        title: 'Pose faïence salle de bain',
+        description: 'Pose de faïence dans salle de bain',
+        duration: '10',
+        price: 500,
+        icon: 'Droplet'
+      },
+      {
+        id: 'carr-4',
+        title: 'Installation plinthes',
+        description: 'Installation de plinthes carrelage',
+        duration: '2',
+        price: 80,
+        icon: 'Minus'
+      }
+    ],
+    toiture: [
+      {
+        id: 'toit-1',
+        title: 'Installation tuiles',
+        description: 'Pose de tuiles sur toiture',
+        duration: '16',
+        price: 800,
+        icon: 'Home'
+      },
+      {
+        id: 'toit-2',
+        title: 'Installation gouttières',
+        description: 'Installation de gouttières et descentes',
+        duration: '4',
+        price: 200,
+        icon: 'Droplet'
+      },
+      {
+        id: 'toit-3',
+        title: 'Installation velux',
+        description: 'Installation d\'une fenêtre de toit',
+        duration: '6',
+        price: 300,
+        icon: 'Window'
+      },
+      {
+        id: 'toit-4',
+        title: 'Réparation toiture',
+        description: 'Réparation de fuites ou dégâts toiture',
+        duration: '8',
+        price: 400,
+        icon: 'AlertTriangle'
+      }
+    ],
+    chauffage: [
+      {
+        id: 'chauf-1',
+        title: 'Installation chaudière',
+        description: 'Installation d\'une chaudière gaz ou fioul',
+        duration: '8',
+        price: 400,
+        icon: 'Thermometer'
+      },
+      {
+        id: 'chauf-2',
+        title: 'Installation radiateur',
+        description: 'Installation d\'un radiateur à eau',
+        duration: '3',
+        price: 150,
+        icon: 'Zap'
+      },
+      {
+        id: 'chauf-3',
+        title: 'Installation poêle',
+        description: 'Installation d\'un poêle à bois ou granulés',
+        duration: '6',
+        price: 300,
+        icon: 'Flame'
+      },
+      {
+        id: 'chauf-4',
+        title: 'Maintenance chauffage',
+        description: 'Entretien et maintenance système chauffage',
+        duration: '2',
+        price: 100,
+        icon: 'Settings'
+      }
+    ],
+    renovation: [
+      {
+        id: 'reno-1',
+        title: 'Rénovation salle de bain',
+        description: 'Rénovation complète d\'une salle de bain',
+        duration: '40',
+        price: 2000,
+        icon: 'Droplet'
+      },
+      {
+        id: 'reno-2',
+        title: 'Rénovation cuisine',
+        description: 'Rénovation complète d\'une cuisine',
+        duration: '32',
+        price: 1600,
+        icon: 'Utensils'
+      },
+      {
+        id: 'reno-3',
+        title: 'Rénovation chambre',
+        description: 'Rénovation complète d\'une chambre',
+        duration: '24',
+        price: 1200,
+        icon: 'Bed'
+      }
+    ],
+    nettoyage: [
+      {
+        id: 'net-1',
+        title: 'Nettoyage après travaux',
+        description: 'Nettoyage complet après rénovation',
+        duration: '4',
+        price: 120,
+        icon: 'Sparkles'
+      },
+      {
+        id: 'net-2',
+        title: 'Nettoyage vitres',
+        description: 'Nettoyage de toutes les vitres',
+        duration: '2',
+        price: 80,
+        icon: 'Window'
+      },
+      {
+        id: 'net-3',
+        title: 'Nettoyage façade',
+        description: 'Nettoyage de façade extérieure',
+        duration: '6',
+        price: 200,
+        icon: 'Home'
+      }
+    ],
+    solar: [
+      {
+        id: 'sol-1',
+        title: 'Installation panneaux solaires',
+        description: 'Installation complète de panneaux photovoltaïques',
+        duration: '24',
+        price: 1200,
+        icon: 'Sun'
+      },
+      {
+        id: 'sol-2',
+        title: 'Installation onduleur',
+        description: 'Installation d\'un onduleur solaire',
+        duration: '4',
+        price: 200,
+        icon: 'Zap'
+      },
+      {
+        id: 'sol-3',
+        title: 'Connexion électrique',
+        description: 'Connexion au réseau électrique',
+        duration: '6',
+        price: 300,
+        icon: 'Settings'
+      }
+    ],
+    jardinage: [
+      {
+        id: 'jard-1',
+        title: 'Tonte pelouse',
+        description: 'Tonte complète du jardin',
+        duration: '2',
+        price: 60,
+        icon: 'Scissors'
+      },
+      {
+        id: 'jard-2',
+        title: 'Taille haie',
+        description: 'Taille de haies et arbustes',
+        duration: '3',
+        price: 90,
+        icon: 'Tree'
+      },
+      {
+        id: 'jard-3',
+        title: 'Installation système d\'arrosage',
+        description: 'Installation d\'un système d\'arrosage automatique',
+        duration: '8',
+        price: 400,
+        icon: 'Droplet'
+      }
+    ],
+    serrurerie: [
+      {
+        id: 'serr-1',
+        title: 'Installation serrure',
+        description: 'Installation d\'une nouvelle serrure',
+        duration: '1',
+        price: 60,
+        icon: 'Key'
+      },
+      {
+        id: 'serr-2',
+        title: 'Installation porte blindée',
+        description: 'Installation d\'une porte blindée',
+        duration: '4',
+        price: 200,
+        icon: 'Shield'
+      },
+      {
+        id: 'serr-3',
+        title: 'Installation interphone',
+        description: 'Installation d\'un système d\'interphone',
+        duration: '3',
+        price: 150,
+        icon: 'Phone'
+      }
+    ],
+    vitrerie: [
+      {
+        id: 'vitr-1',
+        title: 'Installation vitre',
+        description: 'Installation d\'une vitre simple ou double',
+        duration: '2',
+        price: 100,
+        icon: 'Window'
+      },
+      {
+        id: 'vitr-2',
+        title: 'Installation miroir',
+        description: 'Installation d\'un miroir mural',
+        duration: '1',
+        price: 50,
+        icon: 'Image'
+      },
+      {
+        id: 'vitr-3',
+        title: 'Installation double vitrage',
+        description: 'Installation d\'un double vitrage',
+        duration: '3',
+        price: 150,
+        icon: 'Layers'
+      }
+    ],
+    isolation: [
+      {
+        id: 'isol-1',
+        title: 'Installation isolation mur',
+        description: 'Installation d\'isolation thermique sur murs',
+        duration: '12',
+        price: 600,
+        icon: 'Thermometer'
+      },
+      {
+        id: 'isol-2',
+        title: 'Installation isolation toiture',
+        description: 'Installation d\'isolation en combles',
+        duration: '16',
+        price: 800,
+        icon: 'Home'
+      },
+      {
+        id: 'isol-3',
+        title: 'Installation VMC',
+        description: 'Installation d\'une ventilation mécanique',
+        duration: '6',
+        price: 300,
+        icon: 'Wind'
+      }
+    ],
+    climatisation: [
+      {
+        id: 'clim-1',
+        title: 'Installation climatiseur',
+        description: 'Installation d\'un climatiseur split',
+        duration: '6',
+        price: 300,
+        icon: 'Thermometer'
+      },
+      {
+        id: 'clim-2',
+        title: 'Installation gaines',
+        description: 'Installation de gaines de climatisation',
+        duration: '8',
+        price: 400,
+        icon: 'Zap'
+      },
+      {
+        id: 'clim-3',
+        title: 'Maintenance climatisation',
+        description: 'Entretien et maintenance climatisation',
+        duration: '2',
+        price: 100,
+        icon: 'Settings'
+      }
+    ]
+  };
+
+  // Get predefined tasks for the selected category
+  const predefinedTasks = projectCategory && predefinedTasksByCategory[projectCategory] 
+    ? predefinedTasksByCategory[projectCategory] 
+    : [];
 
   const durationOptions = [
     { value: '0.5', label: '30 minutes' },
@@ -205,33 +730,58 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious }) => {
         <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
           <Icon name="Package" size={20} className="sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3" />
           Tâches prédéfinies
+          {projectCategory && (
+            <span className="ml-2 px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
+              {projectCategory}
+            </span>
+          )}
         </h2>
-        <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4">Ajoutez rapidement des tâches courantes avec tarifs recommandés</p>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {predefinedTasks.map(task => (
-            <div 
-              key={task.id} 
-              className="border border-border rounded-lg p-3 sm:p-4 hover:shadow-md transition-all cursor-pointer"
-              onClick={() => addPredefinedTask(task)}
-            >
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex items-center">
-                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center mr-2 sm:mr-3">
-                    <Icon name={task.icon} size={14} className="sm:w-4 sm:h-4 text-primary" />
+        {!projectCategory ? (
+          <div className="text-center py-8">
+            <Icon name="Info" size={48} className="text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">
+              Sélectionnez d'abord une catégorie de projet pour voir les tâches prédéfinies disponibles
+            </p>
+          </div>
+        ) : predefinedTasks.length > 0 ? (
+          <>
+            <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4">
+              Ajoutez rapidement des tâches courantes pour la catégorie "{projectCategory}" avec tarifs recommandés
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              {predefinedTasks.map(task => (
+                <div 
+                  key={task.id} 
+                  className="border border-border rounded-lg p-3 sm:p-4 hover:shadow-md transition-all cursor-pointer"
+                  onClick={() => addPredefinedTask(task)}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center mr-2 sm:mr-3">
+                        <Icon name={task.icon} size={14} className="sm:w-4 sm:h-4 text-primary" />
+                      </div>
+                      <h3 className="text-sm sm:text-base font-medium">{task.title}</h3>
+                    </div>
+                    <div className="text-base sm:text-lg font-semibold">{task.price}€</div>
                   </div>
-                  <h3 className="text-sm sm:text-base font-medium">{task.title}</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{task.description}</p>
+                  <div className="flex items-center mt-2 text-xs text-muted-foreground">
+                    <Icon name="Clock" size={12} className="mr-1" />
+                    <span>{task.duration}h</span>
+                  </div>
                 </div>
-                <div className="text-base sm:text-lg font-semibold">{task.price}€</div>
-              </div>
-              <p className="text-xs sm:text-sm text-muted-foreground">{task.description}</p>
-              <div className="flex items-center mt-2 text-xs text-muted-foreground">
-                <Icon name="Clock" size={12} className="mr-1" />
-                <span>{task.duration}h</span>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        ) : (
+          <div className="text-center py-8">
+            <Icon name="Package" size={48} className="text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">
+              Aucune tâche prédéfinie disponible pour cette catégorie. Créez vos propres tâches ci-dessous.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="bg-card border border-border rounded-lg p-4 sm:p-6">

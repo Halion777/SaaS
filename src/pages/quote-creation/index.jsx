@@ -14,6 +14,12 @@ const QuoteCreation = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedClient, setSelectedClient] = useState(null);
+  const [projectInfo, setProjectInfo] = useState({
+    category: '',
+    customCategory: '',
+    deadline: '',
+    description: ''
+  });
   const [tasks, setTasks] = useState([]);
   const [files, setFiles] = useState([]);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
@@ -28,6 +34,7 @@ const QuoteCreation = () => {
         setIsAutoSaving(true);
         const quoteData = {
           selectedClient,
+          projectInfo,
           tasks,
           files,
           currentStep,
@@ -44,7 +51,7 @@ const QuoteCreation = () => {
 
     const interval = setInterval(autoSave, 30000); // Auto-save every 30 seconds
     return () => clearInterval(interval);
-  }, [selectedClient, tasks, files, currentStep, companyInfo]);
+  }, [selectedClient, projectInfo, tasks, files, currentStep, companyInfo]);
 
   // Load draft on component mount
   useEffect(() => {
@@ -53,6 +60,7 @@ const QuoteCreation = () => {
       try {
         const draftData = JSON.parse(savedDraft);
         setSelectedClient(draftData.selectedClient);
+        setProjectInfo(draftData.projectInfo || { category: '', customCategory: '', deadline: '', description: '' });
         setTasks(draftData.tasks || []);
         setFiles(draftData.files || []);
         setCurrentStep(draftData.currentStep || 1);
@@ -124,6 +132,10 @@ const QuoteCreation = () => {
 
   const handleClientSelect = (client) => {
     setSelectedClient(client);
+  };
+
+  const handleProjectInfoChange = (newProjectInfo) => {
+    setProjectInfo(newProjectInfo);
   };
 
   const handleTasksChange = (newTasks) => {
@@ -218,7 +230,9 @@ const QuoteCreation = () => {
         return (
           <ClientSelection
             selectedClient={selectedClient}
+            projectInfo={projectInfo}
             onClientSelect={handleClientSelect}
+            onProjectInfoChange={handleProjectInfoChange}
             onNext={handleNext}
           />
         );
@@ -226,6 +240,7 @@ const QuoteCreation = () => {
         return (
           <TaskDefinition
             tasks={tasks}
+            projectCategory={projectInfo.category}
             onTasksChange={handleTasksChange}
             onNext={handleNext}
             onPrevious={handlePrevious}

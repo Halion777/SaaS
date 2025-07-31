@@ -7,7 +7,6 @@ import QuotesTable from './components/QuotesTable';
 import FilterBar from './components/FilterBar';
 import BulkActionsToolbar from './components/BulkActionsToolbar';
 import AIAnalyticsPanel from './components/AIAnalyticsPanel';
-import QuickActionsSection from './components/QuickActionsSection';
 
 const QuotesManagement = () => {
   const navigate = useNavigate();
@@ -354,12 +353,6 @@ const QuotesManagement = () => {
               </div>
             </div>
           </div>
-
-          {/* Quick Actions Section - Positioned above the filters */}
-          <QuickActionsSection
-            onBulkOptimize={handleBulkOptimize}
-            selectedCount={selectedQuotes.length}
-          />
 
           {/* Filters */}
           <FilterBar

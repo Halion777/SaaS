@@ -252,13 +252,29 @@ const RecouvrementPage = () => {
                   <Icon name="FileText" size={14} className="sm:w-4 sm:h-4 text-blue-500" />
                   <span className="text-xs sm:text-sm text-foreground">Dossier complet et justificatifs</span>
                 </li>
-                <li className="flex items-center space-x-2">
-                  <Icon name="Percent" size={14} className="sm:w-4 sm:h-4 text-purple-500" />
-                  <span className="text-xs sm:text-sm text-foreground">Commission 15-25% selon complexité</span>
-                </li>
               </ul>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Call to Action Section */}
+      <div className="bg-card border border-border rounded-lg p-6 sm:p-8">
+        <div className="text-center">
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-3">Confiez-nous vos impayés</h2>
+          <p className="text-muted-foreground mb-6">
+            Nos experts en recouvrement vous accompagnent pour récupérer vos créances
+          </p>
+          <Button
+            onClick={() => setActiveTab('invoices')}
+            variant="default"
+            size="lg"
+            className="px-8 py-3"
+            iconName="ArrowRight"
+            iconPosition="right"
+          >
+            Commencer le recouvrement
+          </Button>
         </div>
       </div>
     </div>
@@ -350,15 +366,15 @@ const RecouvrementPage = () => {
         {/* Information Section */}
         <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-border space-y-2 sm:space-y-3">
           <div className="flex items-center space-x-2">
-            <Icon name="DollarSign" size={14} className="sm:w-4 sm:h-4 text-muted-foreground" />
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              <span className="font-medium">Tarification:</span> Commission uniquement en cas de succès (15-25% selon la complexité)
-            </p>
-          </div>
-          <div className="flex items-center space-x-2">
             <Icon name="Clock" size={14} className="sm:w-4 sm:h-4 text-muted-foreground" />
             <p className="text-xs sm:text-sm text-muted-foreground">
               <span className="font-medium">Délais:</span> Première action sous 48h, suivi régulier et transparent
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Icon name="Shield" size={14} className="sm:w-4 sm:h-4 text-muted-foreground" />
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              <span className="font-medium">Garantie:</span> Aucun frais si nous ne récupérons pas votre argent
             </p>
           </div>
         </div>

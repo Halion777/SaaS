@@ -162,24 +162,8 @@ const QuotePreview = ({
   const validUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR');
 
   const getTemplateClasses = () => {
-    switch (customization.template) {
-      case 'moderne':
-        return 'bg-gradient-to-r from-blue-500 to-blue-700 text-white';
-      case 'professionnel':
-        return 'bg-gradient-to-r from-green-500 to-green-700 text-white';
-      case 'elegant':
-        return 'bg-gradient-to-r from-purple-500 to-purple-700 text-white';
-      case 'classique':
-        return 'bg-gradient-to-r from-red-500 to-red-700 text-white';
-      case 'minimaliste':
-        return 'bg-gradient-to-r from-gray-500 to-gray-700 text-white';
-      case 'blanc':
-        return 'bg-white border-2 border-gray-300 text-gray-800';
-      case 'noir':
-        return 'bg-black text-white';
-      default:
-        return 'bg-gradient-to-r from-blue-500 to-blue-700 text-white';
-    }
+    // Always return white background with border
+    return 'bg-white border border-gray-200';
   };
 
   return (
@@ -201,21 +185,27 @@ const QuotePreview = ({
             </Button>
             
             <Button
-              key={activeTab}
-              variant={activeTab === 'personalization' || activeTab === 'financial' ? 'default' : 'outline'}
-              onClick={() => {
-                if (activeTab === 'personalization') {
-                  setActiveTab('financial');
-                } else {
-                  setActiveTab('personalization');
-                }
-              }}
-              iconName="Settings"
+              variant={activeTab === 'personalization' ? 'default' : 'outline'}
+              onClick={() => setActiveTab(activeTab === 'personalization' ? null : 'personalization')}
+              iconName="Palette"
               iconPosition="left"
               size="sm"
               className="text-xs sm:text-sm"
             >
-              {activeTab === 'personalization' ? 'Masquer' : 'Personnaliser'}
+              <span className="hidden sm:inline">Couleurs</span>
+              <span className="sm:hidden">Couleurs</span>
+            </Button>
+            
+            <Button
+              variant={activeTab === 'financial' ? 'default' : 'outline'}
+              onClick={() => setActiveTab(activeTab === 'financial' ? null : 'financial')}
+              iconName="Calculator"
+              iconPosition="left"
+              size="sm"
+              className="text-xs sm:text-sm"
+            >
+              <span className="hidden sm:inline">Configuration</span>
+              <span className="sm:hidden">Config</span>
             </Button>
             
             <Button

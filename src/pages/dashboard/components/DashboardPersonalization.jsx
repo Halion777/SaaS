@@ -247,7 +247,7 @@ const DashboardPersonalization = ({ isOpen, onClose, onSave }) => {
               iconName="RotateCcw"
               iconPosition="left"
             >
-              Réinitialiser
+              Effacer
             </Button>
             <p className="text-sm text-muted-foreground">
               {Object.values(widgetSettings).filter(Boolean).length} / {Object.keys(widgetSettings).length} widgets activés
