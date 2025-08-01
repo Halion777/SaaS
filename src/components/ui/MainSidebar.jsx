@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import Icon from '../AppIcon';
 import NavigationItem from './NavigationItem';
 import UserProfile from './UserProfile';
@@ -19,6 +20,7 @@ const MainSidebar = () => {
   });
   const location = useLocation();
   const navigate = useNavigate();
+  const { logout, user } = useAuth();
   const mobileNavRef = useScrollPosition('mobile-nav-scroll', isMobile);
 
   useEffect(() => {
@@ -239,12 +241,23 @@ const MainSidebar = () => {
     }
   ];
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // The logout function in AuthContext will handle the redirect
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Fallback: redirect to login page
+      navigate('/login');
+    }
   };
 
-  const mockUser = {
+  // Use real user data or fallback to mock data
+  const userData = user ? {
+    name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+    company: user.user_metadata?.company_name || 'Company',
+    avatar: '/assets/images/avatar.jpg'
+  } : {
     name: 'Jean Dupont',
     company: 'Artisan Pro',
     avatar: '/assets/images/avatar.jpg'
@@ -386,7 +399,7 @@ const MainSidebar = () => {
         {/* User Profile */}
         <div className="mt-auto">
           <UserProfile 
-            user={mockUser} 
+            user={userData} 
             isCollapsed={isCollapsed} 
             onLogout={handleLogout}
             isTablet={isTablet}

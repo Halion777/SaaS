@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { Checkbox } from '../../components/ui/Checkbox';
 import Icon from '../../components/AppIcon';
+import ErrorMessage from '../../components/ui/ErrorMessage';
 import LoginHeader from './components/LoginHeader';
 import SecurityBadges from './components/SecurityBadges';
 import SocialProof from './components/SocialProof';
@@ -14,18 +16,50 @@ import Footer from '../../components/Footer';
 
 const LoginPage = () => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [errors, setErrors] = useState({});
   
-  const handleSubmit = (e) => {
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+  
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrors({});
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const { error } = await login(formData.email, formData.password);
+      
+      if (error) {
+        if (error.message?.includes('Invalid login credentials')) {
+          setErrors({ general: t('errors.invalidCredentials') });
+        } else {
+          setErrors({ general: error.message || t('errors.loginFailed') });
+        }
+      } else {
+        // Login successful - AuthContext will handle redirect to dashboard
+        // or to the original intended destination
+        const from = location.state?.from || '/dashboard';
+        navigate(from, { replace: true });
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setErrors({ general: t('errors.loginFailed') });
+    } finally {
       setIsLoading(false);
-      window.location.href = '/dashboard';
-    }, 1500);
+    }
   };
 
   return (
@@ -77,6 +111,9 @@ const LoginPage = () => {
                 type="email"
                 placeholder={t('login.emailPlaceholder')}
                 required
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                error={errors.email}
               />
               
               <div>
@@ -85,6 +122,9 @@ const LoginPage = () => {
                   type="password"
                   placeholder={t('login.passwordPlaceholder')}
                   required
+                  value={formData.password}
+                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  error={errors.password}
                 />
                 <div className="flex justify-end">
                   <Link to="/forgot-password" className="text-sm text-primary hover:underline mt-2">
@@ -102,6 +142,8 @@ const LoginPage = () => {
                 />
               </div>
               
+              {errors.general && <ErrorMessage message={errors.general} />}
+
               <Button 
                 type="submit" 
                 className="w-full"

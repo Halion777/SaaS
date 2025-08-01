@@ -8,8 +8,8 @@
     "blog": "Blog",
     "login": "Inloggen",
     "register": "Registreren",
-    "freeTrial": "Gratis proefperiode",
-    "dashboard": "Dashboard"
+    "freeTrial": "Gratis proef",
+    "logout": "Uitloggen"
   },
   "header": {
     "notification": {
@@ -22,6 +22,7 @@
     }
   },
   "ui": {
+    "loading": "Laden...",
     "tagline": "Havitam - Je professionele digitale vitamine",
     "buttons": {
       "continue": "Doorgaan",
@@ -484,7 +485,7 @@
     "popular": "Meest Populair",
     "period": "maand",
     "taxNote": "Excl. BTW, toepasselijke belasting",
-    "savings": "Bespaar {{amount}}€ per jaar",
+    "savings": "Bespaar {amount}€ per jaar",
     "plans": {
       "starter": {
         "name": "Starter",
@@ -742,6 +743,7 @@
       "subtitle": "Start met 14 dagen gratis, geen verplichting",
       "recommended": "Aanbevolen",
       "perMonth": "maand",
+      "perYear": "jaar",
       "freeTrial": {
         "title": "14-daagse gratis proefperiode",
         "description": "Test alle functies zonder verplichting. Geen creditcard vereist."
@@ -751,6 +753,7 @@
         "secure": "Veilig",
         "certified": "Gecertificeerd"
       },
+      "saveAnnual": "Bespaar {amount}€ per jaar",
       "plans": {
         "starter": {
           "name": "Starter",
@@ -792,10 +795,15 @@
       "mason": "Metselaar",
       "tiling": "Tegelzetter",
       "roofing": "Dakdekker",
-      "heating": "Verwarmingsmonteur",
+      "heating": "Verwarmingstechnicus",
       "gardening": "Hovenier",
-      "locksmith": "Sluisjesmaker",
-      "other": "Ander"
+      "locksmith": "Sluissmid",
+      "other": "Andere"
+    },
+    "success": {
+      "title": "Registratie succesvol!",
+      "description": "Je account is succesvol aangemaakt. Je wordt binnenkort doorgestuurd naar je dashboard.",
+      "redirecting": "Doorsturen naar dashboard..."
     },
     "countries": {
       "FR": "Frankrijk",
@@ -868,7 +876,7 @@
         "name": "Sophie Dubois",
         "trade": "Elektricien",
         "location": "Parijs",
-        "quote": "Geen handmatige follow-ups meer! Havitam beheert alles automatisch."
+        "quote": "Geen handmatige opvolging meer! Havitam beheert alles automatisch."
       }
     },
     "security": {
@@ -890,8 +898,36 @@
   },
   "errors": {
     "required": "Dit veld is verplicht",
-    "invalidEmail": "Ongeldig e-mailadres",
-    "tooShort": "Te kort"
+    "invalidEmail": "Voer een geldig e-mailadres in",
+    "tooShort": "Wachtwoord moet minimaal 8 tekens bevatten",
+    "invalidPhone": "Voer een geldig telefoonnummer in (10-15 cijfers)",
+    "emailNotConfirmed": "Controleer uw e-mail voor bevestiging",
+    "emailAlreadyExists": "Dit e-mailadres is al geregistreerd",
+    "registrationFailed": "Registratie mislukt. Probeer het opnieuw.",
+    "paymentFailed": "Betaling instellen mislukt. Probeer het opnieuw.",
+    "invalidCredentials": "Ongeldige e-mail of wachtwoord",
+    "loginFailed": "Inloggen mislukt. Probeer het opnieuw."
+  },
+  "stripeSuccess": {
+    "processing": {
+      "title": "Je betaling wordt verwerkt...",
+      "description": "Even geduld terwijl we je abonnement bevestigen."
+    },
+    "success": {
+      "title": "Betaling succesvol!",
+      "description": "Je abonnement is succesvol geactiveerd.",
+      "redirecting": "Doorsturen naar dashboard..."
+    },
+    "redirecting": {
+      "title": "Authenticatie vereist",
+      "description": "Log in om toegang te krijgen tot je dashboard.",
+      "redirecting": "Doorsturen naar login..."
+    },
+    "error": {
+      "title": "Er is iets misgegaan",
+      "description": "Er was een probleem bij het verwerken van je betaling. Neem contact op met ondersteuning.",
+      "loginButton": "Ga naar Login"
+    }
   },
   "meta": {
     "title": "HAVITAM - Je professionele digitale vitamine",

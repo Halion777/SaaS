@@ -83,9 +83,9 @@ const TaskList = () => {
               <Icon 
                 name={getTaskIcon(task.type)} 
                 size={14} 
-                className="sm:w-4 sm:h-4"
+                className={`sm:w-4 sm:h-4 ${getPriorityColor(task.priority)}`}
                 color="currentColor"
-                className={getPriorityColor(task.priority)}
+                
               />
             </div>
             <div className="flex-1 min-w-0">

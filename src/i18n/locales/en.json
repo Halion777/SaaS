@@ -9,7 +9,7 @@
     "login": "Login",
     "register": "Register",
     "freeTrial": "Free Trial",
-    "dashboard": "Dashboard"
+    "logout": "Logout"
   },
   "header": {
     "notification": {
@@ -22,6 +22,7 @@
     }
   },
   "ui": {
+    "loading": "Loading...",
     "tagline": "Havitam - Your professional digital vitamin",
     "buttons": {
       "continue": "Continue",
@@ -478,13 +479,13 @@
     },
     "toggle": {
       "monthly": "Monthly",
-      "yearly": "Yearly",
+      "yearly": "Annual",
       "savings": "-20%"
     },
     "popular": "Most Popular",
     "period": "month",
     "taxNote": "Excl. VAT, applicable tax",
-    "savings": "Save {{amount}}€ per year",
+    "savings": "Save {amount}€ per year",
     "plans": {
       "starter": {
         "name": "Starter",
@@ -739,18 +740,10 @@
     },
     "step3": {
       "title": "Choose your plan",
-      "subtitle": "Start with 14 days free, no commitment",
-      "recommended": "Recommended",
+      "subtitle": "Start with 14 free days, without commitment",
       "perMonth": "month",
-      "freeTrial": {
-        "title": "14-day free trial",
-        "description": "Test all features without commitment. No credit card required."
-      },
-      "trustBadges": {
-        "gdpr": "GDPR",
-        "secure": "Secure",
-        "certified": "Certified"
-      },
+      "perYear": "year",
+      "recommended": "Recommended",
       "plans": {
         "starter": {
           "name": "Starter",
@@ -760,11 +753,11 @@
             "Basic templates",
             "Payment tracking",
             "Email support",
-            "Basic customer management"
+            "Basic client management"
           ],
           "limitations": [
             "Limited AI",
-            "No automatic follow-ups"
+            "No automatic reminders"
           ]
         },
         "pro": {
@@ -773,7 +766,7 @@
           "features": [
             "Unlimited quotes/invoices",
             "Complete AI and optimizations",
-            "Automatic follow-ups",
+            "Automatic reminders",
             "Advanced analytics",
             "Premium templates",
             "Priority support",
@@ -782,7 +775,17 @@
           ],
           "limitations": []
         }
-      }
+      },
+      "freeTrial": {
+        "title": "14-day free trial",
+        "description": "Test all features without commitment. No credit card required."
+      },
+      "trustBadges": {
+        "gdpr": "GDPR",
+        "secure": "Secure",
+        "certified": "Certified"
+      },
+      "saveAnnual": "Save {amount}€ per year"
     },
     "professions": {
       "electrician": "Electrician",
@@ -792,10 +795,15 @@
       "mason": "Mason",
       "tiling": "Tiler",
       "roofing": "Roofer",
-      "heating": "Heating engineer",
+      "heating": "Heating Engineer",
       "gardening": "Landscaper",
       "locksmith": "Locksmith",
       "other": "Other"
+    },
+    "success": {
+      "title": "Registration Successful!",
+      "description": "Your account has been created successfully. You will be redirected to your dashboard shortly.",
+      "redirecting": "Redirecting to dashboard..."
     },
     "countries": {
       "FR": "France",
@@ -890,8 +898,36 @@
   },
   "errors": {
     "required": "This field is required",
-    "invalidEmail": "Invalid email",
-    "tooShort": "Too short"
+    "invalidEmail": "Please enter a valid email address",
+    "tooShort": "Password must be at least 8 characters",
+    "invalidPhone": "Please enter a valid phone number (10-15 digits)",
+    "emailNotConfirmed": "Please check your email for confirmation",
+    "emailAlreadyExists": "This email is already registered",
+    "registrationFailed": "Registration failed. Please try again.",
+    "paymentFailed": "Payment setup failed. Please try again.",
+    "invalidCredentials": "Invalid email or password",
+    "loginFailed": "Login failed. Please try again."
+  },
+  "stripeSuccess": {
+    "processing": {
+      "title": "Processing your payment...",
+      "description": "Please wait while we confirm your subscription."
+    },
+    "success": {
+      "title": "Payment Successful!",
+      "description": "Your subscription has been activated successfully.",
+      "redirecting": "Redirecting to dashboard..."
+    },
+    "redirecting": {
+      "title": "Authentication Required",
+      "description": "Please log in to access your dashboard.",
+      "redirecting": "Redirecting to login..."
+    },
+    "error": {
+      "title": "Something went wrong",
+      "description": "There was an issue processing your payment. Please contact support.",
+      "loginButton": "Go to Login"
+    }
   },
   "meta": {
     "title": "HAVITAM - Your professional digital vitamin",

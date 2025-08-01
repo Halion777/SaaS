@@ -1,16 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 
 const StepThree = ({ formData, updateFormData }) => {
   const { t } = useTranslation();
+  const [billingCycle, setBillingCycle] = useState('monthly');
   
   const plans = [
     {
       id: 'starter',
       name: t('registerForm.step3.plans.starter.name'),
-      price: '29.99',
-      period: t('registerForm.step3.perMonth'),
+      price: {
+        monthly: '29.99',
+        yearly: '24.99'
+      },
+      period: billingCycle === 'monthly' ? t('registerForm.step3.perMonth') : t('registerForm.step3.perYear'),
       description: t('registerForm.step3.plans.starter.description'),
       features: t('registerForm.step3.plans.starter.features', { returnObjects: true }),
       limitations: t('registerForm.step3.plans.starter.limitations', { returnObjects: true }),
@@ -19,14 +23,27 @@ const StepThree = ({ formData, updateFormData }) => {
     {
       id: 'pro',
       name: t('registerForm.step3.plans.pro.name'),
-      price: '49.99',
-      period: t('registerForm.step3.perMonth'),
+      price: {
+        monthly: '49.99',
+        yearly: '41.66'
+      },
+      period: billingCycle === 'monthly' ? t('registerForm.step3.perMonth') : t('registerForm.step3.perYear'),
       description: t('registerForm.step3.plans.pro.description'),
       features: t('registerForm.step3.plans.pro.features', { returnObjects: true }),
       limitations: t('registerForm.step3.plans.pro.limitations', { returnObjects: true }),
       popular: true
     }
   ];
+
+  const handlePlanSelect = (planId) => {
+    updateFormData('selectedPlan', planId);
+    updateFormData('billingCycle', billingCycle);
+  };
+
+  const handleBillingCycleChange = (cycle) => {
+    setBillingCycle(cycle);
+    updateFormData('billingCycle', cycle);
+  };
 
   return (
     <div className="space-y-6">
@@ -39,6 +56,35 @@ const StepThree = ({ formData, updateFormData }) => {
         </p>
       </div>
 
+      {/* Billing Cycle Toggle */}
+      <div className="flex justify-center mb-6">
+        <div className="inline-flex items-center bg-gray-100 rounded-lg p-1">
+          <button
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              billingCycle === 'monthly'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+            onClick={() => handleBillingCycleChange('monthly')}
+          >
+            {t('pricing.toggle.monthly')}
+          </button>
+          <button
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              billingCycle === 'yearly'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+            onClick={() => handleBillingCycleChange('yearly')}
+          >
+            {t('pricing.toggle.yearly')}
+            <span className="ml-1 bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+              {t('pricing.toggle.savings')}
+            </span>
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {plans.map((plan) => (
           <div
@@ -47,7 +93,7 @@ const StepThree = ({ formData, updateFormData }) => {
               formData.selectedPlan === plan.id
                 ? 'border-primary bg-primary/5' :'border-border hover:border-primary/50'
             } ${plan.popular ? 'ring-2 ring-primary/20' : ''}`}
-            onClick={() => updateFormData('selectedPlan', plan.id)}
+            onClick={() => handlePlanSelect(plan.id)}
           >
             {plan.popular && (
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
@@ -62,10 +108,17 @@ const StepThree = ({ formData, updateFormData }) => {
                 {plan.name}
               </h3>
               <div className="flex items-baseline justify-center mb-2">
-                <span className="text-3xl font-bold text-foreground">€{plan.price}</span>
+                <span className="text-3xl font-bold text-foreground">€{plan.price[billingCycle]}</span>
                 <span className="text-muted-foreground ml-1">/{plan.period}</span>
               </div>
               <p className="text-sm text-muted-foreground">{plan.description}</p>
+              {billingCycle === 'yearly' && (
+                <p className="text-sm text-green-600 font-medium mt-2">
+                  {t('registerForm.step3.saveAnnual', { 
+                    amount: ((parseFloat(plan.price.monthly) * 12) - (parseFloat(plan.price.yearly) * 12)).toFixed(2) 
+                  })}
+                </p>
+              )}
             </div>
 
             <div className="space-y-3 mb-6">

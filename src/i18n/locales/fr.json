@@ -9,6 +9,7 @@
     "login": "Connexion",
     "register": "S'inscrire",
     "freeTrial": "Essai gratuit",
+    "logout": "Déconnexion",
     "dashboard": "Tableau de bord"
   },
   "header": {
@@ -22,6 +23,7 @@
     }
   },
   "ui": {
+    "loading": "Chargement...",
     "tagline": "Havitam - Votre vitamine digitale professionnelle",
     "buttons": {
       "continue": "Continuer",
@@ -484,7 +486,7 @@
     "popular": "Le plus populaire",
     "period": "mois",
     "taxNote": "HT, TVA applicable",
-    "savings": "Économisez {{amount}}€ par an",
+    "savings": "Économisez {amount}€ par an",
     "plans": {
       "starter": {
         "name": "Starter",
@@ -742,6 +744,7 @@
       "subtitle": "Commencez avec 14 jours gratuits, sans engagement",
       "recommended": "Recommandé",
       "perMonth": "mois",
+      "perYear": "an",
       "freeTrial": {
         "title": "Essai gratuit de 14 jours",
         "description": "Testez toutes les fonctionnalités sans engagement. Aucune carte bancaire requise."
@@ -751,6 +754,7 @@
         "secure": "Sécurisé",
         "certified": "Certifié"
       },
+      "saveAnnual": "Économisez {amount}€ par an",
       "plans": {
         "starter": {
           "name": "Starter",
@@ -796,6 +800,11 @@
       "gardening": "Paysagiste",
       "locksmith": "Serrurier",
       "other": "Autre"
+    },
+    "success": {
+      "title": "Inscription réussie !",
+      "description": "Votre compte a été créé avec succès. Vous allez être redirigé vers votre tableau de bord dans quelques instants.",
+      "redirecting": "Redirection vers le tableau de bord..."
     },
     "countries": {
       "FR": "France",
@@ -890,8 +899,36 @@
   },
   "errors": {
     "required": "Ce champ est requis",
-    "invalidEmail": "Email invalide",
-    "tooShort": "Trop court"
+    "invalidEmail": "Veuillez entrer une adresse email valide",
+    "tooShort": "Le mot de passe doit contenir au moins 8 caractères",
+    "invalidPhone": "Veuillez entrer un numéro de téléphone valide (10-15 chiffres)",
+    "emailNotConfirmed": "Veuillez vérifier votre email pour confirmation",
+    "emailAlreadyExists": "Cette adresse email est déjà enregistrée",
+    "registrationFailed": "L'inscription a échoué. Veuillez réessayer.",
+    "paymentFailed": "La configuration du paiement a échoué. Veuillez réessayer.",
+    "invalidCredentials": "Email ou mot de passe invalide",
+    "loginFailed": "La connexion a échoué. Veuillez réessayer."
+  },
+  "stripeSuccess": {
+    "processing": {
+      "title": "Traitement de votre paiement...",
+      "description": "Veuillez patienter pendant que nous confirmons votre abonnement."
+    },
+    "success": {
+      "title": "Paiement réussi !",
+      "description": "Votre abonnement a été activé avec succès.",
+      "redirecting": "Redirection vers le tableau de bord..."
+    },
+    "redirecting": {
+      "title": "Authentification requise",
+      "description": "Veuillez vous connecter pour accéder à votre tableau de bord.",
+      "redirecting": "Redirection vers la connexion..."
+    },
+    "error": {
+      "title": "Quelque chose s'est mal passé",
+      "description": "Il y a eu un problème lors du traitement de votre paiement. Veuillez contacter le support.",
+      "loginButton": "Aller à la connexion"
+    }
   },
   "meta": {
     "title": "HAVITAM - Votre vitamine digitale professionnelle",

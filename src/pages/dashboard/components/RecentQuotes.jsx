@@ -95,9 +95,8 @@ const RecentQuotes = () => {
                 <Icon 
                   name={statusConfig.icon} 
                   size={16} 
-                  className="sm:w-[18px] sm:h-[18px]"
+                  className={`sm:w-[18px] sm:h-[18px] ${statusConfig.color}`}
                   color="currentColor"
-                  className={statusConfig.color}
                 />
               </div>
               <div className="flex-1 min-w-0">

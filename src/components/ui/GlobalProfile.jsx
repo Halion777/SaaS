@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import UserProfile from './UserProfile';
 
 const GlobalProfile = () => {
   const location = useLocation();
+  const { logout, user } = useAuth();
   const [isMobile, setIsMobile] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -51,15 +53,26 @@ const GlobalProfile = () => {
     };
   }, [lastScrollY]);
 
-  const mockUser = {
+  // Use real user data or fallback to mock data
+  const userData = user ? {
+    name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+    company: user.user_metadata?.company_name || 'Company',
+    avatar: '/assets/images/avatar.jpg'
+  } : {
     name: 'Jean Dupont',
     company: 'Artisan Pro',
     avatar: '/assets/images/avatar.jpg'
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    window.location.href = '/login';
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // The logout function in AuthContext will handle the redirect
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Fallback: redirect to login page
+      window.location.href = '/login';
+    }
   };
 
   // Only render on mobile AND on dashboard pages
@@ -73,7 +86,7 @@ const GlobalProfile = () => {
     }`}>
       <div className="p-4 pt-4 pointer-events-auto">
         <UserProfile 
-          user={mockUser} 
+          user={userData} 
           isCollapsed={false} 
           onLogout={handleLogout}
           isGlobal={true}

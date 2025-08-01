@@ -1,11 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as authService from '../services/authService';
 
-// Create Auth Context
+// Create auth context
 const AuthContext = createContext();
 
-// Auth Provider Component
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
@@ -17,17 +16,49 @@ export const AuthProvider = ({ children }) => {
     async function loadUserSession() {
       setLoading(true);
       
-      // Check for existing session
-      const currentSession = await authService.getSession();
-      setSession(currentSession);
-      
-      // Get user data if session exists
-      if (currentSession) {
-        const userData = await authService.getCurrentUser();
-        setUser(userData);
+      try {
+        // Check for existing session and refresh if needed
+        const currentSession = await authService.checkAndRefreshSession();
+        setSession(currentSession);
+        
+        // Get user data if session exists and is valid
+        if (currentSession && currentSession.access_token) {
+          try {
+            const userData = await authService.getCurrentUser();
+            setUser(userData);
+            
+            // If we have a valid session and user, redirect to dashboard if on login/register pages
+            if (userData && (window.location.pathname === '/login' || window.location.pathname === '/register')) {
+              navigate('/dashboard');
+            }
+          } catch (error) {
+            console.error('Error getting user data:', error);
+            // If there's an error getting user data, clear the session
+            setSession(null);
+            setUser(null);
+          }
+        } else {
+          // No valid session, clear user data
+          setUser(null);
+        }
+        
+        // Check if user just completed registration and returned from Stripe
+        const registrationComplete = sessionStorage.getItem('registration_complete');
+        
+        if (registrationComplete === 'true' && currentSession?.user) {
+          // Clear the registration flag
+          sessionStorage.removeItem('registration_complete');
+          
+          // Redirect to dashboard
+          navigate('/dashboard');
+        }
+      } catch (error) {
+        console.error('Error loading user session:', error);
+        setSession(null);
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     }
     
     loadUserSession();
@@ -40,7 +71,19 @@ export const AuthProvider = ({ children }) => {
       // Handle auth events
       switch(event) {
         case 'SIGNED_IN':
-          // User signed in
+          // Check if this is a post-registration sign in
+          const registrationComplete = sessionStorage.getItem('registration_complete');
+          
+          if (registrationComplete === 'true' && session?.user) {
+            // Clear the registration flag
+            sessionStorage.removeItem('registration_complete');
+            
+            // Redirect to dashboard
+            navigate('/dashboard');
+          } else {
+            // Regular sign in, redirect to dashboard
+            navigate('/dashboard');
+          }
           break;
         case 'SIGNED_OUT':
           navigate('/login');
@@ -88,14 +131,6 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
     
     if (error) return { error };
-    
-    // If email confirmation is required
-    if (data?.user?.identities?.length === 0) {
-      return { 
-        data, 
-        message: 'Please check your email for confirmation link' 
-      };
-    }
     
     // Set user and session
     setUser(data?.user || null);

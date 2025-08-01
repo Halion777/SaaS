@@ -1459,7 +1459,7 @@ const HomePage = () => {
       </div>
       
       {/* Custom CSS for animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes slideDown {
           from {
             transform: translateY(-100%);

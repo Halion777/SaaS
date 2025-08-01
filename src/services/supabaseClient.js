@@ -12,8 +12,22 @@ const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_KEY || 'eyJhbGc
 
 /**
  * Supabase client for browser usage (with anon key)
+ * Configured with persistence to keep users logged in
  */
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    // Enable automatic session persistence
+    persistSession: true,
+    // Store session in localStorage (default)
+    storage: localStorage,
+    // Auto-refresh tokens before they expire
+    autoRefreshToken: true,
+    // Detect session in URL (for magic links, etc.)
+    detectSessionInUrl: true,
+    // Flow type for authentication
+    flowType: 'pkce'
+  }
+});
 
 /**
  * Storage configuration

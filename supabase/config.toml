@@ -20,5 +20,8 @@
   [functions.optimize-pricing]
   verify_jwt = true
 
-[global.env]
-  OPENAI_API_KEY = "env(OPENAI_API_KEY)" 
+  [functions.create-checkout-session]
+  verify_jwt = true
+
+  [functions.create-portal-session]
+  verify_jwt = true 

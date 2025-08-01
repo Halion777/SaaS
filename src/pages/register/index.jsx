@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import Button from '../../components/ui/Button';
 import { Checkbox } from '../../components/ui/Checkbox';
 import Icon from '../../components/AppIcon';
+import ErrorMessage from '../../components/ui/ErrorMessage';
 import ProgressIndicator from './components/ProgressIndicator';
 import StepOne from './components/StepOne';
 import StepTwo from './components/StepTwo';
@@ -11,6 +12,8 @@ import StepThree from './components/StepThree';
 import TestimonialCard from './components/TestimonialCard';
 import TrustSignals from './components/TrustSignals';
 import Footer from '../../components/Footer';
+import { completeRegistration } from '../../services/authService';
+import { createCheckoutSession } from '../../services/stripeService';
 
 const Register = () => {
   const { t, i18n } = useTranslation();
@@ -28,6 +31,7 @@ const Register = () => {
     country: 'FR',
     businessSize: '',
     selectedPlan: 'pro',
+    billingCycle: 'monthly',
     acceptTerms: false
   });
   const [errors, setErrors] = useState({});
@@ -72,6 +76,13 @@ const Register = () => {
       if (!formData.password) newErrors.password = t('errors.required');
       else if (formData.password.length < 8) newErrors.password = t('errors.tooShort');
       if (!formData.phone.trim()) newErrors.phone = t('errors.required');
+      else {
+        // Phone number validation - should be between 10-15 digits with optional + prefix
+        const phoneRegex = /^\+?[0-9]{10,15}$/;
+        if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
+          newErrors.phone = t('errors.invalidPhone');
+        }
+      }
       if (!formData.country) newErrors.country = t('errors.required');
     }
 
@@ -103,14 +114,78 @@ const Register = () => {
     
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Step 1: Complete user registration
+      const { data: authData, error: authError } = await completeRegistration(formData);
+      
+      if (authError) {
+        if (authError.message?.includes('already registered')) {
+          setErrors({ email: t('errors.emailAlreadyExists') });
+        } else {
+          setErrors({ general: authError.message || t('errors.registrationFailed') });
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // Step 2: Create Stripe checkout session with 14-day trial
+      const { data: stripeData, error: stripeError } = await createCheckoutSession({
+        planType: formData.selectedPlan,
+        billingCycle: formData.billingCycle,
+        userId: authData.user.id
+      });
+
+      if (stripeError) {
+        setErrors({ general: t('errors.paymentFailed') });
+        setIsLoading(false);
+        return;
+      }
+
+      // Step 3: Redirect to Stripe checkout
+      if (stripeData?.url) {
+        // Store registration completion flag in sessionStorage for after checkout
+        sessionStorage.setItem('registration_complete', 'true');
+        window.location.href = stripeData.url;
+      } else {
+        // Fallback - redirect to dashboard
+        setFormSubmitted(true);
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 2000);
+      }
+      
+    } catch (error) {
+      console.error('Registration error:', error);
+      setErrors({ general: t('errors.registrationFailed') });
+    } finally {
       setIsLoading(false);
-      navigate('/dashboard');
-    }, 2000);
+    }
   };
 
   const renderStep = () => {
+    // Show success message if form was submitted
+    if (formSubmitted) {
+      return (
+        <div className="text-center py-12">
+          <div className="mb-6">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Icon name="Check" size={32} className="text-green-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-foreground mb-2">
+              {t('register.success.title')}
+            </h2>
+            <p className="text-muted-foreground">
+              {t('register.success.description')}
+            </p>
+          </div>
+          <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
+            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <span>{t('register.success.redirecting')}</span>
+          </div>
+        </div>
+      );
+    }
+
     switch (currentStep) {
       case 1:
         return <StepOne formData={formData} updateFormData={updateFormData} errors={errors} />;
@@ -164,6 +239,12 @@ const Register = () => {
                 <ProgressIndicator currentStep={currentStep} totalSteps={3} />
                 
                 <div className="bg-card rounded-lg border border-border p-6 lg:p-8 shadow-sm">
+                  {errors.general && (
+                    <ErrorMessage 
+                      message={errors.general} 
+                      onClose={() => setErrors(prev => ({ ...prev, general: '' }))}
+                    />
+                  )}
                   {renderStep()}
 
                   {/* Terms and Conditions for Step 3 */}
@@ -189,8 +270,6 @@ const Register = () => {
                       />
                     </div>
                   )}
-
-                  {/* Boost signatures message for Step 1 */}
 
                   {/* Navigation Buttons */}
                   <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
