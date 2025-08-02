@@ -4,26 +4,11 @@ import * as authService from '../services/authService';
 import { supabase } from '../services/supabaseClient';
 import { sessionManager } from '../services/supabaseClient';
 
-// Create a custom storage manager for auth synchronization
-const authSyncStorage = {
-  setItem: (key, value) => {
-    localStorage.setItem(key, value);
-    // Dispatch a custom event to notify other tabs
-    window.dispatchEvent(new Event('auth-storage-change'));
-  },
-  getItem: (key) => localStorage.getItem(key),
-  removeItem: (key) => {
-    localStorage.removeItem(key);
-    // Dispatch a custom event to notify other tabs
-    window.dispatchEvent(new Event('auth-storage-change'));
-  }
-};
-
 // Create the AuthContext
-export const AuthContext = createContext(null);
+const AuthContext = createContext(null);
 
 // AuthProvider component
-export function AuthProvider({ children }) {
+export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -34,8 +19,8 @@ export function AuthProvider({ children }) {
   const autoLogin = useCallback(async () => {
     try {
       // Check for existing session in localStorage
-      const storedAccessToken = authSyncStorage.getItem('sb-access-token');
-      const storedRefreshToken = authSyncStorage.getItem('sb-refresh-token');
+      const storedAccessToken = localStorage.getItem('sb-access-token');
+      const storedRefreshToken = localStorage.getItem('sb-refresh-token');
 
       if (storedAccessToken && storedRefreshToken) {
         // Attempt to set the session using stored tokens
@@ -48,11 +33,6 @@ export function AuthProvider({ children }) {
           // Successfully restored session
           setSession(data.session);
           setUser(data.session.user);
-
-          // Sync to storage for cross-tab communication
-          authSyncStorage.setItem('sb-access-token', data.session.access_token);
-          authSyncStorage.setItem('sb-refresh-token', data.session.refresh_token);
-          authSyncStorage.setItem('sb-user', JSON.stringify(data.session.user));
 
           // Navigate to dashboard if on a public path
           const currentPath = location.pathname;
@@ -74,8 +54,8 @@ export function AuthProvider({ children }) {
 
   // Cross-tab authentication synchronization
   const syncAuthState = useCallback(async () => {
-    const storedSession = authSyncStorage.getItem('sb-access-token');
-    const storedUser = authSyncStorage.getItem('sb-user');
+    const storedSession = localStorage.getItem('sb-access-token');
+    const storedUser = localStorage.getItem('sb-user');
 
     if (storedSession && storedUser) {
       try {
@@ -90,9 +70,9 @@ export function AuthProvider({ children }) {
         } else {
           setUser(null);
           setSession(null);
-          authSyncStorage.removeItem('sb-access-token');
-          authSyncStorage.removeItem('sb-refresh-token');
-          authSyncStorage.removeItem('sb-user');
+          localStorage.removeItem('sb-access-token');
+          localStorage.removeItem('sb-refresh-token');
+          localStorage.removeItem('sb-user');
         }
       } catch (error) {
         console.error('Error parsing stored user:', error);
@@ -118,37 +98,6 @@ export function AuthProvider({ children }) {
           // If auto login fails, proceed with normal session check
           const currentSession = await authService.checkAndRefreshSession();
           setSession(currentSession);
-          
-          // Get user data if session exists and is valid
-          if (currentSession && currentSession.access_token) {
-            try {
-              const userData = await authService.getCurrentUser();
-              setUser(userData);
-              
-              // Sync to storage for cross-tab communication
-              if (userData) {
-                authSyncStorage.setItem('sb-access-token', currentSession.access_token);
-                authSyncStorage.setItem('sb-user', JSON.stringify(userData));
-              }
-            } catch (error) {
-              console.error('Error getting user data:', error);
-              setSession(null);
-              setUser(null);
-              authSyncStorage.removeItem('sb-access-token');
-              authSyncStorage.removeItem('sb-user');
-            }
-          }
-        }
-        
-        // Check if user just completed registration and returned from Stripe
-        const registrationComplete = sessionStorage.getItem('registration_complete');
-        
-        if (registrationComplete === 'true' && (session?.user || user)) {
-          // Clear the registration flag
-          sessionStorage.removeItem('registration_complete');
-          
-          // Redirect to dashboard
-          navigate('/dashboard');
         }
       } catch (error) {
         console.error('Error loading user session:', error);
@@ -160,72 +109,7 @@ export function AuthProvider({ children }) {
     }
     
     loadUserSession();
-    
-    // Set up auth state listener
-    const { data: authListener } = authService.onAuthStateChange((session, event) => {
-      setSession(session);
-      setUser(session?.user || null);
-      
-      // Sync to storage for cross-tab communication
-      if (session?.user) {
-        authSyncStorage.setItem('sb-access-token', session.access_token);
-        authSyncStorage.setItem('sb-refresh-token', session.refresh_token);
-        authSyncStorage.setItem('sb-user', JSON.stringify(session.user));
-      } else {
-        authSyncStorage.removeItem('sb-access-token');
-        authSyncStorage.removeItem('sb-refresh-token');
-        authSyncStorage.removeItem('sb-user');
-      }
-      
-      // Handle auth events
-      switch(event) {
-        case 'SIGNED_IN':
-          // Check if this is a post-registration sign in
-          const registrationComplete = sessionStorage.getItem('registration_complete');
-          
-          if (registrationComplete === 'true' && session?.user) {
-            // Don't redirect yet - let the Stripe success page handle it
-            return;
-          }
-
-          // Precise navigation for sign-in
-          const currentPath = location.pathname;
-          const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password'];
-          
-          if (currentPath === '/login') {
-            navigate('/dashboard');
-          } else if (currentPath === '/reset-password') {
-            // Stay on reset password page if authenticated
-            return;
-          } else if (publicPaths.includes(currentPath)) {
-            navigate('/dashboard');
-          }
-          break;
-        
-        case 'SIGNED_OUT':
-          navigate('/login');
-          break;
-        
-        default:
-          break;
-      }
-    });
-    
-    // Listen for storage changes in other tabs
-    window.addEventListener('auth-storage-change', syncAuthState);
-    window.addEventListener('storage', (e) => {
-      if (e.key === 'sb-access-token' || e.key === 'sb-user') {
-        syncAuthState();
-      }
-    });
-    
-    // Cleanup subscription
-    return () => {
-      authListener?.subscription?.unsubscribe();
-      window.removeEventListener('auth-storage-change', syncAuthState);
-      window.removeEventListener('storage', syncAuthState);
-    };
-  }, [navigate, location, syncAuthState, autoLogin]);
+  }, [autoLogin]);
 
   // Login function
   const login = async (email, password) => {
@@ -250,8 +134,9 @@ export function AuthProvider({ children }) {
       sessionManager.clearAllAuthData();
       
       // Clear local and cross-tab storage
-      authSyncStorage.removeItem('sb-access-token');
-      authSyncStorage.removeItem('sb-user');
+      localStorage.removeItem('sb-access-token');
+      localStorage.removeItem('sb-refresh-token');
+      localStorage.removeItem('sb-user');
       
       // Clear local state
       setUser(null);
@@ -275,9 +160,6 @@ export function AuthProvider({ children }) {
     // Set user and session
     setUser(data?.user || null);
     setSession(data?.session || null);
-    
-    // Don't redirect to dashboard - let the registration flow handle it
-    // The user will be redirected to Stripe checkout, then to dashboard after payment
     
     return { data };
   };
@@ -307,7 +189,7 @@ export function AuthProvider({ children }) {
     
     return { data, error };
   };
-  
+
   // Auth context value
   const value = {
     user,
@@ -326,20 +208,16 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
 // Custom hook to use auth context
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
+  if (context === null) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
+};
 
-// Default export for backwards compatibility
-export default {
-  AuthContext,
-  AuthProvider,
-  useAuth
-}; 
+// Export the context for potential direct use
+export default AuthContext; 

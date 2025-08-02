@@ -118,6 +118,7 @@ const Register = () => {
     setCurrentStep(prev => prev - 1);
   };
 
+  // Modify handleSubmit to add more precise registration completion flag
   const handleSubmit = async () => {
     if (!validateStep(3)) return;
     
@@ -157,8 +158,15 @@ const Register = () => {
 
       // Step 3: Redirect to Stripe checkout
       if (stripeData?.url) {
-        // Store registration completion flag in sessionStorage for after checkout
-        sessionStorage.setItem('registration_complete', 'true');
+        // Store detailed registration completion information
+        sessionStorage.setItem('registration_pending', JSON.stringify({
+          userId: authData.user.id,
+          email: authData.user.email,
+          plan: formData.selectedPlan,
+          billingCycle: formData.billingCycle,
+          timestamp: Date.now()
+        }));
+        
         // Redirect to Stripe checkout - DO NOT redirect to dashboard yet
         window.location.href = stripeData.url;
       } else {
@@ -169,7 +177,6 @@ const Register = () => {
       }
       
     } catch (error) {
-      console.error('Registration error:', error);
       setErrors({ general: t('errors.registrationFailed') });
       cleanupOptimization(); // Clean up optimization
     } finally {

@@ -89,13 +89,17 @@ serve(async (req) => {
             .update({
               subscription_status: 'active',
               stripe_subscription_id: session.subscription as string,
-              stripe_customer_id: session.customer as string
+              stripe_customer_id: session.customer as string,
+              registration_completed: true  // Add a flag to mark registration as fully complete
             })
             .eq('id', session.metadata.userId)
 
           if (error) {
             console.error('Error updating user subscription:', error)
           }
+
+          // Optional: You could send a confirmation email or perform additional actions here
+          console.log(`Registration completed for user: ${session.metadata.userId}`)
         }
         break
 
