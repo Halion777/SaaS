@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
+import { resetPassword } from '../../services/authService';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Icon from '../../components/AppIcon';
+import ErrorMessage from '../../components/ui/ErrorMessage';
 import Footer from '../../components/Footer';
 
 const ForgotPasswordPage = () => {
@@ -12,16 +14,26 @@ const ForgotPasswordPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
   
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const { error: resetError } = await resetPassword(email);
+      
+      if (resetError) {
+        setError(resetError.message || t('errors.passwordResetFailed'));
+      } else {
+        setIsSubmitted(true);
+      }
+    } catch (error) {
+      setError(t('errors.passwordResetFailed'));
+    } finally {
       setIsLoading(false);
-      setIsSubmitted(true);
-    }, 1500);
+    }
   };
 
   return (
@@ -73,14 +85,22 @@ const ForgotPasswordPage = () => {
           <div className="bg-white rounded-lg shadow-professional p-8">
             {!isSubmitted ? (
               <>
-                            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                {t('forgotPassword.title')}
-              </h2>
-              <p className="text-gray-600">
-                {t('forgotPassword.subtitle')}
-              </p>
-            </div>
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                    {t('forgotPassword.title')}
+                  </h2>
+                  <p className="text-gray-600">
+                    {t('forgotPassword.subtitle')}
+                  </p>
+                </div>
+                
+                {/* Error Display */}
+                {error && (
+                  <ErrorMessage 
+                    message={error}
+                    onClose={() => setError('')}
+                  />
+                )}
                 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <Input 
@@ -97,8 +117,9 @@ const ForgotPasswordPage = () => {
                     className="w-full"
                     variant="login"
                     loading={isLoading}
+                    disabled={isLoading}
                   >
-                    {t('forgotPassword.resetButton')}
+                    {isLoading ? t('ui.buttons.loading') : t('forgotPassword.resetButton')}
                   </Button>
                 </form>
               </>

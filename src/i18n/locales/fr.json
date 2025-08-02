@@ -23,7 +23,6 @@
     }
   },
   "ui": {
-    "loading": "Chargement...",
     "tagline": "Havitam - Votre vitamine digitale professionnelle",
     "buttons": {
       "continue": "Continuer",
@@ -685,7 +684,9 @@
     "trial": {
       "noCommitment": "Sans engagement",
       "setupTime": "Configuration en 5 min"
-    }
+    },
+    "haveAccount": "Vous avez déjà un compte ?",
+    "loginLink": "Connexion"
   },
   "registerForm": {
     "step1": {
@@ -897,6 +898,23 @@
     "checkInbox": "Veuillez vérifier votre boîte de réception pour les instructions de réinitialisation.",
     "backToLogin": "Retour à la connexion"
   },
+  "resetPassword": {
+    "title": "Réinitialisez votre mot de passe",
+    "subtitle": "Entrez un nouveau mot de passe pour votre compte",
+    "newPassword": "Nouveau mot de passe",
+    "newPasswordPlaceholder": "Saisissez votre nouveau mot de passe",
+    "confirmPassword": "Confirmez le nouveau mot de passe",
+    "confirmPasswordPlaceholder": "Confirmez votre nouveau mot de passe",
+    "updateButton": "Mettre à jour le mot de passe",
+    "successTitle": "Mot de passe mis à jour",
+    "successMessage": "Votre mot de passe a été mis à jour avec succès.",
+    "redirecting": "Redirection vers la connexion...",
+    "validating": "Validation du lien de réinitialisation",
+    "validatingMessage": "Veuillez patienter pendant que nous vérifions votre lien de réinitialisation.",
+    "invalidLink": "Désolé",
+    "backToForgotPassword": "Retour au mot de passe oublié",
+    "tryAgain": "Réessayer"
+  },
   "errors": {
     "required": "Ce champ est requis",
     "invalidEmail": "Veuillez entrer une adresse email valide",
@@ -907,7 +925,13 @@
     "registrationFailed": "L'inscription a échoué. Veuillez réessayer.",
     "paymentFailed": "La configuration du paiement a échoué. Veuillez réessayer.",
     "invalidCredentials": "Email ou mot de passe invalide",
-    "loginFailed": "La connexion a échoué. Veuillez réessayer."
+    "loginFailed": "La connexion a échoué. Veuillez réessayer.",
+    "passwordResetFailed": "La réinitialisation du mot de passe a échoué. Veuillez réessayer.",
+    "passwordUpdateFailed": "Désolé, nous n'avons pas pu mettre à jour votre mot de passe. Veuillez essayer un mot de passe différent ou demander un nouveau lien de réinitialisation.",
+    "passwordRequired": "Le mot de passe est requis",
+    "passwordTooShort": "Le mot de passe doit comporter au moins 8 caractères",
+    "passwordsDoNotMatch": "Les mots de passe ne correspondent pas",
+    "invalidResetLink": "Nous n'avons pas pu mettre à jour votre mot de passe. Veuillez essayer un mot de passe différent ou demander un nouveau lien de réinitialisation."
   },
   "stripeSuccess": {
     "processing": {
@@ -954,6 +978,14 @@
       "title": "Contact - HAVITAM",
       "description": "Contactez l'équipe HAVITAM pour toute question sur notre plateforme pour artisans, pour une démonstration ou un support technique.",
       "keywords": "contact, support, artisans, devis, facture, gestion"
+    },
+    "forgotPassword": {
+      "title": "Mot de passe oublié - HAVITAM",
+      "description": "Réinitialisez le mot de passe de votre compte HAVITAM. Saisissez votre email pour recevoir les instructions de réinitialisation."
+    },
+    "resetPassword": {
+      "title": "Réinitialiser le mot de passe - HAVITAM",
+      "description": "Définissez votre nouveau mot de passe pour votre compte HAVITAM."
     }
   },
   "footer": {

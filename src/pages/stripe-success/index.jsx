@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../../context/AuthContext';
 import { createUserAfterPayment } from '../../services/authService';
 import Icon from '../../components/AppIcon';
 
@@ -9,67 +8,59 @@ const StripeSuccessPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { isAuthenticated, loading } = useAuth();
   const [status, setStatus] = useState('processing');
 
   useEffect(() => {
     const handleSuccess = async () => {
       try {
-        // Check if user is authenticated
-        if (isAuthenticated) {
-          // Check if we have pending registration data
-          const pendingRegistration = sessionStorage.getItem('pendingRegistration');
-          
-          if (pendingRegistration) {
-            try {
-              const registrationData = JSON.parse(pendingRegistration);
-              
-              // Create user record in database after successful payment
-              const { error } = await createUserAfterPayment(
-                registrationData.userId,
-                registrationData
-              );
-              
-              if (error) {
-                console.error('Error creating user after payment:', error);
-                setStatus('error');
-                return;
-              }
-            } catch (error) {
-              console.error('Error processing registration data:', error);
+        // Check if we have pending registration data
+        const pendingRegistration = sessionStorage.getItem('pendingRegistration');
+        const registrationComplete = sessionStorage.getItem('registration_complete');
+        
+        if (pendingRegistration) {
+          try {
+            const registrationData = JSON.parse(pendingRegistration);
+            
+            // Create user record in database after successful payment
+            const { error } = await createUserAfterPayment(
+              registrationData.userId,
+              registrationData
+            );
+            
+            if (error) {
+              console.error('Error creating user after payment:', error);
               setStatus('error');
               return;
             }
+            
+            // Clear the pending registration data
+            sessionStorage.removeItem('pendingRegistration');
+          } catch (error) {
+            console.error('Error processing registration data:', error);
+            setStatus('error');
+            return;
           }
-          
-          setStatus('success');
-          // Redirect to dashboard after a short delay
-          setTimeout(() => {
-            navigate('/dashboard', { replace: true });
-          }, 2000);
-        } else {
-          // If not authenticated, redirect to login
-          setStatus('redirecting');
-          setTimeout(() => {
-            navigate('/login', { 
-              replace: true,
-              state: { 
-                from: '/dashboard',
-                message: 'Please log in to access your dashboard'
-              }
-            });
-          }, 2000);
         }
+        
+        // Clear the registration complete flag
+        if (registrationComplete === 'true') {
+          sessionStorage.removeItem('registration_complete');
+        }
+        
+        setStatus('success');
+        // Redirect to dashboard after a short delay
+        setTimeout(() => {
+          navigate('/dashboard', { replace: true });
+        }, 2000);
       } catch (error) {
         console.error('Error handling Stripe success:', error);
         setStatus('error');
       }
     };
 
-    if (!loading) {
-      handleSuccess();
-    }
-  }, [isAuthenticated, loading, navigate]);
+    // Handle success immediately - don't wait for authentication
+    handleSuccess();
+  }, [navigate]);
 
   const renderContent = () => {
     switch (status) {

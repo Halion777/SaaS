@@ -53,9 +53,9 @@ export async function createPortalSession(userId) {
 export async function getSubscriptionStatus(userId) {
   try {
     const { data, error } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', userId)
+      .from('users')
+      .select('subscription_status, stripe_subscription_id, trial_end_date, selected_plan')
+      .eq('id', userId)
       .single();
 
     return { data, error };

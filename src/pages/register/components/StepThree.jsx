@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
+import ErrorMessage from '../../../components/ui/ErrorMessage';
 
-const StepThree = ({ formData, updateFormData }) => {
+const StepThree = ({ formData, updateFormData, errors }) => {
   const { t } = useTranslation();
   const [billingCycle, setBillingCycle] = useState('monthly');
   
@@ -55,6 +56,18 @@ const StepThree = ({ formData, updateFormData }) => {
           {t('registerForm.step3.subtitle')}
         </p>
       </div>
+
+      {/* Error Display */}
+      {errors?.general && (
+        <ErrorMessage 
+          message={errors.general}
+        />
+      )}
+      {errors?.email && (
+        <ErrorMessage 
+          message={errors.email}
+        />
+      )}
 
       {/* Billing Cycle Toggle */}
       <div className="flex justify-center mb-6">

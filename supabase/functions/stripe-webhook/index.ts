@@ -83,59 +83,18 @@ serve(async (req) => {
         
         // Update user subscription status
         if (session.metadata?.userId) {
-          // First check if user exists in database
-          const { data: existingUser, error: userError } = await supabaseClient
+          // Update existing user record with subscription data
+          const { error } = await supabaseClient
             .from('users')
-            .select('*')
+            .update({
+              subscription_status: 'active',
+              stripe_subscription_id: session.subscription as string,
+              stripe_customer_id: session.customer as string
+            })
             .eq('id', session.metadata.userId)
-            .single()
 
-          if (userError && userError.code === 'PGRST116') {
-            // User doesn't exist, create it from auth data
-            // Get user from auth.users
-            const { data: authData, error: authError } = await supabaseClient.auth.admin.getUserById(session.metadata.userId)
-            
-            if (authError || !authData?.user) {
-              break
-            }
-
-            // Create user record
-            const { error: createError } = await supabaseClient
-              .from('users')
-              .insert({
-                id: authData.user.id,
-                email: authData.user.email,
-                full_name: authData.user.user_metadata?.full_name || 'Unknown',
-                company_name: authData.user.user_metadata?.company_name || '',
-                phone: authData.user.user_metadata?.phone || '',
-                profession: authData.user.user_metadata?.profession || '',
-                country: authData.user.user_metadata?.country || 'FR',
-                business_size: authData.user.user_metadata?.business_size || '',
-                selected_plan: authData.user.user_metadata?.selected_plan || 'starter',
-                subscription_status: 'active',
-                stripe_subscription_id: session.subscription as string,
-                trial_start_date: new Date().toISOString(),
-                trial_end_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-                stripe_customer_id: session.customer as string
-              })
-
-            if (createError) {
-              console.error('Error creating user record:', createError)
-            }
-          } else if (existingUser) {
-            // User exists, update subscription status
-            const { error } = await supabaseClient
-              .from('users')
-              .update({
-                subscription_status: 'active',
-                stripe_subscription_id: session.subscription as string,
-                stripe_customer_id: session.customer as string
-              })
-              .eq('id', session.metadata.userId)
-
-            if (error) {
-              console.error('Error updating user subscription:', error)
-            }
+          if (error) {
+            console.error('Error updating user subscription:', error)
           }
         }
         break

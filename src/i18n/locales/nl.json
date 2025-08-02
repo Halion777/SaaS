@@ -22,7 +22,6 @@
     }
   },
   "ui": {
-    "loading": "Laden...",
     "tagline": "Havitam - Je professionele digitale vitamine",
     "buttons": {
       "continue": "Doorgaan",
@@ -684,7 +683,9 @@
     "trial": {
       "noCommitment": "Geen verplichting",
       "setupTime": "Setup in 5 min"
-    }
+    },
+    "haveAccount": "Heeft u al een account?",
+    "loginLink": "Inloggen"
   },
   "registerForm": {
     "step1": {
@@ -896,6 +897,24 @@
     "checkInbox": "Controleer je inbox voor reset-instructies.",
     "backToLogin": "Terug naar inloggen"
   },
+  "resetPassword": {
+    "title": "Herstel uw wachtwoord",
+    "subtitle": "Voer een nieuw wachtwoord in voor uw account",
+    "newPassword": "Nieuw wachtwoord",
+    "newPasswordPlaceholder": "Voer uw nieuwe wachtwoord in",
+    "confirmPassword": "Bevestig nieuw wachtwoord",
+    "confirmPasswordPlaceholder": "Bevestig uw nieuwe wachtwoord",
+    "updateButton": "Wachtwoord bijwerken",
+    "successTitle": "Wachtwoord bijgewerkt",
+    "successMessage": "Uw wachtwoord is succesvol bijgewerkt.",
+    "redirecting": "Doorsturen naar aanmelden...",
+    "validating": "Reset link valideren",
+    "validatingMessage": "Een moment geduld terwijl we uw reset link verifiëren.",
+    "invalidLink": "Ongeldige reset link",
+    "backToForgotPassword": "Terug naar wachtwoord vergeten",
+    "tryAgain": "Opnieuw proberen",
+    "invalidLink": "Sorry"
+  },
   "errors": {
     "required": "Dit veld is verplicht",
     "invalidEmail": "Voer een geldig e-mailadres in",
@@ -906,7 +925,18 @@
     "registrationFailed": "Registratie mislukt. Probeer het opnieuw.",
     "paymentFailed": "Betaling instellen mislukt. Probeer het opnieuw.",
     "invalidCredentials": "Ongeldige e-mail of wachtwoord",
-    "loginFailed": "Inloggen mislukt. Probeer het opnieuw."
+    "loginFailed": "Inloggen mislukt. Probeer het opnieuw.",
+    "passwordResetFailed": "Wachtwoord resetten mislukt. Probeer het opnieuw.",
+    "passwordUpdateFailed": "Sorry, we konden uw wachtwoord niet bijwerken. Probeer een ander wachtwoord of vraag een nieuwe reset link aan.",
+    "passwordRequired": "Wachtwoord is verplicht",
+    "passwordTooShort": "Wachtwoord moet minimaal 8 tekens bevatten",
+    "passwordsDoNotMatch": "Wachtwoorden komen niet overeen",
+    "invalidResetLink": "Ongeldige reset link. Vraag een nieuwe link aan om uw wachtwoord opnieuw in te stellen.",
+    "passwordSameAsCurrent": "Nieuw wachtwoord moet anders zijn dan uw huidige wachtwoord",
+    "passwordUpdateFailed": "Sorry, we konden uw wachtwoord niet bijwerken. Probeer een ander wachtwoord of vraag een nieuwe reset link aan.",
+    "invalidResetLink": "Ongeldige reset link. Vraag een nieuwe link aan om uw wachtwoord opnieuw in te stellen.",
+    "passwordUpdateFailed": "Sorry, we konden uw wachtwoord niet bijwerken. Probeer een ander wachtwoord of vraag een nieuwe reset link aan.",
+    "invalidResetLink": "We konden uw wachtwoord niet bijwerken. Probeer een ander wachtwoord of vraag een nieuwe reset link aan."
   },
   "stripeSuccess": {
     "processing": {
@@ -953,6 +983,14 @@
       "title": "Contact - HAVITAM",
       "description": "Neem contact op met het HAVITAM team voor vragen over ons platform voor vakmensen, voor een demo of technische ondersteuning.",
       "keywords": "contact, ondersteuning, vakmensen, offertes, facturen, beheer"
+    },
+    "forgotPassword": {
+      "title": "Wachtwoord vergeten - HAVITAM",
+      "description": "Reset het wachtwoord van je HAVITAM account. Voer je e-mail in om reset-instructies te ontvangen."
+    },
+    "resetPassword": {
+      "title": "Wachtwoord resetten - HAVITAM",
+      "description": "Stel je nieuwe wachtwoord in voor je HAVITAM account."
     }
   },
   "footer": {
@@ -1372,5 +1410,16 @@
         "quote": "Geen handmatige opvolging meer! Havitam beheert alles automatisch."
       }
     }
+  },
+  "errors": {
+    "passwordRequired": "Wachtwoord is verplicht",
+    "passwordTooShort": "Wachtwoord moet minimaal 8 tekens lang zijn",
+    "passwordsDoNotMatch": "Wachtwoorden komen niet overeen",
+    "passwordUpdateFailed": "Sorry, we konden uw wachtwoord niet bijwerken. Probeer een ander wachtwoord of vraag een nieuwe reset link aan.",
+    "passwordSameAsCurrent": "Nieuw wachtwoord moet anders zijn dan uw huidige wachtwoord",
+    "invalidResetLink": "Ongeldige reset link. Vraag een nieuwe link aan om uw wachtwoord opnieuw in te stellen.",
+    "passwordUpdateFailed": "Sorry, we konden uw wachtwoord niet bijwerken. Probeer een ander wachtwoord of vraag een nieuwe reset link aan.",
+    "invalidResetLink": "We konden uw wachtwoord niet bijwerken. Probeer een ander wachtwoord of vraag een nieuwe reset link aan.",
+    "passwordSameAsCurrent": "Nieuw wachtwoord moet anders zijn dan uw huidige wachtwoord"
   }
 } 

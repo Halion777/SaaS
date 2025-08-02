@@ -1,19 +1,21 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
+import { completeRegistration } from '../../services/authService';
+import { createCheckoutSession } from '../../services/stripeService';
+import { optimizePaymentFlow } from '../../utils/paymentOptimization';
 import Button from '../../components/ui/Button';
 import { Checkbox } from '../../components/ui/Checkbox';
 import Icon from '../../components/AppIcon';
 import ErrorMessage from '../../components/ui/ErrorMessage';
-import ProgressIndicator from './components/ProgressIndicator';
 import StepOne from './components/StepOne';
 import StepTwo from './components/StepTwo';
 import StepThree from './components/StepThree';
+import ProgressIndicator from './components/ProgressIndicator';
 import TestimonialCard from './components/TestimonialCard';
 import TrustSignals from './components/TrustSignals';
 import Footer from '../../components/Footer';
-import { completeRegistration } from '../../services/authService';
-import { createCheckoutSession } from '../../services/stripeService';
 
 const Register = () => {
   const { t, i18n } = useTranslation();
@@ -35,6 +37,13 @@ const Register = () => {
     acceptTerms: false
   });
   const [errors, setErrors] = useState({});
+
+  // Clear any existing session storage data when component mounts
+  useEffect(() => {
+    // Clear any pending registration data from previous attempts
+    sessionStorage.removeItem('pendingRegistration');
+    sessionStorage.removeItem('registration_complete');
+  }, []);
 
   const testimonials = [
     {
@@ -114,17 +123,21 @@ const Register = () => {
     
     setIsLoading(true);
     
+    // Optimize payment flow to reduce API calls
+    const cleanupOptimization = optimizePaymentFlow();
+    
     try {
       // Step 1: Complete user registration
       const { data: authData, error: authError } = await completeRegistration(formData);
       
       if (authError) {
-        if (authError.message?.includes('already registered')) {
+        if (authError.code === 'user_already_exists' || authError.message?.includes('already registered')) {
           setErrors({ email: t('errors.emailAlreadyExists') });
         } else {
           setErrors({ general: authError.message || t('errors.registrationFailed') });
         }
         setIsLoading(false);
+        cleanupOptimization(); // Clean up optimization
         return;
       }
 
@@ -138,6 +151,7 @@ const Register = () => {
       if (stripeError) {
         setErrors({ general: t('errors.paymentFailed') });
         setIsLoading(false);
+        cleanupOptimization(); // Clean up optimization
         return;
       }
 
@@ -145,18 +159,19 @@ const Register = () => {
       if (stripeData?.url) {
         // Store registration completion flag in sessionStorage for after checkout
         sessionStorage.setItem('registration_complete', 'true');
+        // Redirect to Stripe checkout - DO NOT redirect to dashboard yet
         window.location.href = stripeData.url;
       } else {
-        // Fallback - redirect to dashboard
-        setFormSubmitted(true);
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 2000);
+        // Fallback - show error
+        setErrors({ general: t('errors.paymentFailed') });
+        setIsLoading(false);
+        cleanupOptimization(); // Clean up optimization
       }
       
     } catch (error) {
       console.error('Registration error:', error);
       setErrors({ general: t('errors.registrationFailed') });
+      cleanupOptimization(); // Clean up optimization
     } finally {
       setIsLoading(false);
     }
@@ -192,7 +207,7 @@ const Register = () => {
       case 2:
         return <StepTwo formData={formData} updateFormData={updateFormData} errors={errors} />;
       case 3:
-        return <StepThree formData={formData} updateFormData={updateFormData} />;
+        return <StepThree formData={formData} updateFormData={updateFormData} errors={errors} />;
       default:
         return null;
     }

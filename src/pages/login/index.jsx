@@ -1,62 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import { Checkbox } from '../../components/ui/Checkbox';
 import Icon from '../../components/AppIcon';
 import ErrorMessage from '../../components/ui/ErrorMessage';
-import LoginHeader from './components/LoginHeader';
-import SecurityBadges from './components/SecurityBadges';
-import SocialProof from './components/SocialProof';
-import TrialCallToAction from './components/TrialCallToAction';
 import Footer from '../../components/Footer';
 
-const LoginPage = () => {
+const Login = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, isAuthenticated, loading } = useAuth();
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
-  const [errors, setErrors] = useState({});
-  
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+  const [error, setError] = useState('');
+
+  // Check if there's a redirect state from previous route
+  const from = location.state?.from || '/dashboard';
+
+  useEffect(() => {
+    // If already authenticated, redirect to dashboard or previous page
+    if (isAuthenticated) {
+      navigate(from, { replace: true });
     }
-  };
-  
+  }, [isAuthenticated, navigate, from]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     setIsLoading(true);
-    setErrors({});
-    
+
     try {
-      const { error } = await login(formData.email, formData.password);
-      
-      if (error) {
-        if (error.message?.includes('Invalid login credentials')) {
-          setErrors({ general: t('errors.invalidCredentials') });
+      // Validate inputs
+      if (!email || !password) {
+        setError(t('errors.required'));
+        return;
+      }
+
+      // Attempt login
+      const { data, error: loginError } = await login(email, password);
+
+      if (loginError) {
+        // Handle specific error types
+        if (loginError.message.includes('Invalid login credentials')) {
+          setError(t('errors.invalidCredentials'));
         } else {
-          setErrors({ general: error.message || t('errors.loginFailed') });
+          setError(loginError.message || t('errors.loginFailed'));
         }
-      } else {
-        // Login successful - AuthContext will handle redirect to dashboard
-        // or to the original intended destination
-        const from = location.state?.from || '/dashboard';
+      } else if (data) {
+        // Successful login - navigation handled in AuthContext
         navigate(from, { replace: true });
       }
-    } catch (error) {
-      console.error('Login error:', error);
-      setErrors({ general: t('errors.loginFailed') });
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(t('errors.loginFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -64,7 +66,11 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50 relative overflow-hidden">
-
+      <Helmet>
+        <title>{t('meta.login.title')}</title>
+        <meta name="description" content={t('meta.login.description')} />
+        <html lang={i18n.language} />
+      </Helmet>
 
       {/* Background Pattern */}
       <div className="absolute inset-0 z-0 opacity-5">
@@ -81,19 +87,17 @@ const LoginPage = () => {
           </Link>
         </div>
         
-        {/* Register Link */}
-        <div className="absolute top-4 right-4 z-20">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-muted-foreground">{t('login.noAccount')}</span>
-            <Link to="/register" className="text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center space-x-1">
-              <span>{t('nav.register')}</span>
-              <Icon name="UserPlus" size={16} />
-            </Link>
-          </div>
-        </div>
-        
         <div className="max-w-md mx-auto my-16">
-          <LoginHeader />
+          {/* Logo */}
+          <div className="flex items-center justify-center mb-8">
+            <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center mr-3">
+              <Icon name="Hammer" size={36} color="white" />
+            </div>
+            <div className="text-left">
+              <h1 className="text-2xl font-bold text-foreground">Havitam</h1>
+              <p className="text-sm text-muted-foreground">Artisan Pro</p>
+            </div>
+          </div>
           
           <div className="bg-white rounded-lg shadow-professional p-8">
             <div className="text-center mb-8">
@@ -105,52 +109,50 @@ const LoginPage = () => {
               </p>
             </div>
             
+            {/* Error Display */}
+            {error && (
+              <ErrorMessage 
+                message={error}
+                onClose={() => setError('')}
+              />
+            )}
+            
             <form onSubmit={handleSubmit} className="space-y-6">
               <Input 
                 label={t('login.email')}
                 type="email"
                 placeholder={t('login.emailPlaceholder')}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                error={errors.email}
               />
               
-              <div>
-                <Input 
-                  label={t('login.password')}
-                  type="password"
-                  placeholder={t('login.passwordPlaceholder')}
-                  required
-                  value={formData.password}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
-                  error={errors.password}
-                />
-                <div className="flex justify-end">
-                  <Link to="/forgot-password" className="text-sm text-primary hover:underline mt-2">
-                    {t('login.forgotPassword')}
-                  </Link>
-                </div>
+              <Input 
+                label={t('login.password')}
+                type="password"
+                placeholder={t('login.passwordPlaceholder')}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              
+              <div className="flex items-center justify-between">
+                <Link 
+                  to="/forgot-password" 
+                  className="text-sm text-primary hover:underline"
+                >
+                  {t('login.forgotPassword')}
+                </Link>
               </div>
               
-              <div className="flex items-center">
-                <Checkbox
-                  id="remember"
-                  label={t('login.rememberMe')}
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                />
-              </div>
-              
-              {errors.general && <ErrorMessage message={errors.general} />}
-
               <Button 
                 type="submit" 
                 className="w-full"
                 variant="login"
-                loading={isLoading}
+                loading={isLoading || loading}
+                disabled={isLoading || loading}
               >
-                {t('login.loginButton')}
+                {isLoading || loading ? t('ui.buttons.loading') : t('nav.login')}
               </Button>
             </form>
             
@@ -163,12 +165,6 @@ const LoginPage = () => {
               </p>
             </div>
           </div>
-          
-          <div className="mt-8">
-            <SecurityBadges />
-            <SocialProof />
-            <TrialCallToAction />
-          </div>
         </div>
       </div>
       <Footer />
@@ -176,4 +172,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default Login;

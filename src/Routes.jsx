@@ -11,6 +11,7 @@ import HomePage from './pages/home';
 import Login from './pages/login';
 import Register from './pages/register';
 import ForgotPasswordPage from './pages/forgot-password';
+import ResetPasswordPage from './pages/reset-password';
 import PricingPage from './pages/pricing';
 import FindArtisanPage from './pages/find-artisan';
 import AboutPage from './pages/about';
@@ -43,6 +44,7 @@ const AppRoutes = () => {
     <Router>
       <AuthProvider>
         <ScrollToTop />
+        <GlobalProfile />
         <Routes>
           {/* Public pages - redirect authenticated users to dashboard */}
           <Route path="/" element={
@@ -63,6 +65,11 @@ const AppRoutes = () => {
           <Route path="/forgot-password" element={
             <PublicRoute>
               <ForgotPasswordPage />
+            </PublicRoute>
+          } />
+          <Route path="/reset-password" element={
+            <PublicRoute>
+              <ResetPasswordPage />
             </PublicRoute>
           } />
           <Route path="/pricing" element={
@@ -110,171 +117,81 @@ const AppRoutes = () => {
               <BlogPage />
             </PublicRoute>
           } />
-          <Route path="/blog/:slug" element={
-            <PublicRoute>
-              <BlogPage />
-            </PublicRoute>
-          } />
-          
-          {/* Stripe success callback - allow authenticated users */}
           <Route path="/stripe-success" element={<StripeSuccessPage />} />
-          
-          {/* Protected pages */}
+
+          {/* Protected Routes */}
           <Route path="/dashboard" element={
             <ProtectedRoute>
-              <>
-                <GlobalProfile />
-                <Dashboard />
-              </>
+              <Dashboard />
             </ProtectedRoute>
           } />
-          
           <Route path="/quote-creation" element={
             <ProtectedRoute>
-              <>
-                <GlobalProfile />
-                <QuoteCreation />
-              </>
+              <QuoteCreation />
             </ProtectedRoute>
           } />
-          
           <Route path="/quotes-management" element={
             <ProtectedRoute>
-              <>
-                <GlobalProfile />
-                <QuotesManagement />
-              </>
+              <QuotesManagement />
             </ProtectedRoute>
           } />
-          
           <Route path="/invoices-management" element={
             <ProtectedRoute>
-              <>
-                <GlobalProfile />
-                <InvoicesManagement />
-              </>
+              <InvoicesManagement />
             </ProtectedRoute>
           } />
-          
           <Route path="/supplier-invoices" element={
             <ProtectedRoute>
-              <>
-                <GlobalProfile />
-                <SupplierInvoicesManagement />
-              </>
+              <SupplierInvoicesManagement />
             </ProtectedRoute>
           } />
-          
-
           <Route path="/client-management" element={
             <ProtectedRoute>
-              <>
-                <GlobalProfile />
-                <ClientManagement />
-              </>
+              <ClientManagement />
             </ProtectedRoute>
           } />
-          
           <Route path="/follow-up-management" element={
             <ProtectedRoute>
-              <>
-                <GlobalProfile />
-                <FollowUpManagement />
-              </>
+              <FollowUpManagement />
             </ProtectedRoute>
           } />
-          
           <Route path="/analytics-dashboard" element={
             <ProtectedRoute>
-              <>
-                <GlobalProfile />
-                <AnalyticsDashboard />
-              </>
+              <AnalyticsDashboard />
             </ProtectedRoute>
           } />
-          
-          {/* Service pages */}
           <Route path="/services/peppol" element={
             <ProtectedRoute>
-              <>
-                <GlobalProfile />
-                <PeppolNetworkPage />
-              </>
+              <PeppolNetworkPage />
             </ProtectedRoute>
           } />
-          
           <Route path="/services/assurance" element={
             <ProtectedRoute>
-              <>
-                <GlobalProfile />
-                <AssuranceCreditPage />
-              </>
+              <AssuranceCreditPage />
             </ProtectedRoute>
           } />
-          
           <Route path="/services/recouvrement" element={
             <ProtectedRoute>
-              <>
-                <GlobalProfile />
-                <RecouvrementPage />
-              </>
+              <RecouvrementPage />
             </ProtectedRoute>
           } />
-          
           <Route path="/leads-management" element={
             <ProtectedRoute>
-              <>
-                <GlobalProfile />
-                <LeadsManagementPage />
-              </>
+              <LeadsManagementPage />
             </ProtectedRoute>
           } />
-          
-          <Route path="/quotes-follow-up" element={
-            <ProtectedRoute>
-              <>
-                <GlobalProfile />
-                <FollowUpManagement />
-              </>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/invoices-follow-up" element={
-            <ProtectedRoute>
-              <>
-                <GlobalProfile />
-                <FollowUpManagement />
-              </>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/peppol-access-point" element={
-            <ProtectedRoute>
-              <>
-                <GlobalProfile />
-                <PeppolNetworkPage />
-              </>
-            </ProtectedRoute>
-          } />
-          
           <Route path="/statistics" element={
             <ProtectedRoute>
-              <>
-                <GlobalProfile />
-                <StatisticsPage />
-              </>
+              <StatisticsPage />
             </ProtectedRoute>
           } />
-          
           <Route path="/multi-user-profiles" element={
             <ProtectedRoute>
-              <>
-                <GlobalProfile />
-                <MultiUserProfilesPage />
-              </>
+              <MultiUserProfilesPage />
             </ProtectedRoute>
           } />
-          
+
+          {/* 404 Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AuthProvider>

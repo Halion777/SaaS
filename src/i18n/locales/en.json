@@ -22,7 +22,6 @@
     }
   },
   "ui": {
-    "loading": "Loading...",
     "tagline": "Havitam - Your professional digital vitamin",
     "buttons": {
       "continue": "Continue",
@@ -684,7 +683,9 @@
     "trial": {
       "noCommitment": "No commitment",
       "setupTime": "Setup in 5 min"
-    }
+    },
+    "haveAccount": "Already have an account?",
+    "loginLink": "Log in"
   },
   "registerForm": {
     "step1": {
@@ -896,6 +897,21 @@
     "checkInbox": "Please check your inbox for reset instructions.",
     "backToLogin": "Back to login"
   },
+  "resetPassword": {
+    "title": "Reset Your Password",
+    "subtitle": "Enter a new password for your account",
+    "newPassword": "New Password",
+    "newPasswordPlaceholder": "Enter your new password",
+    "confirmPassword": "Confirm New Password",
+    "confirmPasswordPlaceholder": "Confirm your new password",
+    "updateButton": "Update Password",
+    "successTitle": "Password Updated",
+    "successMessage": "Your password has been successfully updated.",
+    "redirecting": "Redirecting to login...",
+    "validating": "Validating Reset Link",
+    "validatingMessage": "Please wait while we verify your reset link.",
+    "invalidLink": "Sorry"
+  },
   "errors": {
     "required": "This field is required",
     "invalidEmail": "Please enter a valid email address",
@@ -906,7 +922,13 @@
     "registrationFailed": "Registration failed. Please try again.",
     "paymentFailed": "Payment setup failed. Please try again.",
     "invalidCredentials": "Invalid email or password",
-    "loginFailed": "Login failed. Please try again."
+    "loginFailed": "Login failed. Please try again.",
+    "passwordResetFailed": "Password reset failed. Please try again.",
+    "passwordUpdateFailed": "Sorry, we couldn't update your password. Please try a different password or request a new reset link.",
+    "passwordRequired": "Password is required",
+    "passwordTooShort": "Password must be at least 8 characters long",
+    "passwordsDoNotMatch": "Passwords do not match",
+    "invalidResetLink": "We were unable to update your password. Please try a different password or request a new reset link."
   },
   "stripeSuccess": {
     "processing": {
@@ -953,6 +975,18 @@
       "title": "Contact - HAVITAM",
       "description": "Contact the HAVITAM team for any questions about our platform for artisans, for a demo or technical support.",
       "keywords": "contact, support, artisans, quotes, invoices, management"
+    },
+    "login": {
+      "title": "Login - HAVITAM",
+      "description": "Log in to your HAVITAM account and manage your artisan business efficiently."
+    },
+    "forgotPassword": {
+      "title": "Forgot Password - HAVITAM",
+      "description": "Reset your HAVITAM account password. Enter your email to receive reset instructions."
+    },
+    "resetPassword": {
+      "title": "Reset Password - HAVITAM",
+      "description": "Set your new password for your HAVITAM account."
     }
   },
   "footer": {
@@ -1020,7 +1054,7 @@
       },
       "feature5": {
         "title": "Automatic qualified leads reception",
-        "description": "Receive project requests in your geographic area according to your specialties. Respond with a quote in 1 click, or move to the next one."
+        "description": "Receive project requests in your geographic area according to your specialties. Respond with a quote in 1 click, or move to the next."
       },
       "feature6": {
         "title": "Voice-dictated quotes (New)",
