@@ -111,6 +111,45 @@ export async function generateFollowUpContent(clientInfo, context) {
 }
 
 /**
+ * Generates a personalized follow-up message for a specific item (quote or invoice)
+ * @param {object} item - The item (quote or invoice) to generate a follow-up message for
+ * @returns {Promise<string>} Generated follow-up message
+ */
+export async function generateFollowUpMessage(item) {
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a professional client communication specialist for artisan businesses. Generate a polite, professional follow-up message for unpaid invoices or unanswered quotes. The message should be courteous, clear, and encourage prompt action.`
+        },
+        {
+          role: 'user',
+          content: `Generate a follow-up message for a ${item.type === 'invoice' ? 'pending invoice' : 'unanswered quote'}:
+- Client Name: ${item.clientName}
+- Amount: ${item.amount}€
+- ${item.type === 'invoice' ? `Due Date: ${item.dueDate}` : `Sent Date: ${item.sentDate}`}
+
+The message should:
+- Be professional and courteous
+- Remind the client about the pending item
+- Encourage prompt action
+- Offer assistance if they have any questions`
+        }
+      ],
+      max_tokens: 300,
+      temperature: 0.7
+    });
+
+    return response.choices[0].message.content.trim();
+  } catch (error) {
+    console.error('Error generating follow-up message:', error);
+    throw error;
+  }
+}
+
+/**
  * Analyzes client data and provides insights
  * @param {array} clients - Array of client data
  * @returns {Promise<object>} Client analytics insights

@@ -109,10 +109,10 @@ const HomePage = () => {
         <meta property="og:title" content={t('meta.ogTitle')} />
         <meta property="og:description" content={t('meta.ogDescription')} />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://havitam.com" />
+        <meta property="og:url" content="https://Haliqo.com" />
         <meta property="og:image" content="/assets/images/og-image.jpg" />
         <meta name="twitter:card" content="summary_large_image" />
-        <link rel="canonical" href="https://havitam.com" />
+        <link rel="canonical" href="https://Haliqo.com" />
         <html lang={i18n.language} />
       </Helmet>
       
@@ -140,7 +140,7 @@ const HomePage = () => {
               </div>
               
                                     {/* Main Headline */}
-                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
                     {t('home.hero.title.prefix')}
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0036ab] to-[#12bf23]">
                       {t('home.hero.title.highlight')}
@@ -209,7 +209,7 @@ const HomePage = () => {
                     <div className="relative bg-white rounded-2xl shadow-2xl p-4 transform rotate-3 hover:rotate-0 transition-transform duration-500">
                       <img 
                         src="/assets/images/dashboard 1.png" 
-                        alt="HAVITAM Dashboard" 
+                        alt="Haliqo Dashboard" 
                         className="w-full h-auto rounded-xl"
                       />
                     </div>
@@ -572,7 +572,7 @@ const HomePage = () => {
                     </div>
                     <div className="mx-auto text-sm font-semibold text-gray-700 flex items-center">
                       <Icon name="Globe" size={16} className="mr-2 text-[#0036ab]" />
-                      Dashboard HAVITAM
+                      Dashboard Haliqo
                     </div>
                     <div className="flex items-center space-x-2">
                       <Icon name="Shield" size={16} className="text-[#12bf23]" />
@@ -584,7 +584,7 @@ const HomePage = () => {
                   <div className="p-4">
                     <img 
                       src="/assets/images/dashboard 2.png" 
-                      alt="HAVITAM Dashboard" 
+                      alt="Haliqo Dashboard" 
                       className="w-full h-auto rounded-2xl shadow-lg"
                     />
                   </div>
@@ -640,7 +640,7 @@ const HomePage = () => {
                       <div className="pt-10 pb-4 px-3 h-full">
                         <img 
                           src="/assets/images/mobile 2.png" 
-                          alt="HAVITAM Mobile App" 
+                          alt="Haliqo Mobile App" 
                           className="w-full h-full mobile-app-image rounded-2xl"
                         />
                       </div>
@@ -1439,9 +1439,9 @@ const HomePage = () => {
           {
             "@context": "https://schema.org",
             "@type": "Organization",
-            "url": "https://havitam.com",
-            "logo": "https://havitam.com/assets/images/logo.png",
-            "name": "Havitam",
+            "url": "https://Haliqo.com",
+            "logo": "https://Haliqo.com/assets/images/logo.png",
+            "name": "Haliqo",
             "description": t('meta.schemaDescription'),
             "contactPoint": {
               "@type": "ContactPoint",
@@ -1449,10 +1449,10 @@ const HomePage = () => {
               "contactType": "customer service"
             },
             "sameAs": [
-              "https://facebook.com/havitam",
-              "https://twitter.com/havitam",
-              "https://linkedin.com/company/havitam",
-              "https://instagram.com/havitam"
+              "https://facebook.com/Haliqo",
+              "https://twitter.com/Haliqo",
+              "https://linkedin.com/company/Haliqo",
+              "https://instagram.com/Haliqo"
             ]
           }
         `}} />

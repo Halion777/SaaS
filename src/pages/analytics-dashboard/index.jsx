@@ -12,6 +12,7 @@ import MetricsProgress from './components/MetricsProgress';
 import ComparisonAnalytics from './components/ComparisonAnalytics';
 import FilterControls from './components/FilterControls';
 import ExportControls from './components/ExportControls';
+import DetailedAnalyticsPanel from './components/DetailedAnalyticsPanel';
 import { generateBusinessInsights, generatePricingOptimization, analyzePerformancePatterns } from '../../services/openaiService';
 import { useScrollPosition } from '../../utils/useScrollPosition';
 
@@ -117,42 +118,66 @@ const AnalyticsDashboard = () => {
 
   const kpiData = [
     {
-      title: 'Chiffre d\'affaires',
+      title: 'Total devis envoyés',
+      value: '245',
+      change: '+15.3%',
+      trend: 'up',
+      icon: 'FileText',
+      color: 'blue',
+      description: 'devis ce mois-ci'
+    },
+    {
+      title: 'Devis acceptés',
+      value: '168',
+      change: '+12.7%',
+      trend: 'up',
+      icon: 'CheckCircle',
+      color: 'emerald',
+      description: 'taux de conversion'
+    },
+    {
+      title: 'Revenu mensuel',
       value: '156 750€',
       change: '+12.5%',
       trend: 'up',
       icon: 'Euro',
-      color: 'emerald',
+      color: 'orange',
       description: 'vs mois précédent'
     },
     {
-      title: 'Taux de conversion',
-      value: '68.5%',
+      title: 'Statut des paiements',
+      value: '92%',
       change: '+5.2%',
       trend: 'up',
-      icon: 'TrendingUp',
-      color: 'blue',
-      description: 'devis acceptés'
-    },
-    {
-      title: 'Coût d\'acquisition',
-      value: '85€',
-      change: '-8.3%',
-      trend: 'down',
-      icon: 'Target',
+      icon: 'CreditCard',
       color: 'purple',
-      description: 'par nouveau client'
-    },
-    {
-      title: 'Marge bénéficiaire',
-      value: '32.8%',
-      change: '+2.1%',
-      trend: 'up',
-      icon: 'PieChart',
-      color: 'orange',
-      description: 'marge moyenne'
+      description: 'payés à temps'
     }
   ];
+
+  const detailedAnalyticsData = {
+    paymentStatus: {
+      paid: 68,
+      pending: 22,
+      overdue: 10
+    },
+    clientActivity: {
+      newClients: 15,
+      returningClients: 74,
+      inactiveClients: 11
+    },
+    taskDuration: {
+      avgTaskTime: '3.5 jours',
+      fastestTask: '1 jour',
+      longestTask: '7 jours'
+    },
+    quoteOverview: {
+      totalQuotes: 245,
+      acceptedQuotes: 168,
+      rejectedQuotes: 45,
+      pendingQuotes: 32
+    }
+  };
 
   const revenueData = [
     { month: 'Jan', revenue: 120000, forecast: 125000 },
@@ -204,13 +229,23 @@ const AnalyticsDashboard = () => {
               ))}
             </motion.div>
 
+            {/* Detailed Analytics Panel */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mb-6 sm:mb-8"
+            >
+              <DetailedAnalyticsPanel data={detailedAnalyticsData} />
+            </motion.div>
+
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
               {/* Revenue Forecasting */}
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 }}
+                transition={{ delay: 0.4 }}
               >
                 <RevenueChart data={revenueData} />
               </motion.div>
@@ -219,7 +254,7 @@ const AnalyticsDashboard = () => {
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 }}
+                transition={{ delay: 0.5 }}
               >
                 <ConversionChart data={conversionData} />
               </motion.div>

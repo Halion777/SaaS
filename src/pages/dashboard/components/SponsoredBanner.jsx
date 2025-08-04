@@ -11,7 +11,7 @@ const SponsoredBanner = () => {
     description: 'Augmentez votre taux de signature de 40% avec nos suggestions intelligentes',
     image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&h=200&fit=crop',
     cta: 'Découvrir Premium',
-    sponsor: 'Havitam Pro',
+    sponsor: 'Haliqo Pro',
     discount: '30% de réduction'
   };
 

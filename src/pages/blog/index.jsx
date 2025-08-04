@@ -10,7 +10,7 @@ const BlogPage = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Helmet>
-        <title>Blog - HAVITAM</title>
+        <title>Blog - Haliqo</title>
         <meta name="description" content="Découvrez nos articles sur l'actualité et les bonnes pratiques pour les artisans." />
         <html lang="fr" />
       </Helmet>

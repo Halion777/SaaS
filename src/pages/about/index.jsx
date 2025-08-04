@@ -142,7 +142,7 @@ const AboutPage = () => {
                     <div className="relative bg-white rounded-2xl shadow-2xl p-4 transform rotate-3 hover:rotate-0 transition-transform duration-500">
                       <img 
                         src="/assets/images/craftsman-workshop.jpg" 
-                        alt="Atelier d'artisan HAVITAM" 
+                        alt="Atelier d'artisan Haliqo" 
                         className="w-full h-auto rounded-xl"
                       />
                     </div>
@@ -218,7 +218,7 @@ const AboutPage = () => {
                     <div className="relative overflow-hidden rounded-xl">
                       <img 
                         src="/assets/images/our story 2.png" 
-                        alt="L'histoire de Havitam - Transformation digitale du bâtiment" 
+                        alt="L'histoire de Haliqo - Transformation digitale du bâtiment" 
                         className="w-full h-64 sm:h-80 md:h-96 object-cover object-top rounded-xl transition-transform duration-700 group-hover:scale-110"
                       />
                       {/* Gradient overlay */}
@@ -242,7 +242,7 @@ const AboutPage = () => {
                     <div className="relative overflow-hidden rounded-xl">
                       <img 
                         src="/assets/images/our story.png" 
-                        alt="L'histoire de Havitam - Transformation digitale du bâtiment" 
+                        alt="L'histoire de Haliqo - Transformation digitale du bâtiment" 
                         className="w-full h-64 sm:h-80 md:h-96 object-cover rounded-xl transition-transform duration-700 group-hover:scale-110"
                       />
                       {/* Gradient overlay */}

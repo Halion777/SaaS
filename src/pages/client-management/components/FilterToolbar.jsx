@@ -181,30 +181,30 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
           <div className="space-y-3">
             <div>
               <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Type de client</label>
-              <Select
+      <Select
                 placeholder="Tous les types"
-                options={typeOptions}
-                value={filters.type}
+        options={typeOptions}
+        value={filters.type}
                 onChange={(e) => handleFilterChange('type', e.target.value)}
-              />
+      />
             </div>
-            
+      
             <div>
               <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Statut</label>
-              <Select
+      <Select
                 placeholder="Tous les statuts"
-                options={statusOptions}
-                value={filters.status}
+        options={statusOptions}
+        value={filters.status}
                 onChange={(e) => handleFilterChange('status', e.target.value)}
-              />
+      />
             </div>
-            
+      
             <div>
               <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Région</label>
-              <Select
+      <Select
                 placeholder="Toutes les régions"
-                options={locationOptions}
-                value={filters.location}
+        options={locationOptions}
+        value={filters.location}
                 onChange={(e) => handleFilterChange('location', e.target.value)}
               />
             </div>

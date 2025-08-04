@@ -120,6 +120,15 @@ export const AuthProvider = ({ children }) => {
         throw error;
       }
       
+      // Explicitly set user and session
+      if (data?.user) {
+        setUser(data.user);
+        setSession(data.session);
+        
+        // Force navigation to dashboard
+        navigate('/dashboard');
+      }
+      
       return { data, error: null };
     } catch (error) {
       console.error('Login error:', error);

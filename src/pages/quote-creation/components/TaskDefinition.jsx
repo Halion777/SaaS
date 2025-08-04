@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import Select from '../../../components/ui/Select';
@@ -11,12 +11,16 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
     description: '',
     duration: '',
     price: '',
-    materials: []
+    materials: [],
+    hourlyRate: '',
+    pricingType: 'flat'
   });
   const [newMaterial, setNewMaterial] = useState({ name: '', quantity: '', unit: '', price: '' });
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
+  // Remove selectedCategories state
+  // const [selectedCategories, setSelectedCategories] = useState([]);
 
   // Predefined tasks based on category
   const predefinedTasksByCategory = {
@@ -566,10 +570,69 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
     ]
   };
 
-  // Get predefined tasks for the selected category
-  const predefinedTasks = projectCategory && predefinedTasksByCategory[projectCategory] 
-    ? predefinedTasksByCategory[projectCategory] 
-    : [];
+  // Modify the categories to support multi-select
+  const categoryOptions = [
+    { value: 'plomberie', label: 'Plomberie' },
+    { value: 'electricite', label: 'Électricité' },
+    { value: 'menuiserie', label: 'Menuiserie' },
+    { value: 'peinture', label: 'Peinture' },
+    { value: 'maconnerie', label: 'Maçonnerie' },
+    { value: 'carrelage', label: 'Carrelage' },
+    { value: 'toiture', label: 'Toiture' },
+    { value: 'chauffage', label: 'Chauffage' },
+    { value: 'renovation', label: 'Rénovation' },
+    { value: 'nettoyage', label: 'Nettoyage' },
+    { value: 'solar', label: 'Énergie solaire' },
+    { value: 'jardinage', label: 'Jardinage' },
+    { value: 'serrurerie', label: 'Serrurerie' },
+    { value: 'vitrerie', label: 'Vitrerie' },
+    { value: 'isolation', label: 'Isolation' },
+    { value: 'climatisation', label: 'Climatisation' }
+  ];
+
+  // Update useEffect or add a new one to handle category changes
+  useEffect(() => {
+    // If projectCategory is provided, set it as the initial selected category
+    // if (projectCategory) {
+    //   setSelectedCategories([projectCategory]);
+    // }
+  }, [projectCategory]);
+
+  // Modify predefinedTasks to support multiple categories
+  const getPredefinedTasks = () => {
+    const selectedCategories = projectCategory || [];
+    const categories = Array.isArray(selectedCategories) ? selectedCategories : [selectedCategories];
+    
+    // Filter out any empty or undefined categories
+    const validCategories = categories.filter(cat => cat && cat.trim() !== '');
+    
+    if (validCategories.length === 0) {
+      return []; // Return empty array if no valid categories
+    }
+    
+    let tasks = [];
+    validCategories.forEach(category => {
+      // Ensure the category exists in predefinedTasksByCategory
+      if (predefinedTasksByCategory[category]) {
+        tasks = tasks.concat(
+          predefinedTasksByCategory[category].map(task => ({
+            ...task,
+            category: category // Add category information to each task
+          }))
+        );
+      }
+    });
+    
+    return tasks;
+  };
+
+  const predefinedTasks = getPredefinedTasks();
+
+  // Add a method to get category label
+  const getCategoryLabel = (categoryValue) => {
+    const categoryOption = categoryOptions.find(c => c.value === categoryValue);
+    return categoryOption ? categoryOption.label : categoryValue;
+  };
 
   const durationOptions = [
     { value: '0.5', label: '30 minutes' },
@@ -628,9 +691,31 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
     }
   };
 
+  // Modify handleTaskChange to support pricing type
   const handleTaskChange = (field, value) => {
-    setCurrentTask(prev => ({ ...prev, [field]: value }));
+    let updatedTask = { ...currentTask, [field]: value };
+
+    // Auto-calculate price if hourly rate and duration are set
+    if (field === 'hourlyRate' || field === 'duration') {
+      const hourlyRate = parseFloat(field === 'hourlyRate' ? value : currentTask.hourlyRate);
+      const duration = parseFloat(field === 'duration' ? value : currentTask.duration);
+
+      if (!isNaN(hourlyRate) && !isNaN(duration) && currentTask.pricingType === 'hourly') {
+        updatedTask.price = (hourlyRate * duration).toFixed(2);
+      }
+    }
+
+    setCurrentTask(updatedTask);
   };
+
+  // Remove handleCategoryToggle method
+  // const handleCategoryToggle = (category) => {
+  //   setSelectedCategories(prev => 
+  //     prev.includes(category) 
+  //       ? prev.filter(cat => cat !== category)
+  //       : [...prev, category]
+  //   );
+  // };
 
   const handleMaterialChange = (field, value) => {
     setNewMaterial(prev => ({ ...prev, [field]: value }));
@@ -666,11 +751,23 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         price: parseFloat(currentTask.price)
       };
       onTasksChange([...tasks, task]);
-      setCurrentTask({ description: '', duration: '', price: '', materials: [] });
+      setCurrentTask({ description: '', duration: '', price: '', materials: [], hourlyRate: '', pricingType: 'flat' });
     }
   };
 
   const addPredefinedTask = (predefinedTask) => {
+    // Check if the task is already added
+    const isTaskAlreadyAdded = tasks.some(task => 
+      task.description.includes(predefinedTask.title) && 
+      task.duration === predefinedTask.duration
+    );
+
+    if (isTaskAlreadyAdded) {
+      // Optional: Show a toast or alert to inform the user
+      alert(`La tâche "${predefinedTask.title}" a déjà été ajoutée.`);
+      return;
+    }
+
     const task = {
       id: Date.now(),
       description: predefinedTask.title + ' - ' + predefinedTask.description,
@@ -725,19 +822,70 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* Pricing Type Selection */}
+      <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
+          <Icon name="DollarSign" size={20} className="sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3" />
+          Type de tarification
+        </h2>
+        
+        <div className="flex space-x-4">
+          <Button
+            type="button"
+            variant={currentTask.pricingType === 'flat' ? 'primary' : 'outline'}
+            onClick={() => handleTaskChange('pricingType', 'flat')}
+          >
+            Tarif fixe
+          </Button>
+          <Button
+            type="button"
+            variant={currentTask.pricingType === 'hourly' ? 'primary' : 'outline'}
+            onClick={() => handleTaskChange('pricingType', 'hourly')}
+          >
+            Tarif horaire
+          </Button>
+        </div>
+
+        {currentTask.pricingType === 'hourly' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4">
+            <Input
+              label="Taux horaire (€/h)"
+              type="number"
+              placeholder="Taux horaire"
+              value={currentTask.hourlyRate}
+              onChange={(e) => handleTaskChange('hourlyRate', e.target.value)}
+            />
+            <Select
+              label="Durée estimée"
+              placeholder="Sélectionner la durée"
+              options={durationOptions}
+              value={currentTask.duration}
+              onChange={(e) => handleTaskChange('duration', e.target.value)}
+            />
+          </div>
+        )}
+      </div>
+
       {/* Predefined Tasks Section */}
       <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
         <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
           <Icon name="Package" size={20} className="sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3" />
           Tâches prédéfinies
           {projectCategory && (
-            <span className="ml-2 px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
-              {projectCategory}
-            </span>
+            <div className="ml-2 flex space-x-1">
+              {(Array.isArray(projectCategory) ? projectCategory : [projectCategory]).map(cat => (
+                <span 
+                  key={cat} 
+                  className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full"
+                >
+                  {getCategoryLabel(cat)}
+                </span>
+              ))}
+            </div>
           )}
         </h2>
         
-        {!projectCategory ? (
+        {!projectCategory || projectCategory.length === 0 ? (
           <div className="text-center py-8">
             <Icon name="Info" size={48} className="text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">
@@ -747,31 +895,59 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         ) : predefinedTasks.length > 0 ? (
           <>
             <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4">
-              Ajoutez rapidement des tâches courantes pour la catégorie "{projectCategory}" avec tarifs recommandés
+              Ajoutez rapidement des tâches courantes pour {
+                (Array.isArray(projectCategory) ? projectCategory : [projectCategory])
+                  .map(getCategoryLabel)
+                  .join(', ')
+              } avec tarifs recommandés
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-              {predefinedTasks.map(task => (
-                <div 
-                  key={task.id} 
-                  className="border border-border rounded-lg p-3 sm:p-4 hover:shadow-md transition-all cursor-pointer"
-                  onClick={() => addPredefinedTask(task)}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center">
-                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center mr-2 sm:mr-3">
-                        <Icon name={task.icon} size={14} className="sm:w-4 sm:h-4 text-primary" />
+              {predefinedTasks.map(task => {
+                // Check if this task has already been added
+                const isTaskAdded = tasks.some(existingTask => 
+                  existingTask.description.includes(task.title) && 
+                  existingTask.duration === task.duration
+                );
+
+                return (
+                  <div 
+                    key={task.id} 
+                    className={`
+                      border border-border rounded-lg p-3 sm:p-4 transition-all 
+                      ${isTaskAdded 
+                        ? 'opacity-50 cursor-not-allowed bg-muted/30' 
+                        : 'hover:shadow-md cursor-pointer'
+                      }
+                    `}
+                    onClick={() => !isTaskAdded && addPredefinedTask(task)}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center">
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center mr-2 sm:mr-3">
+                          <Icon name={task.icon} size={14} className="sm:w-4 sm:h-4 text-primary" />
+                        </div>
+                        <h3 className="text-sm sm:text-base font-medium">{task.title}</h3>
                       </div>
-                      <h3 className="text-sm sm:text-base font-medium">{task.title}</h3>
+                      <div className="text-base sm:text-lg font-semibold">{task.price}€</div>
                     </div>
-                    <div className="text-base sm:text-lg font-semibold">{task.price}€</div>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{task.description}</p>
+                    <div className="flex items-center mt-2 text-xs text-muted-foreground">
+                      <Icon name="Clock" size={12} className="mr-1" />
+                      <span>{task.duration}h</span>
+                      {task.category && (
+                        <span className="ml-2 px-1 py-0.5 bg-muted/30 rounded text-[0.6rem]">
+                          {getCategoryLabel(task.category)}
+                        </span>
+                      )}
+                      {isTaskAdded && (
+                        <span className="ml-2 px-1 py-0.5 bg-success/30 text-success rounded text-[0.6rem]">
+                          Ajouté
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">{task.description}</p>
-                  <div className="flex items-center mt-2 text-xs text-muted-foreground">
-                    <Icon name="Clock" size={12} className="mr-1" />
-                    <span>{task.duration}h</span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </>
         ) : (

@@ -226,7 +226,7 @@ class SupplierInvoicesService {
   async sendToAccountant(invoiceIds, accountantEmail = null) {
     try {
       // Mock implementation
-      const defaultAccountantEmail = accountantEmail || 'comptable@havitam.fr';
+      const defaultAccountantEmail = accountantEmail || 'comptable@Haliqo.fr';
       
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));

@@ -903,65 +903,65 @@ const PeppolNetworkPage = () => {
 
                   {/* Desktop Filters - Always visible on md+ screens */}
                   <div className="hidden md:block p-4 space-y-4 border-t border-border">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                      {/* Search */}
-                      <div>
-                        <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Rechercher</label>
-                        <Input
-                          value={filters.search}
-                          onChange={(e) => handleFilterChange('search', e.target.value)}
-                          placeholder="N° facture, destinataire, Peppol ID..."
-                          iconName="Search"
-                        />
-                      </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    {/* Search */}
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Rechercher</label>
+                      <Input
+                        value={filters.search}
+                        onChange={(e) => handleFilterChange('search', e.target.value)}
+                        placeholder="N° facture, destinataire, Peppol ID..."
+                        iconName="Search"
+                      />
+                    </div>
 
-                      {/* Status Filter */}
-                      <div>
-                        <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Statut</label>
-                        <Select
-                          value={filters.status}
-                          onChange={(e) => handleFilterChange('status', e.target.value)}
-                          placeholder="Tous les statuts"
-                          options={[
-                            { value: '', label: 'Tous les statuts' },
-                            { value: 'delivered', label: 'Livré' },
-                            { value: 'pending', label: 'En attente' },
-                            { value: 'failed', label: 'Échoué' }
-                          ]}
-                        />
-                      </div>
+                    {/* Status Filter */}
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Statut</label>
+                      <Select
+                        value={filters.status}
+                        onChange={(e) => handleFilterChange('status', e.target.value)}
+                        placeholder="Tous les statuts"
+                        options={[
+                          { value: '', label: 'Tous les statuts' },
+                          { value: 'delivered', label: 'Livré' },
+                          { value: 'pending', label: 'En attente' },
+                          { value: 'failed', label: 'Échoué' }
+                        ]}
+                      />
+                    </div>
 
-                      {/* Date Range */}
-                      <div>
-                        <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Période</label>
-                        <Select
-                          value={filters.dateRange}
-                          onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-                          placeholder="Toutes les dates"
-                          options={[
-                            { value: '', label: 'Toutes les dates' },
-                            { value: 'today', label: 'Aujourd\'hui' },
-                            { value: 'week', label: '7 derniers jours' },
-                            { value: 'month', label: '30 derniers jours' },
-                            { value: 'quarter', label: '3 derniers mois' }
-                          ]}
-                        />
-                      </div>
+                    {/* Date Range */}
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Période</label>
+                      <Select
+                        value={filters.dateRange}
+                        onChange={(e) => handleFilterChange('dateRange', e.target.value)}
+                        placeholder="Toutes les dates"
+                        options={[
+                          { value: '', label: 'Toutes les dates' },
+                          { value: 'today', label: 'Aujourd\'hui' },
+                          { value: 'week', label: '7 derniers jours' },
+                          { value: 'month', label: '30 derniers jours' },
+                          { value: 'quarter', label: '3 derniers mois' }
+                        ]}
+                      />
+                    </div>
 
-                      {/* Amount Range */}
-                      <div>
-                        <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Montant</label>
-                        <Select
-                          value={filters.amountRange}
-                          onChange={(e) => handleFilterChange('amountRange', e.target.value)}
-                          placeholder="Tous les montants"
-                          options={[
-                            { value: '', label: 'Tous les montants' },
-                            { value: 'low', label: 'Moins de 1000€' },
-                            { value: 'medium', label: '1000€ - 5000€' },
-                            { value: 'high', label: 'Plus de 5000€' }
-                          ]}
-                        />
+                    {/* Amount Range */}
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Montant</label>
+                      <Select
+                        value={filters.amountRange}
+                        onChange={(e) => handleFilterChange('amountRange', e.target.value)}
+                        placeholder="Tous les montants"
+                        options={[
+                          { value: '', label: 'Tous les montants' },
+                          { value: 'low', label: 'Moins de 1000€' },
+                          { value: 'medium', label: '1000€ - 5000€' },
+                          { value: 'high', label: 'Plus de 5000€' }
+                        ]}
+                      />
                       </div>
                     </div>
                   </div>
@@ -979,7 +979,7 @@ const PeppolNetworkPage = () => {
                             placeholder="N° facture, destinataire, Peppol ID..."
                             iconName="Search"
                           />
-                        </div>
+                    </div>
 
                         {/* Status Filter */}
                         <div>
@@ -995,7 +995,7 @@ const PeppolNetworkPage = () => {
                               { value: 'failed', label: 'Échoué' }
                             ]}
                           />
-                        </div>
+                    </div>
 
                         {/* Date Range */}
                         <div>
@@ -1012,7 +1012,7 @@ const PeppolNetworkPage = () => {
                               { value: 'quarter', label: '3 derniers mois' }
                             ]}
                           />
-                        </div>
+                  </div>
 
                         {/* Amount Range */}
                         <div>
@@ -1155,65 +1155,65 @@ const PeppolNetworkPage = () => {
 
                   {/* Desktop Filters - Always visible on md+ screens */}
                   <div className="hidden md:block p-4 space-y-4 border-t border-border">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {/* Search */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">Rechercher</label>
-                        <Input
-                          value={filters.search}
-                          onChange={(e) => handleFilterChange('search', e.target.value)}
-                          placeholder="N° facture, expéditeur, Peppol ID..."
-                          iconName="Search"
-                        />
-                      </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Search */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">Rechercher</label>
+                      <Input
+                        value={filters.search}
+                        onChange={(e) => handleFilterChange('search', e.target.value)}
+                        placeholder="N° facture, expéditeur, Peppol ID..."
+                        iconName="Search"
+                      />
+                    </div>
 
-                      {/* Status Filter */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">Statut</label>
-                        <Select
-                          value={filters.status}
-                          onChange={(e) => handleFilterChange('status', e.target.value)}
-                          placeholder="Tous les statuts"
-                          options={[
-                            { value: '', label: 'Tous les statuts' },
-                            { value: 'received', label: 'Reçu' },
-                            { value: 'processed', label: 'Traité' },
-                            { value: 'pending', label: 'En attente' }
-                          ]}
-                        />
-                      </div>
+                    {/* Status Filter */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">Statut</label>
+                      <Select
+                        value={filters.status}
+                        onChange={(e) => handleFilterChange('status', e.target.value)}
+                        placeholder="Tous les statuts"
+                        options={[
+                          { value: '', label: 'Tous les statuts' },
+                          { value: 'received', label: 'Reçu' },
+                          { value: 'processed', label: 'Traité' },
+                          { value: 'pending', label: 'En attente' }
+                        ]}
+                      />
+                    </div>
 
-                      {/* Date Range */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">Période</label>
-                        <Select
-                          value={filters.dateRange}
-                          onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-                          placeholder="Toutes les dates"
-                          options={[
-                            { value: '', label: 'Toutes les dates' },
-                            { value: 'today', label: 'Aujourd\'hui' },
-                            { value: 'week', label: '7 derniers jours' },
-                            { value: 'month', label: '30 derniers jours' },
-                            { value: 'quarter', label: '3 derniers mois' }
-                          ]}
-                        />
-                      </div>
+                    {/* Date Range */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">Période</label>
+                      <Select
+                        value={filters.dateRange}
+                        onChange={(e) => handleFilterChange('dateRange', e.target.value)}
+                        placeholder="Toutes les dates"
+                        options={[
+                          { value: '', label: 'Toutes les dates' },
+                          { value: 'today', label: 'Aujourd\'hui' },
+                          { value: 'week', label: '7 derniers jours' },
+                          { value: 'month', label: '30 derniers jours' },
+                          { value: 'quarter', label: '3 derniers mois' }
+                        ]}
+                      />
+                    </div>
 
-                      {/* Amount Range */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">Montant</label>
-                        <Select
-                          value={filters.amountRange}
-                          onChange={(e) => handleFilterChange('amountRange', e.target.value)}
-                          placeholder="Tous les montants"
-                          options={[
-                            { value: '', label: 'Tous les montants' },
-                            { value: 'low', label: 'Moins de 1000€' },
-                            { value: 'medium', label: '1000€ - 5000€' },
-                            { value: 'high', label: 'Plus de 5000€' }
-                          ]}
-                        />
+                    {/* Amount Range */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">Montant</label>
+                      <Select
+                        value={filters.amountRange}
+                        onChange={(e) => handleFilterChange('amountRange', e.target.value)}
+                        placeholder="Tous les montants"
+                        options={[
+                          { value: '', label: 'Tous les montants' },
+                          { value: 'low', label: 'Moins de 1000€' },
+                          { value: 'medium', label: '1000€ - 5000€' },
+                          { value: 'high', label: 'Plus de 5000€' }
+                        ]}
+                      />
                       </div>
                     </div>
                   </div>
@@ -1231,7 +1231,7 @@ const PeppolNetworkPage = () => {
                             placeholder="N° facture, expéditeur, Peppol ID..."
                             iconName="Search"
                           />
-                        </div>
+                    </div>
 
                         {/* Status Filter */}
                         <div>
@@ -1247,7 +1247,7 @@ const PeppolNetworkPage = () => {
                               { value: 'pending', label: 'En attente' }
                             ]}
                           />
-                        </div>
+                    </div>
 
                         {/* Date Range */}
                         <div>
@@ -1264,7 +1264,7 @@ const PeppolNetworkPage = () => {
                               { value: 'quarter', label: '3 derniers mois' }
                             ]}
                           />
-                        </div>
+                  </div>
 
                         {/* Amount Range */}
                         <div>

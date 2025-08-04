@@ -138,7 +138,7 @@ const MainSidebar = () => {
         {
           id: 'peppol-access-point',
           label: 'Point d\'accès PEPPOL',
-          path: '/peppol-access-point',
+          path: '/services/peppol',
           icon: 'Network',
           notifications: 0
         },
@@ -306,10 +306,10 @@ const MainSidebar = () => {
               <img 
                 src="/assets/logo/logo.png" 
                 alt="Havitam Logo" 
-                className="w-12 h-12 object-contain"
+                className="w-14 h-14 object-contain"
               />
               <div>
-                <h1 className="text-lg font-semibold text-foreground">Havitam</h1>
+               
                 <p className="text-xs text-muted-foreground">Artisan Pro</p>
               </div>
             </div>

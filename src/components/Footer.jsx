@@ -23,7 +23,7 @@ const Footer = () => {
             <div className="mb-6">
               <img 
                 src="/assets/logo/logo.png" 
-                alt="Havitam Logo" 
+                alt="Haliqo Logo" 
                 className="w-auto h-16 lg:h-20 object-contain brightness-0 invert"
               />
             </div>
@@ -31,16 +31,16 @@ const Footer = () => {
               {t('footer.description')}
             </p>
             <div className="flex space-x-4">
-              <a href="https://facebook.com/havitam" aria-label="Facebook" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg">
+              <a href="https://facebook.com/Haliqo" aria-label="Facebook" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg">
                 <Icon name="Facebook" size={20} />
               </a>
-              <a href="https://twitter.com/havitam" aria-label="Twitter" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg">
+              <a href="https://twitter.com/Haliqo" aria-label="Twitter" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg">
                 <Icon name="Twitter" size={20} />
               </a>
-              <a href="https://linkedin.com/company/havitam" aria-label="LinkedIn" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg">
+              <a href="https://linkedin.com/company/Haliqo" aria-label="LinkedIn" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg">
                 <Icon name="Linkedin" size={20} />
               </a>
-              <a href="https://instagram.com/havitam" aria-label="Instagram" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg">
+              <a href="https://instagram.com/Haliqo" aria-label="Instagram" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg">
                 <Icon name="Instagram" size={20} />
               </a>
             </div>
@@ -152,7 +152,7 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="text-center md:text-left">
               <span className="text-sm text-gray-400">
-                © {currentYear} Havitam. {t('footer.copyright')}
+                © {currentYear} Haliqo. {t('footer.copyright')}
               </span>
             </div>
             <div className="flex flex-wrap justify-center md:justify-end space-x-4 lg:space-x-6">

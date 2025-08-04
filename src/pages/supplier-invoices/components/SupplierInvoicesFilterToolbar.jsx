@@ -128,7 +128,7 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
           >
             <Icon name={isExpanded ? "ChevronUp" : "ChevronDown"} size={16} />
           </Button>
-        </div>
+          </div>
         </div>
 
       {/* Desktop Filters - Always visible on md+ screens */}

@@ -491,14 +491,20 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         <div className="space-y-3 sm:space-y-4">
           <Select
             label="Catégorie *"
-            placeholder="Sélectionner une catégorie"
+            placeholder="Sélectionner une ou plusieurs catégories"
             options={categoryOptions}
-            value={projectInfo.category}
-            onChange={(e) => handleProjectChange('category', e.target.value)}
+            value={projectInfo.categories || []}
+            onChange={(e) => {
+              const selectedCategories = Array.isArray(e.target.value) 
+                ? e.target.value 
+                : [e.target.value];
+              handleProjectChange('categories', selectedCategories);
+            }}
+            multiple
             required
           />
           
-          {projectInfo.category === 'autre' && (
+          {projectInfo.categories?.includes('autre') && (
             <Input
               label="Catégorie personnalisée *"
               type="text"

@@ -1,7 +1,7 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
 
-const StepIndicator = ({ currentStep, totalSteps = 4 }) => {
+const StepIndicator = ({ currentStep, totalSteps = 4, onStepChange }) => {
   const steps = [
     { id: 1, title: 'Client', icon: 'User' },
     { id: 2, title: 'Tâches', icon: 'Calculator' },
@@ -14,12 +14,15 @@ const StepIndicator = ({ currentStep, totalSteps = 4 }) => {
       <div className="flex items-center justify-between">
         {steps.map((step, index) => (
           <React.Fragment key={step.id}>
-            <div className="flex flex-col items-center">
+            <div 
+              className="flex flex-col items-center cursor-pointer"
+              onClick={() => onStepChange && onStepChange(step.id)}
+            >
               <div className={`
                 w-8 h-8 sm:w-12 sm:h-12 rounded-full flex items-center justify-center border-2 transition-all duration-200
                 ${currentStep >= step.id 
-                  ? 'bg-primary border-primary text-primary-foreground' 
-                  : 'bg-background border-border text-muted-foreground'
+                  ? 'bg-primary border-primary text-primary-foreground hover:bg-primary/90' 
+                  : 'bg-background border-border text-muted-foreground hover:bg-muted/30'
                 }
               `}>
                 {currentStep > step.id ? (

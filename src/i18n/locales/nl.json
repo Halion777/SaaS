@@ -22,7 +22,7 @@
     }
   },
   "ui": {
-    "tagline": "Havitam - Je professionele digitale vitamine",
+    "tagline": "Haliqo - Je professionele digitale vitamine",
     "buttons": {
       "continue": "Doorgaan",
       "back": "Terug",
@@ -39,7 +39,7 @@
   },
   "home": {
     "hero": {
-      "badge": "Havitam - Je professionele digitale vitamine",
+      "badge": "Haliqo - Je professionele digitale vitamine",
       "title": {
         "prefix": "De alles-in-één oplossing voor ",
         "highlight": "bouwprofessionals"
@@ -62,7 +62,7 @@
         "highlight": "demo",
         "suffix": " hoe je ons systeem gebruikt"
       },
-      "subtitle": "Ontdek in enkele minuten hoe HAVITAM je dagelijkse beheer kan transformeren",
+      "subtitle": "Ontdek in enkele minuten hoe Haliqo je dagelijkse beheer kan transformeren",
       "video": {
         "placeholder": "VIDEO",
         "clickToPlay": "Klik om de demo te starten"
@@ -70,7 +70,7 @@
     },
     "features": {
       "badge": "Functies",
-      "title": "De 8 belangrijkste functies van Havitam",
+      "title": "De 8 belangrijkste functies van Haliqo",
       "subtitle": "Boost je bedrijf met eenvoudige, snelle en intelligente tools",
       "feature1": {
         "title": "Offertes & facturen in 1 klik",
@@ -143,7 +143,7 @@
     },
     "stats": {
       "badge": "Onze resultaten",
-      "title": "HAVITAM in cijfers",
+      "title": "Haliqo in cijfers",
       "subtitle": "Ontdek de impact van ons platform op de bouwsector",
       "artisans": "500+ vakmensen",
       "quotes": "10.000+ gemaakte offertes",
@@ -152,7 +152,7 @@
     "craftsmen": {
       "badge": "Onze klanten",
       "title": "Vakprofielen",
-      "subtitle": "HAVITAM past zich aan alle bouwvakken aan",
+      "subtitle": "Haliqo past zich aan alle bouwvakken aan",
       "plumber": {
         "title": "Loodgieter",
         "description": "Installatie, storingen & sanitair onderhoud",
@@ -191,30 +191,30 @@
       "others": {
         "title": "Andere vakken",
         "description": "Selecteer deze optie als je activiteit hierboven niet vermeld staat",
-        "benefit": "Havitam past zich aan alle specialiteiten aan"
+        "benefit": "Haliqo past zich aan alle specialiteiten aan"
       }
     },
     "testimonials": {
       "badge": "Getuigenissen",
       "title": "Wat onze klanten zeggen",
-      "subtitle": "Ontdek waarom vakmensen HAVITAM vertrouwen",
+      "subtitle": "Ontdek waarom vakmensen Haliqo vertrouwen",
       "testimonial1": {
-        "quote": "HAVITAM heeft mijn manier van werken revolutionair veranderd. Ik bespaar enorm veel tijd op administratieve taken en kan me concentreren op mijn bouwplaatsen.",
+        "quote": "Haliqo heeft mijn manier van werken revolutionair veranderd. Ik bespaar enorm veel tijd op administratieve taken en kan me concentreren op mijn bouwplaatsen.",
         "name": "Jean Dupont",
         "profession": "Elektricien"
       },
       "testimonial2": {
-        "quote": "Intuïtieve interface en responsieve ondersteuning. Ik raad HAVITAM aan aan al mijn vakmensen collega's.",
+        "quote": "Intuïtieve interface en responsieve ondersteuning. Ik raad Haliqo aan aan al mijn vakmensen collega's.",
         "name": "Marie Laurent",
         "profession": "Loodgieter"
       },
       "testimonial3": {
-        "quote": "Sinds ik HAVITAM gebruik, is mijn facturering sneller en zijn mijn klanten tevredener.",
+        "quote": "Sinds ik Haliqo gebruik, is mijn facturering sneller en zijn mijn klanten tevredener.",
         "name": "Pierre Martin",
         "profession": "Schilder"
       },
       "testimonial4": {
-        "quote": "Offertebeheer is nu kinderspel. HAVITAM heeft me elke week uren bespaard.",
+        "quote": "Offertebeheer is nu kinderspel. Haliqo heeft me elke week uren bespaard.",
         "name": "Sophie Leroy",
         "profession": "Tegelzetter"
       },
@@ -224,7 +224,7 @@
         "profession": "Timmerman"
       },
       "testimonial6": {
-        "quote": "HAVITAM heeft me in staat gesteld mijn bedrijf met 40% te ontwikkelen in één jaar dankzij betere organisatie.",
+        "quote": "Haliqo heeft me in staat gesteld mijn bedrijf met 40% te ontwikkelen in één jaar dankzij betere organisatie.",
         "name": "Claire Moreau",
         "profession": "Elektricien"
       }
@@ -248,10 +248,10 @@
     "faq": {
       "badge": "FAQ",
       "title": "Veelgestelde vragen",
-      "subtitle": "Alles wat je moet weten over HAVITAM",
+      "subtitle": "Alles wat je moet weten over Haliqo",
       "pricing": {
-        "question": "Hoeveel kost HAVITAM?",
-        "intro": "HAVITAM biedt verschillende formules aan die aangepast zijn aan je behoeften:",
+        "question": "Hoeveel kost Haliqo?",
+        "intro": "Haliqo biedt verschillende formules aan die aangepast zijn aan je behoeften:",
         "starter": {
           "title": "Starter (€19/maand)",
           "description": "Essentiële functies om te beginnen"
@@ -268,8 +268,8 @@
         "trialNote": "geen verplichting op al onze formules!"
       },
       "setup": {
-        "question": "Hoe lang duurt het om HAVITAM in te stellen?",
-        "intro": "Het instellen van HAVITAM is heel eenvoudig en snel:",
+        "question": "Hoe lang duurt het om Haliqo in te stellen?",
+        "intro": "Het instellen van Haliqo is heel eenvoudig en snel:",
         "accountCreation": "Account aanmaken",
         "basicConfig": "Basis configuratie",
         "firstQuote": "Eerste offerte gemaakt",
@@ -288,7 +288,7 @@
         "intro": "Onze mobiele app komt binnenkort! Het zal beschikbaar zijn op iOS en Android.",
         "comingSoon": "Binnenkort beschikbaar",
         "description": "We werken momenteel aan de mobiele app om je een optimale mobiele ervaring te bieden. Word op de hoogte gesteld zodra het uitkomt!",
-        "browserAccess": "In de tussentijd kun je HAVITAM benaderen vanuit je mobiele browser."
+        "browserAccess": "In de tussentijd kun je Haliqo benaderen vanuit je mobiele browser."
       },
       "support": {
         "question": "Welke klantenservice bied je aan?",
@@ -301,7 +301,7 @@
           "title": "E-mail ondersteuning",
           "response": "Antwoord binnen 24u"
         },
-        "conclusion": "Ons team van experts staat klaar om je te helpen het beste uit HAVITAM te halen!"
+        "conclusion": "Ons team van experts staat klaar om je te helpen het beste uit Haliqo te halen!"
       },
       "leads": {
         "question": "Kan ik automatisch gekwalificeerde leads ontvangen?",
@@ -324,7 +324,7 @@
     "hero": {
       "badge": "Over ons • Bouw vereenvoudigen",
       "title": {
-        "prefix": "Havitam, je ",
+        "prefix": "Haliqo, je ",
         "highlight": "digitale partner",
         "suffix": " in de bouw"
       },
@@ -341,10 +341,10 @@
     "story": {
       "badge": "Ons verhaal",
       "title": "Ons verhaal",
-      "subtitle": "Ontdek hoe HAVITAM geboren werd uit een eenvoudige visie",
-      "paragraph1": "Het idee van Havitam werd geboren uit een eenvoudige observatie: vakmensen verliezen enorm veel tijd aan administratieve taken terwijl ze zich zouden moeten kunnen concentreren op hun expertise.",
+      "subtitle": "Ontdek hoe Haliqo geboren werd uit een eenvoudige visie",
+      "paragraph1": "Het idee van Haliqo werd geboren uit een eenvoudige observatie: vakmensen verliezen enorm veel tijd aan administratieve taken terwijl ze zich zouden moeten kunnen concentreren op hun expertise.",
       "paragraph2": "Na gesprekken met veel zelfstandigen realiseerden we ons dat er een gebrek was aan een eenvoudige, moderne en intuïtieve oplossing, speciaal ontworpen voor hen.",
-      "paragraph3": "De naam <span class=\"font-bold text-[#0036ab]\">HAVITAM</span> komt van <span class=\"font-semibold\">HA</span> (de initialen van de oprichter) en <span class=\"font-semibold\">vitam</span>, verwijzend naar de \"vitamine\" die een boost geeft aan de activiteit van vakmensen.",
+      "paragraph3": "De naam <span class=\"font-bold text-[#0036ab]\">Haliqo</span> komt van <span class=\"font-semibold\">HA</span> (de initialen van de oprichter) en <span class=\"font-semibold\">vitam</span>, verwijzend naar de \"vitamine\" die een boost geeft aan de activiteit van vakmensen.",
       "paragraph4": "Onze missie is om de <span class=\"font-semibold text-[#12bf23]\">digitale vitamine van de bouw</span> te worden, door het dagelijkse beheer te vergemakkelijken, de administratieve tijd te verminderen en de winstgevendheid van professionals in de sector te verhogen."
     },
     "values": {
@@ -371,18 +371,18 @@
     "founder": {
       "badge": "Onze oprichter",
       "title": "Onze oprichter",
-      "subtitle": "Ontdek de visie die HAVITAM heeft voortgebracht",
+      "subtitle": "Ontdek de visie die Haliqo heeft voortgebracht",
       "name": "Haitam A.",
       "role": "Oprichter & CEO",
       "bio": {
         "paragraph1": "Haitam A. is gepassioneerd door technologie en ondernemerschap. Na studies in internationale handel en verschillende ervaringen in bedrijfscreatie, werd hij geconfronteerd met de complexiteit van administratief beheer, offertes en facturering.",
         "paragraph2": "Het was door te praten met vakmensen-vrienden dat hij begreep dat dit probleem wijdverbreid was in de sector. Hij besloot daarom een eenvoudige en complete oplossing te creëren om aan hun specifieke behoeften te voldoen.",
-        "paragraph3": "Zonder uit de bouwsector te komen, wist hij zich te omringen, te observeren, te luisteren — en een nuttig en effectief platform te bouwen. Havitam werd geboren uit deze visie: vakmensen de digitale tools bieden die ze verdienen."
+        "paragraph3": "Zonder uit de bouwsector te komen, wist hij zich te omringen, te observeren, te luisteren — en een nuttig en effectief platform te bouwen. Haliqo werd geboren uit deze visie: vakmensen de digitale tools bieden die ze verdienen."
       }
     },
     "cta": {
       "title": "Sluit je aan bij de bouwrevolutie",
-      "subtitle": "Ontdek hoe HAVITAM je bedrijf kan transformeren en je in staat kan stellen je te concentreren op wat je het beste doet.",
+      "subtitle": "Ontdek hoe Haliqo je bedrijf kan transformeren en je in staat kan stellen je te concentreren op wat je het beste doet.",
       "trust": {
         "trial": "14 dagen gratis proefperiode",
         "noCommitment": "Geen verplichting",
@@ -397,7 +397,7 @@
     "hero": {
       "badge": "Contact",
       "title": "We staan voor je klaar",
-      "subtitle": "Neem contact op met ons team voor vragen over HAVITAM",
+      "subtitle": "Neem contact op met ons team voor vragen over Haliqo",
       "benefits": {
         "response24h": "Antwoord binnen 24u",
         "frenchSupport": "Ondersteuning in FR / NL / EN",
@@ -406,10 +406,10 @@
     },
     "info": {
       "title": "Laten we praten over je project",
-      "description": "Of je nu een vakman bent die Havitam wil ontdekken of een klant die hulp nodig heeft, we zijn er om je te ondersteunen.",
+      "description": "Of je nu een vakman bent die Haliqo wil ontdekken of een klant die hulp nodig heeft, we zijn er om je te ondersteunen.",
       "email": {
         "title": "E-mail",
-        "address": "support@havitam.com",
+        "address": "support@Haliqo.com",
         "response": "Antwoord binnen 24u"
       },
       "phone": {
@@ -522,11 +522,11 @@
     },
     "guarantees": {
       "badge": "Garanties",
-      "title": "Waarom HAVITAM kiezen?",
+      "title": "Waarom Haliqo kiezen?",
       "subtitle": "We bieden je gemoedsrust met onze garanties en ondersteuning",
       "trial": {
         "title": "Gratis proefperiode",
-        "description": "Test HAVITAM gratis 14 dagen zonder verplichting"
+        "description": "Test Haliqo gratis 14 dagen zonder verplichting"
       },
       "noCommitment": {
         "title": "Geen verplichting",
@@ -559,7 +559,7 @@
     },
     "cta": {
       "title": "Klaar om je bedrijf te transformeren?",
-      "subtitle": "Sluit je aan bij duizenden vakmensen die HAVITAM vertrouwen om hun bedrijf te laten groeien",
+      "subtitle": "Sluit je aan bij duizenden vakmensen die Haliqo vertrouwen om hun bedrijf te laten groeien",
       "button": "Start gratis proefperiode"
     }
   },
@@ -656,7 +656,7 @@
   },
   "login": {
     "title": "Inloggen",
-    "subtitle": "Verbind met je HAVITAM account",
+    "subtitle": "Verbind met je Haliqo account",
     "welcome": "Welkom terug!",
     "welcomeSubtitle": "Verbind met je vakmensen-ruimte om je offertes en facturen te beheren",
     "logoSubtitle": "Vakman Pro",
@@ -717,7 +717,7 @@
     },
     "step2": {
       "title": "Aanvullende informatie",
-      "subtitle": "Pas Havitam aan volgens je activiteit",
+      "subtitle": "Pas Haliqo aan volgens je activiteit",
       "businessSize": "Bedrijfsgrootte",
       "businessSizePlaceholder": "Aantal werknemers",
       "solo": "Solo vakman",
@@ -850,14 +850,14 @@
     },
     "step2": {
       "title": "Aanvullende informatie",
-      "subtitle": "Pas Havitam aan volgens je activiteit"
+      "subtitle": "Pas Haliqo aan volgens je activiteit"
     },
     "step3": {
       "title": "Kies je plan",
       "subtitle": "Start met 14 dagen gratis, geen verplichting"
     },
     "benefits": {
-      "title": "Waarom Havitam kiezen?",
+      "title": "Waarom Haliqo kiezen?",
       "signatures": "+40% handtekeningen",
       "signaturesDescription": "AI optimaliseert je offertes om conversies te maximaliseren",
       "timeSaving": "Tijdsbesparing",
@@ -877,7 +877,7 @@
         "name": "Sophie Dubois",
         "trade": "Elektricien",
         "location": "Parijs",
-        "quote": "Geen handmatige opvolging meer! Havitam beheert alles automatisch."
+        "quote": "Geen handmatige opvolging meer! Haliqo beheert alles automatisch."
       }
     },
     "security": {
@@ -960,37 +960,37 @@
     }
   },
   "meta": {
-    "title": "HAVITAM - Je professionele digitale vitamine",
-    "description": "HAVITAM vereenvoudigt het administratieve beheer van bouwvakkers. Maak offertes, verstuur facturen en ontwikkel je klantenbestand.",
+    "title": "Haliqo - Je professionele digitale vitamine",
+    "description": "Haliqo vereenvoudigt het administratieve beheer van bouwvakkers. Maak offertes, verstuur facturen en ontwikkel je klantenbestand.",
     "keywords": "vakman, bouw, offertes, facturen, beheer, elektricien, loodgieter, schilder",
-    "ogTitle": "HAVITAM - Je professionele digitale vitamine",
+    "ogTitle": "Haliqo - Je professionele digitale vitamine",
     "ogDescription": "Vereenvoudig je administratief beheer en ontwikkel je klantenbestand",
     "schemaDescription": "Het alles-in-één platform voor bouwvakkers. Maak offertes, verstuur facturen, volg betalingen en ontvang prospects.",
     "phone": "+33-1-23-45-67-89",
     "about": {
-      "title": "Over ons - HAVITAM",
-      "description": "Ontdek het verhaal en de waarden van HAVITAM, het innovatieve platform voor bouwvakkers."
+      "title": "Over ons - Haliqo",
+      "description": "Ontdek het verhaal en de waarden van Haliqo, het innovatieve platform voor bouwvakkers."
     },
     "pricing": {
-      "title": "Prijzen - HAVITAM",
+      "title": "Prijzen - Haliqo",
       "description": "Kies het plan dat het beste bij je behoeften past. Alle plannen omvatten een 14-daagse gratis proefperiode."
     },
     "findArtisan": {
-      "title": "Vind een vakman - HAVITAM",
+      "title": "Vind een vakman - Haliqo",
       "description": "Vind een gekwalificeerde vakman bij jou in de buurt voor je renovatie- en bouwprojecten."
     },
     "contact": {
-      "title": "Contact - HAVITAM",
-      "description": "Neem contact op met het HAVITAM team voor vragen over ons platform voor vakmensen, voor een demo of technische ondersteuning.",
+      "title": "Contact - Haliqo",
+      "description": "Neem contact op met het Haliqo team voor vragen over ons platform voor vakmensen, voor een demo of technische ondersteuning.",
       "keywords": "contact, ondersteuning, vakmensen, offertes, facturen, beheer"
     },
     "forgotPassword": {
-      "title": "Wachtwoord vergeten - HAVITAM",
-      "description": "Reset het wachtwoord van je HAVITAM account. Voer je e-mail in om reset-instructies te ontvangen."
+      "title": "Wachtwoord vergeten - Haliqo",
+      "description": "Reset het wachtwoord van je Haliqo account. Voer je e-mail in om reset-instructies te ontvangen."
     },
     "resetPassword": {
-      "title": "Wachtwoord resetten - HAVITAM",
-      "description": "Stel je nieuwe wachtwoord in voor je HAVITAM account."
+      "title": "Wachtwoord resetten - Haliqo",
+      "description": "Stel je nieuwe wachtwoord in voor je Haliqo account."
     }
   },
   "footer": {
@@ -1037,7 +1037,7 @@
     "section": {
       "badge": "Functies",
       "title": "Al onze functies",
-      "subtitle": "Ontdek hoe HAVITAM je dagelijkse beheer kan transformeren"
+      "subtitle": "Ontdek hoe Haliqo je dagelijkse beheer kan transformeren"
     },
     "list": {
       "feature1": {
@@ -1075,7 +1075,7 @@
     },
     "benefits": {
       "badge": "Voordelen",
-      "title": "Waarom HAVITAM kiezen?",
+      "title": "Waarom Haliqo kiezen?",
       "subtitle": "Sluit je aan bij honderden vakmensen die hun beheer al hebben getransformeerd",
       "benefit1": {
         "title": "Omzetstijging",
@@ -1087,7 +1087,7 @@
       },
       "benefit3": {
         "title": "Klanttevredenheid",
-        "description": "98% van onze gebruikers beveelt HAVITAM aan bij hun collega's"
+        "description": "98% van onze gebruikers beveelt Haliqo aan bij hun collega's"
       }
     },
     "cta": {
@@ -1111,11 +1111,11 @@
     "sections": {
       "acceptance": {
         "title": "Acceptatie van voorwaarden",
-        "content": "<p>Door toegang te krijgen tot en HAVITAM te gebruiken, ga je akkoord met deze gebruiksvoorwaarden. Als je niet akkoord gaat met deze voorwaarden, gebruik dan onze diensten niet.</p>"
+        "content": "<p>Door toegang te krijgen tot en Haliqo te gebruiken, ga je akkoord met deze gebruiksvoorwaarden. Als je niet akkoord gaat met deze voorwaarden, gebruik dan onze diensten niet.</p>"
       },
       "services": {
         "title": "Beschrijving van diensten",
-        "content": "<p>HAVITAM biedt een administratief beheerplatform voor bouwvakkers, inclusief offertecreatie, factuurbeheer, betalingsopvolging en andere bedrijfsbeheertools.</p>"
+        "content": "<p>Haliqo biedt een administratief beheerplatform voor bouwvakkers, inclusief offertecreatie, factuurbeheer, betalingsopvolging en andere bedrijfsbeheertools.</p>"
       },
       "accounts": {
         "title": "Gebruikersaccounts",
@@ -1131,11 +1131,11 @@
       },
       "intellectual": {
         "title": "Intellectueel eigendom",
-        "content": "<p>HAVITAM en zijn inhoud zijn beschermd door intellectuele eigendomsrechten. Je mag onze inhoud niet kopiëren, wijzigen of distribueren zonder toestemming.</p>"
+        "content": "<p>Haliqo en zijn inhoud zijn beschermd door intellectuele eigendomsrechten. Je mag onze inhoud niet kopiëren, wijzigen of distribueren zonder toestemming.</p>"
       },
       "liability": {
         "title": "Aansprakelijkheidsbeperking",
-        "content": "<p>HAVITAM wordt geleverd \"zoals het is\" zonder garantie. We zijn niet aansprakelijk voor indirecte of gevolgschade als gevolg van het gebruik van onze diensten.</p>"
+        "content": "<p>Haliqo wordt geleverd \"zoals het is\" zonder garantie. We zijn niet aansprakelijk voor indirecte of gevolgschade als gevolg van het gebruik van onze diensten.</p>"
       },
       "termination": {
         "title": "Beëindiging",
@@ -1147,7 +1147,7 @@
       },
       "contact": {
         "title": "Contact",
-        "content": "<p>Voor vragen over deze voorwaarden, neem contact op via support@havitam.com</p>"
+        "content": "<p>Voor vragen over deze voorwaarden, neem contact op via support@haliqo.com</p>"
       }
     },
     "contact": {
@@ -1170,7 +1170,7 @@
     "sections": {
       "introduction": {
         "title": "Inleiding",
-        "content": "<p>HAVITAM zet zich in voor de bescherming van je privacy. Dit beleid legt uit hoe we je persoonlijke informatie verzamelen, gebruiken en beschermen.</p>"
+        "content": "<p>Haliqo zet zich in voor de bescherming van je privacy. Dit beleid legt uit hoe we je persoonlijke informatie verzamelen, gebruiken en beschermen.</p>"
       },
       "collection": {
         "title": "Informatieverzameling",
@@ -1206,7 +1206,7 @@
       },
       "contact": {
         "title": "Contact",
-        "content": "<p>Voor vragen over dit privacybeleid, neem contact op via privacy@havitam.com</p>"
+        "content": "<p>Voor vragen over dit privacybeleid, neem contact op via privacy@haliqo.com</p>"
       }
     },
     "contact": {
@@ -1275,7 +1275,7 @@
       },
       "contact": {
         "title": "Contact",
-        "content": "<p>Voor vragen over ons gebruik van cookies, neem contact op via cookies@havitam.com</p>"
+        "content": "<p>Voor vragen over ons gebruik van cookies, neem contact op via cookies@haliqo.com</p>"
       }
     },
     "contact": {
@@ -1301,7 +1301,7 @@
     },
     "section": {
       "badge": "Kernfuncties",
-      "title": "De 8 kernfuncties van HAVITAM",
+      "title": "De 8 kernfuncties van Haliqo",
       "subtitle": "Boost je business met eenvoudige, snelle en intelligente tools"
     },
     "list": {
@@ -1340,7 +1340,7 @@
     },
     "benefits": {
       "badge": "Voordelen",
-      "title": "Waarom HAVITAM kiezen?",
+      "title": "Waarom Haliqo kiezen?",
       "subtitle": "Sluit je aan bij honderden vakmensen die hun beheer al hebben getransformeerd",
       "benefit1": {
         "title": "Omzetstijging",
@@ -1352,7 +1352,7 @@
       },
       "benefit3": {
         "title": "Klanttevredenheid",
-        "description": "98% van onze gebruikers beveelt HAVITAM aan bij hun collega's"
+        "description": "98% van onze gebruikers beveelt Haliqo aan bij hun collega's"
       }
     },
     "cta": {
@@ -1375,24 +1375,24 @@
   },
   "meta": {
     "features": {
-      "title": "Functies - HAVITAM",
-      "description": "Ontdek alle HAVITAM functies ontworpen om het administratieve beheer van bouwvakkers te vereenvoudigen."
+      "title": "Functies - Haliqo",
+      "description": "Ontdek alle Haliqo functies ontworpen om het administratieve beheer van bouwvakkers te vereenvoudigen."
     },
     "terms": {
-      "title": "Gebruiksvoorwaarden - HAVITAM",
-      "description": "Lees onze gebruiksvoorwaarden om de regels en verplichtingen te begrijpen die verbonden zijn aan het gebruik van het HAVITAM platform."
+      "title": "Gebruiksvoorwaarden - Haliqo",
+      "description": "Lees onze gebruiksvoorwaarden om de regels en verplichtingen te begrijpen die verbonden zijn aan het gebruik van het Haliqo platform."
     },
     "privacy": {
-      "title": "Privacybeleid - HAVITAM",
-      "description": "Ontdek hoe HAVITAM je persoonlijke informatie beschermt en gebruikt in overeenstemming met de huidige regelgeving."
+      "title": "Privacybeleid - Haliqo",
+      "description": "Ontdek hoe Haliqo je persoonlijke informatie beschermt en gebruikt in overeenstemming met de huidige regelgeving."
     },
     "cookies": {
-      "title": "Cookiebeleid - HAVITAM",
-      "description": "Begrijp hoe HAVITAM cookies gebruikt om je ervaring op ons platform te verbeteren."
+      "title": "Cookiebeleid - Haliqo",
+      "description": "Begrijp hoe Haliqo cookies gebruikt om je ervaring op ons platform te verbeteren."
     },
     "forgotPassword": {
-      "title": "Wachtwoord resetten - HAVITAM",
-      "description": "Reset je HAVITAM wachtwoord veilig om toegang te krijgen tot je vakmensen-account."
+      "title": "Wachtwoord resetten - Haliqo",
+      "description": "Reset je Haliqo wachtwoord veilig om toegang te krijgen tot je vakmensen-account."
     }
   },
   "register": {
@@ -1407,7 +1407,7 @@
         "name": "Sophie Dubois",
         "trade": "Elektricien",
         "location": "Parijs",
-        "quote": "Geen handmatige opvolging meer! Havitam beheert alles automatisch."
+        "quote": "Geen handmatige opvolging meer! Haliqo beheert alles automatisch."
       }
     }
   },

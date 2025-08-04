@@ -15,7 +15,7 @@ const QuoteCreation = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedClient, setSelectedClient] = useState(null);
   const [projectInfo, setProjectInfo] = useState({
-    category: '',
+    categories: [],
     customCategory: '',
     deadline: '',
     description: ''
@@ -60,7 +60,7 @@ const QuoteCreation = () => {
       try {
         const draftData = JSON.parse(savedDraft);
         setSelectedClient(draftData.selectedClient);
-        setProjectInfo(draftData.projectInfo || { category: '', customCategory: '', deadline: '', description: '' });
+        setProjectInfo(draftData.projectInfo || { categories: [], customCategory: '', deadline: '', description: '' });
         setTasks(draftData.tasks || []);
         setFiles(draftData.files || []);
         setCurrentStep(draftData.currentStep || 1);
@@ -211,6 +211,19 @@ const QuoteCreation = () => {
     navigate('/quotes-management');
   };
 
+  const handleStepChange = (newStep) => {
+    // Validate step change based on current progress
+    if (newStep <= currentStep || 
+        (newStep === 2 && selectedClient && projectInfo.categories.length > 0) ||
+        (newStep === 3 && tasks.length > 0) ||
+        (newStep === 4)) {
+      setCurrentStep(newStep);
+    } else {
+      // Optional: Show a validation error message
+      alert('Veuillez remplir les informations requises avant de passer à l\'étape suivante.');
+    }
+  };
+
   const clearDraft = () => {
     if (confirm('Êtes-vous sûr de vouloir effacer ce brouillon ?')) {
       localStorage.removeItem('quote-draft');
@@ -240,7 +253,7 @@ const QuoteCreation = () => {
         return (
           <TaskDefinition
             tasks={tasks}
-            projectCategory={projectInfo.category}
+            projectCategory={projectInfo.categories}
             onTasksChange={handleTasksChange}
             onNext={handleNext}
             onPrevious={handlePrevious}
@@ -323,7 +336,10 @@ const QuoteCreation = () => {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
             {/* Main Content */}
             <div className="lg:col-span-3 space-y-4 sm:space-y-6">
-              <StepIndicator currentStep={currentStep} />
+              <StepIndicator 
+                currentStep={currentStep} 
+                onStepChange={handleStepChange} 
+              />
               {renderCurrentStep()}
             </div>
 

@@ -90,13 +90,11 @@ const Login = () => {
         <div className="max-w-md mx-auto my-16">
           {/* Logo */}
           <div className="flex items-center justify-center mb-8">
-            <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center mr-3">
-              <Icon name="Hammer" size={36} color="white" />
-            </div>
-            <div className="text-left">
-              <h1 className="text-2xl font-bold text-foreground">Havitam</h1>
-              <p className="text-sm text-muted-foreground">Artisan Pro</p>
-            </div>
+            <img 
+              src="/assets/logo/logo.png" 
+              alt="Haliqo Logo" 
+              className="w-16 h-16 object-contain"
+            />
           </div>
           
           <div className="bg-white rounded-lg shadow-professional p-8">

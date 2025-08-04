@@ -28,9 +28,9 @@ import InvoicesManagement from './pages/invoices-management';
 import SupplierInvoicesManagement from './pages/supplier-invoices';
 
 import ClientManagement from './pages/client-management';
-import FollowUpManagement from './pages/follow-up-management';
+import FollowUpManagement from './pages/follow-up-management/index';
 import AnalyticsDashboard from './pages/analytics-dashboard';
-import PeppolNetworkPage from './pages/services/peppol';
+import PeppolNetworkPage from './pages/services/peppol/index';
 import AssuranceCreditPage from './pages/services/assurance';
 import RecouvrementPage from './pages/services/recouvrement';
 import LeadsManagementPage from './pages/leads-management';
@@ -150,7 +150,7 @@ const AppRoutes = () => {
               <ClientManagement />
             </ProtectedRoute>
           } />
-          <Route path="/follow-up-management" element={
+          <Route path="/quotes-follow-up" element={
             <ProtectedRoute>
               <FollowUpManagement />
             </ProtectedRoute>

@@ -1,326 +1,183 @@
-import React, { useState } from 'react';
-import Icon from '../../../components/AppIcon';
+import React, { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
-import Select from '../../../components/ui/Select';
+import Icon from '../../../components/AppIcon';
 
-const QuickSupplierInvoiceUpload = ({ isOpen, onClose, onUploadSupplierInvoice }) => {
-  const [formData, setFormData] = useState({
-    supplierName: '',
-    supplierEmail: '',
-    invoiceNumber: '',
-    amount: '',
-    category: '',
-    issueDate: '',
-    dueDate: '',
-    paymentMethod: '',
-    invoiceFile: null
-  });
+const QuickSupplierInvoiceUpload = ({ onInvoiceUpload, isDebtCollection = false }) => {
+  const { t } = useTranslation();
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [uploadMethod, setUploadMethod] = useState('manual');
+  const fileInputRef = useRef(null);
 
-  const [isUploading, setIsUploading] = useState(false);
-  const [dragActive, setDragActive] = useState(false);
-
-  const categoryOptions = [
-    { value: '', label: 'Sélectionner une catégorie' },
-    { value: 'Matériaux', label: 'Matériaux' },
-    { value: 'Outillage', label: 'Outillage' },
-    { value: 'Services', label: 'Services' },
-    { value: 'Fournitures', label: 'Fournitures' },
-    { value: 'Assurance', label: 'Assurance' },
-    { value: 'Transport', label: 'Transport' },
-    { value: 'Marketing', label: 'Marketing' }
-  ];
-
-  const paymentMethodOptions = [
-    { value: '', label: 'Sélectionner une méthode' },
-    { value: 'Virement bancaire', label: 'Virement bancaire' },
-    { value: 'Chèque', label: 'Chèque' },
-    { value: 'Prélèvement', label: 'Prélèvement' },
-    { value: 'Espèces', label: 'Espèces' },
-    { value: 'Carte bancaire', label: 'Carte bancaire' }
-  ];
-
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    setSelectedFiles(files);
   };
 
-  const handleFileUpload = (file) => {
-    if (file && (file.type === 'application/pdf' || file.type.startsWith('image/'))) {
-      setFormData(prev => ({ ...prev, invoiceFile: file }));
-    } else {
-      alert('Veuillez sélectionner un fichier PDF ou une image.');
-    }
-  };
-
-  const handleDrag = (e) => {
+  const handleDragOver = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setDragActive(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileUpload(e.dataTransfer.files[0]);
-    }
+    const files = Array.from(e.dataTransfer.files);
+    setSelectedFiles(files);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!formData.supplierName || !formData.amount || !formData.invoiceFile) {
-      alert('Veuillez remplir tous les champs obligatoires et télécharger un fichier.');
-      return;
-    }
-
-    setIsUploading(true);
-
+  const handleUpload = async () => {
     try {
-      // Simulate file upload
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      if (selectedFiles.length === 0) {
+        alert(t('invoiceUpload.noFilesSelected'));
+        return;
+      }
 
-      const newInvoice = {
-        id: Date.now(),
-        number: formData.invoiceNumber || `FOURN-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
-        supplierName: formData.supplierName,
-        supplierEmail: formData.supplierEmail,
-        amount: parseFloat(formData.amount),
-        status: 'pending',
-        issueDate: formData.issueDate || new Date().toISOString().split('T')[0],
-        dueDate: formData.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        paymentMethod: formData.paymentMethod,
-        category: formData.category,
-        invoiceFile: formData.invoiceFile.name
-      };
-
-      onUploadSupplierInvoice(newInvoice);
-      onClose();
-      
-      // Reset form
-      setFormData({
-        supplierName: '',
-        supplierEmail: '',
-        invoiceNumber: '',
-        amount: '',
-        category: '',
-        issueDate: '',
-        dueDate: '',
-        paymentMethod: '',
-        invoiceFile: null
+      // TODO: Implement actual file upload logic
+      const uploadPromises = selectedFiles.map(async (file) => {
+        // Simulate file upload
+        return {
+          fileName: file.name,
+          fileSize: file.size,
+          uploadStatus: 'success'
+        };
       });
+
+      const uploadResults = await Promise.all(uploadPromises);
+
+      // Callback to parent component
+      onInvoiceUpload(uploadResults);
+
+      // Reset state
+      setSelectedFiles([]);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     } catch (error) {
-      alert('Erreur lors de l\'upload. Veuillez réessayer.');
-    } finally {
-      setIsUploading(false);
+      console.error('Invoice upload error:', error);
+      alert(t('invoiceUpload.uploadError'));
     }
   };
 
-  if (!isOpen) return null;
+  const removeFile = (fileToRemove) => {
+    setSelectedFiles(selectedFiles.filter(file => file !== fileToRemove));
+  };
 
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-card border border-border rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-semibold text-foreground">Importer une facture fournisseur</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Ajoutez une nouvelle facture fournisseur à votre système
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-md hover:bg-muted transition-colors"
-            >
-              <Icon name="X" size={20} color="var(--color-muted-foreground)" />
-            </button>
-          </div>
+    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-lg">
+      <h2 className="text-xl font-bold text-gray-900 mb-4">
+        {isDebtCollection 
+          ? t('invoiceUpload.debtCollection.title') 
+          : t('invoiceUpload.title')
+        }
+      </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* File Upload */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Fichier de facture *
-              </label>
-              <div
-                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                  dragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
-                }`}
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-              >
-                {formData.invoiceFile ? (
-                  <div className="space-y-2">
-                    <Icon name="FileText" size={32} color="var(--color-primary)" className="mx-auto" />
-                    <p className="text-sm font-medium text-foreground">{formData.invoiceFile.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {(formData.invoiceFile.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setFormData(prev => ({ ...prev, invoiceFile: null }))}
-                    >
-                      Changer de fichier
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Icon name="Upload" size={32} color="var(--color-muted-foreground)" className="mx-auto" />
-                    <p className="text-sm font-medium text-foreground">
-                      Glissez-déposez votre facture ici
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      ou cliquez pour sélectionner un fichier (PDF, JPG, PNG)
-                    </p>
-                    <input
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={(e) => handleFileUpload(e.target.files[0])}
-                      className="hidden"
-                      id="file-upload"
-                    />
-                    <label htmlFor="file-upload">
-                      <Button type="button" variant="outline" size="sm" asChild>
-                        <span>Sélectionner un fichier</span>
-                      </Button>
-                    </label>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Form Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Nom du fournisseur *
-                </label>
-                <Input
-                  value={formData.supplierName}
-                  onChange={(e) => handleInputChange('supplierName', e.target.value)}
-                  placeholder="Ex: Materiaux Pro"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Email du fournisseur
-                </label>
-                <Input
-                  type="email"
-                  value={formData.supplierEmail}
-                  onChange={(e) => handleInputChange('supplierEmail', e.target.value)}
-                  placeholder="contact@fournisseur.fr"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Numéro de facture
-                </label>
-                <Input
-                  value={formData.invoiceNumber}
-                  onChange={(e) => handleInputChange('invoiceNumber', e.target.value)}
-                  placeholder="Ex: FACT-2024-001"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Montant (€) *
-                </label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.amount}
-                  onChange={(e) => handleInputChange('amount', e.target.value)}
-                  placeholder="0.00"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Catégorie
-                </label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(value) => handleInputChange('category', value)}
-                  options={categoryOptions}
-                  placeholder="Sélectionner une catégorie"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Méthode de paiement
-                </label>
-                <Select
-                  value={formData.paymentMethod}
-                  onValueChange={(value) => handleInputChange('paymentMethod', value)}
-                  options={paymentMethodOptions}
-                  placeholder="Sélectionner une méthode"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Date d'émission
-                </label>
-                <Input
-                  type="date"
-                  value={formData.issueDate}
-                  onChange={(e) => handleInputChange('issueDate', e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Date d'échéance
-                </label>
-                <Input
-                  type="date"
-                  value={formData.dueDate}
-                  onChange={(e) => handleInputChange('dueDate', e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center justify-end space-x-3 pt-6 border-t border-border">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={isUploading}
-              >
-                Annuler
-              </Button>
-              <Button
-                type="submit"
-                disabled={isUploading}
-                iconName={isUploading ? "Loader2" : "Upload"}
-                iconPosition="left"
-              >
-                {isUploading ? 'Upload en cours...' : 'Importer la facture'}
-              </Button>
-            </div>
-          </form>
-        </div>
+      {/* Upload Method Toggle */}
+      <div className="flex items-center space-x-4 mb-6">
+        <button
+          onClick={() => setUploadMethod('manual')}
+          className={`px-4 py-2 rounded-lg transition-all ${
+            uploadMethod === 'manual' 
+              ? 'bg-[#0036ab] text-white' 
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          {t('invoiceUpload.manualUpload')}
+        </button>
+        <button
+          onClick={() => setUploadMethod('bulk')}
+          className={`px-4 py-2 rounded-lg transition-all ${
+            uploadMethod === 'bulk' 
+              ? 'bg-[#0036ab] text-white' 
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          {t('invoiceUpload.bulkUpload')}
+        </button>
       </div>
+
+      {/* File Upload Area */}
+      <div 
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-[#0036ab] transition-colors"
+      >
+        <input 
+          type="file" 
+          multiple
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+          className="hidden"
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+        />
+        <Icon 
+          name="Upload" 
+          size={48} 
+          className="mx-auto mb-4 text-gray-400" 
+        />
+        <p className="text-gray-600 mb-4">
+          {uploadMethod === 'manual' 
+            ? t('invoiceUpload.manualUploadDescription') 
+            : t('invoiceUpload.bulkUploadDescription')
+          }
+        </p>
+        <Button 
+          variant="outline" 
+          onClick={() => fileInputRef.current.click()}
+        >
+          {t('invoiceUpload.selectFiles')}
+        </Button>
+      </div>
+
+      {/* Selected Files List */}
+      {selectedFiles.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold mb-4">
+            {t('invoiceUpload.selectedFiles')}
+          </h3>
+          <div className="space-y-2">
+            {selectedFiles.map((file, index) => (
+              <div 
+                key={index} 
+                className="flex items-center justify-between bg-gray-100 p-3 rounded-lg"
+              >
+                <div className="flex items-center space-x-3">
+                  <Icon 
+                    name="File" 
+                    size={24} 
+                    className="text-[#0036ab]" 
+                  />
+                  <div>
+                    <p className="text-sm font-medium">{file.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {(file.size / 1024).toFixed(2)} KB
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => removeFile(file)}
+                >
+                  <Icon name="X" size={16} />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Upload Button */}
+      {selectedFiles.length > 0 && (
+        <div className="mt-6 flex justify-end">
+          <Button 
+            variant="primary" 
+            onClick={handleUpload}
+          >
+            {t('invoiceUpload.uploadButton')}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

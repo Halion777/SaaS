@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../context/AuthContext';
 import Icon from './AppIcon';
 
 const LanguageDropdown = () => {
   const { i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
+  const { user, updateUserProfile } = useAuth();
 
   const languages = [
     { code: 'fr', name: 'Français', flag: '🇫🇷' },
@@ -12,12 +14,48 @@ const LanguageDropdown = () => {
     { code: 'nl', name: 'Nederlands', flag: '🇳🇱' }
   ];
 
+  // Load language preference on component mount
+  useEffect(() => {
+    // First, check user's stored preference
+    const storedLanguage = user?.user_metadata?.language;
+    
+    // If user has a stored preference, use it
+    if (storedLanguage && languages.some(lang => lang.code === storedLanguage)) {
+      i18n.changeLanguage(storedLanguage);
+      document.documentElement.setAttribute('lang', storedLanguage);
+    } else {
+      // Otherwise, check localStorage
+      const localStorageLanguage = localStorage.getItem('language');
+      
+      if (localStorageLanguage && languages.some(lang => lang.code === localStorageLanguage)) {
+        i18n.changeLanguage(localStorageLanguage);
+        document.documentElement.setAttribute('lang', localStorageLanguage);
+      }
+    }
+  }, [user, i18n]);
+
   const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
 
-  const handleLanguageChange = (languageCode) => {
+  const handleLanguageChange = async (languageCode) => {
+    // Change language in i18n
     i18n.changeLanguage(languageCode);
+    
+    // Save to localStorage
     localStorage.setItem('language', languageCode);
+    
+    // Set HTML lang attribute
     document.documentElement.setAttribute('lang', languageCode);
+    
+    // If user is logged in, update their profile
+    if (user) {
+      await updateUserProfile({ 
+        data: { 
+          language: languageCode 
+        } 
+      });
+    }
+    
+    // Close dropdown
     setIsOpen(false);
   };
 

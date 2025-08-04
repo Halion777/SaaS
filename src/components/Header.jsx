@@ -169,7 +169,7 @@ const Header = () => {
             <Link to={isAuthenticated ? "/dashboard" : "/"} className="flex items-center">
               <img 
                 src="/assets/logo/logo.png" 
-                alt="Havitam Logo" 
+                alt="Haliqo Logo" 
                 className="w-auto h-12 lg:h-16 object-contain"
               />
             </Link>

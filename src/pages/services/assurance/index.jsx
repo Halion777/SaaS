@@ -87,13 +87,13 @@ const AssuranceCreditPage = () => {
 
   const sectorOptions = [
     { value: 'construction', label: 'Construction' },
-    { value: 'manufacturing', label: 'Manufacturing' },
-    { value: 'retail', label: 'Retail' },
+    { value: 'manufacturing', label: 'Fabrication' },
+    { value: 'retail', label: 'Commerce de détail' },
     { value: 'services', label: 'Services' },
-    { value: 'technology', label: 'Technology' },
-    { value: 'healthcare', label: 'Healthcare' },
+    { value: 'technology', label: 'Technologie' },
+    { value: 'healthcare', label: 'Santé' },
     { value: 'finance', label: 'Finance' },
-    { value: 'other', label: 'Other' }
+    { value: 'other', label: 'Autre' }
   ];
 
   const handleChange = (field, value) => {
@@ -103,8 +103,8 @@ const AssuranceCreditPage = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     // Handle form submission
-    console.log('Form submitted:', formData);
-    alert('Your request has been sent successfully!');
+    console.log('Formulaire soumis :', formData);
+    alert('Votre demande a été envoyée avec succès !');
   };
 
   const renderOverview = () => (
@@ -116,8 +116,8 @@ const AssuranceCreditPage = () => {
             <Icon name="Umbrella" size={24} className="sm:w-8 sm:h-8 text-blue-500" />
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Credit Insurance</h1>
-            <p className="text-sm sm:text-lg text-muted-foreground">Protect your cash flow against unpaid customers.</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Assurance Crédit</h1>
+            <p className="text-sm sm:text-lg text-muted-foreground">Protégez votre trésorerie contre les impayés clients.</p>
           </div>
         </div>
 
@@ -128,8 +128,8 @@ const AssuranceCreditPage = () => {
               <Icon name="Percent" size={20} className="sm:w-6 sm:h-6 text-green-500" />
             </div>
             <div>
-              <h3 className="font-bold text-base sm:text-lg text-foreground">Coverage 90%</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground">Of the unpaid amount</p>
+              <h3 className="font-bold text-base sm:text-lg text-foreground">Couverture 90%</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">Du montant impayé</p>
             </div>
           </div>
           
@@ -139,7 +139,7 @@ const AssuranceCreditPage = () => {
             </div>
             <div>
               <h3 className="font-bold text-base sm:text-lg text-foreground">Clients B2B</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground">Businesses Only</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Entreprises uniquement</p>
             </div>
           </div>
           
@@ -148,8 +148,8 @@ const AssuranceCreditPage = () => {
               <Icon name="Zap" size={20} className="sm:w-6 sm:h-6 text-purple-500" />
             </div>
             <div>
-              <h3 className="font-bold text-base sm:text-lg text-foreground">Quick Claims</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground">Processed in 48h</p>
+              <h3 className="font-bold text-base sm:text-lg text-foreground">Réclamations Rapides</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">Traitées en 48h</p>
             </div>
           </div>
         </div>
@@ -158,7 +158,7 @@ const AssuranceCreditPage = () => {
         <div>
           <div className="flex items-center space-x-2 mb-3 sm:mb-4">
             <Icon name="FileText" size={16} className="sm:w-5 sm:h-5 text-primary" />
-            <h2 className="text-lg sm:text-xl font-semibold text-foreground">Service Description</h2>
+            <h2 className="text-lg sm:text-xl font-semibold text-foreground">Description du Service</h2>
           </div>
 
           {/* Risk Protection */}
@@ -168,9 +168,9 @@ const AssuranceCreditPage = () => {
                 <Icon name="AlertTriangle" size={12} className="sm:w-3.5 sm:h-3.5 text-orange-500" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground mb-2">Risk protection</h3>
+                <h3 className="font-semibold text-foreground mb-2">Protection des risques</h3>
                 <p className="text-xs sm:text-sm text-muted-foreground">
-                  This insurance covers up to 90% of the outstanding amount in the event of bankruptcy or prolonged non-payment of a B2B customer. It allows you to maintain your cash flow and continue your activity serenely, even in the event of the failure of an important customer.
+                  Cette assurance couvre jusqu'à 90% du montant impayé en cas de faillite ou de non-paiement prolongé d'un client B2B. Elle vous permet de maintenir votre trésorerie et de continuer votre activité sereinement, même en cas de défaillance d'un client important.
                 </p>
               </div>
             </div>
@@ -181,24 +181,24 @@ const AssuranceCreditPage = () => {
             <div>
               <div className="flex items-center space-x-2 mb-3 sm:mb-4">
                 <Icon name="CheckCircle" size={16} className="sm:w-5 sm:h-5 text-green-500" />
-                <h3 className="font-semibold text-foreground">Benefits</h3>
+                <h3 className="font-semibold text-foreground">Avantages</h3>
               </div>
               <ul className="space-y-2">
                 <li className="flex items-center space-x-2">
                   <Icon name="CheckCircle" size={14} className="sm:w-4 sm:h-4 text-green-500" />
-                  <span className="text-xs sm:text-sm text-foreground">Coverage of up to 90% of receivables</span>
+                  <span className="text-xs sm:text-sm text-foreground">Couverture jusqu'à 90% des créances</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <Icon name="CheckCircle" size={14} className="sm:w-4 sm:h-4 text-green-500" />
-                  <span className="text-xs sm:text-sm text-foreground">Customer Bankruptcy Protection</span>
+                  <span className="text-xs sm:text-sm text-foreground">Protection contre la faillite client</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <Icon name="CheckCircle" size={14} className="sm:w-4 sm:h-4 text-green-500" />
-                  <span className="text-xs sm:text-sm text-foreground">Legal support included</span>
+                  <span className="text-xs sm:text-sm text-foreground">Support juridique inclus</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <Icon name="CheckCircle" size={14} className="sm:w-4 sm:h-4 text-green-500" />
-                  <span className="text-xs sm:text-sm text-foreground">Responsiveness in the event of a disaster</span>
+                  <span className="text-xs sm:text-sm text-foreground">Réactivité en cas de sinistre</span>
                 </li>
               </ul>
             </div>
@@ -211,19 +211,19 @@ const AssuranceCreditPage = () => {
               <ul className="space-y-2">
                 <li className="flex items-center space-x-2">
                   <Icon name="Building" size={14} className="sm:w-4 sm:h-4 text-blue-500" />
-                  <span className="text-xs sm:text-sm text-foreground">B2B customers only (companies)</span>
+                  <span className="text-xs sm:text-sm text-foreground">Clients B2B uniquement (entreprises)</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <Icon name="Euro" size={14} className="sm:w-4 sm:h-4 text-green-500" />
-                  <span className="text-xs sm:text-sm text-foreground">Invoices over €500</span>
+                  <span className="text-xs sm:text-sm text-foreground">Factures supérieures à 500€</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <Icon name="Calendar" size={14} className="sm:w-4 sm:h-4 text-orange-500" />
-                  <span className="text-xs sm:text-sm text-foreground">Maximum payment term 90 days</span>
+                  <span className="text-xs sm:text-sm text-foreground">Délai de paiement maximum 90 jours</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <Icon name="Clock" size={14} className="sm:w-4 sm:h-4 text-red-500" />
-                  <span className="text-xs sm:text-sm text-foreground">Declaration within 30 days maximum</span>
+                  <span className="text-xs sm:text-sm text-foreground">Déclaration dans les 30 jours maximum</span>
                 </li>
               </ul>
             </div>
@@ -258,18 +258,18 @@ const AssuranceCreditPage = () => {
       {/* Application Form */}
       <div className="bg-card border border-border rounded-lg p-4 sm:p-6 lg:p-8">
         <div className="mb-4 sm:mb-6">
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-2">Applying for credit insurance</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">Fill out this form to receive a personalized proposal</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-2">Demande d'assurance crédit</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Remplissez ce formulaire pour recevoir une proposition personnalisée</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Company Contact Information */}
           <div className="space-y-3 sm:space-y-4">
-            <h2 className="text-base sm:text-lg font-semibold text-foreground">Company contact information</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-foreground">Informations de contact de l'entreprise</h2>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
               <Input
-                label="Company Name *"
+                label="Nom de l'entreprise *"
                 type="text"
                 value={formData.companyName}
                 onChange={(e) => handleChange('companyName', e.target.value)}
@@ -278,7 +278,7 @@ const AssuranceCreditPage = () => {
               />
               
               <Input
-                label="Contact person *"
+                label="Personne de contact *"
                 type="text"
                 value={formData.contactPerson}
                 onChange={(e) => handleChange('contactPerson', e.target.value)}
@@ -298,7 +298,7 @@ const AssuranceCreditPage = () => {
               />
               
               <Input
-                label="Telephone *"
+                label="Téléphone *"
                 type="tel"
                 value={formData.telephone}
                 onChange={(e) => handleChange('telephone', e.target.value)}
@@ -308,7 +308,7 @@ const AssuranceCreditPage = () => {
             </div>
 
             <Input
-              label="Full address *"
+              label="Adresse complète *"
               type="textarea"
               value={formData.address}
               onChange={(e) => handleChange('address', e.target.value)}
@@ -319,19 +319,19 @@ const AssuranceCreditPage = () => {
 
           {/* Industry */}
           <div className="space-y-3 sm:space-y-4">
-            <h2 className="text-base sm:text-lg font-semibold text-foreground">Industry</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-foreground">Secteur d'activité</h2>
             
             <Select
-              label="Main sector *"
+              label="Secteur principal *"
               options={sectorOptions}
               value={formData.sector}
               onChange={(e) => handleChange('sector', e.target.value)}
-              placeholder="Select your sector"
+              placeholder="Sélectionnez votre secteur"
               required
             />
             
             <Input
-              label="Description of the activity *"
+              label="Description de l'activité *"
               type="textarea"
               value={formData.activityDescription}
               onChange={(e) => handleChange('activityDescription', e.target.value)}
@@ -342,11 +342,11 @@ const AssuranceCreditPage = () => {
 
           {/* Financial Information */}
           <div className="space-y-3 sm:space-y-4">
-            <h2 className="text-base sm:text-lg font-semibold text-foreground">Financial Information</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-foreground">Informations financières</h2>
             
             <div className="relative">
               <Input
-                label="Annual turnover *"
+                label="Chiffre d'affaires annuel *"
                 type="text"
                 value={formData.annualTurnover}
                 onChange={(e) => handleChange('annualTurnover', e.target.value)}
@@ -357,7 +357,7 @@ const AssuranceCreditPage = () => {
             </div>
             
             <Input
-              label="Top B2B Customers *"
+              label="Principaux clients B2B *"
               type="textarea"
               value={formData.topCustomers}
               onChange={(e) => handleChange('topCustomers', e.target.value)}
@@ -374,7 +374,7 @@ const AssuranceCreditPage = () => {
             iconName="Send"
             iconPosition="left"
           >
-            Send my request
+            Envoyer ma demande
           </Button>
         </form>
 
@@ -382,7 +382,7 @@ const AssuranceCreditPage = () => {
         <div className="flex items-center space-x-2 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-border">
           <Icon name="Shield" size={14} className="sm:w-4 sm:h-4 text-muted-foreground" />
           <p className="text-xs sm:text-sm text-muted-foreground">
-            Your data is secure and used only for the study of your file.
+            Vos données sont sécurisées et utilisées uniquement pour l'étude de votre dossier.
           </p>
         </div>
       </div>
@@ -401,37 +401,36 @@ const AssuranceCreditPage = () => {
           {/* Header */}
           <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-            <div>
+              <div>
                 <div className="flex items-center">
                   <Icon name="Umbrella" size={24} className="text-primary mr-3" />
                   <h1 className="text-xl sm:text-2xl font-bold text-foreground">Assurance Crédit</h1>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                Protégez votre trésorerie contre les impayés clients
-              </p>
-            </div>
+                  Protégez votre trésorerie contre les impayés clients
+                </p>
+              </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
-            <div className="flex items-center gap-2">
-              <Button 
-                variant={activeTab === 'overview' ? 'default' : 'outline'}
-                onClick={() => setActiveTab('overview')}
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant={activeTab === 'overview' ? 'default' : 'outline'}
+                    onClick={() => setActiveTab('overview')}
                     size="sm"
                     className="text-xs sm:text-sm"
-              >
+                  >
                     Aperçu
-              </Button>
-              <Button 
-                variant={activeTab === 'application' ? 'default' : 'outline'}
-                onClick={() => setActiveTab('application')}
+                  </Button>
+                  <Button 
+                    variant={activeTab === 'application' ? 'default' : 'outline'}
+                    onClick={() => setActiveTab('application')}
                     size="sm"
                     className="text-xs sm:text-sm"
-              >
-                Application
-              </Button>
+                  >
+                    Demande
+                  </Button>
                 </div>
-
+              </div>
             </div>
-          </div>
           </header>
 
           {/* Content */}

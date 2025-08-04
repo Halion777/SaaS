@@ -14,7 +14,7 @@ const FindArtisanPage = () => {
   const [priceDropdownOpen, setPriceDropdownOpen] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [formData, setFormData] = useState({
-    category: '',
+    categories: [],
     address: '',
     zipCode: '',
     description: '',
@@ -32,6 +32,20 @@ const FindArtisanPage = () => {
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleCategoryToggle = (category) => {
+    setFormData(prev => {
+      const currentCategories = prev.categories;
+      const newCategories = currentCategories.includes(category)
+        ? currentCategories.filter(cat => cat !== category)
+        : [...currentCategories, category];
+      
+      return {
+        ...prev,
+        categories: newCategories
+      };
+    });
   };
 
   const handleFileChange = (e) => {
@@ -56,8 +70,8 @@ const FindArtisanPage = () => {
     e.preventDefault();
     setFormSubmitted(true);
     
-    // Check if category is selected before proceeding
-    if (formData.category === '') {
+    // Check if at least one category is selected before proceeding
+    if (formData.categories.length === 0) {
       return;
     }
     
@@ -274,9 +288,9 @@ const FindArtisanPage = () => {
                         <div className="absolute left-3 text-muted-foreground">
                           <Icon name="Briefcase" className="w-5 h-5" />
                         </div>
-                        <span className={formData.category ? 'text-foreground' : 'text-muted-foreground'}>
-                          {formData.category 
-                            ? workCategories.find(cat => cat.value === formData.category)?.label
+                        <span className={formData.categories.length > 0 ? 'text-foreground' : 'text-muted-foreground'}>
+                          {formData.categories.length > 0 
+                            ? formData.categories.map(cat => workCategories.find(c => c.value === cat)?.label).join(', ')
                             : t('findArtisan.form.selectCategory')
                           }
                         </span>
@@ -292,16 +306,13 @@ const FindArtisanPage = () => {
                             <button
                               key={category.value}
                               type="button"
-                              onClick={() => {
-                                handleInputChange('category', category.value);
-                                setDropdownOpen(false);
-                              }}
+                              onClick={() => handleCategoryToggle(category.value)}
                               className={`w-full px-4 py-3 text-left hover:bg-muted/50 transition-colors flex items-center ${
-                                formData.category === category.value ? 'bg-primary/10 text-primary' : 'text-foreground'
+                                formData.categories.includes(category.value) ? 'bg-primary/10 text-primary' : 'text-foreground'
                               }`}
                             >
                               <div className={`w-6 h-6 rounded flex items-center justify-center mr-3 ${
-                                formData.category === category.value ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
+                                formData.categories.includes(category.value) ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
                               }`}>
                                 <Icon name={category.icon} className="w-3 h-3" />
                               </div>
@@ -313,7 +324,7 @@ const FindArtisanPage = () => {
                     </div>
                     
                     {/* Error message if no category selected */}
-                    {formSubmitted && formData.category === '' && (
+                    {formSubmitted && formData.categories.length === 0 && (
                       <p className="text-sm text-destructive mt-2">
                         {t('findArtisan.form.categoryError')}
                       </p>

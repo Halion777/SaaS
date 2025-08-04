@@ -13,7 +13,7 @@ const LoginHeader = () => {
           <Icon name="Hammer" size={36} color="white" />
         </div>
         <div className="text-left">
-          <h1 className="text-2xl font-bold text-foreground">Havitam</h1>
+          <h1 className="text-2xl font-bold text-foreground">Haliqo</h1>
           <p className="text-sm text-muted-foreground">{t('login.logoSubtitle')}</p>
         </div>
       </div>

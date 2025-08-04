@@ -146,9 +146,10 @@ const StepOne = ({ formData, updateFormData, errors }) => {
           label={t('registerForm.step1.profession')}
           placeholder={t('registerForm.step1.professionPlaceholder')}
           options={professionOptions}
-          value={formData.profession}
+          value={formData.profession || []}
           onChange={(e) => updateFormData('profession', e.target.value)}
           error={errors.profession}
+          multiple
           required
         />
 

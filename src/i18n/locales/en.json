@@ -22,7 +22,7 @@
     }
   },
   "ui": {
-    "tagline": "Havitam - Your professional digital vitamin",
+    "tagline": "Haliqo - Your professional digital vitamin",
     "buttons": {
       "continue": "Continue",
       "back": "Back",
@@ -39,7 +39,7 @@
   },
   "home": {
     "hero": {
-      "badge": "Havitam - Your professional digital vitamin",
+      "badge": "Haliqo - Your professional digital vitamin",
       "title": {
         "prefix": "The all-in-one solution for ",
         "highlight": "Construction professionals"
@@ -62,7 +62,7 @@
         "highlight": "demo",
         "suffix": " how to use our system"
       },
-      "subtitle": "Discover in a few minutes how HAVITAM can transform your daily management",
+      "subtitle": "Discover in a few minutes how Haliqo can transform your daily management",
       "video": {
         "placeholder": "VIDEO",
         "clickToPlay": "Click to launch the demo"
@@ -70,7 +70,7 @@
     },
     "features": {
       "badge": "Features",
-      "title": "The 8 key features of Havitam",
+      "title": "The 8 key features of Haliqo",
       "subtitle": "Boost your business with simple, fast and intelligent tools",
       "feature1": {
         "title": "Quotes & invoices in 1 click",
@@ -143,7 +143,7 @@
     },
     "stats": {
       "badge": "Our Results",
-      "title": "HAVITAM in Numbers",
+      "title": "Haliqo in Numbers",
       "subtitle": "Discover the impact of our platform on the construction sector",
       "artisans": "500+ artisans",
       "quotes": "10,000+ quotes created",
@@ -152,7 +152,7 @@
     "craftsmen": {
       "badge": "Our Clients",
       "title": "Trade Profiles",
-      "subtitle": "HAVITAM adapts to all construction trades",
+      "subtitle": "Haliqo adapts to all construction trades",
       "plumber": {
         "title": "Plumber",
         "description": "Installation, troubleshooting & sanitary maintenance",
@@ -191,30 +191,30 @@
       "others": {
         "title": "Other Trades",
         "description": "Select this option if your activity is not listed above",
-        "benefit": "Havitam adapts to all specialties"
+        "benefit": "Haliqo adapts to all specialties"
       }
     },
     "testimonials": {
       "badge": "Testimonials",
       "title": "What our clients say",
-      "subtitle": "Discover why artisans trust HAVITAM",
+      "subtitle": "Discover why artisans trust Haliqo",
       "testimonial1": {
-        "quote": "HAVITAM has revolutionized my way of working. I save a lot of time on administrative tasks and can focus on my construction sites.",
+        "quote": "Haliqo has revolutionized my way of working. I save a lot of time on administrative tasks and can focus on my construction sites.",
         "name": "Jean Dupont",
         "profession": "Electrician"
       },
       "testimonial2": {
-        "quote": "Intuitive interface and responsive support. I recommend HAVITAM to all my artisan colleagues.",
+        "quote": "Intuitive interface and responsive support. I recommend Haliqo to all my artisan colleagues.",
         "name": "Marie Laurent",
         "profession": "Plumber"
       },
       "testimonial3": {
-        "quote": "Since I've been using HAVITAM, my invoicing is faster and my clients are more satisfied.",
+        "quote": "Since I've been using Haliqo, my invoicing is faster and my clients are more satisfied.",
         "name": "Pierre Martin",
         "profession": "Painter"
       },
       "testimonial4": {
-        "quote": "Quote management is now child's play. HAVITAM has saved me hours every week.",
+        "quote": "Quote management is now child's play. Haliqo has saved me hours every week.",
         "name": "Sophie Leroy",
         "profession": "Tiler"
       },
@@ -224,7 +224,7 @@
         "profession": "Carpenter"
       },
       "testimonial6": {
-        "quote": "HAVITAM has allowed me to develop my business by 40% in one year thanks to better organization.",
+        "quote": "Haliqo has allowed me to develop my business by 40% in one year thanks to better organization.",
         "name": "Claire Moreau",
         "profession": "Electrician"
       }
@@ -248,10 +248,10 @@
     "faq": {
       "badge": "FAQ",
       "title": "Frequently Asked Questions",
-      "subtitle": "Everything you need to know about HAVITAM",
+      "subtitle": "Everything you need to know about Haliqo",
       "pricing": {
-        "question": "How much does HAVITAM cost?",
-        "intro": "HAVITAM offers several plans adapted to your needs:",
+        "question": "How much does Haliqo cost?",
+        "intro": "Haliqo offers several plans adapted to your needs:",
         "starter": {
           "title": "Starter (€19/month)",
           "description": "Essential features to get started"
@@ -268,8 +268,8 @@
         "trialNote": "no commitment on all our plans!"
       },
       "setup": {
-        "question": "How long does it take to set up HAVITAM?",
-        "intro": "Setting up HAVITAM is very simple and fast:",
+        "question": "How long does it take to set up Haliqo?",
+        "intro": "Setting up Haliqo is very simple and fast:",
         "accountCreation": "Account creation",
         "basicConfig": "Basic configuration",
         "firstQuote": "First quote created",
@@ -288,7 +288,7 @@
         "intro": "Our mobile app is coming soon! It will be available on iOS and Android.",
         "comingSoon": "Coming Soon",
         "description": "We are currently working on the mobile app to offer you an optimal mobile experience. Be notified as soon as it's released!",
-        "browserAccess": "In the meantime, you can access HAVITAM from your mobile browser."
+        "browserAccess": "In the meantime, you can access Haliqo from your mobile browser."
       },
       "support": {
         "question": "What customer support do you offer?",
@@ -301,7 +301,7 @@
           "title": "Email support",
           "response": "Response within 24h"
         },
-        "conclusion": "Our team of experts is here to help you get the most out of HAVITAM!"
+        "conclusion": "Our team of experts is here to help you get the most out of Haliqo!"
       },
       "leads": {
         "question": "Can I receive qualified leads automatically?",
@@ -324,7 +324,7 @@
     "hero": {
       "badge": "About Us • Simplify Construction",
       "title": {
-        "prefix": "Havitam, your ",
+        "prefix": "Haliqo, your ",
         "highlight": "digital partner",
         "suffix": " in construction"
       },
@@ -341,10 +341,10 @@
     "story": {
       "badge": "Our Story",
       "title": "Our Story",
-      "subtitle": "Discover how HAVITAM was born from a simple vision",
-      "paragraph1": "The idea of Havitam was born from a simple observation: artisans lose a tremendous amount of time on administrative tasks when they should be able to focus on their expertise.",
+      "subtitle": "Discover how Haliqo was born from a simple vision",
+      "paragraph1": "The idea of Haliqo was born from a simple observation: artisans lose a tremendous amount of time on administrative tasks when they should be able to focus on their expertise.",
       "paragraph2": "After discussing with many independent workers, we realized that there was a lack of a simple, modern and intuitive solution, designed specifically for them.",
-      "paragraph3": "The name <span class=\"font-bold text-[#0036ab]\">HAVITAM</span> comes from <span class=\"font-semibold\">HA</span> (the founder's initials) and <span class=\"font-semibold\">vitam</span>, referring to the \"vitamin\" that gives a boost to artisans' activity.",
+      "paragraph3": "The name <span class=\"font-bold text-[#0036ab]\">Haliqo</span> comes from <span class=\"font-semibold\">HA</span> (the founder's initials) and <span class=\"font-semibold\">vitam</span>, referring to the \"vitamin\" that gives a boost to artisans' activity.",
       "paragraph4": "Our mission is to become the <span class=\"font-semibold text-[#12bf23]\">digital vitamin of construction</span>, by facilitating daily management, reducing administrative time and increasing the profitability of professionals in the sector."
     },
     "values": {
@@ -371,18 +371,18 @@
     "founder": {
       "badge": "Our Founder",
       "title": "Our Founder",
-      "subtitle": "Discover the vision that gave birth to HAVITAM",
+      "subtitle": "Discover the vision that gave birth to Haliqo",
       "name": "Haitam A.",
       "role": "Founder & CEO",
       "bio": {
         "paragraph1": "Haitam A. is passionate about technology and entrepreneurship. After studying international business and several experiences in business creation, he was confronted with the complexity of administrative management, quotes, and invoicing.",
         "paragraph2": "It was by discussing with artisan friends that he understood that this problem was widely shared in the sector. He therefore decided to create a simple and complete solution to meet their specific needs.",
-        "paragraph3": "Without coming from the construction industry, he knew how to surround himself, observe, listen — and build a useful and effective platform. Havitam was born from this vision: to offer artisans the digital tools they deserve."
+        "paragraph3": "Without coming from the construction industry, he knew how to surround himself, observe, listen — and build a useful and effective platform. Haliqo was born from this vision: to offer artisans the digital tools they deserve."
       }
     },
     "cta": {
       "title": "Join the construction revolution",
-      "subtitle": "Discover how HAVITAM can transform your business and allow you to focus on what you do best.",
+      "subtitle": "Discover how Haliqo can transform your business and allow you to focus on what you do best.",
       "trust": {
         "trial": "14-day free trial",
         "noCommitment": "No commitment",
@@ -397,7 +397,7 @@
     "hero": {
       "badge": "Contact",
       "title": "We're here to help",
-      "subtitle": "Contact our team for any questions about HAVITAM",
+      "subtitle": "Contact our team for any questions about Haliqo",
       "benefits": {
         "response24h": "Response within 24h",
         "frenchSupport": "Support in FR / NL / EN",
@@ -406,10 +406,10 @@
     },
     "info": {
       "title": "Let's talk about your project",
-      "description": "Whether you're an artisan who wants to discover Havitam or a client who needs help, we're here to support you.",
+      "description": "Whether you're an artisan who wants to discover Haliqo or a client who needs help, we're here to support you.",
       "email": {
         "title": "Email",
-        "address": "support@havitam.com",
+        "address": "support@Haliqo.com",
         "response": "Response within 24h"
       },
       "phone": {
@@ -522,11 +522,11 @@
     },
     "guarantees": {
       "badge": "Guarantees",
-      "title": "Why choose HAVITAM?",
+      "title": "Why choose Haliqo?",
       "subtitle": "We offer you peace of mind with our guarantees and support",
       "trial": {
         "title": "Free trial",
-        "description": "Test HAVITAM free for 14 days with no commitment"
+        "description": "Test Haliqo free for 14 days with no commitment"
       },
       "noCommitment": {
         "title": "No commitment",
@@ -559,7 +559,7 @@
     },
     "cta": {
       "title": "Ready to transform your business?",
-      "subtitle": "Join thousands of artisans who trust HAVITAM to grow their business",
+      "subtitle": "Join thousands of artisans who trust Haliqo to grow their business",
       "button": "Start free trial"
     }
   },
@@ -656,7 +656,7 @@
   },
   "login": {
     "title": "Login",
-    "subtitle": "Connect to your HAVITAM account",
+    "subtitle": "Connect to your Haliqo account",
     "welcome": "Welcome back!",
     "welcomeSubtitle": "Connect to your craftsman space to manage your quotes and invoices",
     "logoSubtitle": "Artisan Pro",
@@ -717,7 +717,7 @@
     },
     "step2": {
       "title": "Additional information",
-      "subtitle": "Customize Havitam according to your activity",
+      "subtitle": "Customize Haliqo according to your activity",
       "businessSize": "Company size",
       "businessSizePlaceholder": "Number of employees",
       "solo": "Solo artisan",
@@ -850,14 +850,14 @@
     },
     "step2": {
       "title": "Additional information",
-      "subtitle": "Customize Havitam according to your activity"
+      "subtitle": "Customize Haliqo according to your activity"
     },
     "step3": {
       "title": "Choose your plan",
       "subtitle": "Start with 14 days free, no commitment"
     },
     "benefits": {
-      "title": "Why choose Havitam?",
+      "title": "Why choose Haliqo?",
       "signatures": "+40% signatures",
       "signaturesDescription": "AI optimizes your quotes to maximize conversions",
       "timeSaving": "Time saving",
@@ -877,7 +877,7 @@
         "name": "Sophie Dubois",
         "trade": "Electrician",
         "location": "Paris",
-        "quote": "No more manual follow-ups! Havitam manages everything automatically."
+        "quote": "No more manual follow-ups! Haliqo manages everything automatically."
       }
     },
     "security": {
@@ -952,41 +952,41 @@
     }
   },
   "meta": {
-    "title": "HAVITAM - Your professional digital vitamin",
-    "description": "HAVITAM simplifies the administrative management of construction professionals. Create quotes, send invoices and develop your clientele.",
+    "title": "Haliqo - Your professional digital vitamin",
+    "description": "Haliqo simplifies the administrative management of construction professionals. Create quotes, send invoices and develop your clientele.",
     "keywords": "artisan, construction, quotes, invoices, management, electrician, plumber, painter",
-    "ogTitle": "HAVITAM - Your professional digital vitamin",
+    "ogTitle": "Haliqo - Your professional digital vitamin",
     "ogDescription": "Simplify your administrative management and develop your clientele",
     "schemaDescription": "The all-in-one platform for construction professionals. Create quotes, send invoices, track payments and receive prospects.",
     "phone": "+33-1-23-45-67-89",
     "about": {
-      "title": "About - HAVITAM",
-      "description": "Discover the story and values of HAVITAM, the innovative platform for construction artisans."
+      "title": "About - Haliqo",
+      "description": "Discover the story and values of Haliqo, the innovative platform for construction artisans."
     },
     "pricing": {
-      "title": "Pricing - HAVITAM",
+      "title": "Pricing - Haliqo",
       "description": "Choose the plan that best fits your needs. All plans include a 14-day free trial."
     },
     "findArtisan": {
-      "title": "Find an Artisan - HAVITAM",
+      "title": "Find an Artisan - Haliqo",
       "description": "Find a qualified artisan near you for your renovation and construction projects."
     },
     "contact": {
-      "title": "Contact - HAVITAM",
-      "description": "Contact the HAVITAM team for any questions about our platform for artisans, for a demo or technical support.",
+      "title": "Contact - Haliqo",
+      "description": "Contact the Haliqo team for any questions about our platform for artisans, for a demo or technical support.",
       "keywords": "contact, support, artisans, quotes, invoices, management"
     },
     "login": {
-      "title": "Login - HAVITAM",
-      "description": "Log in to your HAVITAM account and manage your artisan business efficiently."
+      "title": "Login - Haliqo",
+      "description": "Log in to your Haliqo account and manage your artisan business efficiently."
     },
     "forgotPassword": {
-      "title": "Forgot Password - HAVITAM",
-      "description": "Reset your HAVITAM account password. Enter your email to receive reset instructions."
+      "title": "Forgot Password - Haliqo",
+      "description": "Reset your Haliqo account password. Enter your email to receive reset instructions."
     },
     "resetPassword": {
-      "title": "Reset Password - HAVITAM",
-      "description": "Set your new password for your HAVITAM account."
+      "title": "Reset Password - Haliqo",
+      "description": "Set your new password for your Haliqo account."
     }
   },
   "footer": {
@@ -1033,7 +1033,7 @@
     "section": {
       "badge": "Features",
       "title": "All our features",
-      "subtitle": "Discover how HAVITAM can transform your daily management"
+      "subtitle": "Discover how Haliqo can transform your daily management"
     },
     "list": {
       "feature1": {
@@ -1071,7 +1071,7 @@
     },
     "benefits": {
       "badge": "Benefits",
-      "title": "Why choose HAVITAM?",
+      "title": "Why choose Haliqo?",
       "subtitle": "Join hundreds of artisans who have already transformed their management",
       "benefit1": {
         "title": "Revenue increase",
@@ -1083,7 +1083,7 @@
       },
       "benefit3": {
         "title": "Customer satisfaction",
-        "description": "98% of our users recommend HAVITAM to their colleagues"
+        "description": "98% of our users recommend Haliqo to their colleagues"
       }
     },
     "cta": {
@@ -1107,11 +1107,11 @@
     "sections": {
       "acceptance": {
         "title": "Acceptance of Terms",
-        "content": "<p>By accessing and using HAVITAM, you agree to be bound by these terms of service. If you do not agree to these terms, please do not use our services.</p>"
+        "content": "<p>By accessing and using Haliqo, you agree to be bound by these terms of service. If you do not agree to these terms, please do not use our services.</p>"
       },
       "services": {
         "title": "Description of Services",
-        "content": "<p>HAVITAM provides an administrative management platform for construction professionals, including quote creation, invoice management, payment tracking and other business management tools.</p>"
+        "content": "<p>Haliqo provides an administrative management platform for construction professionals, including quote creation, invoice management, payment tracking and other business management tools.</p>"
       },
       "accounts": {
         "title": "User Accounts",
@@ -1127,11 +1127,11 @@
       },
       "intellectual": {
         "title": "Intellectual Property",
-        "content": "<p>HAVITAM and its content are protected by intellectual property rights. You may not copy, modify or distribute our content without authorization.</p>"
+        "content": "<p>Haliqo and its content are protected by intellectual property rights. You may not copy, modify or distribute our content without authorization.</p>"
       },
       "liability": {
         "title": "Limitation of Liability",
-        "content": "<p>HAVITAM is provided \"as is\" without warranty. We will not be liable for indirect or consequential damages resulting from the use of our services.</p>"
+        "content": "<p>Haliqo is provided \"as is\" without warranty. We will not be liable for indirect or consequential damages resulting from the use of our services.</p>"
       },
       "termination": {
         "title": "Termination",
@@ -1143,7 +1143,7 @@
       },
       "contact": {
         "title": "Contact",
-        "content": "<p>For any questions regarding these terms, contact us at support@havitam.com</p>"
+        "content": "<p>For any questions regarding these terms, contact us at support@haliqo.com</p>"
       }
     },
     "contact": {
@@ -1166,7 +1166,7 @@
     "sections": {
       "introduction": {
         "title": "Introduction",
-        "content": "<p>HAVITAM is committed to protecting your privacy. This policy explains how we collect, use and protect your personal information.</p>"
+        "content": "<p>Haliqo is committed to protecting your privacy. This policy explains how we collect, use and protect your personal information.</p>"
       },
       "collection": {
         "title": "Information Collection",
@@ -1202,7 +1202,7 @@
       },
       "contact": {
         "title": "Contact",
-        "content": "<p>For any questions regarding this privacy policy, contact us at privacy@havitam.com</p>"
+        "content": "<p>For any questions regarding this privacy policy, contact us at privacy@Haliqo.com</p>"
       }
     },
     "contact": {
@@ -1271,7 +1271,7 @@
       },
       "contact": {
         "title": "Contact",
-        "content": "<p>For any questions regarding our use of cookies, contact us at cookies@havitam.com</p>"
+        "content": "<p>For any questions regarding our use of cookies, contact us at cookies@Haliqo.com</p>"
       }
     },
     "contact": {
@@ -1297,7 +1297,7 @@
     },
     "section": {
       "badge": "Key Features",
-      "title": "The 8 key features of HAVITAM",
+      "title": "The 8 key features of Haliqo",
       "subtitle": "Boost your business with simple, fast and intelligent tools"
     },
     "list": {
@@ -1336,7 +1336,7 @@
     },
     "benefits": {
       "badge": "Benefits",
-      "title": "Why choose HAVITAM?",
+      "title": "Why choose Haliqo?",
       "subtitle": "Join hundreds of artisans who have already transformed their management",
       "benefit1": {
         "title": "Revenue increase",
@@ -1348,7 +1348,7 @@
       },
       "benefit3": {
         "title": "Customer satisfaction",
-        "description": "98% of our users recommend HAVITAM to their colleagues"
+        "description": "98% of our users recommend Haliqo to their colleagues"
       }
     },
     "cta": {
@@ -1371,24 +1371,24 @@
   },
   "meta": {
     "features": {
-      "title": "Features - HAVITAM",
-      "description": "Discover all HAVITAM features designed to simplify the administrative management of construction professionals."
+      "title": "Features - Haliqo",
+      "description": "Discover all Haliqo features designed to simplify the administrative management of construction professionals."
     },
     "terms": {
-      "title": "Terms of Service - HAVITAM",
-      "description": "Read our terms of service to understand the rules and obligations related to using the HAVITAM platform."
+      "title": "Terms of Service - Haliqo",
+      "description": "Read our terms of service to understand the rules and obligations related to using the Haliqo platform."
     },
     "privacy": {
-      "title": "Privacy Policy - HAVITAM",
-      "description": "Discover how HAVITAM protects and uses your personal information in accordance with current regulations."
+      "title": "Privacy Policy - Haliqo",
+      "description": "Discover how Haliqo protects and uses your personal information in accordance with current regulations."
     },
     "cookies": {
-      "title": "Cookie Policy - HAVITAM",
-      "description": "Understand how HAVITAM uses cookies to improve your experience on our platform."
+      "title": "Cookie Policy - Haliqo",
+      "description": "Understand how Haliqo uses cookies to improve your experience on our platform."
     },
     "forgotPassword": {
-      "title": "Reset Password - HAVITAM",
-      "description": "Reset your HAVITAM password securely to access your artisan account."
+      "title": "Reset Password - Haliqo",
+      "description": "Reset your Haliqo password securely to access your artisan account."
     }
   }
 } 
