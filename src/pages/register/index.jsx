@@ -30,7 +30,7 @@ const Register = () => {
     phone: '',
     companyName: '',
     profession: '',
-    country: 'FR',
+    country: 'BE',
     businessSize: '',
     selectedPlan: 'pro',
     billingCycle: 'monthly',

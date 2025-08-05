@@ -801,8 +801,14 @@
       "tiling": "Tiler",
       "roofing": "Roofer",
       "heating": "Heating Engineer",
+      "renovation": "Renovation",
+      "cleaning": "Cleaning",
+      "solar": "Solar Installation",
       "gardening": "Landscaper",
       "locksmith": "Locksmith",
+      "glazing": "Glazing",
+      "insulation": "Insulation",
+      "airConditioning": "Air Conditioning",
       "other": "Other"
     },
     "success": {

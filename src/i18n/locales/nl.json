@@ -801,8 +801,14 @@
       "tiling": "Tegelzetter",
       "roofing": "Dakdekker",
       "heating": "Verwarmingstechnicus",
+      "renovation": "Renovatie",
+      "cleaning": "Schoonmaak",
+      "solar": "Zonne-installatie",
       "gardening": "Hovenier",
       "locksmith": "Sluissmid",
+      "glazing": "Glaswerk",
+      "insulation": "Isolatie",
+      "airConditioning": "Airconditioning",
       "other": "Andere"
     },
     "success": {

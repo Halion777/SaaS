@@ -802,8 +802,14 @@
       "tiling": "Carreleur",
       "roofing": "Couvreur",
       "heating": "Chauffagiste",
+      "renovation": "Rénovation",
+      "cleaning": "Nettoyage",
+      "solar": "Installation solaire",
       "gardening": "Paysagiste",
       "locksmith": "Serrurier",
+      "glazing": "Vitrerie",
+      "insulation": "Isolation",
+      "airConditioning": "Climatisation",
       "other": "Autre"
     },
     "success": {

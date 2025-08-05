@@ -81,6 +81,21 @@ const StepOne = ({ formData, updateFormData, errors }) => {
       icon: <Icon name="Thermometer" size={16} />
     },
     { 
+      value: 'renovation', 
+      label: t('registerForm.professions.renovation'),
+      icon: <Icon name="Tool" size={16} />
+    },
+    { 
+      value: 'cleaning', 
+      label: t('registerForm.professions.cleaning'),
+      icon: <Icon name="Sparkles" size={16} />
+    },
+    { 
+      value: 'solar', 
+      label: t('registerForm.professions.solar'),
+      icon: <Icon name="Sun" size={16} />
+    },
+    { 
       value: 'gardening', 
       label: t('registerForm.professions.gardening'),
       icon: <Icon name="Flower" size={16} />
@@ -89,6 +104,21 @@ const StepOne = ({ formData, updateFormData, errors }) => {
       value: 'locksmith', 
       label: t('registerForm.professions.locksmith'),
       icon: <Icon name="Lock" size={16} />
+    },
+    { 
+      value: 'glazing', 
+      label: t('registerForm.professions.glazing'),
+      icon: <Icon name="Square" size={16} />
+    },
+    { 
+      value: 'insulation', 
+      label: t('registerForm.professions.insulation'),
+      icon: <Icon name="Shield" size={16} />
+    },
+    { 
+      value: 'airConditioning', 
+      label: t('registerForm.professions.airConditioning'),
+      icon: <Icon name="Thermometer" size={16} />
     },
     { 
       value: 'other', 
