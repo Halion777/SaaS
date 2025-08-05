@@ -1136,10 +1136,7 @@ const HomePage = () => {
                             <Icon name="CheckCircle" size={16} className="text-[#12bf23] mr-2" />
                             <span><strong>{t('home.faq.pricing.pro.title')} :</strong> {t('home.faq.pricing.pro.description')}</span>
                           </li>
-                          <li className="flex items-center">
-                            <Icon name="CheckCircle" size={16} className="text-[#12bf23] mr-2" />
-                            <span><strong>{t('home.faq.pricing.business.title')} :</strong> {t('home.faq.pricing.business.description')}</span>
-                          </li>
+                         
                         </ul>
                         <p className="text-gray-600 mt-4">
                           <strong>{t('home.faq.pricing.trial')}</strong> {t('home.faq.pricing.trialNote')}
@@ -1248,7 +1245,7 @@ const HomePage = () => {
                           <div className="flex items-center p-3 bg-orange-50 rounded-lg">
                             <Icon name="Server" size={20} className="text-orange-600 mr-3" />
                             <div>
-                              <div className="font-semibold text-gray-900">Hébergement français</div>
+                              <div className="font-semibold text-gray-900">Hébergement sécurisé en Europe</div>
                               <div className="text-sm text-gray-600">{t('home.faq.security.servers')}</div>
                             </div>
                           </div>

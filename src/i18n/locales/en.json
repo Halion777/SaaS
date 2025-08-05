@@ -42,7 +42,7 @@
       "badge": "Haliqo - Your professional digital vitamin",
       "title": {
         "prefix": "The all-in-one solution for ",
-        "highlight": "Construction professionals"
+        "highlight": "craftsman professionals"
       },
       "subtitle": "Save time, send your quotes, invoices and track your payments – stress-free.",
       "benefits": {
@@ -253,16 +253,12 @@
         "question": "How much does Haliqo cost?",
         "intro": "Haliqo offers several plans adapted to your needs:",
         "starter": {
-          "title": "Starter (€19/month)",
+          "title": "Starter (€29.99/month)",
           "description": "Essential features to get started"
         },
         "pro": {
-          "title": "Pro (€39/month)",
+          "title": "Pro (€49.99/month)",
           "description": "Advanced features + priority support"
-        },
-        "business": {
-          "title": "Business (€59/month)",
-          "description": "Multi-users + advanced features"
         },
         "trial": "14-day free trial",
         "trialNote": "no commitment on all our plans!"
@@ -344,8 +340,8 @@
       "subtitle": "Discover how Haliqo was born from a simple vision",
       "paragraph1": "The idea of Haliqo was born from a simple observation: artisans lose a tremendous amount of time on administrative tasks when they should be able to focus on their expertise.",
       "paragraph2": "After discussing with many independent workers, we realized that there was a lack of a simple, modern and intuitive solution, designed specifically for them.",
-      "paragraph3": "The name <span class=\"font-bold text-[#0036ab]\">Haliqo</span> comes from <span class=\"font-semibold\">HA</span> (the founder's initials) and <span class=\"font-semibold\">vitam</span>, referring to the \"vitamin\" that gives a boost to artisans' activity.",
-      "paragraph4": "Our mission is to become the <span class=\"font-semibold text-[#12bf23]\">digital vitamin of construction</span>, by facilitating daily management, reducing administrative time and increasing the profitability of professionals in the sector."
+      "paragraph3": "The name <span class=\"font-bold text-[#0036ab]\">Haliqo</span> comes from the initials <span class=\"font-semibold\">HA</span> of the founder Haitam, and the letters <span class=\"font-semibold\">LIQO</span> which represent the key features of the platform: <span class=\"font-semibold text-[#12bf23]\">L</span>eads, <span class=\"font-semibold text-[#12bf23]\">I</span>nvoices, <span class=\"font-semibold text-[#12bf23]\">Q</span>uotes, <span class=\"font-semibold text-[#12bf23]\">O</span>ptimization.",
+      "paragraph4": "Haliqo's ambition is to be a true \"<span class=\"font-semibold text-[#0036ab]\">booster liquid</span>\" that fluidifies and energizes all the administrative work of artisans, on a daily basis."
     },
     "values": {
       "badge": "Our Values",
@@ -483,8 +479,9 @@
     },
     "popular": "Most Popular",
     "period": "month",
+    "taxDeduction": "Subscription deductible at 120% thanks to government support for the transition to electronic invoicing (e-invoicing).",
     "taxNote": "Excl. VAT, applicable tax",
-    "savings": "Save {amount}€ per year",
+    "savings": "Save {{amount}}€ per year",
     "plans": {
       "starter": {
         "name": "Starter",
@@ -584,7 +581,7 @@
         "description": "Select the type of work"
       },
       "step2": {
-        "title": "Location",
+        "title": "Location project",
         "description": "Indicate the site address"
       },
       "step3": {
@@ -605,7 +602,14 @@
       "roofing": "Roofing",
       "masonry": "Masonry",
       "heating": "Heating",
+      "renovation": "Renovation",
+      "cleaning": "Cleaning",
+      "solar": "Solar Installation",
       "gardening": "Gardening",
+      "locksmith": "Locksmith",
+      "glazing": "Glazing",
+      "insulation": "Insulation",
+      "airConditioning": "Air Conditioning",
       "other": "Other"
     },
     "priceRanges": {
@@ -624,9 +628,9 @@
       "selectCategory": "Select a category",
       "categoryError": "Please select a work category",
       "address": "Site address or city",
-      "addressPlaceholder": "Ex: 123 Peace Street, Paris",
+      "addressPlaceholder": "Ex: 123 Law Street, Brussels",
       "zipCode": "Postal code",
-      "zipCodePlaceholder": "Ex: 75001",
+      "zipCodePlaceholder": "Ex: 1000",
       "description": "Project description",
       "descriptionPlaceholder": "Describe your work in detail: nature, dimensions, desired materials...",
       "priceRange": "Price range",
@@ -641,7 +645,7 @@
       "fullName": "First / Last Name",
       "fullNamePlaceholder": "Your full name",
       "phone": "Phone",
-      "phonePlaceholder": "06 12 34 56 78",
+      "phonePlaceholder": "04 12 34 56 78",
       "email": "Email",
       "emailPlaceholder": "your@email.com",
       "submit": "Send my request"
@@ -698,7 +702,7 @@
       "profession": "Profession / Activity type",
       "professionPlaceholder": "Select your trade",
       "email": "Email address",
-      "emailPlaceholder": "john@example.com",
+      "emailPlaceholder": "john@example",
       "password": "Password",
       "passwordPlaceholder": "Create a secure password",
       "passwordStrength": "Password strength:",
@@ -707,7 +711,7 @@
       "passwordGood": "Good",
       "passwordExcellent": "Excellent",
       "phone": "Phone number",
-      "phonePlaceholder": "+1 555 123 4567",
+      "phonePlaceholder": "04 12 34 56 78",
       "country": "Country",
       "countryPlaceholder": "Select your country",
       "aiBoost": {
@@ -830,12 +834,9 @@
         "title": "SSL Security",
         "description": "End-to-end encryption for all your information"
       },
-      "iso": {
-        "title": "ISO Certified",
-        "description": "Recognized quality and security standards"
-      },
+      
       "artisans": {
-        "title": "2000+ Artisans",
+        "title": "500+ Artisans",
         "description": "Already trust our platform"
       }
     }
@@ -987,6 +988,26 @@
     "resetPassword": {
       "title": "Reset Password - Haliqo",
       "description": "Set your new password for your Haliqo account."
+    },
+    "register": {
+      "title": "Register - Haliqo",
+      "description": "Create your Haliqo account and start managing your artisan business efficiently."
+    },
+    "features": {
+      "title": "Features - Haliqo",
+      "description": "Discover all Haliqo features designed to simplify the administrative management of construction professionals."
+    },
+    "terms": {
+      "title": "Terms of Service - Haliqo",
+      "description": "Read our terms of service to understand the rules and obligations related to using the Haliqo platform."
+    },
+    "privacy": {
+      "title": "Privacy Policy - Haliqo",
+      "description": "Discover how Haliqo protects and uses your personal information in accordance with current regulations."
+    },
+    "cookies": {
+      "title": "Cookie Policy - Haliqo",
+      "description": "Understand how Haliqo uses cookies to improve your experience on our platform."
     }
   },
   "footer": {
@@ -1369,28 +1390,7 @@
       }
     }
   },
-  "meta": {
-    "features": {
-      "title": "Features - Haliqo",
-      "description": "Discover all Haliqo features designed to simplify the administrative management of construction professionals."
-    },
-    "terms": {
-      "title": "Terms of Service - Haliqo",
-      "description": "Read our terms of service to understand the rules and obligations related to using the Haliqo platform."
-    },
-    "privacy": {
-      "title": "Privacy Policy - Haliqo",
-      "description": "Discover how Haliqo protects and uses your personal information in accordance with current regulations."
-    },
-    "cookies": {
-      "title": "Cookie Policy - Haliqo",
-      "description": "Understand how Haliqo uses cookies to improve your experience on our platform."
-    },
-    "forgotPassword": {
-      "title": "Reset Password - Haliqo",
-      "description": "Reset your Haliqo password securely to access your artisan account."
-    }
-  },
+  
   "sidebar": {
     "categories": {
       "main": {

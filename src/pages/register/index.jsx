@@ -227,6 +227,12 @@ const Register = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50 relative">
+      <Helmet>
+        <title>{t('meta.register.title')}</title>
+        <meta name="description" content={t('meta.register.description')} />
+        <html lang={i18n.language} />
+      </Helmet>
+      
       {/* Background Pattern */}
       <div className="absolute inset-0 z-0 opacity-5">
         <div className="absolute top-0 left-0 right-0 h-40 bg-blue-600 transform -skew-y-3 origin-top-right"></div>

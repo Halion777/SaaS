@@ -14,6 +14,7 @@ const ClientModal = ({ client, onSave, onClose }) => {
     address: '',
     contactPerson: '',
     companySize: '',
+    regNumber: '',
     preferences: [],
     peppolId: '',
     enablePeppol: false
@@ -48,6 +49,7 @@ const ClientModal = ({ client, onSave, onClose }) => {
         address: client.address || '',
         contactPerson: client.contactPerson || '',
         companySize: client.companySize || '',
+        regNumber: client.regNumber || '',
         preferences: client.preferences || [],
         peppolId: client.peppolId || '',
         enablePeppol: client.enablePeppol || false
@@ -119,7 +121,7 @@ const ClientModal = ({ client, onSave, onClose }) => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
-                  label="Nom / Raison sociale *"
+                  label="Nom / Raison sociale"
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleChange('name', e.target.value)}
@@ -128,7 +130,7 @@ const ClientModal = ({ client, onSave, onClose }) => {
                 />
                 
                 <Select
-                  label="Type de client *"
+                  label="Type de client"
                   options={typeOptions}
                   value={formData.type}
                   onChange={(e) => handleChange('type', e.target.value)}
@@ -137,7 +139,7 @@ const ClientModal = ({ client, onSave, onClose }) => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
-                  label="Email *"
+                  label="Email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleChange('email', e.target.value)}
@@ -146,7 +148,7 @@ const ClientModal = ({ client, onSave, onClose }) => {
                 />
                 
                 <Input
-                  label="Téléphone *"
+                  label="Téléphone"
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => handleChange('phone', e.target.value)}
@@ -186,6 +188,14 @@ const ClientModal = ({ client, onSave, onClose }) => {
                     placeholder="Sélectionner la taille"
                   />
                 </div>
+                
+                <Input
+                  label="Numéro d'enregistrement"
+                  type="text"
+                  value={formData.regNumber}
+                  onChange={(e) => handleChange('regNumber', e.target.value)}
+                  placeholder="Numéro d'enregistrement de l'entreprise"
+                />
               </div>
             )}
 

@@ -178,6 +178,14 @@ const Header = () => {
             {!isAuthenticated && (
               <nav className="hidden lg:flex items-center space-x-8">
                 <Link 
+                  to="/"
+                  className={`text-gray-700 hover:text-[#0036ab] transition-colors font-medium ${
+                    isActive('/') ? 'text-[#0036ab]' : ''
+                  }`}
+                >
+                  {t('nav.home')}
+                </Link>
+                <Link 
                   to="/about"
                   className={`text-gray-700 hover:text-[#0036ab] transition-colors font-medium ${
                     isActive('/about') ? 'text-[#0036ab]' : ''
@@ -298,6 +306,14 @@ const Header = () => {
                 <>
                   {/* Mobile Navigation Links */}
                   <nav className="flex flex-col space-y-1 mb-4">
+                    <Link 
+                      to="/"
+                      className={`px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium ${
+                        isActive('/') ? 'bg-[#0036ab]/5 text-[#0036ab]' : ''
+                      }`}
+                    >
+                      {t('nav.home')}
+                    </Link>
                     <Link 
                       to="/about"
                       className={`px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium ${

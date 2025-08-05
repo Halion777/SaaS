@@ -120,9 +120,15 @@ const PricingPage = () => {
                 </div>
               </div>
             </div>
-            
+            {/* Tax Deduction Notice */}
+            <div className="text-center mb-8">
+              <p className="text-sm text-gray-600 bg-[#12bf23]/10 border border-[#12bf23]/20 rounded-lg px-4 py-3 max-w-4xl mx-auto">
+                <Icon name="Info" size={16} className="inline mr-2 text-[#12bf23]" />
+                {t('pricing.taxDeduction')}
+              </p>
+            </div>
             {/* Billing Toggle */}
-            <div className="flex justify-center mb-10">
+            <div className="flex justify-center mb-3">
               <div className="inline-flex items-center bg-white/80 backdrop-blur-sm p-1 rounded-xl shadow-lg border border-gray-200 w-80 relative">
                 {/* Animated Background Slider */}
                 <div 
@@ -156,6 +162,9 @@ const PricingPage = () => {
                 </button>
               </div>
             </div>
+            
+            
+            
           </div>
         </section>
         

@@ -28,7 +28,7 @@ const ClientManagement = () => {
       type: 'individual',
       email: 'jean.dupont@email.com',
       phone: '+33 6 12 34 56 78',
-      address: '123 Rue de la Paix, Paris',
+      address: '123 Rue de la Loi, Bruxelles',
       totalRevenue: 15000,
       projectsCount: 5,
       status: 'active',

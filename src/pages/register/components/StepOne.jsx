@@ -99,8 +99,9 @@ const StepOne = ({ formData, updateFormData, errors }) => {
   
   // Country options
   const countries = [
-    { value: 'FR', label: t('registerForm.countries.FR'), icon: <Icon name="Flag" size={16} /> },
+    
     { value: 'BE', label: t('registerForm.countries.BE'), icon: <Icon name="Flag" size={16} /> },
+    { value: 'FR', label: t('registerForm.countries.FR'), icon: <Icon name="Flag" size={16} /> },
     { value: 'CH', label: t('registerForm.countries.CH'), icon: <Icon name="Flag" size={16} /> },
     { value: 'LU', label: t('registerForm.countries.LU'), icon: <Icon name="Flag" size={16} /> },
     { value: 'CA', label: t('registerForm.countries.CA'), icon: <Icon name="Flag" size={16} /> },
@@ -219,7 +220,7 @@ const StepOne = ({ formData, updateFormData, errors }) => {
           label={t('registerForm.step1.country')}
           placeholder={t('registerForm.step1.countryPlaceholder')}
           options={countries}
-          value={formData.country || 'FR'}
+          value={formData.country || 'BE'}
           onChange={(e) => updateFormData('country', e.target.value)}
           error={errors.country}
           required

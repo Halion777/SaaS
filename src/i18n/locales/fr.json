@@ -254,11 +254,11 @@
         "question": "Combien coûte Haliqo ?",
         "intro": "Haliqo propose deux formules simples et sans engagement :",
         "starter": {
-          "title": "Starter (19€/mois)",
+          "title": "Starter (29,99€/mois)",
           "description": "Fonctionnalités essentielles pour débuter"
         },
         "pro": {
-          "title": "Pro (39€/mois)",
+          "title": "Pro (49,99€/mois)",
           "description": "Fonctionnalités avancées + support prioritaire"
         },
         "trial": "Essai gratuit de 14 jours",
@@ -467,7 +467,6 @@
         "suffix": " et adaptés"
       },
       "subtitle": "Choisissez le plan qui correspond le mieux à vos besoins. Tous les plans incluent un essai gratuit de 14 jours.",
-      "taxDeduction": "Abonnement déductible à 120 % grâce au soutien de l'État pour le passage à la facturation électronique (e-invoicing).",
       "benefits": {
         "trial": "14 jours d'essai gratuit",
         "noCommitment": "Sans engagement",
@@ -479,10 +478,11 @@
       "yearly": "Annuel",
       "savings": "-20%"
     },
+    "taxDeduction": "Abonnement déductible à 120 % grâce au soutien de l'État pour le passage à la facturation électronique (e-invoicing).",
     "popular": "Le plus populaire",
     "period": "mois",
     "taxNote": "HT, TVA applicable",
-    "savings": "Économisez {amount}€ par an",
+    "savings": "Économisez {{amount}}€ par an",
     "plans": {
       "starter": {
         "name": "Starter",
@@ -582,7 +582,7 @@
         "description": "Sélectionnez le type de travaux"
       },
       "step2": {
-        "title": "Localisation",
+        "title": "Localisation projet",
         "description": "Indiquez l'adresse du chantier"
       },
       "step3": {
@@ -603,7 +603,14 @@
       "roofing": "Toiture",
       "masonry": "Maçonnerie",
       "heating": "Chauffage",
+      "renovation": "Rénovation",
+      "cleaning": "Nettoyage",
+      "solar": "Installation solaire",
       "gardening": "Jardinage",
+      "locksmith": "Serrurerie",
+      "glazing": "Vitrerie",
+      "insulation": "Isolation",
+      "airConditioning": "Climatisation",
       "other": "Autre"
     },
     "priceRanges": {
@@ -622,9 +629,9 @@
       "selectCategory": "Sélectionnez une ou plusieurs catégories",
       "categoryError": "Veuillez sélectionner au moins une catégorie de travaux",
       "address": "Adresse ou ville du chantier",
-      "addressPlaceholder": "Ex: 123 Rue de la Paix, Paris",
+      "addressPlaceholder": "Ex: 123 Rue de la Loi, Bruxelles",
       "zipCode": "Code postal",
-      "zipCodePlaceholder": "Ex: 75001",
+      "zipCodePlaceholder": "Ex: 1000",
       "description": "Description du projet",
       "descriptionPlaceholder": "Décrivez vos travaux en détail : nature, dimensions, matériaux souhaités...",
       "priceRange": "Fourchette de prix",
@@ -639,7 +646,7 @@
       "fullName": "Nom / Prénom",
       "fullNamePlaceholder": "Votre nom complet",
       "phone": "Téléphone",
-      "phonePlaceholder": "06 12 34 56 78",
+      "phonePlaceholder": "04 12 34 56 78",
       "email": "Email",
       "emailPlaceholder": "votre@email.com",
       "submit": "Envoyer ma demande"
@@ -696,7 +703,7 @@
       "profession": "Profession / Type d'activité",
       "professionPlaceholder": "Sélectionnez votre métier",
       "email": "Adresse email",
-      "emailPlaceholder": "jean@exemple.fr",
+      "emailPlaceholder": "jean@exemple",
       "password": "Mot de passe",
       "passwordPlaceholder": "Créez un mot de passe sécurisé",
       "passwordStrength": "Force du mot de passe:",
@@ -705,7 +712,7 @@
       "passwordGood": "Bon",
       "passwordExcellent": "Excellent",
       "phone": "Numéro de téléphone",
-      "phonePlaceholder": "+33 6 12 34 56 78",
+      "phonePlaceholder": "04 12 34 56 78",
       "country": "Pays",
       "countryPlaceholder": "Sélectionnez votre pays",
       "aiBoost": {
@@ -828,12 +835,9 @@
         "title": "Sécurité SSL",
         "description": "Chiffrement de bout en bout pour toutes vos informations"
       },
-      "iso": {
-        "title": "Certifié ISO",
-        "description": "Standards de qualité et sécurité reconnus"
-      },
+      
       "artisans": {
-        "title": "2000+ Artisans",
+        "title": "500+ Artisans",
         "description": "Font déjà confiance à notre plateforme"
       }
     }
@@ -983,6 +987,30 @@
     "resetPassword": {
       "title": "Réinitialiser le mot de passe - Haliqo",
       "description": "Définissez votre nouveau mot de passe pour votre compte Haliqo."
+    },
+    "register": {
+      "title": "S'inscrire - Haliqo",
+      "description": "Créez votre compte Haliqo et commencez à gérer votre entreprise d'artisanat efficacement."
+    },
+    "login": {
+      "title": "Connexion - Haliqo",
+      "description": "Connectez-vous à votre compte Haliqo pour accéder à votre tableau de bord."
+    },
+    "features": {
+      "title": "Fonctionnalités - Haliqo",
+      "description": "Découvrez toutes les fonctionnalités d'Haliqo conçues pour simplifier la gestion administrative des artisans du bâtiment."
+    },
+    "terms": {
+      "title": "Conditions d'utilisation - Haliqo",
+      "description": "Lisez nos conditions d'utilisation pour comprendre les règles et obligations liées à l'utilisation de la plateforme Haliqo."
+    },
+    "privacy": {
+      "title": "Politique de confidentialité - Haliqo",
+      "description": "Découvrez comment Haliqo protège et utilise vos informations personnelles conformément aux réglementations en vigueur."
+    },
+    "cookies": {
+      "title": "Politique des cookies - Haliqo",
+      "description": "Comprenez comment Haliqo utilise les cookies pour améliorer votre expérience sur notre plateforme."
     }
   },
   "footer": {
@@ -1364,28 +1392,6 @@
         "adminTime": "temps admin",
         "satisfaction": "satisfaction"
       }
-    }
-  },
-  "meta": {
-    "features": {
-      "title": "Fonctionnalités - Haliqo",
-      "description": "Découvrez toutes les fonctionnalités d'Haliqo conçues pour simplifier la gestion administrative des artisans du bâtiment."
-    },
-    "terms": {
-      "title": "Conditions d'utilisation - Haliqo",
-      "description": "Lisez nos conditions d'utilisation pour comprendre les règles et obligations liées à l'utilisation de la plateforme Haliqo."
-    },
-    "privacy": {
-      "title": "Politique de confidentialité - Haliqo",
-      "description": "Découvrez comment Haliqo protège et utilise vos informations personnelles conformément aux réglementations en vigueur."
-    },
-    "cookies": {
-      "title": "Politique des cookies - Haliqo",
-      "description": "Comprenez comment Haliqo utilise les cookies pour améliorer votre expérience sur notre plateforme."
-    },
-    "forgotPassword": {
-      "title": "Réinitialiser le mot de passe - Haliqo",
-      "description": "Réinitialisez votre mot de passe Haliqo en toute sécurité pour accéder à votre compte artisan."
     }
   },
   "followUp": {

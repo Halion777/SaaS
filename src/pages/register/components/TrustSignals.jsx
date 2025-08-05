@@ -17,11 +17,6 @@ const TrustSignals = () => {
       description: t('registerForm.trustSignals.ssl.description')
     },
     {
-      icon: 'Award',
-      title: t('registerForm.trustSignals.iso.title'),
-      description: t('registerForm.trustSignals.iso.description')
-    },
-    {
       icon: 'Users',
       title: t('registerForm.trustSignals.artisans.title'),
       description: t('registerForm.trustSignals.artisans.description')
@@ -29,7 +24,7 @@ const TrustSignals = () => {
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {signals.map((signal, index) => (
         <div key={index} className="text-center">
           <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">

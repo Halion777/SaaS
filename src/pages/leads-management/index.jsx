@@ -13,7 +13,7 @@ const LeadsManagementPage = () => {
   const tabsScrollRef = useScrollPosition('leads-tabs-scroll');
   const [settings, setSettings] = useState({
     receiveQuotes: false,
-    professionalAddress: '123 Rue de la République, 75001 Paris',
+    professionalAddress: '123 Rue de la Loi, 1000 Bruxelles',
     interventionRadius: '20',
     workCategories: {
       plomberie: false,

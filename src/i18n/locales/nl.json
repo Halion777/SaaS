@@ -253,16 +253,12 @@
         "question": "Hoeveel kost Haliqo?",
         "intro": "Haliqo biedt verschillende formules aan die aangepast zijn aan je behoeften:",
         "starter": {
-          "title": "Starter (€19/maand)",
+          "title": "Starter (€29,99/maand)",
           "description": "Essentiële functies om te beginnen"
         },
         "pro": {
-          "title": "Pro (€39/maand)",
+          "title": "Pro (€49,99/maand)",
           "description": "Geavanceerde functies + prioriteitsondersteuning"
-        },
-        "business": {
-          "title": "Business (€59/maand)",
-          "description": "Multi-gebruikers + geavanceerde functies"
         },
         "trial": "14 dagen gratis proefperiode",
         "trialNote": "geen verplichting op al onze formules!"
@@ -344,8 +340,8 @@
       "subtitle": "Ontdek hoe Haliqo geboren werd uit een eenvoudige visie",
       "paragraph1": "Het idee van Haliqo werd geboren uit een eenvoudige observatie: vakmensen verliezen enorm veel tijd aan administratieve taken terwijl ze zich zouden moeten kunnen concentreren op hun expertise.",
       "paragraph2": "Na gesprekken met veel zelfstandigen realiseerden we ons dat er een gebrek was aan een eenvoudige, moderne en intuïtieve oplossing, speciaal ontworpen voor hen.",
-      "paragraph3": "De naam <span class=\"font-bold text-[#0036ab]\">Haliqo</span> komt van <span class=\"font-semibold\">HA</span> (de initialen van de oprichter) en <span class=\"font-semibold\">vitam</span>, verwijzend naar de \"vitamine\" die een boost geeft aan de activiteit van vakmensen.",
-      "paragraph4": "Onze missie is om de <span class=\"font-semibold text-[#12bf23]\">digitale vitamine van de bouw</span> te worden, door het dagelijkse beheer te vergemakkelijken, de administratieve tijd te verminderen en de winstgevendheid van professionals in de sector te verhogen."
+      "paragraph3": "De naam <span class=\"font-bold text-[#0036ab]\">Haliqo</span> komt van de initialen <span class=\"font-semibold\">HA</span> van de oprichter Haitam, en de letters <span class=\"font-semibold\">LIQO</span> die de kernfuncties van het platform vertegenwoordigen: <span class=\"font-semibold text-[#12bf23]\">L</span>eads, <span class=\"font-semibold text-[#12bf23]\">I</span>nvoices, <span class=\"font-semibold text-[#12bf23]\">Q</span>uotes, <span class=\"font-semibold text-[#12bf23]\">O</span>ptimization.",
+      "paragraph4": "De ambitie van Haliqo is om een echte \"<span class=\"font-semibold text-[#0036ab]\">booster vloeistof</span>\" te zijn die alle administratieve werk van vakmensen vloeibaar maakt en dynamiseert, op dagelijkse basis."
     },
     "values": {
       "badge": "Onze waarden",
@@ -484,7 +480,8 @@
     "popular": "Meest Populair",
     "period": "maand",
     "taxNote": "Excl. BTW, toepasselijke belasting",
-    "savings": "Bespaar {amount}€ per jaar",
+    "taxDeduction": "Abonnement aftrekbaar voor 120% dankzij overheidssteun voor de overgang naar elektronische facturering (e-invoicing).",
+    "savings": "Bespaar {{amount}}€ per jaar",
     "plans": {
       "starter": {
         "name": "Starter",
@@ -584,7 +581,7 @@
         "description": "Selecteer het type werk"
       },
       "step2": {
-        "title": "Locatie",
+        "title": "Project locatie",
         "description": "Geef het adres van de werf aan"
       },
       "step3": {
@@ -605,7 +602,14 @@
       "roofing": "Dakwerk",
       "masonry": "Metselwerk",
       "heating": "Verwarming",
+      "renovation": "Renovatie",
+      "cleaning": "Schoonmaak",
+      "solar": "Zonne-installatie",
       "gardening": "Tuinieren",
+      "locksmith": "Smederij",
+      "glazing": "Glaswerk",
+      "insulation": "Isolatie",
+      "airConditioning": "Airconditioning",
       "other": "Andere"
     },
     "priceRanges": {
@@ -624,9 +628,9 @@
       "selectCategory": "Selecteer een categorie",
       "categoryError": "Selecteer een werkcategorie",
       "address": "Werfadres of stad",
-      "addressPlaceholder": "Ex: 123 Vredestraat, Parijs",
+      "addressPlaceholder": "Ex: 123 Wetstraat, Brussel",
       "zipCode": "Postcode",
-      "zipCodePlaceholder": "Ex: 75001",
+      "zipCodePlaceholder": "Ex: 1000",
       "description": "Projectbeschrijving",
       "descriptionPlaceholder": "Beschrijf je werk in detail: aard, afmetingen, gewenste materialen...",
       "priceRange": "Prijsbereik",
@@ -641,7 +645,7 @@
       "fullName": "Voor- / Achternaam",
       "fullNamePlaceholder": "Je volledige naam",
       "phone": "Telefoon",
-      "phonePlaceholder": "06 12 34 56 78",
+      "phonePlaceholder": "04 12 34 56 78",
       "email": "E-mail",
       "emailPlaceholder": "jouw@email.com",
       "submit": "Mijn aanvraag versturen"
@@ -698,7 +702,7 @@
       "profession": "Beroep / Activiteitstype",
       "professionPlaceholder": "Selecteer je vak",
       "email": "E-mailadres",
-      "emailPlaceholder": "jan@voorbeeld.nl",
+      "emailPlaceholder": "jan@voorbeeld",
       "password": "Wachtwoord",
       "passwordPlaceholder": "Maak een veilig wachtwoord",
       "passwordStrength": "Wachtwoordsterkte:",
@@ -707,7 +711,7 @@
       "passwordGood": "Goed",
       "passwordExcellent": "Uitstekend",
       "phone": "Telefoonnummer",
-      "phonePlaceholder": "+31 6 12345678",
+      "phonePlaceholder": "04 12 34 56 78",
       "country": "Land",
       "countryPlaceholder": "Selecteer je land",
       "aiBoost": {
@@ -830,12 +834,9 @@
         "title": "SSL-beveiliging",
         "description": "End-to-end versleuteling voor al je informatie"
       },
-      "iso": {
-        "title": "ISO-gecertificeerd",
-        "description": "Erkende kwaliteits- en veiligheidsnormen"
-      },
+      
       "artisans": {
-        "title": "2000+ Vakmensen",
+        "title": "500+ Vakmensen",
         "description": "Vertrouwen al op ons platform"
       }
     }
@@ -984,6 +985,14 @@
       "description": "Neem contact op met het Haliqo team voor vragen over ons platform voor vakmensen, voor een demo of technische ondersteuning.",
       "keywords": "contact, ondersteuning, vakmensen, offertes, facturen, beheer"
     },
+    "login": {
+      "title": "Inloggen - Haliqo",
+      "description": "Log in op je Haliqo account en beheer je vakmansbedrijf efficiënt."
+    },
+    "register": {
+      "title": "Registreren - Haliqo",
+      "description": "Maak je Haliqo account aan en begin met het efficiënt beheren van je ambachtsbedrijf."
+    },
     "forgotPassword": {
       "title": "Wachtwoord vergeten - Haliqo",
       "description": "Reset het wachtwoord van je Haliqo account. Voer je e-mail in om reset-instructies te ontvangen."
@@ -991,6 +1000,22 @@
     "resetPassword": {
       "title": "Wachtwoord resetten - Haliqo",
       "description": "Stel je nieuwe wachtwoord in voor je Haliqo account."
+    },
+    "features": {
+      "title": "Functies - Haliqo",
+      "description": "Ontdek alle Haliqo functies ontworpen om het administratieve beheer van bouwvakkers te vereenvoudigen."
+    },
+    "terms": {
+      "title": "Gebruiksvoorwaarden - Haliqo",
+      "description": "Lees onze gebruiksvoorwaarden om de regels en verplichtingen te begrijpen die verbonden zijn aan het gebruik van het Haliqo platform."
+    },
+    "privacy": {
+      "title": "Privacybeleid - Haliqo",
+      "description": "Ontdek hoe Haliqo je persoonlijke informatie beschermt en gebruikt in overeenstemming met de huidige regelgeving."
+    },
+    "cookies": {
+      "title": "Cookiebeleid - Haliqo",
+      "description": "Begrijp hoe Haliqo cookies gebruikt om je ervaring op ons platform te verbeteren."
     }
   },
   "footer": {
@@ -1371,28 +1396,6 @@
         "adminTime": "admin tijd",
         "satisfaction": "tevredenheid"
       }
-    }
-  },
-  "meta": {
-    "features": {
-      "title": "Functies - Haliqo",
-      "description": "Ontdek alle Haliqo functies ontworpen om het administratieve beheer van bouwvakkers te vereenvoudigen."
-    },
-    "terms": {
-      "title": "Gebruiksvoorwaarden - Haliqo",
-      "description": "Lees onze gebruiksvoorwaarden om de regels en verplichtingen te begrijpen die verbonden zijn aan het gebruik van het Haliqo platform."
-    },
-    "privacy": {
-      "title": "Privacybeleid - Haliqo",
-      "description": "Ontdek hoe Haliqo je persoonlijke informatie beschermt en gebruikt in overeenstemming met de huidige regelgeving."
-    },
-    "cookies": {
-      "title": "Cookiebeleid - Haliqo",
-      "description": "Begrijp hoe Haliqo cookies gebruikt om je ervaring op ons platform te verbeteren."
-    },
-    "forgotPassword": {
-      "title": "Wachtwoord resetten - Haliqo",
-      "description": "Reset je Haliqo wachtwoord veilig om toegang te krijgen tot je vakmensen-account."
     }
   },
   "register": {

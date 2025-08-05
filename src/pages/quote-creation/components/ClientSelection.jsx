@@ -13,9 +13,12 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
     email: '',
     phone: '',
     address: '',
-    company: '',
     contactPerson: '',
-    companySize: ''
+    companySize: '',
+    regNumber: '',
+    peppolId: '',
+    enablePeppol: false,
+    preferences: []
   });
 
   const existingClients = [
@@ -36,6 +39,13 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
     { value: 'PME', label: 'PME (10-249 salariés)' },
     { value: 'ETI', label: 'ETI (250-4999 salariés)' },
     { value: 'GE', label: 'Grande Entreprise (5000+ salariés)' }
+  ];
+
+  const preferenceOptions = [
+    { value: 'email', label: 'Email' },
+    { value: 'phone', label: 'Téléphone' },
+    { value: 'sms', label: 'SMS' },
+    { value: 'mail', label: 'Courrier' }
   ];
 
   const categoryOptions = [
@@ -245,6 +255,21 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
     setNewClient(prev => ({ ...prev, [field]: value }));
   };
 
+  const handlePreferenceToggle = (preference) => {
+    setNewClient(prev => ({
+      ...prev,
+      preferences: prev.preferences.includes(preference)
+        ? prev.preferences.filter(p => p !== preference)
+        : [...prev.preferences, preference]
+    }));
+  };
+
+  const validatePeppolId = (peppolId) => {
+    // Basic Peppol ID validation: [Country Code]:[Identifier]
+    const peppolRegex = /^[0-9]{4}:[A-Z0-9]+$/;
+    return peppolRegex.test(peppolId);
+  };
+
   const handleProjectChange = (field, value) => {
     const updatedProjectInfo = { ...projectInfo, [field]: value };
     onProjectInfoChange(updatedProjectInfo);
@@ -338,7 +363,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
             {clientType === 'individual' && (
               <div className="space-y-3 sm:space-y-4">
                 <Input
-                  label="Nom complet *"
+                  label="Nom complet"
                   type="text"
                   placeholder="Jean Martin"
                   value={newClient.name}
@@ -348,7 +373,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   <Input
-                    label="Email *"
+                    label="Email"
                     type="email"
                     placeholder="jean.martin@email.com"
                     value={newClient.email}
@@ -361,6 +386,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                     placeholder="06 12 34 56 78"
                     value={newClient.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
+                    required
                   />
                 </div>
                 
@@ -376,78 +402,181 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
 
             {/* Professional Client Form */}
             {clientType === 'professional' && (
-              <div className="space-y-3 sm:space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+              <>
+                {/* Basic Information */}
+                <div className="space-y-4">
+                  <h3 className="font-medium text-foreground">Informations de base</h3>
+                  
                   <Input
-                    label="Raison sociale *"
+                    label="Nom / Raison sociale"
                     type="text"
-                    placeholder="SARL Construction Plus"
                     value={newClient.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
+                    placeholder="Nom du client ou de l'entreprise"
                     required
                   />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                      label="Email"
+                      type="email"
+                      value={newClient.email}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      placeholder="email@exemple.com"
+                      required
+                    />
+                    
+                    <Input
+                      label="Téléphone"
+                      type="tel"
+                      value={newClient.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      placeholder="+33 6 12 34 56 78"
+                      required
+                    />
+                  </div>
+
                   <Input
-                    label="Nom commercial (optionnel)"
+                    label="Adresse"
                     type="text"
-                    placeholder="Construction Plus"
-                    value={newClient.company}
-                    onChange={(e) => handleInputChange('company', e.target.value)}
+                    value={newClient.address}
+                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    placeholder="Adresse complète"
                   />
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+
+                {/* Professional-specific fields */}
+                <div className="space-y-4 border-t border-border pt-4">
+                  <h3 className="font-medium text-foreground">Informations entreprise</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                      label="Personne de contact"
+                      type="text"
+                      value={newClient.contactPerson}
+                      onChange={(e) => handleInputChange('contactPerson', e.target.value)}
+                      placeholder="Nom du contact principal"
+                    />
+                    
+                    <Select
+                      label="Taille de l'entreprise"
+                      options={companySizeOptions}
+                      value={newClient.companySize}
+                      onChange={(e) => handleInputChange('companySize', e.target.value)}
+                      placeholder="Sélectionner la taille"
+                    />
+                  </div>
+                  
                   <Input
-                    label="Email *"
-                    type="email"
-                    placeholder="contact@constructionplus.fr"
-                    value={newClient.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    required
-                  />
-                  <Input
-                    label="Téléphone *"
-                    type="tel"
-                    placeholder="+33 1 23 45 67 89"
-                    value={newClient.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                  <Input
-                    label="Personne de contact"
+                    label="Numéro d'enregistrement"
                     type="text"
-                    placeholder="Marie Martin"
-                    value={newClient.contactPerson}
-                    onChange={(e) => handleInputChange('contactPerson', e.target.value)}
-                  />
-                  <Select
-                    label="Taille de l'entreprise"
-                    options={companySizeOptions}
-                    value={newClient.companySize}
-                    onChange={(e) => handleInputChange('companySize', e.target.value)}
-                    placeholder="Sélectionner la taille"
+                    value={newClient.regNumber}
+                    onChange={(e) => handleInputChange('regNumber', e.target.value)}
+                    placeholder="Numéro d'enregistrement de l'entreprise"
                   />
                 </div>
-                
-                <Input
-                  label="Adresse"
-                  type="text"
-                  placeholder="456 Avenue des Entreprises, 69000 Lyon"
-                  value={newClient.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                />
-              </div>
+
+                {/* Peppol Configuration */}
+                <div className="space-y-4 border-t border-border pt-4">
+                  <h3 className="font-medium text-foreground">Configuration Peppol</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id="enablePeppol"
+                        checked={newClient.enablePeppol}
+                        onChange={(e) => handleInputChange('enablePeppol', e.target.checked)}
+                        className="w-4 h-4 text-primary border-border rounded focus:ring-primary"
+                      />
+                      <label htmlFor="enablePeppol" className="text-sm font-medium">
+                        Activer l'envoi de factures via Peppol
+                      </label>
+                    </div>
+                    
+                    {newClient.enablePeppol && (
+                      <div className="space-y-4 pl-7">
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <div className="flex items-start space-x-3">
+                            <Icon name="Info" size={20} className="text-blue-600 mt-0.5" />
+                            <div>
+                              <h4 className="font-medium text-blue-900 mb-1">Facturation électronique Peppol</h4>
+                              <p className="text-sm text-blue-700">
+                                L'envoi de factures via Peppol nécessite un identifiant Peppol valide du client.
+                                Contactez votre client pour obtenir son Peppol ID.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Input
+                            label="Peppol ID du client *"
+                            type="text"
+                            value={newClient.peppolId}
+                            onChange={(e) => handleInputChange('peppolId', e.target.value)}
+                            placeholder="Ex: 0208:123456789"
+                            helperText="Format: [Pays]:[Numéro d'identification] (ex: 0208:123456789 pour la France)"
+                            required={newClient.enablePeppol}
+                          />
+                          {newClient.peppolId.trim() && (
+                            <div className="flex items-center space-x-2 text-xs">
+                              {validatePeppolId(newClient.peppolId.trim()) ? (
+                                <>
+                                  <Icon name="CheckCircle" size={14} color="var(--color-green)" />
+                                  <span className="text-green-600">Format Peppol ID valide</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Icon name="AlertCircle" size={14} color="var(--color-destructive)" />
+                                  <span className="text-red-600">Format invalide. Utilisez: 0208:123456789</span>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Communication Preferences */}
+                <div className="space-y-4 border-t border-border pt-4">
+                  <h3 className="font-medium text-foreground">Préférences de communication</h3>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {preferenceOptions.map((preference) => (
+                      <div
+                        key={preference.value}
+                        className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                          newClient.preferences?.includes(preference.value)
+                            ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/50'
+                        }`}
+                        onClick={() => handlePreferenceToggle(preference.value)}
+                      >
+                        <div className="flex items-center justify-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={newClient.preferences?.includes(preference.value) || false}
+                            onChange={() => {}}
+                            className="w-4 h-4 text-primary border-border rounded focus:ring-primary"
+                          />
+                          <span className="text-sm font-medium">{preference.label}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
             )}
             
-            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-3 sm:pt-4">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-3 sm:pt-4 justify-end">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => {
                   setShowNewClientForm(false);
-                  setNewClient({ name: '', type: 'individual', email: '', phone: '', address: '', company: '', contactPerson: '', companySize: '' });
+                  setNewClient({ name: '', type: 'individual', email: '', phone: '', address: '', contactPerson: '', companySize: '', regNumber: '', peppolId: '', enablePeppol: false, preferences: [] });
                   setClientType('individual');
                 }}
               >

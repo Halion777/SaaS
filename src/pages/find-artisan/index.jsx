@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -26,6 +26,31 @@ const FindArtisanPage = () => {
     projectImages: []
   });
   const fileInputRef = useRef(null);
+  const categoryDropdownRef = useRef(null);
+  const priceDropdownRef = useRef(null);
+
+  // Handle click outside dropdowns to close them
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Close category dropdown if clicked outside
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+      
+      // Close price dropdown if clicked outside
+      if (priceDropdownRef.current && !priceDropdownRef.current.contains(event.target)) {
+        setPriceDropdownOpen(false);
+      }
+    };
+
+    // Add event listener
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    // Cleanup event listener
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -114,32 +139,67 @@ const FindArtisanPage = () => {
     { 
       value: 'tiling', 
       label: t('findArtisan.categories.tiling'),
-      icon: 'Hammer'
+      icon: 'Grid'
     },
     { 
       value: 'roofing', 
       label: t('findArtisan.categories.roofing'),
-      icon: 'Hammer'
+      icon: 'Home'
     },
     { 
       value: 'masonry', 
       label: t('findArtisan.categories.masonry'),
-      icon: 'Hammer'
+      icon: 'Building'
     },
     { 
       value: 'heating', 
       label: t('findArtisan.categories.heating'),
-      icon: 'Zap'
+      icon: 'Thermometer'
+    },
+    { 
+      value: 'renovation', 
+      label: t('findArtisan.categories.renovation'),
+      icon: 'Tool'
+    },
+    { 
+      value: 'cleaning', 
+      label: t('findArtisan.categories.cleaning'),
+      icon: 'Sparkles'
+    },
+    { 
+      value: 'solar', 
+      label: t('findArtisan.categories.solar'),
+      icon: 'Sun'
     },
     { 
       value: 'gardening', 
       label: t('findArtisan.categories.gardening'),
-      icon: 'Shovel'
+      icon: 'Flower'
+    },
+    { 
+      value: 'locksmith', 
+      label: t('findArtisan.categories.locksmith'),
+      icon: 'Lock'
+    },
+    { 
+      value: 'glazing', 
+      label: t('findArtisan.categories.glazing'),
+      icon: 'Square'
+    },
+    { 
+      value: 'insulation', 
+      label: t('findArtisan.categories.insulation'),
+      icon: 'Shield'
+    },
+    { 
+      value: 'airConditioning', 
+      label: t('findArtisan.categories.airConditioning'),
+      icon: 'Thermometer'
     },
     { 
       value: 'other', 
       label: t('findArtisan.categories.other'),
-      icon: 'Hammer'
+      icon: 'Tool'
     }
   ];
 
@@ -278,7 +338,7 @@ const FindArtisanPage = () => {
                     <label className="block text-sm font-medium text-foreground mb-2">
                       {t('findArtisan.form.category')} *
                     </label>
-                    <div className="relative">
+                    <div className="relative" ref={categoryDropdownRef}>
                       {/* Custom Dropdown Button */}
                       <button
                         type="button"
@@ -301,22 +361,22 @@ const FindArtisanPage = () => {
                       
                       {/* Dropdown Options */}
                       {dropdownOpen && (
-                        <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-md z-10 max-h-60 overflow-y-auto overflow-x-hidden scrollbar-hide">
                           {workCategories.map(category => (
                             <button
                               key={category.value}
                               type="button"
                               onClick={() => handleCategoryToggle(category.value)}
-                              className={`w-full px-4 py-3 text-left hover:bg-muted/50 transition-colors flex items-center ${
-                                formData.categories.includes(category.value) ? 'bg-primary/10 text-primary' : 'text-foreground'
+                              className={`w-full px-3 py-2 text-left text-sm outline-none transition-transform duration-200 hover:scale-[1.02] flex items-center rounded-sm ${
+                                formData.categories.includes(category.value) ? 'bg-accent text-accent-foreground' : 'text-foreground'
                               }`}
                             >
                               <div className={`w-6 h-6 rounded flex items-center justify-center mr-3 ${
-                                formData.categories.includes(category.value) ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
+                                formData.categories.includes(category.value) ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                               }`}>
                                 <Icon name={category.icon} className="w-3 h-3" />
                               </div>
-                              <span className="text-sm">{category.label}</span>
+                              <span className="flex-1">{category.label}</span>
                             </button>
                           ))}
                         </div>
@@ -378,7 +438,7 @@ const FindArtisanPage = () => {
                     <label className="block text-sm font-medium text-foreground mb-2">
                       {t('findArtisan.form.priceRange')}
                     </label>
-                    <div className="relative">
+                    <div className="relative" ref={priceDropdownRef}>
                       {/* Custom Dropdown Button */}
                       <button
                         type="button"
