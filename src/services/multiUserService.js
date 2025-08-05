@@ -102,6 +102,7 @@ class MultiUserService {
           role: profileData.role,
           avatar: profileData.avatar,
           permissions: permissionsArray,
+          pin: profileData.pin || null,
           is_active: false
         })
         .select()
@@ -236,7 +237,7 @@ class MultiUserService {
       if (avatarUrl) {
         await this.deleteAvatar(avatarUrl);
       }
-
+      
       return { success: true };
     } catch (error) {
       
@@ -345,7 +346,7 @@ class MultiUserService {
       if (!allProfiles || allProfiles.length === 0) {
         return null;
       }
-      
+
       // If there's only one profile, make it active
       if (allProfiles.length === 1) {
         const { data: singleProfile, error: singleError } = await supabase
@@ -567,9 +568,9 @@ class MultiUserService {
         .from('user_invitations')
         .insert({
           company_id: userId,
-          email,
-          role,
-          permissions,
+        email,
+        role,
+        permissions,
           token,
           expires_at: expiresAt.toISOString()
         })

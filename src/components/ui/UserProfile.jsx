@@ -7,6 +7,7 @@ import Button from './Button';
 import PinModal from './PinModal';
 import { useMultiUser } from '../../context/MultiUserContext';
 import { useAuth } from '../../context/AuthContext';
+import { createPortal } from 'react-dom';
 
 const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) => {
   const { t } = useTranslation();
@@ -678,9 +679,9 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
       )}
 
       {/* Account Settings Modal */}
-      {isAccountSettingsOpen && (
+      {isAccountSettingsOpen && createPortal(
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000] p-4">
-          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 max-h-[90vh] overflow-y-auto">
+          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2  overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-medium text-foreground">Paramètres du compte</h3>
               <button
@@ -717,7 +718,8 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* PIN Modal for Profile Switching */}

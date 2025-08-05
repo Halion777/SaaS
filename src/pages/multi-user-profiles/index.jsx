@@ -27,7 +27,9 @@ const MultiUserProfilesPage = () => {
     addProfile,
     updateProfile,
     deleteProfile,
-    getCompanyProfiles
+    getCompanyProfiles,
+    uploadAndUpdateAvatar,
+    
   } = useMultiUser();
 
   const [invitations, setInvitations] = useState([]);
@@ -432,7 +434,7 @@ const MultiUserProfilesPage = () => {
     e.preventDefault();
     
     try {
-      const newProfile = await addProfile(user?.id, {
+      const newProfile = await addProfile({
         name: profileForm.name,
         email: profileForm.email,
         role: profileForm.role,
@@ -469,14 +471,14 @@ const MultiUserProfilesPage = () => {
         if (!profileForm.pin) {
           // Set default PIN if none provided
           const defaultPin = '1234';
-          await updateProfile(user?.id, newProfile.id, { pin: defaultPin });
+          await updateProfile(newProfile.id, { pin: defaultPin });
         }
         
         // Also set PIN for existing admin profile if it doesn't have one
         const adminProfile = allProfiles.find(p => p.role === 'admin' && p.id !== newProfile.id);
         if (adminProfile && !adminProfile.pin) {
           const adminPin = '0000'; // Special PIN for admin
-          await updateProfile(user?.id, adminProfile.id, { pin: adminPin });
+          await updateProfile(adminProfile.id, { pin: adminPin });
         }
       }
     } catch (error) {
@@ -1442,7 +1444,7 @@ const MultiUserProfilesPage = () => {
                   <form onSubmit={handleInviteUser} className="space-y-6">
                     {/* Basic Information */}
                     <div className="space-y-6">
-                      <div>
+                  <div>
                         <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
                           <Icon name="UserPlus" size={18} className="mr-2 text-primary" />
                           Informations de l'utilisateur
@@ -1451,21 +1453,21 @@ const MultiUserProfilesPage = () => {
                           <div className="space-y-2">
                             <label className="text-sm font-medium leading-none text-foreground">
                               Email <span className="text-destructive">*</span>
-                            </label>
-                            <input
-                              type="email"
-                              value={inviteForm.email}
-                              onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                    </label>
+                    <input
+                      type="email"
+                      value={inviteForm.email}
+                      onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
                               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                              placeholder="email@exemple.com"
-                              required
-                            />
-                          </div>
+                      placeholder="email@exemple.com"
+                      required
+                    />
+                  </div>
 
                           <div className="space-y-2">
                             <label className="text-sm font-medium leading-none text-foreground">
                               Rôle <span className="text-destructive">*</span>
-                            </label>
+                    </label>
                             <EnhancedSelect
                               options={[
                                 { value: 'viewer', label: 'Lecteur' },
@@ -1474,7 +1476,7 @@ const MultiUserProfilesPage = () => {
                                 { value: 'manager', label: 'Gestionnaire' },
                                 { value: 'admin', label: 'Administrateur' }
                               ]}
-                              value={inviteForm.role}
+                      value={inviteForm.role}
                               onChange={(value) => setInviteForm({ ...inviteForm, role: value })}
                               placeholder="Sélectionner un rôle"
                               size="default"
@@ -1483,7 +1485,7 @@ const MultiUserProfilesPage = () => {
                           </div>
                         </div>
                       </div>
-                    </div>
+                  </div>
 
                     {/* Role Information */}
                     <div className="space-y-6">

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Icon from '../AppIcon';
 import Button from './Button';
+import { createPortal } from 'react-dom';
 
 const PinModal = ({ 
   isOpen, 
@@ -49,7 +50,7 @@ const PinModal = ({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000] p-4">
       <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
         <div className="flex items-center justify-between mb-4">
@@ -125,7 +126,8 @@ const PinModal = ({
           <p>Le code PIN protège l'accès à ce profil</p>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
