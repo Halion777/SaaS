@@ -93,7 +93,7 @@
         "description": "Ontvang projectaanvragen in je geografische gebied volgens je specialiteiten. Reageer met een offerte in 1 klik, of ga naar de volgende."
       },
       "feature6": {
-        "title": "Stem-dicteerde offertes (Nieuw)",
+        "title": "Spraakgedicteerde offertes (Nieuw)",
         "description": "Bespaar enorm veel tijd door je offertes te dicteren. Onze stemassistent schrijft ze voor je, direct."
       },
       "feature7": {
@@ -1070,7 +1070,7 @@
       },
       "feature8": {
         "title": "Offerte-analyse & AI-aanbevelingen (Beta)",
-        "description": "Ontvang automatische feedback op elke offerte: te duur? te lang? incompleet? AI begeleidt je om het te optimaliseren voordat je het verstuurt."
+        "description": "Ontvang automatische feedback op elke offerte: te duur? te lang? onvolledig? AI begeleidt je om het te optimaliseren voordat je het verstuurt."
       }
     },
     "benefits": {
@@ -1421,5 +1421,633 @@
     "passwordUpdateFailed": "Sorry, we konden uw wachtwoord niet bijwerken. Probeer een ander wachtwoord of vraag een nieuwe reset link aan.",
     "invalidResetLink": "We konden uw wachtwoord niet bijwerken. Probeer een ander wachtwoord of vraag een nieuwe reset link aan.",
     "passwordSameAsCurrent": "Nieuw wachtwoord moet anders zijn dan uw huidige wachtwoord"
+  },
+  "sidebar": {
+    "categories": {
+      "main": {
+        "label": "Hoofd",
+        "items": {
+          "dashboard": "Dashboard",
+          "analytics": "Analyse",
+          "peppolAccessPoint": "PEPPOL Toegangspunt",
+          "leadsManagement": "Lead Beheer"
+        }
+      },
+      "quotes": {
+        "label": "Offertes",
+        "items": {
+          "quoteCreation": "Offerte Maken",
+          "quotesManagement": "Offertes Beheer",
+          "quotesFollowUp": "Opvolgingen"
+        }
+      },
+      "invoices": {
+        "label": "Facturen",
+        "items": {
+          "clientInvoices": "Klantfacturen",
+          "supplierInvoices": "Leveranciersfacturen"
+        }
+      },
+      "clients": {
+        "label": "Klanten",
+        "items": {
+          "clientManagement": "Klantenbeheer"
+        }
+      },
+      "services": {
+        "label": "Services",
+        "items": {
+          "creditInsurance": "Kredietverzekering",
+          "recovery": "Incasso"
+        }
+      }
+    }
+  },
+  "profile": {
+    "defaultUser": {
+      "name": "Jan Jansen",
+      "company": "Artisan Bedrijf"
+    },
+    "dropdown": {
+      "accountSettings": "Account Instellingen",
+      "currentProfile": "Mijn Huidige Profiel",
+      "availableProfiles": "Beschikbare Profielen",
+      "manageProfiles": "Profielen Beheren",
+      "createProfiles": "Profielen Aanmaken",
+      "logout": "Uitloggen"
+    },
+    "settings": {
+      "title": "Account Instellingen",
+      "tabs": {
+        "account": "Account",
+        "preferences": "Voorkeuren",
+        "security": "Beveiliging"
+      },
+      "account": {
+        "pinSettings": {
+          "title": "PIN Code",
+          "configured": "PIN Code Ingesteld",
+          "notConfigured": "Geen PIN Code Ingesteld",
+          "adminNote": "Alleen beheerders of profieleigenaren kunnen de PIN wijzigen"
+        },
+        "permissions": {
+          "title": "Machtigingen"
+        }
+      },
+      "preferences": {
+        "applicationSettings": "Applicatie-instellingen",
+        "darkMode": {
+          "title": "Donkere Modus",
+          "description": "Schakelen tussen lichte en donkere modus"
+        },
+        "language": {
+          "title": "Taal",
+          "description": "Selecteer interfacetaal"
+        },
+        "notifications": {
+          "title": "Meldingen",
+          "description": "Beheer meldingsvoorkeuren"
+        }
+      },
+      "security": {
+        "authentication": {
+          "title": "Authenticatie",
+          "twoFactor": {
+            "title": "Twee-Factor Authenticatie",
+            "status": "Uitgeschakeld"
+          },
+          "resetPassword": {
+            "title": "Wachtwoord Resetten",
+            "description": "Wijzig uw wachtwoord"
+          }
+        }
+      }
+    }
+  },
+  "common": {
+    "save": "Opslaan",
+    "cancel": "Annuleren",
+    "configure": "Configureren",
+    "remove": "Verwijderen",
+    "reset": "Resetten",
+    "toggleButton": "Schakelen",
+    "more": "meer",
+    "invoice": "factuur",
+    "invoice_plural": "facturen"
+  },
+  "multiUserProfile": {
+    "premiumFeature": {
+      "title": "Meerdere Profielen",
+      "description": "Deze functie is alleen beschikbaar voor Premium-accounts.",
+      "upgradeButton": "Upgraden naar Premium"
+    },
+    "currentUser": {
+      "adminDescription": "Beheerder - Kan alle profielen beheren",
+      "userDescription": "Gebruiker - Beperkte toegang"
+    },
+    "addProfileButton": "Een profiel toevoegen",
+    "switchProfileNotice": "Om van profiel te wisselen, gebruik de dropdown in de zijbalk.",
+    "currentProfileLabel": "Huidig Profiel",
+    "editProfileTooltip": "Bewerken",
+    "deleteProfileTooltip": "Verwijderen",
+    "roles": {
+      "admin": "Beheerder",
+      "manager": "Manager", 
+      "accountant": "Accountant",
+      "sales": "Verkoop",
+      "viewer": "Waarnemer",
+      "default": "Gebruiker"
+    },
+    "permissions": {
+      "quotes": "Offertebeheer",
+      "invoices": "Factuurbeheer",
+      "clients": "Klantenbeheer",
+      "analytics": "Analytics",
+      "settings": "Instellingen",
+      "users": "Gebruikersbeheer"
+    },
+    "alerts": {
+      "adminOnly": "Alleen beheerders kunnen profielen beheren.",
+      "profileNotFound": "Profiel niet gevonden.",
+      "deletePermissionDenied": "U heeft geen toestemming om dit profiel te verwijderen.",
+      "confirmDelete": "Weet u zeker dat u het profiel \"{{name}}\" wilt verwijderen?"
+    },
+    "modal": {
+      "editProfileTitle": "Profiel bewerken",
+      "addProfileTitle": "Een profiel toevoegen",
+      "fullNameLabel": "Volledige naam",
+      "fullNamePlaceholder": "Naam van de gebruiker",
+      "roleLabel": "Rol",
+      "rolePlaceholder": "Selecteer een rol",
+      "roleAdminNote": "Alleen beheerders kunnen rollen wijzigen",
+      "permissionsLabel": "Machtigingen",
+      "permissionsAdminNote": "Alleen beheerders kunnen machtigingen wijzigen",
+      "addButton": "Toevoegen"
+    }
+  },
+  "dashboard": {
+  "header": {
+    "title": "Snel Overzicht",
+    "subtitle": "Overzicht van uw bedrijfsactiviteiten"
+  },
+  "welcomeBanner": {
+    "title": "Welkom bij uw Dashboard",
+    "subtitle": "Hier is een snel overzicht van uw activiteiten en belangrijke acties"
+  },
+  "buttons": {
+    "personalize": "Personaliseren",
+    "detailedAnalytics": "Gedetailleerde Analyses",
+    "newQuote": "+ Nieuwe Offerte",
+    "guidedTour": "▷ Rondleiding"
+  },
+  "metrics": {
+    "quotesThisMonth": "Offertes deze maand",
+    "signatureRate": "Handtekeningenpercentage",
+    "monthlyTurnover": "Maandomzet",
+    "aiGain": "AI-winst",
+    "changeTexts": {
+      "positive": "+{{value}}%",
+      "negative": "-{{value}}%",
+      "new": "Nieuw"
+    }
+  },
+  "aiInsights": {
+    "title": "AI-inzichten",
+    "viewFullAnalysis": "Bekijk volledige analyse",
+    "priceOptimization": {
+      "title": "Prijsoptimalisatie",
+      "description": "AI suggereert tarieven te verhogen met 8% op basis van marktanalyse"
+    },
+    "bestConversionDay": {
+      "title": "Beste conversiedag",
+      "description": "Dinsdag toont 23% hoger offerte-acceptatiepercentage"
+    },
+    "followUpOpportunity": {
+      "title": "Opvolgkans",
+      "description": "3 klanten hebben niet gereageerd op offertes voor 5+ dagen"
+    }
+  },
+  "personalization": {
+    "title": "Dashboard Personalisatie",
+    "subtitle": "Pas uw dashboard aan door widgets in of uit te schakelen",
+    "widgetCategories": {
+      "Analytics": "Analyse",
+      "Finance": "Financiën",
+      "Sales": "Verkoop",
+      "Clients": "Klanten",
+      "Productivity": "Productiviteit",
+      "Navigation": "Navigatie",
+      "AI": "AI",
+      "Integration": "Integratie",
+      "Marketing": "Marketing"
+    },
+    "widgets": {
+      "metricsCards": {
+        "title": "Belangrijkste Metriek",
+        "description": "Toont uw belangrijkste bedrijfsindicatoren"
+      },
+      "invoiceOverview": {
+        "title": "Factuur Overzicht",
+        "description": "Volg uw geldstromen in en uit"
+      },
+      "recentQuotes": {
+        "title": "Recente Offertes",
+        "description": "Monitor uw laatste offertes en hun status"
+      },
+      "topClients": {
+        "title": "Top Klanten",
+        "description": "Bekijk uw best presterende klanten"
+      },
+      "taskList": {
+        "title": "Taken van Vandaag",
+        "description": "Beheer uw dagelijkse taken en prioriteiten"
+      },
+      "quickActions": {
+        "title": "Snelle Acties",
+        "description": "Snelle toegang tot hoofdfuncties"
+      },
+      "aiPerformance": {
+        "title": "AI Prestatie",
+        "description": "Volg AI-gedreven verbeteringen en winsten"
+      },
+      "peppolWidget": {
+        "title": "Peppol Netwerk",
+        "description": "Status elektronische factuuruitwisseling"
+      },
+      "sponsoredBanner": {
+        "title": "Gesponsorde Banner",
+        "description": "Promoties en speciale aanbiedingen"
+      },
+      "aiAlerts": {
+        "title": "AI Waarschuwingen",
+        "description": "Slimme meldingen en aanbevelingen"
+      }
+    },
+    "buttons": {
+      "reset": "Resetten",
+      "cancel": "Annuleren",
+      "save": "Opslaan",
+      "saving": "Opslaan...",
+      "widgetsActive": "{{count}} / {{total}} widgets actief"
+    }
+  },
+  "tour": {
+    "steps": {
+      "metrics": {
+        "title": "Belangrijkste Indicatoren",
+        "content": "Uw belangrijkste indicatoren: offertes, handtekeningpercentage, omzet en AI-winsten."
+      },
+      "newQuote": {
+        "title": "Offerte Maken",
+        "content": "Maak een nieuwe offerte met één klik vanaf elke pagina."
+      },
+      "recentQuotes": {
+        "title": "Recente Offertes",
+        "content": "Volg uw recente offertes en hun status (verzonden, bekeken, ondertekend, afgewezen)."
+      },
+      "quickActions": {
+        "title": "Snelle Acties",
+        "content": "Snelle toegang tot meest gebruikte acties."
+      },
+      "analytics": {
+        "title": "Gedetailleerde Analyses",
+        "content": "Gedetailleerde analyses om uw prestatie-inzichten te verdiepen."
+      }
+    },
+    "buttons": {
+      "back": "Vorige",
+      "close": "Sluiten",
+      "last": "Voltooien",
+      "next": "Volgende",
+      "skip": "Overslaan"
+    }
+  },
+  "quickActions": {
+    "title": "Snelle Acties",
+    "actions": [
+      {
+        "label": "Offerte Maken",
+        "description": "Begin snel een nieuwe offerte"
+      },
+      {
+        "label": "Klanten Volgen",
+        "description": "Beheer en volg klantinteracties"
+      },
+      {
+        "label": "Facturen Bekijken",
+        "description": "Bekijk en beheer uw facturen"
+      }
+    ],
+    "keyboardShortcuts": "Sneltoets"
+  },
+  "topClients": {
+    "title": "Top Klanten",
+    "sortedBy": "Op Omzet",
+    "quotes": "Offertes",
+    "totalRevenue": "Totale Omzet: {{amount}}",
+    "clients": [
+      {
+        "name": "Marie Dubois",
+        "company": "Loodgietersoplossingen",
+        "revenue": "12.500,00 €"
+      },
+      {
+        "name": "Pierre Martin",
+        "company": "Elektrische Services",
+        "revenue": "9.750,00 €"
+      },
+      {
+        "name": "Sophie Leroy",
+        "company": "Schilderspecialisten",
+        "revenue": "7.200,00 €"
+      },
+      {
+        "name": "Jean Moreau",
+        "company": "Tegelexperts",
+        "revenue": "6.800,00 €"
+      }
+    ],
+    "statuses": {
+      "active": {
+        "label": "Actief",
+        "color": "text-success",
+        "bg": "bg-success/10"
+      },
+      "prospect": {
+        "label": "Prospect",
+        "color": "text-warning",
+        "bg": "bg-warning/10"
+      },
+      "inactive": {
+        "label": "Inactief",
+        "color": "text-muted-foreground",
+        "bg": "bg-muted/50"
+      }
+    }
+  },
+  "sponsoredBanner": {
+    "title": "Optimaliseer Uw Offertes met Premium AI",
+    "description": "Verhoog uw handtekeningpercentage met 40% met intelligente suggesties",
+    "cta": "Ontdek Premium",
+    "sponsor": "Haliqo Pro",
+    "discount": "30% Korting",
+    "sponsoredLabel": "Gesponsord"
+  },
+  "aiPerformance": {
+    "title": "AI Prestatie",
+    "subtitle": "AI-gedreven verbeteringen en winsten",
+    "totalGain": "Totale AI Winst",
+    "metrics": {
+      "signatureRate": "Handtekeningpercentage",
+      "timeSaved": "Tijd Bespaard",
+      "revenueGenerated": "Omzet Gegenereerd"
+    },
+    "lastAnalysis": "Laatste analyse: 2 uur geleden",
+    "aiActive": "AI Actief"
+  },
+  "invoiceOverview": {
+    "title": "Factuur Overzicht",
+    "subtitle": "Volg uw geldstromen in en uit",
+    "buttons": {
+      "clientInvoices": {
+        "full": "Klantfacturen",
+        "short": "Klanten"
+      },
+      "supplierInvoices": {
+        "full": "Leveranciersfacturen",
+        "short": "Leveranciers"
+      },
+      "newInvoice": {
+        "full": "Nieuwe Factuur",
+        "short": "Nieuw"
+      },
+      "viewAnalytics": {
+        "full": "Bekijk Analyses",
+        "short": "Analyses"
+      }
+    },
+    "sections": {
+      "clientInvoices": {
+        "title": "Klantfacturen",
+        "totalRevenue": "Totale Omzet",
+        "paidRevenue": "Betaalde Omzet",
+        "outstanding": "Openstaand",
+        "overdue": "Achterstallig"
+      },
+      "supplierInvoices": {
+        "title": "Leveranciersfacturen",
+        "totalExpenses": "Totale Kosten",
+        "paidExpenses": "Betaalde Kosten",
+        "outstanding": "Openstaand",
+        "overdue": "Achterstallig"
+      },
+      "cashFlow": {
+        "title": "Geldstroom",
+        "monthlyNet": "Maandelijks Netto",
+        "collectionRate": "Incasseringspercentage",
+        "paymentRate": "Betalingspercentage",
+        "availableBalance": "Beschikbaar Saldo"
+      },
+      "lastUpdate": {
+        "prefix": "Laatste update:",
+        "recentInvoices": "{{count}} recente facturen"
+      }
+    }
+  },
+  "peppolWidget": {
+    "title": "Peppol Netwerk",
+    "subtitle": "Elektronische factuuruitwisseling",
+    "connectionStatus": {
+      "connected": "Verbonden",
+      "disconnected": "Niet verbonden"
+    },
+    "sandboxMode": "Test",
+    "notConfigured": {
+      "title": "Peppol Niet Geconfigureerd",
+      "description": "Configureer uw Peppol-ID om elektronische facturen uit te wisselen",
+      "buttonFull": "Configureer Peppol",
+      "buttonShort": "Configureer"
+    },
+    "connectionInfo": {
+      "peppolId": {
+        "label": "Peppol-ID",
+        "notDefined": "Niet gedefinieerd"
+      },
+      "businessName": {
+        "label": "Bedrijf",
+        "notDefined": "Niet gedefinieerd"
+      }
+    },
+    "statistics": {
+      "totalSent": "Verzonden",
+      "totalReceived": "Ontvangen",
+      "pending": "In behandeling",
+      "failed": "Mislukt"
+    },
+    "successRate": "Succespercentage",
+    "quickActions": {
+      "sendInvoice": {
+        "full": "Factuur verzenden",
+        "short": "Verzenden"
+      },
+      "settings": {
+        "full": "Instellingen",
+        "short": "Config"
+      }
+    },
+    "lastActivity": "Laatste activiteit: {{date}}"
+  },
+  "taskList": {
+    "title": "Taken van Vandaag",
+    "tasksCount": "{{count}} taken",
+    "viewAllTasks": "Bekijk Alle Taken",
+    "taskTypes": {
+      "finalize": "Afronden",
+      "send": "Verzenden",
+      "follow": "Opvolgen",
+      "invoice": "Factureren"
+    },
+    "tasks": [
+      {
+        "title": "Loodgietersofferte Afronden",
+        "client": "Marie Dubois",
+        "action": "Materiaaldetails Toevoegen"
+      },
+      {
+        "title": "Elektrische Offerte Verzenden",
+        "client": "Pierre Martin",
+        "action": "Controleren en Verzenden"
+      },
+      {
+        "title": "Schilderklant Opvolgen",
+        "client": "Sophie Leroy",
+        "action": "Telefonische Oproep"
+      },
+      {
+        "title": "Tegelwerk Factuur Maken",
+        "client": "Jean Moreau",
+        "action": "Offerte Gisteren Ondertekend"
+      }
+    ]
+  },
+  "quoteChart": {
+    "title": "Offerte Evolutie",
+    "seriesLabels": {
+      "quotes": "Offertes Aangemaakt",
+      "signed": "Offertes Ondertekend"
+    },
+    "months": {
+      "Jan": "Jan",
+      "Feb": "Feb",
+      "Mar": "Mrt",
+      "Apr": "Apr",
+      "May": "Mei",
+      "Jun": "Jun",
+      "Jul": "Jul"
+    },
+    "chartAriaLabel": "Offerte Evolutie Grafiek"
+  },
+  "recentQuotes": {
+    "title": "Recente Offertes",
+    "viewAllQuotes": "Bekijk Alle Offertes",
+    "statuses": {
+      "signed": {
+        "label": "Ondertekend",
+        "color": "text-success",
+        "bg": "bg-success/10"
+      },
+      "viewed": {
+        "label": "Bekeken",
+        "color": "text-warning",
+        "bg": "bg-warning/10"
+      },
+      "sent": {
+        "label": "Verzonden",
+        "color": "text-primary",
+        "bg": "bg-primary/10"
+      },
+      "draft": {
+        "label": "Concept",
+        "color": "text-muted-foreground",
+        "bg": "bg-muted/50"
+      }
+    },
+    "quotes": [
+      {
+        "id": "DEV-2025-001",
+        "client": "Marie Dubois",
+        "service": "Badkamer Loodgieterij",
+        "amount": "2.450,00 €",
+        "date": "2025-07-18"
+      },
+      {
+        "id": "DEV-2025-002",
+        "client": "Pierre Martin",
+        "service": "Elektrische Installatie",
+        "amount": "1.850,00 €",
+        "date": "2025-07-17"
+      },
+      {
+        "id": "DEV-2025-003",
+        "client": "Sophie Leroy",
+        "service": "Appartement Schilderwerk",
+        "amount": "3.200,00 €",
+        "date": "2025-07-16"
+      },
+      {
+        "id": "DEV-2025-004",
+        "client": "Jean Moreau",
+        "service": "Keuken Tegels",
+        "amount": "1.650,00 €",
+        "date": "2025-07-15"
+      }
+    ]
+  },
+  "aiAlerts": {
+    "title": "AI Waarschuwingen",
+    "footer": {
+      "aiEnabled": "AI Ingeschakeld • Gemiddelde Winst: +40%"
+    },
+    "alerts": [
+      {
+        "type": "forgotten_quote",
+        "title": "Vergeten Offerte",
+        "message": "De offerte voor Marie Dubois is niet verzonden in 3 dagen",
+        "action": "Nu Verzenden"
+      },
+      {
+        "type": "inactive_client",
+        "title": "Inactieve Klant",
+        "message": "Pierre Martin is niet benaderd in 2 weken",
+        "action": "Vervolgafspraak Plannen"
+      },
+      {
+        "type": "price_optimization",
+        "title": "Prijsoptimalisatie",
+        "message": "Verhoog uw tarieven met 8% volgens AI-analyse",
+        "action": "Aanbevelingen Bekijken"
+      }
+    ],
+    "alertTypes": {
+      "forgotten_quote": "Vergeten Offerte",
+      "inactive_client": "Inactieve Klant",
+      "price_optimization": "Prijsoptimalisatie",
+      "follow_up": "Vervolgactie"
+    },
+    "priorities": {
+      "high": {
+        "color": "text-error",
+        "background": "border-error bg-error/5"
+      },
+      "medium": {
+        "color": "text-warning",
+        "background": "border-warning bg-warning/5"
+      },
+      "low": {
+        "color": "text-primary",
+        "background": "border-primary bg-primary/5"
+      }
+    }
   }
+}
 } 

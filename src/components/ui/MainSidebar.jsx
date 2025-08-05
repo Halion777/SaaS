@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import Icon from '../AppIcon';
 import NavigationItem from './NavigationItem';
@@ -21,6 +22,7 @@ const MainSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+  const { t } = useTranslation();
   const mobileNavRef = useScrollPosition('mobile-nav-scroll', isMobile);
 
   useEffect(() => {
@@ -119,32 +121,32 @@ const MainSidebar = () => {
   const navigationCategories = [
     {
       id: 'main',
-      label: 'Principales',
+      label: t('sidebar.categories.main.label'),
       items: [
         {
           id: 'dashboard',
-          label: 'Tableau de bord',
+          label: t('sidebar.categories.main.items.dashboard'),
           path: '/dashboard',
           icon: 'LayoutDashboard',
           notifications: 0
         },
         {
           id: 'analytics-dashboard',
-          label: 'Analytics',
+          label: t('sidebar.categories.main.items.analytics'),
           path: '/analytics-dashboard',
           icon: 'BarChart3',
           notifications: 0
         },
         {
           id: 'peppol-access-point',
-          label: 'Point d\'accès PEPPOL',
+          label: t('sidebar.categories.main.items.peppolAccessPoint'),
           path: '/services/peppol',
           icon: 'Network',
           notifications: 0
         },
         {
           id: 'leads-management',
-          label: 'Gestion des Leads',
+          label: t('sidebar.categories.main.items.leadsManagement'),
           path: '/leads-management',
           icon: 'Users',
           notifications: 0
@@ -153,27 +155,27 @@ const MainSidebar = () => {
     },
     {
       id: 'quotes',
-      label: 'Devis',
+      label: t('sidebar.categories.quotes.label'),
       isCollapsible: true,
       isExpanded: expandedSections.quotes,
       items: [
         {
           id: 'quote-creation',
-          label: 'Créer un devis',
+          label: t('sidebar.categories.quotes.items.quoteCreation'),
           path: '/quote-creation',
           icon: 'FileText',
           notifications: 2
         },
         {
           id: 'quotes-management',
-          label: 'Gestion des devis',
+          label: t('sidebar.categories.quotes.items.quotesManagement'),
           path: '/quotes-management',
           icon: 'FolderOpen',
           notifications: 0
         },
         {
           id: 'quotes-follow-up',
-          label: 'Relances',
+          label: t('sidebar.categories.quotes.items.quotesFollowUp'),
           path: '/quotes-follow-up',
           icon: 'MessageCircle',
           notifications: 0
@@ -182,20 +184,20 @@ const MainSidebar = () => {
     },
     {
       id: 'invoices',
-      label: 'Factures',
+      label: t('sidebar.categories.invoices.label'),
       isCollapsible: true,
       isExpanded: expandedSections.invoices,
       items: [
         {
           id: 'client-invoices',
-          label: 'Factures clients',
+          label: t('sidebar.categories.invoices.items.clientInvoices'),
           path: '/invoices-management',
           icon: 'Receipt',
           notifications: 1
         },
         {
           id: 'supplier-invoices',
-          label: 'Factures fournisseurs',
+          label: t('sidebar.categories.invoices.items.supplierInvoices'),
           path: '/supplier-invoices',
           icon: 'FileText',
           notifications: 2
@@ -204,35 +206,35 @@ const MainSidebar = () => {
     },
     {
       id: 'clients',
-      label: 'Clients',
+      label: t('sidebar.categories.clients.label'),
       isCollapsible: true,
       isExpanded: expandedSections.clients,
       items: [
         {
           id: 'client-management',
-          label: 'Gestion clients',
+          label: t('sidebar.categories.clients.items.clientManagement'),
           path: '/client-management',
           icon: 'Users',
           notifications: 0
-                }
+        }
       ]
     },
     {
       id: 'services',
-      label: 'Services',
+      label: t('sidebar.categories.services.label'),
       isCollapsible: true,
       isExpanded: expandedSections.services,
       items: [
         {
           id: 'assurance-credit',
-          label: 'Assurance crédit',
+          label: t('sidebar.categories.services.items.creditInsurance'),
           path: '/services/assurance',
           icon: 'Shield',
           notifications: 0
         },
         {
           id: 'recouvrement',
-          label: 'Recouvrement',
+          label: t('sidebar.categories.services.items.recovery'),
           path: '/services/recouvrement',
           icon: 'Banknote',
           notifications: 0
@@ -252,15 +254,15 @@ const MainSidebar = () => {
     }
   };
 
-  // Use real user data or fallback to mock data
+  // Use real user data from AuthContext
   const userData = user ? {
     name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
     company: user.user_metadata?.company_name || 'Company',
-    avatar: '/assets/images/avatar.jpg'
+    avatar: user.user_metadata?.avatar_url || '/assets/images/no profile.jpg'
   } : {
-    name: 'Jean Dupont',
-    company: 'Artisan Pro',
-    avatar: '/assets/images/avatar.jpg'
+    name: 'User',
+    company: 'Company',
+    avatar: '/assets/images/no profile.jpg'
   };
 
   // Flatten navigation items for mobile view

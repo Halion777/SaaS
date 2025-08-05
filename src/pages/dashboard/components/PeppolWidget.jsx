@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import peppolService from '../../../services/peppolService';
 
 const PeppolWidget = () => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [peppolData, setPeppolData] = useState({
     settings: {
@@ -70,8 +72,8 @@ const PeppolWidget = () => {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'Jamais';
-    return new Date(dateString).toLocaleDateString('fr-FR');
+    if (!dateString) return t('common.never');
+    return new Date(dateString).toLocaleDateString(i18n.language);
   };
 
   const getStatusColor = (status) => {
@@ -119,8 +121,8 @@ const PeppolWidget = () => {
             <Icon name="Globe" size={14} className="sm:w-4 sm:h-4" color="var(--color-blue-600)" />
           </div>
           <div>
-            <h3 className="text-base sm:text-lg font-semibold text-foreground">Peppol Network</h3>
-            <p className="text-xs sm:text-sm text-muted-foreground">Échange électronique de factures</p>
+            <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('dashboard.peppolWidget.title')}</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.peppolWidget.subtitle')}</p>
           </div>
         </div>
         <div className="flex items-center space-x-2">
@@ -132,12 +134,12 @@ const PeppolWidget = () => {
               color="currentColor" 
             />
             <span className="text-xs sm:text-sm font-medium">
-              {peppolData.connectionStatus === 'connected' ? 'Connecté' : 'Déconnecté'}
+              {t(`dashboard.peppolWidget.connectionStatus.${peppolData.connectionStatus}`)}
             </span>
           </div>
           {peppolData.settings.sandboxMode && (
             <span className="text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 bg-warning/10 text-warning rounded-full">
-              Test
+              {t('dashboard.peppolWidget.sandboxMode')}
             </span>
           )}
         </div>
@@ -148,9 +150,9 @@ const PeppolWidget = () => {
           <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 bg-muted/50 rounded-full flex items-center justify-center">
             <Icon name="Globe" size={20} className="sm:w-6 sm:h-6" color="var(--color-muted-foreground)" />
           </div>
-          <h4 className="text-sm sm:text-base font-medium text-foreground mb-2">Peppol non configuré</h4>
+          <h4 className="text-sm sm:text-base font-medium text-foreground mb-2">{t('dashboard.peppolWidget.notConfigured.title')}</h4>
           <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6">
-            Configurez votre identifiant Peppol pour échanger des factures électroniques
+            {t('dashboard.peppolWidget.notConfigured.description')}
           </p>
           <Button 
             variant="default" 
@@ -158,8 +160,8 @@ const PeppolWidget = () => {
             onClick={() => navigate('/services/peppol')}
             className="text-xs"
           >
-            <span className="hidden sm:inline">Configurer Peppol</span>
-            <span className="sm:hidden">Configurer</span>
+            <span className="hidden sm:inline">{t('dashboard.peppolWidget.notConfigured.buttonFull')}</span>
+            <span className="sm:hidden">{t('dashboard.peppolWidget.notConfigured.buttonShort')}</span>
           </Button>
         </div>
       ) : (
@@ -169,19 +171,19 @@ const PeppolWidget = () => {
             <div className="p-3 sm:p-4 bg-muted/30 rounded-lg">
               <div className="flex items-center space-x-2 mb-2">
                 <Icon name="Hash" size={12} className="sm:w-[14px] sm:h-[14px]" color="var(--color-muted-foreground)" />
-                <span className="text-xs sm:text-sm text-muted-foreground">ID Peppol</span>
+                <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.peppolWidget.connectionInfo.peppolId.label')}</span>
               </div>
               <p className="text-xs sm:text-sm font-medium text-foreground truncate">
-                {peppolData.settings.peppolId || 'Non défini'}
+                {peppolData.settings.peppolId || t('dashboard.peppolWidget.connectionInfo.peppolId.notDefined')}
               </p>
             </div>
             <div className="p-3 sm:p-4 bg-muted/30 rounded-lg">
               <div className="flex items-center space-x-2 mb-2">
                 <Icon name="Building" size={12} className="sm:w-[14px] sm:h-[14px]" color="var(--color-muted-foreground)" />
-                <span className="text-xs sm:text-sm text-muted-foreground">Entreprise</span>
+                <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.peppolWidget.connectionInfo.businessName.label')}</span>
               </div>
               <p className="text-xs sm:text-sm font-medium text-foreground truncate">
-                {peppolData.settings.businessName || 'Non définie'}
+                {peppolData.settings.businessName || t('dashboard.peppolWidget.connectionInfo.businessName.notDefined')}
               </p>
             </div>
           </div>
@@ -192,32 +194,32 @@ const PeppolWidget = () => {
               <div className="text-lg sm:text-xl font-bold text-primary mb-1">
                 {peppolData.stats.totalSent}
               </div>
-              <div className="text-xs text-muted-foreground">Envoyées</div>
+              <div className="text-xs text-muted-foreground">{t('dashboard.peppolWidget.statistics.totalSent')}</div>
             </div>
             <div className="text-center p-3 sm:p-4 bg-success/5 rounded-lg">
               <div className="text-lg sm:text-xl font-bold text-success mb-1">
                 {peppolData.stats.totalReceived}
               </div>
-              <div className="text-xs text-muted-foreground">Reçues</div>
+              <div className="text-xs text-muted-foreground">{t('dashboard.peppolWidget.statistics.totalReceived')}</div>
             </div>
             <div className="text-center p-3 sm:p-4 bg-warning/5 rounded-lg">
               <div className="text-lg sm:text-xl font-bold text-warning mb-1">
                 {peppolData.stats.pending}
               </div>
-              <div className="text-xs text-muted-foreground">En attente</div>
+              <div className="text-xs text-muted-foreground">{t('dashboard.peppolWidget.statistics.pending')}</div>
             </div>
             <div className="text-center p-3 sm:p-4 bg-error/5 rounded-lg">
               <div className="text-lg sm:text-xl font-bold text-error mb-1">
                 {peppolData.stats.failed}
               </div>
-              <div className="text-xs text-muted-foreground">Échouées</div>
+              <div className="text-xs text-muted-foreground">{t('dashboard.peppolWidget.statistics.failed')}</div>
             </div>
           </div>
 
           {/* Success Rate */}
           <div className="p-3 sm:p-4 bg-muted/30 rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs sm:text-sm text-muted-foreground">Taux de succès</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.peppolWidget.successRate')}</span>
               <span className="text-xs sm:text-sm font-medium text-foreground">
                 {peppolData.stats.successRate}%
               </span>
@@ -240,8 +242,8 @@ const PeppolWidget = () => {
               onClick={() => navigate('/services/peppol')}
               className="text-xs flex-1 sm:flex-none"
             >
-              <span className="hidden sm:inline">Envoyer facture</span>
-              <span className="sm:hidden">Envoyer</span>
+              <span className="hidden sm:inline">{t('dashboard.peppolWidget.quickActions.sendInvoice.full')}</span>
+              <span className="sm:hidden">{t('dashboard.peppolWidget.quickActions.sendInvoice.short')}</span>
             </Button>
             <Button
               variant="outline"
@@ -251,14 +253,14 @@ const PeppolWidget = () => {
               onClick={() => navigate('/services/peppol')}
               className="text-xs flex-1 sm:flex-none"
             >
-              <span className="hidden sm:inline">Paramètres</span>
-              <span className="sm:hidden">Config</span>
+              <span className="hidden sm:inline">{t('dashboard.peppolWidget.quickActions.settings.full')}</span>
+              <span className="sm:hidden">{t('dashboard.peppolWidget.quickActions.settings.short')}</span>
             </Button>
           </div>
 
           {/* Last Activity */}
           <div className="text-center text-xs text-muted-foreground">
-            Dernière activité: {formatDate(peppolData.stats.lastActivity)}
+            {t('dashboard.peppolWidget.lastActivity', { date: formatDate(peppolData.stats.lastActivity) })}
           </div>
         </div>
       )}

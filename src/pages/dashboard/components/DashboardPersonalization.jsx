@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
 const DashboardPersonalization = ({ isOpen, onClose, onSave }) => {
+  const { t, i18n } = useTranslation();
   const [widgetSettings, setWidgetSettings] = useState({
     metricsCards: true,
     invoiceOverview: true,
@@ -77,73 +79,73 @@ const DashboardPersonalization = ({ isOpen, onClose, onSave }) => {
   const widgetDefinitions = [
     {
       key: 'metricsCards',
-      title: 'Métriques principales',
-      description: 'Affiche les KPIs principaux (CA, devis, clients)',
+      title: t('dashboard.personalization.widgets.metricsCards.title'),
+      description: t('dashboard.personalization.widgets.metricsCards.description'),
       icon: 'BarChart3',
-      category: 'Analytics'
+      category: t('dashboard.personalization.widgetCategories.Analytics')
     },
     {
       key: 'invoiceOverview',
-      title: 'Vue d\'ensemble des factures',
-      description: 'Résumé des factures clients et fournisseurs',
+      title: t('dashboard.personalization.widgets.invoiceOverview.title'),
+      description: t('dashboard.personalization.widgets.invoiceOverview.description'),
       icon: 'Receipt',
-      category: 'Finance'
+      category: t('dashboard.personalization.widgetCategories.Finance')
     },
     {
       key: 'recentQuotes',
-      title: 'Devis récents',
-      description: 'Liste des derniers devis créés',
+      title: t('dashboard.personalization.widgets.recentQuotes.title'),
+      description: t('dashboard.personalization.widgets.recentQuotes.description'),
       icon: 'FileText',
-      category: 'Sales'
+      category: t('dashboard.personalization.widgetCategories.Sales')
     },
     {
       key: 'topClients',
-      title: 'Meilleurs clients',
-      description: 'Top 5 des clients par chiffre d\'affaires',
+      title: t('dashboard.personalization.widgets.topClients.title'),
+      description: t('dashboard.personalization.widgets.topClients.description'),
       icon: 'Users',
-      category: 'Clients'
+      category: t('dashboard.personalization.widgetCategories.Clients')
     },
     {
       key: 'taskList',
-      title: 'Liste des tâches',
-      description: 'Tâches en cours et à venir',
+      title: t('dashboard.personalization.widgets.taskList.title'),
+      description: t('dashboard.personalization.widgets.taskList.description'),
       icon: 'CheckSquare',
-      category: 'Productivity'
+      category: t('dashboard.personalization.widgetCategories.Productivity')
     },
     {
       key: 'quickActions',
-      title: 'Actions rapides',
-      description: 'Accès rapide aux fonctionnalités principales',
+      title: t('dashboard.personalization.widgets.quickActions.title'),
+      description: t('dashboard.personalization.widgets.quickActions.description'),
       icon: 'Zap',
-      category: 'Navigation'
+      category: t('dashboard.personalization.widgetCategories.Navigation')
     },
     {
       key: 'aiPerformance',
-      title: 'Performance IA',
-      description: 'Métriques et insights de l\'intelligence artificielle',
+      title: t('dashboard.personalization.widgets.aiPerformance.title'),
+      description: t('dashboard.personalization.widgets.aiPerformance.description'),
       icon: 'Brain',
-      category: 'AI'
+      category: t('dashboard.personalization.widgetCategories.AI')
     },
     {
       key: 'peppolWidget',
-      title: 'Réseau Peppol',
-      description: 'Statut et métriques de l\'intégration Peppol',
+      title: t('dashboard.personalization.widgets.peppolWidget.title'),
+      description: t('dashboard.personalization.widgets.peppolWidget.description'),
       icon: 'Network',
-      category: 'Integration'
+      category: t('dashboard.personalization.widgetCategories.Integration')
     },
     {
       key: 'sponsoredBanner',
-      title: 'Bannière sponsorisée',
-      description: 'Promotions et offres spéciales',
+      title: t('dashboard.personalization.widgets.sponsoredBanner.title'),
+      description: t('dashboard.personalization.widgets.sponsoredBanner.description'),
       icon: 'Gift',
-      category: 'Marketing'
+      category: t('dashboard.personalization.widgetCategories.Marketing')
     },
     {
       key: 'aiAlerts',
-      title: 'Alertes IA',
-      description: 'Notifications intelligentes et recommandations',
+      title: t('dashboard.personalization.widgets.aiAlerts.title'),
+      description: t('dashboard.personalization.widgets.aiAlerts.description'),
       icon: 'Bell',
-      category: 'AI'
+      category: t('dashboard.personalization.widgetCategories.AI')
     }
   ];
 
@@ -167,9 +169,9 @@ const DashboardPersonalization = ({ isOpen, onClose, onSave }) => {
               <Icon name="Settings" size={20} className="text-primary" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-foreground">Personnalisation du tableau de bord</h2>
+              <h2 className="text-xl font-semibold text-foreground">{t('dashboard.personalization.title')}</h2>
               <p className="text-sm text-muted-foreground">
-                Choisissez les widgets que vous souhaitez afficher
+                {t('dashboard.personalization.subtitle')}
               </p>
             </div>
           </div>
@@ -247,10 +249,13 @@ const DashboardPersonalization = ({ isOpen, onClose, onSave }) => {
               iconName="RotateCcw"
               iconPosition="left"
             >
-              Effacer
+              {t('dashboard.personalization.buttons.reset')}
             </Button>
             <p className="text-sm text-muted-foreground">
-              {Object.values(widgetSettings).filter(Boolean).length} / {Object.keys(widgetSettings).length} widgets activés
+              {t('dashboard.personalization.buttons.widgetsActive', {
+                count: Object.values(widgetSettings).filter(Boolean).length,
+                total: Object.keys(widgetSettings).length
+              })}
             </p>
           </div>
           <div className="flex items-center space-x-3">
@@ -258,7 +263,7 @@ const DashboardPersonalization = ({ isOpen, onClose, onSave }) => {
               variant="outline"
               onClick={onClose}
             >
-              Annuler
+              {t('dashboard.personalization.buttons.cancel')}
             </Button>
             <Button
               onClick={handleSave}
@@ -266,7 +271,10 @@ const DashboardPersonalization = ({ isOpen, onClose, onSave }) => {
               iconName={loading ? "Loader2" : "Save"}
               iconPosition="left"
             >
-              {loading ? 'Sauvegarde...' : 'Sauvegarder'}
+              {loading 
+                ? t('dashboard.personalization.buttons.saving') 
+                : t('dashboard.personalization.buttons.save')
+              }
             </Button>
           </div>
         </div>

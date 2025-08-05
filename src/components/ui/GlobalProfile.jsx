@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import UserProfile from './UserProfile';
 
 const GlobalProfile = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const { logout, user } = useAuth();
   const [isMobile, setIsMobile] = useState(false);
@@ -53,15 +55,15 @@ const GlobalProfile = () => {
     };
   }, [lastScrollY]);
 
-  // Use real user data or fallback to mock data
+  // Use real user data from AuthContext
   const userData = user ? {
-    name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-    company: user.user_metadata?.company_name || 'Company',
-    avatar: '/assets/images/avatar.jpg'
+    name: user.user_metadata?.full_name || user.email?.split('@')[0] || t('profile.defaultUser.name'),
+    company: user.user_metadata?.company_name || t('profile.defaultUser.company'),
+    avatar: user.user_metadata?.avatar_url || '/assets/images/no profile.jpg'
   } : {
-    name: 'Jean Dupont',
-    company: 'Artisan Pro',
-    avatar: '/assets/images/avatar.jpg'
+    name: t('profile.defaultUser.name'),
+    company: t('profile.defaultUser.company'),
+    avatar: '/assets/images/no profile.jpg'
   };
 
   const handleLogout = async () => {

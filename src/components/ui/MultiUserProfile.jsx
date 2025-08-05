@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../AppIcon';
 import Button from './Button';
 import Input from './Input';
@@ -14,6 +15,7 @@ const MultiUserProfile = ({
   isPremium = false,
   maxProfiles = 5 
 }) => {
+  const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState(null);
   const [formData, setFormData] = useState({
@@ -24,20 +26,20 @@ const MultiUserProfile = ({
   });
 
   const availableRoles = [
-    { value: 'admin', label: 'Administrateur' },
-    { value: 'manager', label: 'Gestionnaire' },
-    { value: 'accountant', label: 'Comptable' },
-    { value: 'sales', label: 'Commercial' },
-    { value: 'viewer', label: 'Lecteur' }
+    { value: 'admin', label: t('multiUserProfile.roles.admin') },
+    { value: 'manager', label: t('multiUserProfile.roles.manager') },
+    { value: 'accountant', label: t('multiUserProfile.roles.accountant') },
+    { value: 'sales', label: t('multiUserProfile.roles.sales') },
+    { value: 'viewer', label: t('multiUserProfile.roles.viewer') }
   ];
 
   const availablePermissions = [
-    { value: 'quotes', label: 'Gestion des devis' },
-    { value: 'invoices', label: 'Gestion des factures' },
-    { value: 'clients', label: 'Gestion des clients' },
-    { value: 'analytics', label: 'Analytics' },
-    { value: 'settings', label: 'Paramètres' },
-    { value: 'users', label: 'Gestion des utilisateurs' }
+    { value: 'quotes', label: t('multiUserProfile.permissions.quotes') },
+    { value: 'invoices', label: t('multiUserProfile.permissions.invoices') },
+    { value: 'clients', label: t('multiUserProfile.permissions.clients') },
+    { value: 'analytics', label: t('multiUserProfile.permissions.analytics') },
+    { value: 'settings', label: t('multiUserProfile.permissions.settings') },
+    { value: 'users', label: t('multiUserProfile.permissions.users') }
   ];
 
   // Check if current user is admin
@@ -67,7 +69,7 @@ const MultiUserProfile = ({
   const handleOpenModal = (profile = null) => {
     // Only admins can open the modal
     if (!isCurrentUserAdmin) {
-      alert("Seuls les administrateurs peuvent gérer les profils.");
+      alert(t('multiUserProfile.alerts.adminOnly'));
       return;
     }
     if (profile) {
@@ -109,16 +111,16 @@ const MultiUserProfile = ({
     
     // Check permissions before deleting
     if (!profileToDelete) {
-      alert('Profil non trouvé.');
+      alert(t('multiUserProfile.alerts.profileNotFound'));
       return;
     }
     
     if (!canDeleteProfile(profileToDelete)) {
-      alert('Vous n\'avez pas les permissions pour supprimer ce profil.');
+      alert(t('multiUserProfile.alerts.deletePermissionDenied'));
       return;
     }
     
-    if (window.confirm(`Êtes-vous sûr de vouloir supprimer le profil "${profileToDelete.name}" ?`)) {
+    if (window.confirm(t('multiUserProfile.alerts.confirmDelete', { name: profileToDelete.name }))) {
       onDeleteProfile(profileId);
     }
   };
@@ -140,25 +142,25 @@ const MultiUserProfile = ({
 
   const getRoleLabel = (role) => {
     const roleMap = {
-      admin: 'Administrateur',
-      manager: 'Gestionnaire',
-      accountant: 'Comptable',
-      sales: 'Commercial',
-      viewer: 'Lecteur'
+      admin: t('multiUserProfile.roles.admin'),
+      manager: t('multiUserProfile.roles.manager'),
+      accountant: t('multiUserProfile.roles.accountant'),
+      sales: t('multiUserProfile.roles.sales'),
+      viewer: t('multiUserProfile.roles.viewer')
     };
-    return roleMap[role] || 'Utilisateur';
+    return roleMap[role] || t('multiUserProfile.roles.default');
   };
 
   if (!isPremium) {
     return (
       <div className="bg-card border border-border rounded-lg p-6 text-center">
         <Icon name="Users" size={48} className="text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-medium mb-2">Profils multiples</h3>
+        <h3 className="text-lg font-medium mb-2">{t('multiUserProfile.premiumFeature.title')}</h3>
         <p className="text-muted-foreground mb-4">
-          Cette fonctionnalité est disponible uniquement pour les comptes Premium.
+          {t('multiUserProfile.premiumFeature.description')}
         </p>
         <Button variant="outline" onClick={() => window.location.href = '/pricing'}>
-          Passer à Premium
+          {t('multiUserProfile.premiumFeature.upgradeButton')}
         </Button>
       </div>
     );
@@ -184,14 +186,17 @@ const MultiUserProfile = ({
               <h3 className="font-medium">{currentUser.name}</h3>
               <p className="text-sm text-muted-foreground">{getRoleLabel(currentUser.role)}</p>
               <p className="text-xs text-muted-foreground">
-                {isCurrentUserAdmin ? 'Administrateur - Peut gérer tous les profils' : 'Utilisateur - Accès limité'}
+                {isCurrentUserAdmin 
+                  ? t('multiUserProfile.currentUser.adminDescription') 
+                  : t('multiUserProfile.currentUser.userDescription')
+                }
               </p>
             </div>
           </div>
           {isCurrentUserAdmin && (
             <Button variant="outline" size="sm" onClick={() => handleOpenModal()}>
               <Icon name="Plus" size={16} className="mr-2" />
-              Ajouter un profil
+              {t('multiUserProfile.addProfileButton')}
             </Button>
           )}
         </div>
@@ -202,7 +207,7 @@ const MultiUserProfile = ({
         <div className="flex items-center space-x-2">
           <Icon name="Info" size={16} className="text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
-            Pour changer de profil, utilisez le menu déroulant dans la barre latérale.
+            {t('multiUserProfile.switchProfileNotice')}
           </p>
         </div>
       </div>
@@ -232,7 +237,7 @@ const MultiUserProfile = ({
               <p className="text-xs text-muted-foreground mb-2">{getRoleLabel(user.role)}</p>
               {currentUser.id === user.id && (
                 <div className="text-xs text-primary font-medium mb-2">
-                  Profil actuel
+                  {t('multiUserProfile.currentProfileLabel')}
                 </div>
               )}
               
@@ -245,7 +250,7 @@ const MultiUserProfile = ({
                         handleOpenModal(user);
                       }}
                       className="p-1 rounded hover:bg-muted transition-colors"
-                      title="Modifier"
+                      title={t('multiUserProfile.editProfileTooltip')}
                     >
                       <Icon name="Edit" size={12} />
                     </button>
@@ -257,7 +262,7 @@ const MultiUserProfile = ({
                         handleDelete(user.id);
                       }}
                       className="p-1 rounded hover:bg-muted transition-colors text-destructive"
-                      title="Supprimer"
+                      title={t('multiUserProfile.deleteProfileTooltip')}
                     >
                       <Icon name="Trash2" size={12} />
                     </button>
@@ -275,7 +280,10 @@ const MultiUserProfile = ({
           <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md mx-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium">
-                {editingProfile ? 'Modifier le profil' : 'Ajouter un profil'}
+                {editingProfile 
+                  ? t('multiUserProfile.modal.editProfileTitle') 
+                  : t('multiUserProfile.modal.addProfileTitle')
+                }
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -288,12 +296,12 @@ const MultiUserProfile = ({
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Nom complet
+                  {t('multiUserProfile.modal.fullNameLabel')}
                 </label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Nom de l'utilisateur"
+                  placeholder={t('multiUserProfile.modal.fullNamePlaceholder')}
                   required
                   disabled={!isCurrentUserAdmin}
                 />
@@ -301,25 +309,25 @@ const MultiUserProfile = ({
 
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Rôle
+                  {t('multiUserProfile.modal.roleLabel')}
                 </label>
                 <Select
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                   options={availableRoles}
-                  placeholder="Sélectionner un rôle"
+                  placeholder={t('multiUserProfile.modal.rolePlaceholder')}
                   disabled={!isCurrentUserAdmin}
                 />
                 {!isCurrentUserAdmin && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Seuls les administrateurs peuvent modifier les rôles
+                    {t('multiUserProfile.modal.roleAdminNote')}
                   </p>
                 )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Permissions
+                  {t('multiUserProfile.modal.permissionsLabel')}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {availablePermissions.map((permission) => (
@@ -344,18 +352,21 @@ const MultiUserProfile = ({
                 </div>
                 {!isCurrentUserAdmin && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Seuls les administrateurs peuvent modifier les permissions
+                    {t('multiUserProfile.modal.permissionsAdminNote')}
                   </p>
                 )}
               </div>
 
               <div className="flex justify-end space-x-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
-                  Annuler
+                  {t('common.cancel')}
                 </Button>
                 {isCurrentUserAdmin && (
                   <Button type="submit">
-                    {editingProfile ? 'Enregistrer' : 'Ajouter'}
+                    {editingProfile 
+                      ? t('common.save') 
+                      : t('multiUserProfile.modal.addButton')
+                    }
                   </Button>
                 )}
               </div>

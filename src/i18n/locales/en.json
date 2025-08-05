@@ -1390,5 +1390,633 @@
       "title": "Reset Password - Haliqo",
       "description": "Reset your Haliqo password securely to access your artisan account."
     }
+  },
+  "sidebar": {
+    "categories": {
+      "main": {
+        "label": "Main",
+        "items": {
+          "dashboard": "Dashboard",
+          "analytics": "Analytics",
+          "peppolAccessPoint": "PEPPOL Access Point",
+          "leadsManagement": "Leads Management"
+        }
+      },
+      "quotes": {
+        "label": "Quotes",
+        "items": {
+          "quoteCreation": "Create Quote",
+          "quotesManagement": "Quotes Management",
+          "quotesFollowUp": "Follow-ups"
+        }
+      },
+      "invoices": {
+        "label": "Invoices",
+        "items": {
+          "clientInvoices": "Client Invoices",
+          "supplierInvoices": "Supplier Invoices"
+        }
+      },
+      "clients": {
+        "label": "Clients",
+        "items": {
+          "clientManagement": "Client Management"
+        }
+      },
+      "services": {
+        "label": "Services",
+        "items": {
+          "creditInsurance": "Credit Insurance",
+          "recovery": "Recovery"
+        }
+      }
+    }
+  },
+  "profile": {
+    "defaultUser": {
+      "name": "John Doe",
+      "company": "Artisan Company"
+    },
+    "dropdown": {
+      "accountSettings": "Account Settings",
+      "currentProfile": "My Current Profile",
+      "availableProfiles": "Available Profiles",
+      "manageProfiles": "Manage Profiles",
+      "createProfiles": "Create Profiles",
+      "logout": "Logout"
+    },
+    "settings": {
+      "title": "Account Settings",
+      "tabs": {
+        "account": "Account",
+        "preferences": "Preferences",
+        "security": "Security"
+      },
+      "account": {
+        "pinSettings": {
+          "title": "PIN Code",
+          "configured": "PIN Code Configured",
+          "notConfigured": "No PIN Code Configured",
+          "adminNote": "Only administrators or profile owners can modify the PIN"
+        },
+        "permissions": {
+          "title": "Permissions"
+        }
+      },
+      "preferences": {
+        "applicationSettings": "Application Settings",
+        "darkMode": {
+          "title": "Dark Mode",
+          "description": "Toggle between light and dark mode"
+        },
+        "language": {
+          "title": "Language",
+          "description": "Select interface language"
+        },
+        "notifications": {
+          "title": "Notifications",
+          "description": "Manage notification preferences"
+        }
+      },
+      "security": {
+        "authentication": {
+          "title": "Authentication",
+          "twoFactor": {
+            "title": "Two-Factor Authentication",
+            "status": "Disabled"
+          },
+          "resetPassword": {
+            "title": "Reset Password",
+            "description": "Change your password"
+          }
+        }
+      }
+    }
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "configure": "Configure",
+    "remove": "Remove",
+    "reset": "Reset",
+    "toggleButton": "Toggle",
+    "more": "more",
+    "invoice": "invoice",
+    "invoice_plural": "invoices"
+  },
+  "multiUserProfile": {
+    "premiumFeature": {
+      "title": "Multiple Profiles",
+      "description": "This feature is only available for Premium accounts.",
+      "upgradeButton": "Upgrade to Premium"
+    },
+    "currentUser": {
+      "adminDescription": "Administrator - Can manage all profiles",
+      "userDescription": "User - Limited access"
+    },
+    "addProfileButton": "Add a profile",
+    "switchProfileNotice": "To switch profiles, use the dropdown in the sidebar.",
+    "currentProfileLabel": "Current Profile",
+    "editProfileTooltip": "Edit",
+    "deleteProfileTooltip": "Delete",
+    "roles": {
+      "admin": "Administrator",
+      "manager": "Manager",
+      "accountant": "Accountant",
+      "sales": "Sales",
+      "viewer": "Viewer",
+      "default": "User"
+    },
+    "permissions": {
+      "quotes": "Quote Management",
+      "invoices": "Invoice Management",
+      "clients": "Client Management",
+      "analytics": "Analytics",
+      "settings": "Settings",
+      "users": "User Management"
+    },
+    "alerts": {
+      "adminOnly": "Only administrators can manage profiles.",
+      "profileNotFound": "Profile not found.",
+      "deletePermissionDenied": "You do not have permission to delete this profile.",
+      "confirmDelete": "Are you sure you want to delete the profile \"{{name}}\"?"
+    },
+    "modal": {
+      "editProfileTitle": "Edit Profile",
+      "addProfileTitle": "Add a Profile",
+      "fullNameLabel": "Full Name",
+      "fullNamePlaceholder": "User's name",
+      "roleLabel": "Role",
+      "rolePlaceholder": "Select a role",
+      "roleAdminNote": "Only administrators can modify roles",
+      "permissionsLabel": "Permissions",
+      "permissionsAdminNote": "Only administrators can modify permissions",
+      "addButton": "Add"
+    }
+  },
+  "dashboard": {
+    "header": {
+      "title": "Quick Overview",
+      "subtitle": "Overview of your business activity"
+    },
+    "welcomeBanner": {
+      "title": "Welcome to your Dashboard",
+      "subtitle": "Here's a quick overview of your activity and important actions"
+    },
+    "buttons": {
+      "personalize": "Personalize",
+      "detailedAnalytics": "Detailed Analytics",
+      "newQuote": "+ New Quote",
+      "guidedTour": "▷ Guided Tour"
+    },
+    "metrics": {
+      "quotesThisMonth": "Quotes this Month",
+      "signatureRate": "Signature Rate",
+      "monthlyTurnover": "Monthly Turnover",
+      "aiGain": "AI Gain",
+      "changeTexts": {
+        "positive": "+{{value}}%",
+        "negative": "-{{value}}%",
+        "new": "New"
+      }
+    },
+    "aiInsights": {
+      "title": "AI Insights",
+      "viewFullAnalysis": "View Full Analysis",
+      "priceOptimization": {
+        "title": "Price Optimization",
+        "description": "AI suggests increasing rates by 8% based on market analysis"
+      },
+      "bestConversionDay": {
+        "title": "Best Conversion Day",
+        "description": "Tuesday shows 23% higher quote acceptance rate"
+      },
+      "followUpOpportunity": {
+        "title": "Follow-up Opportunity",
+        "description": "3 clients haven't responded to quotes for 5+ days"
+      }
+    },
+    "personalization": {
+      "title": "Dashboard Personalization",
+      "subtitle": "Customize your dashboard by enabling or disabling widgets",
+      "widgetCategories": {
+        "Analytics": "Analytics",
+        "Finance": "Finance",
+        "Sales": "Sales",
+        "Clients": "Clients",
+        "Productivity": "Productivity",
+        "Navigation": "Navigation",
+        "AI": "AI",
+        "Integration": "Integration",
+        "Marketing": "Marketing"
+      },
+      "widgets": {
+        "metricsCards": {
+          "title": "Key Metrics",
+          "description": "Display your main business indicators"
+        },
+        "invoiceOverview": {
+          "title": "Invoice Overview",
+          "description": "Track your cash inflows and outflows"
+        },
+        "recentQuotes": {
+          "title": "Recent Quotes",
+          "description": "Monitor your latest quotes and their status"
+        },
+        "topClients": {
+          "title": "Top Clients",
+          "description": "View your best performing clients"
+        },
+        "taskList": {
+          "title": "Today's Tasks",
+          "description": "Manage your daily tasks and priorities"
+        },
+        "quickActions": {
+          "title": "Quick Actions",
+          "description": "Quick access to main features"
+        },
+        "aiPerformance": {
+          "title": "AI Performance",
+          "description": "Track AI-driven improvements and gains"
+        },
+        "peppolWidget": {
+          "title": "Peppol Network",
+          "description": "Electronic invoice exchange status"
+        },
+        "sponsoredBanner": {
+          "title": "Sponsored Banner",
+          "description": "Promotions and special offers"
+        },
+        "aiAlerts": {
+          "title": "AI Alerts",
+          "description": "Smart notifications and recommendations"
+        }
+      },
+      "buttons": {
+        "reset": "Reset",
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving...",
+        "widgetsActive": "{{count}} / {{total}} widgets active"
+      }
+    },
+    "tour": {
+      "steps": {
+        "metrics": {
+          "title": "Key Indicators",
+          "content": "Your key indicators: quotes, signature rate, revenue and AI gains."
+        },
+        "newQuote": {
+          "title": "Create Quote",
+          "content": "Create a new quote with one click from any page."
+        },
+        "recentQuotes": {
+          "title": "Recent Quotes",
+          "content": "Track your recent quotes and their status (sent, viewed, signed, declined)."
+        },
+        "quickActions": {
+          "title": "Quick Actions",
+          "content": "Quick access to most used actions."
+        },
+        "analytics": {
+          "title": "Detailed Analytics",
+          "content": "Detailed analyses to deepen your performance insights."
+        }
+      },
+      "buttons": {
+        "back": "Previous",
+        "close": "Close",
+        "last": "Finish",
+        "next": "Next",
+        "skip": "Skip"
+      }
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "actions": [
+        {
+          "label": "Create Quote",
+          "description": "Start a new quote quickly"
+        },
+        {
+          "label": "Follow Clients",
+          "description": "Manage and track client interactions"
+        },
+        {
+          "label": "View Invoices",
+          "description": "Review and manage your invoices"
+        }
+      ],
+      "keyboardShortcuts": "Keyboard Shortcut"
+    },
+    "topClients": {
+      "title": "Top Clients",
+      "sortedBy": "Sorted by Revenue",
+      "quotes": "Quotes",
+      "totalRevenue": "Total Revenue: {{amount}}",
+      "clients": [
+        {
+          "name": "Marie Dubois",
+          "company": "Plumbing Solutions",
+          "revenue": "12,500.00 €"
+        },
+        {
+          "name": "Pierre Martin",
+          "company": "Electric Services",
+          "revenue": "9,750.00 €"
+        },
+        {
+          "name": "Sophie Leroy",
+          "company": "Painting Pros",
+          "revenue": "7,200.00 €"
+        },
+        {
+          "name": "Jean Moreau",
+          "company": "Tiling Experts",
+          "revenue": "6,800.00 €"
+        }
+      ],
+      "statuses": {
+        "active": {
+          "label": "Active",
+          "color": "text-success",
+          "bg": "bg-success/10"
+        },
+        "prospect": {
+          "label": "Prospect",
+          "color": "text-warning",
+          "bg": "bg-warning/10"
+        },
+        "inactive": {
+          "label": "Inactive",
+          "color": "text-muted-foreground",
+          "bg": "bg-muted/50"
+        }
+      }
+    },
+    "sponsoredBanner": {
+      "title": "Optimize Your Quotes with Premium AI",
+      "description": "Increase your signature rate by 40% with intelligent suggestions",
+      "cta": "Discover Premium",
+      "sponsor": "Haliqo Pro",
+      "discount": "30% Off",
+      "sponsoredLabel": "Sponsored"
+    },
+    "aiPerformance": {
+      "title": "AI Performance",
+      "subtitle": "AI-driven improvements and gains",
+      "totalGain": "Total AI Gain",
+      "metrics": {
+        "signatureRate": "Signature Rate",
+        "timeSaved": "Time Saved",
+        "revenueGenerated": "Revenue Generated"
+      },
+      "lastAnalysis": "Last analysis: 2 hours ago",
+      "aiActive": "AI Active"
+    },
+    "invoiceOverview": {
+      "title": "Invoice Overview",
+      "subtitle": "Track your cash inflows and outflows",
+      "buttons": {
+        "clientInvoices": {
+          "full": "Client Invoices",
+          "short": "Clients"
+        },
+        "supplierInvoices": {
+          "full": "Supplier Invoices",
+          "short": "Suppliers"
+        },
+        "newInvoice": {
+          "full": "New Invoice",
+          "short": "New"
+        },
+        "viewAnalytics": {
+          "full": "View Analytics",
+          "short": "Analytics"
+        }
+      },
+      "sections": {
+        "clientInvoices": {
+          "title": "Client Invoices",
+          "totalRevenue": "Total Revenue",
+          "paidRevenue": "Paid Revenue",
+          "outstanding": "Outstanding",
+          "overdue": "Overdue"
+        },
+        "supplierInvoices": {
+          "title": "Supplier Invoices",
+          "totalExpenses": "Total Expenses",
+          "paidExpenses": "Paid Expenses",
+          "outstanding": "Outstanding",
+          "overdue": "Overdue"
+        },
+        "cashFlow": {
+          "title": "Cash Flow",
+          "monthlyNet": "Monthly Net",
+          "collectionRate": "Collection Rate",
+          "paymentRate": "Payment Rate",
+          "availableBalance": "Available Balance"
+        },
+        "lastUpdate": {
+          "prefix": "Last updated:",
+          "recentInvoices": "{{count}} recent invoices"
+        }
+      }
+    },
+    "peppolWidget": {
+      "title": "Peppol Network",
+      "subtitle": "Electronic invoice exchange",
+      "connectionStatus": {
+        "connected": "Connected",
+        "disconnected": "Disconnected"
+      },
+      "sandboxMode": "Test",
+      "notConfigured": {
+        "title": "Peppol Not Configured",
+        "description": "Configure your Peppol ID to exchange electronic invoices",
+        "buttonFull": "Configure Peppol",
+        "buttonShort": "Configure"
+      },
+      "connectionInfo": {
+        "peppolId": {
+          "label": "Peppol ID",
+          "notDefined": "Not defined"
+        },
+        "businessName": {
+          "label": "Company",
+          "notDefined": "Not defined"
+        }
+      },
+      "statistics": {
+        "totalSent": "Sent",
+        "totalReceived": "Received",
+        "pending": "Pending",
+        "failed": "Failed"
+      },
+      "successRate": "Success Rate",
+      "quickActions": {
+        "sendInvoice": {
+          "full": "Send Invoice",
+          "short": "Send"
+        },
+        "settings": {
+          "full": "Settings",
+          "short": "Config"
+        }
+      },
+      "lastActivity": "Last activity: {{date}}"
+    },
+    "taskList": {
+      "title": "Today's Tasks",
+      "tasksCount": "{{count}} tasks",
+      "viewAllTasks": "View All Tasks",
+      "taskTypes": {
+        "finalize": "Finalize",
+        "send": "Send",
+        "follow": "Follow Up",
+        "invoice": "Invoice"
+      },
+      "tasks": [
+        {
+          "title": "Finalize Plumbing Quote",
+          "client": "Marie Dubois",
+          "action": "Add Material Details"
+        },
+        {
+          "title": "Send Electrical Quote",
+          "client": "Pierre Martin",
+          "action": "Review and Send"
+        },
+        {
+          "title": "Follow Up Painting Client",
+          "client": "Sophie Leroy",
+          "action": "Phone Call"
+        },
+        {
+          "title": "Create Tiling Invoice",
+          "client": "Jean Moreau",
+          "action": "Quote Signed Yesterday"
+        }
+      ]
+    },
+    "quoteChart": {
+      "title": "Quote Evolution",
+      "seriesLabels": {
+        "quotes": "Quotes Created",
+        "signed": "Quotes Signed"
+      },
+      "months": {
+        "Jan": "Jan",
+        "Feb": "Feb",
+        "Mar": "Mar",
+        "Apr": "Apr",
+        "May": "May",
+        "Jun": "Jun",
+        "Jul": "Jul"
+      },
+      "chartAriaLabel": "Quote Evolution Chart"
+    },
+    "recentQuotes": {
+      "title": "Recent Quotes",
+      "viewAllQuotes": "View All Quotes",
+      "statuses": {
+        "signed": {
+          "label": "Signed",
+          "color": "text-success",
+          "bg": "bg-success/10"
+        },
+        "viewed": {
+          "label": "Viewed",
+          "color": "text-warning",
+          "bg": "bg-warning/10"
+        },
+        "sent": {
+          "label": "Sent",
+          "color": "text-primary",
+          "bg": "bg-primary/10"
+        },
+        "draft": {
+          "label": "Draft",
+          "color": "text-muted-foreground",
+          "bg": "bg-muted/50"
+        }
+      },
+      "quotes": [
+        {
+          "id": "DEV-2025-001",
+          "client": "Marie Dubois",
+          "service": "Bathroom Plumbing",
+          "amount": "2,450.00 €",
+          "date": "2025-07-18"
+        },
+        {
+          "id": "DEV-2025-002",
+          "client": "Pierre Martin",
+          "service": "Electrical Installation",
+          "amount": "1,850.00 €",
+          "date": "2025-07-17"
+        },
+        {
+          "id": "DEV-2025-003",
+          "client": "Sophie Leroy",
+          "service": "Apartment Painting",
+          "amount": "3,200.00 €",
+          "date": "2025-07-16"
+        },
+        {
+          "id": "DEV-2025-004",
+          "client": "Jean Moreau",
+          "service": "Kitchen Tiling",
+          "amount": "1,650.00 €",
+          "date": "2025-07-15"
+        }
+      ]
+    },
+    "aiAlerts": {
+      "title": "AI Alerts",
+      "footer": {
+        "aiEnabled": "AI Enabled • Average Gain: +40%"
+      },
+      "alerts": [
+        {
+          "type": "forgotten_quote",
+          "title": "Forgotten Quote",
+          "message": "The quote for Marie Dubois has not been sent for 3 days",
+          "action": "Send Now"
+        },
+        {
+          "type": "inactive_client",
+          "title": "Inactive Client",
+          "message": "Pierre Martin has not been contacted for 2 weeks",
+          "action": "Schedule Follow-up"
+        },
+        {
+          "type": "price_optimization",
+          "title": "Price Optimization",
+          "message": "Increase your rates by 8% according to AI analysis",
+          "action": "View Recommendations"
+        }
+      ],
+      "alertTypes": {
+        "forgotten_quote": "Forgotten Quote",
+        "inactive_client": "Inactive Client",
+        "price_optimization": "Price Optimization",
+        "follow_up": "Follow-up"
+      },
+      "priorities": {
+        "high": {
+          "color": "text-error",
+          "background": "border-error bg-error/5"
+        },
+        "medium": {
+          "color": "text-warning",
+          "background": "border-warning bg-warning/5"
+        },
+        "low": {
+          "color": "text-primary",
+          "background": "border-primary bg-primary/5"
+        }
+      }
+    }
   }
 } 

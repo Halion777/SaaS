@@ -18,36 +18,46 @@ export const AuthProvider = ({ children }) => {
   // Automatic login function
   const autoLogin = useCallback(async () => {
     try {
-      // Check for existing session in localStorage
-      const storedAccessToken = localStorage.getItem('sb-access-token');
-      const storedRefreshToken = localStorage.getItem('sb-refresh-token');
+      // Clear potentially stale tokens before attempting to restore session
+      localStorage.removeItem('sb-access-token');
+      localStorage.removeItem('sb-refresh-token');
+      
+      // Get current session directly from Supabase
+      const { data, error } = await supabase.auth.getSession();
 
-      if (storedAccessToken && storedRefreshToken) {
-        // Attempt to set the session using stored tokens
-        const { data, error } = await supabase.auth.setSession({
-          access_token: storedAccessToken,
-          refresh_token: storedRefreshToken
-        });
+      if (data.session) {
+        // Successfully restored session
+        setSession(data.session);
+        setUser(data.session.user);
 
-        if (data.session) {
-          // Successfully restored session
-          setSession(data.session);
-          setUser(data.session.user);
-
-          // Navigate to dashboard if on a public path
-          const currentPath = location.pathname;
-          const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password'];
-          
-          if (publicPaths.includes(currentPath)) {
-            navigate('/dashboard');
-          }
-
-          return true;
+        // Navigate to dashboard if on a public path
+        const currentPath = location.pathname;
+        const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password'];
+        
+        if (publicPaths.includes(currentPath)) {
+          navigate('/dashboard');
         }
+
+        return true;
       }
+
+      // If no session, attempt to sign out to clear any lingering auth state
+      await supabase.auth.signOut();
+      
       return false;
     } catch (error) {
       console.error('Auto login error:', error);
+      
+      // Ensure complete logout in case of any session restoration issues
+      try {
+        await supabase.auth.signOut();
+      } catch (signOutError) {
+        console.error('Error during forced sign out:', signOutError);
+      }
+      
+      setUser(null);
+      setSession(null);
+      
       return false;
     }
   }, [location, navigate]);
@@ -139,13 +149,30 @@ export const AuthProvider = ({ children }) => {
   // Logout function
   const logout = async () => {
     try {
+      // Use Supabase sign out method first
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Supabase sign out error:', error);
+      }
+      
       // Use secure session manager to clear all auth data
       sessionManager.clearAllAuthData();
       
-      // Clear local and cross-tab storage
-      localStorage.removeItem('sb-access-token');
-      localStorage.removeItem('sb-refresh-token');
-      localStorage.removeItem('sb-user');
+      // Clear local and cross-tab storage comprehensively
+      const keysToRemove = [
+        'sb-access-token', 
+        'sb-refresh-token', 
+        'sb-provider-token',
+        'sb-user',
+        'user_data',
+        'registration_complete'
+      ];
+      
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+      });
       
       // Clear local state
       setUser(null);
@@ -155,6 +182,11 @@ export const AuthProvider = ({ children }) => {
       navigate('/login');
     } catch (error) {
       console.error('Logout error:', error);
+      
+      // Fallback cleanup
+      setUser(null);
+      setSession(null);
+      navigate('/login');
     }
   };
 

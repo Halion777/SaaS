@@ -153,6 +153,7 @@ export async function getSession() {
  */
 export async function checkAndRefreshSession() {
   try {
+    // Attempt to get current session
     const { data, error } = await supabase.auth.getSession();
 
     if (error) {
@@ -161,12 +162,29 @@ export async function checkAndRefreshSession() {
         message: error.message,
         details: error.details
       });
+      
+      // Attempt to sign out to clear any invalid session
+      try {
+        await supabase.auth.signOut();
+      } catch (signOutError) {
+        console.error('Error during forced sign out:', signOutError);
+      }
+      
       return null;
     }
 
+    // Return the session if it exists
     return data.session;
   } catch (unexpectedError) {
     console.error('Unexpected session check error:', unexpectedError);
+    
+    // Attempt to sign out to clear any invalid session
+    try {
+      await supabase.auth.signOut();
+    } catch (signOutError) {
+      console.error('Error during forced sign out:', signOutError);
+    }
+    
     return null;
   }
 }

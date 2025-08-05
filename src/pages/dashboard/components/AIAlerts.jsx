@@ -1,34 +1,36 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
 const AIAlerts = () => {
+  const { t } = useTranslation();
   const alerts = [
     {
       id: 1,
       type: 'forgotten_quote',
-      title: 'Devis oublié',
-      message: 'Le devis pour Marie Dubois n\'a pas été envoyé depuis 3 jours',
+      title: t('dashboard.aiAlerts.alerts.0.title'),
+      message: t('dashboard.aiAlerts.alerts.0.message'),
       priority: 'high',
-      action: 'Envoyer maintenant',
+      action: t('dashboard.aiAlerts.alerts.0.action'),
       timestamp: '2025-07-16'
     },
     {
       id: 2,
       type: 'inactive_client',
-      title: 'Client inactif',
-      message: 'Pierre Martin n\'a pas eu de contact depuis 2 semaines',
+      title: t('dashboard.aiAlerts.alerts.1.title'),
+      message: t('dashboard.aiAlerts.alerts.1.message'),
       priority: 'medium',
-      action: 'Programmer relance',
+      action: t('dashboard.aiAlerts.alerts.1.action'),
       timestamp: '2025-07-05'
     },
     {
       id: 3,
       type: 'price_optimization',
-      title: 'Optimisation prix',
-      message: 'Augmentez vos tarifs de 8% selon l\'analyse IA',
+      title: t('dashboard.aiAlerts.alerts.2.title'),
+      message: t('dashboard.aiAlerts.alerts.2.message'),
       priority: 'low',
-      action: 'Voir recommandations',
+      action: t('dashboard.aiAlerts.alerts.2.action'),
       timestamp: '2025-07-18'
     }
   ];
@@ -44,28 +46,28 @@ const AIAlerts = () => {
   };
 
   const getPriorityColor = (priority) => {
-    const colors = {
-      high: 'border-error bg-error/5',
-      medium: 'border-warning bg-warning/5',
-      low: 'border-primary bg-primary/5'
+    const configs = {
+      high: t('dashboard.aiAlerts.priorities.high.background'),
+      medium: t('dashboard.aiAlerts.priorities.medium.background'),
+      low: t('dashboard.aiAlerts.priorities.low.background')
     };
-    return colors[priority] || 'border-border bg-card';
+    return configs[priority] || 'border-border bg-card';
   };
 
   const getIconColor = (priority) => {
-    const colors = {
-      high: 'text-error',
-      medium: 'text-warning',
-      low: 'text-primary'
+    const configs = {
+      high: t('dashboard.aiAlerts.priorities.high.color'),
+      medium: t('dashboard.aiAlerts.priorities.medium.color'),
+      low: t('dashboard.aiAlerts.priorities.low.color')
     };
-    return colors[priority] || 'text-muted-foreground';
+    return configs[priority] || 'text-muted-foreground';
   };
 
   return (
     <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-professional">
       <div className="flex items-center justify-between mb-4 sm:mb-6">
         <div className="flex items-center space-x-2">
-          <h3 className="text-base sm:text-lg font-semibold text-foreground">Alertes IA</h3>
+          <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('dashboard.aiAlerts.title')}</h3>
           <div className="ai-indicator w-1.5 h-1.5 sm:w-2 sm:h-2 bg-primary rounded-full"></div>
         </div>
         <Button variant="ghost" size="sm" className="p-1 sm:p-1.5">
@@ -97,7 +99,7 @@ const AIAlerts = () => {
       </div>
       <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-border">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>IA activée • Gain moyen: +40%</span>
+          <span>{t('dashboard.aiAlerts.footer.aiEnabled')}</span>
           <Button variant="ghost" size="sm" className="p-1 sm:p-1.5">
             <Icon name="Brain" size={12} className="sm:w-[14px] sm:h-[14px]" color="currentColor" />
           </Button>

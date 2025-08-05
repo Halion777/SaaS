@@ -1,15 +1,17 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Image from '../../../components/AppImage';
 
 const TopClients = () => {
+  const { t } = useTranslation();
   const clients = [
     {
       id: 1,
-      name: 'Marie Dubois',
-      company: 'Résidence Les Jardins',
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150&h=150&fit=crop&crop=face',
-      revenue: '12.450,00 €',
+      name: t('dashboard.topClients.clients.0.name'),
+      company: t('dashboard.topClients.clients.0.company'),
+      avatar: '/assets/images/no profile.jpg',
+      revenue: t('dashboard.topClients.clients.0.revenue'),
       quotes: 8,
       signatureRate: 87,
       lastContact: '2025-07-18',
@@ -17,10 +19,10 @@ const TopClients = () => {
     },
     {
       id: 2,
-      name: 'Pierre Martin',
-      company: 'Copropriété Bellevue',
+      name: t('dashboard.topClients.clients.1.name'),
+      company: t('dashboard.topClients.clients.1.company'),
       avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-      revenue: '9.850,00 €',
+      revenue: t('dashboard.topClients.clients.1.revenue'),
       quotes: 6,
       signatureRate: 75,
       lastContact: '2025-07-17',
@@ -28,10 +30,10 @@ const TopClients = () => {
     },
     {
       id: 3,
-      name: 'Sophie Leroy',
-      company: 'Maison individuelle',
+      name: t('dashboard.topClients.clients.2.name'),
+      company: t('dashboard.topClients.clients.2.company'),
       avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-      revenue: '7.200,00 €',
+      revenue: t('dashboard.topClients.clients.2.revenue'),
       quotes: 4,
       signatureRate: 92,
       lastContact: '2025-07-16',
@@ -39,10 +41,10 @@ const TopClients = () => {
     },
     {
       id: 4,
-      name: 'Jean Moreau',
-      company: 'Restaurant Le Gourmet',
+      name: t('dashboard.topClients.clients.3.name'),
+      company: t('dashboard.topClients.clients.3.company'),
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-      revenue: '6.750,00 €',
+      revenue: t('dashboard.topClients.clients.3.revenue'),
       quotes: 5,
       signatureRate: 68,
       lastContact: '2025-07-15',
@@ -53,19 +55,19 @@ const TopClients = () => {
   const getStatusConfig = (status) => {
     const configs = {
       active: {
-        label: 'Actif',
-        color: 'text-success',
-        bg: 'bg-success/10'
+        label: t('dashboard.topClients.statuses.active.label'),
+        color: t('dashboard.topClients.statuses.active.color'),
+        bg: t('dashboard.topClients.statuses.active.bg')
       },
       prospect: {
-        label: 'Prospect',
-        color: 'text-warning',
-        bg: 'bg-warning/10'
+        label: t('dashboard.topClients.statuses.prospect.label'),
+        color: t('dashboard.topClients.statuses.prospect.color'),
+        bg: t('dashboard.topClients.statuses.prospect.bg')
       },
       inactive: {
-        label: 'Inactif',
-        color: 'text-muted-foreground',
-        bg: 'bg-muted/50'
+        label: t('dashboard.topClients.statuses.inactive.label'),
+        color: t('dashboard.topClients.statuses.inactive.color'),
+        bg: t('dashboard.topClients.statuses.inactive.bg')
       }
     };
     return configs[status] || configs.prospect;
@@ -80,9 +82,9 @@ const TopClients = () => {
   return (
     <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-professional">
       <div className="flex items-center justify-between mb-4 sm:mb-6">
-        <h3 className="text-base sm:text-lg font-semibold text-foreground">Top clients</h3>
+        <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('dashboard.topClients.title')}</h3>
         <div className="flex items-center space-x-1 sm:space-x-2">
-          <span className="text-xs text-muted-foreground">Par CA</span>
+          <span className="text-xs text-muted-foreground">{t('dashboard.topClients.sortedBy')}</span>
           <Icon name="TrendingUp" size={12} className="sm:w-[14px] sm:h-[14px]" color="var(--color-success)" />
         </div>
       </div>
@@ -117,7 +119,7 @@ const TopClients = () => {
               <div className="text-right">
                 <p className="text-sm font-semibold text-foreground">{client.revenue}</p>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 mt-1 space-y-0.5 sm:space-y-0">
-                  <span className="text-xs text-muted-foreground">{client.quotes} devis</span>
+                  <span className="text-xs text-muted-foreground">{client.quotes} {t('dashboard.topClients.quotes')}</span>
                   <span className="hidden sm:inline text-xs text-muted-foreground">•</span>
                   <span className={`text-xs font-medium ${getSignatureRateColor(client.signatureRate)}`}>
                     {client.signatureRate}%
@@ -130,7 +132,7 @@ const TopClients = () => {
       </div>
       <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-border">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">CA total: 36.250,00 €</span>
+          <span className="text-xs text-muted-foreground">{t('dashboard.topClients.totalRevenue', { amount: '36.250,00 €' })}</span>
           <Icon name="Users" size={12} className="sm:w-[14px] sm:h-[14px]" color="var(--color-muted-foreground)" />
         </div>
       </div>

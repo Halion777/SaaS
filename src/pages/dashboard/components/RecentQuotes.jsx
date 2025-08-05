@@ -1,43 +1,45 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
 const RecentQuotes = () => {
+  const { t } = useTranslation();
   const quotes = [
     {
       id: 'DEV-2025-001',
-      client: 'Marie Dubois',
-      service: 'Plomberie salle de bain',
-      amount: '2.450,00 €',
+      client: t('dashboard.recentQuotes.quotes.0.client'),
+      service: t('dashboard.recentQuotes.quotes.0.service'),
+      amount: t('dashboard.recentQuotes.quotes.0.amount'),
       status: 'signed',
-      date: '2025-07-18',
+      date: t('dashboard.recentQuotes.quotes.0.date'),
       aiScore: 92
     },
     {
       id: 'DEV-2025-002',
-      client: 'Pierre Martin',
-      service: 'Installation électrique',
-      amount: '1.850,00 €',
+      client: t('dashboard.recentQuotes.quotes.1.client'),
+      service: t('dashboard.recentQuotes.quotes.1.service'),
+      amount: t('dashboard.recentQuotes.quotes.1.amount'),
       status: 'viewed',
-      date: '2025-07-17',
+      date: t('dashboard.recentQuotes.quotes.1.date'),
       aiScore: 78
     },
     {
       id: 'DEV-2025-003',
-      client: 'Sophie Leroy',
-      service: 'Peinture appartement',
-      amount: '3.200,00 €',
+      client: t('dashboard.recentQuotes.quotes.2.client'),
+      service: t('dashboard.recentQuotes.quotes.2.service'),
+      amount: t('dashboard.recentQuotes.quotes.2.amount'),
       status: 'sent',
-      date: '2025-07-16',
+      date: t('dashboard.recentQuotes.quotes.2.date'),
       aiScore: 85
     },
     {
       id: 'DEV-2025-004',
-      client: 'Jean Moreau',
-      service: 'Carrelage cuisine',
-      amount: '1.650,00 €',
+      client: t('dashboard.recentQuotes.quotes.3.client'),
+      service: t('dashboard.recentQuotes.quotes.3.service'),
+      amount: t('dashboard.recentQuotes.quotes.3.amount'),
       status: 'signed',
-      date: '2025-07-15',
+      date: t('dashboard.recentQuotes.quotes.3.date'),
       aiScore: 88
     }
   ];
@@ -45,27 +47,27 @@ const RecentQuotes = () => {
   const getStatusConfig = (status) => {
     const configs = {
       signed: {
-        label: 'Signé',
-        color: 'text-success',
-        bg: 'bg-success/10',
+        label: t('dashboard.recentQuotes.statuses.signed.label'),
+        color: t('dashboard.recentQuotes.statuses.signed.color'),
+        bg: t('dashboard.recentQuotes.statuses.signed.bg'),
         icon: 'CheckCircle'
       },
       viewed: {
-        label: 'Consulté',
-        color: 'text-warning',
-        bg: 'bg-warning/10',
+        label: t('dashboard.recentQuotes.statuses.viewed.label'),
+        color: t('dashboard.recentQuotes.statuses.viewed.color'),
+        bg: t('dashboard.recentQuotes.statuses.viewed.bg'),
         icon: 'Eye'
       },
       sent: {
-        label: 'Envoyé',
-        color: 'text-primary',
-        bg: 'bg-primary/10',
+        label: t('dashboard.recentQuotes.statuses.sent.label'),
+        color: t('dashboard.recentQuotes.statuses.sent.color'),
+        bg: t('dashboard.recentQuotes.statuses.sent.bg'),
         icon: 'Send'
       },
       draft: {
-        label: 'Brouillon',
-        color: 'text-muted-foreground',
-        bg: 'bg-muted/50',
+        label: t('dashboard.recentQuotes.statuses.draft.label'),
+        color: t('dashboard.recentQuotes.statuses.draft.color'),
+        bg: t('dashboard.recentQuotes.statuses.draft.bg'),
         icon: 'Edit3'
       }
     };
@@ -81,7 +83,7 @@ const RecentQuotes = () => {
   return (
     <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-professional">
       <div className="flex items-center justify-between mb-4 sm:mb-6">
-        <h3 className="text-base sm:text-lg font-semibold text-foreground">Devis récents</h3>
+        <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('dashboard.recentQuotes.title')}</h3>
         <Button variant="ghost" size="sm" className="p-1 sm:p-1.5">
           <Icon name="MoreHorizontal" size={14} className="sm:w-4 sm:h-4" color="currentColor" />
         </Button>
@@ -127,7 +129,7 @@ const RecentQuotes = () => {
       </div>
       <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-border">
         <Button variant="outline" fullWidth className="text-sm">
-          Voir tous les devis
+          {t('dashboard.recentQuotes.viewAllQuotes')}
         </Button>
       </div>
     </div>

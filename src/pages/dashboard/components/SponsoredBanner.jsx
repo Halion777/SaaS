@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Image from '../../../components/AppImage';
 
 const SponsoredBanner = () => {
+  const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(true);
 
   const bannerData = {
-    title: 'Optimisez vos devis avec l\'IA Premium',
-    description: 'Augmentez votre taux de signature de 40% avec nos suggestions intelligentes',
+    title: t('dashboard.sponsoredBanner.title'),
+    description: t('dashboard.sponsoredBanner.description'),
     image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&h=200&fit=crop',
-    cta: 'Découvrir Premium',
-    sponsor: 'Haliqo Pro',
-    discount: '30% de réduction'
+    cta: t('dashboard.sponsoredBanner.cta'),
+    sponsor: t('dashboard.sponsoredBanner.sponsor'),
+    discount: t('dashboard.sponsoredBanner.discount')
   };
 
   if (!isVisible) return null;
@@ -73,7 +75,7 @@ const SponsoredBanner = () => {
             
             <div className="flex items-center justify-end sm:justify-end space-x-1 text-xs text-white/80">
               <Icon name="Star" size={10} className="sm:w-3 sm:h-3" color="rgb(250, 204, 21)" />
-              <span className="font-medium">Sponsorisé</span>
+              <span className="font-medium">{t('dashboard.sponsoredBanner.sponsoredLabel')}</span>
             </div>
           </div>
         </div>

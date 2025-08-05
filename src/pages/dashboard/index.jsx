@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import MainSidebar from '../../components/ui/MainSidebar';
@@ -17,6 +18,7 @@ import PeppolWidget from './components/PeppolWidget';
 import DashboardPersonalization from './components/DashboardPersonalization';
 
 const Dashboard = () => {
+  const { t, i18n } = useTranslation();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [sidebarOffset, setSidebarOffset] = useState(288); // Default sidebar width
   const [runTour, setRunTour] = useState(false);
@@ -104,14 +106,16 @@ const Dashboard = () => {
   }, []);
 
   const formatTime = (date) => {
-    return date.toLocaleTimeString('fr-FR', { 
+    const locale = i18n.language || 'fr';
+    return date.toLocaleTimeString(locale, { 
       hour: '2-digit', 
       minute: '2-digit' 
     });
   };
 
   const formatDate = (date) => {
-    return date.toLocaleDateString('fr-FR', {
+    const locale = i18n.language || 'fr';
+    return date.toLocaleDateString(locale, {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -150,33 +154,33 @@ const Dashboard = () => {
 
   const metricsData = [
     {
-      title: 'Devis ce mois',
+      title: t('dashboard.metrics.quotesThisMonth'),
       value: '67',
-      change: '+12%',
+      change: t('dashboard.metrics.changeTexts.positive', { value: 12 }),
       changeType: 'positive',
       icon: 'FileText',
       color: 'primary'
     },
     {
-      title: 'Taux de signature',
+      title: t('dashboard.metrics.signatureRate'),
       value: '78%',
-      change: '+8%',
+      change: t('dashboard.metrics.changeTexts.positive', { value: 8 }),
       changeType: 'positive',
       icon: 'TrendingUp',
       color: 'success'
     },
     {
-      title: 'CA du mois',
+      title: t('dashboard.metrics.monthlyTurnover'),
       value: '24.850€',
-      change: '+15%',
+      change: t('dashboard.metrics.changeTexts.positive', { value: 15 }),
       changeType: 'positive',
       icon: 'Euro',
       color: 'warning'
     },
     {
-      title: 'Gain IA',
+      title: t('dashboard.metrics.aiGain'),
       value: '+40%',
-      change: 'Nouveau',
+      change: t('dashboard.metrics.changeTexts.new'),
       changeType: 'positive',
       icon: 'Brain',
       color: 'primary'
@@ -210,11 +214,11 @@ const Dashboard = () => {
             <div>
               <div className="flex items-center">
                 <Icon name="LayoutDashboard" size={24} className="text-primary mr-3" />
-                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Aperçu Rapide</h1>
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">{t('dashboard.header.title')}</h1>
               </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                Vue d'ensemble de votre activité • {formatDate(currentTime)} • {formatTime(currentTime)}
-              </p>
+                  {t('dashboard.header.subtitle')} • {formatDate(currentTime)} • {formatTime(currentTime)}
+                </p>
             </div>
               <div className="flex items-center justify-between sm:justify-end space-x-2 sm:space-x-4 w-full sm:w-auto">
                 <div className="flex items-center space-x-2">
@@ -226,7 +230,7 @@ const Dashboard = () => {
                 onClick={() => setIsPersonalizationOpen(true)}
                     className="dashboard-personalization-button sm:h-9 sm:px-3 sm:w-auto"
               >
-                    <span className="hidden sm:inline">Personnaliser</span>
+                    <span className="hidden sm:inline">{t('dashboard.buttons.personalize')}</span>
               </Button>
               <Button 
                 variant="outline" 
@@ -236,7 +240,7 @@ const Dashboard = () => {
                 onClick={() => window.location.href = '/analytics-dashboard'}
                     className="dashboard-analytics-button sm:h-9 sm:px-3 sm:w-auto"
               >
-                    <span className="hidden sm:inline">Analyses détaillées</span>
+                    <span className="hidden sm:inline">{t('dashboard.buttons.detailedAnalytics')}</span>
               </Button>
                 </div>
               <Button 
@@ -246,7 +250,7 @@ const Dashboard = () => {
                 iconPosition="left"
                   className="dashboard-new-quote-button sm:h-9 sm:px-3 sm:w-auto bg-blue-600 hover:bg-blue-700 text-white [&>svg]:mx-auto sm:[&>svg]:mx-0"
               >
-                  <span className="hidden sm:inline">Nouveau devis</span>
+                  <span className="hidden sm:inline">{t('dashboard.buttons.newQuote')}</span>
               </Button>
               </div>
             </div>
@@ -255,8 +259,8 @@ const Dashboard = () => {
           <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-4 sm:p-6 shadow-md dashboard-welcome mt-4 sm:mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
               <div>
-                <h2 className="text-lg sm:text-xl font-semibold mb-2 text-white">Bienvenue sur votre tableau de bord</h2>
-                <p className="text-white/90 text-sm sm:text-base">Voici un aperçu rapide de votre activité et des actions importantes</p>
+                <h2 className="text-lg sm:text-xl font-semibold mb-2 text-white">{t('dashboard.welcomeBanner.title')}</h2>
+                <p className="text-white/90 text-sm sm:text-base">{t('dashboard.welcomeBanner.subtitle')}</p>
               </div>
               <div className="w-full md:w-auto">
                 <Button 
@@ -266,8 +270,8 @@ const Dashboard = () => {
                 >
                   <span className="flex items-center justify-center">
                     <Icon name="Play" size={16} className="mr-2" />
-                    <span className="hidden sm:inline">Visite guidée</span>
-                    <span className="sm:hidden">Visite</span>
+                    <span className="hidden sm:inline">{t('dashboard.buttons.guidedTour')}</span>
+                    <span className="sm:hidden">{t('dashboard.buttons.guidedTour')}</span>
                   </span>
                 </Button>
               </div>
@@ -352,7 +356,7 @@ const Dashboard = () => {
                   <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center mr-3">
                     <Icon name="Brain" size={16} className="sm:w-5 sm:h-5 text-primary" />
                   </div>
-                  <h3 className="text-base sm:text-lg font-semibold text-foreground">Insights IA</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('dashboard.aiInsights.title')}</h3>
                 </div>
                 <Button 
                   variant="ghost" 
@@ -361,29 +365,29 @@ const Dashboard = () => {
                   className="w-full sm:w-auto"
                 >
                   <span className="flex items-center justify-center">
-                    <span className="hidden sm:inline">Voir l'analyse complète</span>
-                    <span className="sm:hidden">Voir plus</span>
+                    <span className="hidden sm:inline">{t('dashboard.aiInsights.viewFullAnalysis')}</span>
+                    <span className="sm:hidden">{t('dashboard.aiInsights.viewFullAnalysis')}</span>
                     <Icon name="ArrowRight" size={16} className="ml-2" />
                   </span>
                 </Button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                 <div className="p-3 sm:p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                  <h4 className="text-sm font-medium text-foreground mb-2">Optimisation des prix</h4>
+                  <h4 className="text-sm font-medium text-foreground mb-2">{t('dashboard.aiInsights.priceOptimization.title')}</h4>
                   <p className="text-xs text-muted-foreground">
-                    Augmentez vos tarifs de 8% selon l'analyse du marché pour optimiser votre rentabilité
+                    {t('dashboard.aiInsights.priceOptimization.description')}
                   </p>
                 </div>
                 <div className="p-3 sm:p-4 bg-success/5 border border-success/20 rounded-lg">
-                  <h4 className="text-sm font-medium text-foreground mb-2">Meilleur jour de conversion</h4>
+                  <h4 className="text-sm font-medium text-foreground mb-2">{t('dashboard.aiInsights.bestConversionDay.title')}</h4>
                   <p className="text-xs text-muted-foreground">
-                    Les mardis et jeudis ont un taux de conversion 23% plus élevé que les autres jours
+                    {t('dashboard.aiInsights.bestConversionDay.description')}
                   </p>
                 </div>
                 <div className="p-3 sm:p-4 bg-warning/5 border border-warning/20 rounded-lg">
-                  <h4 className="text-sm font-medium text-foreground mb-2">Opportunité de relance</h4>
+                  <h4 className="text-sm font-medium text-foreground mb-2">{t('dashboard.aiInsights.followUpOpportunity.title')}</h4>
                   <p className="text-xs text-muted-foreground">
-                    5 devis non signés depuis plus de 7 jours pourraient être convertis avec une relance
+                    {t('dashboard.aiInsights.followUpOpportunity.description')}
                   </p>
                 </div>
               </div>
@@ -397,7 +401,7 @@ const Dashboard = () => {
             </div>
                     )}
         </div>
-        </main>
+      </main>
 
       {/* Dashboard Personalization Modal */}
       <DashboardPersonalization

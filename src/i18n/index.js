@@ -18,20 +18,43 @@ const resources = {
   }
 };
 
+// Detect initial language
+const getInitialLanguage = () => {
+  const savedLanguage = localStorage.getItem('language');
+  const navigatorLanguage = navigator.language.split('-')[0];
+  
+  const validLanguages = ['fr', 'en', 'nl'];
+  
+  if (savedLanguage && validLanguages.includes(savedLanguage)) {
+    return savedLanguage;
+  }
+  
+  if (validLanguages.includes(navigatorLanguage)) {
+    return navigatorLanguage;
+  }
+  
+  return 'fr'; // Default to French
+};
+
 i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: 'fr', // default language
+    lng: getInitialLanguage(), // Dynamically set initial language
     fallbackLng: 'fr',
+    supportedLngs: ['fr', 'en', 'nl'],
     interpolation: {
       escapeValue: false, // React already escapes values
-      prefix: '{',
-      suffix: '}',
     },
     react: {
       useSuspense: false,
     },
   });
+
+// Add language change listener to update localStorage
+i18n.on('languageChanged', (lng) => {
+  localStorage.setItem('language', lng);
+  document.documentElement.setAttribute('lang', lng);
+});
 
 export default i18n; 

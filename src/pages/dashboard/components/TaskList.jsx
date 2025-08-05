@@ -1,44 +1,46 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
 const TaskList = () => {
+  const { t } = useTranslation();
   const tasks = [
     {
       id: 1,
       type: 'finalize',
-      title: 'Finaliser devis plomberie',
-      client: 'Marie Dubois',
+      title: t('dashboard.taskList.tasks.0.title'),
+      client: t('dashboard.taskList.tasks.0.client'),
       priority: 'high',
       dueDate: '2025-07-19',
-      action: 'Ajouter détails matériaux'
+      action: t('dashboard.taskList.tasks.0.action')
     },
     {
       id: 2,
       type: 'send',
-      title: 'Envoyer devis électricité',
-      client: 'Pierre Martin',
+      title: t('dashboard.taskList.tasks.1.title'),
+      client: t('dashboard.taskList.tasks.1.client'),
       priority: 'medium',
       dueDate: '2025-07-20',
-      action: 'Relecture et envoi'
+      action: t('dashboard.taskList.tasks.1.action')
     },
     {
       id: 3,
       type: 'follow',
-      title: 'Relancer client peinture',
-      client: 'Sophie Leroy',
+      title: t('dashboard.taskList.tasks.2.title'),
+      client: t('dashboard.taskList.tasks.2.client'),
       priority: 'high',
       dueDate: '2025-07-19',
-      action: 'Appel téléphonique'
+      action: t('dashboard.taskList.tasks.2.action')
     },
     {
       id: 4,
       type: 'invoice',
-      title: 'Créer facture carrelage',
-      client: 'Jean Moreau',
+      title: t('dashboard.taskList.tasks.3.title'),
+      client: t('dashboard.taskList.tasks.3.client'),
       priority: 'low',
       dueDate: '2025-07-21',
-      action: 'Devis signé hier'
+      action: t('dashboard.taskList.tasks.3.action')
     }
   ];
 
@@ -73,8 +75,8 @@ const TaskList = () => {
   return (
     <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-professional">
       <div className="flex items-center justify-between mb-4 sm:mb-6">
-        <h3 className="text-base sm:text-lg font-semibold text-foreground">Tâches du jour</h3>
-        <span className="text-xs sm:text-sm text-muted-foreground">{tasks.length} tâches</span>
+        <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('dashboard.taskList.title')}</h3>
+        <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.taskList.tasksCount', { count: tasks.length })}</span>
       </div>
       <div className="space-y-3 sm:space-y-4">
         {tasks.map((task) => (
@@ -85,7 +87,6 @@ const TaskList = () => {
                 size={14} 
                 className={`sm:w-4 sm:h-4 ${getPriorityColor(task.priority)}`}
                 color="currentColor"
-                
               />
             </div>
             <div className="flex-1 min-w-0">
@@ -103,7 +104,7 @@ const TaskList = () => {
       </div>
       <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-border">
         <Button variant="outline" fullWidth className="text-sm">
-          Voir toutes les tâches
+          {t('dashboard.taskList.viewAllTasks')}
         </Button>
       </div>
     </div>
