@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import { useAuth } from './AuthContext';
 import multiUserService from '../services/multiUserService';
 
 const MultiUserContext = createContext();
@@ -17,88 +18,124 @@ export const MultiUserProvider = ({ children }) => {
   const [isPremium, setIsPremium] = useState(false);
   const [subscriptionLimits, setSubscriptionLimits] = useState({});
   const [loading, setLoading] = useState(true);
-  const [permissions, setPermissions] = useState([]);
+  const [permissions, setPermissions] = useState({});
+  const [userProfile, setUserProfile] = useState(null);
+  const [initialized, setInitialized] = useState(false);
 
-  // Mock company ID - in real app, this would come from auth context
-  const companyId = 'artisan-pro-001';
+  const { user } = useAuth();
 
   useEffect(() => {
-    initializeMultiUser();
-  }, []);
-
-  const initializeMultiUser = async () => {
-    try {
-      setLoading(true);
-      
-      // Check if account is premium
-      const premium = await multiUserService.isPremiumAccount(companyId);
-      setIsPremium(premium);
-      
-      // Set mock premium for demo
-      localStorage.setItem(`subscription-${companyId}`, 'premium');
-      setIsPremium(true);
-      
-      // Get subscription limits
-      const limits = await multiUserService.getSubscriptionLimits(companyId);
-      setSubscriptionLimits(limits);
-      
-      // Get company profiles
-      const profiles = await multiUserService.getCompanyProfiles(companyId);
-      setCompanyProfiles(profiles);
-      
-      // Get current profile
-      const current = await multiUserService.getCurrentProfile(companyId);
-      setCurrentProfile(current);
-      
-      // Set permissions based on current profile
-      if (current) {
-        setPermissions(current.permissions || []);
-      }
-      
-    } catch (error) {
-      console.error('Error initializing multi-user context:', error);
-    } finally {
+    if (user && !initialized) {
+      initializeMultiUser();
+    } else if (!user) {
+      // Clear state when user is null
+      setCurrentProfile(null);
+      setCompanyProfiles([]);
+      setIsPremium(false);
+      setSubscriptionLimits({});
+      setPermissions({});
+      setUserProfile(null);
+      setInitialized(false);
       setLoading(false);
     }
-  };
+  }, [user, initialized]);
 
-  const switchProfile = async (profileId) => {
+  // Initialize multi-user system
+  const initializeMultiUser = useCallback(async () => {
+    if (!user || initialized) return;
+    
     try {
-      console.log('MultiUserContext: Switching to profile:', profileId);
-      console.log('MultiUserContext: Company ID:', companyId);
+      // Get all profiles for this user
+      const profiles = await multiUserService.getProfiles(user.id);
       
-      const newProfile = await multiUserService.switchProfile(companyId, profileId);
-      console.log('MultiUserContext: New profile received:', newProfile);
+      setCompanyProfiles(profiles);
+      
+      // Get the current active profile
+      const currentProfile = await multiUserService.getCurrentProfile(user.id);
+      
+      if (currentProfile) {
+        setCurrentProfile(currentProfile);
+        setPermissions(currentProfile.permissions || []);
+        
+        // Set premium status based on role or profile count
+        const isUserPremium = currentProfile.role === 'admin' || profiles.length > 1;
+        setIsPremium(isUserPremium);
+        
+        // Set subscription limits (reasonable defaults)
+        setSubscriptionLimits({
+          maxProfiles: 10,
+          maxUsers: 50,
+          maxStorage: '10GB'
+        });
+      } else {
+        // No active profile - user needs to select one
+        setCurrentProfile(null);
+        setPermissions([]);
+        
+        // Set default values
+        setIsPremium(false);
+        setSubscriptionLimits({
+          maxProfiles: 1,
+          maxUsers: 1,
+          maxStorage: '1GB'
+        });
+      }
+      
+      setInitialized(true);
+    } catch (error) {
+      console.error('Error initializing multi-user system:', error);
+      setInitialized(true);
+    }
+  }, [user, initialized]);
+
+  // Switch to a different profile
+  const switchToProfile = useCallback(async (profileId) => {
+    if (!user) return;
+    
+    try {
+      const newProfile = await multiUserService.switchProfile(user.id, profileId);
       
       setCurrentProfile(newProfile);
       setPermissions(newProfile.permissions || []);
       
-      // Reload profiles to update active status
-      const profiles = await multiUserService.getCompanyProfiles(companyId);
-      console.log('MultiUserContext: Updated profiles:', profiles);
-      setCompanyProfiles(profiles);
+      // Update the profiles list to reflect the new active state
+      setCompanyProfiles(prevProfiles => 
+        prevProfiles.map(profile => ({
+          ...profile,
+          is_active: profile.id === profileId
+        }))
+      );
       
       return newProfile;
     } catch (error) {
       console.error('Error switching profile:', error);
       throw error;
     }
-  };
+  }, [user]);
 
   const addProfile = async (profileData) => {
+    if (!user) throw new Error('User not authenticated');
+    
     try {
-      const newProfile = await multiUserService.addProfile(companyId, profileData);
-      setCompanyProfiles(prev => [...prev, newProfile]);
+      const newProfile = await multiUserService.addProfile(user.id, profileData);
+      
+      setCompanyProfiles(prev => {
+        const updated = [...prev, newProfile];
+        return updated;
+      });
+      
       return newProfile;
     } catch (error) {
-      console.error('Error adding profile:', error);
+      console.error('MultiUserContext: Error adding profile:', error);
       throw error;
     }
   };
 
   const updateProfile = async (profileId, profileData) => {
+    if (!user) throw new Error('User not authenticated');
+    
     try {
-      const updatedProfile = await multiUserService.updateProfile(companyId, profileId, profileData);
+      const updatedProfile = await multiUserService.updateProfile(user.id, profileId, profileData);
       setCompanyProfiles(prev => prev.map(profile => 
         profile.id === profileId ? updatedProfile : profile
       ));
@@ -106,7 +143,7 @@ export const MultiUserProvider = ({ children }) => {
       // Update current profile if it's the one being edited
       if (currentProfile?.id === profileId) {
         setCurrentProfile(updatedProfile);
-        setPermissions(updatedProfile.permissions || []);
+        setPermissions(updatedProfile.permissions || {});
       }
       
       return updatedProfile;
@@ -117,15 +154,17 @@ export const MultiUserProvider = ({ children }) => {
   };
 
   const deleteProfile = async (profileId) => {
+    if (!user) throw new Error('User not authenticated');
+    
     try {
-      await multiUserService.deleteProfile(companyId, profileId);
+      await multiUserService.deleteProfile(user.id, profileId);
       setCompanyProfiles(prev => prev.filter(profile => profile.id !== profileId));
       
       // If current profile is deleted, switch to admin profile
       if (currentProfile?.id === profileId) {
         const adminProfile = companyProfiles.find(profile => profile.role === 'admin' && profile.id !== profileId);
         if (adminProfile) {
-          await switchProfile(adminProfile.id);
+          await switchToProfile(adminProfile.id);
         }
       }
     } catch (error) {
@@ -134,17 +173,140 @@ export const MultiUserProvider = ({ children }) => {
     }
   };
 
-  const hasPermission = (permission) => {
-    if (!currentProfile) return false;
+  const uploadAvatar = async (file) => {
+    if (!user) throw new Error('User not authenticated');
     
+    try {
+      return await multiUserService.uploadAvatar(user.id, file);
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      throw error;
+    }
+  };
+
+  const updateProfileAvatar = async (profileId, avatarUrl) => {
+    if (!user) throw new Error('User not authenticated');
+    
+    try {
+      const updatedProfile = await multiUserService.updateProfileAvatar(user.id, profileId, avatarUrl);
+      setCompanyProfiles(prev => prev.map(profile => 
+        profile.id === profileId ? updatedProfile : profile
+      ));
+      
+      // Update current profile if it's the one being edited
+      if (currentProfile?.id === profileId) {
+        setCurrentProfile(updatedProfile);
+      }
+      
+      return updatedProfile;
+    } catch (error) {
+      console.error('Error updating profile avatar:', error);
+      throw error;
+    }
+  };
+
+  const uploadAndUpdateAvatar = async (profileId, file) => {
+    if (!user) throw new Error('User not authenticated');
+    
+    try {
+      // Upload new avatar
+      const avatarUrl = await multiUserService.uploadAvatar(user.id, file);
+      
+      // Update profile with new avatar (this will also delete the old one)
+      const updatedProfile = await multiUserService.updateProfileAvatar(user.id, profileId, avatarUrl);
+      
+      // Update local state
+      setCompanyProfiles(prev => prev.map(profile => 
+        profile.id === profileId ? updatedProfile : profile
+      ));
+      
+      // Update current profile if it's the one being edited
+      if (currentProfile?.id === profileId) {
+        setCurrentProfile(updatedProfile);
+      }
+      
+      return updatedProfile;
+    } catch (error) {
+      console.error('Error uploading and updating avatar:', error);
+      throw error;
+    }
+  };
+
+  const inviteUser = async (email, role, permissions) => {
+    if (!user) throw new Error('User not authenticated');
+    
+    try {
+      return await multiUserService.inviteUser(user.id, email, role, permissions);
+    } catch (error) {
+      console.error('Error inviting user:', error);
+      throw error;
+    }
+  };
+
+  const getPendingInvitations = async () => {
+    if (!user) throw new Error('User not authenticated');
+    
+    try {
+      return await multiUserService.getPendingInvitations(user.id);
+    } catch (error) {
+      console.error('Error getting pending invitations:', error);
+      throw error;
+    }
+  };
+
+  const getCompanyProfiles = async () => {
+    if (!user) return [];
+    
+    try {
+      const profiles = await multiUserService.getProfiles(user.id);
+      setCompanyProfiles(profiles);
+      return profiles;
+    } catch (error) {
+      console.error('Error getting company profiles:', error);
+      return [];
+    }
+  };
+
+  const cancelInvitation = async (invitationId) => {
+    if (!user) throw new Error('User not authenticated');
+    
+    try {
+      return await multiUserService.cancelInvitation(user.id, invitationId);
+    } catch (error) {
+      console.error('Error cancelling invitation:', error);
+      throw error;
+    }
+  };
+
+  const hasPermission = (module, requiredPermission = 'view') => {
+    if (!currentProfile) {
+      return false;
+    }
+
     // Admin has all permissions
-    if (currentProfile.role === 'admin') return true;
+    if (currentProfile.role === 'admin') {
+      return true;
+    }
+
+    // Handle both array and object formats for permissions
+    let permissions = currentProfile.permissions;
     
-    return permissions.includes(permission);
+    if (Array.isArray(permissions)) {
+      // Array format (from database) - simple check if module is in array
+      return permissions.includes(module);
+    } else if (typeof permissions === 'object' && permissions !== null) {
+      // Object format (fallback for old data)
+      const modulePermission = permissions[module];
+      if (modulePermission) {
+        return modulePermission !== 'none';
+      }
+    }
+    
+    return false;
   };
 
   const getUserRole = () => {
-    return currentProfile?.role || 'viewer';
+    return currentProfile?.role || 'none';
   };
 
   const isAdmin = () => {
@@ -152,36 +314,40 @@ export const MultiUserProvider = ({ children }) => {
   };
 
   const canManageUsers = () => {
-    return hasPermission('users') || isAdmin();
+    return hasPermission('users', 'invite');
   };
 
   const canManageQuotes = () => {
-    return hasPermission('quotes') || isAdmin();
+    return hasPermission('quotes', 'approve');
   };
 
   const canManageInvoices = () => {
-    return hasPermission('invoices') || isAdmin();
+    return hasPermission('invoices', 'approve');
   };
 
   const canManageClients = () => {
-    return hasPermission('clients') || isAdmin();
+    return hasPermission('clients', 'delete');
   };
 
   const canViewAnalytics = () => {
-    return hasPermission('analytics') || isAdmin();
+    return hasPermission('analytics', 'full');
   };
 
   const canManageSettings = () => {
-    return hasPermission('settings') || isAdmin();
+    return hasPermission('settings', 'full');
   };
 
   const getProfileAvatar = (profile) => {
-    if (profile.avatar) {
+    if (profile?.avatar) {
       return profile.avatar;
     }
     
     // Generate initials from name
-    return profile.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    if (profile?.name) {
+      return profile.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    
+    return 'U';
   };
 
   const getRoleColor = (role) => {
@@ -206,7 +372,7 @@ export const MultiUserProvider = ({ children }) => {
     return roleMap[role] || 'Utilisateur';
   };
 
-  const value = {
+  const value = useMemo(() => ({
     // State
     currentProfile,
     companyProfiles,
@@ -214,12 +380,20 @@ export const MultiUserProvider = ({ children }) => {
     subscriptionLimits,
     loading,
     permissions,
+    userProfile,
     
     // Actions
-    switchProfile,
+    switchProfile: switchToProfile, // Renamed to avoid conflict with useState
     addProfile,
     updateProfile,
     deleteProfile,
+    uploadAvatar,
+    updateProfileAvatar,
+    uploadAndUpdateAvatar,
+    inviteUser,
+    getPendingInvitations,
+    getCompanyProfiles,
+    cancelInvitation,
     
     // Permission checks
     hasPermission,
@@ -237,9 +411,41 @@ export const MultiUserProvider = ({ children }) => {
     getRoleColor,
     getRoleLabel,
     
-    // Company info
-    companyId
-  };
+    // User info
+    userId: user?.id
+  }), [
+    currentProfile,
+    companyProfiles,
+    isPremium,
+    subscriptionLimits,
+    loading,
+    permissions,
+    userProfile,
+    switchToProfile, // Renamed to avoid conflict with useState
+    addProfile,
+    updateProfile,
+    deleteProfile,
+    uploadAvatar,
+    updateProfileAvatar,
+    uploadAndUpdateAvatar,
+    inviteUser,
+    getPendingInvitations,
+    getCompanyProfiles,
+    cancelInvitation,
+    hasPermission,
+    getUserRole,
+    isAdmin,
+    canManageUsers,
+    canManageQuotes,
+    canManageInvoices,
+    canManageClients,
+    canViewAnalytics,
+    canManageSettings,
+    getProfileAvatar,
+    getRoleColor,
+    getRoleLabel,
+    user?.id
+  ]);
 
   return (
     <MultiUserContext.Provider value={value}>

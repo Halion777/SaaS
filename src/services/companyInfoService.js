@@ -5,10 +5,12 @@
 /**
  * Save company information to localStorage
  * @param {Object} companyInfo - Company information object
+ * @param {string} userId - User ID for user-specific storage
  */
-export const saveCompanyInfo = (companyInfo) => {
+export const saveCompanyInfo = (companyInfo, userId) => {
   try {
-    localStorage.setItem('company-info', JSON.stringify(companyInfo));
+    const key = userId ? `company-info-${userId}` : 'company-info';
+    localStorage.setItem(key, JSON.stringify(companyInfo));
     return { success: true };
   } catch (error) {
     console.error('Error saving company info:', error);
@@ -18,11 +20,13 @@ export const saveCompanyInfo = (companyInfo) => {
 
 /**
  * Load company information from localStorage
+ * @param {string} userId - User ID for user-specific storage
  * @returns {Object|null} Company information or null if not found
  */
-export const loadCompanyInfo = () => {
+export const loadCompanyInfo = (userId) => {
   try {
-    const savedInfo = localStorage.getItem('company-info');
+    const key = userId ? `company-info-${userId}` : 'company-info';
+    const savedInfo = localStorage.getItem(key);
     return savedInfo ? JSON.parse(savedInfo) : null;
   } catch (error) {
     console.error('Error loading company info:', error);

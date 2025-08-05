@@ -1,23 +1,26 @@
 import React, { useState, useEffect } from 'react';
+import AppIcon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
-import Icon from '../../../components/AppIcon';
 import Image from '../../../components/AppImage';
 import { saveCompanyInfo, validateCompanyInfo } from '../../../services/companyInfoService';
+import { useAuth } from '../../../context/AuthContext';
 
 const CompanyInfoModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
+  const { user } = useAuth();
   const [companyInfo, setCompanyInfo] = useState({
-    name: 'VOTRE ENTREPRISE',
-    vatNumber: 'BE0123456789',
-    address: '123 Rue de l\'Exemple',
-    postalCode: '1000',
-    city: 'Bruxelles',
+    name: '',
+    vatNumber: '',
+    address: '',
+    postalCode: '',
+    city: '',
     country: 'Belgique',
-    phone: '+32 123 45 67 89',
-    email: 'contact@entreprise.be',
-    website: 'www.entreprise.be',
+    phone: '',
+    email: '',
+    website: '',
     logo: null,
-    signature: null
+    signature: null,
+    ...initialData
   });
 
   useEffect(() => {
@@ -55,7 +58,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
     }
 
     // Save to localStorage for persistence
-    const result = saveCompanyInfo(companyInfo);
+    const result = saveCompanyInfo(companyInfo, user?.id);
     if (result.success) {
       onSave(companyInfo);
       onClose();
@@ -94,7 +97,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 transition-colors p-1 rounded-full hover:bg-gray-100"
           >
-            <Icon name="X" size={18} className="sm:w-5 sm:h-5" />
+            <AppIcon name="X" size={18} className="sm:w-5 sm:h-5" />
           </button>
         </div>
 
@@ -145,10 +148,10 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
               />
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex space-x-1">
                 <button className="text-muted-foreground hover:text-foreground">
-                  <Icon name="Eye" size={16} />
+                  <AppIcon name="Eye" size={16} />
                 </button>
                 <button className="text-muted-foreground hover:text-foreground">
-                  <Icon name="ChevronDown" size={16} />
+                  <AppIcon name="ChevronDown" size={16} />
                 </button>
               </div>
             </div>

@@ -816,8 +816,8 @@
       "ES": "Espagne"
     },
     "progress": {
-      "step": "Étape {current} sur {total}",
-      "completed": "{percentage}% terminé"
+      "step": "Étape {{current}} sur {{total}}",
+      "completed": "{{percentage}}% terminé"
     },
     "trustSignals": {
       "gdpr": {
@@ -1478,6 +1478,7 @@
       "availableProfiles": "Profils disponibles",
       "manageProfiles": "Gérer les profils",
       "createProfiles": "Créer des profils",
+      "noProfiles": "Aucun profil",
       "logout": "Déconnexion"
     },
     "settings": {
@@ -1601,8 +1602,8 @@
   "buttons": {
     "personalize": "Personnaliser",
     "detailedAnalytics": "Analyses détaillées",
-    "newQuote": "+ Nouveau devis",
-    "guidedTour": "▷ Visite guidée"
+    "newQuote": "Nouveau devis",
+    "guidedTour": "Visite guidée"
   },
   "metrics": {
     "quotesThisMonth": "Devis ce mois",

@@ -6,48 +6,44 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://kvuvjtbfvzhtccinhmcl.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2dXZqdGJmdnpodGNjaW5obWNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMwMzI4MjMsImV4cCI6MjA2ODYwODgyM30.9vj1JflLlLVrBiv1czG89WZMLgzo-QINoGecfkhVeXs';
 
-// Custom storage handler for enhanced security
-const secureSessionStorage = {
-  getItem: (key) => {
-    try {
-      const item = sessionStorage.getItem(key);
-      return item;
-    } catch (error) {
-      console.error('Error retrieving session item:', error);
-      return null;
-    }
-  },
-  setItem: (key, value) => {
-    try {
-      sessionStorage.setItem(key, value);
-    } catch (error) {
-      console.error('Error setting session item:', error);
-    }
-  },
-  removeItem: (key) => {
-    try {
-      sessionStorage.removeItem(key);
-    } catch (error) {
-      console.error('Error removing session item:', error);
-    }
-  }
-};
-
 /**
  * Supabase client with simplified authentication configuration
  */
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    // Use session storage for temporary authentication
+    // Use localStorage for persistent authentication (survives tab closure)
     persistSession: true,
-    storage: secureSessionStorage,
+    storage: {
+      getItem: (key) => {
+        try {
+          return localStorage.getItem(key);
+        } catch (error) {
+          console.error('Error retrieving auth item:', error);
+          return null;
+        }
+      },
+      setItem: (key, value) => {
+        try {
+          localStorage.setItem(key, value);
+        } catch (error) {
+          console.error('Error setting auth item:', error);
+        }
+      },
+      removeItem: (key) => {
+        try {
+          localStorage.removeItem(key);
+        } catch (error) {
+          console.error('Error removing auth item:', error);
+        }
+      }
+    },
     
-    // Simplified token management
+    // Enhanced token management
     autoRefreshToken: true,
-    detectSessionInUrl: false, // Removed PKCE-related detection
+    detectSessionInUrl: false,
     
-    // Removed PKCE flow
-    flowType: 'implicit' // Use standard implicit flow
+    // Use standard implicit flow
+    flowType: 'implicit'
   }
 });
 

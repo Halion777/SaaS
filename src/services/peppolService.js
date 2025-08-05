@@ -1,37 +1,63 @@
 // Service for Peppol network integration
+import { supabase } from './supabaseClient';
+
 class PeppolService {
   constructor() {
     // Use import.meta.env for Vite or fallback to empty string
     this.baseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.REACT_APP_API_URL) || '/api';
   }
 
-  // Get current Peppol settings
+  // Get current user from Supabase auth
+  async getCurrentUser() {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      return user;
+    } catch (error) {
+      console.error('Error getting current user:', error);
+      return null;
+    }
+  }
+
+  // Get Peppol settings from localStorage
   async getPeppolSettings() {
     try {
-      // In a real implementation, this would fetch from API
-      const savedSettings = localStorage.getItem('peppol-settings');
-      if (savedSettings) {
+      const user = await this.getCurrentUser();
+      const userId = user?.id;
+      
+      if (!userId) {
         return {
-          success: true,
-          data: JSON.parse(savedSettings)
+          success: false,
+          error: 'User not authenticated'
         };
       }
 
-      // Default settings
-      const defaultSettings = {
-        peppolId: '',
-        businessName: '',
-        sandboxMode: true,
-        isConfigured: false,
-        lastTested: null
-      };
+      const savedSettings = localStorage.getItem(`peppol-settings-${userId}`);
+      
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        return {
+          success: true,
+          data: settings
+        };
+      }
 
+      // Return default settings if none saved
       return {
         success: true,
-        data: defaultSettings
+        data: {
+          peppolId: '',
+          sandboxMode: true,
+          accessPoint: 'default',
+          certificatePath: '',
+          privateKeyPath: '',
+          connectionStatus: 'not_configured',
+          lastUpdated: null,
+          lastTested: null
+        }
       };
     } catch (error) {
-      console.error('Error fetching Peppol settings:', error);
+      console.error('Error getting Peppol settings:', error);
       return {
         success: false,
         error: 'Erreur lors de la récupération des paramètres Peppol'
@@ -39,28 +65,25 @@ class PeppolService {
     }
   }
 
-  // Save Peppol settings
+  // Save Peppol settings to localStorage
   async savePeppolSettings(settings) {
     try {
-      // Validate Peppol ID format
-      if (settings.peppolId && !this.validatePeppolId(settings.peppolId)) {
+      const user = await this.getCurrentUser();
+      const userId = user?.id;
+      
+      if (!userId) {
         return {
           success: false,
-          error: 'Format de Peppol ID invalide. Utilisez le format: scheme:identifier'
+          error: 'User not authenticated'
         };
       }
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Save to localStorage (in real app, this would be an API call)
       const settingsToSave = {
         ...settings,
-        isConfigured: !!settings.peppolId,
         lastUpdated: new Date().toISOString()
       };
 
-      localStorage.setItem('peppol-settings', JSON.stringify(settingsToSave));
+      localStorage.setItem(`peppol-settings-${userId}`, JSON.stringify(settingsToSave));
 
       return {
         success: true,
@@ -115,7 +138,12 @@ class PeppolService {
         connectionStatus: testResults.connectionStatus
       };
 
-      localStorage.setItem('peppol-settings', JSON.stringify(updatedSettings));
+      const user = await this.getCurrentUser();
+      const userId = user?.id;
+      
+      if (userId) {
+        localStorage.setItem(`peppol-settings-${userId}`, JSON.stringify(updatedSettings));
+      }
 
       return {
         success: true,

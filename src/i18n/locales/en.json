@@ -818,8 +818,8 @@
       "ES": "Spain"
     },
     "progress": {
-      "step": "Step {current} of {total}",
-      "completed": "{percentage}% completed"
+      "step": "Step {{current}} of {{total}}",
+      "completed": "{{percentage}}% completed"
     },
     "trustSignals": {
       "gdpr": {
@@ -1443,6 +1443,7 @@
       "availableProfiles": "Available Profiles",
       "manageProfiles": "Manage Profiles",
       "createProfiles": "Create Profiles",
+      "noProfiles": "No Profiles",
       "logout": "Logout"
     },
     "settings": {
@@ -1566,8 +1567,8 @@
     "buttons": {
       "personalize": "Personalize",
       "detailedAnalytics": "Detailed Analytics",
-      "newQuote": "+ New Quote",
-      "guidedTour": "▷ Guided Tour"
+      "newQuote": "New Quote",
+      "guidedTour": "Guided Tour"
     },
     "metrics": {
       "quotesThisMonth": "Quotes this Month",

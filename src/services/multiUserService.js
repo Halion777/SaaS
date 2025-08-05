@@ -1,197 +1,421 @@
+import { supabase } from './supabaseClient';
+
 // Multi-User Profile Management Service
 class MultiUserService {
   constructor() {
     this.baseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.REACT_APP_API_URL) || '/api';
-    this.storageKey = 'company-profiles';
   }
 
-  // Get all profiles for the current company
-  async getCompanyProfiles(companyId) {
+  // Get current user from auth
+  async getCurrentUser() {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error) throw error;
+    return user;
+  }
+
+  // Get user profile from users table
+  async getUserProfile(userId) {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+
+  // Get all profiles for the current company (user_id)
+  async getCompanyProfiles(userId) {
     try {
-      // For demo purposes, using localStorage
-      const stored = localStorage.getItem(`${this.storageKey}-${companyId}`);
-      if (stored) {
-        return JSON.parse(stored);
-      }
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
 
-      // Mock data for demonstration
-      const mockProfiles = [
-        {
-          id: '1',
-          name: 'Jean Dupont',
-          role: 'admin',
-          avatar: '',
-          permissions: ['quotes', 'invoices', 'clients', 'analytics', 'settings', 'users'],
-          email: 'jean.dupont@artisanpro.fr',
-          isActive: true,
-          lastActive: new Date().toISOString(),
-          createdAt: '2024-01-15T10:00:00Z'
-        },
-        {
-          id: '2',
-          name: 'Marie Martin',
-          role: 'accountant',
-          avatar: '',
-          permissions: ['invoices', 'analytics'],
-          email: 'marie.martin@artisanpro.fr',
-          isActive: false,
-          lastActive: '2024-01-20T14:30:00Z',
-          createdAt: '2024-01-18T09:00:00Z'
-        },
-        {
-          id: '3',
-          name: 'Pierre Durand',
-          role: 'sales',
-          avatar: '',
-          permissions: ['quotes', 'clients'],
-          email: 'pierre.durand@artisanpro.fr',
-          isActive: false,
-          lastActive: '2024-01-22T11:00:00Z',
-          createdAt: '2024-01-22T11:00:00Z'
-        }
-      ];
-
-      localStorage.setItem(`${this.storageKey}-${companyId}`, JSON.stringify(mockProfiles));
-      return mockProfiles;
+      if (error) throw error;
+      return data || [];
     } catch (error) {
-      console.error('Error fetching company profiles:', error);
+      
       throw error;
     }
   }
 
   // Add a new profile
-  async addProfile(companyId, profileData) {
+  async addProfile(userId, profileData) {
     try {
-      const profiles = await this.getCompanyProfiles(companyId);
-      const newProfile = {
-        id: Date.now().toString(),
-        ...profileData,
-        email: profileData.email || `${profileData.name.toLowerCase().replace(' ', '.')}@artisanpro.fr`,
-        isActive: false,
-        lastActive: null,
-        createdAt: new Date().toISOString()
+      // Convert permissions object to array format for database
+      let permissionsArray = [];
+      
+      if (profileData.permissions) {
+        if (Array.isArray(profileData.permissions)) {
+          // Already an array, use as is
+          permissionsArray = profileData.permissions;
+        } else {
+          // Convert object format to array format
+          const permissions = profileData.permissions;
+          permissionsArray = [];
+          
+          // Add permissions based on the object structure
+          if (permissions.dashboard && permissions.dashboard !== 'none') {
+            permissionsArray.push('dashboard');
+          }
+          if (permissions.quotes && permissions.quotes !== 'none') {
+            permissionsArray.push('quotes');
+          }
+          if (permissions.invoices && permissions.invoices !== 'none') {
+            permissionsArray.push('invoices');
+          }
+          if (permissions.clients && permissions.clients !== 'none') {
+            permissionsArray.push('clients');
+          }
+          if (permissions.leads && permissions.leads !== 'none') {
+            permissionsArray.push('leads');
+          }
+          if (permissions.analytics && permissions.analytics !== 'none') {
+            permissionsArray.push('analytics');
+          }
+          if (permissions.settings && permissions.settings !== 'none') {
+            permissionsArray.push('settings');
+          }
+          if (permissions.users && permissions.users !== 'none') {
+            permissionsArray.push('users');
+          }
+          if (permissions.billing && permissions.billing !== 'none') {
+            permissionsArray.push('billing');
+          }
+        }
+      }
+
+      // Default permissions if none specified
+      if (permissionsArray.length === 0) {
+        permissionsArray = [];
+      }
+
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .insert({
+          user_id: userId,
+          name: profileData.name,
+          email: profileData.email,
+          role: profileData.role,
+          avatar: profileData.avatar,
+          permissions: permissionsArray,
+          is_active: false
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      
+      throw error;
+    }
+  }
+
+  // Update a profile
+  async updateProfile(userId, profileId, profileData) {
+    try {
+      // Convert permissions object to array if needed
+      let permissionsArray = [];
+      if (profileData.permissions) {
+        if (Array.isArray(profileData.permissions)) {
+          permissionsArray = profileData.permissions;
+        } else {
+          // Convert object to array
+          const permissions = profileData.permissions;
+          if (permissions.dashboard && permissions.dashboard !== 'none') {
+            permissionsArray.push('dashboard');
+          }
+          if (permissions.quotes && permissions.quotes !== 'none') {
+            permissionsArray.push('quotes');
+          }
+          if (permissions.invoices && permissions.invoices !== 'none') {
+            permissionsArray.push('invoices');
+          }
+          if (permissions.clients && permissions.clients !== 'none') {
+            permissionsArray.push('clients');
+          }
+          if (permissions.leads && permissions.leads !== 'none') {
+            permissionsArray.push('leads');
+          }
+          if (permissions.analytics && permissions.analytics !== 'none') {
+            permissionsArray.push('analytics');
+          }
+          if (permissions.settings && permissions.settings !== 'none') {
+            permissionsArray.push('settings');
+          }
+          if (permissions.users && permissions.users !== 'none') {
+            permissionsArray.push('users');
+          }
+          if (permissions.billing && permissions.billing !== 'none') {
+            permissionsArray.push('billing');
+          }
+        }
+      }
+
+      const updateData = {
+        updated_at: new Date().toISOString()
       };
 
-      const updatedProfiles = [...profiles, newProfile];
-      localStorage.setItem(`${this.storageKey}-${companyId}`, JSON.stringify(updatedProfiles));
+      // Only update fields that are provided
+      if (profileData.name !== undefined) updateData.name = profileData.name;
+      if (profileData.email !== undefined) updateData.email = profileData.email;
+      if (profileData.role !== undefined) updateData.role = profileData.role;
+      if (profileData.avatar !== undefined) updateData.avatar = profileData.avatar;
+      if (profileData.pin !== undefined) updateData.pin = profileData.pin;
+      if (permissionsArray.length > 0 || profileData.permissions !== undefined) {
+        updateData.permissions = permissionsArray;
+      }
+      if (profileData.is_active !== undefined) updateData.is_active = profileData.is_active;
+      if (profileData.last_active !== undefined) updateData.last_active = profileData.last_active;
+
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .update(updateData)
+        .eq('id', profileId)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Database error in updateProfile:', error);
+        throw error;
+      }
       
-      return newProfile;
+      return data;
     } catch (error) {
-      console.error('Error adding profile:', error);
+      console.error('Error in updateProfile:', error);
       throw error;
     }
   }
 
-  // Update an existing profile
-  async updateProfile(companyId, profileId, profileData) {
-    try {
-      const profiles = await this.getCompanyProfiles(companyId);
-      const updatedProfiles = profiles.map(profile => 
-        profile.id === profileId 
-          ? { ...profile, ...profileData, updatedAt: new Date().toISOString() }
-          : profile
-      );
+  // Get profile by ID
+  async getProfileById(userId, profileId) {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', profileId)
+      .eq('user_id', userId)
+      .single();
 
-      localStorage.setItem(`${this.storageKey}-${companyId}`, JSON.stringify(updatedProfiles));
-      
-      return updatedProfiles.find(profile => profile.id === profileId);
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      throw error;
-    }
+    if (error) throw error;
+    return data;
   }
 
-  // Delete a profile
-  async deleteProfile(companyId, profileId) {
+  // Delete a profile (only admin can delete)
+  async deleteProfile(userId, profileId) {
     try {
-      const profiles = await this.getCompanyProfiles(companyId);
-      const updatedProfiles = profiles.filter(profile => profile.id !== profileId);
-      
-      localStorage.setItem(`${this.storageKey}-${companyId}`, JSON.stringify(updatedProfiles));
-      
+      // Check if current user is admin
+      const currentProfile = await this.getCurrentProfile(userId);
+      if (!currentProfile || currentProfile.role !== 'admin') {
+        throw new Error('Only admin can delete profiles');
+      }
+
+      // Don't allow admin to delete their own profile
+      if (currentProfile.id === profileId) {
+        throw new Error('Cannot delete your own profile');
+      }
+
+      // Get profile to check if it has an avatar
+      const profileToDelete = await this.getProfileById(userId, profileId);
+      const avatarUrl = profileToDelete?.avatar;
+
+      // Delete the profile from database
+      const { error } = await supabase
+        .from('user_profiles')
+        .delete()
+        .eq('id', profileId)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      // Delete avatar from storage if it exists
+      if (avatarUrl) {
+        await this.deleteAvatar(avatarUrl);
+      }
+
       return { success: true };
     } catch (error) {
-      console.error('Error deleting profile:', error);
+      
       throw error;
     }
   }
 
   // Switch to a different profile
-  async switchProfile(companyId, profileId) {
+  async switchProfile(userId, profileId) {
     try {
-      console.log('MultiUserService: Switching profile for company:', companyId, 'to profile:', profileId);
+      // First, deactivate ALL profiles for this user to ensure only one is active
+      const { error: deactivateAllError } = await supabase
+        .from('user_profiles')
+        .update({
+          is_active: false,
+          last_active: new Date().toISOString()
+        })
+        .eq('user_id', userId);
       
-      const profiles = await this.getCompanyProfiles(companyId);
-      console.log('MultiUserService: Available profiles:', profiles);
-      
-      const targetProfile = profiles.find(profile => profile.id === profileId);
-      console.log('MultiUserService: Target profile found:', targetProfile);
-      
-      if (!targetProfile) {
-        throw new Error('Profile not found');
+      if (deactivateAllError) {
+        console.error('Error deactivating all profiles:', deactivateAllError);
+        throw deactivateAllError;
       }
-
-      // Update last active time for current profile
-      const currentProfileId = localStorage.getItem('current-profile-id');
-      console.log('MultiUserService: Current profile ID:', currentProfileId);
       
-      if (currentProfileId) {
-        await this.updateProfile(companyId, currentProfileId, {
-          lastActive: new Date().toISOString(),
-          isActive: false
-        });
+      // Now activate the target profile
+      const { data: activatedProfile, error: activateError } = await supabase
+        .from('user_profiles')
+        .update({
+          is_active: true,
+          last_active: new Date().toISOString()
+        })
+        .eq('id', profileId)
+        .eq('user_id', userId)
+        .select('*')
+        .single();
+      
+      if (activateError) {
+        console.error('Error activating target profile:', activateError);
+        throw activateError;
       }
-
-      // Set new profile as active
-      await this.updateProfile(companyId, profileId, {
-        lastActive: new Date().toISOString(),
-        isActive: true
-      });
-
-      // Store current profile ID
-      localStorage.setItem('current-profile-id', profileId);
-      console.log('MultiUserService: Profile switch completed successfully');
       
-      return targetProfile;
+      // Store the current profile ID in sessionStorage (not localStorage) for this session only
+      sessionStorage.setItem(`current-profile-id-${userId}`, profileId);
+      
+      return activatedProfile;
     } catch (error) {
       console.error('Error switching profile:', error);
       throw error;
     }
   }
 
-  // Get current active profile
-  async getCurrentProfile(companyId) {
+  // Get the current active profile for a user
+  async getCurrentProfile(userId) {
     try {
-      const currentProfileId = localStorage.getItem('current-profile-id');
-      if (!currentProfileId) {
-        // Return the first admin profile as default
-        const profiles = await this.getCompanyProfiles(companyId);
-        const adminProfile = profiles.find(profile => profile.role === 'admin');
-        if (adminProfile) {
-          localStorage.setItem('current-profile-id', adminProfile.id);
-          return adminProfile;
+      // First try to get the active profile from the database
+      const { data: activeProfiles, error: activeError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_active', true);
+      
+      if (activeError) {
+        console.error('Error getting active profiles:', activeError);
+        throw activeError;
+      }
+      
+      if (activeProfiles && activeProfiles.length > 0) {
+        if (activeProfiles.length === 1) {
+          // Only one active profile - perfect
+          const activeProfile = activeProfiles[0];
+          sessionStorage.setItem(`current-profile-id-${userId}`, activeProfile.id);
+          return activeProfile;
+        } else {
+          // Multiple active profiles - this is the problem we're fixing
+          // Keep the first one active, deactivate the rest
+          const [keepActive, ...deactivateThese] = activeProfiles;
+          
+          // Deactivate the extra profiles
+          for (const profile of deactivateThese) {
+            await supabase
+              .from('user_profiles')
+              .update({
+                is_active: false,
+                last_active: new Date().toISOString()
+              })
+              .eq('id', profile.id);
+          }
+          
+          sessionStorage.setItem(`current-profile-id-${userId}`, keepActive.id);
+          return keepActive;
         }
+      }
+      
+      // If no active profile found, get all profiles for this user
+      const { data: allProfiles, error: profilesError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true });
+      
+      if (profilesError) {
+        console.error('Error getting all profiles:', profilesError);
+        throw profilesError;
+      }
+      
+      if (!allProfiles || allProfiles.length === 0) {
         return null;
       }
-
-      const profiles = await this.getCompanyProfiles(companyId);
-      return profiles.find(profile => profile.id === currentProfileId);
+      
+      // If there's only one profile, make it active
+      if (allProfiles.length === 1) {
+        const { data: singleProfile, error: singleError } = await supabase
+          .from('user_profiles')
+          .update({
+            is_active: true,
+            last_active: new Date().toISOString()
+          })
+          .eq('id', allProfiles[0].id)
+          .select('*')
+          .single();
+        
+        if (singleError) {
+          console.error('Error activating single profile:', singleError);
+          throw singleError;
+        }
+        
+        sessionStorage.setItem(`current-profile-id-${userId}`, singleProfile.id);
+        return singleProfile;
+      }
+      
+      // If multiple profiles exist but none are active, this means user needs to select one
+      return null;
     } catch (error) {
       console.error('Error getting current profile:', error);
       throw error;
     }
   }
 
-  // Check if user has permission for specific action
-  async hasPermission(companyId, permission) {
+  // Get all profiles for a user
+  async getProfiles(userId) {
     try {
-      const currentProfile = await this.getCurrentProfile(companyId);
-      if (!currentProfile) return false;
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true });
 
-      // Admin has all permissions
-      if (currentProfile.role === 'admin') return true;
+      if (error) {
+        console.error('Error getting profiles:', error);
+        throw error;
+      }
 
-      return currentProfile.permissions.includes(permission);
+      return data || [];
+    } catch (error) {
+      console.error('Error getting profiles:', error);
+      throw error;
+    }
+  }
+
+  // Check if user has a specific permission
+  async hasPermission(userId, permission) {
+    try {
+      const currentProfile = await this.getCurrentProfile(userId);
+      if (!currentProfile) {
+        return false;
+      }
+
+      // Handle both array and object formats for permissions
+      let permissions = currentProfile.permissions;
+      
+      if (Array.isArray(permissions)) {
+        // Array format (from database)
+        return permissions.includes(permission);
+      } else if (typeof permissions === 'object' && permissions !== null) {
+        // Object format (fallback for old data)
+        return permissions[permission] && permissions[permission] !== 'none';
+      }
+      
+      return false;
     } catch (error) {
       console.error('Error checking permission:', error);
       return false;
@@ -199,22 +423,23 @@ class MultiUserService {
   }
 
   // Get user's role
-  async getUserRole(companyId) {
+  async getUserRole(userId) {
     try {
-      const currentProfile = await this.getCurrentProfile(companyId);
-      return currentProfile?.role || 'viewer';
+      const currentProfile = await this.getCurrentProfile(userId);
+      return currentProfile?.role || 'none'; // No profile = no role
     } catch (error) {
       console.error('Error getting user role:', error);
-      return 'viewer';
+      return 'none';
     }
   }
 
   // Check if account is Premium (for multi-user features)
-  async isPremiumAccount(companyId) {
+  async isPremiumAccount(userId) {
     try {
-      // Mock premium check - in real app, this would check subscription status
-      const subscription = localStorage.getItem(`subscription-${companyId}`);
-      return subscription === 'premium' || subscription === 'enterprise';
+      const userProfile = await this.getUserProfile(userId);
+      return userProfile.subscription_status === 'active' || 
+             userProfile.subscription_status === 'trial' ||
+             userProfile.selected_plan === 'pro';
     } catch (error) {
       console.error('Error checking premium status:', error);
       return false;
@@ -222,9 +447,10 @@ class MultiUserService {
   }
 
   // Get subscription limits
-  async getSubscriptionLimits(companyId) {
+  async getSubscriptionLimits(userId) {
     try {
-      const isPremium = await this.isPremiumAccount(companyId);
+      const userProfile = await this.getUserProfile(userId);
+      const isPremium = await this.isPremiumAccount(userId);
       
       if (isPremium) {
         return {
@@ -249,26 +475,113 @@ class MultiUserService {
     }
   }
 
-  // Invite a new user (send invitation email)
-  async inviteUser(companyId, email, role, permissions) {
+  // Upload avatar to Supabase storage
+  async uploadAvatar(userId, file) {
     try {
-      // Mock invitation - in real app, this would send an email
-      const invitation = {
-        id: Date.now().toString(),
-        email,
-        role,
-        permissions,
-        companyId,
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
-      };
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${userId}/${Date.now()}.${fileExt}`;
+      
+      const { data, error } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file);
 
-      const invitations = JSON.parse(localStorage.getItem(`invitations-${companyId}`) || '[]');
-      invitations.push(invitation);
-      localStorage.setItem(`invitations-${companyId}`, JSON.stringify(invitations));
+      if (error) throw error;
 
-      return invitation;
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      throw error;
+    }
+  }
+
+  // Delete avatar from storage
+  async deleteAvatar(avatarUrl) {
+    try {
+      if (!avatarUrl) return;
+      
+      // Extract file path from URL
+      const url = new URL(avatarUrl);
+      const pathParts = url.pathname.split('/');
+      const fileName = pathParts[pathParts.length - 1];
+      const userId = pathParts[pathParts.length - 2];
+      const filePath = `${userId}/${fileName}`;
+      
+      const { error } = await supabase.storage
+        .from('avatars')
+        .remove([filePath]);
+
+      if (error) {
+        console.error('Error deleting avatar:', error);
+        // Don't throw error, just log it
+      } else {
+        console.log('Avatar deleted successfully:', filePath);
+      }
+    } catch (error) {
+      console.error('Error in deleteAvatar:', error);
+      // Don't throw error, just log it
+    }
+  }
+
+  // Update profile avatar with cleanup
+  async updateProfileAvatar(userId, profileId, newAvatarUrl) {
+    try {
+      // Get current profile to check if there's an existing avatar
+      const currentProfile = await this.getProfileById(userId, profileId);
+      const oldAvatarUrl = currentProfile?.avatar;
+      
+      // Update profile with new avatar
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .update({ avatar: newAvatarUrl })
+        .eq('id', profileId)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      // Delete old avatar if it exists and is different from new one
+      if (oldAvatarUrl && oldAvatarUrl !== newAvatarUrl) {
+        await this.deleteAvatar(oldAvatarUrl);
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error updating profile avatar:', error);
+      throw error;
+    }
+  }
+
+  // Invite a new user (send invitation email)
+  async inviteUser(userId, email, role, permissions) {
+    try {
+      const token = crypto.randomUUID();
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+      const { data, error } = await supabase
+        .from('user_invitations')
+        .insert({
+          company_id: userId,
+          email,
+          role,
+          permissions,
+          token,
+          expires_at: expiresAt.toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // TODO: Send invitation email here
+      console.log('Invitation created:', data);
+      
+      return data;
     } catch (error) {
       console.error('Error inviting user:', error);
       throw error;
@@ -276,10 +589,18 @@ class MultiUserService {
   }
 
   // Get pending invitations
-  async getPendingInvitations(companyId) {
+  async getPendingInvitations(userId) {
     try {
-      const invitations = JSON.parse(localStorage.getItem(`invitations-${companyId}`) || '[]');
-      return invitations.filter(inv => inv.status === 'pending' && new Date(inv.expiresAt) > new Date());
+      const { data, error } = await supabase
+        .from('user_invitations')
+        .select('*')
+        .eq('company_id', userId)
+        .eq('status', 'pending')
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
     } catch (error) {
       console.error('Error getting pending invitations:', error);
       return [];
@@ -287,18 +608,154 @@ class MultiUserService {
   }
 
   // Cancel invitation
-  async cancelInvitation(companyId, invitationId) {
+  async cancelInvitation(userId, invitationId) {
     try {
-      const invitations = JSON.parse(localStorage.getItem(`invitations-${companyId}`) || '[]');
-      const updatedInvitations = invitations.map(inv => 
-        inv.id === invitationId ? { ...inv, status: 'cancelled' } : inv
-      );
-      localStorage.setItem(`invitations-${companyId}`, JSON.stringify(updatedInvitations));
-      
+      const { error } = await supabase
+        .from('user_invitations')
+        .update({ status: 'cancelled' })
+        .eq('id', invitationId)
+        .eq('company_id', userId);
+
+      if (error) throw error;
       return { success: true };
     } catch (error) {
       console.error('Error cancelling invitation:', error);
       throw error;
+    }
+  }
+
+  // Create initial admin profile for new user
+  async createInitialProfile(userId, userData) {
+    try {
+      console.log('=== CREATE INITIAL PROFILE START ===');
+      console.log('Creating initial profile for user:', userId, 'with data:', userData);
+      
+      // Check if user already has profiles
+      const existingProfiles = await this.getCompanyProfiles(userId);
+      console.log('Existing profiles found:', existingProfiles.length);
+      
+      // Check if there's already an admin profile
+      const existingAdminProfile = existingProfiles.find(profile => profile.role === 'admin');
+      if (existingAdminProfile) {
+        console.log('Admin profile already exists, returning:', existingAdminProfile);
+        return existingAdminProfile;
+      }
+      
+      // If there are existing profiles but no admin profile, delete them and create admin
+      if (existingProfiles.length > 0) {
+        console.log('Found non-admin profiles, deleting them to create admin profile');
+        for (const profile of existingProfiles) {
+          await supabase
+            .from('user_profiles')
+            .delete()
+            .eq('id', profile.id);
+        }
+      }
+
+      // Create admin profile for the user using provided data with full permissions
+      // Use array format for permissions as expected by the database
+      const profileData = {
+        user_id: userId,
+        name: userData.full_name || userData.email?.split('@')[0] || 'Admin',
+        email: userData.email,
+        role: 'admin',
+        avatar: null, // No avatar needed initially, user can update later
+        permissions: [
+          'dashboard',
+          'quotes', 
+          'invoices',
+          'clients',
+          'leads',
+          'analytics',
+          'settings',
+          'users',
+          'billing'
+        ],
+        is_active: true
+      };
+      
+      console.log('Profile data:', JSON.stringify(profileData, null, 2));
+      
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .insert(profileData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Database error during profile creation:', error);
+        throw error;
+      }
+
+      console.log('Profile created successfully:', data);
+      console.log('=== END CREATE INITIAL PROFILE ===');
+      
+      return data;
+    } catch (error) {
+      console.error('Error in createInitialProfile:', error);
+      throw error;
+    }
+  }
+
+  // Accept invitation (for invited users)
+  async acceptInvitation(token) {
+    try {
+      const { data: invitation, error: inviteError } = await supabase
+        .from('user_invitations')
+        .select('*')
+        .eq('token', token)
+        .eq('status', 'pending')
+        .gt('expires_at', new Date().toISOString())
+        .single();
+
+      if (inviteError || !invitation) {
+        throw new Error('Invalid or expired invitation');
+      }
+
+      // Create profile for the invited user
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .insert({
+          user_id: invitation.company_id,
+          name: invitation.email.split('@')[0], // Use email prefix as name
+          email: invitation.email,
+          role: invitation.role,
+          permissions: invitation.permissions,
+          is_active: false
+        })
+        .select()
+        .single();
+
+      if (profileError) throw profileError;
+
+      // Update invitation status
+      await supabase
+        .from('user_invitations')
+        .update({ status: 'accepted' })
+        .eq('id', invitation.id);
+
+      return profile;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Clean up all avatars for a user (when deleting account)
+  async cleanupUserAvatars(userId) {
+    try {
+      // Get all profiles for the user
+      const profiles = await this.getCompanyProfiles(userId);
+      
+      // Delete all avatars
+      for (const profile of profiles) {
+        if (profile.avatar) {
+          await this.deleteAvatar(profile.avatar);
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error cleaning up user avatars:', error);
+      // Don't throw error, just log it
     }
   }
 }

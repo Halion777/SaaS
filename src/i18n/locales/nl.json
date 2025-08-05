@@ -818,8 +818,8 @@
       "ES": "Spanje"
     },
     "progress": {
-      "step": "Stap {current} van {total}",
-      "completed": "{percentage}% voltooid"
+      "step": "Stap {{current}} van {{total}}",
+      "completed": "{{percentage}}% voltooid"
     },
     "trustSignals": {
       "gdpr": {
@@ -1474,6 +1474,7 @@
       "availableProfiles": "Beschikbare Profielen",
       "manageProfiles": "Profielen Beheren",
       "createProfiles": "Profielen Aanmaken",
+      "noProfiles": "Geen Profielen",
       "logout": "Uitloggen"
     },
     "settings": {
@@ -1597,8 +1598,8 @@
   "buttons": {
     "personalize": "Personaliseren",
     "detailedAnalytics": "Gedetailleerde Analyses",
-    "newQuote": "+ Nieuwe Offerte",
-    "guidedTour": "▷ Rondleiding"
+    "newQuote": "Nieuwe Offerte",
+    "guidedTour": "Rondleiding"
   },
   "metrics": {
     "quotesThisMonth": "Offertes deze maand",

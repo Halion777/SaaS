@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import * as authService from '../services/authService';
 import { supabase } from '../services/supabaseClient';
@@ -12,114 +12,194 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showProfileSelection, setShowProfileSelection] = useState(false);
+  const [isProfileSelected, setIsProfileSelected] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState(null);
+  const [pinModal, setPinModal] = useState({
+    isOpen: false,
+    targetProfileId: null,
+    targetProfileName: '',
+    action: null // 'switch', 'edit', 'delete'
+  });
+
   const navigate = useNavigate();
   const location = useLocation();
+  const authListenerRef = useRef(null);
+  const autoLoginRef = useRef(false);
 
-  // Automatic login function
+  // Auto login function with profile selection
   const autoLogin = useCallback(async () => {
     try {
-      // Clear potentially stale tokens before attempting to restore session
-      localStorage.removeItem('sb-access-token');
-      localStorage.removeItem('sb-refresh-token');
-      
-      // Get current session directly from Supabase
       const { data, error } = await supabase.auth.getSession();
-
+      
+      if (error) {
+        console.error('Error getting session:', error);
+        return false;
+      }
+      
       if (data.session) {
-        // Successfully restored session
-        setSession(data.session);
         setUser(data.session.user);
-
-        // Navigate to dashboard if on a public path
-        const currentPath = location.pathname;
-        const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password'];
+        setSession(data.session);
         
-        if (publicPaths.includes(currentPath)) {
-          navigate('/dashboard');
+        // Check if user has multiple profiles
+        try {
+          const multiUserService = (await import('../services/multiUserService')).default;
+          
+          // Get the current active profile from database
+          const currentProfile = await multiUserService.getCurrentProfile(data.session.user.id);
+          
+          if (currentProfile) {
+            // User has an active profile, no need for selection
+            setIsProfileSelected(true);
+            return true;
+          } else {
+            // No active profile - check if user has profiles that need selection
+            const profiles = await multiUserService.getProfiles(data.session.user.id);
+            
+            if (profiles.length > 1) {
+              // Multiple profiles exist but none are active - show selection
+              setShowProfileSelection(true);
+              setIsProfileSelected(false);
+              return true;
+            } else if (profiles.length === 1) {
+              // Only one profile - it should have been auto-activated by getCurrentProfile
+              // If we're here, something went wrong, so let's try to activate it
+              try {
+                await multiUserService.switchProfile(data.session.user.id, profiles[0].id);
+                setIsProfileSelected(true);
+                return true;
+              } catch (switchError) {
+                console.error('Error auto-activating single profile:', switchError);
+                setShowProfileSelection(true);
+                setIsProfileSelected(false);
+                return true;
+              }
+            } else {
+              // No profiles exist - this is normal for new users
+              setIsProfileSelected(false);
+              return true;
+            }
+          }
+        } catch (profileError) {
+          console.error('Error checking profiles during auto-login:', profileError);
+          setIsProfileSelected(false);
+          return true;
         }
-
-        return true;
       }
 
-      // If no session, attempt to sign out to clear any lingering auth state
-      await supabase.auth.signOut();
+      // If no session, clear any lingering auth state
+      setUser(null);
+      setSession(null);
+      setIsProfileSelected(false);
       
       return false;
     } catch (error) {
       console.error('Auto login error:', error);
       
-      // Ensure complete logout in case of any session restoration issues
-      try {
-        await supabase.auth.signOut();
-      } catch (signOutError) {
-        console.error('Error during forced sign out:', signOutError);
-      }
-      
       setUser(null);
       setSession(null);
+      setIsProfileSelected(false);
       
       return false;
     }
-  }, [location, navigate]);
+  }, [isProfileSelected]);
 
-  // Cross-tab authentication synchronization
-  const syncAuthState = useCallback(async () => {
-    const storedSession = localStorage.getItem('sb-access-token');
-    const storedUser = localStorage.getItem('sb-user');
+  // Listen for auth state changes
+  useEffect(() => {
+    // Prevent multiple listeners
+    if (authListenerRef.current) {
+      return;
+    }
 
-    if (storedSession && storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        // Only log significant auth events, not every token refresh
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+          console.log('Auth state changed:', event, session?.user?.email);
+        }
         
-        // Validate the session with Supabase
-        const { data } = await supabase.auth.getSession();
-        
-        if (data.session) {
-          setUser(parsedUser);
-          setSession(data.session);
-        } else {
+        if (event === 'SIGNED_IN' && session) {
+          setUser(session.user);
+          setSession(session);
+        } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setSession(null);
-          localStorage.removeItem('sb-access-token');
-          localStorage.removeItem('sb-refresh-token');
-          localStorage.removeItem('sb-user');
+          setIsProfileSelected(false);
+        } else if (event === 'TOKEN_REFRESHED' && session) {
+          // Only update if the user actually changed
+          setUser(prevUser => {
+            if (prevUser?.id !== session.user?.id) {
+              return session.user;
+            }
+            return prevUser;
+          });
+          setSession(session);
         }
-      } catch (error) {
-        console.error('Error parsing stored user:', error);
-        setUser(null);
-        setSession(null);
       }
-    } else {
-      setUser(null);
-      setSession(null);
-    }
+    );
+
+    authListenerRef.current = subscription;
+
+    return () => {
+      if (authListenerRef.current) {
+        authListenerRef.current.unsubscribe();
+        authListenerRef.current = null;
+      }
+    };
   }, []);
 
   // Initialize auth state
   useEffect(() => {
+    let isMounted = true;
+    
     async function loadUserSession() {
+      if (!isMounted || autoLoginRef.current) return;
+      
+      autoLoginRef.current = true;
       setLoading(true);
       
       try {
         // First, try auto login
         const autoLoginSuccess = await autoLogin();
         
-        if (!autoLoginSuccess) {
+        if (!autoLoginSuccess && isMounted) {
           // If auto login fails, proceed with normal session check
           const currentSession = await authService.checkAndRefreshSession();
-          setSession(currentSession);
+          if (isMounted) {
+            setSession(currentSession);
+          }
         }
       } catch (error) {
         console.error('Error loading user session:', error);
-        setSession(null);
-        setUser(null);
+        if (isMounted) {
+          setSession(null);
+          setUser(null);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
     
     loadUserSession();
-  }, [autoLogin]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Remove autoLogin from dependencies to prevent infinite loops
+
+  // Handle navigation after successful authentication
+  useEffect(() => {
+    if (user && isProfileSelected && !loading) {
+      const currentPath = location.pathname;
+      const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password'];
+      
+      if (publicPaths.includes(currentPath)) {
+        navigate('/dashboard');
+      }
+    }
+  }, [user, isProfileSelected, loading, location.pathname, navigate]);
 
   // Login function
   const login = async (email, password) => {
@@ -135,8 +215,37 @@ export const AuthProvider = ({ children }) => {
         setUser(data.user);
         setSession(data.session);
         
-        // Force navigation to dashboard
-        navigate('/dashboard');
+        // Check if user has multiple profiles
+        try {
+          const multiUserService = (await import('../services/multiUserService')).default;
+          const profiles = await multiUserService.getCompanyProfiles(data.user.id);
+          
+          if (profiles.length > 1 && !isProfileSelected) {
+            // Multiple profiles exist and no profile is selected yet, show profile selection
+            // All profiles will require PIN (including admin)
+            setShowProfileSelection(true);
+            setIsProfileSelected(false);
+          } else if (profiles.length === 1 && !isProfileSelected) {
+            // Only one profile and no profile is selected yet, auto-select it (no PIN required)
+            const profile = profiles[0];
+            await multiUserService.switchProfile(data.user.id, profile.id);
+            setIsProfileSelected(true);
+            
+            // Force navigation to dashboard
+            navigate('/dashboard');
+          } else if (profiles.length === 0) {
+            // No profiles exist, this is normal for workers
+            setIsProfileSelected(false);
+            navigate('/dashboard');
+          } else {
+            // Profile is already selected, navigate to dashboard
+            navigate('/dashboard');
+          }
+        } catch (profileError) {
+          console.error('Error checking profiles during login:', profileError);
+          setIsProfileSelected(false);
+          navigate('/dashboard');
+        }
       }
       
       return { data, error: null };
@@ -159,38 +268,28 @@ export const AuthProvider = ({ children }) => {
       // Use secure session manager to clear all auth data
       sessionManager.clearAllAuthData();
       
-      // Clear local and cross-tab storage comprehensively
-      const keysToRemove = [
-        'sb-access-token', 
-        'sb-refresh-token', 
-        'sb-provider-token',
-        'sb-user',
-        'user_data',
-        'registration_complete'
-      ];
-      
-      keysToRemove.forEach(key => {
-        localStorage.removeItem(key);
-        sessionStorage.removeItem(key);
-      });
+      // Clear profile selection data from sessionStorage
+      if (user) {
+        sessionStorage.removeItem(`current-profile-id-${user.id}`);
+      }
       
       // Clear local state
       setUser(null);
       setSession(null);
+      setShowProfileSelection(false);
+      setIsProfileSelected(false);
       
-      // Navigate to login
+      // Navigate to login page
       navigate('/login');
+      
+      return { error: null };
     } catch (error) {
       console.error('Logout error:', error);
-      
-      // Fallback cleanup
-      setUser(null);
-      setSession(null);
-      navigate('/login');
+      return { error };
     }
   };
 
-  // Sign up function
+  // Register new user
   const register = async (email, password, fullName, companyName) => {
     setLoading(true);
     const { data, error } = await authService.signUp(email, password, fullName, companyName);
@@ -231,18 +330,47 @@ export const AuthProvider = ({ children }) => {
     return { data, error };
   };
 
+  // Handle profile selection
+  const handleProfileSelect = async (profile) => {
+    try {
+      console.log('Profile selected in AuthContext:', profile);
+      
+      // The profile switching is now handled by the ProfileSelectionModal
+      // which calls switchToProfile from MultiUserContext
+      
+      setShowProfileSelection(false);
+      setIsProfileSelected(true);
+      
+      // Navigate to dashboard
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error selecting profile:', error);
+    }
+  };
+
+  // Close profile selection
+  const closeProfileSelection = () => {
+    setShowProfileSelection(false);
+    // If user closes profile selection, log them out
+    logout();
+  };
+
   // Auth context value
-  const value = {
+  const value = useMemo(() => ({
     user,
     session,
     loading,
+    showProfileSelection,
+    isProfileSelected,
     login,
     register,
     logout,
     updateUserProfile,
     sendPasswordReset,
+    handleProfileSelect,
+    closeProfileSelection,
     isAuthenticated: !!user && !!session
-  };
+  }), [user, session, loading, showProfileSelection, isProfileSelected, login, register, logout, updateUserProfile, sendPasswordReset, handleProfileSelect, closeProfileSelection]);
   
   return (
     <AuthContext.Provider value={value}>

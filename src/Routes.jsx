@@ -1,10 +1,9 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
 import GlobalProfile from './components/ui/GlobalProfile';
-import { AuthProvider } from './context/AuthContext';
 
 // Import pages
 import HomePage from './pages/home';
@@ -41,11 +40,10 @@ import StripeSuccessPage from './pages/stripe-success';
 
 const AppRoutes = () => {
   return (
-    <Router>
-      <AuthProvider>
-        <ScrollToTop />
-        <GlobalProfile />
-        <Routes>
+    <>
+      <ScrollToTop />
+      <GlobalProfile />
+      <Routes>
           {/* Public pages - redirect authenticated users to dashboard */}
           <Route path="/" element={
             <PublicRoute>
@@ -194,8 +192,7 @@ const AppRoutes = () => {
           {/* 404 Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </AuthProvider>
-    </Router>
+    </>
   );
 };
 

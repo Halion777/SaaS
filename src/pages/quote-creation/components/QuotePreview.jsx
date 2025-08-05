@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import AppIcon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
-import Icon from '../../../components/AppIcon';
 import Image from '../../../components/AppImage';
 import CompanyInfoModal from './CompanyInfoModal';
 import Personalization from './Personalization';
 import FinancialConfig from './FinancialConfig';
 import ElectronicSignatureModal from './ElectronicSignatureModal';
 import { loadCompanyInfo, getDefaultCompanyInfo } from '../../../services/companyInfoService';
+import { useAuth } from '../../../context/AuthContext';
 
 const QuotePreview = ({ 
   selectedClient, 
@@ -16,6 +17,7 @@ const QuotePreview = ({
   onSave, 
   onSend 
 }) => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('personalization');
   const [showCompanyModal, setShowCompanyModal] = useState(false);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
@@ -56,7 +58,7 @@ const QuotePreview = ({
 
   // Load saved company info on component mount
   useEffect(() => {
-    const savedCompanyInfo = loadCompanyInfo();
+    const savedCompanyInfo = loadCompanyInfo(user?.id);
     if (savedCompanyInfo) {
       setCompanyInfo(savedCompanyInfo);
     }
@@ -71,7 +73,7 @@ const QuotePreview = ({
         console.error('Error loading saved signature data:', error);
       }
     }
-  }, []);
+  }, [user?.id]);
 
   const handleCompanyInfoSave = (info) => {
     setCompanyInfo(info);
@@ -227,7 +229,7 @@ const QuotePreview = ({
               onClick={() => setPreviewMode(previewMode === 'desktop' ? 'mobile' : 'desktop')}
               className="p-2 rounded bg-gray-200 text-gray-600 hover:bg-gray-300 transition-colors"
             >
-              <Icon name={previewMode === 'mobile' ? "Monitor" : "Smartphone"} size={14} />
+              <AppIcon name={previewMode === 'mobile' ? "Monitor" : "Smartphone"} size={14} />
             </button>
           </div>
         </div>
@@ -236,7 +238,7 @@ const QuotePreview = ({
       {/* Quote Preview - Full Width */}
       <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
         <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
-          <Icon name="Eye" size={18} className="sm:w-5 sm:h-5 mr-2" />
+          <AppIcon name="Eye" size={18} className="sm:w-5 sm:h-5 mr-2" />
           Aperçu du devis
         </h3>
         

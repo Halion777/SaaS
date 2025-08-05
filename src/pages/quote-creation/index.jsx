@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import MainSidebar from '../../components/ui/MainSidebar';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
@@ -11,6 +12,7 @@ import QuotePreview from './components/QuotePreview';
 import AIScoring from './components/AIScoring';
 
 const QuoteCreation = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedClient, setSelectedClient] = useState(null);
@@ -41,7 +43,7 @@ const QuoteCreation = () => {
           companyInfo,
           lastSaved: new Date().toISOString()
         };
-        localStorage.setItem('quote-draft', JSON.stringify(quoteData));
+        localStorage.setItem(`quote-draft-${user?.id}`, JSON.stringify(quoteData));
         
         setTimeout(() => {
           setIsAutoSaving(false);
@@ -51,11 +53,11 @@ const QuoteCreation = () => {
 
     const interval = setInterval(autoSave, 30000); // Auto-save every 30 seconds
     return () => clearInterval(interval);
-  }, [selectedClient, projectInfo, tasks, files, currentStep, companyInfo]);
+  }, [selectedClient, projectInfo, tasks, files, currentStep, companyInfo, user?.id]);
 
   // Load draft on component mount
   useEffect(() => {
-    const savedDraft = localStorage.getItem('quote-draft');
+    const savedDraft = localStorage.getItem(`quote-draft-${user?.id}`);
     if (savedDraft) {
       try {
         const draftData = JSON.parse(savedDraft);
@@ -69,7 +71,7 @@ const QuoteCreation = () => {
         console.error('Error loading draft:', error);
       }
     }
-  }, []);
+  }, [user?.id]);
 
   // Handle sidebar offset and responsive layout
   useEffect(() => {
@@ -166,12 +168,12 @@ const QuoteCreation = () => {
     };
 
     // Save to localStorage (in real app, this would be an API call)
-    const existingQuotes = JSON.parse(localStorage.getItem('quotes') || '[]');
+    const existingQuotes = JSON.parse(localStorage.getItem(`quotes-${user?.id}`) || '[]');
     existingQuotes.push(quoteData);
-    localStorage.setItem('quotes', JSON.stringify(existingQuotes));
+    localStorage.setItem(`quotes-${user?.id}`, JSON.stringify(existingQuotes));
 
     // Clear draft
-    localStorage.removeItem('quote-draft');
+    localStorage.removeItem(`quote-draft-${user?.id}`);
 
     // Show success message and redirect
     alert('Devis sauvegardé avec succès !');
@@ -199,12 +201,12 @@ const QuoteCreation = () => {
     };
 
     // Save to localStorage (in real app, this would be an API call)
-    const existingQuotes = JSON.parse(localStorage.getItem('quotes') || '[]');
+    const existingQuotes = JSON.parse(localStorage.getItem(`quotes-${user?.id}`) || '[]');
     existingQuotes.push(quoteData);
-    localStorage.setItem('quotes', JSON.stringify(existingQuotes));
+    localStorage.setItem(`quotes-${user?.id}`, JSON.stringify(existingQuotes));
 
     // Clear draft
-    localStorage.removeItem('quote-draft');
+    localStorage.removeItem(`quote-draft-${user?.id}`);
 
     // Show success message and redirect
     alert(`Devis envoyé avec succès à ${selectedClient?.label?.split(' - ')[0]} !`);
@@ -226,9 +228,9 @@ const QuoteCreation = () => {
 
   const clearDraft = () => {
     if (confirm('Êtes-vous sûr de vouloir effacer ce brouillon ?')) {
-      localStorage.removeItem('quote-draft');
+      localStorage.removeItem(`quote-draft-${user?.id}`);
       localStorage.removeItem('quote-signature-data');
-      localStorage.removeItem('company-info');
+      localStorage.removeItem(`company-info-${user?.id}`);
       setSelectedClient(null);
       setTasks([]);
       setFiles([]);

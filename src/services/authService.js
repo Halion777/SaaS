@@ -281,11 +281,14 @@ export async function updatePassword(newPassword) {
  */
 export async function completeRegistration(formData) {
   try {
+    console.log('=== COMPLETE REGISTRATION START ===');
+    console.log('Form data:', formData);
+    
     // Clear any existing session storage data first
     sessionStorage.removeItem('pendingRegistration');
     sessionStorage.removeItem('registration_complete');
     
-    // Step 1: Create auth user (this is required for Supabase auth)
+    // Step 1: Create auth user ONLY (no profile, no user record yet)
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: formData.email,
       password: formData.password,
@@ -303,62 +306,31 @@ export async function completeRegistration(formData) {
     });
 
     if (authError) {
+      console.error('Auth signup error:', authError);
       return { error: authError };
     }
 
-    // Step 2: Create user record in public.users table immediately
-    if (authData?.user) {
-      // Calculate trial end date (14 days from now)
-      const trialStartDate = new Date();
-      const trialEndDate = new Date(trialStartDate.getTime() + (14 * 24 * 60 * 60 * 1000)); // 14 days
+    console.log('Auth user created:', authData.user.id);
 
-      const userRecord = {
-        id: authData.user.id,
-        email: formData.email,
-        full_name: formData.fullName,
-        company_name: formData.companyName,
-        phone: formData.phone,
-        profession: formData.profession,
-        country: formData.country,
-        business_size: formData.businessSize,
-        selected_plan: formData.selectedPlan,
-        subscription_status: 'trial',
-        trial_start_date: trialStartDate.toISOString(),
-        trial_end_date: trialEndDate.toISOString(),
-        stripe_customer_id: null,
-        stripe_subscription_id: null
-      };
-
-      // Create user record in public.users table
-      const { error: userError } = await supabase
-        .from('users')
-        .upsert(userRecord, { 
-          onConflict: 'id',
-          ignoreDuplicates: false 
-        });
-
-      if (userError) {
-        console.error('Error creating user record:', userError);
-        return { error: userError };
-      }
-
-      // Store registration data in sessionStorage for after payment
-      const registrationData = {
-        userId: authData.user.id,
-        email: formData.email,
-        fullName: formData.fullName,
-        companyName: formData.companyName,
-        phone: formData.phone,
-        profession: formData.profession,
-        country: formData.country,
-        businessSize: formData.businessSize,
-        selectedPlan: formData.selectedPlan,
-        registrationComplete: true
-      };
-      
-      sessionStorage.setItem('pendingRegistration', JSON.stringify(registrationData));
-    }
-
+    // Store registration data in sessionStorage for after payment
+    const registrationData = {
+      userId: authData.user.id,
+      email: formData.email,
+      fullName: formData.fullName,
+      companyName: formData.companyName,
+      phone: formData.phone,
+      profession: formData.profession,
+      country: formData.country,
+      businessSize: formData.businessSize,
+      selectedPlan: formData.selectedPlan,
+      registrationComplete: false // Will be set to true after payment
+    };
+    
+    sessionStorage.setItem('pendingRegistration', JSON.stringify(registrationData));
+    
+    console.log('=== COMPLETE REGISTRATION END ===');
+    console.log('Registration data stored for payment completion');
+    
     return { data: authData, error: null };
   } catch (error) {
     console.error('Error in complete registration:', error);
@@ -374,30 +346,74 @@ export async function completeRegistration(formData) {
  */
 export async function createUserAfterPayment(userId, userData) {
   try {
-    // Update subscription status and related fields after payment
-    const updateData = {
-      subscription_status: 'active', // Change from 'trial' to 'active'
-      // Note: stripe_customer_id and stripe_subscription_id will be updated by webhook
+    
+
+    // Step 1: Create user record in public.users table
+    const trialStartDate = new Date();
+    const trialEndDate = new Date(trialStartDate.getTime() + (14 * 24 * 60 * 60 * 1000)); // 14 days
+
+    const userRecord = {
+      id: userId,
+      email: userData.email,
+      full_name: userData.fullName,
+      company_name: userData.companyName,
+      phone: userData.phone,
+      profession: userData.profession,
+      country: userData.country,
+      business_size: userData.businessSize,
+      selected_plan: userData.selectedPlan,
+      subscription_status: 'active', // Changed from 'trial' to 'active' after payment
+      trial_start_date: trialStartDate.toISOString(),
+      trial_end_date: trialEndDate.toISOString(),
+      stripe_customer_id: null, // Will be updated by webhook
+      stripe_subscription_id: null // Will be updated by webhook
     };
 
-    const { data, error } = await supabase
-      .from('users')
-      .update(updateData)
-      .eq('id', userId)
-      .select()
-      .single()
+    console.log('Creating user record:', userRecord);
 
-    if (error) {
-      console.error('Error updating user subscription after payment:', error);
-      return { error };
+    const { data: userDataResult, error: userError } = await supabase
+      .from('users')
+      .upsert(userRecord, { 
+        onConflict: 'id',
+        ignoreDuplicates: false 
+      })
+      .select()
+      .single();
+
+    if (userError) {
+      console.error('Error creating user record after payment:', userError);
+      return { error: userError };
     }
 
-    // Clear the pending registration data
-    sessionStorage.removeItem('pendingRegistration');
+    console.log('User record created successfully:', userDataResult);
+
+    // Step 2: Create initial admin profile for the user
+    try {
+      console.log('Creating admin profile...');
+      const multiUserService = (await import('./multiUserService')).default;
+      await multiUserService.createInitialProfile(userId, {
+        full_name: userData.fullName,
+        company_name: userData.companyName,
+        email: userData.email
+      });
+      console.log('Admin profile created successfully for user:', userId);
+    } catch (profileError) {
+      console.error('Error creating initial profile after payment:', profileError);
+      // Don't fail the entire process if profile creation fails
+    }
+
+    // Step 3: Update registration data to mark as complete
+    const updatedRegistrationData = {
+      ...userData,
+      userId: userId,
+      registrationComplete: true
+    };
     
-    return { data, error: null };
+    sessionStorage.setItem('pendingRegistration', JSON.stringify(updatedRegistrationData));
+
+    return { data: userDataResult, error: null };
   } catch (error) {
-    console.error('Error updating user after payment:', error);
+    console.error('Error creating user after payment:', error);
     return { error };
   }
 }

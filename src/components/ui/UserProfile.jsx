@@ -1,13 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import Icon from '../AppIcon';
 import Image from '../AppImage';
 import Button from './Button';
+import PinModal from './PinModal';
 import { useMultiUser } from '../../context/MultiUserContext';
 import { useAuth } from '../../context/AuthContext';
 
 const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
   const [pinSettings, setPinSettings] = useState({
@@ -15,6 +18,11 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
     pin: '',
     confirmPin: '',
     isSettingPin: false
+  });
+  const [pinModal, setPinModal] = useState({
+    isOpen: false,
+    targetProfileId: null,
+    targetProfileName: ''
   });
   const dropdownRef = useRef(null);
   const [activeSettingsTab, setActiveSettingsTab] = useState('account');
@@ -29,7 +37,8 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
     getProfileAvatar, 
     getRoleColor, 
     getRoleLabel,
-    isAdmin
+    isAdmin,
+    updateProfile
   } = multiUserContext || {
     currentProfile: null,
     companyProfiles: [],
@@ -38,7 +47,8 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
     getProfileAvatar: () => '',
     getRoleColor: () => '',
     getRoleLabel: () => '',
-    isAdmin: () => false
+    isAdmin: () => false,
+    updateProfile: () => {}
   };
 
   // Get actual user data from AuthContext
@@ -80,11 +90,8 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
   // Removed click outside handler since we have backdrop
 
   const toggleDropdown = () => {
-    // console.log('Toggle dropdown clicked, current state:', isDropdownOpen);
     setIsDropdownOpen(!isDropdownOpen);
   };
-
-  // console.log('UserProfile render - isDropdownOpen:', isDropdownOpen, 'isPremium:', isPremium, 'companyProfiles:', companyProfiles?.length, 'currentProfile:', currentProfile?.name);
 
   const handleAccountSettings = () => {
     setIsDropdownOpen(false);
@@ -92,10 +99,10 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
     
     // Load current PIN settings
     if (currentProfile) {
-      const savedPin = localStorage.getItem(`profile-pin-${currentProfile.id}`);
+      const hasPin = currentProfile.pin && currentProfile.pin.trim() !== '';
       setPinSettings(prev => ({
         ...prev,
-        hasPin: !!savedPin,
+        hasPin: hasPin,
         isSettingPin: false
       }));
     }
@@ -108,30 +115,32 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
 
   const handleProfileSwitch = async (profileId) => {
     try {
-      console.log('Attempting to switch to profile:', profileId);
-      console.log('Current profiles:', companyProfiles);
-      console.log('Current profile:', currentProfile);
-      
       // Check if target profile has PIN protection
       const targetProfile = companyProfiles.find(p => p.id === profileId);
-      const targetPin = localStorage.getItem(`profile-pin-${profileId}`);
+      const hasPin = targetProfile?.pin && targetProfile.pin.trim() !== '';
       
-      if (targetPin) {
-        // Show PIN input modal
-        const enteredPin = prompt(`Entrez le code PIN pour ${targetProfile.name}:`);
-        if (enteredPin !== targetPin) {
-          alert('Code PIN incorrect');
-          return;
-        }
+      if (hasPin) {
+        // Show PIN modal for protected profile
+        setPinModal({
+          isOpen: true,
+          targetProfileId: profileId,
+          targetProfileName: targetProfile.name
+        });
+        return;
       }
       
+      // No PIN required, switch directly
+      await performProfileSwitch(profileId);
+    } catch (error) {
+      console.error('Error switching profile:', error);
+    }
+  };
+
+  const performProfileSwitch = async (profileId) => {
+    try {
       const result = await switchProfile(profileId);
-      console.log('Profile switch result:', result);
       
       setIsDropdownOpen(false);
-      
-      // Show success message
-      console.log('Profile switched successfully to:', result.name);
       
       // Add a visual feedback
       const button = document.querySelector('[data-profile-switch="success"]');
@@ -144,20 +153,47 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
         }, 1000);
       }
     } catch (error) {
-      console.error('Error switching profile:', error);
+      console.error('Error performing profile switch:', error);
+      throw error;
     }
+  };
+
+  const handlePinConfirm = async (pin) => {
+    const targetProfile = companyProfiles.find(p => p.id === pinModal.targetProfileId);
+    
+    if (pin !== targetProfile?.pin) {
+      throw new Error('Incorrect PIN');
+    }
+    
+    // PIN is correct, perform the switch
+    await performProfileSwitch(pinModal.targetProfileId);
+    
+    // Close the modal
+    setPinModal({
+      isOpen: false,
+      targetProfileId: null,
+      targetProfileName: ''
+    });
+  };
+
+  const handlePinModalClose = () => {
+    setPinModal({
+      isOpen: false,
+      targetProfileId: null,
+      targetProfileName: ''
+    });
   };
 
   const handleManageProfiles = () => {
     setIsDropdownOpen(false);
-    window.location.href = '/multi-user-profiles';
+    navigate('/multi-user-profiles');
   };
 
   const handleSetPin = () => {
     setPinSettings(prev => ({ ...prev, isSettingPin: true, pin: '', confirmPin: '' }));
   };
 
-  const handleSavePin = () => {
+  const handleSavePin = async () => {
     if (pinSettings.pin !== pinSettings.confirmPin) {
       alert('Les codes PIN ne correspondent pas');
       return;
@@ -169,32 +205,55 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
     }
     
     if (currentProfile) {
-      localStorage.setItem(`profile-pin-${currentProfile.id}`, pinSettings.pin);
-      setPinSettings(prev => ({ 
-        ...prev, 
-        hasPin: true, 
-        isSettingPin: false, 
-        pin: '', 
-        confirmPin: '' 
-      }));
+      try {
+        // Update the profile with the new PIN
+        await updateProfile(currentProfile.id, { pin: pinSettings.pin });
+        
+        // Update local state
+        setPinSettings(prev => ({ 
+          ...prev, 
+          hasPin: true, 
+          isSettingPin: false, 
+          pin: '', 
+          confirmPin: '' 
+        }));
+        
+        alert('Code PIN configuré avec succès');
+      } catch (error) {
+        console.error('Error saving PIN:', error);
+        alert('Erreur lors de la configuration du code PIN');
+      }
+    } else {
+      console.error('No current profile found');
+      alert('Aucun profil actuel trouvé');
     }
   };
 
-  const handleRemovePin = () => {
+  const handleRemovePin = async () => {
     if (currentProfile) {
-      localStorage.removeItem(`profile-pin-${currentProfile.id}`);
-      setPinSettings(prev => ({ 
-        ...prev, 
-        hasPin: false, 
-        pin: '', 
-        confirmPin: '' 
-      }));
+      try {
+        // Remove the PIN from the profile
+        await updateProfile(currentProfile.id, { pin: '' });
+        
+        // Update local state
+        setPinSettings(prev => ({ 
+          ...prev, 
+          hasPin: false, 
+          pin: '', 
+          confirmPin: '' 
+        }));
+        
+        alert('Code PIN supprimé');
+      } catch (error) {
+        console.error('Error removing PIN:', error);
+        alert('Erreur lors de la suppression du code PIN');
+      }
     }
   };
 
   // Check if user can edit PIN (admin or own profile)
   const canEditPin = () => {
-    return isPremium && (isAdmin || currentProfile?.id === user?.id);
+    return isPremium && (isAdmin() || currentProfile?.id === user?.id);
   };
 
   const handleCancelPin = () => {
@@ -213,23 +272,6 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
       icon: 'User',
       content: () => (
         <div className="space-y-6">
-          {/* Current Profile Info - existing code */}
-          <div className="bg-muted/50 rounded-lg p-4">
-            <div className="flex items-center space-x-3">
-              <div className="relative">
-                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center font-semibold text-lg text-primary-foreground">
-                  {getProfileAvatar(currentProfile)}
-                </div>
-                <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full ${getRoleColor(currentProfile.role)} border-2 border-background`}></div>
-              </div>
-              <div>
-                <h4 className="font-medium text-foreground">{currentProfile.name}</h4>
-                <p className="text-sm text-muted-foreground">{getRoleLabel(currentProfile.role)}</p>
-                <p className="text-xs text-muted-foreground">{currentProfile.email}</p>
-              </div>
-            </div>
-          </div>
-
           {/* Existing PIN Settings */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -298,18 +340,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
             )}
           </div>
 
-          {/* Profile Permissions */}
-          <div className="space-y-3">
-            <h4 className="font-medium text-foreground">{t('profile.settings.account.permissions.title')}</h4>
-            <div className="grid grid-cols-2 gap-2">
-              {currentProfile.permissions?.map((permission) => (
-                <div key={permission} className="flex items-center space-x-2">
-                  <Icon name="Check" size={14} className="text-green-500" />
-                  <span className="text-sm text-foreground capitalize">{permission}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+
         </div>
       )
     },
@@ -336,16 +367,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
             <div className="space-y-4">
               <h4 className="font-medium text-foreground">{t('profile.settings.preferences.applicationSettings')}</h4>
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h5 className="text-sm font-medium text-foreground">{t('profile.settings.preferences.darkMode.title')}</h5>
-                    <p className="text-xs text-muted-foreground">{t('profile.settings.preferences.darkMode.description')}</p>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    {t('common.toggleButton')}
-                  </Button>
-                </div>
-                
+
                 {/* Language Selection */}
                 <div className="flex items-center justify-between">
                   <div>
@@ -435,7 +457,6 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          // console.log('Button clicked!');
           toggleDropdown();
         }}
         className={`
@@ -448,9 +469,17 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
       >
         <div className={`relative rounded-full overflow-hidden bg-muted flex-shrink-0 ${isGlobal ? 'w-8 h-8' : 'w-8 h-8'}`}>
           {currentProfile ? (
-            <div className="w-full h-full bg-primary flex items-center justify-center font-semibold text-sm text-primary-foreground">
-              {getProfileAvatar(currentProfile)}
-            </div>
+            currentProfile.avatar ? (
+              <Image
+                src={currentProfile.avatar}
+                alt={currentProfile.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-primary flex items-center justify-center font-semibold text-sm text-primary-foreground">
+                {getProfileAvatar(currentProfile)}
+              </div>
+            )
           ) : (
             <Image
               src={userInfo.avatar}
@@ -537,9 +566,17 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                 <div className="text-xs font-medium text-muted-foreground mb-2">{t('profile.dropdown.currentProfile')}</div>
                 <div className="flex items-center space-x-2 px-2 py-1 rounded bg-muted/50">
                   <div className="relative">
-                    <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center font-semibold text-xs text-primary-foreground">
-                      {getProfileAvatar(currentProfile)}
-                    </div>
+                    {currentProfile.avatar ? (
+                      <Image
+                        src={currentProfile.avatar}
+                        alt={currentProfile.name}
+                        className="w-6 h-6 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center font-semibold text-xs text-primary-foreground">
+                        {getProfileAvatar(currentProfile)}
+                      </div>
+                    )}
                     <div className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full ${getRoleColor(currentProfile.role)} border border-background`}></div>
                   </div>
                   <div className="flex-1 min-w-0">
@@ -555,7 +592,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
             )}
 
             {/* Multi-User Profile Section */}
-            {isPremium && (
+            {(isPremium || isAdmin() || companyProfiles.length > 1) && (
               <>
                 <div className="px-4 py-2 border-t border-border">
                   <div className="text-xs font-medium text-muted-foreground mb-2">
@@ -567,7 +604,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                   {companyProfiles.length > 1 ? (
                     <div className="space-y-1">
                       {companyProfiles.filter(profile => profile.id !== currentProfile?.id).slice(0, 3).map((profile) => {
-                        const hasPin = localStorage.getItem(`profile-pin-${profile.id}`);
+                        const hasPin = profile?.pin && profile.pin.trim() !== '';
                         return (
                           <button
                             key={profile.id}
@@ -576,9 +613,17 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                             className="w-full flex items-center space-x-2 px-2 py-1 rounded text-xs transition-colors text-popover-foreground hover:bg-muted"
                           >
                             <div className="relative">
-                              <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center font-semibold text-xs text-primary-foreground">
-                                {getProfileAvatar(profile)}
-                              </div>
+                              {profile.avatar ? (
+                                <Image
+                                  src={profile.avatar}
+                                  alt={profile.name}
+                                  className="w-6 h-6 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center font-semibold text-xs text-primary-foreground">
+                                  {getProfileAvatar(profile)}
+                                </div>
+                              )}
                               <div className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full ${hasPin ? 'bg-yellow-500' : getRoleColor(profile.role)} border border-background`}></div>
                             </div>
                             <div className="flex-1 flex items-center justify-between">
@@ -634,8 +679,8 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
 
       {/* Account Settings Modal */}
       {isAccountSettingsOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000]">
-          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000] p-4">
+          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-medium text-foreground">Paramètres du compte</h3>
               <button
@@ -674,6 +719,16 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
           </div>
         </div>
       )}
+
+      {/* PIN Modal for Profile Switching */}
+      <PinModal
+        isOpen={pinModal.isOpen}
+        onClose={handlePinModalClose}
+        onConfirm={handlePinConfirm}
+        profileName={pinModal.targetProfileName}
+        title="Code PIN requis"
+        message="Entrez le code PIN pour accéder à ce profil"
+      />
     </div>
   );
 };
