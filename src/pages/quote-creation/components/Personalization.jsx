@@ -11,9 +11,9 @@ const QuoteTemplates = [
   { 
     id: 'blanc', 
     name: 'Blanc', 
-    primaryColor: '#000000',
-    secondaryColor: '#6b7280',
-    description: 'Noir et gris sur fond blanc'
+    primaryColor: '#FF6B00',
+    secondaryColor: '#FF8533',
+    description: 'Orange vibrant sur fond blanc'
   },
   { 
     id: 'navy', 

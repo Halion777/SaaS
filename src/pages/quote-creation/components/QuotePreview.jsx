@@ -29,10 +29,10 @@ const QuotePreview = ({
 
   // Customization
   const [customization, setCustomization] = useState({
-    template: 'moderne',
+    template: 'blanc',
     colors: {
       primary: '#FF6B00',  // Vibrant orange
-      secondary: '#000000' // Black text
+      secondary: '#FF8533' // Lighter orange
     }
   });
 
@@ -164,8 +164,8 @@ const QuotePreview = ({
   const validUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR');
 
   const getTemplateClasses = () => {
-    // Return orange background with subtle border and ensure readability
-    return 'bg-orange-50 border border-orange-200 text-black';
+    // Return white background with subtle border and ensure readability
+    return 'bg-white border border-gray-200 text-black';
   };
 
   return (
@@ -363,11 +363,11 @@ const QuotePreview = ({
                 <table className={`w-full border-collapse ${previewMode === 'mobile' ? 'text-xs min-w-[500px]' : 'text-xs sm:text-sm min-w-[600px]'}`}>
                   <thead>
                     <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
-                      <th className={`border border-orange-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-left' : 'p-3 sm:p-4 text-left'}`} style={{ color: customization.colors.primary }}>Description</th>
-                      <th className={`border border-orange-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-center w-16' : 'p-3 sm:p-4 text-center w-20 sm:w-24'}`} style={{ color: customization.colors.primary }}>Durée (h)</th>
-                      <th className={`border border-orange-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-20' : 'p-3 sm:p-4 text-right w-24 sm:w-32'}`} style={{ color: customization.colors.primary }}>Prix unitaire</th>
-                      <th className={`border border-orange-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-center w-20' : 'p-3 sm:p-4 text-center w-24 sm:w-32'}`} style={{ color: customization.colors.primary }}>Matériaux</th>
-                      <th className={`border border-orange-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-20' : 'p-3 sm:p-4 text-right w-24 sm:w-32'}`} style={{ color: customization.colors.primary }}>Total</th>
+                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-left' : 'p-3 sm:p-4 text-left'}`} style={{ color: customization.colors.primary }}>Description</th>
+                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-center w-16' : 'p-3 sm:p-4 text-center w-20 sm:w-24'}`} style={{ color: customization.colors.primary }}>Durée (h)</th>
+                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-20' : 'p-3 sm:p-4 text-right w-24 sm:w-32'}`} style={{ color: customization.colors.primary }}>Prix unitaire</th>
+                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-center w-20' : 'p-3 sm:p-4 text-center w-24 sm:w-32'}`} style={{ color: customization.colors.primary }}>Matériaux</th>
+                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-20' : 'p-3 sm:p-4 text-right w-24 sm:w-32'}`} style={{ color: customization.colors.primary }}>Total</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -378,15 +378,15 @@ const QuotePreview = ({
                       
                       return (
                         <tr key={task.id}>
-                          <td className={`border border-orange-300 ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>
+                          <td className={`border border-gray-300 ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>
                             <div className="font-medium text-black">{task.description}</div>
                           </td>
-                          <td className={`border border-orange-300 text-center text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{task.duration}</td>
-                          <td className={`border border-orange-300 text-right text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{task.price}€/h</td>
-                          <td className={`border border-orange-300 text-center text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>
+                          <td className={`border border-gray-300 text-center text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{task.duration}</td>
+                          <td className={`border border-gray-300 text-right text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{task.price}€/h</td>
+                          <td className={`border border-gray-300 text-center text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>
                             {task.materials.length > 0 ? task.materials.map(m => m.name).join(', ') : '-'}
                           </td>
-                          <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{taskTotal.toFixed(2)}€</td>
+                          <td className={`border border-gray-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{taskTotal.toFixed(2)}€</td>
                         </tr>
                       );
                     })}
@@ -437,7 +437,7 @@ const QuotePreview = ({
             <div className={`grid gap-8 sm:gap-12 ${previewMode === 'mobile' ? 'grid-cols-1 px-4 pb-4' : 'grid-cols-1 sm:grid-cols-2 px-4 sm:px-8 lg:px-10 pb-4 sm:pb-8 lg:pb-10'}`}>
               <div>
                 <h4 className={`font-semibold text-black mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>Signature de l'entreprise:</h4>
-                <div className={`border-2 border-dashed border-orange-300 rounded-lg text-center bg-orange-50 flex items-center justify-center ${previewMode === 'mobile' ? 'p-3 min-h-[60px]' : 'p-4 sm:p-6 min-h-[80px] sm:min-h-[100px]'}`}>
+                <div className={`border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50 flex items-center justify-center ${previewMode === 'mobile' ? 'p-3 min-h-[60px]' : 'p-4 sm:p-6 min-h-[80px] sm:min-h-[100px]'}`}>
                   <p className={`text-black ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`}>Zone de signature électronique</p>
                 </div>
                 <p className={`text-black mt-2 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`}>
@@ -446,7 +446,7 @@ const QuotePreview = ({
               </div>
               <div>
                 <h4 className={`font-semibold text-black mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>Bon pour accord client:</h4>
-                <div className={`border-2 border-dashed border-orange-300 rounded-lg text-center bg-orange-50 flex items-center justify-center ${previewMode === 'mobile' ? 'p-3 min-h-[60px]' : 'p-4 sm:p-6 min-h-[80px] sm:min-h-[100px]'}`}>
+                <div className={`border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50 flex items-center justify-center ${previewMode === 'mobile' ? 'p-3 min-h-[60px]' : 'p-4 sm:p-6 min-h-[80px] sm:min-h-[100px]'}`}>
                   {signatureData?.signature ? (
                     <div className="w-full">
                       <img 
