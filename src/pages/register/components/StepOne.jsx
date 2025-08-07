@@ -173,6 +173,15 @@ const StepOne = ({ formData, updateFormData, errors }) => {
           required
         />
         
+        <Input
+          label={t('registerForm.step1.vatNumber')}
+          type="text"
+          placeholder={t('registerForm.step1.vatNumberPlaceholder')}
+          value={formData.vatNumber}
+          onChange={(e) => updateFormData('vatNumber', e.target.value)}
+          error={errors.vatNumber}
+        />
+        
         <Select
           label={t('registerForm.step1.profession')}
           placeholder={t('registerForm.step1.professionPlaceholder')}

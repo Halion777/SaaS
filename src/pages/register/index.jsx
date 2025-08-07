@@ -29,6 +29,7 @@ const Register = () => {
     password: '',
     phone: '',
     companyName: '',
+    vatNumber: '',
     profession: '',
     country: 'BE',
     businessSize: '',

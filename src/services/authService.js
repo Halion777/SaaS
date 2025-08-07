@@ -296,6 +296,7 @@ export async function completeRegistration(formData) {
         data: {
           full_name: formData.fullName,
           company_name: formData.companyName,
+          vat_number: formData.vatNumber,
           phone: formData.phone,
           profession: formData.profession,
           country: formData.country,
@@ -318,6 +319,7 @@ export async function completeRegistration(formData) {
       email: formData.email,
       fullName: formData.fullName,
       companyName: formData.companyName,
+      vatNumber: formData.vatNumber,
       phone: formData.phone,
       profession: formData.profession,
       country: formData.country,
@@ -357,6 +359,7 @@ export async function createUserAfterPayment(userId, userData) {
       email: userData.email,
       full_name: userData.fullName,
       company_name: userData.companyName,
+      vat_number: userData.vatNumber,
       phone: userData.phone,
       profession: userData.profession,
       country: userData.country,
