@@ -25,17 +25,20 @@ const QuoteCreation = () => {
   const [tasks, setTasks] = useState([]);
   const [files, setFiles] = useState([]);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
   const [companyInfo, setCompanyInfo] = useState(null);
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
-  const [showExitConfirmation, setShowExitConfirmation] = useState(false);
-  const [pendingNavigation, setPendingNavigation] = useState(null);
+
 
   // Auto-save functionality
   useEffect(() => {
     const autoSave = () => {
-      if (selectedClient || tasks.length > 0 || files.length > 0) {
+      // Auto-save if there's any data to save
+      if (selectedClient || tasks.length > 0 || files.length > 0 || 
+          projectInfo.categories.length > 0 || projectInfo.description || projectInfo.deadline) {
         setIsAutoSaving(true);
+        const savedTime = new Date().toISOString();
         const quoteData = {
           selectedClient,
           projectInfo,
@@ -43,18 +46,27 @@ const QuoteCreation = () => {
           files,
           currentStep,
           companyInfo,
-          lastSaved: new Date().toISOString()
+          lastSaved: savedTime
         };
         localStorage.setItem(`quote-draft-${user?.id}`, JSON.stringify(quoteData));
+        setLastSaved(savedTime);
         
         setTimeout(() => {
           setIsAutoSaving(false);
-        }, 1000);
+        }, 1500);
       }
     };
 
-    const interval = setInterval(autoSave, 30000); // Auto-save every 30 seconds
-    return () => clearInterval(interval);
+    // Auto-save every 15 seconds (more frequent)
+    const interval = setInterval(autoSave, 15000);
+    
+    // Also auto-save immediately when data changes (debounced)
+    const timeoutId = setTimeout(autoSave, 2000);
+    
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeoutId);
+    };
   }, [selectedClient, projectInfo, tasks, files, currentStep, companyInfo, user?.id]);
 
   // Load draft on component mount
@@ -69,49 +81,14 @@ const QuoteCreation = () => {
         setFiles(draftData.files || []);
         setCurrentStep(draftData.currentStep || 1);
         setCompanyInfo(draftData.companyInfo);
+        setLastSaved(draftData.lastSaved);
       } catch (error) {
         console.error('Error loading draft:', error);
       }
     }
   }, [user?.id]);
 
-  // Handle page exit confirmation
-  useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      const hasUnsavedChanges = selectedClient || tasks.length > 0 || files.length > 0 || 
-        (projectInfo.description && projectInfo.description.trim() !== '');
-      
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = '';
-        return '';
-      }
-    };
 
-    const handlePopState = (e) => {
-      const hasUnsavedChanges = selectedClient || tasks.length > 0 || files.length > 0 || 
-        (projectInfo.description && projectInfo.description.trim() !== '');
-      
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        setShowExitConfirmation(true);
-        setPendingNavigation('back');
-        // Push the current state back to prevent navigation
-        window.history.pushState(null, '', window.location.pathname);
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('popstate', handlePopState);
-    
-    // Push initial state to enable popstate detection
-    window.history.pushState(null, '', window.location.pathname);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [selectedClient, tasks, files, projectInfo]);
 
   // Handle sidebar offset and responsive layout
   useEffect(() => {
@@ -162,12 +139,40 @@ const QuoteCreation = () => {
 
   const handleNext = () => {
     if (currentStep < 4) {
+      // Auto-save before moving to next step
+      const savedTime = new Date().toISOString();
+      const quoteData = {
+        selectedClient,
+        projectInfo,
+        tasks,
+        files,
+        currentStep: currentStep + 1,
+        companyInfo,
+        lastSaved: savedTime
+      };
+      localStorage.setItem(`quote-draft-${user?.id}`, JSON.stringify(quoteData));
+      setLastSaved(savedTime);
+      
       setCurrentStep(currentStep + 1);
     }
   };
 
   const handlePrevious = () => {
     if (currentStep > 1) {
+      // Auto-save before moving to previous step
+      const savedTime = new Date().toISOString();
+      const quoteData = {
+        selectedClient,
+        projectInfo,
+        tasks,
+        files,
+        currentStep: currentStep - 1,
+        companyInfo,
+        lastSaved: savedTime
+      };
+      localStorage.setItem(`quote-draft-${user?.id}`, JSON.stringify(quoteData));
+      setLastSaved(savedTime);
+      
       setCurrentStep(currentStep - 1);
     }
   };
@@ -254,15 +259,81 @@ const QuoteCreation = () => {
   };
 
   const handleStepChange = (newStep) => {
-    // Validate step change based on current progress
-    if (newStep <= currentStep || 
-        (newStep === 2 && selectedClient && projectInfo.categories.length > 0) ||
-        (newStep === 3 && tasks.length > 0) ||
-        (newStep === 4)) {
+    // Validation functions matching the component validation logic
+    const isStep1Valid = () => {
+      // Check if a client is selected (either existing or new)
+      const isClientValid = selectedClient;
+
+      // Check if project information is complete
+      const isProjectValid = 
+        projectInfo.categories && 
+        projectInfo.categories.length > 0 &&
+        projectInfo.deadline &&
+        projectInfo.description &&
+        projectInfo.description.trim().length > 0;
+
+      // If "autre" category is selected, custom category must be filled
+      const isCustomCategoryValid = !projectInfo.categories?.includes('autre') || 
+        (projectInfo.customCategory && projectInfo.customCategory.trim().length > 0);
+
+      return isClientValid && isProjectValid && isCustomCategoryValid;
+    };
+
+    const isStep2Valid = () => {
+      return tasks.length > 0;
+    };
+
+    // Validate step change based on comprehensive validation
+    let canProceed = false;
+    
+    if (newStep <= currentStep) {
+      // Can always go back or stay on current step
+      canProceed = true;
+    } else if (newStep === 2) {
+      canProceed = isStep1Valid();
+    } else if (newStep === 3) {
+      canProceed = isStep1Valid() && isStep2Valid();
+    } else if (newStep === 4) {
+      canProceed = isStep1Valid() && isStep2Valid();
+    }
+
+    if (canProceed) {
+      // Auto-save before changing step
+      const savedTime = new Date().toISOString();
+      const quoteData = {
+        selectedClient,
+        projectInfo,
+        tasks,
+        files,
+        currentStep: newStep,
+        companyInfo,
+        lastSaved: savedTime
+      };
+      localStorage.setItem(`quote-draft-${user?.id}`, JSON.stringify(quoteData));
+      setLastSaved(savedTime);
+      
       setCurrentStep(newStep);
     } else {
-      // Optional: Show a validation error message
-      alert('Veuillez remplir les informations requises avant de passer à l\'étape suivante.');
+      // Show specific validation error message
+      let errorMessage = 'Veuillez remplir les informations requises avant de passer à l\'étape suivante.';
+      
+      if (newStep === 2 && !isStep1Valid()) {
+        if (!selectedClient) {
+          errorMessage = 'Veuillez sélectionner un client.';
+        } else if (!projectInfo.categories || projectInfo.categories.length === 0) {
+          errorMessage = 'Veuillez sélectionner au moins une catégorie de projet.';
+        } else if (!projectInfo.deadline) {
+          errorMessage = 'Veuillez définir une date limite pour le projet.';
+        } else if (!projectInfo.description || projectInfo.description.trim().length === 0) {
+          errorMessage = 'Veuillez décrire le projet.';
+        } else if (projectInfo.categories.includes('autre') && (!projectInfo.customCategory || projectInfo.customCategory.trim().length === 0)) {
+          errorMessage = 'Veuillez spécifier la catégorie personnalisée.';
+        }
+      } else if (newStep === 3 && !isStep2Valid()) {
+        errorMessage = 'Veuillez ajouter au moins une tâche avant de continuer.';
+      }
+      
+      alert(errorMessage);
     }
   };
 
@@ -282,61 +353,11 @@ const QuoteCreation = () => {
       setFiles([]);
       setCurrentStep(1);
       setCompanyInfo(null);
+      setLastSaved(null); // Clear the last saved timestamp
     }
   };
 
-  const handleSaveDraft = () => {
-    const quoteData = {
-      selectedClient,
-      projectInfo,
-      tasks,
-      files,
-      currentStep,
-      companyInfo,
-      lastSaved: new Date().toISOString()
-    };
-    localStorage.setItem(`quote-draft-${user?.id}`, JSON.stringify(quoteData));
-    setShowExitConfirmation(false);
-    setPendingNavigation(null);
-    
-    // Navigate based on pending navigation
-    if (pendingNavigation === 'back') {
-      navigate(-1);
-    } else if (pendingNavigation) {
-      navigate(pendingNavigation);
-    }
-  };
 
-  const handleDiscardChanges = () => {
-    localStorage.removeItem(`quote-draft-${user?.id}`);
-    localStorage.removeItem('quote-signature-data');
-    localStorage.removeItem(`company-info-${user?.id}`);
-    setSelectedClient(null);
-    setProjectInfo({
-      categories: [],
-      customCategory: '',
-      deadline: '',
-      description: ''
-    });
-    setTasks([]);
-    setFiles([]);
-    setCurrentStep(1);
-    setCompanyInfo(null);
-    setShowExitConfirmation(false);
-    setPendingNavigation(null);
-    
-    // Navigate based on pending navigation
-    if (pendingNavigation === 'back') {
-      navigate(-1);
-    } else if (pendingNavigation) {
-      navigate(pendingNavigation);
-    }
-  };
-
-  const handleCancelExit = () => {
-    setShowExitConfirmation(false);
-    setPendingNavigation(null);
-  };
 
   const renderCurrentStep = () => {
     switch (currentStep) {
@@ -411,10 +432,16 @@ const QuoteCreation = () => {
             </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
               {isAutoSaving && (
+                  <div className="flex items-center text-xs sm:text-sm text-green-600 bg-green-50 px-2 py-1 rounded-md border border-green-200">
+                    <Icon name="Save" size={14} className="sm:w-4 sm:h-4 mr-2 animate-pulse" />
+                    Sauvegarde automatique...
+                  </div>
+              )}
+              {lastSaved && !isAutoSaving && (
                   <div className="flex items-center text-xs sm:text-sm text-muted-foreground">
-                    <Icon name="Save" size={14} className="sm:w-4 sm:h-4 mr-2" />
-                  Sauvegarde automatique...
-                </div>
+                    <Icon name="CheckCircle" size={14} className="sm:w-4 sm:h-4 mr-2 text-green-500" />
+                    Sauvegardé {new Date(lastSaved).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                  </div>
               )}
               
               <Button
@@ -456,53 +483,7 @@ const QuoteCreation = () => {
         </div>
       </div>
 
-      {/* Exit Confirmation Modal */}
-      {showExitConfirmation && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-card border border-border rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="flex items-center mb-4">
-              <Icon name="AlertTriangle" size={24} className="text-warning mr-3" />
-              <h3 className="text-lg font-semibold text-foreground">
-                Quitter la création de devis ?
-              </h3>
-            </div>
-            
-            <p className="text-sm text-muted-foreground mb-6">
-              Vous avez des modifications non sauvegardées. Que souhaitez-vous faire ?
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                onClick={handleSaveDraft}
-                variant="default"
-                iconName="Save"
-                iconPosition="left"
-                className="flex-1"
-              >
-                Sauvegarder le brouillon
-              </Button>
-              
-              <Button
-                onClick={handleDiscardChanges}
-                variant="destructive"
-                iconName="Trash2"
-                iconPosition="left"
-                className="flex-1"
-              >
-                Supprimer les modifications
-              </Button>
-              
-              <Button
-                onClick={handleCancelExit}
-                variant="outline"
-                className="flex-1"
-              >
-                Continuer l'édition
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };
