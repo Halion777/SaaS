@@ -57,34 +57,19 @@ class MultiUserService {
           const permissions = profileData.permissions;
           permissionsArray = [];
           
-          // Add permissions based on the object structure
-          if (permissions.dashboard && permissions.dashboard !== 'none') {
-            permissionsArray.push('dashboard');
-          }
-          if (permissions.quotes && permissions.quotes !== 'none') {
-            permissionsArray.push('quotes');
-          }
-          if (permissions.invoices && permissions.invoices !== 'none') {
-            permissionsArray.push('invoices');
-          }
-          if (permissions.clients && permissions.clients !== 'none') {
-            permissionsArray.push('clients');
-          }
-          if (permissions.leads && permissions.leads !== 'none') {
-            permissionsArray.push('leads');
-          }
-          if (permissions.analytics && permissions.analytics !== 'none') {
-            permissionsArray.push('analytics');
-          }
-          if (permissions.settings && permissions.settings !== 'none') {
-            permissionsArray.push('settings');
-          }
-          if (permissions.users && permissions.users !== 'none') {
-            permissionsArray.push('users');
-          }
-          if (permissions.billing && permissions.billing !== 'none') {
-            permissionsArray.push('billing');
-          }
+          // Add permissions based on the new object structure
+          // Only add modules that have 'view_only' or 'full_access' permissions
+          const moduleKeys = [
+            'dashboard', 'analytics', 'peppolAccessPoint', 'leadsManagement',
+            'quoteCreation', 'quotesManagement', 'quotesFollowUp', 'invoicesFollowUp',
+            'clientInvoices', 'supplierInvoices', 'clientManagement', 'creditInsurance', 'recovery'
+          ];
+          
+          moduleKeys.forEach(moduleKey => {
+            if (permissions[moduleKey] && permissions[moduleKey] !== 'no_access') {
+              permissionsArray.push(moduleKey);
+            }
+          });
         }
       }
 
@@ -127,33 +112,20 @@ class MultiUserService {
         } else {
           // Convert object to array
           const permissions = profileData.permissions;
-          if (permissions.dashboard && permissions.dashboard !== 'none') {
-            permissionsArray.push('dashboard');
-          }
-          if (permissions.quotes && permissions.quotes !== 'none') {
-            permissionsArray.push('quotes');
-          }
-          if (permissions.invoices && permissions.invoices !== 'none') {
-            permissionsArray.push('invoices');
-          }
-          if (permissions.clients && permissions.clients !== 'none') {
-            permissionsArray.push('clients');
-          }
-          if (permissions.leads && permissions.leads !== 'none') {
-            permissionsArray.push('leads');
-          }
-          if (permissions.analytics && permissions.analytics !== 'none') {
-            permissionsArray.push('analytics');
-          }
-          if (permissions.settings && permissions.settings !== 'none') {
-            permissionsArray.push('settings');
-          }
-          if (permissions.users && permissions.users !== 'none') {
-            permissionsArray.push('users');
-          }
-          if (permissions.billing && permissions.billing !== 'none') {
-            permissionsArray.push('billing');
-          }
+          
+          // Add permissions based on the new object structure
+          // Only add modules that have 'view_only' or 'full_access' permissions
+          const moduleKeys = [
+            'dashboard', 'analytics', 'peppolAccessPoint', 'leadsManagement',
+            'quoteCreation', 'quotesManagement', 'quotesFollowUp', 'invoicesFollowUp',
+            'clientInvoices', 'supplierInvoices', 'clientManagement', 'creditInsurance', 'recovery'
+          ];
+          
+          moduleKeys.forEach(moduleKey => {
+            if (permissions[moduleKey] && permissions[moduleKey] !== 'no_access') {
+              permissionsArray.push(moduleKey);
+            }
+          });
         }
       }
 
@@ -663,14 +635,18 @@ class MultiUserService {
         avatar: null, // No avatar needed initially, user can update later
         permissions: [
           'dashboard',
-          'quotes', 
-          'invoices',
-          'clients',
-          'leads',
           'analytics',
-          'settings',
-          'users',
-          'billing'
+          'peppolAccessPoint',
+          'leadsManagement',
+          'quoteCreation',
+          'quotesManagement',
+          'quotesFollowUp',
+          'invoicesFollowUp',
+          'clientInvoices',
+          'supplierInvoices',
+          'clientManagement',
+          'creditInsurance',
+          'recovery'
         ],
         is_active: true
       };

@@ -28,6 +28,7 @@ import SupplierInvoicesManagement from './pages/supplier-invoices';
 
 import ClientManagement from './pages/client-management';
 import FollowUpManagement from './pages/follow-up-management/index';
+import InvoicesFollowUp from './pages/invoices-follow-up';
 import AnalyticsDashboard from './pages/analytics-dashboard';
 import PeppolNetworkPage from './pages/services/peppol/index';
 import AssuranceCreditPage from './pages/services/assurance';
@@ -151,6 +152,11 @@ const AppRoutes = () => {
           <Route path="/quotes-follow-up" element={
             <ProtectedRoute>
               <FollowUpManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/invoices-follow-up" element={
+            <ProtectedRoute>
+              <InvoicesFollowUp />
             </ProtectedRoute>
           } />
           <Route path="/analytics-dashboard" element={

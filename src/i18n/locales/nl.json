@@ -2072,7 +2072,19 @@
         "color": "text-primary",
         "background": "border-primary bg-primary/5"
       }
+    },
+  "permissions": {
+    "labels": {
+      "no_access": "Geen toegang",
+      "view_only": "Alleen bekijken",
+      "full_access": "Volledige toegang"
+    },
+    "descriptions": {
+      "no_access": "Gebruiker heeft geen toegang tot deze functie",
+      "view_only": "Gebruiker kan bekijken maar niet wijzigen",
+      "full_access": "Gebruiker kan bekijken, maken, wijzigen en verwijderen"
     }
   }
 }
-} 
+  }
+}

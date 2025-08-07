@@ -2080,6 +2080,18 @@
         "background": "border-primary bg-primary/5"
       }
     }
+  },
+  "permissions": {
+    "labels": {
+      "no_access": "Aucun accès",
+      "view_only": "Lecture seule",
+      "full_access": "Accès complet"
+    },
+    "descriptions": {
+      "no_access": "L'utilisateur ne peut pas accéder à cette fonctionnalité",
+      "view_only": "L'utilisateur peut consulter mais ne peut pas modifier",
+      "full_access": "L'utilisateur peut consulter, créer, modifier et supprimer"
+    }
   }
 } 
 } 

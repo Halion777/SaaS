@@ -52,83 +52,111 @@ const MultiUserProfilesPage = () => {
     email: '',
     role: 'viewer',
     permissions: {
-      dashboard: 'view',
-      quotes: 'view',
-      invoices: 'view',
-      clients: 'view',
-      leads: 'view',
-      analytics: 'view',
-      settings: 'view',
-      users: 'view',
-      billing: 'view'
+      dashboard: 'view_only',
+      analytics: 'view_only',
+      peppolAccessPoint: 'no_access',
+      leadsManagement: 'view_only',
+      quoteCreation: 'no_access',
+      quotesManagement: 'view_only',
+      quotesFollowUp: 'view_only',
+      invoicesFollowUp: 'view_only',
+      clientInvoices: 'view_only',
+      supplierInvoices: 'no_access',
+      clientManagement: 'view_only',
+      creditInsurance: 'no_access',
+      recovery: 'no_access'
     }
   });
 
-  // Access control configuration
+  // Access control configuration - simplified to match sidebar structure
   const accessPermissions = {
     dashboard: {
       label: 'Tableau de bord',
       description: 'Accès au tableau de bord principal',
-      permissions: ['view', 'edit', 'full']
-    },
-    quotes: {
-      label: 'Devis',
-      description: 'Gestion des devis et estimations',
-      permissions: ['view', 'create', 'edit', 'delete', 'approve']
-    },
-    invoices: {
-      label: 'Factures',
-      description: 'Gestion des factures et paiements',
-      permissions: ['view', 'create', 'edit', 'delete', 'approve']
-    },
-    clients: {
-      label: 'Clients',
-      description: 'Gestion de la base de données clients',
-      permissions: ['view', 'create', 'edit', 'delete']
-    },
-    leads: {
-      label: 'Prospects',
-      description: 'Gestion des prospects et opportunités',
-      permissions: ['view', 'create', 'edit', 'delete']
+      permissions: ['no_access', 'view_only', 'full_access']
     },
     analytics: {
-      label: 'Analyses',
+      label: 'Analytics',
       description: 'Accès aux rapports et analyses',
-      permissions: ['view', 'export', 'full']
+      permissions: ['no_access', 'view_only', 'full_access']
     },
-    settings: {
-      label: 'Paramètres',
-      description: 'Configuration du système',
-      permissions: ['view', 'edit', 'full']
+    peppolAccessPoint: {
+      label: 'Point d\'accès PEPPOL',
+      description: 'Accès aux services PEPPOL',
+      permissions: ['no_access', 'view_only', 'full_access']
     },
-    users: {
-      label: 'Utilisateurs',
-      description: 'Gestion des utilisateurs et profils',
-      permissions: ['view', 'create', 'edit', 'delete', 'invite']
+    leadsManagement: {
+      label: 'Gestion des Leads',
+      description: 'Gestion des prospects et opportunités',
+      permissions: ['no_access', 'view_only', 'full_access']
     },
-    billing: {
-      label: 'Facturation',
-      description: 'Gestion des abonnements et paiements',
-      permissions: ['view', 'edit', 'full']
+    quoteCreation: {
+      label: 'Créer un devis',
+      description: 'Création de nouveaux devis',
+      permissions: ['no_access', 'view_only', 'full_access']
+    },
+    quotesManagement: {
+      label: 'Gestion des devis',
+      description: 'Gestion et suivi des devis',
+      permissions: ['no_access', 'view_only', 'full_access']
+    },
+    quotesFollowUp: {
+      label: 'Relances devis',
+      description: 'Suivi et relances des devis',
+      permissions: ['no_access', 'view_only', 'full_access']
+    },
+    invoicesFollowUp: {
+      label: 'Relances factures',
+      description: 'Suivi et relances des factures',
+      permissions: ['no_access', 'view_only', 'full_access']
+    },
+    clientInvoices: {
+      label: 'Factures clients',
+      description: 'Gestion des factures clients',
+      permissions: ['no_access', 'view_only', 'full_access']
+    },
+    supplierInvoices: {
+      label: 'Factures fournisseurs',
+      description: 'Gestion des factures fournisseurs',
+      permissions: ['no_access', 'view_only', 'full_access']
+    },
+    clientManagement: {
+      label: 'Gestion clients',
+      description: 'Gestion de la base de données clients',
+      permissions: ['no_access', 'view_only', 'full_access']
+    },
+    creditInsurance: {
+      label: 'Assurance crédit',
+      description: 'Services d\'assurance crédit',
+      permissions: ['no_access', 'view_only', 'full_access']
+    },
+    recovery: {
+      label: 'Recouvrement',
+      description: 'Services de recouvrement',
+      permissions: ['no_access', 'view_only', 'full_access']
     }
   };
 
-  // Predefined role templates
+  // Predefined role templates - updated with new permission structure
   const roleTemplates = {
     admin: {
       name: 'Administrateur',
       description: 'Accès complet à toutes les fonctionnalités',
       role: 'admin',
       permissions: {
-        dashboard: 'full',
-        quotes: 'approve',
-        invoices: 'approve',
-        clients: 'delete',
-        leads: 'delete',
-        analytics: 'full',
-        settings: 'full',
-        users: 'invite',
-        billing: 'full'
+        dashboard: 'full_access',
+        analytics: 'full_access',
+        peppolAccessPoint: 'full_access',
+        leadsManagement: 'full_access',
+        quoteCreation: 'full_access',
+        quotesManagement: 'full_access',
+        quotesFollowUp: 'full_access',
+        invoicesFollowUp: 'full_access',
+        clientInvoices: 'full_access',
+        supplierInvoices: 'full_access',
+        clientManagement: 'full_access',
+        creditInsurance: 'full_access',
+        recovery: 'full_access'
       }
     },
     manager: {
@@ -136,15 +164,19 @@ const MultiUserProfilesPage = () => {
       description: 'Gestion des équipes et approbation des documents',
       role: 'manager',
       permissions: {
-        dashboard: 'edit',
-        quotes: 'approve',
-        invoices: 'approve',
-        clients: 'edit',
-        leads: 'edit',
-        analytics: 'export',
-        settings: 'view',
-        users: 'view',
-        billing: 'view'
+        dashboard: 'full_access',
+        analytics: 'full_access',
+        peppolAccessPoint: 'view_only',
+        leadsManagement: 'full_access',
+        quoteCreation: 'full_access',
+        quotesManagement: 'full_access',
+        quotesFollowUp: 'full_access',
+        invoicesFollowUp: 'full_access',
+        clientInvoices: 'full_access',
+        supplierInvoices: 'view_only',
+        clientManagement: 'full_access',
+        creditInsurance: 'view_only',
+        recovery: 'view_only'
       }
     },
     accountant: {
@@ -152,15 +184,19 @@ const MultiUserProfilesPage = () => {
       description: 'Gestion financière et facturation',
       role: 'accountant',
       permissions: {
-        dashboard: 'view',
-        quotes: 'view',
-        invoices: 'approve',
-        clients: 'view',
-        leads: 'view',
-        analytics: 'export',
-        settings: 'view',
-        users: 'view',
-        billing: 'edit'
+        dashboard: 'view_only',
+        analytics: 'full_access',
+        peppolAccessPoint: 'view_only',
+        leadsManagement: 'view_only',
+        quoteCreation: 'view_only',
+        quotesManagement: 'view_only',
+        quotesFollowUp: 'view_only',
+        invoicesFollowUp: 'full_access',
+        clientInvoices: 'full_access',
+        supplierInvoices: 'full_access',
+        clientManagement: 'view_only',
+        creditInsurance: 'view_only',
+        recovery: 'view_only'
       }
     },
     sales: {
@@ -168,15 +204,19 @@ const MultiUserProfilesPage = () => {
       description: 'Gestion des ventes et relations clients',
       role: 'sales',
       permissions: {
-        dashboard: 'view',
-        quotes: 'create',
-        invoices: 'view',
-        clients: 'edit',
-        leads: 'edit',
-        analytics: 'view',
-        settings: 'view',
-        users: 'view',
-        billing: 'view'
+        dashboard: 'view_only',
+        analytics: 'view_only',
+        peppolAccessPoint: 'no_access',
+        leadsManagement: 'full_access',
+        quoteCreation: 'full_access',
+        quotesManagement: 'view_only',
+        quotesFollowUp: 'view_only',
+        invoicesFollowUp: 'view_only',
+        clientInvoices: 'view_only',
+        supplierInvoices: 'no_access',
+        clientManagement: 'full_access',
+        creditInsurance: 'no_access',
+        recovery: 'no_access'
       }
     },
     viewer: {
@@ -184,22 +224,20 @@ const MultiUserProfilesPage = () => {
       description: 'Accès en lecture seule aux données',
       role: 'viewer',
       permissions: {
-        dashboard: 'view',
-        quotes: 'view',
-        invoices: 'view',
-        clients: 'view',
-        leads: 'view',
-        analytics: 'view',
-        settings: 'view',
-        users: 'view',
-        billing: 'view'
+        dashboard: 'view_only',
+        analytics: 'view_only',
+        peppolAccessPoint: 'no_access',
+        leadsManagement: 'view_only',
+        quoteCreation: 'no_access',
+        quotesManagement: 'view_only',
+        quotesFollowUp: 'view_only',
+        invoicesFollowUp: 'view_only',
+        clientInvoices: 'view_only',
+        supplierInvoices: 'no_access',
+        clientManagement: 'view_only',
+        creditInsurance: 'no_access',
+        recovery: 'no_access'
       }
-    },
-    custom: {
-      name: 'Personnalisé',
-      description: 'Permissions personnalisées',
-      role: 'custom',
-      permissions: {}
     }
   };
 
@@ -210,15 +248,19 @@ const MultiUserProfilesPage = () => {
     selectedTemplate: 'viewer',
     pin: '', // PIN for profile access
     permissions: {
-      dashboard: 'view',
-      quotes: 'view',
-      invoices: 'view',
-      clients: 'view',
-      leads: 'view',
-      analytics: 'view',
-      settings: 'view',
-      users: 'view',
-      billing: 'view'
+      dashboard: 'view_only',
+      analytics: 'view_only',
+      peppolAccessPoint: 'no_access',
+      leadsManagement: 'view_only',
+      quoteCreation: 'no_access',
+      quotesManagement: 'view_only',
+      quotesFollowUp: 'view_only',
+      invoicesFollowUp: 'view_only',
+      clientInvoices: 'view_only',
+      supplierInvoices: 'no_access',
+      clientManagement: 'view_only',
+      creditInsurance: 'no_access',
+      recovery: 'no_access'
     }
   });
 
@@ -384,31 +426,16 @@ const MultiUserProfilesPage = () => {
 
   // Get permission label
   const getPermissionLabel = (permission) => {
-    const labels = {
-      view: 'Voir',
-      create: 'Créer',
-      edit: 'Modifier',
-      delete: 'Supprimer',
-      approve: 'Approuver',
-      export: 'Exporter',
-      full: 'Accès complet',
-      invite: 'Inviter'
-    };
-    return labels[permission] || permission;
+    return t(`permissions.labels.${permission}`) || permission;
   };
 
   // Check if user has specific permission
   const hasPermission = (module, requiredPermission) => {
     const userPermission = profileForm.permissions[module];
     const permissionLevels = {
-      view: 1,
-      create: 2,
-      edit: 3,
-      delete: 4,
-      approve: 5,
-      export: 6,
-      full: 7,
-      invite: 8
+      no_access: 0,
+      view_only: 1,
+      full_access: 2
     };
     
     return permissionLevels[userPermission] >= permissionLevels[requiredPermission];
@@ -418,14 +445,18 @@ const MultiUserProfilesPage = () => {
   const getModuleIcon = (moduleKey) => {
     const icons = {
       dashboard: 'LayoutDashboard',
-      quotes: 'FileText',
-      invoices: 'Receipt',
-      clients: 'Users',
-      leads: 'Target',
       analytics: 'BarChart3',
-      settings: 'Settings',
-      users: 'UserCheck',
-      billing: 'CreditCard'
+      peppolAccessPoint: 'Network',
+      leadsManagement: 'Target',
+      quoteCreation: 'FileText',
+      quotesManagement: 'FolderOpen',
+      quotesFollowUp: 'MessageCircle',
+      invoicesFollowUp: 'Bell',
+      clientInvoices: 'Receipt',
+      supplierInvoices: 'FileText',
+      clientManagement: 'Users',
+      creditInsurance: 'Shield',
+      recovery: 'Banknote'
     };
     return icons[moduleKey] || 'Settings';
   };
@@ -450,15 +481,19 @@ const MultiUserProfilesPage = () => {
         selectedTemplate: 'viewer',
         pin: '',
         permissions: {
-          dashboard: 'view',
-          quotes: 'view',
-          invoices: 'view',
-          clients: 'view',
-          leads: 'view',
-          analytics: 'view',
-          settings: 'view',
-          users: 'view',
-          billing: 'view'
+          dashboard: 'view_only',
+          analytics: 'view_only',
+          peppolAccessPoint: 'no_access',
+          leadsManagement: 'view_only',
+          quoteCreation: 'no_access',
+          quotesManagement: 'view_only',
+          quotesFollowUp: 'view_only',
+          invoicesFollowUp: 'view_only',
+          clientInvoices: 'view_only',
+          supplierInvoices: 'no_access',
+          clientManagement: 'view_only',
+          creditInsurance: 'no_access',
+          recovery: 'no_access'
         }
       });
       
@@ -510,15 +545,19 @@ const MultiUserProfilesPage = () => {
         selectedTemplate: 'viewer',
         pin: '',
         permissions: {
-          dashboard: 'view',
-          quotes: 'view',
-          invoices: 'view',
-          clients: 'view',
-          leads: 'view',
-          analytics: 'view',
-          settings: 'view',
-          users: 'view',
-          billing: 'view'
+          dashboard: 'view_only',
+          analytics: 'view_only',
+          peppolAccessPoint: 'no_access',
+          leadsManagement: 'view_only',
+          quoteCreation: 'no_access',
+          quotesManagement: 'view_only',
+          quotesFollowUp: 'view_only',
+          invoicesFollowUp: 'view_only',
+          clientInvoices: 'view_only',
+          supplierInvoices: 'no_access',
+          clientManagement: 'view_only',
+          creditInsurance: 'no_access',
+          recovery: 'no_access'
         }
       });
       alert('Profil modifié avec succès');
@@ -557,15 +596,19 @@ const MultiUserProfilesPage = () => {
         email: '', 
         role: 'viewer', 
         permissions: {
-          dashboard: 'view',
-          quotes: 'view',
-          invoices: 'view',
-          clients: 'view',
-          leads: 'view',
-          analytics: 'view',
-          settings: 'view',
-          users: 'view',
-          billing: 'view'
+          dashboard: 'view_only',
+          analytics: 'view_only',
+          peppolAccessPoint: 'no_access',
+          leadsManagement: 'view_only',
+          quoteCreation: 'no_access',
+          quotesManagement: 'view_only',
+          quotesFollowUp: 'view_only',
+          invoicesFollowUp: 'view_only',
+          clientInvoices: 'view_only',
+          supplierInvoices: 'no_access',
+          clientManagement: 'view_only',
+          creditInsurance: 'no_access',
+          recovery: 'no_access'
         }
       });
       alert('Invitation envoyée avec succès');
@@ -603,9 +646,9 @@ const MultiUserProfilesPage = () => {
     // Convert permissions from array to object format for the form
     const permissionsObject = {};
     
-    // Initialize all permissions to 'view' by default
+    // Initialize all permissions to 'view_only' by default
     Object.keys(accessPermissions).forEach(moduleKey => {
-      permissionsObject[moduleKey] = 'view';
+      permissionsObject[moduleKey] = 'view_only';
     });
     
     // Map existing permissions from array to object

@@ -2039,6 +2039,18 @@
           "background": "border-primary bg-primary/5"
         }
       }
+    },
+    "permissions": {
+      "labels": {
+        "no_access": "No Access",
+        "view_only": "View Only",
+        "full_access": "Full Access"
+      },
+      "descriptions": {
+        "no_access": "User cannot access this feature",
+        "view_only": "User can view but cannot modify",
+        "full_access": "User can view, create, modify and delete"
+      }
     }
   }
 } 

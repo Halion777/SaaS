@@ -314,27 +314,27 @@ export const MultiUserProvider = ({ children }) => {
   };
 
   const canManageUsers = () => {
-    return hasPermission('users', 'invite');
+    return hasPermission('clientManagement', 'full_access');
   };
 
   const canManageQuotes = () => {
-    return hasPermission('quotes', 'approve');
+    return hasPermission('quotesManagement', 'full_access');
   };
 
   const canManageInvoices = () => {
-    return hasPermission('invoices', 'approve');
+    return hasPermission('clientInvoices', 'full_access');
   };
 
   const canManageClients = () => {
-    return hasPermission('clients', 'delete');
+    return hasPermission('clientManagement', 'full_access');
   };
 
   const canViewAnalytics = () => {
-    return hasPermission('analytics', 'full');
+    return hasPermission('analytics', 'view_only');
   };
 
   const canManageSettings = () => {
-    return hasPermission('settings', 'full');
+    return hasPermission('dashboard', 'full_access');
   };
 
   const getProfileAvatar = (profile) => {
