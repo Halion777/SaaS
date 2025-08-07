@@ -28,6 +28,8 @@ const QuoteCreation = () => {
   const [companyInfo, setCompanyInfo] = useState(null);
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
+  const [showExitConfirmation, setShowExitConfirmation] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState(null);
 
   // Auto-save functionality
   useEffect(() => {
@@ -72,6 +74,44 @@ const QuoteCreation = () => {
       }
     }
   }, [user?.id]);
+
+  // Handle page exit confirmation
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      const hasUnsavedChanges = selectedClient || tasks.length > 0 || files.length > 0 || 
+        (projectInfo.description && projectInfo.description.trim() !== '');
+      
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    const handlePopState = (e) => {
+      const hasUnsavedChanges = selectedClient || tasks.length > 0 || files.length > 0 || 
+        (projectInfo.description && projectInfo.description.trim() !== '');
+      
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        setShowExitConfirmation(true);
+        setPendingNavigation('back');
+        // Push the current state back to prevent navigation
+        window.history.pushState(null, '', window.location.pathname);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+    
+    // Push initial state to enable popstate detection
+    window.history.pushState(null, '', window.location.pathname);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [selectedClient, tasks, files, projectInfo]);
 
   // Handle sidebar offset and responsive layout
   useEffect(() => {
@@ -232,11 +272,70 @@ const QuoteCreation = () => {
       localStorage.removeItem('quote-signature-data');
       localStorage.removeItem(`company-info-${user?.id}`);
       setSelectedClient(null);
+      setProjectInfo({
+        categories: [],
+        customCategory: '',
+        deadline: '',
+        description: ''
+      });
       setTasks([]);
       setFiles([]);
       setCurrentStep(1);
       setCompanyInfo(null);
     }
+  };
+
+  const handleSaveDraft = () => {
+    const quoteData = {
+      selectedClient,
+      projectInfo,
+      tasks,
+      files,
+      currentStep,
+      companyInfo,
+      lastSaved: new Date().toISOString()
+    };
+    localStorage.setItem(`quote-draft-${user?.id}`, JSON.stringify(quoteData));
+    setShowExitConfirmation(false);
+    setPendingNavigation(null);
+    
+    // Navigate based on pending navigation
+    if (pendingNavigation === 'back') {
+      navigate(-1);
+    } else if (pendingNavigation) {
+      navigate(pendingNavigation);
+    }
+  };
+
+  const handleDiscardChanges = () => {
+    localStorage.removeItem(`quote-draft-${user?.id}`);
+    localStorage.removeItem('quote-signature-data');
+    localStorage.removeItem(`company-info-${user?.id}`);
+    setSelectedClient(null);
+    setProjectInfo({
+      categories: [],
+      customCategory: '',
+      deadline: '',
+      description: ''
+    });
+    setTasks([]);
+    setFiles([]);
+    setCurrentStep(1);
+    setCompanyInfo(null);
+    setShowExitConfirmation(false);
+    setPendingNavigation(null);
+    
+    // Navigate based on pending navigation
+    if (pendingNavigation === 'back') {
+      navigate(-1);
+    } else if (pendingNavigation) {
+      navigate(pendingNavigation);
+    }
+  };
+
+  const handleCancelExit = () => {
+    setShowExitConfirmation(false);
+    setPendingNavigation(null);
   };
 
   const renderCurrentStep = () => {
@@ -356,6 +455,54 @@ const QuoteCreation = () => {
           </div>
         </div>
       </div>
+
+      {/* Exit Confirmation Modal */}
+      {showExitConfirmation && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card border border-border rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center mb-4">
+              <Icon name="AlertTriangle" size={24} className="text-warning mr-3" />
+              <h3 className="text-lg font-semibold text-foreground">
+                Quitter la création de devis ?
+              </h3>
+            </div>
+            
+            <p className="text-sm text-muted-foreground mb-6">
+              Vous avez des modifications non sauvegardées. Que souhaitez-vous faire ?
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                onClick={handleSaveDraft}
+                variant="default"
+                iconName="Save"
+                iconPosition="left"
+                className="flex-1"
+              >
+                Sauvegarder le brouillon
+              </Button>
+              
+              <Button
+                onClick={handleDiscardChanges}
+                variant="destructive"
+                iconName="Trash2"
+                iconPosition="left"
+                className="flex-1"
+              >
+                Supprimer les modifications
+              </Button>
+              
+              <Button
+                onClick={handleCancelExit}
+                variant="outline"
+                className="flex-1"
+              >
+                Continuer l'édition
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

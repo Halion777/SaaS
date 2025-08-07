@@ -10,12 +10,14 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
   const [currentTask, setCurrentTask] = useState({
     description: '',
     duration: '',
+    durationUnit: 'minutes',
     price: '',
     materials: [],
     hourlyRate: '',
     pricingType: 'flat'
   });
   const [editingPredefinedTask, setEditingPredefinedTask] = useState(null);
+  const [editingExistingTask, setEditingExistingTask] = useState(null);
   const [newMaterial, setNewMaterial] = useState({ name: '', quantity: '', unit: '', price: '' });
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -31,6 +33,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         title: 'Installation robinetterie',
         description: 'Installation complète d\'une robinetterie avec raccordement',
         duration: '120',
+        durationUnit: 'minutes',
         price: 120,
         icon: 'Droplet'
       },
@@ -39,6 +42,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         title: 'Réparation fuite',
         description: 'Diagnostic et réparation d\'une fuite d\'eau',
         duration: '90',
+        durationUnit: 'minutes',
         price: 80,
         icon: 'AlertTriangle'
       },
@@ -657,6 +661,12 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
     { value: 'sac', label: 'Sac' }
   ];
 
+  const durationUnitOptions = [
+    { value: 'minutes', label: 'Minutes' },
+    { value: 'hours', label: 'Heures' },
+    { value: 'days', label: 'Jours' }
+  ];
+
   const handleVoiceTranscription = async (transcription) => {
     if (transcription) {
       setIsGenerating(true);
@@ -765,6 +775,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
     setCurrentTask({
       description: predefinedTask.title + ' - ' + predefinedTask.description,
       duration: predefinedTask.duration,
+      durationUnit: predefinedTask.durationUnit || 'minutes',
       price: predefinedTask.price,
       materials: [],
       hourlyRate: '',
@@ -777,6 +788,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
     setCurrentTask({
       description: '',
       duration: '',
+      durationUnit: 'minutes',
       price: '',
       materials: [],
       hourlyRate: '',
@@ -786,6 +798,63 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
 
   const removeTask = (taskId) => {
     onTasksChange(tasks.filter(t => t.id !== taskId));
+  };
+
+  const editTask = (task) => {
+    setEditingExistingTask(task);
+    setCurrentTask({
+      description: task.description,
+      duration: task.duration,
+      durationUnit: task.durationUnit || 'minutes',
+      price: task.price,
+      materials: [...task.materials],
+      hourlyRate: task.hourlyRate || '',
+      pricingType: task.pricingType || 'flat'
+    });
+  };
+
+  const saveEditedTask = () => {
+    if (!editingExistingTask) return;
+    
+    const updatedTask = {
+      ...editingExistingTask,
+      description: currentTask.description,
+      duration: currentTask.duration,
+      durationUnit: currentTask.durationUnit,
+      price: currentTask.price,
+      materials: currentTask.materials,
+      hourlyRate: currentTask.hourlyRate,
+      pricingType: currentTask.pricingType
+    };
+    
+    const updatedTasks = tasks.map(t => 
+      t.id === editingExistingTask.id ? updatedTask : t
+    );
+    
+    onTasksChange(updatedTasks);
+    setEditingExistingTask(null);
+    setCurrentTask({
+      description: '',
+      duration: '',
+      durationUnit: 'minutes',
+      price: '',
+      materials: [],
+      hourlyRate: '',
+      pricingType: 'flat'
+    });
+  };
+
+  const cancelEditTask = () => {
+    setEditingExistingTask(null);
+    setCurrentTask({
+      description: '',
+      duration: '',
+      durationUnit: 'minutes',
+      price: '',
+      materials: [],
+      hourlyRate: '',
+      pricingType: 'flat'
+    });
   };
 
   const generateAIDescription = async () => {
@@ -819,20 +888,38 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
     }
   };
 
-  // Helper function to format duration from minutes to readable format
-  const formatDuration = (minutes) => {
-    if (!minutes || isNaN(minutes)) return '0h';
+  // Helper function to format duration based on unit
+  const formatDuration = (duration, unit = 'minutes') => {
+    if (!duration || isNaN(duration)) return '0';
     
-    const mins = parseInt(minutes);
-    const hours = Math.floor(mins / 60);
-    const remainingMinutes = mins % 60;
+    const value = parseFloat(duration);
     
-    if (hours === 0) {
-      return `${remainingMinutes}min`;
-    } else if (remainingMinutes === 0) {
-      return `${hours}h`;
-    } else {
-      return `${hours}h ${remainingMinutes}min`;
+    switch (unit) {
+      case 'minutes':
+        const hours = Math.floor(value / 60);
+        const remainingMinutes = value % 60;
+        
+        if (hours === 0) {
+          return `${remainingMinutes}min`;
+        } else if (remainingMinutes === 0) {
+          return `${hours}h`;
+        } else {
+          return `${hours}h ${remainingMinutes}min`;
+        }
+      case 'hours':
+        if (value === 1) {
+          return '1h';
+        } else {
+          return `${value}h`;
+        }
+      case 'days':
+        if (value === 1) {
+          return '1 jour';
+        } else {
+          return `${value} jours`;
+        }
+      default:
+        return `${value}min`;
     }
   };
 
@@ -906,7 +993,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                     <p className="text-xs sm:text-sm text-muted-foreground">{task.description}</p>
                                                               <div className="flex items-center mt-2 text-xs text-muted-foreground">
                       <Icon name="Clock" size={12} className="mr-1" />
-                      <span>{formatDuration(task.duration)}</span>
+                      <span>{formatDuration(task.duration, 'minutes')}</span>
                         {task.category && (
                           <span className="ml-2 px-1 py-0.5 bg-muted/30 rounded text-[0.6rem]">
                             {getCategoryLabel(task.category)}
@@ -1049,14 +1136,23 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                 )}
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <Input
-                  label="Durée estimée (minutes)"
-                  type="number"
-                  placeholder="Ex: 120"
-                  value={currentTask.duration}
-                  onChange={(e) => handleTaskChange('duration', e.target.value)}
-                  description="Durée en minutes (ex: 120 = 2h)"
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                <div className="sm:col-span-2">
+                  <Input
+                    label="Durée estimée"
+                    type="number"
+                    placeholder="Ex: 120"
+                    value={currentTask.duration}
+                    onChange={(e) => handleTaskChange('duration', e.target.value)}
+                    description={`Durée en ${currentTask.durationUnit === 'minutes' ? 'minutes' : currentTask.durationUnit === 'hours' ? 'heures' : 'jours'}`}
+                  />
+                </div>
+                <Select
+                  label="Unité"
+                  placeholder="Unité"
+                  options={durationUnitOptions}
+                  value={currentTask.durationUnit}
+                  onChange={(e) => handleTaskChange('durationUnit', e.target.value)}
                 />
                 <Input
                   label="Prix (€)"
@@ -1112,17 +1208,25 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                 </div>
                 
                 <div className="flex justify-end mb-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addMaterial}
-                    disabled={!newMaterial.name || !newMaterial.quantity || !newMaterial.unit}
-                    iconName="Plus"
-                    iconPosition="left"
-                  >
-                    Ajouter le matériau
-                  </Button>
+                  <div className="text-right">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addMaterial}
+                      disabled={!newMaterial.name || !newMaterial.quantity || !newMaterial.unit}
+                      iconName="Plus"
+                      iconPosition="left"
+                      className={!newMaterial.name || !newMaterial.quantity || !newMaterial.unit ? "opacity-50 cursor-not-allowed" : ""}
+                    >
+                      Ajouter le matériau
+                    </Button>
+                    {(!newMaterial.name || !newMaterial.quantity || !newMaterial.unit) && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Remplissez le nom, la quantité et l'unité pour ajouter un matériau
+                      </p>
+                    )}
+                  </div>
                 </div>
                 
                 {currentTask.materials.length > 0 && (
@@ -1147,16 +1251,27 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                 )}
               </div>
               
-              <Button
-                onClick={addTask}
-                disabled={!currentTask.description || !currentTask.duration || !currentTask.price}
-                iconName={editingPredefinedTask ? "Save" : "Plus"}
-                iconPosition="left"
-                fullWidth
-                className="bg-gradient-to-r from-primary to-success hover:from-primary/90 hover:to-success/90"
-              >
-                {editingPredefinedTask ? "Sauvegarder les modifications" : "Ajouter cette tâche"}
-              </Button>
+              <div className="flex space-x-2">
+                <Button
+                  onClick={editingExistingTask ? saveEditedTask : addTask}
+                  disabled={!currentTask.description || !currentTask.duration || !currentTask.price}
+                  iconName={editingPredefinedTask || editingExistingTask ? "Save" : "Plus"}
+                  iconPosition="left"
+                  className="flex-1 bg-gradient-to-r from-primary to-success hover:from-primary/90 hover:to-success/90"
+                >
+                  {editingPredefinedTask || editingExistingTask ? "Sauvegarder les modifications" : "Ajouter cette tâche"}
+                </Button>
+                {editingExistingTask && (
+                  <Button
+                    onClick={cancelEditTask}
+                    variant="outline"
+                    iconName="X"
+                    iconPosition="left"
+                  >
+                    Annuler
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
           
@@ -1173,14 +1288,23 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                   const taskTotal = task.price + taskMaterialsTotal;
                   
                   return (
-                    <div key={task.id} className="p-4 bg-background border border-border rounded-lg hover:shadow-md transition-shadow">
+                    <div key={task.id} className={`relative p-4 bg-background border rounded-lg hover:shadow-md transition-shadow ${
+                      editingExistingTask?.id === task.id 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-border'
+                    }`}>
                       <div className="flex items-start justify-between">
+                        {editingExistingTask?.id === task.id && (
+                          <div className="absolute -top-2 -left-2 px-2 py-1 bg-primary text-white text-xs rounded-full">
+                            En cours d'édition
+                          </div>
+                        )}
                         <div className="flex-1">
                           <h4 className="font-medium text-foreground">{task.description}</h4>
                           <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
                             <span className="flex items-center space-x-1">
                               <Icon name="Clock" size={14} />
-                              <span>Durée: {formatDuration(task.duration)}</span>
+                              <span>Durée: {formatDuration(task.duration, task.durationUnit || 'minutes')}</span>
                             </span>
                             <span className="flex items-center space-x-1">
                               <Icon name="User" size={14} />
@@ -1207,12 +1331,20 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                             </div>
                           )}
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeTask(task.id)}
-                          iconName="Trash2"
-                        />
+                        <div className="flex items-center space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => editTask(task)}
+                            iconName="Edit"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeTask(task.id)}
+                            iconName="Trash2"
+                          />
+                        </div>
                       </div>
                     </div>
                   );
