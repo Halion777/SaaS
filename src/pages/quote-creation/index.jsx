@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useMultiUser } from '../../context/MultiUserContext';
 import MainSidebar from '../../components/ui/MainSidebar';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
@@ -13,6 +14,7 @@ import AIScoring from './components/AIScoring';
 
 const QuoteCreation = () => {
   const { user } = useAuth();
+  const { currentProfile } = useMultiUser();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedClient, setSelectedClient] = useState(null);
@@ -30,6 +32,10 @@ const QuoteCreation = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
 
+  // Helper function to generate draft key with user and profile IDs
+  const getDraftKey = () => {
+    return `quote-draft-${user?.id}-${currentProfile?.id || 'default'}`;
+  };
 
   // Auto-save functionality
   useEffect(() => {
@@ -48,7 +54,7 @@ const QuoteCreation = () => {
           companyInfo,
           lastSaved: savedTime
         };
-        localStorage.setItem(`quote-draft-${user?.id}`, JSON.stringify(quoteData));
+        localStorage.setItem(getDraftKey(), JSON.stringify(quoteData));
         setLastSaved(savedTime);
         
         setTimeout(() => {
@@ -67,11 +73,11 @@ const QuoteCreation = () => {
       clearInterval(interval);
       clearTimeout(timeoutId);
     };
-  }, [selectedClient, projectInfo, tasks, files, currentStep, companyInfo, user?.id]);
+  }, [selectedClient, projectInfo, tasks, files, currentStep, companyInfo, user?.id, currentProfile?.id]);
 
-  // Load draft on component mount
+  // Load draft on component mount and when profile changes
   useEffect(() => {
-    const savedDraft = localStorage.getItem(`quote-draft-${user?.id}`);
+    const savedDraft = localStorage.getItem(getDraftKey());
     if (savedDraft) {
       try {
         const draftData = JSON.parse(savedDraft);
@@ -84,9 +90,30 @@ const QuoteCreation = () => {
         setLastSaved(draftData.lastSaved);
       } catch (error) {
         console.error('Error loading draft:', error);
+        // If there's an error loading the draft, clear the form
+        clearFormData();
       }
+    } else {
+      // If no draft exists for this profile, clear the form
+      clearFormData();
     }
-  }, [user?.id]);
+  }, [user?.id, currentProfile?.id]);
+
+  // Helper function to clear form data
+  const clearFormData = () => {
+    setSelectedClient(null);
+    setProjectInfo({
+      categories: [],
+      customCategory: '',
+      deadline: '',
+      description: ''
+    });
+    setTasks([]);
+    setFiles([]);
+    setCurrentStep(1);
+    setCompanyInfo(null);
+    setLastSaved(null);
+  };
 
 
 
@@ -150,7 +177,7 @@ const QuoteCreation = () => {
         companyInfo,
         lastSaved: savedTime
       };
-      localStorage.setItem(`quote-draft-${user?.id}`, JSON.stringify(quoteData));
+      localStorage.setItem(getDraftKey(), JSON.stringify(quoteData));
       setLastSaved(savedTime);
       
       setCurrentStep(currentStep + 1);
@@ -170,7 +197,7 @@ const QuoteCreation = () => {
         companyInfo,
         lastSaved: savedTime
       };
-      localStorage.setItem(`quote-draft-${user?.id}`, JSON.stringify(quoteData));
+      localStorage.setItem(getDraftKey(), JSON.stringify(quoteData));
       setLastSaved(savedTime);
       
       setCurrentStep(currentStep - 1);
@@ -213,12 +240,12 @@ const QuoteCreation = () => {
     };
 
     // Save to localStorage (in real app, this would be an API call)
-    const existingQuotes = JSON.parse(localStorage.getItem(`quotes-${user?.id}`) || '[]');
+    const existingQuotes = JSON.parse(localStorage.getItem(`quotes-${user?.id}-${currentProfile?.id || 'default'}`) || '[]');
     existingQuotes.push(quoteData);
-    localStorage.setItem(`quotes-${user?.id}`, JSON.stringify(existingQuotes));
+    localStorage.setItem(`quotes-${user?.id}-${currentProfile?.id || 'default'}`, JSON.stringify(existingQuotes));
 
     // Clear draft
-    localStorage.removeItem(`quote-draft-${user?.id}`);
+    localStorage.removeItem(getDraftKey());
 
     // Show success message and redirect
     alert('Devis sauvegardé avec succès !');
@@ -246,12 +273,12 @@ const QuoteCreation = () => {
     };
 
     // Save to localStorage (in real app, this would be an API call)
-    const existingQuotes = JSON.parse(localStorage.getItem(`quotes-${user?.id}`) || '[]');
+    const existingQuotes = JSON.parse(localStorage.getItem(`quotes-${user?.id}-${currentProfile?.id || 'default'}`) || '[]');
     existingQuotes.push(quoteData);
-    localStorage.setItem(`quotes-${user?.id}`, JSON.stringify(existingQuotes));
+    localStorage.setItem(`quotes-${user?.id}-${currentProfile?.id || 'default'}`, JSON.stringify(existingQuotes));
 
     // Clear draft
-    localStorage.removeItem(`quote-draft-${user?.id}`);
+    localStorage.removeItem(getDraftKey());
 
     // Show success message and redirect
     alert(`Devis envoyé avec succès à ${selectedClient?.label?.split(' - ')[0]} !`);
@@ -309,7 +336,7 @@ const QuoteCreation = () => {
         companyInfo,
         lastSaved: savedTime
       };
-      localStorage.setItem(`quote-draft-${user?.id}`, JSON.stringify(quoteData));
+      localStorage.setItem(getDraftKey(), JSON.stringify(quoteData));
       setLastSaved(savedTime);
       
       setCurrentStep(newStep);
@@ -339,21 +366,10 @@ const QuoteCreation = () => {
 
   const clearDraft = () => {
     if (confirm('Êtes-vous sûr de vouloir effacer ce brouillon ?')) {
-      localStorage.removeItem(`quote-draft-${user?.id}`);
+      localStorage.removeItem(getDraftKey());
       localStorage.removeItem('quote-signature-data');
-      localStorage.removeItem(`company-info-${user?.id}`);
-      setSelectedClient(null);
-      setProjectInfo({
-        categories: [],
-        customCategory: '',
-        deadline: '',
-        description: ''
-      });
-      setTasks([]);
-      setFiles([]);
-      setCurrentStep(1);
-      setCompanyInfo(null);
-      setLastSaved(null); // Clear the last saved timestamp
+      localStorage.removeItem(`company-info-${user?.id}-${currentProfile?.id || 'default'}`);
+      clearFormData();
     }
   };
 
