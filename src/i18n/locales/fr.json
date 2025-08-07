@@ -110,26 +110,26 @@
       "badge": "Services complémentaires",
       "title": "Recouvrement & Assurance crédit",
       "subtitle": "Sécurisez vos revenus, concentrez-vous sur votre métier",
-          "recovery": {
-      "title": "Recouvrement professionnel – 0€ sans résultat",
-      "description": "Uniquement pour vos clients B2B",
-      "bullet1": "En cas de facture impayée, nous lançons les démarches à votre place",
-      "bullet2": "Procédures amiables et juridiques gérées par nos partenaires spécialisés",
-      "bullet3": "100% gratuit tant qu'aucune somme n'est récupérée",
-      "bullet4": "Commission à partir de 4% sur le montant recouvré",
-      "bullet5": "Notification automatique dès qu'un retard est détecté",
-      "bullet6": "Vous restez concentré sur vos chantiers, on s'occupe du reste"
-    },
-    "insurance": {
-      "title": "Assurance crédit – Factures B2B garanties",
-      "description": "Service proposé via notre partenaire certifié",
-      "bullet1": "Évaluation de la solvabilité du client B2B avant validation du devis",
-      "bullet2": "Activez la garantie en un clic depuis votre tableau de bord",
-      "bullet3": "En cas d'impayé, jusqu'à 90% de la facture couverte",
-      "bullet4": "Système intelligent qui alerte sur les clients à risque",
-      "bullet5": "Suivi des garanties, remboursements et risques en temps réel",
-      "bullet6": "Simple, rapide, sans paperasse"
-    }
+      "recovery": {
+        "title": "Recouvrement professionnel – 0€ sans résultat",
+        "description": "Uniquement pour vos clients B2B",
+        "bullet1": "En cas de facture impayée, nous lançons les démarches à votre place",
+        "bullet2": "Procédures amiables et juridiques gérées par nos partenaires spécialisés",
+        "bullet3": "100% gratuit tant qu'aucune somme n'est récupérée",
+        "bullet4": "Commission à partir de 4% sur le montant recouvré",
+        "bullet5": "Notification automatique dès qu'un retard est détecté",
+        "bullet6": "Vous restez concentré sur vos chantiers, on s'occupe du reste"
+      },
+      "insurance": {
+        "title": "Assurance crédit – Factures B2B garanties",
+        "description": "Service proposé via notre partenaire certifié",
+        "bullet1": "Évaluation de la solvabilité du client B2B avant validation du devis",
+        "bullet2": "Activez la garantie en un clic depuis votre tableau de bord",
+        "bullet3": "En cas d'impayé, jusqu'à 90% de la facture couverte",
+        "bullet4": "Système intelligent qui alerte sur les clients à risque",
+        "bullet5": "Suivi des garanties, remboursements et risques en temps réel",
+        "bullet6": "Simple, rapide, sans paperasse"
+      }
     },
     "mobile": {
       "badge": "Multi-plateforme",
@@ -850,7 +850,6 @@
         "title": "Sécurité SSL",
         "description": "Chiffrement de bout en bout pour toutes vos informations"
       },
-      
       "artisans": {
         "title": "500+ Artisans",
         "description": "Font déjà confiance à notre plateforme"
@@ -1584,7 +1583,7 @@
     "deleteProfileTooltip": "Supprimer",
     "roles": {
       "admin": "Administrateur",
-      "manager": "Gestionnaire", 
+      "manager": "Gestionnaire",
       "accountant": "Comptable",
       "sales": "Commercial",
       "viewer": "Lecteur",
@@ -1618,480 +1617,480 @@
     }
   },
   "dashboard": {
-  "header": {
-    "title": "Aperçu Rapide",
-    "subtitle": "Aperçu de votre activité commerciale"
-  },
-  "welcomeBanner": {
-    "title": "Bienvenue sur votre tableau de bord",
-    "subtitle": "Voici un aperçu rapide de votre activité et des actions importantes"
-  },
-  "buttons": {
-    "personalize": "Personnaliser",
-    "detailedAnalytics": "Analyses détaillées",
-    "newQuote": "Nouveau devis",
-    "guidedTour": "Visite guidée"
-  },
-  "metrics": {
-    "quotesThisMonth": "Devis ce mois",
-    "signatureRate": "Taux de signature",
-    "monthlyTurnover": "CA du mois",
-    "aiGain": "Gain IA",
-    "changeTexts": {
-      "positive": "+{{value}}%",
-      "negative": "-{{value}}%",
-      "new": "Nouveau"
-    }
-  },
-  "aiInsights": {
-    "title": "Insights IA",
-    "viewFullAnalysis": "Voir l'analyse complète",
-    "priceOptimization": {
-      "title": "Optimisation des prix",
-      "description": "L'IA suggère d'augmenter les tarifs de 8% selon l'analyse du marché"
+    "header": {
+      "title": "Aperçu Rapide",
+      "subtitle": "Aperçu de votre activité commerciale"
     },
-    "bestConversionDay": {
-      "title": "Meilleur jour de conversion",
-      "description": "Le mardi montre un taux d'acceptation des devis 23% plus élevé"
-    },
-    "followUpOpportunity": {
-      "title": "Opportunité de relance",
-      "description": "3 clients n'ont pas répondu aux devis depuis 5+ jours"
-    }
-  },
-  "personalization": {
-    "title": "Personnalisation du tableau de bord",
-    "subtitle": "Personnalisez votre tableau de bord en activant ou désactivant les widgets",
-    "widgetCategories": {
-      "Analytics": "Analyses",
-      "Finance": "Finance",
-      "Sales": "Ventes",
-      "Clients": "Clients",
-      "Productivity": "Productivité",
-      "Navigation": "Navigation",
-      "AI": "IA",
-      "Integration": "Intégration",
-      "Marketing": "Marketing"
-    },
-    "widgets": {
-      "metricsCards": {
-        "title": "Indicateurs clés",
-        "description": "Affichez vos principaux indicateurs commerciaux"
-      },
-      "invoiceOverview": {
-        "title": "Vue d'ensemble des factures",
-        "description": "Suivez vos entrées et sorties de trésorerie"
-      },
-      "recentQuotes": {
-        "title": "Devis récents",
-        "description": "Surveillez vos derniers devis et leur statut"
-      },
-      "topClients": {
-        "title": "Meilleurs clients",
-        "description": "Consultez vos clients les plus performants"
-      },
-      "taskList": {
-        "title": "Tâches du jour",
-        "description": "Gérez vos tâches quotidiennes et priorités"
-      },
-      "quickActions": {
-        "title": "Actions rapides",
-        "description": "Accès rapide aux fonctionnalités principales"
-      },
-      "aiPerformance": {
-        "title": "Performance IA",
-        "description": "Suivez les améliorations et gains pilotés par l'IA"
-      },
-      "peppolWidget": {
-        "title": "Réseau Peppol",
-        "description": "Statut d'échange de factures électroniques"
-      },
-      "sponsoredBanner": {
-        "title": "Bannière sponsorisée",
-        "description": "Promotions et offres spéciales"
-      },
-      "aiAlerts": {
-        "title": "Alertes IA",
-        "description": "Notifications intelligentes et recommandations"
-      }
+    "welcomeBanner": {
+      "title": "Bienvenue sur votre tableau de bord",
+      "subtitle": "Voici un aperçu rapide de votre activité et des actions importantes"
     },
     "buttons": {
-      "reset": "Réinitialiser",
-      "cancel": "Annuler",
-      "save": "Sauvegarder",
-      "saving": "Sauvegarde...",
-      "widgetsActive": "{{count}} / {{total}} widgets actifs"
-    }
-  },
-  "tour": {
-    "steps": {
-      "metrics": {
-        "title": "Indicateurs clés",
-        "content": "Vos indicateurs clés : devis, taux de signature, chiffre d'affaires et gains IA."
-      },
-      "newQuote": {
-        "title": "Créer un devis",
-        "content": "Créez un nouveau devis en un clic depuis n'importe quelle page."
-      },
-      "recentQuotes": {
-        "title": "Devis récents",
-        "content": "Suivez vos devis récents et leur statut (envoyé, vu, signé, refusé)."
-      },
-      "quickActions": {
-        "title": "Actions rapides",
-        "content": "Accès rapide aux actions les plus utilisées."
-      },
-      "analytics": {
-        "title": "Analyses détaillées",
-        "content": "Analyses détaillées pour approfondir vos performances."
-      }
+      "personalize": "Personnaliser",
+      "detailedAnalytics": "Analyses détaillées",
+      "newQuote": "Nouveau devis",
+      "guidedTour": "Visite guidée"
     },
-    "buttons": {
-      "back": "Précédent",
-      "close": "Fermer",
-      "last": "Terminer",
-      "next": "Suivant",
-      "skip": "Passer"
-    }
-  },
-  "quickActions": {
-    "title": "Actions Rapides",
-    "actions": [
-      {
-        "label": "Créer un Devis",
-        "description": "Commencez un nouveau devis rapidement"
-      },
-      {
-        "label": "Suivre les Clients",
-        "description": "Gérez et suivez les interactions clients"
-      },
-      {
-        "label": "Voir les Factures",
-        "description": "Consultez et gérez vos factures"
-      }
-    ],
-    "keyboardShortcuts": "Raccourci clavier"
-  },
-  "topClients": {
-    "title": "Meilleurs Clients",
-    "sortedBy": "Triés par Chiffre d'Affaires",
-    "quotes": "Devis",
-    "totalRevenue": "Chiffre d'Affaires Total : {{amount}}",
-    "clients": [
-      {
-        "name": "Marie Dubois",
-        "company": "Solutions Plomberie",
-        "revenue": "12 500,00 €"
-      },
-      {
-        "name": "Pierre Martin",
-        "company": "Services Électriques",
-        "revenue": "9 750,00 €"
-      },
-      {
-        "name": "Sophie Leroy",
-        "company": "Pros de la Peinture",
-        "revenue": "7 200,00 €"
-      },
-      {
-        "name": "Jean Moreau",
-        "company": "Experts en Carrelage",
-        "revenue": "6 800,00 €"
-      }
-    ],
-    "statuses": {
-      "active": {
-        "label": "Actif",
-        "color": "text-success",
-        "bg": "bg-success/10"
-      },
-      "prospect": {
-        "label": "Prospect",
-        "color": "text-warning",
-        "bg": "bg-warning/10"
-      },
-      "inactive": {
-        "label": "Inactif",
-        "color": "text-muted-foreground",
-        "bg": "bg-muted/50"
-      }
-    }
-  },
-  "sponsoredBanner": {
-    "title": "Optimisez vos Devis avec l'IA Premium",
-    "description": "Augmentez votre taux de signature de 40% avec des suggestions intelligentes",
-    "cta": "Découvrir Premium",
-    "sponsor": "Haliqo Pro",
-    "discount": "30% de réduction",
-    "sponsoredLabel": "Sponsorisé"
-  },
-  "aiPerformance": {
-    "title": "Performance IA",
-    "subtitle": "Améliorations et gains pilotés par l'IA",
-    "totalGain": "Gain total IA",
     "metrics": {
+      "quotesThisMonth": "Devis ce mois",
       "signatureRate": "Taux de signature",
-      "timeSaved": "Temps économisé",
-      "revenueGenerated": "CA généré"
-    },
-    "lastAnalysis": "Dernière analyse : il y a 2h",
-    "aiActive": "IA active"
-  },
-  "invoiceOverview": {
-    "title": "Vue d'ensemble des factures",
-    "subtitle": "Suivi de vos entrées et sorties de trésorerie",
-    "buttons": {
-      "clientInvoices": {
-        "full": "Factures clients",
-        "short": "Clients"
-      },
-      "supplierInvoices": {
-        "full": "Factures fournisseurs",
-        "short": "Fournisseurs"
-      },
-      "newInvoice": {
-        "full": "Nouvelle facture",
-        "short": "Nouvelle"
-      },
-      "viewAnalytics": {
-        "full": "Voir analyses",
-        "short": "Analyses"
+      "monthlyTurnover": "CA du mois",
+      "aiGain": "Gain IA",
+      "changeTexts": {
+        "positive": "+{{value}}%",
+        "negative": "-{{value}}%",
+        "new": "Nouveau"
       }
     },
-    "sections": {
-      "clientInvoices": {
-        "title": "Factures clients",
-        "totalRevenue": "Revenus totaux",
-        "paidRevenue": "Revenus encaissés",
-        "outstanding": "En attente",
-        "overdue": "En retard"
-      },
-      "supplierInvoices": {
-        "title": "Factures fournisseurs",
-        "totalExpenses": "Dépenses totales",
-        "paidExpenses": "Dépenses payées",
-        "outstanding": "En attente",
-        "overdue": "En retard"
-      },
-      "cashFlow": {
-        "title": "Flux de trésorerie",
-        "monthlyNet": "Net du mois",
-        "collectionRate": "Taux d'encaissement",
-        "paymentRate": "Taux de paiement",
-        "availableBalance": "Solde disponible"
-      },
-      "lastUpdate": {
-        "prefix": "Dernière mise à jour :",
-        "recentInvoices": "{{count}} factures récentes"
-      }
-    }
-  },
-  "peppolWidget": {
-    "title": "Réseau Peppol",
-    "subtitle": "Échange électronique de factures",
-    "connectionStatus": {
-      "connected": "Connecté",
-      "disconnected": "Déconnecté"
-    },
-    "sandboxMode": "Test",
-    "notConfigured": {
-      "title": "Peppol non configuré",
-      "description": "Configurez votre identifiant Peppol pour échanger des factures électroniques",
-      "buttonFull": "Configurer Peppol",
-      "buttonShort": "Configurer"
-    },
-    "connectionInfo": {
-      "peppolId": {
-        "label": "ID Peppol",
-        "notDefined": "Non défini"
-      },
-      "businessName": {
-        "label": "Entreprise",
-        "notDefined": "Non définie"
-      }
-    },
-    "statistics": {
-      "totalSent": "Envoyées",
-      "totalReceived": "Reçues",
-      "pending": "En attente",
-      "failed": "Échouées"
-    },
-    "successRate": "Taux de succès",
-    "quickActions": {
-      "sendInvoice": {
-        "full": "Envoyer facture",
-        "short": "Envoyer"
-      },
-      "settings": {
-        "full": "Paramètres",
-        "short": "Config"
-      }
-    },
-    "lastActivity": "Dernière activité : {{date}}"
-  },
-  "taskList": {
-    "title": "Tâches du jour",
-    "tasksCount": "{{count}} tâches",
-    "viewAllTasks": "Voir toutes les tâches",
-    "taskTypes": {
-      "finalize": "Finaliser",
-      "send": "Envoyer",
-      "follow": "Suivre",
-      "invoice": "Facturer"
-    },
-    "tasks": [
-      {
-        "title": "Finaliser le devis plomberie",
-        "client": "Marie Dubois",
-        "action": "Ajouter détails matériaux"
-      },
-      {
-        "title": "Envoyer le devis électrique",
-        "client": "Pierre Martin",
-        "action": "Réviser et envoyer"
-      },
-      {
-        "title": "Suivre le client peinture",
-        "client": "Sophie Leroy",
-        "action": "Appel téléphonique"
-      },
-      {
-        "title": "Créer la facture carrelage",
-        "client": "Jean Moreau",
-        "action": "Devis signé hier"
-      }
-    ]
-  },
-  "quoteChart": {
-    "title": "Évolution des devis",
-    "seriesLabels": {
-      "quotes": "Devis créés",
-      "signed": "Devis signés"
-    },
-    "months": {
-      "Jan": "Jan",
-      "Feb": "Fév",
-      "Mar": "Mar",
-      "Apr": "Avr",
-      "May": "Mai",
-      "Jun": "Juin",
-      "Jul": "Juil"
-    },
-    "chartAriaLabel": "Graphique d'évolution des devis"
-  },
-  "recentQuotes": {
-    "title": "Devis récents",
-    "viewAllQuotes": "Voir tous les devis",
-    "statuses": {
-      "signed": {
-        "label": "Signé",
-        "color": "text-success",
-        "bg": "bg-success/10"
-      },
-      "viewed": {
-        "label": "Consulté",
-        "color": "text-warning",
-        "bg": "bg-warning/10"
-      },
-      "sent": {
-        "label": "Envoyé",
-        "color": "text-primary",
-        "bg": "bg-primary/10"
-      },
-      "draft": {
-        "label": "Brouillon",
-        "color": "text-muted-foreground",
-        "bg": "bg-muted/50"
-      }
-    },
-    "quotes": [
-      {
-        "id": "DEV-2025-001",
-        "client": "Marie Dubois",
-        "service": "Plomberie salle de bain",
-        "amount": "2.450,00 €",
-        "date": "2025-07-18"
-      },
-      {
-        "id": "DEV-2025-002",
-        "client": "Pierre Martin",
-        "service": "Installation électrique",
-        "amount": "1.850,00 €",
-        "date": "2025-07-17"
-      },
-      {
-        "id": "DEV-2025-003",
-        "client": "Sophie Leroy",
-        "service": "Peinture appartement",
-        "amount": "3.200,00 €",
-        "date": "2025-07-16"
-      },
-      {
-        "id": "DEV-2025-004",
-        "client": "Jean Moreau",
-        "service": "Carrelage cuisine",
-        "amount": "1.650,00 €",
-        "date": "2025-07-15"
-      }
-    ]
-  },
-  "aiAlerts": {
-    "title": "Alertes IA",
-    "footer": {
-      "aiEnabled": "IA activée • Gain moyen : +40%"
-    },
-    "alerts": [
-      {
-        "type": "forgotten_quote",
-        "title": "Devis oublié",
-        "message": "Le devis pour Marie Dubois n'a pas été envoyé depuis 3 jours",
-        "action": "Envoyer maintenant"
-      },
-      {
-        "type": "inactive_client",
-        "title": "Client inactif",
-        "message": "Pierre Martin n'a pas été contacté depuis 2 semaines",
-        "action": "Planifier un suivi"
-      },
-      {
-        "type": "price_optimization",
+    "aiInsights": {
+      "title": "Insights IA",
+      "viewFullAnalysis": "Voir l'analyse complète",
+      "priceOptimization": {
         "title": "Optimisation des prix",
-        "message": "Augmentez vos tarifs de 8% selon l'analyse IA",
-        "action": "Voir recommandations"
-      }
-    ],
-    "alertTypes": {
-      "forgotten_quote": "Devis oublié",
-      "inactive_client": "Client inactif",
-      "price_optimization": "Optimisation des prix",
-      "follow_up": "Suivi"
-    },
-    "priorities": {
-      "high": {
-        "color": "text-error",
-        "background": "border-error bg-error/5"
+        "description": "L'IA suggère d'augmenter les tarifs de 8% selon l'analyse du marché"
       },
-      "medium": {
-        "color": "text-warning",
-        "background": "border-warning bg-warning/5"
+      "bestConversionDay": {
+        "title": "Meilleur jour de conversion",
+        "description": "Le mardi montre un taux d'acceptation des devis 23% plus élevé"
       },
-      "low": {
-        "color": "text-primary",
-        "background": "border-primary bg-primary/5"
+      "followUpOpportunity": {
+        "title": "Opportunité de relance",
+        "description": "3 clients n'ont pas répondu aux devis depuis 5+ jours"
       }
-    }
-  },
-  "permissions": {
-    "labels": {
-      "no_access": "Aucun accès",
-      "view_only": "Lecture seule",
-      "full_access": "Accès complet"
     },
-    "descriptions": {
-      "no_access": "L'utilisateur ne peut pas accéder à cette fonctionnalité",
-      "view_only": "L'utilisateur peut consulter mais ne peut pas modifier",
-      "full_access": "L'utilisateur peut consulter, créer, modifier et supprimer"
+    "personalization": {
+      "title": "Personnalisation du tableau de bord",
+      "subtitle": "Personnalisez votre tableau de bord en activant ou désactivant les widgets",
+      "widgetCategories": {
+        "Analytics": "Analyses",
+        "Finance": "Finance",
+        "Sales": "Ventes",
+        "Clients": "Clients",
+        "Productivity": "Productivité",
+        "Navigation": "Navigation",
+        "AI": "IA",
+        "Integration": "Intégration",
+        "Marketing": "Marketing"
+      },
+      "widgets": {
+        "metricsCards": {
+          "title": "Indicateurs clés",
+          "description": "Affichez vos principaux indicateurs commerciaux"
+        },
+        "invoiceOverview": {
+          "title": "Vue d'ensemble des factures",
+          "description": "Suivez vos entrées et sorties de trésorerie"
+        },
+        "recentQuotes": {
+          "title": "Devis récents",
+          "description": "Surveillez vos derniers devis et leur statut"
+        },
+        "topClients": {
+          "title": "Meilleurs clients",
+          "description": "Consultez vos clients les plus performants"
+        },
+        "taskList": {
+          "title": "Tâches du jour",
+          "description": "Gérez vos tâches quotidiennes et priorités"
+        },
+        "quickActions": {
+          "title": "Actions rapides",
+          "description": "Accès rapide aux fonctionnalités principales"
+        },
+        "aiPerformance": {
+          "title": "Performance IA",
+          "description": "Suivez les améliorations et gains pilotés par l'IA"
+        },
+        "peppolWidget": {
+          "title": "Réseau Peppol",
+          "description": "Statut d'échange de factures électroniques"
+        },
+        "sponsoredBanner": {
+          "title": "Bannière sponsorisée",
+          "description": "Promotions et offres spéciales"
+        },
+        "aiAlerts": {
+          "title": "Alertes IA",
+          "description": "Notifications intelligentes et recommandations"
+        }
+      },
+      "buttons": {
+        "reset": "Réinitialiser",
+        "cancel": "Annuler",
+        "save": "Sauvegarder",
+        "saving": "Sauvegarde...",
+        "widgetsActive": "{{count}} / {{total}} widgets actifs"
+      }
+    },
+    "tour": {
+      "steps": {
+        "metrics": {
+          "title": "Indicateurs clés",
+          "content": "Vos indicateurs clés : devis, taux de signature, chiffre d'affaires et gains IA."
+        },
+        "newQuote": {
+          "title": "Créer un devis",
+          "content": "Créez un nouveau devis en un clic depuis n'importe quelle page."
+        },
+        "recentQuotes": {
+          "title": "Devis récents",
+          "content": "Suivez vos devis récents et leur statut (envoyé, vu, signé, refusé)."
+        },
+        "quickActions": {
+          "title": "Actions rapides",
+          "content": "Accès rapide aux actions les plus utilisées."
+        },
+        "analytics": {
+          "title": "Analyses détaillées",
+          "content": "Analyses détaillées pour approfondir vos performances."
+        }
+      },
+      "buttons": {
+        "back": "Précédent",
+        "close": "Fermer",
+        "last": "Terminer",
+        "next": "Suivant",
+        "skip": "Passer"
+      }
+    },
+    "quickActions": {
+      "title": "Actions Rapides",
+      "actions": [
+        {
+          "label": "Créer un Devis",
+          "description": "Commencez un nouveau devis rapidement"
+        },
+        {
+          "label": "Suivre les Clients",
+          "description": "Gérez et suivez les interactions clients"
+        },
+        {
+          "label": "Voir les Factures",
+          "description": "Consultez et gérez vos factures"
+        }
+      ],
+      "keyboardShortcuts": "Raccourci clavier"
+    },
+    "topClients": {
+      "title": "Meilleurs Clients",
+      "sortedBy": "Triés par Chiffre d'Affaires",
+      "quotes": "Devis",
+      "totalRevenue": "Chiffre d'Affaires Total : {{amount}}",
+      "clients": [
+        {
+          "name": "Marie Dubois",
+          "company": "Solutions Plomberie",
+          "revenue": "12 500,00 €"
+        },
+        {
+          "name": "Pierre Martin",
+          "company": "Services Électriques",
+          "revenue": "9 750,00 €"
+        },
+        {
+          "name": "Sophie Leroy",
+          "company": "Pros de la Peinture",
+          "revenue": "7 200,00 €"
+        },
+        {
+          "name": "Jean Moreau",
+          "company": "Experts en Carrelage",
+          "revenue": "6 800,00 €"
+        }
+      ],
+      "statuses": {
+        "active": {
+          "label": "Actif",
+          "color": "text-success",
+          "bg": "bg-success/10"
+        },
+        "prospect": {
+          "label": "Prospect",
+          "color": "text-warning",
+          "bg": "bg-warning/10"
+        },
+        "inactive": {
+          "label": "Inactif",
+          "color": "text-muted-foreground",
+          "bg": "bg-muted/50"
+        }
+      }
+    },
+    "sponsoredBanner": {
+      "title": "Optimisez vos Devis avec l'IA Premium",
+      "description": "Augmentez votre taux de signature de 40% avec des suggestions intelligentes",
+      "cta": "Découvrir Premium",
+      "sponsor": "Haliqo Pro",
+      "discount": "30% de réduction",
+      "sponsoredLabel": "Sponsorisé"
+    },
+    "aiPerformance": {
+      "title": "Performance IA",
+      "subtitle": "Améliorations et gains pilotés par l'IA",
+      "totalGain": "Gain total IA",
+      "metrics": {
+        "signatureRate": "Taux de signature",
+        "timeSaved": "Temps économisé",
+        "revenueGenerated": "CA généré"
+      },
+      "lastAnalysis": "Dernière analyse : il y a 2h",
+      "aiActive": "IA active"
+    },
+    "invoiceOverview": {
+      "title": "Vue d'ensemble des factures",
+      "subtitle": "Suivi de vos entrées et sorties de trésorerie",
+      "buttons": {
+        "clientInvoices": {
+          "full": "Factures clients",
+          "short": "Clients"
+        },
+        "supplierInvoices": {
+          "full": "Factures fournisseurs",
+          "short": "Fournisseurs"
+        },
+        "newInvoice": {
+          "full": "Nouvelle facture",
+          "short": "Nouvelle"
+        },
+        "viewAnalytics": {
+          "full": "Voir analyses",
+          "short": "Analyses"
+        }
+      },
+      "sections": {
+        "clientInvoices": {
+          "title": "Factures clients",
+          "totalRevenue": "Revenus totaux",
+          "paidRevenue": "Revenus encaissés",
+          "outstanding": "En attente",
+          "overdue": "En retard"
+        },
+        "supplierInvoices": {
+          "title": "Factures fournisseurs",
+          "totalExpenses": "Dépenses totales",
+          "paidExpenses": "Dépenses payées",
+          "outstanding": "En attente",
+          "overdue": "En retard"
+        },
+        "cashFlow": {
+          "title": "Flux de trésorerie",
+          "monthlyNet": "Net du mois",
+          "collectionRate": "Taux d'encaissement",
+          "paymentRate": "Taux de paiement",
+          "availableBalance": "Solde disponible"
+        },
+        "lastUpdate": {
+          "prefix": "Dernière mise à jour :",
+          "recentInvoices": "{{count}} factures récentes"
+        }
+      }
+    },
+    "peppolWidget": {
+      "title": "Réseau Peppol",
+      "subtitle": "Échange électronique de factures",
+      "connectionStatus": {
+        "connected": "Connecté",
+        "disconnected": "Déconnecté"
+      },
+      "sandboxMode": "Test",
+      "notConfigured": {
+        "title": "Peppol non configuré",
+        "description": "Configurez votre identifiant Peppol pour échanger des factures électroniques",
+        "buttonFull": "Configurer Peppol",
+        "buttonShort": "Configurer"
+      },
+      "connectionInfo": {
+        "peppolId": {
+          "label": "ID Peppol",
+          "notDefined": "Non défini"
+        },
+        "businessName": {
+          "label": "Entreprise",
+          "notDefined": "Non définie"
+        }
+      },
+      "statistics": {
+        "totalSent": "Envoyées",
+        "totalReceived": "Reçues",
+        "pending": "En attente",
+        "failed": "Échouées"
+      },
+      "successRate": "Taux de succès",
+      "quickActions": {
+        "sendInvoice": {
+          "full": "Envoyer facture",
+          "short": "Envoyer"
+        },
+        "settings": {
+          "full": "Paramètres",
+          "short": "Config"
+        }
+      },
+      "lastActivity": "Dernière activité : {{date}}"
+    },
+    "taskList": {
+      "title": "Tâches du jour",
+      "tasksCount": "{{count}} tâches",
+      "viewAllTasks": "Voir toutes les tâches",
+      "taskTypes": {
+        "finalize": "Finaliser",
+        "send": "Envoyer",
+        "follow": "Suivre",
+        "invoice": "Facturer"
+      },
+      "tasks": [
+        {
+          "title": "Finaliser le devis plomberie",
+          "client": "Marie Dubois",
+          "action": "Ajouter détails matériaux"
+        },
+        {
+          "title": "Envoyer le devis électrique",
+          "client": "Pierre Martin",
+          "action": "Réviser et envoyer"
+        },
+        {
+          "title": "Suivre le client peinture",
+          "client": "Sophie Leroy",
+          "action": "Appel téléphonique"
+        },
+        {
+          "title": "Créer la facture carrelage",
+          "client": "Jean Moreau",
+          "action": "Devis signé hier"
+        }
+      ]
+    },
+    "quoteChart": {
+      "title": "Évolution des devis",
+      "seriesLabels": {
+        "quotes": "Devis créés",
+        "signed": "Devis signés"
+      },
+      "months": {
+        "Jan": "Jan",
+        "Feb": "Fév",
+        "Mar": "Mar",
+        "Apr": "Avr",
+        "May": "Mai",
+        "Jun": "Juin",
+        "Jul": "Juil"
+      },
+      "chartAriaLabel": "Graphique d'évolution des devis"
+    },
+    "recentQuotes": {
+      "title": "Devis récents",
+      "viewAllQuotes": "Voir tous les devis",
+      "statuses": {
+        "signed": {
+          "label": "Signé",
+          "color": "text-success",
+          "bg": "bg-success/10"
+        },
+        "viewed": {
+          "label": "Consulté",
+          "color": "text-warning",
+          "bg": "bg-warning/10"
+        },
+        "sent": {
+          "label": "Envoyé",
+          "color": "text-primary",
+          "bg": "bg-primary/10"
+        },
+        "draft": {
+          "label": "Brouillon",
+          "color": "text-muted-foreground",
+          "bg": "bg-muted/50"
+        }
+      },
+      "quotes": [
+        {
+          "id": "DEV-2025-001",
+          "client": "Marie Dubois",
+          "service": "Plomberie salle de bain",
+          "amount": "2.450,00 €",
+          "date": "2025-07-18"
+        },
+        {
+          "id": "DEV-2025-002",
+          "client": "Pierre Martin",
+          "service": "Installation électrique",
+          "amount": "1.850,00 €",
+          "date": "2025-07-17"
+        },
+        {
+          "id": "DEV-2025-003",
+          "client": "Sophie Leroy",
+          "service": "Peinture appartement",
+          "amount": "3.200,00 €",
+          "date": "2025-07-16"
+        },
+        {
+          "id": "DEV-2025-004",
+          "client": "Jean Moreau",
+          "service": "Carrelage cuisine",
+          "amount": "1.650,00 €",
+          "date": "2025-07-15"
+        }
+      ]
+    },
+    "aiAlerts": {
+      "title": "Alertes IA",
+      "footer": {
+        "aiEnabled": "IA activée • Gain moyen : +40%"
+      },
+      "alerts": [
+        {
+          "type": "forgotten_quote",
+          "title": "Devis oublié",
+          "message": "Le devis pour Marie Dubois n'a pas été envoyé depuis 3 jours",
+          "action": "Envoyer maintenant"
+        },
+        {
+          "type": "inactive_client",
+          "title": "Client inactif",
+          "message": "Pierre Martin n'a pas été contacté depuis 2 semaines",
+          "action": "Planifier un suivi"
+        },
+        {
+          "type": "price_optimization",
+          "title": "Optimisation des prix",
+          "message": "Augmentez vos tarifs de 8% selon l'analyse IA",
+          "action": "Voir recommandations"
+        }
+      ],
+      "alertTypes": {
+        "forgotten_quote": "Devis oublié",
+        "inactive_client": "Client inactif",
+        "price_optimization": "Optimisation des prix",
+        "follow_up": "Suivi"
+      },
+      "priorities": {
+        "high": {
+          "color": "text-error",
+          "background": "border-error bg-error/5"
+        },
+        "medium": {
+          "color": "text-warning",
+          "background": "border-warning bg-warning/5"
+        },
+        "low": {
+          "color": "text-primary",
+          "background": "border-primary bg-primary/5"
+        }
+      }
+    },
+    "permissions": {
+      "labels": {
+        "no_access": "Aucun accès",
+        "view_only": "Lecture seule",
+        "full_access": "Accès complet"
+      },
+      "descriptions": {
+        "no_access": "L'utilisateur ne peut pas accéder à cette fonctionnalité",
+        "view_only": "L'utilisateur peut consulter mais ne peut pas modifier",
+        "full_access": "L'utilisateur peut consulter, créer, modifier et supprimer"
+      }
     }
   }
-} 
-} 
+}

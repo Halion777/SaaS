@@ -426,7 +426,7 @@ const MultiUserProfilesPage = () => {
 
   // Get permission label
   const getPermissionLabel = (permission) => {
-    return t(`permissions.labels.${permission}`) || permission;
+    return t(`dashboard.permissions.labels.${permission}`) || permission;
   };
 
   // Check if user has specific permission
