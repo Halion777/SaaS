@@ -319,11 +319,11 @@
   },
   "about": {
     "hero": {
-      "badge": "À propos de nous • Simplifier le bâtiment",
+      "badge": "À propos de nous • Simplifier l'artisanat",
       "title": {
         "prefix": "Haliqo, votre ",
         "highlight": "partenaire digital",
-        "suffix": " dans le bâtiment"
+        "suffix": " pour artisans"
       },
       "subtitle": "Des outils simples, rapides et puissants pour automatiser vos devis, factures et paiements – tout en vous concentrant sur votre métier.",
       "benefits": {
@@ -341,8 +341,8 @@
       "subtitle": "Découvrez comment Haliqo est né d'une vision simple",
       "paragraph1": "L'idée de Haliqo est née d'un constat simple : les artisans perdent énormément de temps sur les tâches administratives alors qu'ils devraient pouvoir se concentrer sur leur savoir-faire.",
       "paragraph2": "Après avoir discuté avec de nombreux indépendants, nous avons réalisé qu'il manquait une solution simple, moderne et intuitive, pensée spécialement pour eux.",
-      "paragraph3": "Le nom <span class=\"font-bold text-[#0036ab]\">Haliqo</span> vient des initiales <span class=\"font-semibold\">HA</span> du fondateur Haitam, et des lettres <span class=\"font-semibold\">LIQO</span> qui représentent les fonctionnalités clés de la plateforme : Leads, Invoices, Quotes, Optimization.",
-      "paragraph4": "L'ambition de Haliqo est d'être un véritable \"liquide booster\" qui fluidifie et dynamise tout le travail administratif des artisans, au quotidien."
+      "paragraph3": "Le nom <span class=\"font-bold text-[#0036ab]\">Haliqo</span> vient des initiales <span class=\"font-semibold\">HA</span> du fondateur Haitam, et des lettres <span class=\"font-semibold\">LIQO</span> qui représentent les fonctionnalités clés de la plateforme : <span class=\"font-semibold text-[#12bf23]\">L</span>eads, <span class=\"font-semibold text-[#12bf23]\">I</span>nvoices, <span class=\"font-semibold text-[#12bf23]\">Q</span>uotes, <span class=\"font-semibold text-[#12bf23]\">O</span>ptimization.",
+      "paragraph4": "L'ambition de Haliqo est d'être un véritable \"<span class=\"font-semibold text-[#0036ab]\">liquide booster</span>\" qui fluidifie et dynamise tout le travail administratif des artisans, au quotidien."
     },
     "values": {
       "badge": "Nos valeurs",
@@ -654,9 +654,16 @@
   },
   "blog": {
     "hero": {
-      "badge": "Blog",
-      "title": "Actualités et conseils",
-      "subtitle": "Restez informé des dernières nouvelles et découvrez des conseils pour optimiser votre activité"
+      "badge": "Blog en développement",
+      "title": "Notre blog",
+      "titleHighlight": "arrive bientôt",
+      "subtitle": "Notre blog est en cours de création. Vous y trouverez bientôt des articles sur les meilleures pratiques et conseils pour les artisans.",
+      "benefits": {
+        "expertAdvice": "Conseils d'experts",
+        "bestPractices": "Bonnes pratiques",
+        "industryNews": "Actualités du secteur"
+      },
+      "backToHome": "Retour à l'accueil"
     }
   },
   "login": {

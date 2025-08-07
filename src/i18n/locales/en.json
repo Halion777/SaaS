@@ -318,11 +318,11 @@
   },
   "about": {
     "hero": {
-      "badge": "About Us • Simplify Construction",
+      "badge": "About Us • Simplify Craftsmanship",
       "title": {
         "prefix": "Haliqo, your ",
         "highlight": "digital partner",
-        "suffix": " in construction"
+        "suffix": " for craftsmen"
       },
       "subtitle": "Simple, fast and powerful tools to automate your quotes, invoices and payments – while focusing on your trade.",
       "benefits": {
@@ -653,9 +653,16 @@
   },
   "blog": {
     "hero": {
-      "badge": "Blog",
-      "title": "News and Tips",
-      "subtitle": "Stay informed of the latest news and discover tips to optimize your business"
+      "badge": "Blog in development",
+      "title": "Our blog",
+      "titleHighlight": "coming soon",
+      "subtitle": "Our blog is being created. You will soon find articles on best practices and advice for craftsmen.",
+      "benefits": {
+        "expertAdvice": "Expert advice",
+        "bestPractices": "Best practices",
+        "industryNews": "Industry news"
+      },
+      "backToHome": "Back to home"
     }
   },
   "login": {

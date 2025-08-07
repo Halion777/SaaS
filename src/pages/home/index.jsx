@@ -1269,7 +1269,7 @@ const HomePage = () => {
                         <Icon name="Smartphone" size={20} className="text-[#0036ab]" />
                       </div>
                       <h3 className="text-lg font-semibold text-gray-900">
-                        L'application mobile est-elle disponible ?
+                        {t('home.faq.mobile.question')}
                       </h3>
                     </div>
                     <Icon 

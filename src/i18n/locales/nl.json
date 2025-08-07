@@ -42,7 +42,7 @@
       "badge": "Haliqo - Je professionele digitale vitamine",
       "title": {
         "prefix": "De alles-in-één oplossing voor ",
-        "highlight": "bouwprofessionals"
+        "highlight": "vakmensen"
       },
       "subtitle": "Bespaar tijd, verstuur je offertes, facturen en volg je betalingen – zonder stress.",
       "benefits": {
@@ -318,11 +318,11 @@
   },
   "about": {
     "hero": {
-      "badge": "Over ons • Bouw vereenvoudigen",
+      "badge": "Over ons • Vakmanschap vereenvoudigen",
       "title": {
         "prefix": "Haliqo, je ",
         "highlight": "digitale partner",
-        "suffix": " in de bouw"
+        "suffix": " voor vakmensen"
       },
       "subtitle": "Eenvoudige, snelle en krachtige tools om je offertes, facturen en betalingen te automatiseren – terwijl je je focust op je vak.",
       "benefits": {
@@ -653,9 +653,16 @@
   },
   "blog": {
     "hero": {
-      "badge": "Blog",
-      "title": "Nieuws en tips",
-      "subtitle": "Blijf op de hoogte van het laatste nieuws en ontdek tips om je bedrijf te optimaliseren"
+      "badge": "Blog in ontwikkeling",
+      "title": "Onze blog",
+      "titleHighlight": "komt binnenkort",
+      "subtitle": "Onze blog wordt gemaakt. Je vindt binnenkort artikelen over beste praktijken en advies voor vakmensen.",
+      "benefits": {
+        "expertAdvice": "Expertadvies",
+        "bestPractices": "Beste praktijken",
+        "industryNews": "Sectornieuws"
+      },
+      "backToHome": "Terug naar home"
     }
   },
   "login": {
