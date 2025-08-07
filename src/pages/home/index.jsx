@@ -197,7 +197,7 @@ const HomePage = () => {
                 <div className={`transition-all duration-1000 delay-300 ${isVisible.hero ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
                   <div className="relative">
                     {/* PEPPOL Logo - Floating Element */}
-                    <div className="absolute -top-8 -left-8 bg-white rounded-full shadow-lg p-3 z-20 animate-pulse">
+                    <div className="absolute -top-8 -left-8 bg-white rounded-full shadow-lg p-3 z-20">
                       <img 
                         src="/assets/logo/peppol_logo.png" 
                         alt="PEPPOL Logo" 
@@ -212,24 +212,26 @@ const HomePage = () => {
                         alt="Haliqo Dashboard" 
                         className="w-full h-auto rounded-xl"
                       />
-                    </div>
-                    
-                    {/* Floating Elements */}
-                    <div className="absolute -top-4 -right-4 bg-white rounded-xl shadow-lg p-4 transform -rotate-6">
-                      <div className="flex items-center space-x-2">
-                        <Icon name="TrendingUp" size={20} className="text-[#12bf23]" />
-                        <span className="text-sm font-medium text-gray-700">+45% CA</span>
+                      
+                      {/* Floating Elements */}
+                      <div className="absolute -top-4 -right-4 bg-white rounded-xl shadow-lg p-4 transform -rotate-6">
+                        <div className="flex items-center space-x-2">
+                          <Icon name="TrendingUp" size={20} className="text-[#12bf23]" />
+                          <span className="text-sm font-medium text-gray-700">+45% {t('home.hero.floatingElements.turnover')}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="absolute -bottom-4 -left-4 bg-white rounded-xl shadow-lg p-4 transform rotate-6">
+                        <div className="flex items-center space-x-2">
+                          <Icon name="Clock" size={20} className="text-[#0036ab]" />
+                          <span className="text-sm font-medium text-gray-700">-60% {t('home.hero.floatingElements.time')}</span>
+                        </div>
                       </div>
                     </div>
                     
-                    <div className="absolute -bottom-4 -left-4 bg-white rounded-xl shadow-lg p-4 transform rotate-6">
-                      <div className="flex items-center space-x-2">
-                        <Icon name="Clock" size={20} className="text-[#0036ab]" />
-                        <span className="text-sm font-medium text-gray-700">-60% temps</span>
-                      </div>
-                    </div>
+
                     
-                    <div className="absolute -bottom-8 -right-8 bg-white rounded-full shadow-lg p-4 transform -rotate-6 animate-pulse">
+                    <div className="absolute -bottom-8 -right-8 bg-white rounded-full shadow-lg p-4 transform -rotate-6">
                       <div className="flex items-center space-x-2">
                         <Icon name="Brain" size={20} className="text-[#12bf23]" />
                         <span className="text-sm font-medium text-gray-700">AI</span>
@@ -546,18 +548,18 @@ const HomePage = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
               {/* Dashboard Preview */}
               <div className="relative group">
-                {/* Floating Elements */}
-                <div className="absolute -top-6 -right-6 bg-white rounded-2xl shadow-xl p-4 transform rotate-6 group-hover:rotate-0 transition-transform duration-500 z-20">
+                {/* Floating Elements for Dashboard */}
+                <div className="absolute -top-4 -right-4 bg-white rounded-xl shadow-lg p-4 transform -rotate-6 group-hover:rotate-0 transition-transform duration-500 z-20">
                   <div className="flex items-center space-x-2">
                     <Icon name="TrendingUp" size={20} className="text-[#12bf23]" />
-                    <span className="text-sm font-bold text-gray-700">+45% CA</span>
+                    <span className="text-sm font-medium text-gray-700">{t('home.mobile.floatingElements.turnover')}</span>
                   </div>
                 </div>
                 
-                <div className="absolute -bottom-6 -left-6 bg-white rounded-2xl shadow-xl p-4 transform -rotate-6 group-hover:rotate-0 transition-transform duration-500 z-20">
+                <div className="absolute -bottom-4 -left-4 bg-white rounded-xl shadow-lg p-4 transform rotate-6 group-hover:rotate-0 transition-transform duration-500 z-20">
                   <div className="flex items-center space-x-2">
                     <Icon name="Users" size={20} className="text-[#0036ab]" />
-                    <span className="text-sm font-bold text-gray-700">+2,500 clients</span>
+                    <span className="text-sm font-medium text-gray-700">{t('home.mobile.floatingElements.clients')}</span>
                   </div>
                 </div>
 
@@ -602,14 +604,14 @@ const HomePage = () => {
                   <div className="absolute -top-4 -right-4 bg-white rounded-2xl shadow-xl p-3 transform rotate-6 group-hover:rotate-0 transition-transform duration-500 z-20">
                     <div className="flex items-center space-x-2">
                       <Icon name="Smartphone" size={16} className="text-[#12bf23]" />
-                      <span className="text-xs font-bold text-gray-700">App mobile</span>
+                      <span className="text-xs font-bold text-gray-700">{t('home.mobile.floatingElements.mobileApp')}</span>
                       </div>
                     </div>
                   
                   <div className="absolute -bottom-4 -left-4 bg-white rounded-2xl shadow-xl p-3 transform -rotate-6 group-hover:rotate-0 transition-transform duration-500 z-20">
                     <div className="flex items-center space-x-2">
                       <Icon name="Zap" size={16} className="text-[#0036ab]" />
-                      <span className="text-xs font-bold text-gray-700">Rapide</span>
+                      <span className="text-xs font-bold text-gray-700">{t('home.mobile.floatingElements.fast')}</span>
                   </div>
                 </div>
                 

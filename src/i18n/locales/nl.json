@@ -53,6 +53,10 @@
       "trust": {
         "artisans": "500+ Vakmensen",
         "rating": "4.9/5 Sterren"
+      },
+      "floatingElements": {
+        "turnover": "Omzet",
+        "time": "Tijd"
       }
     },
     "demo": {
@@ -135,6 +139,12 @@
       "title": "Beheer je bedrijf waar je ook bent",
       "subtitle": "Toegang tot je dashboard vanaf je computer of onderweg met onze mobiele app",
       "comingSoon": "Binnenkort beschikbaar",
+      "floatingElements": {
+        "mobileApp": "Mobiele App",
+        "fast": "Snel",
+        "turnover": "Omzet",
+        "clients": "500+ clients"
+      },
       "tags": {
         "free": "Gratis",
         "secure": "Veilig",

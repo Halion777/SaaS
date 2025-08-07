@@ -54,6 +54,10 @@
       "trust": {
         "artisans": "500+ Artisans",
         "rating": "4.9/5 Étoiles"
+      },
+      "floatingElements": {
+        "turnover": "CA",
+        "time": "Temps"
       }
     },
     "demo": {
@@ -136,6 +140,12 @@
       "title": "Gérez votre entreprise où que vous soyez",
       "subtitle": "Accédez à votre tableau de bord où que vous soyez, depuis votre ordinateur ou votre smartphone (via navigateur)",
       "comingSoon": "Bientôt disponible",
+      "floatingElements": {
+        "mobileApp": "App mobile",
+        "fast": "Rapide",
+        "turnover": "CA",
+        "clients": "500+ clients"
+      },
       "tags": {
         "free": "Gratuit",
         "secure": "Sécurisé",

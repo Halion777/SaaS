@@ -53,6 +53,10 @@
       "trust": {
         "artisans": "500+ Artisans",
         "rating": "4.9/5 Stars"
+      },
+      "floatingElements": {
+        "turnover": "Turnover",
+        "time": "Time"
       }
     },
     "demo": {
@@ -135,6 +139,12 @@
       "title": "Manage your business wherever you are",
       "subtitle": "Access your dashboard from your computer or on the go with our mobile app",
       "comingSoon": "Coming Soon",
+      "floatingElements": {
+        "mobileApp": "Mobile App",
+        "fast": "Fast",
+        "turnover": "Turnover",
+        "clients": "500+ clients"
+      },
       "tags": {
         "free": "Free",
         "secure": "Secure",
