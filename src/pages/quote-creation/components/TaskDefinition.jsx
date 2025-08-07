@@ -15,6 +15,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
     hourlyRate: '',
     pricingType: 'flat'
   });
+  const [editingPredefinedTask, setEditingPredefinedTask] = useState(null);
   const [newMaterial, setNewMaterial] = useState({ name: '', quantity: '', unit: '', price: '' });
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -29,7 +30,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         id: 'plomb-1',
         title: 'Installation robinetterie',
         description: 'Installation complète d\'une robinetterie avec raccordement',
-        duration: '2',
+        duration: '120',
         price: 120,
         icon: 'Droplet'
       },
@@ -37,7 +38,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         id: 'plomb-2',
         title: 'Réparation fuite',
         description: 'Diagnostic et réparation d\'une fuite d\'eau',
-        duration: '1.5',
+        duration: '90',
         price: 80,
         icon: 'AlertTriangle'
       },
@@ -45,7 +46,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         id: 'plomb-3',
         title: 'Installation chauffe-eau',
         description: 'Installation d\'un chauffe-eau électrique ou thermodynamique',
-        duration: '4',
+        duration: '240',
         price: 200,
         icon: 'Thermometer'
       },
@@ -53,7 +54,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         id: 'plomb-4',
         title: 'Débouchage canalisation',
         description: 'Débouchage de canalisation bouchée',
-        duration: '1',
+        duration: '60',
         price: 60,
         icon: 'Zap'
       },
@@ -61,7 +62,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         id: 'plomb-5',
         title: 'Installation WC',
         description: 'Installation complète d\'un WC avec raccordement',
-        duration: '3',
+        duration: '180',
         price: 150,
         icon: 'Home'
       },
@@ -69,7 +70,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         id: 'plomb-6',
         title: 'Installation douche/baignoire',
         description: 'Installation d\'une douche ou baignoire avec robinetterie',
-        duration: '4',
+        duration: '240',
         price: 180,
         icon: 'Droplets'
       }
@@ -79,7 +80,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         id: 'elec-1',
         title: 'Installation prise électrique',
         description: 'Installation d\'une prise électrique standard',
-        duration: '0.5',
+        duration: '30',
         price: 45,
         icon: 'Zap'
       },
@@ -87,7 +88,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         id: 'elec-2',
         title: 'Installation interrupteur',
         description: 'Installation d\'un interrupteur simple ou double',
-        duration: '0.5',
+        duration: '30',
         price: 40,
         icon: 'ToggleLeft'
       },
@@ -95,7 +96,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         id: 'elec-3',
         title: 'Installation luminaire',
         description: 'Installation d\'un luminaire au plafond ou au mur',
-        duration: '1',
+        duration: '60',
         price: 60,
         icon: 'Lightbulb'
       },
@@ -103,7 +104,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         id: 'elec-4',
         title: 'Mise aux normes électrique',
         description: 'Mise aux normes d\'une installation électrique',
-        duration: '8',
+        duration: '480',
         price: 400,
         icon: 'Shield'
       },
@@ -111,7 +112,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         id: 'elec-5',
         title: 'Installation tableau électrique',
         description: 'Installation ou remplacement d\'un tableau électrique',
-        duration: '6',
+        duration: '360',
         price: 300,
         icon: 'Settings'
       },
@@ -751,31 +752,36 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         price: parseFloat(currentTask.price)
       };
       onTasksChange([...tasks, task]);
+      
+      // Clear the form and editing state
       setCurrentTask({ description: '', duration: '', price: '', materials: [], hourlyRate: '', pricingType: 'flat' });
+      setEditingPredefinedTask(null);
     }
   };
 
   const addPredefinedTask = (predefinedTask) => {
-    // Check if the task is already added
-    const isTaskAlreadyAdded = tasks.some(task => 
-      task.description.includes(predefinedTask.title) && 
-      task.duration === predefinedTask.duration
-    );
-
-    if (isTaskAlreadyAdded) {
-      // Optional: Show a toast or alert to inform the user
-      alert(`La tâche "${predefinedTask.title}" a déjà été ajoutée.`);
-      return;
-    }
-
-    const task = {
-      id: Date.now(),
+    // Instead of adding directly, open it for editing
+    setEditingPredefinedTask(predefinedTask);
+    setCurrentTask({
       description: predefinedTask.title + ' - ' + predefinedTask.description,
       duration: predefinedTask.duration,
       price: predefinedTask.price,
-      materials: []
-    };
-    onTasksChange([...tasks, task]);
+      materials: [],
+      hourlyRate: '',
+      pricingType: 'flat'
+    });
+  };
+
+  const cancelEditing = () => {
+    setEditingPredefinedTask(null);
+    setCurrentTask({
+      description: '',
+      duration: '',
+      price: '',
+      materials: [],
+      hourlyRate: '',
+      pricingType: 'flat'
+    });
   };
 
   const removeTask = (taskId) => {
@@ -813,6 +819,23 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
     }
   };
 
+  // Helper function to format duration from minutes to readable format
+  const formatDuration = (minutes) => {
+    if (!minutes || isNaN(minutes)) return '0h';
+    
+    const mins = parseInt(minutes);
+    const hours = Math.floor(mins / 60);
+    const remainingMinutes = mins % 60;
+    
+    if (hours === 0) {
+      return `${remainingMinutes}min`;
+    } else if (remainingMinutes === 0) {
+      return `${hours}h`;
+    } else {
+      return `${hours}h ${remainingMinutes}min`;
+    }
+  };
+
   const totalPrice = tasks.reduce((sum, task) => {
     const taskTotal = task.price + task.materials.reduce((matSum, mat) => matSum + (mat.price * parseFloat(mat.quantity)), 0);
     return sum + taskTotal;
@@ -822,49 +845,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Pricing Type Selection */}
-      <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
-        <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
-          <Icon name="DollarSign" size={20} className="sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3" />
-          Type de tarification
-        </h2>
-        
-        <div className="flex space-x-4">
-          <Button
-            type="button"
-            variant={currentTask.pricingType === 'flat' ? 'primary' : 'outline'}
-            onClick={() => handleTaskChange('pricingType', 'flat')}
-          >
-            Tarif fixe
-          </Button>
-          <Button
-            type="button"
-            variant={currentTask.pricingType === 'hourly' ? 'primary' : 'outline'}
-            onClick={() => handleTaskChange('pricingType', 'hourly')}
-          >
-            Tarif horaire
-          </Button>
-        </div>
 
-        {currentTask.pricingType === 'hourly' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4">
-            <Input
-              label="Taux horaire (€/h)"
-              type="number"
-              placeholder="Taux horaire"
-              value={currentTask.hourlyRate}
-              onChange={(e) => handleTaskChange('hourlyRate', e.target.value)}
-            />
-            <Select
-              label="Durée estimée"
-              placeholder="Sélectionner la durée"
-              options={durationOptions}
-              value={currentTask.duration}
-              onChange={(e) => handleTaskChange('duration', e.target.value)}
-            />
-          </div>
-        )}
-      </div>
 
       {/* Predefined Tasks Section */}
       <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
@@ -903,23 +884,15 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {predefinedTasks.map(task => {
-                // Check if this task has already been added
-                const isTaskAdded = tasks.some(existingTask => 
-                  existingTask.description.includes(task.title) && 
-                  existingTask.duration === task.duration
-                );
-
                 return (
                   <div 
                     key={task.id} 
-                    className={`
-                      border border-border rounded-lg p-3 sm:p-4 transition-all 
-                      ${isTaskAdded 
-                        ? 'opacity-50 cursor-not-allowed bg-muted/30' 
-                        : 'hover:shadow-md cursor-pointer'
-                      }
-                    `}
-                    onClick={() => !isTaskAdded && addPredefinedTask(task)}
+                    className={`border rounded-lg p-3 sm:p-4 transition-all cursor-pointer ${
+                      editingPredefinedTask?.id === task.id 
+                        ? 'border-primary bg-primary/10 shadow-md' 
+                        : 'border-border hover:shadow-md'
+                    }`}
+                    onClick={() => addPredefinedTask(task)}
                   >
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center">
@@ -931,20 +904,20 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                       <div className="text-base sm:text-lg font-semibold">{task.price}€</div>
                     </div>
                     <p className="text-xs sm:text-sm text-muted-foreground">{task.description}</p>
-                    <div className="flex items-center mt-2 text-xs text-muted-foreground">
+                                                              <div className="flex items-center mt-2 text-xs text-muted-foreground">
                       <Icon name="Clock" size={12} className="mr-1" />
-                      <span>{task.duration}h</span>
-                      {task.category && (
-                        <span className="ml-2 px-1 py-0.5 bg-muted/30 rounded text-[0.6rem]">
-                          {getCategoryLabel(task.category)}
-                        </span>
-                      )}
-                      {isTaskAdded && (
-                        <span className="ml-2 px-1 py-0.5 bg-success/30 text-success rounded text-[0.6rem]">
-                          Ajouté
-                        </span>
-                      )}
-                    </div>
+                      <span>{formatDuration(task.duration)}</span>
+                        {task.category && (
+                          <span className="ml-2 px-1 py-0.5 bg-muted/30 rounded text-[0.6rem]">
+                            {getCategoryLabel(task.category)}
+                          </span>
+                        )}
+                        {editingPredefinedTask?.id === task.id && (
+                          <span className="ml-2 px-1 py-0.5 bg-primary/30 text-primary rounded text-[0.6rem]">
+                            En cours d'édition
+                          </span>
+                        )}
+                      </div>
                   </div>
                 );
               })}
@@ -970,8 +943,27 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
           {/* Enhanced Task Form with Voice Integration */}
           <div className="border border-border rounded-lg p-3 sm:p-4 bg-muted/30">
             <h3 className="font-medium text-foreground mb-3 sm:mb-4 flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
-              <span>Nouvelle tâche</span>
+              <span>
+                {editingPredefinedTask ? (
+                  <div className="flex items-center">
+                    <Icon name="Edit" size={16} className="mr-2 text-primary" />
+                    Modifier: {editingPredefinedTask.title}
+                  </div>
+                ) : (
+                  "Nouvelle tâche"
+                )}
+              </span>
               <div className="flex space-x-2">
+                {editingPredefinedTask && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={cancelEditing}
+                    iconName="X"
+                  >
+                    Annuler
+                  </Button>
+                )}
                 <VoiceInput
                   onTranscription={handleVoiceTranscription}
                   disabled={isGenerating}
@@ -1058,12 +1050,13 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <Select
-                  label="Durée estimée"
-                  placeholder="Sélectionner la durée"
-                  options={durationOptions}
+                <Input
+                  label="Durée estimée (minutes)"
+                  type="number"
+                  placeholder="Ex: 120"
                   value={currentTask.duration}
                   onChange={(e) => handleTaskChange('duration', e.target.value)}
+                  description="Durée en minutes (ex: 120 = 2h)"
                 />
                 <Input
                   label="Prix (€)"
@@ -1109,22 +1102,27 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                     value={newMaterial.unit}
                     onChange={(e) => handleMaterialChange('unit', e.target.value)}
                   />
-                  <div className="flex items-end space-x-2">
-                    <Input
-                      label="Prix unitaire (€)"
-                      type="number"
-                      placeholder="0.00"
-                      value={newMaterial.price}
-                      onChange={(e) => handleMaterialChange('price', e.target.value)}
-                    />
-                    <Button
-                      type="button"
-                      size="icon"
-                      onClick={addMaterial}
-                      disabled={!newMaterial.name || !newMaterial.quantity || !newMaterial.unit}
-                      iconName="Plus"
-                    />
-                  </div>
+                  <Input
+                    label="Prix unitaire (€)"
+                    type="number"
+                    placeholder="0.00"
+                    value={newMaterial.price}
+                    onChange={(e) => handleMaterialChange('price', e.target.value)}
+                  />
+                </div>
+                
+                <div className="flex justify-end mb-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addMaterial}
+                    disabled={!newMaterial.name || !newMaterial.quantity || !newMaterial.unit}
+                    iconName="Plus"
+                    iconPosition="left"
+                  >
+                    Ajouter le matériau
+                  </Button>
                 </div>
                 
                 {currentTask.materials.length > 0 && (
@@ -1152,12 +1150,12 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
               <Button
                 onClick={addTask}
                 disabled={!currentTask.description || !currentTask.duration || !currentTask.price}
-                iconName="Plus"
+                iconName={editingPredefinedTask ? "Save" : "Plus"}
                 iconPosition="left"
                 fullWidth
                 className="bg-gradient-to-r from-primary to-success hover:from-primary/90 hover:to-success/90"
               >
-                Ajouter cette tâche
+                {editingPredefinedTask ? "Sauvegarder les modifications" : "Ajouter cette tâche"}
               </Button>
             </div>
           </div>
@@ -1182,7 +1180,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                           <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
                             <span className="flex items-center space-x-1">
                               <Icon name="Clock" size={14} />
-                              <span>Durée: {task.duration}h</span>
+                              <span>Durée: {formatDuration(task.duration)}</span>
                             </span>
                             <span className="flex items-center space-x-1">
                               <Icon name="User" size={14} />

@@ -719,6 +719,8 @@
       "passwordExcellent": "Excellent",
       "phone": "Phone number",
       "phonePlaceholder": "04 12 34 56 78",
+      "vatNumber": "VAT number",
+      "vatNumberPlaceholder": "Company VAT number",
       "country": "Country",
       "countryPlaceholder": "Select your country",
       "aiBoost": {
@@ -1419,8 +1421,14 @@
         "label": "Quotes",
         "items": {
           "quoteCreation": "Create Quote",
-          "quotesManagement": "Quotes Management",
-          "quotesFollowUp": "Follow-ups"
+          "quotesManagement": "Quotes Management"
+        }
+      },
+      "followUps": {
+        "label": "Follow-ups",
+        "items": {
+          "quotesFollowUp": "Quote follow-ups",
+          "invoicesFollowUp": "Invoice follow-ups"
         }
       },
       "invoices": {

@@ -17,7 +17,8 @@ const MainSidebar = () => {
     quotes: true,
     clients: false,
     services: false,
-    invoices: false
+    invoices: false,
+    followUps: false
   });
   const location = useLocation();
   const navigate = useNavigate();
@@ -65,17 +66,19 @@ const MainSidebar = () => {
     const path = location.pathname;
     
     // Determine which section should be expanded based on the current path
-    if (path.startsWith('/quote-creation') || path.startsWith('/quotes-management') || path.startsWith('/quotes-follow-up')) {
-      setExpandedSections(prev => ({ ...prev, quotes: true, clients: false, services: false, invoices: false }));
+    if (path.startsWith('/quote-creation') || path.startsWith('/quotes-management')) {
+      setExpandedSections(prev => ({ ...prev, quotes: true, clients: false, services: false, invoices: false, followUps: false }));
+    } else if (path.startsWith('/quotes-follow-up') || path.startsWith('/invoices-follow-up') || path.startsWith('/follow-up-management')) {
+      setExpandedSections(prev => ({ ...prev, quotes: false, clients: false, services: false, invoices: false, followUps: true }));
     } else if (path.startsWith('/client-management')) {
-      setExpandedSections(prev => ({ ...prev, quotes: false, clients: true, services: false, invoices: false }));
+      setExpandedSections(prev => ({ ...prev, quotes: false, clients: true, services: false, invoices: false, followUps: false }));
     } else if (path.startsWith('/services/')) {
-      setExpandedSections(prev => ({ ...prev, quotes: false, clients: false, services: true, invoices: false }));
-    } else if (path.startsWith('/invoices-management') || path.startsWith('/supplier-invoices') || path.startsWith('/invoices-follow-up')) {
-      setExpandedSections(prev => ({ ...prev, quotes: false, clients: false, services: false, invoices: true }));
+      setExpandedSections(prev => ({ ...prev, quotes: false, clients: false, services: true, invoices: false, followUps: false }));
+    } else if (path.startsWith('/invoices-management') || path.startsWith('/supplier-invoices')) {
+      setExpandedSections(prev => ({ ...prev, quotes: false, clients: false, services: false, invoices: true, followUps: false }));
     } else if (path.startsWith('/dashboard') || path.startsWith('/analytics-dashboard') || path.startsWith('/peppol-access-point') || path.startsWith('/leads-management')) {
       // Keep all sections collapsed for main pages
-      setExpandedSections(prev => ({ ...prev, quotes: false, clients: false, services: false, invoices: false }));
+      setExpandedSections(prev => ({ ...prev, quotes: false, clients: false, services: false, invoices: false, followUps: false }));
     }
   }, [location.pathname, isCollapsed, isTablet]);
 
@@ -110,7 +113,8 @@ const MainSidebar = () => {
         quotes: sectionId === 'quotes',
         clients: sectionId === 'clients',
         services: sectionId === 'services',
-        invoices: sectionId === 'invoices'
+        invoices: sectionId === 'invoices',
+        followUps: sectionId === 'followUps'
       };
     });
   };
@@ -172,12 +176,27 @@ const MainSidebar = () => {
           path: '/quotes-management',
           icon: 'FolderOpen',
           notifications: 0
-        },
+        }
+      ]
+    },
+    {
+      id: 'followUps',
+      label: t('sidebar.categories.followUps.label'),
+      isCollapsible: true,
+      isExpanded: expandedSections.followUps,
+      items: [
         {
           id: 'quotes-follow-up',
-          label: t('sidebar.categories.quotes.items.quotesFollowUp'),
+          label: t('sidebar.categories.followUps.items.quotesFollowUp'),
           path: '/quotes-follow-up',
           icon: 'MessageCircle',
+          notifications: 0
+        },
+        {
+          id: 'invoices-follow-up',
+          label: t('sidebar.categories.followUps.items.invoicesFollowUp'),
+          path: '/invoices-follow-up',
+          icon: 'Bell',
           notifications: 0
         }
       ]

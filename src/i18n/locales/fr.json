@@ -720,6 +720,8 @@
       "passwordExcellent": "Excellent",
       "phone": "Numéro de téléphone",
       "phonePlaceholder": "04 12 34 56 78",
+      "vatNumber": "Numéro de TVA",
+      "vatNumberPlaceholder": "Numéro de TVA de l'entreprise",
       "country": "Pays",
       "countryPlaceholder": "Sélectionnez votre pays",
       "aiBoost": {
@@ -1460,8 +1462,14 @@
         "label": "Devis",
         "items": {
           "quoteCreation": "Créer un devis",
-          "quotesManagement": "Gestion des devis",
-          "quotesFollowUp": "Relances"
+          "quotesManagement": "Gestion des devis"
+        }
+      },
+      "followUps": {
+        "label": "Relances",
+        "items": {
+          "quotesFollowUp": "Relances devis",
+          "invoicesFollowUp": "Relances factures"
         }
       },
       "invoices": {

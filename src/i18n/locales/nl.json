@@ -719,6 +719,8 @@
       "passwordExcellent": "Uitstekend",
       "phone": "Telefoonnummer",
       "phonePlaceholder": "04 12 34 56 78",
+      "vatNumber": "BTW-nummer",
+      "vatNumberPlaceholder": "BTW-nummer van het bedrijf",
       "country": "Land",
       "countryPlaceholder": "Selecteer je land",
       "aiBoost": {
@@ -1453,8 +1455,14 @@
         "label": "Offertes",
         "items": {
           "quoteCreation": "Offerte Maken",
-          "quotesManagement": "Offertes Beheer",
-          "quotesFollowUp": "Opvolgingen"
+          "quotesManagement": "Offertes Beheer"
+        }
+      },
+      "followUps": {
+        "label": "Opvolgingen",
+        "items": {
+          "quotesFollowUp": "Offerte opvolgingen",
+          "invoicesFollowUp": "Factuur opvolgingen"
         }
       },
       "invoices": {

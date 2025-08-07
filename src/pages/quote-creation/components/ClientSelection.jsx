@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Select from '../../../components/ui/Select';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
 
 const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjectInfoChange, onNext }) => {
+  const { t } = useTranslation();
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [clientType, setClientType] = useState('individual');
   const [newClient, setNewClient] = useState({
@@ -280,8 +282,29 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
     setNewClient(prev => ({ ...prev, type }));
   };
 
-  const isFormValid = selectedClient || (newClient.name && newClient.email) && 
-    (projectInfo.category && (projectInfo.category !== 'autre' || projectInfo.customCategory));
+  // Enhanced validation logic
+  const isFormValid = () => {
+    // Check if a client is selected (either existing or new)
+    const isClientValid = selectedClient || (
+      newClient.name && 
+      newClient.email && 
+      newClient.phone
+    );
+
+    // Check if project information is complete
+    const isProjectValid = 
+      projectInfo.categories && 
+      projectInfo.categories.length > 0 &&
+      projectInfo.deadline &&
+      projectInfo.description &&
+      projectInfo.description.trim().length > 0;
+
+    // If "autre" category is selected, custom category must be filled
+    const isCustomCategoryValid = !projectInfo.categories?.includes('autre') || 
+      (projectInfo.customCategory && projectInfo.customCategory.trim().length > 0);
+
+    return isClientValid && isProjectValid && isCustomCategoryValid;
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -468,11 +491,11 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                   </div>
                   
                   <Input
-                    label="Numéro d'enregistrement"
+                    label={t('registerForm.step1.vatNumber')}
                     type="text"
                     value={newClient.regNumber}
                     onChange={(e) => handleInputChange('regNumber', e.target.value)}
-                    placeholder="Numéro d'enregistrement de l'entreprise"
+                    placeholder={t('registerForm.step1.vatNumberPlaceholder')}
                   />
                 </div>
 
@@ -619,7 +642,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         
         <div className="space-y-3 sm:space-y-4">
           <Select
-            label="Catégorie *"
+            label="Catégorie"
             placeholder="Sélectionner une ou plusieurs catégories"
             options={categoryOptions}
             value={projectInfo.categories || []}
@@ -635,7 +658,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
           
           {projectInfo.categories?.includes('autre') && (
             <Input
-              label="Catégorie personnalisée *"
+              label="Catégorie personnalisée"
               type="text"
               placeholder="Ex: Peinture murale spéciale"
               value={projectInfo.customCategory}
@@ -646,7 +669,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
 
           <div className="relative">
             <Input
-              label="Date limite *"
+              label="Date"
               type="date"
               value={projectInfo.deadline}
               onChange={(e) => handleProjectChange('deadline', e.target.value)}
@@ -659,7 +682,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
           
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              Description du projet *
+              Description du projet
             </label>
             <div className="relative">
               <textarea
@@ -667,7 +690,8 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                 onChange={(e) => handleProjectChange('description', e.target.value)}
                 rows={4}
                 placeholder="Ex: Pose de parquet dans salon 20m²"
-                className="w-full p-3 border border-border rounded-lg bg-input text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full p-2 border border-border rounded-lg bg-input text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                required
               />
               <div className="absolute bottom-2 sm:bottom-3 right-2 sm:right-3 flex items-center space-x-1 sm:space-x-2">
                 <Button
@@ -694,7 +718,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       <div className="flex justify-end">
         <Button
           onClick={onNext}
-          disabled={!isFormValid}
+          disabled={!isFormValid()}
           iconName="ArrowRight"
           iconPosition="right"
           size="sm"
