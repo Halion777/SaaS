@@ -23,7 +23,8 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
   const [pinModal, setPinModal] = useState({
     isOpen: false,
     targetProfileId: null,
-    targetProfileName: ''
+    targetProfileName: '',
+    error: ''
   });
   const dropdownRef = useRef(null);
   const [activeSettingsTab, setActiveSettingsTab] = useState('account');
@@ -125,7 +126,8 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
         setPinModal({
           isOpen: true,
           targetProfileId: profileId,
-          targetProfileName: targetProfile.name
+          targetProfileName: targetProfile.name,
+          error: ''
         });
         return;
       }
@@ -160,28 +162,49 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
   };
 
   const handlePinConfirm = async (pin) => {
-    const targetProfile = companyProfiles.find(p => p.id === pinModal.targetProfileId);
-    
-    if (pin !== targetProfile?.pin) {
-      throw new Error('Incorrect PIN');
+    try {
+      const targetProfile = companyProfiles.find(p => p.id === pinModal.targetProfileId);
+      
+      if (pin !== targetProfile?.pin) {
+        // Set error message for incorrect PIN
+        setPinModal(prev => ({
+          ...prev,
+          error: 'Code PIN incorrect'
+        }));
+        return;
+      }
+      
+      // Clear any previous error
+      setPinModal(prev => ({
+        ...prev,
+        error: ''
+      }));
+      
+      // PIN is correct, perform the switch
+      await performProfileSwitch(pinModal.targetProfileId);
+      
+      // Close the modal
+      setPinModal({
+        isOpen: false,
+        targetProfileId: null,
+        targetProfileName: '',
+        error: ''
+      });
+    } catch (error) {
+      console.error('Error confirming PIN:', error);
+      setPinModal(prev => ({
+        ...prev,
+        error: 'Erreur lors de la vérification du PIN'
+      }));
     }
-    
-    // PIN is correct, perform the switch
-    await performProfileSwitch(pinModal.targetProfileId);
-    
-    // Close the modal
-    setPinModal({
-      isOpen: false,
-      targetProfileId: null,
-      targetProfileName: ''
-    });
   };
 
   const handlePinModalClose = () => {
     setPinModal({
       isOpen: false,
       targetProfileId: null,
-      targetProfileName: ''
+      targetProfileName: '',
+      error: ''
     });
   };
 
@@ -730,6 +753,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
         profileName={pinModal.targetProfileName}
         title="Code PIN requis"
         message="Entrez le code PIN pour accéder à ce profil"
+        error={pinModal.error}
       />
     </div>
   );
