@@ -45,20 +45,12 @@ class MultiUserService {
   // Add a new profile
   async addProfile(userId, profileData) {
     try {
-      // Convert permissions object to array format for database
-      let permissionsArray = [];
+      // Store permissions as object format for better granular control
+      let permissionsToStore = {};
       
       if (profileData.permissions) {
         if (Array.isArray(profileData.permissions)) {
-          // Already an array, use as is
-          permissionsArray = profileData.permissions;
-        } else {
-          // Convert object format to array format
-          const permissions = profileData.permissions;
-          permissionsArray = [];
-          
-          // Add permissions based on the new object structure
-          // Only add modules that have 'view_only' or 'full_access' permissions
+          // Convert array format to object format
           const moduleKeys = [
             'dashboard', 'analytics', 'peppolAccessPoint', 'leadsManagement',
             'quoteCreation', 'quotesManagement', 'quotesFollowUp', 'invoicesFollowUp',
@@ -66,16 +58,23 @@ class MultiUserService {
           ];
           
           moduleKeys.forEach(moduleKey => {
-            if (permissions[moduleKey] && permissions[moduleKey] !== 'no_access') {
-              permissionsArray.push(moduleKey);
-            }
+            permissionsToStore[moduleKey] = profileData.permissions.includes(moduleKey) ? 'full_access' : 'no_access';
           });
+        } else {
+          // Already in object format, use as is
+          permissionsToStore = profileData.permissions;
         }
-      }
-
-      // Default permissions if none specified
-      if (permissionsArray.length === 0) {
-        permissionsArray = [];
+      } else {
+        // Default permissions if none specified
+        const moduleKeys = [
+          'dashboard', 'analytics', 'peppolAccessPoint', 'leadsManagement',
+          'quoteCreation', 'quotesManagement', 'quotesFollowUp', 'invoicesFollowUp',
+          'clientInvoices', 'supplierInvoices', 'clientManagement', 'creditInsurance', 'recovery'
+        ];
+        
+        moduleKeys.forEach(moduleKey => {
+          permissionsToStore[moduleKey] = 'no_access';
+        });
       }
 
       const { data, error } = await supabase
@@ -86,7 +85,7 @@ class MultiUserService {
           email: profileData.email,
           role: profileData.role,
           avatar: profileData.avatar,
-          permissions: permissionsArray,
+          permissions: permissionsToStore,
           pin: profileData.pin || null,
           is_active: false
         })
@@ -104,17 +103,11 @@ class MultiUserService {
   // Update a profile
   async updateProfile(userId, profileId, profileData) {
     try {
-      // Convert permissions object to array if needed
-      let permissionsArray = [];
+      // Store permissions as object format for better granular control
+      let permissionsToStore = {};
       if (profileData.permissions) {
         if (Array.isArray(profileData.permissions)) {
-          permissionsArray = profileData.permissions;
-        } else {
-          // Convert object to array
-          const permissions = profileData.permissions;
-          
-          // Add permissions based on the new object structure
-          // Only add modules that have 'view_only' or 'full_access' permissions
+          // Convert array format to object format
           const moduleKeys = [
             'dashboard', 'analytics', 'peppolAccessPoint', 'leadsManagement',
             'quoteCreation', 'quotesManagement', 'quotesFollowUp', 'invoicesFollowUp',
@@ -122,10 +115,11 @@ class MultiUserService {
           ];
           
           moduleKeys.forEach(moduleKey => {
-            if (permissions[moduleKey] && permissions[moduleKey] !== 'no_access') {
-              permissionsArray.push(moduleKey);
-            }
+            permissionsToStore[moduleKey] = profileData.permissions.includes(moduleKey) ? 'full_access' : 'no_access';
           });
+        } else {
+          // Already in object format, use as is
+          permissionsToStore = profileData.permissions;
         }
       }
 
@@ -139,8 +133,8 @@ class MultiUserService {
       if (profileData.role !== undefined) updateData.role = profileData.role;
       if (profileData.avatar !== undefined) updateData.avatar = profileData.avatar;
       if (profileData.pin !== undefined) updateData.pin = profileData.pin;
-      if (permissionsArray.length > 0 || profileData.permissions !== undefined) {
-        updateData.permissions = permissionsArray;
+      if (profileData.permissions !== undefined) {
+        updateData.permissions = permissionsToStore;
       }
       if (profileData.is_active !== undefined) updateData.is_active = profileData.is_active;
       if (profileData.last_active !== undefined) updateData.last_active = profileData.last_active;

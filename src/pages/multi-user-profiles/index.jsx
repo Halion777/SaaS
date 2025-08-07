@@ -13,6 +13,7 @@ import GlobalProfile from '../../components/ui/GlobalProfile';
 
 const MultiUserProfilesPage = () => {
   const { t } = useTranslation();
+  const [expandedProfiles, setExpandedProfiles] = useState(new Set());
   const { user } = useAuth();
   const {
     companyProfiles,
@@ -713,6 +714,18 @@ const MultiUserProfilesPage = () => {
     return profile.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  const toggleProfileExpanded = (profileId) => {
+    setExpandedProfiles(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(profileId)) {
+        newSet.delete(profileId);
+      } else {
+        newSet.add(profileId);
+      }
+      return newSet;
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -867,15 +880,65 @@ const MultiUserProfilesPage = () => {
                     )}
                   </div>
                   
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <p className="text-xs text-muted-foreground">{profile.email}</p>
-                    <div className="flex flex-wrap gap-1">
-                      {profile.permissions?.map((permission) => (
-                        <span key={permission} className="px-2 py-1 rounded-full text-xs bg-muted text-muted-foreground">
-                          {permission}
-                        </span>
-                      ))}
+                    
+                    {/* Permissions Section */}
+                    <div className="space-y-2">
+                      <h5 className="text-xs font-medium text-foreground">Permissions</h5>
+                      
+                      {/* All Permissions with Scrollbar */}
+                      <div className="max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                        <div className="grid grid-cols-1 gap-1">
+                          {(() => {
+                            // Convert permissions array to object format
+                            const permissionsObject = {};
+                            Object.keys(accessPermissions).forEach(moduleKey => {
+                              permissionsObject[moduleKey] = 'no_access';
+                            });
+                            
+                            // Handle both array and object formats
+                            if (Array.isArray(profile.permissions)) {
+                              // If permissions is an array of module names, set them to 'full_access'
+                              profile.permissions.forEach(moduleName => {
+                                if (accessPermissions[moduleName]) {
+                                  permissionsObject[moduleName] = 'full_access';
+                                }
+                              });
+                            } else if (profile.permissions && typeof profile.permissions === 'object') {
+                              // If permissions is already an object with permission levels, use it directly
+                              Object.keys(profile.permissions).forEach(moduleKey => {
+                                if (accessPermissions[moduleKey]) {
+                                  permissionsObject[moduleKey] = profile.permissions[moduleKey];
+                                }
+                              });
+                            }
+                            
+                            // Show all permissions
+                            return Object.entries(permissionsObject).map(([moduleKey, permission]) => (
+                              <div key={moduleKey} className="flex items-center justify-between p-1.5 bg-muted/20 rounded">
+                                <div className="flex items-center space-x-2">
+                                  <Icon name={getModuleIcon(moduleKey)} size={10} className="text-primary" />
+                                  <span className="text-xs text-foreground">
+                                    {accessPermissions[moduleKey]?.label}
+                                  </span>
+                                </div>
+                                <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
+                                  permission === 'full_access' 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : permission === 'view_only' 
+                                      ? 'bg-blue-100 text-blue-800' 
+                                      : 'bg-gray-100 text-gray-600'
+                                }`}>
+                                  {getPermissionLabel(permission)}
+                                </span>
+                              </div>
+                            ));
+                          })()}
+                        </div>
+                      </div>
                     </div>
+                    
                     {profile.is_active && (
                       <span className="inline-block px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
                         Actif
