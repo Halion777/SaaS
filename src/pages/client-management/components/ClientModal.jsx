@@ -344,7 +344,7 @@ const ClientModal = ({ client, onSave, onClose }) => {
                     />
                     
                     <Input
-                      label="Numéro d'enregistrement"
+                      label="Numéro de TVA"
                       type="text"
                       value={formData.regNumber}
                       onChange={(e) => handleChange('regNumber', e.target.value)}

@@ -1,17 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Select from '../../../components/ui/Select';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
+import { fetchClients, createClient } from '../../../services/clientsService';
 
 const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjectInfoChange, onNext }) => {
   const { t } = useTranslation();
   const [showNewClientForm, setShowNewClientForm] = useState(false);
-  const [clientType, setClientType] = useState('individual');
+  const [clientType, setClientType] = useState('particulier');
   const [newClient, setNewClient] = useState({
     name: '',
-    type: 'individual',
+    type: 'particulier',
     email: '',
     phone: '',
     address: '',
@@ -26,17 +27,52 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
     preferences: []
   });
 
-  const existingClients = [
-    { value: '1', label: 'Jean Martin - Plomberie Martin', description: 'jean.martin@email.com • 06 12 34 56 78', type: 'professional' },
-    { value: '2', label: 'Marie Dubois - Électricité Pro', description: 'marie.dubois@email.com • 06 87 65 43 21', type: 'professional' },
-    { value: '3', label: 'Pierre Leroy - Menuiserie Leroy', description: 'pierre.leroy@email.com • 06 11 22 33 44', type: 'professional' },
-    { value: '4', label: 'Sophie Bernard - Peinture Déco', description: 'sophie.bernard@email.com • 06 55 66 77 88', type: 'professional' },
-    { value: '5', label: 'Thomas Petit - Maçonnerie TP', description: 'thomas.petit@email.com • 06 99 88 77 66', type: 'professional' }
-  ];
+  const [existingClients, setExistingClients] = useState([]);
+  const [isLoadingClients, setIsLoadingClients] = useState(true);
+  const [isCreatingClient, setIsCreatingClient] = useState(false);
+  const [createError, setCreateError] = useState(null);
+  const [createSuccess, setCreateSuccess] = useState(false);
+  const [clientsRefreshTrigger, setClientsRefreshTrigger] = useState(0);
+
+  // Fetch existing clients on component mount
+  useEffect(() => {
+    const loadClients = async () => {
+      try {
+        setIsLoadingClients(true);
+        const { data, error } = await fetchClients();
+        
+        if (error) {
+          console.error('Error fetching clients:', error);
+          return;
+        }
+
+        // Format clients for the select dropdown
+        const formattedClients = data.map(client => {
+          console.log('Client data:', client); // Debug log
+          const nameIcon = client.type === 'professionnel' ? '🏢' : '👤';
+          return {
+            value: client.id,
+            label: `${nameIcon} ${client.name}`,
+            description: `${client.email ? '📧 ' + client.email : ''} ${client.phone ? '📞 ' + client.phone : ''}`.trim(),
+            type: client.type, // Keep the original French type values
+            client: client // Keep the full client object for reference
+          };
+        });
+
+        setExistingClients(formattedClients);
+      } catch (error) {
+        console.error('Error loading clients:', error);
+      } finally {
+        setIsLoadingClients(false);
+      }
+    };
+
+    loadClients();
+  }, [clientsRefreshTrigger]);
 
   const typeOptions = [
-    { value: 'individual', label: 'Particulier' },
-    { value: 'professional', label: 'Professionnel' }
+    { value: 'particulier', label: 'Particulier' },
+    { value: 'professionnel', label: 'Professionnel' }
   ];
 
   const companySizeOptions = [
@@ -237,42 +273,81 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
     ]
   };
 
-  const handleNewClientSubmit = (e) => {
+  const handleNewClientSubmit = async (e) => {
     e.preventDefault();
     if (newClient.name && newClient.email) {
-      const clientData = {
-        value: `new_${Date.now()}`,
-        label: clientType === 'professional' 
-          ? `${newClient.name}${newClient.company ? ` - ${newClient.company}` : ''}`
-          : newClient.name,
-        description: `${newClient.email} • ${newClient.phone}`,
-        type: clientType,
-        ...newClient
-      };
-      onClientSelect(clientData);
-      setShowNewClientForm(false);
-      setNewClient({ 
-        name: '', 
-        type: 'individual', 
-        email: '', 
-        phone: '', 
-        address: '', 
-        city: '',
-        country: '',
-        postalCode: '',
-        contactPerson: '', 
-        companySize: '',
-        regNumber: '',
-        peppolId: '',
-        enablePeppol: false,
-        preferences: []
-      });
-      setClientType('individual');
+      try {
+        setIsCreatingClient(true);
+        setCreateError(null);
+        setCreateSuccess(false);
+        
+        // Create client in the backend
+        const { data: createdClient, error } = await createClient({
+          ...newClient,
+          type: clientType
+        });
+        
+        if (error) {
+          console.error('Error creating client:', error);
+          setCreateError(error.message || 'Erreur lors de la création du client');
+          return;
+        }
+        
+        // Format the created client for selection
+        const clientData = {
+          value: createdClient.id,
+          label: clientType === 'professionnel' 
+            ? `${createdClient.name}${createdClient.company ? ` - ${createdClient.company}` : ''}`
+            : createdClient.name,
+          description: `${createdClient.email} • ${createdClient.phone}`,
+          type: clientType,
+          client: createdClient
+        };
+        
+        // Select the newly created client
+        onClientSelect(clientData);
+        setShowNewClientForm(false);
+        
+        // Show success message
+        setCreateSuccess(true);
+        setTimeout(() => setCreateSuccess(false), 3000); // Hide after 3 seconds
+        
+        // Refresh the clients list to get the latest data
+        setClientsRefreshTrigger(prev => prev + 1);
+        
+        // Reset form
+        setNewClient({ 
+          name: '', 
+          type: 'particulier', 
+          email: '', 
+          phone: '', 
+          address: '', 
+          city: '',
+          country: '',
+          postalCode: '',
+          contactPerson: '', 
+          companySize: '',
+          regNumber: '',
+          peppolId: '',
+          enablePeppol: false,
+          preferences: []
+        });
+        setClientType('particulier');
+        
+      } catch (error) {
+        console.error('Error creating client:', error);
+        setCreateError('Erreur lors de la création du client');
+      } finally {
+        setIsCreatingClient(false);
+      }
     }
   };
 
   const handleInputChange = (field, value) => {
     setNewClient(prev => ({ ...prev, [field]: value }));
+    // Clear any previous errors when user starts typing
+    if (createError) setCreateError(null);
+    if (createSuccess) setCreateSuccess(false);
   };
 
   const handlePreferenceToggle = (preference) => {
@@ -301,7 +376,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       ...prev, 
       type,
       // Reset professional-specific fields when switching to individual
-      ...(type === 'individual' && {
+      ...(type === 'particulier' && {
         city: '',
         country: '',
         postalCode: '',
@@ -312,6 +387,9 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         enablePeppol: false
       })
     }));
+    // Clear any previous errors when user changes client type
+    if (createError) setCreateError(null);
+    if (createSuccess) setCreateSuccess(false);
   };
 
   // Enhanced validation logic
@@ -363,25 +441,38 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         
         {!showNewClientForm ? (
           <div className="space-y-3 sm:space-y-4">
-            <Select
-              label="Choisir un client existant"
-              placeholder="Rechercher un client..."
-              searchable
-              clearable
-              options={existingClients}
-              value={selectedClient?.value || ''}
-              onChange={(e) => {
-                if (e.target.value === '') {
-                  // Clear selection
-                  onClientSelect(null);
-                } else {
-                  // Select a client
-                  const client = existingClients.find(c => c.value === e.target.value);
-                  onClientSelect(client);
-                }
-              }}
-              description="Tapez pour rechercher parmi vos clients existants"
-            />
+            {isLoadingClients ? (
+              <div className="flex items-center justify-center py-4">
+                <Icon name="Loader2" size={20} className="animate-spin text-muted-foreground mr-2" />
+                <span className="text-sm text-muted-foreground">Chargement des clients...</span>
+              </div>
+            ) : existingClients.length === 0 ? (
+              <div className="text-center py-4">
+                <Icon name="Users" size={24} className="mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground mb-2">Aucun client trouvé</p>
+                <p className="text-xs text-muted-foreground">Commencez par ajouter votre premier client</p>
+              </div>
+            ) : (
+              <Select
+                label="Choisir un client existant"
+                placeholder="Rechercher un client..."
+                searchable
+                clearable
+                options={existingClients}
+                value={selectedClient?.value || ''}
+                onChange={(e) => {
+                  if (e.target.value === '') {
+                    // Clear selection
+                    onClientSelect(null);
+                  } else {
+                    // Select a client
+                    const client = existingClients.find(c => c.value === e.target.value);
+                    onClientSelect(client);
+                  }
+                }}
+                description="Tapez pour rechercher parmi vos clients existants"
+              />
+            )}
             
             <div className="flex items-center justify-center py-3 sm:py-4">
               <div className="flex-1 border-t border-border"></div>
@@ -401,6 +492,26 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
           </div>
         ) : (
           <form onSubmit={handleNewClientSubmit} className="space-y-3 sm:space-y-4">
+            {/* Error Display */}
+            {createError && (
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+                <div className="flex items-center space-x-2">
+                  <Icon name="AlertCircle" size={16} className="text-destructive" />
+                  <span className="text-sm text-destructive">{createError}</span>
+                </div>
+              </div>
+            )}
+            
+            {/* Success Display */}
+            {createSuccess && (
+              <div className="bg-success/10 border border-success/20 rounded-lg p-3">
+                <div className="flex items-center space-x-2">
+                  <Icon name="CheckCircle" size={16} className="text-success" />
+                  <span className="text-sm text-success">Client créé avec succès !</span>
+                </div>
+              </div>
+            )}
+            
             {/* Client Type Selection */}
             <div className="space-y-3">
               <label className="block text-sm font-medium text-foreground">
@@ -430,7 +541,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
             </div>
 
             {/* Individual Client Form */}
-            {clientType === 'individual' && (
+            {clientType === 'particulier' && (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
@@ -474,7 +585,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
             )}
 
             {/* Professional Client Form */}
-            {clientType === 'professional' && (
+            {clientType === 'professionnel' && (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
@@ -555,12 +666,12 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                       onChange={(e) => handleInputChange('contactPerson', e.target.value)}
                     />
                     
-                    <Input
+                    <Select
                       label="Taille de l'entreprise"
-                      type="text"
-                      placeholder="Ex: TPE, PME, Grande entreprise"
+                      options={companySizeOptions}
                       value={newClient.companySize}
                       onChange={(e) => handleInputChange('companySize', e.target.value)}
+                      placeholder="Sélectionner la taille"
                     />
                     
                     <Input
@@ -634,7 +745,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                   setShowNewClientForm(false);
                   setNewClient({ 
                     name: '', 
-                    type: 'individual', 
+                    type: 'particulier', 
                     email: '', 
                     phone: '', 
                     address: '', 
@@ -648,16 +759,17 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                     enablePeppol: false, 
                     preferences: [] 
                   });
-                  setClientType('individual');
+                  setClientType('particulier');
                 }}
               >
                 Annuler
               </Button>
               <Button
                 type="submit"
-                disabled={!newClient.name || !newClient.email}
+                disabled={!newClient.name || !newClient.email || isCreatingClient}
+                loading={isCreatingClient}
               >
-                Ajouter le client
+                {isCreatingClient ? 'Création...' : 'Ajouter le client'}
               </Button>
             </div>
           </form>
@@ -673,7 +785,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
               <p className="text-xs sm:text-sm text-muted-foreground">{selectedClient.description}</p>
               {selectedClient.type && (
                 <p className="text-xs text-muted-foreground">
-                  Type: {selectedClient.type === 'individual' ? 'Particulier' : 'Professionnel'}
+                  Type: {selectedClient.type === 'particulier' ? 'Particulier' : 'Professionnel'}
                 </p>
               )}
             </div>

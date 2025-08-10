@@ -34,7 +34,9 @@ export async function fetchClients() {
       regNumber: client.vat_number,
       peppolId: client.peppol_id,
       enablePeppol: client.peppol_enabled,
-      preferences: client.communication_preferences || []
+      preferences: client.communication_preferences || [],
+      city: client.city,
+      postalCode: client.postal_code
     })) : [];
     
     return { data: mappedData, error: null };
@@ -76,7 +78,9 @@ export async function fetchClientById(id) {
       regNumber: data.vat_number,
       peppolId: data.peppol_id,
       enablePeppol: data.peppol_enabled,
-      preferences: data.communication_preferences || []
+      preferences: data.communication_preferences || [],
+      city: data.city,
+      postalCode: data.postal_code
     } : null;
     
     return { data: mappedData, error: null };
