@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useMultiUser } from '../../context/MultiUserContext';
 import MainSidebar from '../../components/ui/MainSidebar';
@@ -11,12 +11,19 @@ import TaskDefinition from './components/TaskDefinition';
 import FileUpload from './components/FileUpload';
 import QuotePreview from './components/QuotePreview';
 import AIScoring from './components/AIScoring';
-import { generateQuoteNumber, createQuote } from '../../services/quotesService';
+import { generateQuoteNumber, createQuote, fetchQuoteById, updateQuote } from '../../services/quotesService';
 
 const QuoteCreation = () => {
   const { user } = useAuth();
   const { currentProfile } = useMultiUser();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  // Edit mode state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingQuoteId, setEditingQuoteId] = useState(null);
+  const [isLoadingQuote, setIsLoadingQuote] = useState(false);
+  
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedClient, setSelectedClient] = useState(null);
   const [projectInfo, setProjectInfo] = useState({
@@ -32,10 +39,127 @@ const QuoteCreation = () => {
   const [companyInfo, setCompanyInfo] = useState(null);
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Helper function to generate draft key with user and profile IDs
   const getDraftKey = () => {
     return `quote-draft-${user?.id}-${currentProfile?.id || 'default'}`;
+  };
+
+  // Check URL parameters for edit mode
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    const duplicateId = searchParams.get('duplicate');
+    
+    if (editId) {
+      setIsEditing(true);
+      setEditingQuoteId(editId);
+      loadExistingQuote(editId, false); // false = not duplicating
+    } else if (duplicateId) {
+      setIsEditing(false);
+      setEditingQuoteId(duplicateId);
+      loadExistingQuote(duplicateId, true); // true = duplicating
+    } else {
+      setIsEditing(false);
+      setEditingQuoteId(null);
+    }
+  }, [searchParams]);
+
+  // Load existing quote data for editing or duplicating
+  const loadExistingQuote = async (quoteId, isDuplicating = false) => {
+    if (!quoteId || !user?.id) return;
+    
+    try {
+      setIsLoadingQuote(true);
+      const { data: quote, error } = await fetchQuoteById(quoteId);
+      
+      if (error) {
+        console.error('Error loading quote:', error);
+        alert('Erreur lors du chargement du devis. Veuillez réessayer.');
+        return;
+      }
+      
+      if (!quote) {
+        alert('Devis non trouvé.');
+        return;
+      }
+      
+      // Check if user has permission to edit this quote
+      if (quote.user_id !== user.id) {
+        alert('Vous n\'avez pas la permission de modifier ce devis.');
+        navigate('/quotes-management');
+        return;
+      }
+      
+      // Transform backend data to frontend format
+      const transformedClient = {
+        id: quote.client?.id,
+        value: quote.client?.id,
+        label: quote.client?.name,
+        name: quote.client?.name,
+        email: quote.client?.email,
+        phone: quote.client?.phone,
+        address: quote.client?.address,
+        city: quote.client?.city,
+        postalCode: quote.client?.postal_code,
+        country: quote.client?.country,
+        client: quote.client // Keep full client object for reference
+      };
+      
+      const transformedTasks = (quote.quote_tasks || []).map(task => ({
+        id: task.id,
+        description: task.name || task.description,
+        duration: task.duration,
+        durationUnit: task.duration_unit || 'minutes',
+        price: task.unit_price || task.total_price,
+        materials: [], // Materials are stored separately
+        hourlyRate: task.hourly_rate,
+        pricingType: task.pricing_type || 'flat'
+      }));
+      
+      const transformedMaterials = (quote.quote_materials || []).map(material => ({
+        id: material.id,
+        name: material.name,
+        description: material.description,
+        quantity: material.quantity,
+        unit: material.unit,
+        price: material.unit_price || material.total_price
+      }));
+      
+      const transformedFiles = (quote.quote_files || []).map(file => ({
+        id: file.id,
+        name: file.file_name,
+        path: file.file_path,
+        size: file.file_size,
+        type: file.mime_type,
+        uploadedAt: new Date(file.created_at)
+      }));
+      
+      // Set the data
+      setSelectedClient(transformedClient);
+      setProjectInfo({
+        categories: quote.project_categories || [],
+        customCategory: quote.custom_category || '',
+        deadline: quote.deadline || '',
+        description: quote.description || '',
+        quoteNumber: isDuplicating ? null : quote.quote_number // Don't copy quote number when duplicating
+      });
+      setTasks(transformedTasks);
+      setFiles(transformedFiles);
+      
+      // If duplicating, generate a new quote number
+      if (isDuplicating) {
+        setTimeout(() => generateQuoteNumberForPreview(), 100);
+      }
+      
+      console.log('Quote loaded successfully:', quote);
+      
+    } catch (error) {
+      console.error('Error loading quote:', error);
+      alert('Erreur lors du chargement du devis. Veuillez réessayer.');
+    } finally {
+      setIsLoadingQuote(false);
+    }
   };
 
   // Debug: Log user authentication status
@@ -257,6 +381,71 @@ const QuoteCreation = () => {
   // Enhanced handleSave with better data structure and backend integration
   const handleSave = async (data) => {
     try {
+      setIsSaving(true);
+      
+      // Check if we're editing an existing quote
+      if (isEditing && editingQuoteId) {
+        // Update existing quote
+        const totalAmount = tasks.reduce((sum, task) => {
+          const taskMaterialsTotal = task.materials.reduce((matSum, mat) => 
+            matSum + (mat.price * parseFloat(mat.quantity || 1)), 0);
+          return sum + (task.price || 0) + taskMaterialsTotal;
+        }, 0);
+
+        const quoteData = {
+          title: projectInfo.description || 'Nouveau devis',
+          description: projectInfo.description || '',
+          project_categories: projectInfo.categories || [],
+          custom_category: projectInfo.customCategory || '',
+          deadline: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : null,
+          total_amount: totalAmount,
+          tax_amount: data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0,
+          discount_amount: 0,
+          final_amount: totalAmount + (data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0),
+          valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          terms_conditions: data.financialConfig?.defaultConditions?.text || '',
+          // Preserve the existing quote number when editing
+          quote_number: projectInfo.quoteNumber,
+          tasks: tasks.map((task, index) => ({
+            name: task.description || task.name || '',
+            description: task.description || task.name || '',
+            quantity: task.quantity || 1,
+            unit: task.unit || 'piece',
+            unit_price: task.price || task.unit_price || 0,
+            total_price: (task.price || task.unit_price || 0) * (task.quantity || 1),
+            duration: task.duration || 0,
+            duration_unit: task.durationUnit || 'minutes',
+            pricing_type: task.pricingType || 'flat',
+            hourly_rate: task.hourlyRate || 0,
+            order_index: index,
+            materials: task.materials || []
+          })),
+          files: files.map((file, index) => ({
+            file_name: file.name || file.file_name || '',
+            file_path: file.path || file.file_path || file.url || '',
+            file_size: file.size || file.file_size || 0,
+            mime_type: file.type || file.mime_type || '',
+            file_category: 'attachment',
+            order_index: index
+          }))
+        };
+
+        // Update the quote in the backend
+        const { data: updatedQuote, error: updateError } = await updateQuote(editingQuoteId, quoteData);
+        
+        if (updateError) {
+          console.error('Error updating quote:', updateError);
+          alert(`Erreur lors de la mise à jour du devis: ${updateError.message || 'Erreur inconnue'}`);
+          return;
+        }
+
+        console.log('Quote updated successfully:', updatedQuote);
+        alert('Devis mis à jour avec succès !');
+        navigate('/quotes-management');
+        return;
+      }
+
+      // Create new quote (existing logic)
       // Generate quote number using the service
       const { data: quoteNumber, error: numberError } = await generateQuoteNumber(user?.id);
       
@@ -286,8 +475,8 @@ const QuoteCreation = () => {
         quote_number: finalQuoteNumber,
         client_id: selectedClient?.value,
         status: 'draft',
-        title: projectInfo.description || 'Nouveau devis', // Required field in quotes schema
-        description: projectInfo.description || '', // Optional field
+        title: projectInfo.description || 'Nouveau devis',
+        description: projectInfo.description || '',
         project_categories: projectInfo.categories || [],
         custom_category: projectInfo.customCategory || '',
         deadline: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : null,
@@ -295,7 +484,7 @@ const QuoteCreation = () => {
         tax_amount: data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0,
         discount_amount: 0,
         final_amount: totalAmount + (data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0),
-        valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+        valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         terms_conditions: data.financialConfig?.defaultConditions?.text || '',
         tasks: tasks.map((task, index) => ({
           name: task.description || task.name || '',
@@ -344,12 +533,16 @@ const QuoteCreation = () => {
     } catch (error) {
       console.error('Error saving quote:', error);
       alert('Erreur lors de la sauvegarde du devis. Veuillez réessayer.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   // Enhanced handleSend with better data structure and backend integration
   const handleSend = async (data) => {
     try {
+      setIsSaving(true);
+      
       // Debug: Check user authentication
       console.log('Current user:', user);
       console.log('Current profile:', currentProfile);
@@ -360,6 +553,70 @@ const QuoteCreation = () => {
         return;
       }
       
+      // Check if we're editing an existing quote
+      if (isEditing && editingQuoteId) {
+        // Update existing quote and send it
+        const totalAmount = tasks.reduce((sum, task) => {
+          const taskMaterialsTotal = task.materials.reduce((matSum, mat) => 
+            matSum + (mat.price * parseFloat(mat.quantity || 1)), 0);
+          return sum + (task.price || 0) + taskMaterialsTotal;
+        }, 0);
+
+        const quoteData = {
+          title: projectInfo.description || 'Nouveau devis',
+          description: projectInfo.description || '',
+          status: 'sent', // Change status to sent
+          // Preserve the existing quote number when editing
+          quote_number: projectInfo.quoteNumber,
+          project_categories: projectInfo.categories || [],
+          custom_category: projectInfo.customCategory || '',
+          deadline: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : null,
+          total_amount: totalAmount,
+          tax_amount: data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0,
+          discount_amount: 0,
+          final_amount: totalAmount + (data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0),
+          valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          terms_conditions: data.financialConfig?.defaultConditions?.text || '',
+          tasks: tasks.map((task, index) => ({
+            name: task.description || task.name || '',
+            description: task.description || task.name || '',
+            quantity: task.quantity || 1,
+            unit: task.unit || 'piece',
+            unit_price: task.price || task.unit_price || 0,
+            total_price: (task.price || task.unit_price || 0) * (task.quantity || 1),
+            duration: task.duration || 0,
+            duration_unit: task.durationUnit || 'minutes',
+            pricing_type: task.pricingType || 'flat',
+            hourly_rate: task.hourlyRate || 0,
+            order_index: index,
+            materials: task.materials || []
+          })),
+          files: files.map((file, index) => ({
+            file_name: file.name || file.file_name || '',
+            file_path: file.path || file.file_path || file.url || '',
+            file_size: file.size || file.file_size || 0,
+            mime_type: file.type || file.mime_type || '',
+            file_category: 'attachment',
+            order_index: index
+          }))
+        };
+
+        // Update the quote in the backend
+        const { data: updatedQuote, error: updateError } = await updateQuote(editingQuoteId, quoteData);
+        
+        if (updateError) {
+          console.error('Error updating quote:', updateError);
+          alert(`Erreur lors de la mise à jour du devis: ${updateError.message || 'Erreur inconnue'}`);
+          return;
+        }
+
+        console.log('Quote updated and sent successfully:', updatedQuote);
+        alert(`Devis mis à jour et envoyé avec succès à ${selectedClient?.label?.split(' - ')[0] || 'le client'} !`);
+        navigate('/quotes-management');
+        return;
+      }
+
+      // Create new quote (existing logic)
       // Generate quote number using the service
       const { data: quoteNumber, error: numberError } = await generateQuoteNumber(user.id);
       
@@ -426,7 +683,7 @@ const QuoteCreation = () => {
           file_path: file.path || file.file_path || file.url || '',
           file_size: file.size || file.file_size || 0,
           mime_type: file.type || file.mime_type || '',
-          file_category: 'attachment', // Required field for quote_files table
+          file_category: 'attachment',
           order_index: index
         }))
       };
@@ -460,6 +717,8 @@ const QuoteCreation = () => {
     } catch (error) {
       console.error('Error sending quote:', error);
       alert('Erreur lors de l\'envoi du devis. Veuillez réessayer.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -661,6 +920,7 @@ const QuoteCreation = () => {
             onPrevious={handlePrevious}
             onSave={handleSave}
             onSend={handleSend}
+            isSaving={isSaving}
           />
         );
       default:
@@ -686,10 +946,15 @@ const QuoteCreation = () => {
             <div>
                 <div className="flex items-center">
                   <Icon name="FileText" size={24} className="text-primary mr-3" />
-                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Créer un devis</h1>
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">
+                    {isEditing ? 'Modifier le devis' : 'Créer un devis'}
+                  </h1>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Remplissez les informations ci-dessous pour générer automatiquement un devis professionnel
+                  {isEditing 
+                    ? 'Modifiez les informations du devis existant'
+                    : 'Remplissez les informations ci-dessous pour générer automatiquement un devis professionnel'
+                  }
                   {projectInfo.quoteNumber && (
                     <span className="ml-2 inline-flex items-center text-blue-500 text-xs">
                       {projectInfo.quoteNumber}
@@ -698,13 +963,25 @@ const QuoteCreation = () => {
                 </p>
             </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
-              {isAutoSaving && (
+              {isLoadingQuote && (
+                  <div className="flex items-center text-xs sm:text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-200">
+                    <Icon name="Loader" size={14} className="sm:w-4 sm:h-4 mr-2 animate-spin" />
+                    Chargement du devis...
+                  </div>
+              )}
+              {isSaving && (
+                  <div className="flex items-center text-xs sm:text-sm text-orange-600 bg-orange-50 px-2 py-1 rounded-md border border-orange-200">
+                    <Icon name="Save" size={14} className="sm:w-4 sm:h-4 mr-2 animate-pulse" />
+                    Sauvegarde en cours...
+                  </div>
+              )}
+              {isAutoSaving && !isSaving && (
                   <div className="flex items-center text-xs sm:text-sm text-green-600 bg-green-50 px-2 py-1 rounded-md border border-green-200">
                     <Icon name="Save" size={14} className="sm:w-4 sm:h-4 mr-2 animate-pulse" />
                     Sauvegarde automatique...
                   </div>
               )}
-              {lastSaved && !isAutoSaving && (
+              {lastSaved && !isAutoSaving && !isLoadingQuote && !isSaving && (
                   <div className="flex items-center text-xs sm:text-sm text-muted-foreground">
                     <Icon name="CheckCircle" size={14} className="sm:w-4 sm:h-4 mr-2 text-green-500" />
                     Sauvegardé {new Date(lastSaved).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}

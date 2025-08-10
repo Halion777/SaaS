@@ -57,7 +57,12 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
             type: client.type, // Keep the original French type values
             client: client, // Keep the full client object for reference
             // Include address fields directly for easier access
-            
+            address: client.address,
+            city: client.city,
+            postalCode: client.postalCode,
+            country: client.country,
+            email: client.email,
+            phone: client.phone
           };
         });
 

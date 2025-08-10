@@ -18,7 +18,8 @@ const QuotePreview = ({
   companyInfo: parentCompanyInfo,
   onPrevious, 
   onSave, 
-  onSend 
+  onSend,
+  isSaving = false
 }) => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('personalization');
@@ -526,6 +527,7 @@ const QuotePreview = ({
           onClick={onPrevious}
           iconName="ArrowLeft"
           iconPosition="left"
+          disabled={isSaving}
         >
           Précédent
         </Button>
@@ -537,6 +539,7 @@ const QuotePreview = ({
             iconPosition="left"
             size="sm"
             className="text-xs sm:text-sm"
+            disabled={isSaving}
           >
             <span className="hidden sm:inline">Télécharger PDF</span>
             <span className="sm:hidden">PDF</span>
@@ -548,6 +551,7 @@ const QuotePreview = ({
             iconPosition="left"
             size="sm"
             className="text-xs sm:text-sm"
+            disabled={isSaving}
           >
             <span className="hidden sm:inline">Créer lien public</span>
             <span className="sm:hidden">Lien</span>
@@ -559,16 +563,18 @@ const QuotePreview = ({
             iconName="Save"
             iconPosition="left"
             size="sm"
+            disabled={isSaving}
           >
-            Brouillon
+            {isSaving ? 'Sauvegarde...' : 'Brouillon'}
           </Button>
           <Button
             onClick={() => onSend({ customization, financialConfig, companyInfo, signatureData })}
             iconName="Send"
             iconPosition="left"
             size="sm"
+            disabled={isSaving}
           >
-            Envoyer
+            {isSaving ? 'Envoi...' : 'Envoyer'}
           </Button>
         </div>
       </div>
