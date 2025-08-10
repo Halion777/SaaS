@@ -63,9 +63,9 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
     const colors = {
       draft: 'bg-muted text-muted-foreground',
       sent: 'bg-blue-100 text-blue-700',
-      viewed: 'bg-amber-100 text-amber-700',
-      signed: 'bg-green-100 text-success',
-      refused: 'bg-red-100 text-destructive'
+      accepted: 'bg-green-100 text-success',
+      rejected: 'bg-red-100 text-destructive',
+      expired: 'bg-gray-100 text-gray-700'
     };
     return colors[status] || colors.draft;
   };
@@ -74,9 +74,9 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
     const statusMap = {
       draft: 'Brouillon',
       sent: 'Envoyé',
-      viewed: 'Consulté',
-      signed: 'Signé',
-      refused: 'Refusé'
+      accepted: 'Accepté',
+      rejected: 'Refusé',
+      expired: 'Expiré'
     };
     return statusMap[status] || status;
   };
@@ -241,18 +241,9 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => onQuoteAction('duplicate', quote)}
-                    title="Dupliquer"
-                    className="h-8 w-8"
-                  >
-                    <Icon name="Copy" size={16} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
                     onClick={() => onQuoteAction('convert', quote)}
                     title="Convertir en facture"
-                    disabled={quote.status !== 'signed'}
+                    disabled={quote.status !== 'accepted'}
                     className="h-8 w-8"
                   >
                     <Icon name="Receipt" size={16} />
@@ -333,17 +324,6 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                   className="h-8 w-8 text-accent hover:text-accent hover:bg-accent/10"
                 >
                   <Icon name="Sparkles" size={16} />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onQuoteAction('duplicate', quote)}
-                  className="h-8 hidden sm:flex"
-                >
-                  <span className="flex items-center">
-                    <Icon name="Copy" size={14} className="mr-1" />
-                    Dupliquer
-                  </span>
                 </Button>
               </div>
             </div>

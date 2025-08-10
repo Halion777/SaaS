@@ -7,14 +7,32 @@ import QuotesTable from './components/QuotesTable';
 import FilterBar from './components/FilterBar';
 import BulkActionsToolbar from './components/BulkActionsToolbar';
 import AIAnalyticsPanel from './components/AIAnalyticsPanel';
+import { useAuth } from '../../context/AuthContext';
+import { useMultiUser } from '../../context/MultiUserContext';
+import { fetchQuotes, getQuoteStatistics } from '../../services/quotesService';
 
 const QuotesManagement = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { currentProfile } = useMultiUser();
+  
+  const [quotes, setQuotes] = useState([]);
+  const [filteredQuotes, setFilteredQuotes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [stats, setStats] = useState({
+    total: 0,
+    signed: 0,
+    pending: 0,
+    averageScore: 0
+  });
+  
   const [selectedQuotes, setSelectedQuotes] = useState([]);
   const [selectedQuote, setSelectedQuote] = useState(null);
   const [filters, setFilters] = useState({
     status: '',
     client: '',
+    search: '',
     dateRange: { start: '', end: '' },
     amountRange: { min: '', max: '' }
   });
@@ -23,89 +41,91 @@ const QuotesManagement = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
 
-  // Mock quotes data
-  const mockQuotes = [
-    {
-      id: 'Q2025-001',
-      number: 'DEV-2025-001',
-      clientName: 'Marie Dubois',
-      amount: 2450.00,
-      status: 'signed',
-      createdAt: '2025-01-15',
-      aiScore: 92,
-      description: 'Rénovation salle de bain complète'
-    },
-    {
-      id: 'Q2025-002',
-      number: 'DEV-2025-002',
-      clientName: 'Pierre Martin',
-      amount: 1850.00,
-      status: 'viewed',
-      createdAt: '2025-01-16',
-      aiScore: 78,
-      description: 'Installation électrique cuisine'
-    },
-    {
-      id: 'Q2025-003',
-      number: 'DEV-2025-003',
-      clientName: 'Sophie Bernard',
-      amount: 3200.00,
-      status: 'sent',
-      createdAt: '2025-01-17',
-      aiScore: 65,
-      description: 'Plomberie maison neuve'
-    },
-    {
-      id: 'Q2025-004',
-      number: 'DEV-2025-004',
-      clientName: 'Jean Moreau',
-      amount: 890.00,
-      status: 'draft',
-      createdAt: '2025-01-18',
-      aiScore: 45,
-      description: 'Réparation fuite robinet'
-    },
-    {
-      id: 'Q2025-005',
-      number: 'DEV-2025-005',
-      clientName: 'Claire Petit',
-      amount: 4100.00,
-      status: 'refused',
-      createdAt: '2025-01-14',
-      aiScore: 58,
-      description: 'Chauffage central appartement'
-    },
-    {
-      id: 'Q2025-006',
-      number: 'DEV-2025-006',
-      clientName: 'Michel Durand',
-      amount: 1650.00,
-      status: 'signed',
-      createdAt: '2025-01-13',
-      aiScore: 88,
-      description: 'Carrelage terrasse'
-    },
-    {
-      id: 'Q2025-007',
-      number: 'DEV-2025-007',
-      clientName: 'Isabelle Leroy',
-      amount: 2750.00,
-      status: 'viewed',
-      createdAt: '2025-01-12',
-      aiScore: 72,
-      description: 'Peinture intérieure maison'
-    },
-    {
-      id: 'Q2025-008',
-      number: 'DEV-2025-008',
-      clientName: 'Thomas Roux',
-      amount: 5200.00,
-      status: 'sent',
-      createdAt: '2025-01-11',
-      aiScore: 81,
-      description: 'Toiture complète garage'
-    }
-  ];
+  // Fetch quotes data from backend
+  useEffect(() => {
+    const loadQuotes = async () => {
+      if (!user || !currentProfile) return;
+      
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch quotes
+        const { data: quotesData, error: quotesError } = await fetchQuotes();
+        
+        // Handle case when no quotes exist (this is not an error)
+        if (!quotesData || quotesData.length === 0) {
+          setQuotes([]);
+          setFilteredQuotes([]);
+          setStats({ total: 0, signed: 0, pending: 0, averageScore: 0 });
+          return;
+        }
+        
+        // Only set error for actual errors, not for empty data
+        if (quotesError) {
+          console.error('Error fetching quotes:', quotesError);
+          setError('Erreur lors du chargement des devis');
+          return;
+        }
+        
+        // Transform backend data to match frontend structure
+        const transformedQuotes = quotesData.map(quote => ({
+          id: quote.id,
+          number: quote.quote_number,
+          clientName: quote.client?.name || 'Client inconnu',
+          amount: parseFloat(quote.total_with_tax || quote.total_amount || 0),
+          amountFormatted: formatCurrency(parseFloat(quote.total_with_tax || quote.total_amount || 0)),
+          status: quote.status,
+          statusLabel: getStatusLabel(quote.status),
+          createdAt: quote.created_at,
+          createdAtFormatted: formatDate(quote.created_at),
+          aiScore: Math.floor(Math.random() * 40) + 60, // Placeholder AI score
+          description: quote.project_description || 'Aucune description',
+          client: quote.client,
+          companyProfile: quote.company_profile,
+          tasks: quote.quote_tasks || [],
+          materials: quote.quote_materials || [],
+          files: quote.quote_files || [],
+          deadline: quote.deadline,
+          deadlineFormatted: formatDate(quote.deadline),
+          validUntil: quote.expires_at,
+          validUntilFormatted: formatDate(quote.expires_at),
+          isExpired: isQuoteExpired(quote.expires_at),
+          terms: quote.terms_conditions
+        }));
+        
+        // Sort quotes by priority
+        const sortedQuotes = transformedQuotes.sort((a, b) => getQuotePriority(a) - getQuotePriority(b));
+        
+        setQuotes(sortedQuotes);
+        setFilteredQuotes(sortedQuotes);
+        
+        // Calculate stats
+        const total = sortedQuotes.length;
+        const signed = sortedQuotes.filter(q => q.status === 'accepted').length;
+        const pending = sortedQuotes.filter(q => ['sent', 'draft'].includes(q.status)).length;
+        const averageScore = total > 0 ? Math.round(sortedQuotes.reduce((acc, q) => acc + q.aiScore, 0) / total) : 0;
+        
+        setStats({ total, signed, pending, averageScore });
+        
+      } catch (err) {
+        console.error('Error loading quotes:', err);
+        // Only show error for actual network/server errors, not for empty data
+        if (err.message && !err.message.includes('No data')) {
+          setError('Erreur lors du chargement des devis');
+        } else {
+          // If it's just no data, set empty state
+          setQuotes([]);
+          setFilteredQuotes([]);
+          setStats({ total: 0, signed: 0, pending: 0, averageScore: 0 });
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadQuotes();
+  }, [user, currentProfile]);
 
   useEffect(() => {
     const handleSidebarToggle = (e) => {
@@ -177,11 +197,11 @@ const QuotesManagement = () => {
 
   const handleSelectAll = () => {
     setSelectedQuotes(
-      selectedQuotes.length === mockQuotes.length ? [] : mockQuotes.map(q => q.id)
+      selectedQuotes.length === filteredQuotes.length ? [] : filteredQuotes.map(q => q.id)
     );
   };
 
-  const handleQuoteAction = (action, quote) => {
+  const handleQuoteAction = async (action, quote) => {
     switch (action) {
       case 'edit':
         navigate(`/quote-creation?edit=${quote.id}`);
@@ -190,11 +210,19 @@ const QuotesManagement = () => {
         navigate(`/quote-creation?duplicate=${quote.id}`);
         break;
       case 'convert':
-        navigate(`/invoices-management?convert=${quote.id}`);
+        if (quote.status === 'accepted') {
+          navigate(`/invoices-management?convert=${quote.id}`);
+        } else {
+          console.log('Quote must be accepted before converting to invoice');
+        }
         break;
       case 'optimize':
         setSelectedQuote(quote);
         setShowAIPanel(true);
+        break;
+      case 'status':
+        // Handle status updates if needed
+        console.log(`Status update for quote ${quote.id}`);
         break;
       default:
         console.log(`Action ${action} for quote ${quote.id}`);
@@ -206,10 +234,32 @@ const QuotesManagement = () => {
     setShowAIPanel(true);
   };
 
-  const handleBulkAction = (action) => {
-    console.log(`Bulk action ${action} for quotes:`, selectedQuotes);
-    // Implement bulk actions logic here
-    setSelectedQuotes([]);
+  const handleBulkAction = async (action) => {
+    if (selectedQuotes.length === 0) return;
+    
+    try {
+      switch (action) {
+        case 'delete':
+          // Implement bulk delete logic
+          console.log(`Bulk delete for quotes:`, selectedQuotes);
+          break;
+        case 'export':
+          // Implement bulk export logic
+          console.log(`Bulk export for quotes:`, selectedQuotes);
+          break;
+        case 'ai-optimize':
+          // Implement bulk AI optimization
+          console.log(`Bulk AI optimization for quotes:`, selectedQuotes);
+          break;
+        default:
+          console.log(`Bulk action ${action} for quotes:`, selectedQuotes);
+      }
+      
+      // Clear selection after action
+      setSelectedQuotes([]);
+    } catch (error) {
+      console.error('Error performing bulk action:', error);
+    }
   };
 
   const handleClearSelection = () => {
@@ -218,15 +268,75 @@ const QuotesManagement = () => {
 
   const handleFiltersChange = (newFilters) => {
     setFilters(newFilters);
+    
+    // Apply filters to quotes
+    if (quotes.length > 0) {
+      let filtered = [...quotes];
+      
+      // Filter by search term
+      if (newFilters.search) {
+        const searchTerm = newFilters.search.toLowerCase();
+        filtered = filtered.filter(q => 
+          q.number.toLowerCase().includes(searchTerm) ||
+          q.clientName.toLowerCase().includes(searchTerm) ||
+          q.description.toLowerCase().includes(searchTerm)
+        );
+      }
+      
+      // Filter by status
+      if (newFilters.status) {
+        filtered = filtered.filter(q => q.status === newFilters.status);
+      }
+      
+      // Filter by client
+      if (newFilters.client) {
+        filtered = filtered.filter(q => 
+          q.clientName.toLowerCase().includes(newFilters.client.toLowerCase())
+        );
+      }
+      
+      // Filter by date range
+      if (newFilters.dateRange.start || newFilters.dateRange.end) {
+        filtered = filtered.filter(q => {
+          const quoteDate = new Date(q.createdAt);
+          const startDate = newFilters.dateRange.start ? new Date(newFilters.dateRange.start) : null;
+          const endDate = newFilters.dateRange.end ? new Date(newFilters.dateRange.end) : null;
+          
+          if (startDate && endDate) {
+            return quoteDate >= startDate && quoteDate <= endDate;
+          } else if (startDate) {
+            return quoteDate >= startDate;
+          } else if (endDate) {
+            return quoteDate <= endDate;
+          }
+          return true;
+        });
+      }
+      
+      // Filter by amount range
+      if (newFilters.amountRange.min || newFilters.amountRange.max) {
+        filtered = filtered.filter(q => {
+          const amount = q.amount;
+          const min = newFilters.amountRange.min ? parseFloat(newFilters.amountRange.min) : 0;
+          const max = newFilters.amountRange.max ? parseFloat(newFilters.amountRange.max) : Infinity;
+          
+          return amount >= min && amount <= max;
+        });
+      }
+      
+      setFilteredQuotes(filtered);
+    }
   };
 
   const handleClearFilters = () => {
     setFilters({
       status: '',
       client: '',
+      search: '',
       dateRange: { start: '', end: '' },
       amountRange: { min: '', max: '' }
     });
+    setFilteredQuotes(quotes);
   };
 
   const handleOptimizeQuote = (quote) => {
@@ -243,6 +353,61 @@ const QuotesManagement = () => {
     if (selectedQuotes.length > 0) {
       handleBulkAction('ai-optimize');
     }
+  };
+
+  const handleRefresh = () => {
+    if (user && currentProfile) {
+      // Trigger a reload by updating the dependency
+      setQuotes([]);
+      setLoading(true);
+      setError(null);
+    }
+  };
+
+  // Helper function to get status labels in French
+  const getStatusLabel = (status) => {
+    const statusLabels = {
+      'draft': 'Brouillon',
+      'sent': 'Envoyé',
+      'accepted': 'Accepté',
+      'rejected': 'Refusé',
+      'expired': 'Expiré'
+    };
+    return statusLabels[status] || status;
+  };
+
+  // Helper function to format currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format(amount);
+  };
+
+  // Helper function to format dates
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }).format(date);
+  };
+
+  // Helper function to check if quote is expired
+  const isQuoteExpired = (validUntil) => {
+    if (!validUntil) return false;
+    return new Date(validUntil) < new Date();
+  };
+
+  // Helper function to calculate quote priority
+  const getQuotePriority = (quote) => {
+    if (quote.status === 'accepted') return 1;
+    if (quote.status === 'sent') return 2;
+    if (quote.status === 'draft') return 3;
+    if (quote.isExpired) return 4;
+    return 5;
   };
 
   return (
@@ -274,6 +439,17 @@ const QuotesManagement = () => {
             <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
               <Button
                 variant="outline"
+                onClick={handleRefresh}
+                iconName={loading ? "Loader2" : "RefreshCw"}
+                iconPosition="left"
+                className="hidden md:flex text-xs sm:text-sm"
+                disabled={loading}
+              >
+                {loading ? 'Actualisation...' : 'Actualiser'}
+              </Button>
+              
+              <Button
+                variant="outline"
                 onClick={() => setShowAIPanel(!showAIPanel)}
                 iconName={showAIPanel ? "PanelRightClose" : "PanelRightOpen"}
                 iconPosition="left"
@@ -303,7 +479,9 @@ const QuotesManagement = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs sm:text-sm text-muted-foreground">Total devis</p>
-                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{mockQuotes.length}</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">
+                    {loading ? '...' : stats.total}
+                  </p>
                 </div>
                 <div className="bg-primary/10 rounded-full p-2 sm:p-2.5">
                   <Icon name="FileText" size={16} className="sm:w-5 sm:h-5 text-primary" />
@@ -316,7 +494,7 @@ const QuotesManagement = () => {
                 <div>
                   <p className="text-xs sm:text-sm text-muted-foreground">Signés</p>
                   <p className="text-lg sm:text-xl lg:text-2xl font-bold text-success">
-                    {mockQuotes.filter(q => q.status === 'signed').length}
+                    {loading ? '...' : stats.signed}
                   </p>
                 </div>
                 <div className="bg-success/10 rounded-full p-2 sm:p-2.5">
@@ -330,7 +508,7 @@ const QuotesManagement = () => {
                 <div>
                   <p className="text-xs sm:text-sm text-muted-foreground">En attente</p>
                   <p className="text-lg sm:text-xl lg:text-2xl font-bold text-amber-600">
-                    {mockQuotes.filter(q => ['sent', 'viewed'].includes(q.status)).length}
+                    {loading ? '...' : stats.pending}
                   </p>
                 </div>
                 <div className="bg-amber-100 rounded-full p-2 sm:p-2.5">
@@ -344,7 +522,7 @@ const QuotesManagement = () => {
                 <div>
                   <p className="text-xs sm:text-sm text-muted-foreground">Score IA moyen</p>
                   <p className="text-lg sm:text-xl lg:text-2xl font-bold text-primary">
-                    {Math.round(mockQuotes.reduce((acc, q) => acc + q.aiScore, 0) / mockQuotes.length)}%
+                    {loading ? '...' : `${stats.averageScore}%`}
                   </p>
                 </div>
                 <div className="bg-accent/10 rounded-full p-2 sm:p-2.5">
@@ -372,25 +550,74 @@ const QuotesManagement = () => {
 
           {/* Quotes Table */}
           <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
-            <QuotesTable
-              quotes={mockQuotes}
-              selectedQuotes={selectedQuotes}
-              onSelectQuote={handleSelectQuote}
-              onSelectAll={handleSelectAll}
-              onQuoteAction={handleQuoteAction}
-              onQuoteSelect={handleQuoteSelect}
-            />
+            {loading ? (
+              <div className="p-8 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Chargement des devis...</p>
+              </div>
+            ) : error ? (
+              <div className="p-8 text-center">
+                <Icon name="AlertCircle" size={24} className="text-destructive mx-auto mb-4" />
+                <p className="text-destructive mb-4">{error}</p>
+                <Button onClick={() => window.location.reload()} variant="outline">
+                  Réessayer
+                </Button>
+              </div>
+            ) : filteredQuotes.length === 0 ? (
+              <div className="p-8 text-center">
+                <Icon name="FileText" size={48} className="text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">Aucun devis trouvé</h3>
+                <p className="text-muted-foreground mb-4">
+                  {quotes.length === 0 
+                    ? "Bienvenue ! Vous n'avez pas encore créé de devis. Commencez par en créer un nouveau pour gérer vos projets professionnels."
+                    : "Aucun devis ne correspond aux filtres appliqués. Essayez de modifier vos critères de recherche."
+                  }
+                </p>
+                {quotes.length === 0 && (
+                  <Button onClick={() => navigate('/quote-creation')} variant="default" className="gap-2">
+                    <Icon name="Plus" size={16} />
+                    Créer votre premier devis
+                  </Button>
+                )}
+                {quotes.length > 0 && (
+                  <Button onClick={handleClearFilters} variant="outline" className="gap-2">
+                    <Icon name="RotateCcw" size={16} />
+                    Effacer les filtres
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <QuotesTable
+                quotes={filteredQuotes}
+                selectedQuotes={selectedQuotes}
+                onSelectQuote={handleSelectQuote}
+                onSelectAll={handleSelectAll}
+                onQuoteAction={handleQuoteAction}
+                onQuoteSelect={handleQuoteSelect}
+              />
+            )}
           </div>
           
-          {/* Mobile AI Panel Toggle */}
-          <div className="md:hidden">
+          {/* Mobile Actions */}
+          <div className="md:hidden flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              iconName={loading ? "Loader2" : "RefreshCw"}
+              iconPosition="left"
+              className="flex-1 text-xs sm:text-sm"
+              disabled={loading}
+            >
+              {loading ? 'Actualisation...' : 'Actualiser'}
+            </Button>
+            
             <Button
               variant="outline"
               fullWidth
               onClick={() => setShowAIPanel(!showAIPanel)}
               iconName="Sparkles"
               iconPosition="left"
-              className="text-xs sm:text-sm"
+              className="flex-1 text-xs sm:text-sm"
             >
               {showAIPanel ? 'Masquer' : 'Afficher'} l'analyse IA
             </Button>
@@ -447,6 +674,6 @@ const QuotesManagement = () => {
       )}
     </div>
   );
-  };
-  
+};
+
 export default QuotesManagement;

@@ -48,14 +48,16 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
 
         // Format clients for the select dropdown
         const formattedClients = data.map(client => {
-          console.log('Client data:', client); // Debug log
+          
           const nameIcon = client.type === 'professionnel' ? '🏢' : '👤';
           return {
             value: client.id,
             label: `${nameIcon} ${client.name}`,
             description: `${client.email ? '📧 ' + client.email : ''} ${client.phone ? '📞 ' + client.phone : ''}`.trim(),
             type: client.type, // Keep the original French type values
-            client: client // Keep the full client object for reference
+            client: client, // Keep the full client object for reference
+            // Include address fields directly for easier access
+            
           };
         });
 
@@ -294,19 +296,19 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         }
         
         // Format the created client for selection
-        const clientData = {
+      const clientData = {
           value: createdClient.id,
           label: clientType === 'professionnel' 
-            ? `${createdClient.name}${createdClient.company ? ` - ${createdClient.company}` : ''}`
+            ? `${createdClient.name}`
             : createdClient.name,
           description: `${createdClient.email} • ${createdClient.phone}`,
-          type: clientType,
+        type: clientType,
           client: createdClient
-        };
+      };
         
         // Select the newly created client
-        onClientSelect(clientData);
-        setShowNewClientForm(false);
+      onClientSelect(clientData);
+      setShowNewClientForm(false);
         
         // Show success message
         setCreateSuccess(true);
@@ -316,22 +318,22 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         setClientsRefreshTrigger(prev => prev + 1);
         
         // Reset form
-        setNewClient({ 
-          name: '', 
+      setNewClient({ 
+        name: '', 
           type: 'particulier', 
-          email: '', 
-          phone: '', 
-          address: '', 
-          city: '',
-          country: '',
-          postalCode: '',
-          contactPerson: '', 
-          companySize: '',
-          regNumber: '',
-          peppolId: '',
-          enablePeppol: false,
-          preferences: []
-        });
+        email: '', 
+        phone: '', 
+        address: '', 
+        city: '',
+        country: '',
+        postalCode: '',
+        contactPerson: '', 
+        companySize: '',
+        regNumber: '',
+        peppolId: '',
+        enablePeppol: false,
+        preferences: []
+      });
         setClientType('particulier');
         
       } catch (error) {
@@ -453,25 +455,25 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                 <p className="text-xs text-muted-foreground">Commencez par ajouter votre premier client</p>
               </div>
             ) : (
-              <Select
-                label="Choisir un client existant"
-                placeholder="Rechercher un client..."
-                searchable
-                clearable
-                options={existingClients}
-                value={selectedClient?.value || ''}
-                onChange={(e) => {
-                  if (e.target.value === '') {
-                    // Clear selection
-                    onClientSelect(null);
-                  } else {
-                    // Select a client
-                    const client = existingClients.find(c => c.value === e.target.value);
-                    onClientSelect(client);
-                  }
-                }}
-                description="Tapez pour rechercher parmi vos clients existants"
-              />
+            <Select
+              label="Choisir un client existant"
+              placeholder="Rechercher un client..."
+              searchable
+              clearable
+              options={existingClients}
+              value={selectedClient?.value || ''}
+              onChange={(e) => {
+                if (e.target.value === '') {
+                  // Clear selection
+                  onClientSelect(null);
+                } else {
+                  // Select a client
+                  const client = existingClients.find(c => c.value === e.target.value);
+                  onClientSelect(client);
+                }
+              }}
+              description="Tapez pour rechercher parmi vos clients existants"
+            />
             )}
             
             <div className="flex items-center justify-center py-3 sm:py-4">

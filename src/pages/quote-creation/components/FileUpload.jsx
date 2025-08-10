@@ -158,10 +158,10 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious }) => {
                           {formatFileSize(file.size)}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {file.uploadedAt.toLocaleTimeString('fr-FR', { 
+                          {file.uploadedAt ? new Date(file.uploadedAt).toLocaleTimeString('fr-FR', { 
                             hour: '2-digit', 
                             minute: '2-digit' 
-                          })}
+                          }) : 'N/A'}
                         </p>
                       </div>
                     </div>

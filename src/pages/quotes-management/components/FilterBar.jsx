@@ -13,9 +13,9 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters }) => {
     { value: '', label: 'Tous les statuts' },
     { value: 'draft', label: 'Brouillon' },
     { value: 'sent', label: 'Envoyé' },
-    { value: 'viewed', label: 'Consulté' },
-    { value: 'signed', label: 'Signé' },
-    { value: 'refused', label: 'Refusé' }
+    { value: 'accepted', label: 'Accepté' },
+    { value: 'rejected', label: 'Refusé' },
+    { value: 'expired', label: 'Expiré' }
   ];
 
   const clientOptions = [

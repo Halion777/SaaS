@@ -447,11 +447,11 @@ BEGIN
   year := EXTRACT(YEAR FROM NOW())::TEXT;
   
   -- Get the next sequence number for this user and year
-  SELECT COALESCE(MAX(CAST(SUBSTRING(quote_number FROM 'DEV-' || year || '-(.+)') AS INTEGER)), 0) + 1
+  SELECT COALESCE(MAX(CAST(SUBSTRING(quotes.quote_number FROM 'DEV-' || year || '-(.+)') AS INTEGER)), 0) + 1
   INTO sequence_num
   FROM public.quotes
-  WHERE user_id = generate_quote_number.user_id 
-    AND quote_number LIKE 'DEV-' || year || '-%';
+  WHERE quotes.user_id = generate_quote_number.user_id 
+    AND quotes.quote_number LIKE 'DEV-' || year || '-%';
   
   -- Format: DEV-YYYY-XXXXXX (6 digits)
   quote_num := 'DEV-' || year || '-' || LPAD(sequence_num::TEXT, 6, '0');

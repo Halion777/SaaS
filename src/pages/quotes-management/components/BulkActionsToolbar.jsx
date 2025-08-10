@@ -10,7 +10,7 @@ const BulkActionsToolbar = ({ selectedCount, onBulkAction, onClearSelection }) =
     { value: '', label: 'Choisir une action...' },
     { value: 'send-reminder', label: 'Envoyer un rappel' },
     { value: 'mark-sent', label: 'Marquer comme envoyé' },
-    { value: 'mark-viewed', label: 'Marquer comme consulté' },
+    { value: 'mark-accepted', label: 'Marquer comme accepté' },
     { value: 'duplicate', label: 'Dupliquer les devis' },
     { value: 'export', label: 'Exporter en PDF' },
     { value: 'ai-optimize', label: 'Optimiser avec IA' },

@@ -11,6 +11,7 @@ import TaskDefinition from './components/TaskDefinition';
 import FileUpload from './components/FileUpload';
 import QuotePreview from './components/QuotePreview';
 import AIScoring from './components/AIScoring';
+import { generateQuoteNumber, createQuote } from '../../services/quotesService';
 
 const QuoteCreation = () => {
   const { user } = useAuth();
@@ -37,9 +38,20 @@ const QuoteCreation = () => {
     return `quote-draft-${user?.id}-${currentProfile?.id || 'default'}`;
   };
 
-  // Auto-save functionality
+  // Debug: Log user authentication status
   useEffect(() => {
-    const autoSave = () => {
+    console.log('QuoteCreation - User authentication status:', {
+      user: user,
+      userId: user?.id,
+      currentProfile: currentProfile,
+      profileId: currentProfile?.id,
+      isAuthenticated: !!user
+    });
+  }, [user, currentProfile]);
+
+  // Enhanced auto-save functionality with localStorage only
+  useEffect(() => {
+    const autoSave = async () => {
       // Auto-save if there's any data to save
       if (selectedClient || tasks.length > 0 || files.length > 0 || 
           projectInfo.categories.length > 0 || projectInfo.description || projectInfo.deadline) {
@@ -54,8 +66,15 @@ const QuoteCreation = () => {
           companyInfo,
           lastSaved: savedTime
         };
-        localStorage.setItem(getDraftKey(), JSON.stringify(quoteData));
-        setLastSaved(savedTime);
+        
+        // Save to localStorage only
+        try {
+          localStorage.setItem(getDraftKey(), JSON.stringify(quoteData));
+          setLastSaved(savedTime);
+          console.log('Auto-save successful: localStorage');
+        } catch (localStorageError) {
+          console.error('Error saving to localStorage:', localStorageError);
+        }
         
         setTimeout(() => {
           setIsAutoSaving(false);
@@ -77,26 +96,36 @@ const QuoteCreation = () => {
 
   // Load draft on component mount and when profile changes
   useEffect(() => {
-    const savedDraft = localStorage.getItem(getDraftKey());
-    if (savedDraft) {
+    const loadDraft = () => {
       try {
-        const draftData = JSON.parse(savedDraft);
-        setSelectedClient(draftData.selectedClient);
-        setProjectInfo(draftData.projectInfo || { categories: [], customCategory: '', deadline: '', description: '' });
-        setTasks(draftData.tasks || []);
-        setFiles(draftData.files || []);
-        setCurrentStep(draftData.currentStep || 1);
-        setCompanyInfo(draftData.companyInfo);
-        setLastSaved(draftData.lastSaved);
+        // Load from localStorage only
+        const savedDraft = localStorage.getItem(getDraftKey());
+        if (savedDraft) {
+          const draftData = JSON.parse(savedDraft);
+          setSelectedClient(draftData.selectedClient);
+          setProjectInfo(draftData.projectInfo || { categories: [], customCategory: '', deadline: '', description: '' });
+          setTasks(draftData.tasks || []);
+          // Ensure uploadedAt is converted back to Date objects for files
+          const filesWithDates = (draftData.files || []).map(file => ({
+            ...file,
+            uploadedAt: file.uploadedAt ? new Date(file.uploadedAt) : new Date()
+          }));
+          setFiles(filesWithDates);
+          setCurrentStep(draftData.currentStep || 1);
+          setCompanyInfo(draftData.companyInfo);
+          setLastSaved(draftData.lastSaved);
+        } else {
+          // If no draft exists for this profile, clear the form
+          clearFormData();
+        }
       } catch (error) {
         console.error('Error loading draft:', error);
         // If there's an error loading the draft, clear the form
         clearFormData();
       }
-    } else {
-      // If no draft exists for this profile, clear the form
-      clearFormData();
-    }
+    };
+
+    loadDraft();
   }, [user?.id, currentProfile?.id]);
 
   // Helper function to clear form data
@@ -180,6 +209,11 @@ const QuoteCreation = () => {
       localStorage.setItem(getDraftKey(), JSON.stringify(quoteData));
       setLastSaved(savedTime);
       
+      // If moving to step 4 (preview), generate quote number
+      if (currentStep === 3) {
+        generateQuoteNumberForPreview();
+      }
+      
       setCurrentStep(currentStep + 1);
     }
   };
@@ -220,69 +254,213 @@ const QuoteCreation = () => {
     setFiles(newFiles);
   };
 
-  const handleSave = (data) => {
-    const quoteData = {
-      id: Date.now(),
-      number: `DEV-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`,
-      client: selectedClient,
-      tasks,
-      files,
-      customization: data.customization,
-      financialConfig: data.financialConfig,
-      companyInfo: data.companyInfo,
-      status: 'draft',
-      createdAt: new Date().toISOString(),
-      totalAmount: tasks.reduce((sum, task) => {
+  // Enhanced handleSave with better data structure and backend integration
+  const handleSave = async (data) => {
+    try {
+      // Generate quote number using the service
+      const { data: quoteNumber, error: numberError } = await generateQuoteNumber(user?.id);
+      
+      if (numberError) {
+        console.warn('Error generating quote number, using fallback:', numberError);
+      }
+      
+      let finalQuoteNumber = quoteNumber;
+      
+      // If backend didn't provide a number, generate a fallback with timestamp for uniqueness
+      if (!finalQuoteNumber) {
+        const timestamp = Date.now();
+        const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        finalQuoteNumber = `${new Date().getFullYear()}-${timestamp}-${randomSuffix}`;
+      }
+      
+      // Calculate totals more accurately
+      const totalAmount = tasks.reduce((sum, task) => {
         const taskMaterialsTotal = task.materials.reduce((matSum, mat) => 
-          matSum + (mat.price * parseFloat(mat.quantity)), 0);
-        return sum + task.price + taskMaterialsTotal;
-      }, 0)
-    };
+          matSum + (mat.price * parseFloat(mat.quantity || 1)), 0);
+        return sum + (task.price || 0) + taskMaterialsTotal;
+      }, 0);
 
-    // Save to localStorage (in real app, this would be an API call)
-    const existingQuotes = JSON.parse(localStorage.getItem(`quotes-${user?.id}-${currentProfile?.id || 'default'}`) || '[]');
-    existingQuotes.push(quoteData);
-    localStorage.setItem(`quotes-${user?.id}-${currentProfile?.id || 'default'}`, JSON.stringify(existingQuotes));
+      const quoteData = {
+        user_id: user?.id,
+        profile_id: currentProfile?.id,
+        quote_number: finalQuoteNumber,
+        client_id: selectedClient?.value,
+        status: 'draft',
+        title: projectInfo.description || 'Nouveau devis', // Required field in quotes schema
+        description: projectInfo.description || '', // Optional field
+        project_categories: projectInfo.categories || [],
+        custom_category: projectInfo.customCategory || '',
+        deadline: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : null,
+        total_amount: totalAmount,
+        tax_amount: data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0,
+        discount_amount: 0,
+        final_amount: totalAmount + (data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0),
+        valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+        terms_conditions: data.financialConfig?.defaultConditions?.text || '',
+        tasks: tasks.map((task, index) => ({
+          name: task.description || task.name || '',
+          description: task.description || task.name || '',
+          quantity: task.quantity || 1,
+          unit: task.unit || 'piece',
+          unit_price: task.price || task.unit_price || 0,
+          total_price: (task.price || task.unit_price || 0) * (task.quantity || 1),
+          duration: task.duration || 0,
+          duration_unit: task.durationUnit || 'minutes',
+          pricing_type: task.pricingType || 'flat',
+          hourly_rate: task.hourlyRate || 0,
+          order_index: index,
+          materials: task.materials || []
+        })),
+        files: files.map((file, index) => ({
+          file_name: file.name || file.file_name || '',
+          file_path: file.path || file.file_path || file.url || '',
+          file_size: file.size || file.file_size || 0,
+          mime_type: file.type || file.mime_type || '',
+          order_index: index
+        }))
+      };
 
-    // Clear draft
-    localStorage.removeItem(getDraftKey());
+      // Debug logging
+      console.log('Selected client:', selectedClient);
+      console.log('Client ID being used:', selectedClient?.id || selectedClient?.value);
+      console.log('User ID being used:', user?.id);
+      console.log('Profile ID being used:', currentProfile?.id);
 
-    // Show success message and redirect
-    alert('Devis sauvegardé avec succès !');
-    navigate('/quotes-management');
+      // Save to localStorage
+      const existingQuotes = JSON.parse(localStorage.getItem(`quotes-${user?.id}-${currentProfile?.id || 'default'}`) || '[]');
+      existingQuotes.push({
+        ...quoteData,
+        id: Date.now(),
+        createdAt: new Date().toISOString()
+      });
+      localStorage.setItem(`quotes-${user?.id}-${currentProfile?.id || 'default'}`, JSON.stringify(existingQuotes));
+
+      // Clear draft
+      localStorage.removeItem(getDraftKey());
+
+      // Show success message and redirect
+      alert('Devis sauvegardé avec succès !');
+      navigate('/quotes-management');
+    } catch (error) {
+      console.error('Error saving quote:', error);
+      alert('Erreur lors de la sauvegarde du devis. Veuillez réessayer.');
+    }
   };
 
-  const handleSend = (data) => {
-    const quoteData = {
-      id: Date.now(),
-      number: `DEV-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`,
-      client: selectedClient,
-      tasks,
-      files,
-      customization: data.customization,
-      financialConfig: data.financialConfig,
-      companyInfo: data.companyInfo,
-      status: 'sent',
-      sentAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      totalAmount: tasks.reduce((sum, task) => {
+  // Enhanced handleSend with better data structure and backend integration
+  const handleSend = async (data) => {
+    try {
+      // Debug: Check user authentication
+      console.log('Current user:', user);
+      console.log('Current profile:', currentProfile);
+      
+      if (!user?.id) {
+        console.error('No user ID available');
+        alert('Erreur d\'authentification. Veuillez vous reconnecter.');
+        return;
+      }
+      
+      // Generate quote number using the service
+      const { data: quoteNumber, error: numberError } = await generateQuoteNumber(user.id);
+      
+      if (numberError) {
+        console.warn('Error generating quote number, using fallback:', numberError);
+      }
+      
+      let finalQuoteNumber = quoteNumber;
+      
+      // If backend didn't provide a number, generate a fallback with timestamp for uniqueness
+      if (!finalQuoteNumber) {
+        const timestamp = Date.now();
+        const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        finalQuoteNumber = `${new Date().getFullYear()}-${timestamp}-${randomSuffix}`;
+      }
+      
+      // Store the quote number in projectInfo for display
+      setProjectInfo(prev => ({
+        ...prev,
+        quoteNumber: finalQuoteNumber
+      }));
+      
+      // Calculate totals more accurately
+      const totalAmount = tasks.reduce((sum, task) => {
         const taskMaterialsTotal = task.materials.reduce((matSum, mat) => 
-          matSum + (mat.price * parseFloat(mat.quantity)), 0);
-        return sum + task.price + taskMaterialsTotal;
-      }, 0)
-    };
+          matSum + (mat.price * parseFloat(mat.quantity || 1)), 0);
+        return sum + (task.price || 0) + taskMaterialsTotal;
+      }, 0);
 
-    // Save to localStorage (in real app, this would be an API call)
-    const existingQuotes = JSON.parse(localStorage.getItem(`quotes-${user?.id}-${currentProfile?.id || 'default'}`) || '[]');
-    existingQuotes.push(quoteData);
-    localStorage.setItem(`quotes-${user?.id}-${currentProfile?.id || 'default'}`, JSON.stringify(existingQuotes));
+      // Prepare data for backend service
+      const quoteData = {
+        user_id: user?.id,
+        profile_id: currentProfile?.id,
+        quote_number: finalQuoteNumber,
+        client_id: selectedClient?.id || selectedClient?.value,
+        status: 'sent',
+        title: projectInfo.description || 'Nouveau devis',
+        description: projectInfo.description || '',
+        project_categories: projectInfo.categories || [],
+        custom_category: projectInfo.customCategory || '',
+        deadline: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : null,
+        total_amount: totalAmount,
+        tax_amount: data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0,
+        discount_amount: 0,
+        final_amount: totalAmount + (data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0),
+        valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        terms_conditions: data.financialConfig?.defaultConditions?.text || '',
+        tasks: tasks.map((task, index) => ({
+          name: task.description || task.name || '',
+          description: task.description || task.name || '',
+          quantity: task.quantity || 1,
+          unit: task.unit || 'piece',
+          unit_price: task.price || task.unit_price || 0,
+          total_price: (task.price || task.unit_price || 0) * (task.quantity || 1),
+          duration: task.duration || 0,
+          duration_unit: task.durationUnit || 'minutes',
+          pricing_type: task.pricingType || 'flat',
+          hourly_rate: task.hourlyRate || 0,
+          order_index: index,
+          materials: task.materials || []
+        })),
+        files: files.map((file, index) => ({
+          file_name: file.name || file.file_name || '',
+          file_path: file.path || file.file_path || file.url || '',
+          file_size: file.size || file.file_size || 0,
+          mime_type: file.type || file.mime_type || '',
+          file_category: 'attachment', // Required field for quote_files table
+          order_index: index
+        }))
+      };
 
-    // Clear draft
-    localStorage.removeItem(getDraftKey());
+      // Call backend service to create quote
+      const { data: createdQuote, error: createError } = await createQuote(quoteData);
+      
+      if (createError) {
+        console.error('Error creating quote in backend:', createError);
+        alert(`Erreur lors de la création du devis: ${createError.message || 'Erreur inconnue'}`);
+        return;
+      }
 
-    // Show success message and redirect
-    alert(`Devis envoyé avec succès à ${selectedClient?.label?.split(' - ')[0]} !`);
-    navigate('/quotes-management');
+      console.log('Quote created successfully in backend:', createdQuote);
+
+      // Save to localStorage as backup
+      const existingQuotes = JSON.parse(localStorage.getItem(`quotes-${user?.id}-${currentProfile?.id || 'default'}`) || '[]');
+      existingQuotes.push({
+        ...quoteData,
+        id: createdQuote.id || Date.now(),
+        createdAt: new Date().toISOString()
+      });
+      localStorage.setItem(`quotes-${user?.id}-${currentProfile?.id || 'default'}`, JSON.stringify(existingQuotes));
+
+      // Clear draft
+      localStorage.removeItem(getDraftKey());
+
+      // Show success message and redirect
+      alert(`Devis envoyé avec succès à ${selectedClient?.label?.split(' - ')[0] || 'le client'} !`);
+      navigate('/quotes-management');
+    } catch (error) {
+      console.error('Error sending quote:', error);
+      alert('Erreur lors de l\'envoi du devis. Veuillez réessayer.');
+    }
   };
 
   const handleStepChange = (newStep) => {
@@ -364,11 +542,70 @@ const QuoteCreation = () => {
     }
   };
 
+  // Generate quote number for preview
+  const generateQuoteNumberForPreview = async () => {
+    try {
+      if (!user?.id) return;
+      
+      // First try to get a unique quote number from the backend service
+      const { data: quoteNumber, error: numberError } = await generateQuoteNumber(user.id);
+      
+      if (numberError) {
+        console.warn('Error generating quote number for preview, using fallback:', numberError);
+      }
+      
+      let finalQuoteNumber = quoteNumber;
+      
+      // If backend didn't provide a number, generate a fallback with timestamp for uniqueness
+      if (!finalQuoteNumber) {
+        const timestamp = Date.now();
+        const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        finalQuoteNumber = `${new Date().getFullYear()}-${timestamp}-${randomSuffix}`;
+      }
+      
+      // Store the quote number in projectInfo for display
+      setProjectInfo(prev => ({
+        ...prev,
+        quoteNumber: finalQuoteNumber
+      }));
+      
+      // Auto-save with the new quote number
+      const savedTime = new Date().toISOString();
+      const quoteData = {
+        selectedClient,
+        projectInfo: { ...projectInfo, quoteNumber: finalQuoteNumber },
+        tasks,
+        files,
+        currentStep: 4,
+        companyInfo,
+        lastSaved: savedTime
+      };
+      localStorage.setItem(getDraftKey(), JSON.stringify(quoteData));
+      setLastSaved(savedTime);
+      
+      console.log('Quote number generated for preview:', finalQuoteNumber);
+    } catch (error) {
+      console.error('Error generating quote number for preview:', error);
+      // Use fallback quote number with timestamp and random suffix for uniqueness
+      const timestamp = Date.now();
+      const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      const fallbackNumber = `${new Date().getFullYear()}-${timestamp}-${randomSuffix}`;
+      setProjectInfo(prev => ({
+        ...prev,
+        quoteNumber: fallbackNumber
+      }));
+    }
+  };
+
+  // Enhanced clearDraft with localStorage cleanup only
   const clearDraft = () => {
     if (confirm('Êtes-vous sûr de vouloir effacer ce brouillon ?')) {
+      // Clear localStorage items
       localStorage.removeItem(getDraftKey());
       localStorage.removeItem('quote-signature-data');
       localStorage.removeItem(`company-info-${user?.id}-${currentProfile?.id || 'default'}`);
+      
+      // Clear form data
       clearFormData();
     }
   };
@@ -407,11 +644,20 @@ const QuoteCreation = () => {
           />
         );
       case 4:
+        // Ensure quote number exists for preview
+        if (!projectInfo.quoteNumber && user?.id) {
+          // Generate quote number if it doesn't exist
+          setTimeout(() => generateQuoteNumberForPreview(), 100);
+        }
+        
         return (
           <QuotePreview
             selectedClient={selectedClient}
             tasks={tasks}
             files={files}
+            projectInfo={projectInfo}
+            quoteNumber={projectInfo.quoteNumber}
+            companyInfo={companyInfo}
             onPrevious={handlePrevious}
             onSave={handleSave}
             onSend={handleSend}
@@ -443,8 +689,13 @@ const QuoteCreation = () => {
                   <h1 className="text-xl sm:text-2xl font-bold text-foreground">Créer un devis</h1>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                Remplissez les informations ci-dessous pour générer automatiquement un devis professionnel
-              </p>
+                  Remplissez les informations ci-dessous pour générer automatiquement un devis professionnel
+                  {projectInfo.quoteNumber && (
+                    <span className="ml-2 inline-flex items-center text-blue-500 text-xs">
+                      {projectInfo.quoteNumber}
+                    </span>
+                  )}
+                </p>
             </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
               {isAutoSaving && (

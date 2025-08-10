@@ -13,6 +13,9 @@ const QuotePreview = ({
   selectedClient, 
   tasks, 
   files, 
+  projectInfo,
+  quoteNumber,
+  companyInfo: parentCompanyInfo,
   onPrevious, 
   onSave, 
   onSend 
@@ -25,7 +28,13 @@ const QuotePreview = ({
   const [signatureData, setSignatureData] = useState(null);
   
   // Company Information
-  const [companyInfo, setCompanyInfo] = useState(getDefaultCompanyInfo());
+  const [companyInfo, setCompanyInfo] = useState(parentCompanyInfo || getDefaultCompanyInfo());
+  
+  // Quote data
+  const currentDate = new Date().toLocaleDateString('fr-FR');
+  const validUntil = projectInfo?.deadline ? 
+    new Date(projectInfo.deadline).toLocaleDateString('fr-FR') : 
+    '30 jours';
 
   // Customization
   const [customization, setCustomization] = useState({
@@ -136,7 +145,7 @@ const QuotePreview = ({
   };
 
   const handleSignature = (signatureData) => {
-    console.log('Quote signed:', signatureData);
+    
     setSignatureData(signatureData);
     
     // Save signature data to localStorage for persistence
@@ -159,9 +168,13 @@ const QuotePreview = ({
   const advanceAmount = financialConfig.advanceConfig.enabled ? (parseFloat(financialConfig.advanceConfig.amount) || 0) : 0;
   const balanceAmount = totalWithVAT - advanceAmount;
 
-  const quoteNumber = `DEV-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
-  const currentDate = new Date().toLocaleDateString('fr-FR');
-  const validUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR');
+  const displayQuoteNumber = quoteNumber || `${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
+  
+  // Debug: Log quote number for troubleshooting
+  useEffect(() => {
+    console.log('QuotePreview - Quote number received:', quoteNumber);
+    console.log('QuotePreview - Display quote number:', displayQuoteNumber);
+  }, [quoteNumber, displayQuoteNumber]);
 
   const getTemplateClasses = () => {
     // Return white background with subtle border and ensure readability
@@ -240,6 +253,12 @@ const QuotePreview = ({
         <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
           <AppIcon name="Eye" size={18} className="sm:w-5 sm:h-5 mr-2" />
           Aperçu du devis
+          {!quoteNumber && (
+            <span className="ml-2 inline-flex items-center text-orange-600 text-sm">
+              <AppIcon name="Loader" size={14} className="mr-1 animate-spin" />
+              Génération du numéro...
+            </span>
+          )}
         </h3>
         
         {/* Configuration Panels - Hidden by default, shown when activeTab changes */}
@@ -288,8 +307,12 @@ const QuotePreview = ({
             }`}>
               <div className={`flex items-center space-x-3 sm:space-x-6 ${previewMode === 'mobile' ? 'w-full' : 'flex-1'}`}>
                 {companyInfo.logo ? (
-                  <div className="w-12 h-12 sm:w-20 sm:h-20 bg-gray-200 rounded-lg flex items-center justify-center text-xs sm:text-sm">
-                    LOGO
+                  <div className="w-12 h-12 sm:w-20 sm:h-20 rounded-lg flex items-center justify-center overflow-hidden">
+                    <img 
+                      src={companyInfo.logo} 
+                      alt={`Logo ${companyInfo.name}`}
+                      className="w-full h-full object-contain"
+                    />
                   </div>
                 ) : (
                   <div className="w-12 h-12 sm:w-20 sm:h-20 bg-gray-200 rounded-lg flex items-center justify-center text-xs sm:text-sm">
@@ -316,7 +339,7 @@ const QuotePreview = ({
                   className={`font-semibold ${previewMode === 'mobile' ? 'text-base' : 'text-lg sm:text-xl lg:text-2xl'}`}
                   style={{ color: customization.colors.primary }}
                 >
-                  DEVIS N° {quoteNumber}
+                  <span className="text-base" style={{ color: customization.colors.primary }}>{displayQuoteNumber}</span>
                 </h2>
                 <p className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.secondary }}>Date: {currentDate}</p>
                 <p className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.secondary }}>Valable jusqu'au: {validUntil}</p>
@@ -332,10 +355,28 @@ const QuotePreview = ({
                 <h3 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>CLIENT</h3>
                 <div className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
                   <p className="font-medium">{selectedClient?.label?.split(' - ')[0] || 'Client'}</p>
-                  {selectedClient?.company && <p>{selectedClient.company}</p>}
                   <p>{selectedClient?.email || 'email@client.com'}</p>
                   <p>{selectedClient?.phone || '06 12 34 56 78'}</p>
-                  {selectedClient?.address && <p>{selectedClient.address}</p>}
+                  {/* Enhanced address display */}
+                  {selectedClient?.address && (
+                    <div>
+                      <p>{selectedClient.address}</p>
+                      {(selectedClient?.city || selectedClient?.postalCode) && (
+                        <p>{selectedClient.postalCode} {selectedClient.city}</p>
+                      )}
+                      {selectedClient?.country && <p>{selectedClient.country}</p>}
+                    </div>
+                  )}
+                  {/* Fallback if no address but we have client object with address fields */}
+                  {!selectedClient?.address && selectedClient?.client && (
+                    <div>
+                      {selectedClient.client.address && <p>{selectedClient.client.address}</p>}
+                      {(selectedClient.client.city || selectedClient.client.postalCode) && (
+                        <p>{selectedClient.client.postalCode} {selectedClient.client.city}</p>
+                      )}
+                      {selectedClient.client.country && <p>{selectedClient.client.country}</p>}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className={`${previewMode === 'mobile' ? 'text-left' : 'text-right'}`}>
@@ -352,8 +393,8 @@ const QuotePreview = ({
 
             {/* Project Info */}
             <div className={`mb-8 sm:mb-10 ${previewMode === 'mobile' ? 'px-4' : 'px-4 sm:px-8 lg:px-10'}`}>
-              <h3 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>PROJET: d</h3>
-              <p className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>ddd</p>
+              <h3 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>PROJET: {projectInfo?.description || 'Nouveau devis'}</h3>
+              <p className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>{projectInfo?.description || 'Description du projet'}</p>
             </div>
                 
             {/* Tasks Table */}
@@ -438,11 +479,21 @@ const QuotePreview = ({
               <div>
                 <h4 className={`font-semibold text-black mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>Signature de l'entreprise:</h4>
                 <div className={`border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50 flex items-center justify-center ${previewMode === 'mobile' ? 'p-3 min-h-[60px]' : 'p-4 sm:p-6 min-h-[80px] sm:min-h-[100px]'}`}>
-                  <p className={`text-black ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`}>Zone de signature électronique</p>
+                  {companyInfo.signature ? (
+                    <div className="w-full">
+                      <img 
+                        src={companyInfo.signature} 
+                        alt="Signature de l'entreprise" 
+                        className="max-h-12 max-w-full mx-auto"
+                      />
+                      <p className={`text-xs text-black mt-1 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`}>
+                        Signé le {new Date().toLocaleDateString('fr-FR')}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className={`text-black ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`}>Zone de signature électronique</p>
+                  )}
                 </div>
-                <p className={`text-black mt-2 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`}>
-                  Date: _______________
-                </p>
               </div>
               <div>
                 <h4 className={`font-semibold text-black mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>Bon pour accord client:</h4>
@@ -462,9 +513,6 @@ const QuotePreview = ({
                     <p className={`text-black ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`}>Signature du client</p>
                   )}
                 </div>
-                <p className={`text-black mt-2 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`}>
-                  Date: {signatureData?.signedAt ? new Date(signatureData.signedAt).toLocaleDateString('fr-FR') : '_______________'}
-                </p>
               </div>
             </div>
           </div>
