@@ -15,7 +15,7 @@ const TopClients = () => {
       quotes: 8,
       signatureRate: 87,
       lastContact: '2025-07-18',
-      status: 'active'
+      isActive: true
     },
     {
       id: 2,
@@ -26,7 +26,7 @@ const TopClients = () => {
       quotes: 6,
       signatureRate: 75,
       lastContact: '2025-07-17',
-      status: 'active'
+      isActive: true
     },
     {
       id: 3,
@@ -37,7 +37,7 @@ const TopClients = () => {
       quotes: 4,
       signatureRate: 92,
       lastContact: '2025-07-16',
-      status: 'prospect'
+      isActive: false
     },
     {
       id: 4,
@@ -48,29 +48,24 @@ const TopClients = () => {
       quotes: 5,
       signatureRate: 68,
       lastContact: '2025-07-15',
-      status: 'active'
+      isActive: true
     }
   ];
 
-  const getStatusConfig = (status) => {
+  const getStatusConfig = (isActive) => {
     const configs = {
-      active: {
+      true: {
         label: t('dashboard.topClients.statuses.active.label'),
         color: t('dashboard.topClients.statuses.active.color'),
         bg: t('dashboard.topClients.statuses.active.bg')
       },
-      prospect: {
-        label: t('dashboard.topClients.statuses.prospect.label'),
-        color: t('dashboard.topClients.statuses.prospect.color'),
-        bg: t('dashboard.topClients.statuses.prospect.bg')
-      },
-      inactive: {
+      false: {
         label: t('dashboard.topClients.statuses.inactive.label'),
         color: t('dashboard.topClients.statuses.inactive.color'),
         bg: t('dashboard.topClients.statuses.inactive.bg')
       }
     };
-    return configs[status] || configs.prospect;
+    return configs[isActive] || configs.false;
   };
 
   const getSignatureRateColor = (rate) => {
@@ -90,7 +85,7 @@ const TopClients = () => {
       </div>
       <div className="space-y-3 sm:space-y-4">
         {clients.map((client, index) => {
-          const statusConfig = getStatusConfig(client.status);
+          const statusConfig = getStatusConfig(client.isActive);
           return (
             <div key={client.id} className="flex items-center space-x-3 sm:space-x-4 p-2.5 sm:p-3 rounded-lg hover:bg-muted/50 transition-colors duration-150">
               <div className="flex items-center space-x-2 sm:space-x-3">

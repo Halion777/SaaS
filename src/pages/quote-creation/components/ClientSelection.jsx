@@ -15,6 +15,9 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
     email: '',
     phone: '',
     address: '',
+    city: '',
+    country: '',
+    postalCode: '',
     contactPerson: '',
     companySize: '',
     regNumber: '',
@@ -248,7 +251,22 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       };
       onClientSelect(clientData);
       setShowNewClientForm(false);
-      setNewClient({ name: '', type: 'individual', email: '', phone: '', address: '', company: '', contactPerson: '', companySize: '' });
+      setNewClient({ 
+        name: '', 
+        type: 'individual', 
+        email: '', 
+        phone: '', 
+        address: '', 
+        city: '',
+        country: '',
+        postalCode: '',
+        contactPerson: '', 
+        companySize: '',
+        regNumber: '',
+        peppolId: '',
+        enablePeppol: false,
+        preferences: []
+      });
       setClientType('individual');
     }
   };
@@ -279,7 +297,21 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
 
   const handleClientTypeChange = (type) => {
     setClientType(type);
-    setNewClient(prev => ({ ...prev, type }));
+    setNewClient(prev => ({ 
+      ...prev, 
+      type,
+      // Reset professional-specific fields when switching to individual
+      ...(type === 'individual' && {
+        city: '',
+        country: '',
+        postalCode: '',
+        contactPerson: '',
+        companySize: '',
+        regNumber: '',
+        peppolId: '',
+        enablePeppol: false
+      })
+    }));
   };
 
   // Enhanced validation logic
@@ -305,6 +337,21 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
 
     return isClientValid && isProjectValid && isCustomCategoryValid;
   };
+
+  const countryOptions = [
+    { value: 'BE', label: 'Belgique' },
+    { value: 'FR', label: 'France' },
+    { value: 'CH', label: 'Suisse' },
+    { value: 'LU', label: 'Luxembourg' },
+    { value: 'CA', label: 'Canada' },
+    { value: 'US', label: 'États-Unis' },
+    { value: 'DE', label: 'Allemagne' },
+    { value: 'IT', label: 'Italie' },
+    { value: 'ES', label: 'Espagne' },
+    { value: 'NL', label: 'Pays-Bas' },
+    { value: 'GB', label: 'Royaume-Uni' },
+    { value: 'OTHER', label: 'Autre' }
+  ];
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -384,214 +431,200 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
 
             {/* Individual Client Form */}
             {clientType === 'individual' && (
-              <div className="space-y-3 sm:space-y-4">
-                <Input
-                  label="Nom complet"
-                  type="text"
-                  placeholder="Jean Martin"
-                  value={newClient.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  required
-                />
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Nom complet"
+                    type="text"
+                    placeholder="Nom et prénom"
+                    value={newClient.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    required
+                  />
+                  
                   <Input
                     label="Email"
                     type="email"
-                    placeholder="jean.martin@email.com"
+                    placeholder="email@exemple.com"
                     value={newClient.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     required
                   />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
                     label="Téléphone"
                     type="tel"
-                    placeholder="06 12 34 56 78"
+                    placeholder="04 12 34 56 78"
                     value={newClient.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
                     required
                   />
+                  
+                  <Input
+                    label="Adresse"
+                    type="text"
+                    placeholder="Adresse complète"
+                    value={newClient.address}
+                    onChange={(e) => handleInputChange('address', e.target.value)}
+                  />
                 </div>
-                
-                <Input
-                  label="Adresse"
-                  type="text"
-                  placeholder="123 Rue de la République, 75001 Paris"
-                  value={newClient.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                />
               </div>
             )}
 
             {/* Professional Client Form */}
             {clientType === 'professional' && (
-              <>
-                {/* Basic Information */}
-                <div className="space-y-4">
-                  <h3 className="font-medium text-foreground">Informations de base</h3>
-                  
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label="Nom / Raison sociale"
+                    label="Raison sociale"
                     type="text"
+                    placeholder="Nom de l'entreprise"
                     value={newClient.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
-                    placeholder="Nom du client ou de l'entreprise"
                     required
                   />
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input
-                      label="Email"
-                      type="email"
-                      value={newClient.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      placeholder="email@exemple.com"
-                      required
-                    />
-                    
-                    <Input
-                      label="Téléphone"
-                      type="tel"
-                      value={newClient.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                      placeholder="+33 6 12 34 56 78"
-                      required
-                    />
-                  </div>
-
+                  
+                  <Input
+                    label="Email"
+                    type="email"
+                    placeholder="email@exemple.com"
+                    value={newClient.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Téléphone"
+                    type="tel"
+                    placeholder="04 12 34 56 78"
+                    value={newClient.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    required
+                  />
+                  
                   <Input
                     label="Adresse"
                     type="text"
+                    placeholder="Adresse complète"
                     value={newClient.address}
                     onChange={(e) => handleInputChange('address', e.target.value)}
-                    placeholder="Adresse complète"
+                  />
+                </div>
+
+                {/* Location fields - moved here after telephone and address */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Ville"
+                    type="text"
+                    placeholder="Bruxelles"
+                    value={newClient.city}
+                    onChange={(e) => handleInputChange('city', e.target.value)}
+                  />
+                  
+                  <Select
+                    label="Pays"
+                    options={countryOptions}
+                    value={newClient.country}
+                    onChange={(e) => handleInputChange('country', e.target.value)}
+                    placeholder="Sélectionner le pays"
+                  />
+                  
+                  <Input
+                    label="Code postal"
+                    type="text"
+                    placeholder="1000"
+                    value={newClient.postalCode}
+                    onChange={(e) => handleInputChange('postalCode', e.target.value)}
                   />
                 </div>
 
                 {/* Professional-specific fields */}
-                <div className="space-y-4 border-t border-border pt-4">
-                  <h3 className="font-medium text-foreground">Informations entreprise</h3>
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-foreground">Informations professionnelles</h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
                       label="Personne de contact"
                       type="text"
+                      placeholder="Nom de la personne de contact"
                       value={newClient.contactPerson}
                       onChange={(e) => handleInputChange('contactPerson', e.target.value)}
-                      placeholder="Nom du contact principal"
                     />
                     
-                    <Select
+                    <Input
                       label="Taille de l'entreprise"
-                      options={companySizeOptions}
+                      type="text"
+                      placeholder="Ex: TPE, PME, Grande entreprise"
                       value={newClient.companySize}
                       onChange={(e) => handleInputChange('companySize', e.target.value)}
-                      placeholder="Sélectionner la taille"
+                    />
+                    
+                    <Input
+                      label="Numéro de TVA"
+                      type="text"
+                      placeholder="Numéro de TVA ou d'enregistrement"
+                      value={newClient.regNumber}
+                      onChange={(e) => handleInputChange('regNumber', e.target.value)}
                     />
                   </div>
-                  
-                  <Input
-                    label={t('registerForm.step1.vatNumber')}
-                    type="text"
-                    value={newClient.regNumber}
-                    onChange={(e) => handleInputChange('regNumber', e.target.value)}
-                    placeholder={t('registerForm.step1.vatNumberPlaceholder')}
-                  />
                 </div>
 
-                {/* Peppol Configuration */}
-                <div className="space-y-4 border-t border-border pt-4">
-                  <h3 className="font-medium text-foreground">Configuration Peppol</h3>
+                {/* PEPPOL Configuration - only for professional clients */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-foreground">Configuration PEPPOL</h3>
                   
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        id="enablePeppol"
-                        checked={newClient.enablePeppol}
-                        onChange={(e) => handleInputChange('enablePeppol', e.target.checked)}
-                        className="w-4 h-4 text-primary border-border rounded focus:ring-primary"
-                      />
-                      <label htmlFor="enablePeppol" className="text-sm font-medium">
-                        Activer l'envoi de factures via Peppol
-                      </label>
-                    </div>
-                    
-                    {newClient.enablePeppol && (
-                      <div className="space-y-4 pl-7">
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                          <div className="flex items-start space-x-3">
-                            <Icon name="Info" size={20} className="text-blue-600 mt-0.5" />
-                            <div>
-                              <h4 className="font-medium text-blue-900 mb-1">Facturation électronique Peppol</h4>
-                              <p className="text-sm text-blue-700">
-                                L'envoi de factures via Peppol nécessite un identifiant Peppol valide du client.
-                                Contactez votre client pour obtenir son Peppol ID.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Input
-                            label="Peppol ID du client *"
-                            type="text"
-                            value={newClient.peppolId}
-                            onChange={(e) => handleInputChange('peppolId', e.target.value)}
-                            placeholder="Ex: 0208:123456789"
-                            helperText="Format: [Pays]:[Numéro d'identification] (ex: 0208:123456789 pour la France)"
-                            required={newClient.enablePeppol}
-                          />
-                          {newClient.peppolId.trim() && (
-                            <div className="flex items-center space-x-2 text-xs">
-                              {validatePeppolId(newClient.peppolId.trim()) ? (
-                                <>
-                                  <Icon name="CheckCircle" size={14} color="var(--color-green)" />
-                                  <span className="text-green-600">Format Peppol ID valide</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Icon name="AlertCircle" size={14} color="var(--color-destructive)" />
-                                  <span className="text-red-600">Format invalide. Utilisez: 0208:123456789</span>
-                                </>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="enablePeppol"
+                      checked={newClient.enablePeppol}
+                      onChange={(e) => handleInputChange('enablePeppol', e.target.checked)}
+                      className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                    />
+                    <label htmlFor="enablePeppol" className="text-sm font-medium text-foreground">
+                      Activer PEPPOL pour ce client
+                    </label>
                   </div>
-                </div>
-
-                {/* Communication Preferences */}
-                <div className="space-y-4 border-t border-border pt-4">
-                  <h3 className="font-medium text-foreground">Préférences de communication</h3>
                   
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {preferenceOptions.map((preference) => (
-                      <div
-                        key={preference.value}
-                        className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                          newClient.preferences?.includes(preference.value)
-                            ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/50'
-                        }`}
-                        onClick={() => handlePreferenceToggle(preference.value)}
-                      >
-                        <div className="flex items-center justify-center space-x-2">
-                          <input
-                            type="checkbox"
-                            checked={newClient.preferences?.includes(preference.value) || false}
-                            onChange={() => {}}
-                            className="w-4 h-4 text-primary border-border rounded focus:ring-primary"
-                          />
-                          <span className="text-sm font-medium">{preference.label}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  {newClient.enablePeppol && (
+                    <Input
+                      label="Peppol ID du client"
+                      type="text"
+                      placeholder="Format: 0000:IDENTIFIANT"
+                      value={newClient.peppolId}
+                      onChange={(e) => handleInputChange('peppolId', e.target.value)}
+                    />
+                  )}
                 </div>
-              </>
+              </div>
             )}
+
+            {/* Communication Preferences */}
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-foreground">
+                Préférences de communication
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {preferenceOptions.map((preference) => (
+                  <div key={preference.value} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={preference.value}
+                      checked={newClient.preferences.includes(preference.value)}
+                      onChange={(e) => handlePreferenceToggle(preference.value)}
+                      className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                    />
+                    <label htmlFor={preference.value} className="text-sm text-foreground">
+                      {preference.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
             
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-3 sm:pt-4 justify-end">
               <Button
@@ -599,7 +632,22 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                 variant="outline"
                 onClick={() => {
                   setShowNewClientForm(false);
-                  setNewClient({ name: '', type: 'individual', email: '', phone: '', address: '', contactPerson: '', companySize: '', regNumber: '', peppolId: '', enablePeppol: false, preferences: [] });
+                  setNewClient({ 
+                    name: '', 
+                    type: 'individual', 
+                    email: '', 
+                    phone: '', 
+                    address: '', 
+                    city: '',
+                    country: '',
+                    postalCode: '',
+                    contactPerson: '', 
+                    companySize: '', 
+                    regNumber: '', 
+                    peppolId: '', 
+                    enablePeppol: false, 
+                    preferences: [] 
+                  });
                   setClientType('individual');
                 }}
               >

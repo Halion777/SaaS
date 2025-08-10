@@ -8,23 +8,30 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
 
   const typeOptions = [
     { value: 'all', label: 'Tous les types' },
-    { value: 'individual', label: 'Particuliers' },
-    { value: 'professional', label: 'Professionnels' }
+    { value: 'particulier', label: 'Particulier' },
+    { value: 'professionnel', label: 'Professionnel' }
   ];
 
   const statusOptions = [
     { value: 'all', label: 'Tous les statuts' },
     { value: 'active', label: 'Actifs' },
-    { value: 'inactive', label: 'Inactifs' },
-    { value: 'prospect', label: 'Prospects' }
+    { value: 'inactive', label: 'Inactifs' }
   ];
 
   const locationOptions = [
-    { value: 'all', label: 'Toutes les régions' },
-    { value: 'paris', label: 'Île-de-France' },
-    { value: 'lyon', label: 'Auvergne-Rhône-Alpes' },
-    { value: 'marseille', label: 'PACA' },
-    { value: 'other', label: 'Autres régions' }
+    { value: 'all', label: 'Tous les pays' },
+    { value: 'BE', label: 'Belgique' },
+    { value: 'FR', label: 'France' },
+    { value: 'CH', label: 'Suisse' },
+    { value: 'LU', label: 'Luxembourg' },
+    { value: 'CA', label: 'Canada' },
+    { value: 'US', label: 'États-Unis' },
+    { value: 'DE', label: 'Allemagne' },
+    { value: 'IT', label: 'Italie' },
+    { value: 'ES', label: 'Espagne' },
+    { value: 'NL', label: 'Pays-Bas' },
+    { value: 'GB', label: 'Royaume-Uni' },
+    { value: 'OTHER', label: 'Autres pays' }
   ];
 
   const handleFilterChange = (key, value) => {
