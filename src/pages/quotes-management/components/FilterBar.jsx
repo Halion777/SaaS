@@ -4,7 +4,7 @@ import Select from '../../../components/ui/Select';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 
-const FilterBar = ({ filters, onFiltersChange, onClearFilters }) => {
+const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) => {
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [amountRange, setAmountRange] = useState({ min: '', max: '' });
   const [isExpanded, setIsExpanded] = useState(false);
@@ -18,17 +18,27 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters }) => {
     { value: 'expired', label: 'Expiré' }
   ];
 
-  const clientOptions = [
-    { value: '', label: 'Tous les clients' },
-    { value: 'marie-dubois', label: 'Marie Dubois' },
-    { value: 'pierre-martin', label: 'Pierre Martin' },
-    { value: 'sophie-bernard', label: 'Sophie Bernard' },
-    { value: 'jean-moreau', label: 'Jean Moreau' },
-    { value: 'claire-petit', label: 'Claire Petit' },
-    { value: 'michel-durand', label: 'Michel Durand' },
-    { value: 'isabelle-leroy', label: 'Isabelle Leroy' },
-    { value: 'thomas-roux', label: 'Thomas Roux' }
-  ];
+  // Generate client options from actual quotes data
+  const clientOptions = React.useMemo(() => {
+    const uniqueClients = new Map();
+    
+    // Add default option
+    uniqueClients.set('', { value: '', label: 'Tous les clients' });
+    
+    // Extract unique clients from quotes
+    quotes.forEach(quote => {
+      if (quote.client && quote.client.id) {
+        const clientId = quote.client.id.toString();
+        const clientName = quote.client.name || quote.clientName || 'Client inconnu';
+        
+        if (!uniqueClients.has(clientId)) {
+          uniqueClients.set(clientId, { value: clientId, label: clientName });
+        }
+      }
+    });
+    
+    return Array.from(uniqueClients.values());
+  }, [quotes]);
 
   const handleDateRangeChange = (field, value) => {
     const newRange = { ...dateRange, [field]: value };

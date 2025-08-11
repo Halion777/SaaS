@@ -291,7 +291,7 @@ const QuotesManagement = () => {
       // Filter by client
       if (newFilters.client) {
         filtered = filtered.filter(q => 
-          q.clientName.toLowerCase().includes(newFilters.client.toLowerCase())
+          q.client && q.client.id && q.client.id.toString() === newFilters.client
         );
       }
       
@@ -533,11 +533,12 @@ const QuotesManagement = () => {
           </div>
 
           {/* Filters */}
-          <FilterBar
-            filters={filters}
-            onFiltersChange={handleFiltersChange}
-            onClearFilters={handleClearFilters}
-          />
+                  <FilterBar
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          onClearFilters={handleClearFilters}
+          quotes={quotes}
+        />
 
           {/* Bulk Actions */}
           {selectedQuotes.length > 0 && (
