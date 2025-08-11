@@ -5,6 +5,9 @@ import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
 import { fetchClients, createClient } from '../../../services/clientsService';
+import { generateProjectDescriptionWithGemini, isGoogleAIServiceAvailable } from '../../../services/googleAIService';
+import { enhanceTranscriptionWithAI } from '../../../services/googleAIService';
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
 const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjectInfoChange, onNext }) => {
   const { t } = useTranslation();
@@ -33,6 +36,25 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
   const [createError, setCreateError] = useState(null);
   const [createSuccess, setCreateSuccess] = useState(false);
   const [clientsRefreshTrigger, setClientsRefreshTrigger] = useState(0);
+  
+  // AI functionality state
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [aiError, setAiError] = useState(null);
+  
+  // Speech recognition hook
+  const {
+    transcript,
+    listening,
+    resetTranscript,
+    browserSupportsSpeechRecognition,
+    isMicrophoneAvailable
+  } = useSpeechRecognition();
+  
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [wasGeneratedByAI, setWasGeneratedByAI] = useState(false);
 
   // Fetch existing clients on component mount
   useEffect(() => {
@@ -76,6 +98,28 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
 
     loadClients();
   }, [clientsRefreshTrigger]);
+
+  // Cleanup recording state on unmount
+  useEffect(() => {
+    return () => {
+      if (isRecording) {
+        SpeechRecognition.stopListening();
+      }
+    };
+  }, [isRecording]);
+
+  // Timer effect for recording
+  useEffect(() => {
+    let timer;
+    if (isRecording) {
+      timer = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isRecording]);
 
   const typeOptions = [
     { value: 'particulier', label: 'Particulier' },
@@ -375,6 +419,140 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
   const handleProjectChange = (field, value) => {
     const updatedProjectInfo = { ...projectInfo, [field]: value };
     onProjectInfoChange(updatedProjectInfo);
+    
+    // Clear AI error when user modifies the description or categories
+    if (field === 'description' || field === 'categories' || field === 'customCategory') {
+      setAiError(null);
+    }
+  };
+
+  const handleAIDescriptionGeneration = async () => {
+    try {
+      setIsGeneratingAI(true);
+      setAiError(null);
+      
+      // Get the selected category (use custom category if 'autre' is selected)
+      const selectedCategory = projectInfo.categories?.includes('autre') 
+        ? projectInfo.customCategory 
+        : projectInfo.categories?.[0] || '';
+      
+      if (!selectedCategory) {
+        setAiError('Veuillez d\'abord sélectionner une catégorie de projet');
+        return;
+      }
+      
+      // Generate AI description with Google Gemini
+      const result = await generateProjectDescriptionWithGemini(
+        selectedCategory,
+        projectInfo.description,
+        projectInfo.customCategory
+      );
+      
+      if (result.success && result.data) {
+        // Update the project description with AI-generated content
+        onProjectInfoChange({ 
+          ...projectInfo, 
+          description: result.data 
+        });
+      } else {
+        setAiError(result.error || 'Erreur lors de la génération de la description');
+      }
+    } catch (error) {
+      console.error('Error generating AI description:', error);
+      setAiError('Erreur inattendue lors de la génération de la description');
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
+  // Voice recording functions
+  const startRecording = async () => {
+    try {
+      // Check browser compatibility
+      if (!browserSupportsSpeechRecognition) {
+        setAiError('Votre navigateur ne supporte pas la reconnaissance vocale. Utilisez Chrome, Edge, ou Safari.');
+        return;
+      }
+
+      if (!isMicrophoneAvailable) {
+        setAiError('Microphone non disponible. Vérifiez les permissions microphone dans votre navigateur.');
+        return;
+      }
+
+      // Reset previous transcript
+      resetTranscript();
+      
+      // Start speech recognition
+      SpeechRecognition.startListening({ 
+        continuous: true, 
+        language: 'fr-FR',
+        interimResults: false
+      });
+      
+      setIsRecording(true);
+      setRecordingTime(0);
+      
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      setAiError('Erreur lors du démarrage de la reconnaissance vocale.');
+    }
+  };
+
+  const stopRecording = async () => {
+    try {
+      // Stop speech recognition
+      SpeechRecognition.stopListening();
+      setIsRecording(false);
+      
+      // Process the transcript if available
+      if (transcript && transcript.trim()) {
+        await processTranscription(transcript.trim());
+      } else {
+        setAiError('Aucun texte détecté. Essayez de parler plus clairement.');
+      }
+      
+    } catch (error) {
+      console.error('Error stopping recording:', error);
+      setAiError('Erreur lors de l\'arrêt de la reconnaissance vocale.');
+    }
+  };
+
+  const processTranscription = async (rawTranscript) => {
+    try {
+      setIsTranscribing(true);
+      setAiError(null);
+      
+      // Enhance transcription with AI using project context
+      const enhancedResult = await enhanceTranscriptionWithAI(
+        rawTranscript, 
+        projectInfo.categories, 
+        projectInfo.customCategory
+      );
+      
+      if (enhancedResult.success && enhancedResult.data) {
+        // Update the project description with enhanced text
+        onProjectInfoChange({ 
+          ...projectInfo, 
+          description: enhancedResult.data 
+        });
+        
+        // Show success message
+        setAiError(null);
+      } else {
+        // If AI enhancement fails, use the raw transcription
+        onProjectInfoChange({ 
+          ...projectInfo, 
+          description: rawTranscript 
+        });
+        setAiError(enhancedResult.error || 'Transcription réussie mais amélioration IA échouée.');
+      }
+      
+    } catch (error) {
+      console.error('Error processing transcription:', error);
+      setAiError('Erreur lors du traitement de la transcription.');
+    } finally {
+      setIsTranscribing(false);
+    }
   };
 
   const handleClientTypeChange = (type) => {
@@ -847,10 +1025,14 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
             </div>
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              Description du projet
-            </label>
+                      <div>
+              <label className="block text-sm font-medium text-foreground mb-2 flex items-center justify-between">
+                <span>Description du projet</span>
+                <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                  <Icon name="Info" size={14} />
+                  <span>L'IA analyse la catégorie et votre contexte</span>
+                </div>
+              </label>
             <div className="relative">
               <textarea
                 value={projectInfo.description}
@@ -864,20 +1046,98 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                 <Button
                   variant="ghost"
                   size="xs"
-                  iconName="Mic"
-                  title="Dicter la description"
+                  iconName={isRecording ? "Square" : isTranscribing ? "Loader2" : "Mic"}
+                  title={
+                    isRecording 
+                      ? `Arrêter l'écoute (${recordingTime}s)` 
+                      : isTranscribing 
+                        ? "Amélioration IA en cours..." 
+                        : "Dicter la description"
+                  }
+                  onClick={isRecording ? stopRecording : startRecording}
+                  disabled={isTranscribing || isGeneratingAI}
+                  className={
+                    isRecording 
+                      ? "text-red-500 animate-pulse" 
+                      : isTranscribing 
+                        ? "animate-spin" 
+                        : ""
+                  }
                 />
                 <Button
                   variant="ghost"
                   size="xs"
-                  iconName="Sparkles"
-                  title="Enrichir avec l'IA"
+                  iconName={isGeneratingAI ? "Loader2" : "Sparkles"}
+                  title={
+                    isGeneratingAI 
+                      ? "Génération en cours..." 
+                      : !isGoogleAIServiceAvailable() 
+                        ? "Service Google AI indisponible" 
+                        : "Enrichir avec Google AI"
+                  }
+                  onClick={handleAIDescriptionGeneration}
+                  disabled={isGeneratingAI || !isGoogleAIServiceAvailable()}
+                  className={isGeneratingAI ? "animate-spin" : ""}
                 />
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Décrivez précisément le projet pour un devis adapté
             </p>
+            
+            {/* Recording Status */}
+            {isRecording && (
+              <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-md">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs text-red-700">
+                    Écoute en cours... {recordingTime}s
+                  </span>
+                </div>
+                {transcript && (
+                  <div className="mt-2 p-2 bg-white rounded border border-red-100">
+                    <p className="text-xs text-gray-600 mb-1">Texte détecté:</p>
+                    <p className="text-sm text-gray-800">{transcript}</p>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Transcription Status */}
+            {isTranscribing && (
+              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="flex items-center space-x-2">
+                  <Icon name="Loader2" size={14} className="animate-spin text-blue-600" />
+                  <span className="text-xs text-blue-700">
+                    Amélioration IA en cours...
+                  </span>
+                </div>
+              </div>
+            )}
+            
+            {/* AI Error Display */}
+            {aiError && (
+              <div className="mt-2 p-2 bg-destructive/10 border border-destructive/20 rounded-md">
+                <div className="flex items-center space-x-2">
+                  <Icon name="AlertCircle" size={14} className="text-destructive" />
+                  <span className="text-xs text-destructive">{aiError}</span>
+                </div>
+              </div>
+            )}
+            
+            {/* Success Message - Show only when description is successfully generated */}
+            {!aiError && projectInfo.description && !isRecording && !isTranscribing && (
+              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
+                <div className="flex items-center space-x-2">
+                  <Icon name="CheckCircle" size={14} className="text-green-600" />
+                  <span className="text-xs text-green-700">
+                    {transcript ? 'Description dictée et améliorée par l\'IA' : 'Description générée avec succès par Google AI'}
+                  </span>
+                </div>
+              </div>
+            )}
+            
+
           </div>
         </div>
       </div>

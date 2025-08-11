@@ -3,8 +3,9 @@ import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import Select from '../../../components/ui/Select';
 import Icon from '../../../components/AppIcon';
-import VoiceInput from '../../../components/VoiceInput';
-import { generateTaskDescription } from '../../../services/openaiService';
+import { generateTaskDescriptionWithGemini } from '../../../services/googleAIService';
+import { enhanceTranscriptionWithAI } from '../../../services/googleAIService';
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
 const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCategory }) => {
   const [currentTask, setCurrentTask] = useState({
@@ -19,9 +20,25 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
   const [editingPredefinedTask, setEditingPredefinedTask] = useState(null);
   const [editingExistingTask, setEditingExistingTask] = useState(null);
   const [newMaterial, setNewMaterial] = useState({ name: '', quantity: '', unit: '', price: '' });
+  const [editingMaterial, setEditingMaterial] = useState(null);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
+  
+  // Speech recognition hook
+  const {
+    transcript,
+    listening,
+    resetTranscript,
+    browserSupportsSpeechRecognition,
+    isMicrophoneAvailable
+  } = useSpeechRecognition();
+  
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [wasGeneratedByAI, setWasGeneratedByAI] = useState(false);
   // Remove selectedCategories state
   // const [selectedCategories, setSelectedCategories] = useState([]);
 
@@ -667,6 +684,98 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
     { value: 'days', label: 'Jours' }
   ];
 
+  // Voice recording functions
+  const startRecording = async () => {
+    try {
+      // Check browser compatibility
+      if (!browserSupportsSpeechRecognition) {
+        console.error('Browser does not support speech recognition');
+        return;
+      }
+
+      if (!isMicrophoneAvailable) {
+        console.error('Microphone not available');
+        return;
+      }
+
+      // Reset previous transcript
+      resetTranscript();
+      
+      // Start speech recognition
+      SpeechRecognition.startListening({ 
+        continuous: true, 
+        language: 'fr-FR',
+        interimResults: false
+      });
+      
+      setIsRecording(true);
+      setIsVoiceActive(true);
+      setRecordingTime(0);
+      
+    } catch (error) {
+      console.error('Error starting recording:', error);
+    }
+  };
+
+  const stopRecording = async () => {
+    try {
+      // Stop speech recognition
+      SpeechRecognition.stopListening();
+      setIsRecording(false);
+      setIsVoiceActive(false);
+      
+      // Process the transcript if available
+      if (transcript && transcript.trim()) {
+        await processTranscription(transcript.trim());
+      } else {
+        console.log('No transcript available');
+      }
+      
+    } catch (error) {
+      console.error('Error stopping recording:', error);
+    }
+  };
+
+  const processTranscription = async (rawTranscript) => {
+    try {
+      setIsTranscribing(true);
+      
+      // Enhance transcription with AI using project context
+      const enhancedResult = await enhanceTranscriptionWithAI(
+        rawTranscript, 
+        [projectCategory], // Pass the project category
+        '' // No custom category for tasks
+      );
+      
+      if (enhancedResult.success && enhancedResult.data) {
+        // Update the task description with enhanced text
+        setCurrentTask(prev => ({ 
+          ...prev, 
+          description: enhancedResult.data 
+        }));
+        setWasGeneratedByAI(true);
+      } else {
+        // If AI enhancement fails, use the raw transcription
+        setCurrentTask(prev => ({ 
+          ...prev, 
+          description: rawTranscript 
+        }));
+        setWasGeneratedByAI(true);
+        console.error('AI enhancement failed:', enhancedResult.error);
+      }
+      
+    } catch (error) {
+      console.error('Error processing transcription:', error);
+      // Fallback to raw transcription
+      setCurrentTask(prev => ({ 
+        ...prev, 
+        description: rawTranscript 
+      }));
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
   const handleVoiceTranscription = async (transcription) => {
     if (transcription) {
       setIsGenerating(true);
@@ -676,22 +785,27 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         const enhancedPrompt = `Créez une description détaillée pour cette tâche: "${transcription}". 
         Incluez les spécifications techniques, les étapes de réalisation, et estimez les matériaux nécessaires.`;
         
-        const aiResponse = await generateTaskDescription(enhancedPrompt);
-        setCurrentTask(prev => ({
-          ...prev,
-          description: aiResponse.description,
-          duration: aiResponse.estimatedDuration || prev.duration,
-          materials: [
-            ...prev.materials,
-            ...aiResponse.suggestedMaterials?.map(mat => ({
-              id: Date.now() + Math.random(),
-              name: mat.name,
-              quantity: mat.quantity,
-              unit: mat.unit,
-              price: 0
-            })) || []
-          ]
-        }));
+        const aiResponse = await generateTaskDescriptionWithGemini(transcription);
+        if (aiResponse.success && aiResponse.data) {
+          setCurrentTask(prev => ({
+            ...prev,
+            description: aiResponse.data.description,
+            duration: aiResponse.data.estimatedDuration || prev.duration,
+            materials: [
+              ...prev.materials,
+              ...aiResponse.data.suggestedMaterials?.map(mat => ({
+                id: Date.now() + Math.random(),
+                name: mat.name,
+                quantity: mat.quantity,
+                unit: mat.unit,
+                price: 0
+              })) || []
+            ]
+          }));
+        } else {
+          // Fallback: use the transcription directly
+          setCurrentTask(prev => ({ ...prev, description: transcription }));
+        }
       } catch (error) {
         console.error('AI generation error:', error);
         // Fallback: use the transcription directly
@@ -716,8 +830,35 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
       }
     }
 
+    // Reset AI generation flag when user manually types in description
+    if (field === 'description') {
+      setWasGeneratedByAI(false);
+    }
+
     setCurrentTask(updatedTask);
   };
+
+  // Timer effect for recording
+  useEffect(() => {
+    let timer;
+    if (isRecording) {
+      timer = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isRecording]);
+
+  // Cleanup recording state on unmount
+  useEffect(() => {
+    return () => {
+      if (isRecording) {
+        SpeechRecognition.stopListening();
+      }
+    };
+  }, [isRecording]);
 
   // Remove handleCategoryToggle method
   // const handleCategoryToggle = (category) => {
@@ -735,8 +876,10 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
   const addMaterial = () => {
     if (newMaterial.name && newMaterial.quantity && newMaterial.unit) {
       const material = {
-        id: Date.now(),
-        ...newMaterial,
+        id: Date.now() + Math.random(), // Ensure unique ID
+        name: newMaterial.name,
+        quantity: parseFloat(newMaterial.quantity),
+        unit: newMaterial.unit,
         price: parseFloat(newMaterial.price) || 0
       };
       setCurrentTask(prev => ({
@@ -754,6 +897,50 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
     }));
   };
 
+  const editMaterial = (material) => {
+    if (!material || !material.id) return;
+    
+    setEditingMaterial(material);
+    setNewMaterial({
+      name: material.name || '',
+      quantity: (material.quantity || 0).toString(),
+      unit: material.unit || '',
+      price: (material.price || 0).toString()
+    });
+  };
+
+  const saveMaterialEdit = () => {
+    if (!editingMaterial) return;
+    
+    setCurrentTask(prev => ({
+      ...prev,
+      materials: prev.materials.map(m => 
+        m.id === editingMaterial.id 
+          ? {
+              ...m,
+              name: newMaterial.name,
+              quantity: parseFloat(newMaterial.quantity),
+              unit: newMaterial.unit,
+              price: parseFloat(newMaterial.price)
+            }
+          : m
+      )
+    }));
+    
+    setEditingMaterial(null);
+    setNewMaterial({ name: '', quantity: '', unit: '', price: '' });
+  };
+
+  const cancelMaterialEdit = () => {
+    setEditingMaterial(null);
+    setNewMaterial({ name: '', quantity: '', unit: '', price: '' });
+  };
+
+  const clearMaterialForm = () => {
+    setNewMaterial({ name: '', quantity: '', unit: '', price: '' });
+    setEditingMaterial(null);
+  };
+
   const addTask = () => {
     if (currentTask.description && currentTask.duration && currentTask.price) {
       const task = {
@@ -766,6 +953,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
       // Clear the form and editing state
       setCurrentTask({ description: '', duration: '', price: '', materials: [], hourlyRate: '', pricingType: 'flat' });
       setEditingPredefinedTask(null);
+      clearMaterialForm();
     }
   };
 
@@ -865,22 +1053,30 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
       const enhancedPrompt = `Améliorez et détaillez cette description de tâche: "${currentTask.description}". 
       Ajoutez des spécifications techniques professionnelles et des recommandations d'optimisation.`;
       
-      const aiResponse = await generateTaskDescription(enhancedPrompt);
-      setCurrentTask(prev => ({
-        ...prev,
-        description: aiResponse.description,
-        duration: aiResponse.estimatedDuration || prev.duration,
-        materials: [
-          ...prev.materials,
-          ...aiResponse.suggestedMaterials?.map(mat => ({
-            id: Date.now() + Math.random(),
-            name: mat.name,
-            quantity: mat.quantity,
-            unit: mat.unit,
-            price: 0
-          })) || []
-        ]
-      }));
+      const aiResponse = await generateTaskDescriptionWithGemini(currentTask.description);
+      if (aiResponse.success && aiResponse.data) {
+        setCurrentTask(prev => ({
+          ...prev,
+          description: aiResponse.data.description,
+          duration: aiResponse.data.estimatedDuration || prev.duration,
+          materials: [
+            ...prev.materials,
+            ...aiResponse.data.suggestedMaterials?.map(mat => ({
+              id: Date.now() + Math.random(),
+              name: mat.name,
+              quantity: mat.quantity,
+              unit: mat.unit,
+              price: 0
+            })) || []
+          ]
+        }));
+        
+        // Show warning if response was partial
+        if (aiResponse.warning) {
+          // You can add a toast notification here if you have one
+          console.warn('AI Response Warning:', aiResponse.warning);
+        }
+      }
     } catch (error) {
       console.error('AI generation error:', error);
     } finally {
@@ -1051,38 +1247,74 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                     Annuler
                   </Button>
                 )}
-                <VoiceInput
-                  onTranscription={handleVoiceTranscription}
-                  disabled={isGenerating}
-                  onRecordingStart={() => setIsVoiceActive(true)}
-                  onRecordingStop={() => setIsVoiceActive(false)}
-                />
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setShowAIAssistant(!showAIAssistant)}
-                  iconName="Sparkles"
-                  iconPosition="left"
-                  className={showAIAssistant ? "bg-primary/10 text-primary" : ""}
-                >
-                  Assistant IA
-                </Button>
+                  iconName={isRecording ? "Square" : isTranscribing ? "Loader2" : "Mic"}
+                  title={
+                    isRecording 
+                      ? `Arrêter l'écoute (${recordingTime}s)` 
+                      : isTranscribing 
+                        ? "Amélioration IA en cours..." 
+                        : "Dicter la description de la tâche"
+                  }
+                  onClick={isRecording ? stopRecording : startRecording}
+                  disabled={isTranscribing || isGenerating}
+                  className={
+                    isRecording 
+                      ? "text-red-500 animate-pulse" 
+                      : isTranscribing 
+                        ? "animate-spin" 
+                        : ""
+                  }
+                />
+
               </div>
             </h3>
             
-            {/* Voice Status Indicator */}
-            {isVoiceActive && (
-              <div className="mb-3 sm:mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+            {/* Recording Status */}
+            {isRecording && (
+              <div className="mb-3 sm:mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                 <div className="flex items-center space-x-2 sm:space-x-3">
                   <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full animate-pulse"></div>
-                  <Icon name="Mic" size={14} className="sm:w-4 sm:h-4 text-primary" />
-                  <span className="text-xs sm:text-sm text-primary font-medium">
-                    Parlez maintenant... L'IA va générer une description complète de votre tâche
+                  <Icon name="Mic" size={14} className="sm:w-4 sm:h-4 text-red-600" />
+                  <span className="text-xs sm:text-sm text-red-700 font-medium">
+                    Écoute en cours... {recordingTime}s
                   </span>
                 </div>
+                {transcript && (
+                  <div className="mt-2 p-2 bg-white rounded border border-red-100">
+                    <p className="text-xs text-gray-600 mb-1">Texte détecté:</p>
+                    <p className="text-sm text-gray-800">{transcript}</p>
+                  </div>
+                )}
                 <p className="text-xs text-muted-foreground mt-2">
                   💡 Conseil: Décrivez précisément la tâche, les matériaux nécessaires et les spécifications techniques
                 </p>
+              </div>
+            )}
+            
+            {/* Transcription Status */}
+            {isTranscribing && (
+              <div className="mb-3 sm:mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <Icon name="Loader2" size={14} className="sm:w-4 sm:h-4 animate-spin text-blue-600" />
+                  <span className="text-xs sm:text-sm text-blue-700 font-medium">
+                    Amélioration IA en cours...
+                  </span>
+                </div>
+              </div>
+            )}
+            
+            {/* Success Message - Only show after successful AI transcription, not manual typing */}
+            {!isRecording && !isTranscribing && wasGeneratedByAI && currentTask.description && (
+              <div className="mb-3 sm:mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <Icon name="CheckCircle" size={14} className="sm:w-4 sm:h-4 text-green-600" />
+                  <span className="text-xs sm:text-sm text-green-700 font-medium">
+                    Description de tâche dictée et améliorée par l'IA
+                  </span>
+                </div>
               </div>
             )}
 
@@ -1109,31 +1341,34 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
             
             <div className="space-y-3 sm:space-y-4">
               <div className="space-y-2">
-                <Input
-                  label="Description de la tâche"
-                  type="text"
-                  placeholder="Décrivez la tâche à réaliser ou utilisez la dictée vocale pour une description IA complète..."
-                  value={currentTask.description}
-                  onChange={(e) => handleTaskChange('description', e.target.value)}
-                  description="Utilisez la dictée vocale pour une génération automatique par IA"
-                  disabled={isGenerating}
-                  className={isVoiceActive ? "border-primary bg-primary/5" : ""}
-                />
+                <div className="relative">
+                  <Input
+                    label="Description de la tâche"
+                    type="text"
+                    placeholder="Décrivez la tâche à réaliser ou utilisez la dictée vocale pour une description IA complète..."
+                    value={currentTask.description}
+                    onChange={(e) => handleTaskChange('description', e.target.value)}
+                    description="Utilisez la dictée vocale pour une génération automatique par IA"
+                    disabled={isGenerating || isTranscribing}
+                    className={isRecording ? "border-red-500 bg-red-50" : ""}
+                  />
+                  
+                  {/* AI Enhancement Button */}
+                  {currentTask.description && !isGenerating && !isTranscribing && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="xs"
+                      iconName="Sparkles"
+                      title="Améliorer la description avec l'IA"
+                      onClick={generateAIDescription}
+                      disabled={isGenerating || isTranscribing}
+                      className="absolute right-2 top-8 text-primary hover:text-primary/80"
+                    />
+                  )}
+                </div>
                 
-                {currentTask.description && !isGenerating && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={generateAIDescription}
-                    disabled={isGenerating}
-                    iconName="Sparkles"
-                    iconPosition="left"
-                    className="bg-gradient-to-r from-primary/10 to-success/10 hover:from-primary/20 hover:to-success/20"
-                  >
-                    Améliorer avec IA
-                  </Button>
-                )}
+
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
@@ -1209,18 +1444,32 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                 
                 <div className="flex justify-end mb-3">
                   <div className="text-right">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addMaterial}
-                      disabled={!newMaterial.name || !newMaterial.quantity || !newMaterial.unit}
-                      iconName="Plus"
-                      iconPosition="left"
-                      className={!newMaterial.name || !newMaterial.quantity || !newMaterial.unit ? "opacity-50 cursor-not-allowed" : ""}
-                    >
-                      Ajouter le matériau
-                    </Button>
+                    <div className="flex space-x-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={editingMaterial ? saveMaterialEdit : addMaterial}
+                        disabled={!newMaterial.name || !newMaterial.quantity || !newMaterial.unit}
+                        iconName={editingMaterial ? "Save" : "Plus"}
+                        iconPosition="left"
+                        className={!newMaterial.name || !newMaterial.quantity || !newMaterial.unit ? "opacity-50 cursor-not-allowed" : ""}
+                      >
+                        {editingMaterial ? "Sauvegarder" : "Ajouter le matériau"}
+                      </Button>
+                      {editingMaterial && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={cancelMaterialEdit}
+                          iconName="X"
+                          iconPosition="left"
+                        >
+                          Annuler
+                        </Button>
+                      )}
+                    </div>
                     {(!newMaterial.name || !newMaterial.quantity || !newMaterial.unit) && (
                       <p className="text-xs text-muted-foreground mt-1">
                         Remplissez le nom, la quantité et l'unité pour ajouter un matériau
@@ -1232,19 +1481,40 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                 {currentTask.materials.length > 0 && (
                   <div className="space-y-2">
                     {currentTask.materials.map((material) => (
-                      <div key={material.id} className="flex items-center justify-between p-3 bg-background border border-border rounded">
+                      <div key={material.id} className={`flex items-center justify-between p-3 border rounded ${
+                        editingMaterial?.id === material.id 
+                          ? 'bg-primary/5 border-primary' 
+                          : 'bg-background border-border'
+                      }`}>
                         <div className="flex-1">
-                          <span className="font-medium">{material.name}</span>
-                          <span className="text-muted-foreground ml-2">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-medium">{material.name}</span>
+                            {editingMaterial?.id === material.id && (
+                              <span className="px-2 py-1 bg-primary text-white text-xs rounded-full">
+                                En cours d'édition
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-muted-foreground text-sm">
                             {material.quantity} {material.unit} × {material.price}€ = {(material.quantity * material.price).toFixed(2)}€
                           </span>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeMaterial(material.id)}
-                          iconName="Trash2"
-                        />
+                        <div className="flex items-center space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => editMaterial(material)}
+                            iconName="Edit"
+                            disabled={editingMaterial && editingMaterial.id !== material.id}
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeMaterial(material.id)}
+                            iconName="Trash2"
+                            disabled={editingMaterial && editingMaterial.id !== material.id}
+                          />
+                        </div>
                       </div>
                     ))}
                   </div>
