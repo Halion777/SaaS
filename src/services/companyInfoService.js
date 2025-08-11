@@ -21,6 +21,9 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
       return { success: false, error: 'Company information is required' };
     }
 
+    // Debug: Log what's being received
+    console.log('saveCompanyInfo called with:', { companyInfo, userId });
+
     // Handle logo upload if it's a new file
     let logoPath = companyInfo.logo;
     let logoFilename = null;
@@ -104,7 +107,7 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
       address: companyInfo.address || '',
       postal_code: companyInfo.postalCode || '',
       city: companyInfo.city || '',
-      state: companyInfo.state || '', // Add missing state field
+      state: companyInfo.state || '',
       country: companyInfo.country || '',
       phone: companyInfo.phone || '',
       email: companyInfo.email || '',
@@ -120,6 +123,9 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
       is_default: true,
       updated_at: new Date().toISOString()
     };
+
+    // Debug: Log the data being saved
+    console.log('Saving company data to database:', companyData);
 
     let result;
     if (existingProfile) {
@@ -192,6 +198,7 @@ export const loadCompanyInfo = async (userId) => {
       address: data.address,
       postalCode: data.postal_code,
       city: data.city,
+      state: data.state,
       country: data.country,
       phone: data.phone,
       email: data.email,

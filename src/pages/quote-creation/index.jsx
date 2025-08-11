@@ -20,6 +20,9 @@ import { supabase } from '../../services/supabaseClient';
 const getStorageSignedUrl = async (bucket, path) => {
   if (!path) return null;
   
+  // Debug: Log what we're trying to get signed URL for
+  console.log(`Getting signed URL for bucket: ${bucket}, path: ${path}`);
+  
   try {
     // Get signed URL for private bucket access
     const { data, error } = await supabase.storage
@@ -30,6 +33,9 @@ const getStorageSignedUrl = async (bucket, path) => {
       console.error(`Error getting signed URL for ${bucket}/${path}:`, error);
       return null;
     }
+    
+    // Debug: Log the result
+    console.log(`Signed URL result for ${bucket}/${path}:`, data?.signedUrl ? 'SUCCESS' : 'FAILED');
     
     return data.signedUrl;
   } catch (error) {
@@ -214,6 +220,9 @@ const QuoteCreation = () => {
       
       // Load company info from database
       if (quote.company_profile) {
+        // Debug: Log the company profile data
+        console.log('Company profile from database:', quote.company_profile);
+        
         const companyInfo = {
           name: quote.company_profile.company_name || '',
           vatNumber: quote.company_profile.vat_number || '',
@@ -242,6 +251,10 @@ const QuoteCreation = () => {
             publicUrl: await getStorageSignedUrl('company-assets', quote.company_profile.signature_path)
           } : null
         };
+        
+        // Debug: Log the logo and signature data
+        console.log('Logo data loaded:', companyInfo.logo);
+        console.log('Signature data loaded:', companyInfo.signature);
         
         // Save company info to localStorage for display
         if (user?.id) {

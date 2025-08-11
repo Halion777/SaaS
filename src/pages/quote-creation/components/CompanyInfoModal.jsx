@@ -15,6 +15,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
     address: '',
     postalCode: '',
     city: '',
+    state: 'Bruxelles-Capitale',
     country: 'Belgique',
     phone: '',
     email: '',
@@ -67,6 +68,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
               address: companyInfo.address,
               postalCode: companyInfo.postalCode,
               city: companyInfo.city,
+              state: companyInfo.state,
               country: companyInfo.country,
               phone: companyInfo.phone,
               email: companyInfo.email,
@@ -162,6 +164,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
           address: info.address,
           postalCode: info.postalCode,
           city: info.city,
+          state: info.state,
           country: info.country,
           phone: info.phone,
           email: info.email,
@@ -415,13 +418,20 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
                     alt="Logo entreprise"
                     className="w-full h-full object-contain"
                   />
+                ) : companyInfo.logo.publicUrl ? (
+                  // Show from database using publicUrl
+                  <img
+                    src={companyInfo.logo.publicUrl}
+                    alt="Logo entreprise"
+                    className="w-full h-full object-contain"
+                  />
                 ) : typeof companyInfo.logo === 'string' && companyInfo.logo.startsWith('http') ? (
-                  // Show from database if available
-                <Image
-                  src={companyInfo.logo}
-                  alt="Logo entreprise"
-                  className="w-full h-full object-contain"
-                />
+                  // Show from database if available (fallback)
+                  <Image
+                    src={companyInfo.logo}
+                    alt="Logo entreprise"
+                    className="w-full h-full object-contain"
+                  />
                 ) : (
                   // Show placeholder
                   <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
@@ -517,6 +527,19 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
             </div>
           </div>
 
+          {/* State/Province */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Province/Région
+            </label>
+            <Input
+              type="text"
+              value={companyInfo.state}
+              onChange={(e) => handleInputChange('state', e.target.value)}
+              placeholder="Bruxelles-Capitale"
+            />
+          </div>
+
           {/* Country */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
@@ -605,13 +628,20 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
                     alt="Signature"
                     className="w-full h-full object-contain"
                   />
+                ) : companyInfo.signature.publicUrl ? (
+                  // Show from database using publicUrl
+                  <img
+                    src={companyInfo.signature.publicUrl}
+                    alt="Signature"
+                    className="w-full h-full object-contain"
+                  />
                 ) : typeof companyInfo.signature === 'string' && companyInfo.signature.startsWith('http') ? (
-                  // Show from database if available
-                <Image
-                  src={companyInfo.signature}
-                  alt="Signature"
-                  className="w-full h-full object-contain"
-                />
+                  // Show from database if available (fallback)
+                  <Image
+                    src={companyInfo.signature}
+                    alt="Signature"
+                    className="w-full h-full object-contain"
+                  />
                 ) : (
                   // Show placeholder
                   <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">

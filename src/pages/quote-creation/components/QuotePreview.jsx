@@ -350,8 +350,15 @@ const QuotePreview = ({
                         alt={`Logo ${companyInfo.name}`}
                         className="w-full h-full object-contain"
                       />
+                    ) : companyInfo.logo.publicUrl ? (
+                      // Show from database using publicUrl
+                      <img 
+                        src={companyInfo.logo.publicUrl} 
+                        alt={`Logo ${companyInfo.name}`}
+                        className="w-full h-full object-contain"
+                      />
                     ) : typeof companyInfo.logo === 'string' && companyInfo.logo.startsWith('http') ? (
-                      // Show actual image from database
+                      // Show actual image from database (fallback)
                       <img 
                         src={companyInfo.logo} 
                         alt={`Logo ${companyInfo.name}`}
@@ -541,8 +548,15 @@ const QuotePreview = ({
                           alt="Signature de l'entreprise" 
                           className="max-h-12 max-w-full mx-auto"
                         />
+                      ) : companyInfo.signature.publicUrl ? (
+                        // Show from database using publicUrl
+                        <img 
+                          src={companyInfo.signature.publicUrl} 
+                          alt="Signature de l'entreprise" 
+                          className="max-h-12 max-w-full mx-auto"
+                        />
                       ) : typeof companyInfo.signature === 'string' && companyInfo.signature.startsWith('http') ? (
-                        // Show actual signature image from database
+                        // Show actual signature image from database (fallback)
                         <img 
                           src={companyInfo.signature} 
                           alt="Signature de l'entreprise" 
