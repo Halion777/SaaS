@@ -1,11 +1,33 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
 import Image from '../../../components/AppImage';
+import { uploadQuoteFile } from '../../../services/quoteFilesService';
+import { useAuth } from '../../../context/AuthContext';
 
-const FileUpload = ({ files, onFilesChange, onNext, onPrevious }) => {
+const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, isSaving = false }) => {
+
+  const { user } = useAuth();
   const [dragActive, setDragActive] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState(new Set());
   const fileInputRef = useRef(null);
+
+  // Load files from localStorage when component mounts (only for new quotes, not editing)
+  useEffect(() => {
+    if (user?.id && !quoteId && files.length === 0) {
+      try {
+        const storageKey = `quote-files-${user.id}`;
+        const savedFiles = localStorage.getItem(storageKey);
+        if (savedFiles) {
+          const parsedFiles = JSON.parse(savedFiles);
+  
+          onFilesChange(parsedFiles);
+        }
+      } catch (error) {
+        console.error('Error loading files from localStorage:', error);
+      }
+    }
+  }, [user?.id, quoteId, files.length, onFilesChange]);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -34,23 +56,138 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious }) => {
     }
   };
 
-  const handleFiles = (fileList) => {
-    const newFiles = Array.from(fileList).map(file => ({
+  const handleFiles = async (fileList) => {
+    const newFiles = [];
+    
+    for (const file of fileList) {
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`Le fichier ${file.name} est trop volumineux. Taille maximale: 10MB`);
+        continue;
+      }
+
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (!allowedTypes.includes(file.type)) {
+        alert(`Le fichier ${file.name} n'est pas un type de fichier supporté.`);
+        continue;
+      }
+
+      const tempFile = {
       id: Date.now() + Math.random(),
-      file,
       name: file.name,
       size: file.size,
       type: file.type,
-      url: URL.createObjectURL(file),
-      uploadedAt: new Date()
-    }));
-    
-    onFilesChange([...files, ...newFiles]);
+        uploadedAt: new Date(),
+        isUploading: true
+      };
+
+      // Convert file to base64 immediately (same as client signature)
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        tempFile.data = e.target.result; // This is the base64 string
+        
+        newFiles.push(tempFile);
+        setUploadingFiles(prev => new Set(prev).add(tempFile.id));
+        
+        // Add to files list immediately for UI feedback
+        onFilesChange([...files, tempFile]);
+
+        // Save to localStorage for draft
+        if (user?.id) {
+          try {
+            const storageKey = `quote-files-${user.id}`;
+            const existingFiles = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            existingFiles.push(tempFile);
+            localStorage.setItem(storageKey, JSON.stringify(existingFiles));
+            
+          } catch (error) {
+            console.error('Error saving files to localStorage:', error);
+          }
+        }
+      };
+      reader.readAsDataURL(file);
+
+      // Upload to backend if we have a quote ID (for editing existing quotes)
+      if (quoteId && user?.id) {
+        try {
+          const result = await uploadQuoteFile(file, quoteId, user.id, 'attachment');
+          if (result.success) {
+            // Update the file with backend data
+            const updatedFiles = files.map(f => 
+              f.id === tempFile.id 
+                ? { ...f, ...result.data, isUploading: false, backendId: result.data.id }
+                : f
+            );
+            onFilesChange(updatedFiles);
+            
+            // Also update localStorage
+            if (user?.id) {
+              try {
+                const storageKey = `quote-files-${user.id}`;
+                const existingFiles = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                const updatedLocalFiles = existingFiles.map(f => 
+                  f.id === tempFile.id 
+                    ? { ...f, ...result.data, isUploading: false, backendId: result.data.id }
+                    : f
+                );
+                localStorage.setItem(storageKey, JSON.stringify(updatedLocalFiles));
+        
+              } catch (error) {
+                console.error('Error updating file in localStorage:', error);
+              }
+            }
+          } else {
+            console.error('File upload failed:', result.error);
+            // Remove the failed file
+            const filteredFiles = files.filter(f => f.id !== tempFile.id);
+            onFilesChange(filteredFiles);
+            alert(`Erreur lors de l'upload de ${file.name}: ${result.error}`);
+          }
+        } catch (error) {
+          console.error('Error uploading file:', error);
+          // Remove the failed file
+          const filteredFiles = files.filter(f => f.id !== tempFile.id);
+          onFilesChange(filteredFiles);
+          alert(`Erreur lors de l'upload de ${file.name}`);
+        } finally {
+          setUploadingFiles(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(tempFile.id);
+            return newSet;
+          });
+        }
+      } else {
+        // For new quotes, prepare file for upload when quote is created
+        tempFile.isUploading = false;
+        tempFile.readyForUpload = true; // Mark as ready for upload
+        tempFile.uploadPath = `attachments/${tempFile.name}`; // Define upload path
+      }
+    }
   };
 
   const removeFile = (fileId) => {
+    const fileToRemove = files.find(f => f.id === fileId);
+    if (fileToRemove?.backendId) {
+      // TODO: Implement backend deletion for existing quotes
+      
+    }
+    
     const updatedFiles = files.filter(f => f.id !== fileId);
     onFilesChange(updatedFiles);
+    
+    // Also remove from localStorage
+    if (user?.id) {
+      try {
+        const storageKey = `quote-files-${user.id}`;
+        const existingFiles = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        const filteredFiles = existingFiles.filter(f => f.id !== fileId);
+        localStorage.setItem(storageKey, JSON.stringify(filteredFiles));
+
+      } catch (error) {
+        console.error('Error removing file from localStorage:', error);
+      }
+    }
   };
 
   const formatFileSize = (bytes) => {
@@ -136,12 +273,42 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious }) => {
                     <div className="flex items-start space-x-2 sm:space-x-3">
                       {/* File Preview */}
                       <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
-                        {isImage(file.type) ? (
-                          <Image
-                            src={file.url}
-                            alt={file.name}
-                            className="w-full h-full object-cover"
-                          />
+                                                                        {isImage(file.type) ? (
+                          file.data ? (
+                            // Show image from base64 data (for newly uploaded files)
+                            <img
+                              src={file.data}
+                              alt={file.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : file.publicUrl ? (
+                            // Show from database URL (for existing files)
+                            <div className="relative w-full h-full">
+                                                                                      <img
+                                src={file.publicUrl}
+                                alt={file.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  console.error(`Failed to load image: ${file.name} from URL: ${file.publicUrl}`);
+                                  console.error('Error details:', e.target.error);
+                                  // Fallback to placeholder if image fails to load
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                                
+                                onAbort={() => {
+                                  console.error(`Image load aborted for: ${file.name}`);
+                                }}
+                              />
+                              {/* Fallback placeholder (hidden by default) */}
+                              <div className="absolute inset-0 bg-muted flex items-center justify-center" style={{ display: 'none' }}>
+                                <Icon name="Image" size={20} className="sm:w-6 sm:h-6 text-muted-foreground" />
+                              </div>
+                            </div>
+                          ) : (
+                            // Show placeholder
+                            <Icon name="Image" size={20} className="sm:w-6 sm:h-6 text-muted-foreground" />
+                          )
                         ) : isPDF(file.type) ? (
                           <Icon name="FileText" size={20} className="sm:w-6 sm:h-6 text-error" />
                         ) : (
@@ -163,13 +330,27 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious }) => {
                             minute: '2-digit' 
                           }) : 'N/A'}
                         </p>
+                        {/* Upload Status */}
+                        {file.isUploading && (
+                          <div className="flex items-center space-x-1 mt-1">
+                            <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                            <span className="text-xs text-blue-600">Upload en cours...</span>
+                          </div>
+                        )}
+                        {file.backendId && !file.isUploading && (
+                          <div className="flex items-center space-x-1 mt-1">
+                            <Icon name="CheckCircle" size={12} className="text-green-500" />
+                            <span className="text-xs text-green-600">Sauvegardé</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                     
                     {/* Remove Button */}
                     <button
                       onClick={() => removeFile(file.id)}
-                      className="absolute top-1 sm:top-2 right-1 sm:right-2 w-5 h-5 sm:w-6 sm:h-6 bg-error text-error-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-error/80"
+                      disabled={file.isUploading}
+                      className="absolute top-1 sm:top-2 right-1 sm:right-2 w-5 h-5 sm:w-6 sm:h-6 bg-error text-error-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-error/80 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Icon name="X" size={12} className="sm:w-3.5 sm:h-3.5" />
                     </button>
@@ -213,6 +394,7 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious }) => {
           onClick={onPrevious}
           iconName="ArrowLeft"
           iconPosition="left"
+          disabled={isSaving || uploadingFiles.size > 0}
         >
           Étape précédente
         </Button>
@@ -220,8 +402,9 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious }) => {
           onClick={onNext}
           iconName="ArrowRight"
           iconPosition="right"
+          disabled={isSaving || uploadingFiles.size > 0}
         >
-          Étape suivante
+          {uploadingFiles.size > 0 ? 'Upload en cours...' : 'Étape suivante'}
         </Button>
       </div>
     </div>

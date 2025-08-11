@@ -114,7 +114,27 @@ export async function fetchQuoteById(id) {
       .select(`
         *,
         client:clients(id, name, email, phone, address, city, postal_code),
-        company_profile:company_profiles(id, company_name, logo_path, address, city, postal_code, phone, email, website, vat_number),
+        company_profile:company_profiles(
+          id, 
+          company_name, 
+          logo_path, 
+          logo_filename,
+          logo_size,
+          logo_mime_type,
+          signature_path,
+          signature_filename,
+          signature_size,
+          signature_mime_type,
+          address, 
+          city, 
+          state,
+          postal_code, 
+          phone, 
+          email, 
+          website, 
+          vat_number,
+          country
+        ),
         quote_tasks(
           id, 
           name,
@@ -147,6 +167,15 @@ export async function fetchQuoteById(id) {
           mime_type,
           file_category,
           uploaded_by,
+          created_at
+        ),
+        quote_signatures(
+          id,
+          signer_name,
+          signer_email,
+          signature_file_path,
+          signature_data,
+          signed_at,
           created_at
         )
       `)

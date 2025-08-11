@@ -12,6 +12,31 @@ import FileUpload from './components/FileUpload';
 import QuotePreview from './components/QuotePreview';
 import AIScoring from './components/AIScoring';
 import { generateQuoteNumber, createQuote, fetchQuoteById, updateQuote } from '../../services/quotesService';
+import { uploadQuoteFile, uploadQuoteSignature } from '../../services/quoteFilesService';
+import { saveCompanyInfo } from '../../services/companyInfoService';
+import { supabase } from '../../services/supabaseClient';
+
+// Helper function to get signed URL from Supabase storage
+const getStorageSignedUrl = async (bucket, path) => {
+  if (!path) return null;
+  
+  try {
+    // Get signed URL for private bucket access
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .createSignedUrl(path, 3600); // 1 hour expiry
+    
+    if (error) {
+      console.error(`Error getting signed URL for ${bucket}/${path}:`, error);
+      return null;
+    }
+    
+    return data.signedUrl;
+  } catch (error) {
+    console.error(`Exception getting signed URL for ${bucket}/${path}:`, error);
+    return null;
+  }
+};
 
 const QuoteCreation = () => {
   const { user } = useAuth();
@@ -126,14 +151,89 @@ const QuoteCreation = () => {
         price: material.unit_price || material.total_price
       }));
       
-      const transformedFiles = (quote.quote_files || []).map(file => ({
-        id: file.id,
-        name: file.file_name,
-        path: file.file_path,
-        size: file.file_size,
-        type: file.mime_type,
-        uploadedAt: new Date(file.created_at)
-      }));
+      // Get signed URLs for all files
+      const transformedFiles = [];
+      for (const file of quote.quote_files || []) {
+        const signedUrl = await getStorageSignedUrl('quote-files', file.file_path);
+
+        
+        transformedFiles.push({
+          id: file.id,
+          name: file.file_name,
+          path: file.file_path,
+          size: file.file_size,
+          type: file.mime_type,
+          uploadedAt: new Date(file.created_at),
+          backendId: file.id, // Important for edit mode
+          publicUrl: signedUrl, // Signed URL for private bucket access
+          // Add data field for compatibility with existing display logic
+          data: null, // Will be loaded from storage if needed
+          // Mark as already uploaded
+          isUploading: false
+        });
+      }
+      
+
+      
+      // Load company info from database
+      if (quote.company_profile) {
+        const companyInfo = {
+          name: quote.company_profile.company_name || '',
+          vatNumber: quote.company_profile.vat_number || '',
+          address: quote.company_profile.address || '',
+          postalCode: quote.company_profile.postal_code || '',
+          city: quote.company_profile.city || '',
+          state: quote.company_profile.state || '',
+          country: quote.company_profile.country || '',
+          phone: quote.company_profile.phone || '',
+          email: quote.company_profile.email || '',
+          website: quote.company_profile.website || '',
+          logo: quote.company_profile.logo_path ? {
+            name: quote.company_profile.logo_filename || 'company-logo',
+            size: quote.company_profile.logo_size || 0,
+            type: quote.company_profile.logo_mime_type || 'image/*',
+            data: null, // Will be loaded from storage
+            path: quote.company_profile.logo_path,
+            publicUrl: await getStorageSignedUrl('company-assets', quote.company_profile.logo_path)
+          } : null,
+          signature: quote.company_profile.signature_path ? {
+            name: quote.company_profile.signature_filename || 'company-signature',
+            size: quote.company_profile.signature_size || 0,
+            type: quote.company_profile.signature_mime_type || 'image/*',
+            data: null, // Will be loaded from storage
+            path: quote.company_profile.signature_path,
+            publicUrl: await getStorageSignedUrl('company-assets', quote.company_profile.signature_path)
+          } : null
+        };
+        
+        // Save company info to localStorage for display
+        if (user?.id) {
+          localStorage.setItem(`company-info-${user.id}`, JSON.stringify(companyInfo));
+          if (companyInfo.logo?.path) {
+            localStorage.setItem(`company-logo-${user.id}`, JSON.stringify(companyInfo.logo));
+          }
+          if (companyInfo.signature?.path) {
+            localStorage.setItem(`company-signature-${user.id}`, JSON.stringify(companyInfo.signature));
+          }
+        }
+      }
+      
+      // Load client signature if exists
+      if (quote.quote_signatures && quote.quote_signatures.length > 0) {
+        const clientSignature = quote.quote_signatures[0]; // Assuming one client signature per quote
+        const signatureData = {
+          signature: clientSignature.signature_file_path ? 
+            await getStorageSignedUrl('signatures', clientSignature.signature_file_path) : 
+            (clientSignature.signature_data ? `data:image/png;base64,${clientSignature.signature_data}` : null),
+          clientComment: clientSignature.signer_email || '',
+          signedAt: clientSignature.signed_at || new Date().toISOString()
+        };
+        
+        // Save to localStorage for display
+        if (user?.id) {
+          localStorage.setItem(`client-signature-${user.id}`, JSON.stringify(signatureData));
+        }
+      }
       
       // Set the data
       setSelectedClient(transformedClient);
@@ -145,6 +245,7 @@ const QuoteCreation = () => {
         quoteNumber: isDuplicating ? null : quote.quote_number // Don't copy quote number when duplicating
       });
       setTasks(transformedTasks);
+
       setFiles(transformedFiles);
       
       // If duplicating, generate a new quote number
@@ -152,7 +253,7 @@ const QuoteCreation = () => {
         setTimeout(() => generateQuoteNumberForPreview(), 100);
       }
       
-      console.log('Quote loaded successfully:', quote);
+
       
     } catch (error) {
       console.error('Error loading quote:', error);
@@ -162,16 +263,7 @@ const QuoteCreation = () => {
     }
   };
 
-  // Debug: Log user authentication status
-  useEffect(() => {
-    console.log('QuoteCreation - User authentication status:', {
-      user: user,
-      userId: user?.id,
-      currentProfile: currentProfile,
-      profileId: currentProfile?.id,
-      isAuthenticated: !!user
-    });
-  }, [user, currentProfile]);
+
 
   // Enhanced auto-save functionality with localStorage only
   useEffect(() => {
@@ -195,7 +287,6 @@ const QuoteCreation = () => {
         try {
           localStorage.setItem(getDraftKey(), JSON.stringify(quoteData));
           setLastSaved(savedTime);
-          console.log('Auto-save successful: localStorage');
         } catch (localStorageError) {
           console.error('Error saving to localStorage:', localStorageError);
         }
@@ -218,38 +309,58 @@ const QuoteCreation = () => {
     };
   }, [selectedClient, projectInfo, tasks, files, currentStep, companyInfo, user?.id, currentProfile?.id]);
 
-  // Load draft on component mount and when profile changes
+  // Load draft data on component mount
   useEffect(() => {
-    const loadDraft = () => {
-      try {
-        // Load from localStorage only
-        const savedDraft = localStorage.getItem(getDraftKey());
+    if (user?.id) {
+      const draftKey = getDraftKey();
+      const savedDraft = localStorage.getItem(draftKey);
+      
         if (savedDraft) {
+        try {
           const draftData = JSON.parse(savedDraft);
-          setSelectedClient(draftData.selectedClient);
-          setProjectInfo(draftData.projectInfo || { categories: [], customCategory: '', deadline: '', description: '' });
-          setTasks(draftData.tasks || []);
-          // Ensure uploadedAt is converted back to Date objects for files
-          const filesWithDates = (draftData.files || []).map(file => ({
-            ...file,
-            uploadedAt: file.uploadedAt ? new Date(file.uploadedAt) : new Date()
-          }));
-          setFiles(filesWithDates);
-          setCurrentStep(draftData.currentStep || 1);
-          setCompanyInfo(draftData.companyInfo);
-          setLastSaved(draftData.lastSaved);
-        } else {
-          // If no draft exists for this profile, clear the form
-          clearFormData();
-        }
+  
+          
+          if (draftData.projectInfo) setProjectInfo(draftData.projectInfo);
+          if (draftData.selectedClient) setSelectedClient(draftData.selectedClient);
+          if (draftData.tasks) setTasks(draftData.tasks);
+          if (draftData.files) setFiles(draftData.files);
+          if (draftData.companyInfo) setCompanyInfo(draftData.companyInfo);
       } catch (error) {
         console.error('Error loading draft:', error);
-        // If there's an error loading the draft, clear the form
-        clearFormData();
+        }
       }
-    };
-
-    loadDraft();
+      
+      // Also load company info from localStorage
+      try {
+        const companyInfoKey = `company-info-${user.id}`;
+        const savedCompanyInfo = localStorage.getItem(companyInfoKey);
+        if (savedCompanyInfo) {
+          const parsedCompanyInfo = JSON.parse(savedCompanyInfo);
+  
+          setCompanyInfo(prev => ({ ...prev, ...parsedCompanyInfo }));
+        }
+        
+        // Load company logo from localStorage
+        const logoKey = `company-logo-${user.id}`;
+        const savedLogo = localStorage.getItem(logoKey);
+        if (savedLogo) {
+          const parsedLogo = JSON.parse(savedLogo);
+  
+          setCompanyInfo(prev => ({ ...prev, logo: parsedLogo }));
+        }
+        
+        // Load company signature from localStorage
+        const signatureKey = `company-signature-${user.id}`;
+        const savedSignature = localStorage.getItem(signatureKey);
+        if (savedSignature) {
+          const parsedSignature = JSON.parse(savedSignature);
+  
+          setCompanyInfo(prev => ({ ...prev, signature: parsedSignature }));
+        }
+      } catch (error) {
+        console.error('Error loading company info from localStorage:', error);
+      }
+    }
   }, [user?.id, currentProfile?.id]);
 
   // Helper function to clear form data
@@ -378,6 +489,10 @@ const QuoteCreation = () => {
     setFiles(newFiles);
   };
 
+  const handleCompanyInfoChange = (newCompanyInfo) => {
+    setCompanyInfo(newCompanyInfo);
+  };
+
   // Enhanced handleSave with better data structure and backend integration
   const handleSave = async (data) => {
     try {
@@ -439,7 +554,7 @@ const QuoteCreation = () => {
           return;
         }
 
-        console.log('Quote updated successfully:', updatedQuote);
+
         alert('Devis mis à jour avec succès !');
         navigate('/quotes-management');
         return;
@@ -468,6 +583,9 @@ const QuoteCreation = () => {
           matSum + (mat.price * parseFloat(mat.quantity || 1)), 0);
         return sum + (task.price || 0) + taskMaterialsTotal;
       }, 0);
+
+      // For new quotes, files will be uploaded when the quote is actually created
+      const uploadedFiles = files;
 
       const quoteData = {
         user_id: user?.id,
@@ -500,9 +618,9 @@ const QuoteCreation = () => {
           order_index: index,
           materials: task.materials || []
         })),
-        files: files.map((file, index) => ({
+        files: uploadedFiles.map((file, index) => ({
           file_name: file.name || file.file_name || '',
-          file_path: file.path || file.file_path || file.url || '',
+          file_path: file.file_path || file.path || file.file_path || file.url || '',
           file_size: file.size || file.file_size || 0,
           mime_type: file.type || file.mime_type || '',
           order_index: index
@@ -510,10 +628,7 @@ const QuoteCreation = () => {
       };
 
       // Debug logging
-      console.log('Selected client:', selectedClient);
-      console.log('Client ID being used:', selectedClient?.id || selectedClient?.value);
-      console.log('User ID being used:', user?.id);
-      console.log('Profile ID being used:', currentProfile?.id);
+      
 
       // Save to localStorage
       const existingQuotes = JSON.parse(localStorage.getItem(`quotes-${user?.id}-${currentProfile?.id || 'default'}`) || '[]');
@@ -524,8 +639,11 @@ const QuoteCreation = () => {
       });
       localStorage.setItem(`quotes-${user?.id}-${currentProfile?.id || 'default'}`, JSON.stringify(existingQuotes));
 
-      // Clear draft
-      localStorage.removeItem(getDraftKey());
+      // Clear all quote creation data from localStorage
+      clearAllQuoteData();
+      
+      // Clear form data for clean state
+      clearFormData();
 
       // Show success message and redirect
       alert('Devis sauvegardé avec succès !');
@@ -544,8 +662,7 @@ const QuoteCreation = () => {
       setIsSaving(true);
       
       // Debug: Check user authentication
-      console.log('Current user:', user);
-      console.log('Current profile:', currentProfile);
+      
       
       if (!user?.id) {
         console.error('No user ID available');
@@ -610,7 +727,7 @@ const QuoteCreation = () => {
           return;
         }
 
-        console.log('Quote updated and sent successfully:', updatedQuote);
+
         alert(`Devis mis à jour et envoyé avec succès à ${selectedClient?.label?.split(' - ')[0] || 'le client'} !`);
         navigate('/quotes-management');
         return;
@@ -646,7 +763,8 @@ const QuoteCreation = () => {
         return sum + (task.price || 0) + taskMaterialsTotal;
       }, 0);
 
-      // Prepare data for backend service
+      // First, create the quote in the database to get a real ID
+      
       const quoteData = {
         user_id: user?.id,
         profile_id: currentProfile?.id,
@@ -678,17 +796,10 @@ const QuoteCreation = () => {
           order_index: index,
           materials: task.materials || []
         })),
-        files: files.map((file, index) => ({
-          file_name: file.name || file.file_name || '',
-          file_path: file.path || file.file_path || file.url || '',
-          file_size: file.size || file.file_size || 0,
-          mime_type: file.type || file.mime_type || '',
-          file_category: 'attachment',
-          order_index: index
-        }))
+        files: [] // We'll add files after upload
       };
 
-      // Call backend service to create quote
+      // Call backend service to create quote FIRST
       const { data: createdQuote, error: createError } = await createQuote(quoteData);
       
       if (createError) {
@@ -697,19 +808,208 @@ const QuoteCreation = () => {
         return;
       }
 
-      console.log('Quote created successfully in backend:', createdQuote);
+      const quoteId = createdQuote.id;
+      
+
+      // Now save company info to database (including logo and signature)
+      let companyProfileId = null;
+      if (data.companyInfo && user?.id) {
+        try {
+  
+          
+          // Convert base64 data to files for upload
+          let logoFile = null;
+          let signatureFile = null;
+          
+          if (data.companyInfo.logo?.data) {
+            // Convert base64 to file
+            const logoResponse = await fetch(data.companyInfo.logo.data);
+            const logoBlob = await logoResponse.blob();
+            
+            // Create a proper File object
+            logoFile = new File([logoBlob], data.companyInfo.logo.name, { 
+              type: data.companyInfo.logo.type 
+            });
+          }
+          
+          if (data.companyInfo.signature?.data) {
+            // Convert base64 to file
+            const signatureResponse = await fetch(data.companyInfo.signature.data);
+            const signatureBlob = await signatureResponse.blob();
+            
+            // Create a proper File object
+            signatureFile = new File([signatureBlob], data.companyInfo.signature.name, { 
+              type: data.companyInfo.signature.type 
+            });
+          }
+          
+          // Prepare company data for saving
+          const companyDataToSave = {
+            ...data.companyInfo,
+            logo: logoFile,
+            signature: signatureFile
+          };
+          
+          // Save company info to database
+          const companyResult = await saveCompanyInfo(companyDataToSave, user.id);
+          if (companyResult.success) {
+            companyProfileId = companyResult.data.id;
+    
+          } else {
+            console.warn('Company info save warning:', companyResult.error);
+            // Continue with quote creation even if company info save fails
+          }
+        } catch (error) {
+          console.error('Error saving company info:', error);
+          // Continue with quote creation even if company info save fails
+        }
+      }
+
+      // Now save client signature to database and storage
+      let clientSignatureId = null;
+      if (data.signatureData?.signature && user?.id) {
+        try {
+  
+          
+          // Convert base64 to file for upload
+          const signatureResponse = await fetch(data.signatureData.signature);
+          const signatureBlob = await signatureResponse.blob();
+          
+          // Create a proper File object
+          const signatureFile = new File([signatureBlob], 'client-signature.png', { 
+            type: 'image/png' 
+          });
+          
+          // Upload client signature to storage (now with real quote ID)
+          const { data: signatureUploadResult, error: signatureUploadError } = await uploadQuoteSignature(
+            signatureFile,
+            quoteId, // Use real quote ID now
+            user.id,
+            'client'
+          );
+          
+          if (signatureUploadError) {
+            console.error('Client signature upload failed:', signatureUploadError);
+            alert(`Erreur lors de l'upload de la signature client: ${signatureUploadError}`);
+            return;
+          }
+          
+          if (signatureUploadResult.success) {
+            // uploadQuoteSignature already handles database insert
+            clientSignatureId = signatureUploadResult.data.id;
+    
+          }
+        } catch (error) {
+          console.error('Error saving client signature:', error);
+          // Continue with quote creation even if signature save fails
+        }
+      }
+
+      // Now upload quote files to storage (AFTER quote creation)
+      const uploadedFiles = [];
+      if (files.length > 0) {
+        try {
+          for (const file of files) {
+            if (file.data) {
+              // File has base64 data, convert to blob and upload
+      
+              
+              // Convert base64 to file
+              const fileResponse = await fetch(file.data);
+              const fileBlob = await fileResponse.blob();
+              
+              // Create a proper File object with the correct name and type
+              const fileToUpload = new File([fileBlob], file.name, { type: file.type });
+              
+              // Upload file to storage (now with real quote ID)
+              const { data: uploadResult, error: uploadError } = await uploadQuoteFile(
+                fileToUpload, 
+                quoteId, // Use real quote ID now
+                user.id,
+                currentProfile?.id, // Pass profile ID for foreign key constraint
+                'attachment'
+              );
+              
+              if (uploadError) {
+                console.error('File upload failed:', uploadError);
+                alert(`Erreur lors de l'upload de ${file.name}: ${uploadError}`);
+                return;
+              }
+              
+              if (uploadResult.success) {
+                uploadedFiles.push({
+                  ...file,
+                  backendId: uploadResult.data.id,
+                  file_path: uploadResult.data.file_path,
+                  publicUrl: uploadResult.data.publicUrl
+                });
+        
+              }
+            } else if (file.backendId) {
+              // File already uploaded (for editing existing quotes)
+              uploadedFiles.push(file);
+            } else {
+              console.warn('File has no data or backendId, skipping:', file);
+            }
+          }
+        } catch (error) {
+          console.error('Error uploading files:', error);
+          alert('Erreur lors de l\'upload des fichiers. Veuillez réessayer.');
+          return;
+        }
+      }
+
+      // Now update the quote with file references
+      if (uploadedFiles.length > 0) {
+        try {
+          const filesToInsert = uploadedFiles.map((file, index) => ({
+            quote_id: quoteId,
+            file_name: file.name || file.file_name || '',
+            file_path: file.file_path || file.path || file.file_path || file.url || '',
+            file_size: file.size || file.file_size || 0,
+            mime_type: file.type || file.mime_type || '',
+            file_category: 'attachment'
+            // Note: order_index column doesn't exist in schema, removed
+          }));
+
+          const { error: filesInsertError } = await supabase
+            .from('quote_files')
+            .insert(filesToInsert);
+
+          if (filesInsertError) {
+            console.error('Error saving file references to database:', filesInsertError);
+            alert('Erreur lors de la sauvegarde des références de fichiers. Veuillez réessayer.');
+            return;
+          }
+          
+  
+        } catch (error) {
+          console.error('Error saving file references:', error);
+          alert('Erreur lors de la sauvegarde des références de fichiers. Veuillez réessayer.');
+          return;
+        }
+      }
+
+      
 
       // Save to localStorage as backup
       const existingQuotes = JSON.parse(localStorage.getItem(`quotes-${user?.id}-${currentProfile?.id || 'default'}`) || '[]');
       existingQuotes.push({
-        ...quoteData,
-        id: createdQuote.id || Date.now(),
+        id: quoteId,
+        quote_number: finalQuoteNumber,
+        client_id: selectedClient?.id || selectedClient?.value,
+        status: 'sent',
+        title: projectInfo.description || 'Nouveau devis',
+        total_amount: totalAmount,
         createdAt: new Date().toISOString()
       });
       localStorage.setItem(`quotes-${user?.id}-${currentProfile?.id || 'default'}`, JSON.stringify(existingQuotes));
 
-      // Clear draft
-      localStorage.removeItem(getDraftKey());
+      // Clear all quote creation data from localStorage
+      clearAllQuoteData();
+      
+      // Clear form data for clean state
+      clearFormData();
 
       // Show success message and redirect
       alert(`Devis envoyé avec succès à ${selectedClient?.label?.split(' - ')[0] || 'le client'} !`);
@@ -842,7 +1142,7 @@ const QuoteCreation = () => {
       localStorage.setItem(getDraftKey(), JSON.stringify(quoteData));
       setLastSaved(savedTime);
       
-      console.log('Quote number generated for preview:', finalQuoteNumber);
+      
     } catch (error) {
       console.error('Error generating quote number for preview:', error);
       // Use fallback quote number with timestamp and random suffix for uniqueness
@@ -856,13 +1156,40 @@ const QuoteCreation = () => {
     }
   };
 
-  // Enhanced clearDraft with localStorage cleanup only
+  // Comprehensive localStorage clearing function
+  const clearAllQuoteData = () => {
+    if (user?.id) {
+      // Clear draft data
+      localStorage.removeItem(getDraftKey());
+      
+      // Clear company info
+      localStorage.removeItem(`company-info-${user.id}`);
+      localStorage.removeItem(`company-logo-${user.id}`);
+      localStorage.removeItem(`company-signature-${user.id}`);
+      
+      // Clear client signature
+      localStorage.removeItem(`client-signature-${user.id}`);
+      
+      // Clear quote files
+      localStorage.removeItem(`quote-files-${user.id}`);
+      
+      // Clear any other quote-related data
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.includes('quote-') || key.includes('draft-')) && key.includes(user.id)) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+    }
+  };
+
+  // Enhanced clearDraft with comprehensive localStorage cleanup
   const clearDraft = () => {
     if (confirm('Êtes-vous sûr de vouloir effacer ce brouillon ?')) {
-      // Clear localStorage items
-      localStorage.removeItem(getDraftKey());
-      localStorage.removeItem('quote-signature-data');
-      localStorage.removeItem(`company-info-${user?.id}-${currentProfile?.id || 'default'}`);
+      // Clear all quote-related localStorage data
+      clearAllQuoteData();
       
       // Clear form data
       clearFormData();
@@ -900,6 +1227,8 @@ const QuoteCreation = () => {
             onFilesChange={handleFilesChange}
             onNext={handleNext}
             onPrevious={handlePrevious}
+            quoteId={editingQuoteId}
+            isSaving={isSaving}
           />
         );
       case 4:
@@ -920,6 +1249,7 @@ const QuoteCreation = () => {
             onPrevious={handlePrevious}
             onSave={handleSave}
             onSend={handleSend}
+            onCompanyInfoChange={handleCompanyInfoChange}
             isSaving={isSaving}
           />
         );
@@ -960,7 +1290,7 @@ const QuoteCreation = () => {
                       {projectInfo.quoteNumber}
                     </span>
                   )}
-                </p>
+              </p>
             </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
               {isLoadingQuote && (

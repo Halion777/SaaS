@@ -114,10 +114,6 @@ export const AuthProvider = ({ children }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         // Only log significant auth events, not every token refresh
-        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-          console.log('Auth state changed:', event, session?.user?.email);
-        }
-        
         if (event === 'SIGNED_IN' && session) {
           setUser(session.user);
           setSession(session);

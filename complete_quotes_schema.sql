@@ -466,6 +466,98 @@ CREATE POLICY "Users can manage their own quote tags" ON public.quote_tags
 CREATE POLICY "Users can manage their own storage files" ON public.storage_files
     FOR ALL USING (user_id = auth.uid() OR is_public = true);
 
+-- Storage Bucket RLS Policies (CRITICAL for file uploads)
+-- Company Assets Bucket - Allow users to upload to their own folder
+CREATE POLICY "Users can upload to their own company assets folder" ON storage.objects
+    FOR INSERT WITH CHECK (
+        bucket_id = 'company-assets' AND 
+        (storage.foldername(name))[1] = auth.uid()::text
+    );
+
+CREATE POLICY "Users can view their own company assets" ON storage.objects
+    FOR SELECT USING (
+        bucket_id = 'company-assets' AND 
+        (storage.foldername(name))[1] = auth.uid()::text
+    );
+
+CREATE POLICY "Users can update their own company assets" ON storage.objects
+    FOR UPDATE USING (
+        bucket_id = 'company-assets' AND 
+        (storage.foldername(name))[1] = auth.uid()::text
+    );
+
+CREATE POLICY "Users can delete their own company assets" ON storage.objects
+    FOR DELETE USING (
+        bucket_id = 'company-assets' AND 
+        (storage.foldername(name))[1] = auth.uid()::text
+    );
+
+-- Quote Files Bucket
+CREATE POLICY "Users can upload to their own quote files folder" ON storage.objects
+    FOR INSERT WITH CHECK (
+        bucket_id = 'quote-files' AND 
+        (storage.foldername(name))[1] IN (
+            SELECT id::text FROM public.quotes WHERE user_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Users can view their own quote files" ON storage.objects
+    FOR SELECT USING (
+        bucket_id = 'quote-files' AND 
+        (storage.foldername(name))[1] IN (
+            SELECT id::text FROM public.quotes WHERE user_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Users can update their own quote files" ON storage.objects
+    FOR UPDATE USING (
+        bucket_id = 'quote-files' AND 
+        (storage.foldername(name))[1] IN (
+            SELECT id::text FROM public.quotes WHERE user_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Users can delete their own quote files" ON storage.objects
+    FOR DELETE USING (
+        bucket_id = 'quote-files' AND 
+        (storage.foldername(name))[1] IN (
+            SELECT id::text FROM public.quotes WHERE user_id = auth.uid()
+        )
+    );
+
+-- Signatures Bucket
+CREATE POLICY "Users can upload to their own signatures folder" ON storage.objects
+    FOR INSERT WITH CHECK (
+        bucket_id = 'signatures' AND 
+        (storage.foldername(name))[1] IN (
+            SELECT id::text FROM public.quotes WHERE user_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Users can view their own signatures" ON storage.objects
+    FOR SELECT USING (
+        bucket_id = 'signatures' AND 
+        (storage.foldername(name))[1] IN (
+            SELECT id::text FROM public.quotes WHERE user_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Users can update their own signatures" ON storage.objects
+    FOR UPDATE USING (
+        bucket_id = 'signatures' AND 
+        (storage.foldername(name))[1] IN (
+            SELECT id::text FROM public.quotes WHERE user_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Users can delete their own signatures" ON storage.objects
+    FOR DELETE USING (
+        bucket_id = 'signatures' AND 
+        (storage.foldername(name))[1] IN (
+            SELECT id::text FROM public.quotes WHERE user_id = auth.uid()
+        )
+    );
+
 -- Create trigger to automatically update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$

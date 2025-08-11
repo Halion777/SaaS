@@ -3,10 +3,11 @@ import AppIcon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Image from '../../../components/AppImage';
-import { saveCompanyInfo, validateCompanyInfo } from '../../../services/companyInfoService';
+import { validateCompanyInfo, removeCompanyAsset } from '../../../services/companyInfoService';
 import { useAuth } from '../../../context/AuthContext';
+import Icon from '../../../components/AppIcon'; // Added missing import for Icon
 
-const CompanyInfoModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
+const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initialData = {} }) => {
   const { user } = useAuth();
   const [companyInfo, setCompanyInfo] = useState({
     name: '',
@@ -22,6 +23,9 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
     signature: null,
     ...initialData
   });
+  const [isSaving, setIsSaving] = useState(false);
+  const [isRemovingLogo, setIsRemovingLogo] = useState(false);
+  const [isRemovingSignature, setIsRemovingSignature] = useState(false);
 
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
@@ -29,27 +33,278 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
     }
   }, [initialData]);
 
+  // Detect and resolve data conflicts between database and localStorage
+  const resolveDataConflicts = () => {
+    if (!user?.id) return;
+    
+    try {
+      // Check for logo conflicts
+      const localLogoInfo = localStorage.getItem(`company-logo-${user.id}`);
+      if (localLogoInfo && companyInfo.logo && typeof companyInfo.logo === 'string' && companyInfo.logo.startsWith('http')) {
+        // Database has real logo, localStorage has placeholder - remove localStorage
+        localStorage.removeItem(`company-logo-${user.id}`);
+        console.log('Removed localStorage logo placeholder - database has real logo');
+      }
+      
+      // Check for signature conflicts
+      const localSignatureInfo = localStorage.getItem(`company-signature-${user.id}`);
+      if (localSignatureInfo && companyInfo.signature && typeof companyInfo.signature === 'string' && companyInfo.signature.startsWith('http')) {
+        // Database has real signature, localStorage has placeholder - remove localStorage
+        localStorage.removeItem(`company-signature-${user.id}`);
+        console.log('Removed localStorage signature placeholder - database has real signature');
+      }
+      
+      // Check for company info conflicts
+      const localCompanyInfo = localStorage.getItem(`company-info-${user.id}`);
+      if (localCompanyInfo && companyInfo.name && companyInfo.email) {
+        try {
+          const parsed = JSON.parse(localCompanyInfo);
+          // If database has more complete info, update localStorage
+          if (companyInfo.name && companyInfo.email && (!parsed.name || !parsed.email)) {
+            const companyInfoToSave = {
+              name: companyInfo.name,
+              vatNumber: companyInfo.vatNumber,
+              address: companyInfo.address,
+              postalCode: companyInfo.postalCode,
+              city: companyInfo.city,
+              country: companyInfo.country,
+              phone: companyInfo.phone,
+              email: companyInfo.email,
+              website: companyInfo.website
+            };
+            localStorage.setItem(`company-info-${user.id}`, JSON.stringify(companyInfoToSave));
+            console.log('Updated localStorage company info with database data');
+          }
+        } catch (error) {
+          console.error('Error parsing localStorage company info:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Error resolving data conflicts:', error);
+    }
+  };
+
+  // Load saved company info and files from localStorage
+  useEffect(() => {
+    if (isOpen && user?.id) {
+      // Simple: just load from localStorage if available
+      const savedCompanyInfo = localStorage.getItem(`company-info-${user.id}`);
+      if (savedCompanyInfo) {
+        try {
+          const parsed = JSON.parse(savedCompanyInfo);
+          setCompanyInfo(prev => ({ ...prev, ...parsed }));
+        } catch (error) {
+          console.error('Error loading saved company info:', error);
+        }
+      }
+      
+      // Load logo from localStorage if available
+      const savedLogoInfo = localStorage.getItem(`company-logo-${user.id}`);
+      if (savedLogoInfo) {
+        try {
+          const logoInfo = JSON.parse(savedLogoInfo);
+          setCompanyInfo(prev => ({
+            ...prev,
+            logo: logoInfo
+          }));
+        } catch (error) {
+          console.error('Error loading saved logo info:', error);
+        }
+      }
+      
+      // Load signature from localStorage if available
+      const savedSignatureInfo = localStorage.getItem(`company-signature-${user.id}`);
+      if (savedSignatureInfo) {
+        try {
+          const signatureInfo = JSON.parse(savedSignatureInfo);
+          setCompanyInfo(prev => ({
+            ...prev,
+            signature: signatureInfo
+          }));
+        } catch (error) {
+          console.error('Error loading saved signature info:', error);
+        }
+      }
+    }
+  }, [isOpen, user?.id]);
+
   const handleInputChange = (field, value) => {
-    setCompanyInfo(prev => ({ ...prev, [field]: value }));
+    const updatedInfo = { ...companyInfo, [field]: value };
+    setCompanyInfo(updatedInfo);
+    
+    console.log('Text field change:', field, value);
+    console.log('Updated company info:', updatedInfo);
+    
+    // Save to localStorage for draft
+    if (user?.id) {
+      const storageKey = `company-info-${user.id}`;
+      localStorage.setItem(storageKey, JSON.stringify(updatedInfo));
+      console.log('Company info saved to localStorage with key:', storageKey);
+      console.log('localStorage content:', localStorage.getItem(storageKey));
+    }
+    
+    // Notify parent component immediately
+    if (onCompanyInfoChange) {
+      onCompanyInfoChange(updatedInfo);
+    }
+  };
+
+  const handleCompanyInfoSave = (info) => {
+    setCompanyInfo(info);
+    
+    // Sync localStorage with database data to prevent inconsistencies
+    if (user?.id) {
+      try {
+        // Update company info in localStorage
+        const companyInfoToSave = {
+          name: info.name,
+          vatNumber: info.vatNumber,
+          address: info.address,
+          postalCode: info.postalCode,
+          city: info.city,
+          country: info.country,
+          phone: info.phone,
+          email: info.email,
+          website: info.website
+        };
+        localStorage.setItem(`company-info-${user.id}`, JSON.stringify(companyInfoToSave));
+        
+        // If we have real logo/signature URLs from database, remove localStorage placeholders
+        if (info.logo && typeof info.logo === 'string' && info.logo.startsWith('http')) {
+          localStorage.removeItem(`company-logo-${user.id}`);
+        }
+        if (info.signature && typeof info.signature === 'string' && info.signature.startsWith('http')) {
+          localStorage.removeItem(`company-signature-${user.id}`);
+        }
+      } catch (error) {
+        console.error('Error syncing localStorage with database data:', error);
+      }
+    }
   };
 
   const handleLogoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const logoUrl = URL.createObjectURL(file);
-      handleInputChange('logo', logoUrl);
+      // Same approach as client signature: convert to base64 immediately
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const logoData = {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          data: e.target.result // This is the base64 string
+        };
+        
+        console.log('Logo data to store:', logoData);
+        
+        // Update state
+        setCompanyInfo(prev => ({ ...prev, logo: logoData }));
+        
+        // Save to localStorage for draft
+        if (user?.id) {
+          const storageKey = `company-logo-${user.id}`;
+          localStorage.setItem(storageKey, JSON.stringify(logoData));
+          console.log('Logo saved to localStorage with key:', storageKey);
+        }
+        
+        // Notify parent component immediately
+        if (onCompanyInfoChange) {
+          onCompanyInfoChange({ ...companyInfo, logo: logoData });
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const handleSignatureUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const signatureUrl = URL.createObjectURL(file);
-      handleInputChange('signature', signatureUrl);
+      // Same approach as client signature: convert to base64 immediately
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const signatureData = {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          data: e.target.result // This is the base64 string
+        };
+        
+        console.log('Signature data to store:', signatureData);
+        
+        // Update state
+        setCompanyInfo(prev => ({ ...prev, signature: signatureData }));
+        
+        // Save to localStorage for draft
+        if (user?.id) {
+          const storageKey = `company-signature-${user.id}`;
+          localStorage.setItem(storageKey, JSON.stringify(signatureData));
+          console.log('Signature saved to localStorage with key:', storageKey);
+        }
+        
+        // Notify parent component immediately
+        if (onCompanyInfoChange) {
+          onCompanyInfoChange({ ...companyInfo, signature: signatureData });
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const handleSave = () => {
+  const handleRemoveLogo = async () => {
+    if (!companyInfo.logo || (companyInfo.logo && companyInfo.logo.previewUrl && companyInfo.logo.previewUrl.startsWith('blob:'))) {
+      // If it's a new file (blob) or no logo, just remove from state
+      handleInputChange('logo', null);
+      // Remove from localStorage
+      localStorage.removeItem(`company-logo-${user?.id}`);
+      return;
+    }
+
+    setIsRemovingLogo(true);
+    try {
+      const result = await removeCompanyAsset(user?.id, 'logo');
+      if (result.success) {
+        handleInputChange('logo', null);
+        // Remove from localStorage
+        localStorage.removeItem(`company-logo-${user?.id}`);
+      } else {
+        alert(`Erreur lors de la suppression du logo: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error removing logo:', error);
+      alert('Erreur lors de la suppression du logo');
+    } finally {
+      setIsRemovingLogo(false);
+    }
+  };
+
+  const handleRemoveSignature = async () => {
+    if (!companyInfo.signature || (companyInfo.signature && companyInfo.signature.previewUrl && companyInfo.signature.previewUrl.startsWith('blob:'))) {
+      // If it's a new file (blob) or no signature, just remove from state
+      handleInputChange('signature', null);
+      // Remove from localStorage
+      localStorage.removeItem(`company-signature-${user?.id}`);
+      return;
+    }
+
+    setIsRemovingSignature(true);
+    try {
+      const result = await removeCompanyAsset(user?.id, 'signature');
+      if (result.success) {
+        handleInputChange('signature', null);
+        // Remove from localStorage
+        localStorage.removeItem(`company-signature-${user?.id}`);
+      } else {
+        alert(`Erreur lors de la suppression de la signature: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error removing signature:', error);
+      alert('Erreur lors de la suppression de la signature');
+    } finally {
+      setIsRemovingSignature(false);
+    }
+  };
+
+  const handleSave = async () => {
     // Validate company information
     const validation = validateCompanyInfo(companyInfo);
     if (!validation.isValid) {
@@ -57,13 +312,38 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
       return;
     }
 
-    // Save to localStorage for persistence
-    const result = saveCompanyInfo(companyInfo, user?.id);
-    if (result.success) {
+    setIsSaving(true);
+    try {
+      // Save company info to localStorage for draft (NOT to database)
+      const companyInfoToSave = {
+        name: companyInfo.name,
+        vatNumber: companyInfo.vatNumber,
+        address: companyInfo.address,
+        postalCode: companyInfo.postalCode,
+        city: companyInfo.city,
+        country: companyInfo.country,
+        phone: companyInfo.phone,
+        email: companyInfo.email,
+        website: companyInfo.website
+      };
+      
+      if (user?.id) {
+        localStorage.setItem(`company-info-${user.id}`, JSON.stringify(companyInfoToSave));
+        console.log('Company info saved to localStorage for draft');
+      }
+      
+      // Logo and signature are already saved to localStorage when uploaded
+      // No need to save them again here
+      
+      // Notify parent component of the saved data
       onSave(companyInfo);
       onClose();
-    } else {
+      
+    } catch (error) {
+      console.error('Error saving company info to localStorage:', error);
       alert('Erreur lors de la sauvegarde des informations');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -117,19 +397,53 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
             <Button
               variant="outline"
               onClick={() => document.getElementById('logo-upload').click()}
-              iconName="Upload"
+              iconName="Image"
               iconPosition="left"
               fullWidth
             >
               Ajouter un logo
             </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              Format recommandé: PNG avec fond transparent, 300x300px max
+            </p>
             {companyInfo.logo && (
-              <div className="mt-3 w-20 h-20 border border-border rounded-lg overflow-hidden">
+              <div className="mt-3 relative w-20 h-20 border border-border rounded-lg overflow-hidden">
+                {companyInfo.logo.data ? (
+                  // Show preview from base64 data
+                  <img
+                    src={companyInfo.logo.data}
+                    alt="Logo entreprise"
+                    className="w-full h-full object-contain"
+                  />
+                ) : typeof companyInfo.logo === 'string' && companyInfo.logo.startsWith('http') ? (
+                  // Show from database if available
                 <Image
                   src={companyInfo.logo}
                   alt="Logo entreprise"
                   className="w-full h-full object-contain"
                 />
+                ) : (
+                  // Show placeholder
+                  <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+                    <div className="text-center text-xs text-gray-500">
+                      <Icon name="File" size={16} className="mx-auto mb-1" />
+                      {companyInfo.logo.name}
+                    </div>
+                  </div>
+                )}
+                <button
+                  onClick={handleRemoveLogo}
+                  disabled={isRemovingLogo}
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors disabled:opacity-50"
+                  title="Supprimer le logo"
+                >
+                  ×
+                </button>
+                {isRemovingLogo && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -139,97 +453,126 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
             <label className="block text-sm font-medium text-foreground mb-2">
               Nom de l'entreprise *
             </label>
-            <div className="relative">
               <Input
                 type="text"
                 value={companyInfo.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 placeholder="Nom de votre entreprise"
-              />
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex space-x-1">
-                <button className="text-muted-foreground hover:text-foreground">
-                  <AppIcon name="Eye" size={16} />
-                </button>
-                <button className="text-muted-foreground hover:text-foreground">
-                  <AppIcon name="ChevronDown" size={16} />
-                </button>
-              </div>
-            </div>
+              required
+            />
           </div>
 
           {/* VAT Number */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Numéro de TVA
+            </label>
           <Input
-            label="Numéro de TVA"
             type="text"
             value={companyInfo.vatNumber}
             onChange={(e) => handleInputChange('vatNumber', e.target.value)}
             placeholder="BE0123456789"
           />
+          </div>
 
           {/* Address */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Adresse *
+            </label>
           <Input
-            label="Adresse *"
             type="text"
             value={companyInfo.address}
             onChange={(e) => handleInputChange('address', e.target.value)}
             placeholder="123 Rue de l'Exemple"
+              required
           />
+          </div>
 
           {/* Postal Code and City */}
           <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Code postal *
+              </label>
             <Input
-              label="Code postal *"
               type="text"
               value={companyInfo.postalCode}
               onChange={(e) => handleInputChange('postalCode', e.target.value)}
               placeholder="1000"
+                required
             />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Ville *
+              </label>
             <Input
-              label="Ville *"
               type="text"
               value={companyInfo.city}
               onChange={(e) => handleInputChange('city', e.target.value)}
               placeholder="Bruxelles"
+                required
             />
+            </div>
           </div>
 
           {/* Country */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Pays *
+            </label>
           <Input
-            label="Pays *"
             type="text"
             value={companyInfo.country}
             onChange={(e) => handleInputChange('country', e.target.value)}
             placeholder="Belgique"
+              required
           />
+          </div>
 
           {/* Phone */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Téléphone *
+            </label>
           <Input
-            label="Téléphone *"
             type="tel"
             value={companyInfo.phone}
             onChange={(e) => handleInputChange('phone', e.target.value)}
             placeholder="+32 123 45 67 89"
+              required
           />
+          </div>
 
           {/* Email */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Email *
+            </label>
           <Input
-            label="Email *"
             type="email"
             value={companyInfo.email}
             onChange={(e) => handleInputChange('email', e.target.value)}
             placeholder="contact@entreprise.be"
+              required
           />
+          </div>
 
           {/* Website */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Site web
+            </label>
           <Input
-            label="Site web"
             type="url"
             value={companyInfo.website}
             onChange={(e) => handleInputChange('website', e.target.value)}
             placeholder="www.entreprise.be"
           />
+          </div>
 
-          {/* Electronic Signature */}
+          {/* Company Signature */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
               Signature électronique
@@ -254,12 +597,43 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
               Format recommandé: PNG avec fond transparent, 300x150px max
             </p>
             {companyInfo.signature && (
-              <div className="mt-3 w-32 h-16 border border-border rounded-lg overflow-hidden">
+              <div className="mt-3 relative w-32 h-16 border border-border rounded-lg overflow-hidden">
+                {companyInfo.signature.data ? (
+                  // Show preview from base64 data
+                  <img
+                    src={companyInfo.signature.data}
+                    alt="Signature"
+                    className="w-full h-full object-contain"
+                  />
+                ) : typeof companyInfo.signature === 'string' && companyInfo.signature.startsWith('http') ? (
+                  // Show from database if available
                 <Image
                   src={companyInfo.signature}
                   alt="Signature"
                   className="w-full h-full object-contain"
                 />
+                ) : (
+                  // Show placeholder
+                  <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+                    <div className="text-center text-xs text-gray-500">
+                      <Icon name="File" size={16} className="mx-auto mb-1" />
+                      {companyInfo.signature.name}
+                    </div>
+                  </div>
+                )}
+                <button
+                  onClick={handleRemoveSignature}
+                  disabled={isRemovingSignature}
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors disabled:opacity-50"
+                  title="Supprimer la signature"
+                >
+                  ×
+                </button>
+                {isRemovingSignature && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -272,8 +646,9 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, initialData = {} }) => {
             iconName="Save"
             iconPosition="left"
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium"
+            disabled={isSaving}
           >
-            Sauvegarder les informations
+            {isSaving ? 'Sauvegarde en cours...' : 'Sauvegarder les informations'}
           </Button>
         </div>
       </div>

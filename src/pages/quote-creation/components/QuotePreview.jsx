@@ -19,6 +19,7 @@ const QuotePreview = ({
   onPrevious, 
   onSave, 
   onSend,
+  onCompanyInfoChange,
   isSaving = false
 }) => {
   const { user } = useAuth();
@@ -68,10 +69,43 @@ const QuotePreview = ({
 
   // Load saved company info on component mount
   useEffect(() => {
-    const savedCompanyInfo = loadCompanyInfo(user?.id);
-    if (savedCompanyInfo) {
-      setCompanyInfo(savedCompanyInfo);
-    }
+    const loadCompanyData = async () => {
+      if (user?.id) {
+        // Simple: just load from localStorage
+        try {
+          // Load company info from localStorage
+          const localCompanyInfo = localStorage.getItem(`company-info-${user.id}`);
+          if (localCompanyInfo) {
+            const parsed = JSON.parse(localCompanyInfo);
+            setCompanyInfo(prev => ({ ...prev, ...parsed }));
+          }
+          
+          // Load logo from localStorage
+          const localLogoInfo = localStorage.getItem(`company-logo-${user.id}`);
+          if (localLogoInfo) {
+            const logoInfo = JSON.parse(localLogoInfo);
+            setCompanyInfo(prev => ({
+              ...prev,
+              logo: logoInfo
+            }));
+          }
+          
+          // Load signature from localStorage
+          const localSignatureInfo = localStorage.getItem(`company-signature-${user.id}`);
+          if (localSignatureInfo) {
+            const signatureInfo = JSON.parse(localSignatureInfo);
+            setCompanyInfo(prev => ({
+              ...prev,
+              signature: signatureInfo
+            }));
+          }
+        } catch (error) {
+          console.error('Error loading company data from localStorage:', error);
+        }
+      }
+    };
+
+    loadCompanyData();
     
     // Load saved signature data if available
     const savedSignatureData = localStorage.getItem('quote-signature-data');
@@ -171,12 +205,6 @@ const QuotePreview = ({
 
   const displayQuoteNumber = quoteNumber || `${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
   
-  // Debug: Log quote number for troubleshooting
-  useEffect(() => {
-    console.log('QuotePreview - Quote number received:', quoteNumber);
-    console.log('QuotePreview - Display quote number:', displayQuoteNumber);
-  }, [quoteNumber, displayQuoteNumber]);
-
   const getTemplateClasses = () => {
     // Return white background with subtle border and ensure readability
     return 'bg-white border border-gray-200 text-black';
@@ -309,11 +337,29 @@ const QuotePreview = ({
               <div className={`flex items-center space-x-3 sm:space-x-6 ${previewMode === 'mobile' ? 'w-full' : 'flex-1'}`}>
                 {companyInfo.logo ? (
                   <div className="w-12 h-12 sm:w-20 sm:h-20 rounded-lg flex items-center justify-center overflow-hidden">
-                    <img 
-                      src={companyInfo.logo} 
-                      alt={`Logo ${companyInfo.name}`}
-                      className="w-full h-full object-contain"
-                    />
+                    {companyInfo.logo.data ? (
+                      // Show image from base64 data (same as client signature)
+                      <img 
+                        src={companyInfo.logo.data} 
+                        alt={`Logo ${companyInfo.name}`}
+                        className="w-full h-full object-contain"
+                      />
+                    ) : typeof companyInfo.logo === 'string' && companyInfo.logo.startsWith('http') ? (
+                      // Show actual image from database
+                      <img 
+                        src={companyInfo.logo} 
+                        alt={`Logo ${companyInfo.name}`}
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      // Show placeholder for files stored in localStorage
+                      <div className="w-full h-full bg-gray-100 flex items-center justify-center text-center">
+                        <div className="text-xs text-gray-500">
+                          <AppIcon name="File" size={16} className="mx-auto mb-1" />
+                          {companyInfo.logo.name}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="w-12 h-12 sm:w-20 sm:h-20 bg-gray-200 rounded-lg flex items-center justify-center text-xs sm:text-sm">
@@ -482,11 +528,32 @@ const QuotePreview = ({
                 <div className={`border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50 flex items-center justify-center ${previewMode === 'mobile' ? 'p-3 min-h-[60px]' : 'p-4 sm:p-6 min-h-[80px] sm:min-h-[100px]'}`}>
                   {companyInfo.signature ? (
                     <div className="w-full">
-                      <img 
-                        src={companyInfo.signature} 
-                        alt="Signature de l'entreprise" 
-                        className="max-h-12 max-w-full mx-auto"
-                      />
+                      {companyInfo.signature.data ? (
+                        // Show image from base64 data (same as client signature)
+                        <img 
+                          src={companyInfo.signature.data} 
+                          alt="Signature de l'entreprise" 
+                          className="max-h-12 max-w-full mx-auto"
+                        />
+                      ) : typeof companyInfo.signature === 'string' && companyInfo.signature.startsWith('http') ? (
+                        // Show actual signature image from database
+                        <img 
+                          src={companyInfo.signature} 
+                          alt="Signature de l'entreprise" 
+                          className="max-h-12 max-w-full mx-auto"
+                        />
+                      ) : (
+                        // Show placeholder for files stored in localStorage
+                        <div className="text-center">
+                          <AppIcon name="File" size={24} className="mx-auto mb-2 text-gray-400" />
+                          <p className={`text-xs text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`}>
+                            {companyInfo.signature.name}
+                          </p>
+                          <p className={`text-xs text-gray-500 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`}>
+                            Signature enregistrée
+                          </p>
+                        </div>
+                      )}
                       <p className={`text-xs text-black mt-1 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`}>
                         Signé le {new Date().toLocaleDateString('fr-FR')}
                       </p>
@@ -583,12 +650,10 @@ const QuotePreview = ({
       {showCompanyModal && (
         <CompanyInfoModal
           isOpen={showCompanyModal}
-          initialData={companyInfo}
-          onSave={(info) => {
-            handleCompanyInfoSave(info);
-            setShowCompanyModal(false);
-          }}
           onClose={() => setShowCompanyModal(false)}
+          onSave={handleCompanyInfoSave}
+          onCompanyInfoChange={onCompanyInfoChange}
+          initialData={companyInfo}
         />
       )}
       
