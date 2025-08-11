@@ -8,6 +8,8 @@ import FinancialConfig from './FinancialConfig';
 import ElectronicSignatureModal from './ElectronicSignatureModal';
 import { loadCompanyInfo, getDefaultCompanyInfo } from '../../../services/companyInfoService';
 import { useAuth } from '../../../context/AuthContext';
+import { generateQuotePDF } from '../../../services/pdfService';
+import { generatePublicShareLink, getShareLinkInfo, deactivateShareLink } from '../../../services/shareService';
 
 const QuotePreview = ({ 
   selectedClient, 
@@ -29,6 +31,10 @@ const QuotePreview = ({
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [previewMode, setPreviewMode] = useState('desktop'); // desktop or mobile
   const [signatureData, setSignatureData] = useState(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isGeneratingShare, setIsGeneratingShare] = useState(false);
+  const [shareLink, setShareLink] = useState(null);
+  const [shareLinkInfo, setShareLinkInfo] = useState(null);
   
   // Company Information
   const [companyInfo, setCompanyInfo] = useState(parentCompanyInfo || getDefaultCompanyInfo());
@@ -68,40 +74,100 @@ const QuotePreview = ({
     }
   });
 
-  // Load saved company info on component mount
+  // Load saved company info on component mount - Database First Strategy
+  // Company info is single per user and remains the same for all quotes, so we load it once
+  // PRIORITY: Database > Storage > localStorage (fallback only)
+  // Logo and signature ALWAYS come from database/storage when available
   useEffect(() => {
     const loadCompanyData = async () => {
       if (user?.id) {
-        // Simple: just load from localStorage
         try {
-          // Load company info from localStorage
-          const localCompanyInfo = localStorage.getItem(`company-info-${user.id}`);
-          if (localCompanyInfo) {
-            const parsed = JSON.parse(localCompanyInfo);
-            setCompanyInfo(prev => ({ ...prev, ...parsed }));
-          }
+          // First try to load from database (this is the source of truth)
+          const { loadCompanyInfo } = await import('../../../services/companyInfoService');
+          const dbCompanyInfo = await loadCompanyInfo(user.id);
           
-          // Load logo from localStorage
-          const localLogoInfo = localStorage.getItem(`company-logo-${user.id}`);
-          if (localLogoInfo) {
-            const logoInfo = JSON.parse(localLogoInfo);
-            setCompanyInfo(prev => ({
-              ...prev,
-              logo: logoInfo
+          if (dbCompanyInfo) {
+            // Company info exists in database, use it as the source of truth
+            // This includes logo and signature from storage
+            setCompanyInfo(dbCompanyInfo);
+            
+            // Cache basic company info in localStorage for faster subsequent loads
+            // But NOT logo/signature - those come from database/storage
+            localStorage.setItem(`company-info-${user.id}`, JSON.stringify({
+              name: dbCompanyInfo.name,
+              vatNumber: dbCompanyInfo.vatNumber,
+              address: dbCompanyInfo.address,
+              postalCode: dbCompanyInfo.postalCode,
+              city: dbCompanyInfo.city,
+              state: dbCompanyInfo.state,
+              country: dbCompanyInfo.country,
+              phone: dbCompanyInfo.phone,
+              email: dbCompanyInfo.email,
+              website: dbCompanyInfo.website
             }));
-          }
-          
-          // Load signature from localStorage
-          const localSignatureInfo = localStorage.getItem(`company-signature-${user.id}`);
-          if (localSignatureInfo) {
-            const signatureInfo = JSON.parse(localSignatureInfo);
-            setCompanyInfo(prev => ({
-              ...prev,
-              signature: signatureInfo
-            }));
+            
+            // Clear any old logo/signature from localStorage since we're using database
+            localStorage.removeItem(`company-logo-${user.id}`);
+            localStorage.removeItem(`company-signature-${user.id}`);
+          } else {
+            // No database record, try localStorage as fallback
+            const localCompanyInfo = localStorage.getItem(`company-info-${user.id}`);
+            if (localCompanyInfo) {
+              const parsed = JSON.parse(localCompanyInfo);
+              setCompanyInfo(prev => ({ ...prev, ...parsed }));
+            }
+            
+            // Load logo from localStorage (only if no database data)
+            const localLogoInfo = localStorage.getItem(`company-logo-${user.id}`);
+            if (localLogoInfo) {
+              const logoInfo = JSON.parse(localLogoInfo);
+              setCompanyInfo(prev => ({
+                ...prev,
+                logo: logoInfo
+              }));
+            }
+            
+            // Load signature from localStorage (only if no database data)
+            const localSignatureInfo = localStorage.getItem(`company-signature-${user.id}`);
+            if (localSignatureInfo) {
+              const signatureInfo = JSON.parse(localSignatureInfo);
+              setCompanyInfo(prev => ({
+                ...prev,
+                signature: signatureInfo
+              }));
+            }
           }
         } catch (error) {
-          console.error('Error loading company data from localStorage:', error);
+          console.error('Error loading company data:', error);
+          
+          // Fallback to localStorage on error
+          try {
+            const localCompanyInfo = localStorage.getItem(`company-info-${user.id}`);
+            if (localCompanyInfo) {
+              const parsed = JSON.parse(localCompanyInfo);
+              setCompanyInfo(prev => ({ ...prev, ...parsed }));
+            }
+            
+            const localLogoInfo = localStorage.getItem(`company-logo-${user.id}`);
+            if (localLogoInfo) {
+              const logoInfo = JSON.parse(localLogoInfo);
+              setCompanyInfo(prev => ({
+                ...prev,
+                logo: logoInfo
+              }));
+            }
+            
+            const localSignatureInfo = localStorage.getItem(`company-signature-${user.id}`);
+            if (localSignatureInfo) {
+              const signatureInfo = JSON.parse(localSignatureInfo);
+              setCompanyInfo(prev => ({
+                ...prev,
+                signature: signatureInfo
+              }));
+            }
+          } catch (localError) {
+            console.error('Error loading from localStorage fallback:', localError);
+          }
         }
       }
     };
@@ -127,6 +193,51 @@ const QuotePreview = ({
 
   const handleCompanyInfoSave = (info) => {
     setCompanyInfo(info);
+  };
+
+  // Function to refresh company info from database
+  const refreshCompanyInfo = async () => {
+    if (user?.id) {
+      try {
+        const { loadCompanyInfo } = await import('../../../services/companyInfoService');
+        const dbCompanyInfo = await loadCompanyInfo(user.id);
+        
+        if (dbCompanyInfo) {
+          // DEBUG: Log what we're getting when refreshing
+          console.log('=== REFRESHING COMPANY INFO FROM DATABASE ===');
+          console.log('Full dbCompanyInfo:', dbCompanyInfo);
+          console.log('Logo data:', dbCompanyInfo.logo);
+          console.log('Logo type:', typeof dbCompanyInfo.logo);
+          console.log('Logo keys:', dbCompanyInfo.logo ? Object.keys(dbCompanyInfo.logo) : 'No logo');
+          console.log('Signature data:', dbCompanyInfo.signature);
+          console.log('Signature type:', typeof dbCompanyInfo.signature);
+          console.log('Signature keys:', dbCompanyInfo.signature ? Object.keys(dbCompanyInfo.signature) : 'No signature');
+          console.log('==========================================');
+          
+          setCompanyInfo(dbCompanyInfo);
+          
+          // Update cache for basic company info only
+          localStorage.setItem(`company-info-${user.id}`, JSON.stringify({
+            name: dbCompanyInfo.name,
+            vatNumber: dbCompanyInfo.vatNumber,
+            address: dbCompanyInfo.address,
+            postalCode: dbCompanyInfo.postalCode,
+            city: dbCompanyInfo.city,
+            state: dbCompanyInfo.state,
+            country: dbCompanyInfo.country,
+            phone: dbCompanyInfo.phone,
+            email: dbCompanyInfo.email,
+            website: dbCompanyInfo.website
+          }));
+          
+          // Clear old logo/signature from localStorage since we're using database
+          localStorage.removeItem(`company-logo-${user.id}`);
+          localStorage.removeItem(`company-signature-${user.id}`);
+        }
+      } catch (error) {
+        console.error('Error refreshing company info:', error);
+      }
+    }
   };
 
   const handleCustomizationChange = (field, value) => {
@@ -194,6 +305,87 @@ const QuotePreview = ({
       localStorage.setItem('quote-signature-data', JSON.stringify(signatureData));
     } catch (error) {
       console.error('Error saving signature data to localStorage:', error);
+    }
+  };
+
+  // Handle PDF generation
+  const handleGeneratePDF = async () => {
+    try {
+      setIsGeneratingPDF(true);
+      
+      const quoteData = {
+        companyInfo,
+        selectedClient,
+        tasks,
+        files,
+        projectInfo,
+        financialConfig,
+        signatureData
+      };
+      
+      await generateQuotePDF(quoteData, quoteNumber);
+      
+      // Show success message
+      alert('PDF généré avec succès !');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Erreur lors de la génération du PDF. Veuillez réessayer.');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
+  // Handle share link generation
+  const handleGenerateShareLink = async () => {
+    try {
+      setIsGeneratingShare(true);
+      
+      // For now, we'll generate a temporary share link
+      // In a real implementation, you'd need the quote ID from the database
+      const tempShareToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const tempShareLink = `${window.location.origin}/quote-share/${tempShareToken}`;
+      
+      setShareLink(tempShareLink);
+      setShareLinkInfo({
+        share_token: tempShareToken,
+        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        access_count: 0
+      });
+      
+      // Show success message
+      alert('Lien de partage généré avec succès !');
+    } catch (error) {
+      console.error('Error generating share link:', error);
+      alert('Erreur lors de la génération du lien de partage. Veuillez réessayer.');
+    } finally {
+      setIsGeneratingShare(false);
+    }
+  };
+
+  // Handle share link deactivation
+  const handleDeactivateShareLink = async () => {
+    try {
+      if (shareLinkInfo?.id) {
+        await deactivateShareLink(shareLinkInfo.id);
+      }
+      
+      setShareLink(null);
+      setShareLinkInfo(null);
+      alert('Lien de partage désactivé avec succès !');
+    } catch (error) {
+      console.error('Error deactivating share link:', error);
+      alert('Erreur lors de la désactivation du lien de partage.');
+    }
+  };
+
+  // Copy share link to clipboard
+  const handleCopyShareLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      alert('Lien copié dans le presse-papiers !');
+    } catch (error) {
+      console.error('Error copying to clipboard:', error);
+      alert('Erreur lors de la copie du lien.');
     }
   };
 
@@ -626,23 +818,70 @@ const QuotePreview = ({
             iconPosition="left"
             size="sm"
             className="text-xs sm:text-sm"
-            disabled={isSaving}
+            disabled={isSaving || isGeneratingPDF}
+            onClick={handleGeneratePDF}
           >
-            <span className="hidden sm:inline">Télécharger PDF</span>
-            <span className="sm:hidden">PDF</span>
+            {isGeneratingPDF ? (
+              <>
+                <span className="hidden sm:inline">Génération...</span>
+                <span className="sm:hidden">...</span>
+              </>
+            ) : (
+              <>
+                <span className="hidden sm:inline">Télécharger PDF</span>
+                <span className="sm:hidden">PDF</span>
+              </>
+            )}
           </Button>
           
-          <Button
-            variant="outline"
-            iconName="Share"
-            iconPosition="left"
-            size="sm"
-            className="text-xs sm:text-sm"
-            disabled={isSaving}
-          >
-            <span className="hidden sm:inline">Créer lien public</span>
-            <span className="sm:hidden">Lien</span>
-          </Button>
+          {!shareLink ? (
+            <Button
+              variant="outline"
+              iconName="Share"
+              iconPosition="left"
+              size="sm"
+              className="text-xs sm:text-sm"
+              disabled={isSaving || isGeneratingShare}
+              onClick={handleGenerateShareLink}
+            >
+              {isGeneratingShare ? (
+                <>
+                  <span className="hidden sm:inline">Génération...</span>
+                  <span className="sm:hidden">...</span>
+                </>
+              ) : (
+                <>
+                  <span className="hidden sm:inline">Créer lien public</span>
+                  <span className="sm:hidden">Lien</span>
+                </>
+              )}
+            </Button>
+          ) : (
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                iconName="Copy"
+                iconPosition="left"
+                size="sm"
+                className="text-xs sm:text-sm"
+                onClick={handleCopyShareLink}
+              >
+                <span className="hidden sm:inline">Copier</span>
+                <span className="sm:hidden">Copier</span>
+              </Button>
+              <Button
+                variant="outline"
+                iconName="X"
+                iconPosition="left"
+                size="sm"
+                className="text-xs sm:text-sm text-red-600"
+                onClick={handleDeactivateShareLink}
+              >
+                <span className="hidden sm:inline">Désactiver</span>
+                <span className="sm:hidden">X</span>
+              </Button>
+            </div>
+          )}
           
           <Button
             variant="outline"
@@ -666,12 +905,45 @@ const QuotePreview = ({
         </div>
       </div>
 
+      {/* Share Link Display */}
+      {shareLink && (
+        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h4 className="text-sm font-medium text-blue-800 mb-2">Lien de partage généré</h4>
+          <div className="flex items-center space-x-2">
+            <input
+              type="text"
+              value={shareLink}
+              readOnly
+              className="flex-1 px-3 py-2 text-sm border border-blue-300 rounded-md bg-white text-blue-900"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCopyShareLink}
+              className="text-blue-600 border-blue-300 hover:bg-blue-50"
+            >
+              Copier
+            </Button>
+          </div>
+          {shareLinkInfo && (
+            <div className="mt-2 text-xs text-blue-600">
+              <p>Expire le: {new Date(shareLinkInfo.expires_at).toLocaleDateString('fr-FR')}</p>
+              <p>Accès: {shareLinkInfo.access_count || 0} fois</p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Modals */}
       {showCompanyModal && (
         <CompanyInfoModal
           isOpen={showCompanyModal}
           onClose={() => setShowCompanyModal(false)}
-          onSave={handleCompanyInfoSave}
+          onSave={async (info) => {
+            handleCompanyInfoSave(info);
+            // Refresh company info from database to ensure we have the latest data
+            await refreshCompanyInfo();
+          }}
           onCompanyInfoChange={onCompanyInfoChange}
           initialData={companyInfo}
         />

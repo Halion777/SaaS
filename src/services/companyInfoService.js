@@ -1,8 +1,15 @@
 import { supabase } from './supabaseClient';
-import { uploadFile, deleteFile, getPublicUrl } from './storageService';
+import { uploadFile, deleteFile, getPublicUrl, getSignedUrl } from './storageService';
 
 /**
  * Service for managing company information with database storage
+ * 
+ * IMPORTANT: This service enforces a ONE-TO-ONE relationship:
+ * - One user = One company profile
+ * - One user = One logo file
+ * - One user = One signature file
+ * 
+ * When updating assets, old files are automatically deleted to maintain this policy.
  */
 
 /**
@@ -32,6 +39,11 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
 
     if (companyInfo.logo && (companyInfo.logo instanceof File || (typeof companyInfo.logo === 'string' && companyInfo.logo.startsWith('blob:')))) {
       try {
+        // Check if user already has a logo and delete the old one first
+        if (existingProfile && existingProfile.logo_path) {
+          await deleteFile('company-assets', existingProfile.logo_path);
+        }
+
         // It's a new file, upload it
         const logoFile = companyInfo.logo instanceof File ? companyInfo.logo : await fetch(companyInfo.logo).then(r => r.blob());
         const logoFileName = companyInfo.logo instanceof File ? companyInfo.logo.name : 'logo.png';
@@ -39,7 +51,7 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
         const { data: logoUploadData, error: logoError, filePath: logoFilePath } = await uploadFile(
           logoFile, 
           'company-assets', 
-          `${userId}/logos`
+          `${userId}/logo` // Single logo file per user
         );
 
         if (logoError) {
@@ -64,6 +76,11 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
 
     if (companyInfo.signature && (companyInfo.signature instanceof File || (typeof companyInfo.signature === 'string' && companyInfo.signature.startsWith('blob:')))) {
       try {
+        // Check if user already has a signature and delete the old one first
+        if (existingProfile && existingProfile.signature_path) {
+          await deleteFile('company-assets', existingProfile.signature_path);
+        }
+
         // It's a new file, upload it
         const signatureFile = companyInfo.signature instanceof File ? companyInfo.signature : await fetch(companyInfo.signature).then(r => r.blob());
         const signatureFileName = companyInfo.signature instanceof File ? companyInfo.signature.name : 'signature.png';
@@ -71,7 +88,7 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
         const { data: signatureUploadData, error: signatureError, filePath: signatureFilePath } = await uploadFile(
           signatureFile, 
           'company-assets', 
-          `${userId}/signatures`
+          `${userId}/signature` // Single signature file per user
         );
 
         if (signatureError) {
@@ -150,12 +167,24 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
       return { success: false, error: `Database operation failed: ${result.error.message}` };
     }
 
-    // Return the saved data with public URLs for files
+    // Return the saved data with signed URLs for files (private bucket access)
     const savedData = {
       ...companyInfo,
       id: result.data.id,
-      logo: logoPath ? getPublicUrl('company-assets', logoPath) : null,
-      signature: signaturePath ? getPublicUrl('company-assets', signaturePath) : null
+      logo: logoPath ? { 
+        path: logoPath,
+        filename: logoFilename,
+        size: logoSize,
+        mimeType: logoMimeType,
+        publicUrl: await getSignedUrl('company-assets', logoPath).then(result => result.data || null)
+      } : null,
+      signature: signaturePath ? { 
+        path: signaturePath,
+        filename: signatureFilename,
+        size: signatureSize,
+        mimeType: signatureMimeType,
+        publicUrl: await getSignedUrl('company-assets', signaturePath).then(result => result.data || null)
+      } : null
     };
 
     return { success: true, data: savedData };
@@ -191,7 +220,23 @@ export const loadCompanyInfo = async (userId) => {
       return null;
     }
 
-    // Convert database format to frontend format
+    // Convert database format to frontend format with signed URLs for private files
+    const logoData = data.logo_path ? {
+      path: data.logo_path,
+      filename: data.logo_filename,
+      size: data.logo_size,
+      mimeType: data.logo_mime_type,
+      publicUrl: await getSignedUrl('company-assets', data.logo_path).then(result => result.data || null)
+    } : null;
+
+    const signatureData = data.signature_path ? {
+      path: data.signature_path,
+      filename: data.signature_filename,
+      size: data.signature_size,
+      mimeType: data.signature_mime_type,
+      publicUrl: await getSignedUrl('company-assets', data.signature_path).then(result => result.data || null)
+    } : null;
+
     return {
       name: data.company_name,
       vatNumber: data.vat_number,
@@ -203,8 +248,8 @@ export const loadCompanyInfo = async (userId) => {
       phone: data.phone,
       email: data.email,
       website: data.website,
-      logo: data.logo_path ? getPublicUrl('company-assets', data.logo_path) : null,
-      signature: data.signature_path ? getPublicUrl('company-assets', data.signature_path) : null
+      logo: logoData,
+      signature: signatureData
     };
   } catch (error) {
     console.error('Error loading company info:', error);
@@ -246,7 +291,18 @@ export const removeCompanyAsset = async (userId, type) => {
     // Delete file from storage if it exists
     const assetPath = type === 'logo' ? profile.logo_path : profile.signature_path;
     if (assetPath) {
+      // Delete the file from storage
       await deleteFile('company-assets', assetPath);
+      
+      // Also clean up any other files in the user's asset folder for this type
+      // This ensures only one asset file exists per user per type
+      const assetFolder = type === 'logo' ? `${userId}/logo` : `${userId}/signature`;
+      try {
+        // Note: This would require a listFiles function in storageService
+        // For now, we just delete the specific file path
+      } catch (cleanupError) {
+        console.warn(`Warning: Could not clean up additional ${type} files:`, cleanupError);
+      }
     }
 
     // Update database to remove asset references
@@ -321,6 +377,44 @@ export const deleteCompanyInfo = async (userId) => {
     return { success: true };
   } catch (error) {
     console.error('Error deleting company info:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Get current asset status for a user
+ * @param {string} userId - User ID
+ * @returns {Promise<{success: boolean, data?: {hasLogo: boolean, hasSignature: boolean}, error?: string}>}
+ */
+export const getAssetStatus = async (userId) => {
+  try {
+    if (!userId) {
+      return { success: false, error: 'User ID is required' };
+    }
+
+    const { data: profile, error } = await supabase
+      .from('company_profiles')
+      .select('logo_path, signature_path')
+      .eq('user_id', userId)
+      .eq('is_default', true)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') { // No rows returned
+        return { success: true, data: { hasLogo: false, hasSignature: false } };
+      }
+      return { success: false, error: `Database error: ${error.message}` };
+    }
+
+    return {
+      success: true,
+      data: {
+        hasLogo: !!profile.logo_path,
+        hasSignature: !!profile.signature_path
+      }
+    };
+  } catch (error) {
+    console.error('Error getting asset status:', error);
     return { success: false, error: error.message };
   }
 };

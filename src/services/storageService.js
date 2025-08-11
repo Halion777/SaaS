@@ -52,7 +52,7 @@ export async function downloadFile(bucket, filePath) {
 }
 
 /**
- * Get a public URL for a file
+ * Get a public URL for a file (only works for public buckets)
  * @param {string} bucket - Storage bucket name
  * @param {string} filePath - Path to file within bucket
  * @returns {string} Public URL for file
@@ -64,6 +64,36 @@ export function getPublicUrl(bucket, filePath) {
     .getPublicUrl(filePath);
   
   return data.publicUrl;
+}
+
+/**
+ * Get a signed URL for a private file (authenticated access)
+ * @param {string} bucket - Storage bucket name
+ * @param {string} filePath - Path to file within bucket
+ * @param {number} expiresIn - Expiration time in seconds (default: 1 hour)
+ * @returns {Promise<{data: string, error: string}>} Signed URL or error
+ */
+export async function getSignedUrl(bucket, filePath, expiresIn = 3600) {
+  try {
+    if (!filePath) {
+      return { error: 'File path is required' };
+    }
+
+    const { data, error } = await supabase
+      .storage
+      .from(bucket)
+      .createSignedUrl(filePath, expiresIn);
+
+    if (error) {
+      console.error('Error creating signed URL:', error);
+      return { error: error.message };
+    }
+
+    return { data: data.signedUrl };
+  } catch (error) {
+    console.error('Error getting signed URL:', error);
+    return { error: error.message };
+  }
 }
 
 /**

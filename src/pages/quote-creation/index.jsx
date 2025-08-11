@@ -1317,6 +1317,7 @@ const QuoteCreation = () => {
       
       // Clear client signature
       localStorage.removeItem(`client-signature-${user.id}`);
+      localStorage.removeItem('quote-signature-data'); // Clear client signature data
       
       // Clear quote files
       localStorage.removeItem(`quote-files-${user.id}`);
