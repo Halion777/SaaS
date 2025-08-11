@@ -62,6 +62,7 @@ const QuoteCreation = () => {
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [companyInfo, setCompanyInfo] = useState(null);
+  const [financialConfig, setFinancialConfig] = useState(null);
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -89,6 +90,42 @@ const QuoteCreation = () => {
       setEditingQuoteId(null);
     }
   }, [searchParams]);
+
+  // Handle browser back button and page unload to clear localStorage
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Clear localStorage when user leaves the page
+      if (isEditing) {
+        clearAllQuoteData();
+      }
+    };
+
+    const handlePopState = () => {
+      // Clear localStorage when user navigates back
+      if (isEditing) {
+        clearAllQuoteData();
+      }
+    };
+
+    // Add event listeners
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+
+    // Cleanup event listeners
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [isEditing]);
+
+  // Cleanup localStorage when component unmounts (if editing)
+  useEffect(() => {
+    return () => {
+      if (isEditing) {
+        clearAllQuoteData();
+      }
+    };
+  }, [isEditing]);
 
   // Load existing quote data for editing or duplicating
   const loadExistingQuote = async (quoteId, isDuplicating = false) => {
@@ -235,6 +272,42 @@ const QuoteCreation = () => {
         }
       }
       
+      // Load financial configuration if exists
+      let financialConfig = null;
+      if (quote.quote_financial_configs && quote.quote_financial_configs.length > 0) {
+        const financialData = quote.quote_financial_configs[0]; // Assuming one financial config per quote
+        
+        financialConfig = {
+          vatConfig: {
+            display: financialData.vat_config?.display || false,
+            rate: financialData.vat_config?.rate || 21
+          },
+          advanceConfig: {
+            enabled: financialData.advance_config?.enabled || false,
+            percentage: financialData.advance_config?.percentage || 30,
+            amount: financialData.advance_config?.amount || '',
+            dueDate: financialData.advance_config?.due_date || null
+          },
+          marketingBannerConfig: {
+            enabled: !!financialData.marketing_banner?.text,
+            message: financialData.marketing_banner?.text || ''
+          },
+          paymentTerms: {
+            netDays: financialData.payment_terms?.net_days || 30,
+            earlyPaymentDiscount: financialData.payment_terms?.early_payment_discount || 0
+          },
+          discountConfig: {
+            rate: financialData.discount_config?.rate || 0,
+            amount: financialData.discount_config?.amount || 0,
+            type: financialData.discount_config?.type || 'percentage'
+          },
+          defaultConditions: {
+            language: 'FR',
+            text: quote.terms_conditions || 'Conditions générales:\n• Devis valable 30 jours\n• Acompte de 30% à la commande\n• Solde à la livraison\n• Délai de paiement: 30 jours\n• TVA comprise\n• Matériaux et main d\'œuvre garantis 1 an'
+          }
+        };
+      }
+      
       // Set the data
       setSelectedClient(transformedClient);
       setProjectInfo({
@@ -245,8 +318,8 @@ const QuoteCreation = () => {
         quoteNumber: isDuplicating ? null : quote.quote_number // Don't copy quote number when duplicating
       });
       setTasks(transformedTasks);
-
       setFiles(transformedFiles);
+      setFinancialConfig(financialConfig);
       
       // If duplicating, generate a new quote number
       if (isDuplicating) {
@@ -555,6 +628,9 @@ const QuoteCreation = () => {
         }
 
 
+        // Clear all quote creation data from localStorage after successful update
+        clearAllQuoteData();
+        
         alert('Devis mis à jour avec succès !');
         navigate('/quotes-management');
         return;
@@ -728,6 +804,9 @@ const QuoteCreation = () => {
         }
 
 
+        // Clear all quote creation data from localStorage after successful edit
+        clearAllQuoteData();
+        
         alert(`Devis mis à jour et envoyé avec succès à ${selectedClient?.label?.split(' - ')[0] || 'le client'} !`);
         navigate('/quotes-management');
         return;
@@ -810,6 +889,52 @@ const QuoteCreation = () => {
 
       const quoteId = createdQuote.id;
       
+      // Now save financial configuration to database
+      if (data.financialConfig && user?.id) {
+        try {
+          const financialConfigData = {
+            quote_id: quoteId,
+            vat_config: {
+              display: data.financialConfig.vatConfig?.display || false,
+              rate: data.financialConfig.vatConfig?.rate || 21,
+              is_inclusive: false
+            },
+            advance_config: {
+              enabled: data.financialConfig.advanceConfig?.enabled || false,
+              percentage: data.financialConfig.advanceConfig?.percentage || 30,
+              amount: data.financialConfig.advanceConfig?.amount || '',
+              due_date: data.financialConfig.advanceConfig?.dueDate || null
+            },
+            marketing_banner: {
+              text: data.financialConfig.marketingBannerConfig?.message || '',
+              color: '#3B82F6',
+              position: 'top'
+            },
+            payment_terms: {
+              net_days: 30,
+              early_payment_discount: 0
+            },
+            discount_config: {
+              rate: 0,
+              amount: 0,
+              type: 'percentage'
+            }
+          };
+          
+          // Insert financial configuration
+          const { error: financialConfigError } = await supabase
+            .from('quote_financial_configs')
+            .insert(financialConfigData);
+          
+          if (financialConfigError) {
+            console.error('Error saving financial config:', financialConfigError);
+            // Continue with quote creation even if financial config save fails
+          }
+        } catch (error) {
+          console.error('Error saving financial config:', error);
+          // Continue with quote creation even if financial config save fails
+        }
+      }
 
       // Now save company info to database (including logo and signature)
       let companyProfileId = null;
@@ -854,7 +979,17 @@ const QuoteCreation = () => {
           const companyResult = await saveCompanyInfo(companyDataToSave, user.id);
           if (companyResult.success) {
             companyProfileId = companyResult.data.id;
-    
+            
+            // Update the quote with the company profile ID
+            const { error: updateQuoteError } = await supabase
+              .from('quotes')
+              .update({ company_profile_id: companyProfileId })
+              .eq('id', quoteId);
+            
+            if (updateQuoteError) {
+              console.error('Error updating quote with company profile:', updateQuoteError);
+              // Continue with quote creation even if update fails
+            }
           } else {
             console.warn('Company info save warning:', companyResult.error);
             // Continue with quote creation even if company info save fails
@@ -1246,6 +1381,7 @@ const QuoteCreation = () => {
             projectInfo={projectInfo}
             quoteNumber={projectInfo.quoteNumber}
             companyInfo={companyInfo}
+            financialConfig={financialConfig}
             onPrevious={handlePrevious}
             onSave={handleSave}
             onSend={handleSend}

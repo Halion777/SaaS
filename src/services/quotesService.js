@@ -7,21 +7,16 @@ import { supabase } from './supabaseClient';
  */
 export async function generateQuoteNumber(userId) {
   try {
-    console.log('Generating quote number for user:', userId);
-    
     if (!userId) {
       console.error('No userId provided to generateQuoteNumber');
       return { error: 'No userId provided' };
     }
     
     // First, test if we can access the quotes table at all
-    console.log('Testing basic database access...');
     const { data: testData, error: testError } = await supabase
       .from('quotes')
       .select('id')
       .limit(1);
-    
-    console.log('Test query result:', { testData, testError });
     
     if (testError) {
       console.error('Cannot access quotes table:', testError);
@@ -29,11 +24,8 @@ export async function generateQuoteNumber(userId) {
     }
     
     // Now try the RPC function
-    console.log('Calling generate_quote_number RPC...');
     const { data, error } = await supabase
       .rpc('generate_quote_number', { user_id: userId });
-    
-    console.log('RPC response:', { data, error });
     
     if (error) {
       console.error('Supabase RPC error:', error);
@@ -177,6 +169,15 @@ export async function fetchQuoteById(id) {
           signature_data,
           signed_at,
           created_at
+        ),
+        quote_financial_configs(
+          id,
+          vat_config,
+          advance_config,
+          marketing_banner,
+          payment_terms,
+          discount_config,
+          created_at
         )
       `)
       .eq('id', id)
@@ -196,8 +197,6 @@ export async function fetchQuoteById(id) {
  */
 export async function createQuote(quoteData) {
   try {
-    console.log('Creating quote with data:', quoteData);
-    
     // Validate required fields
     if (!quoteData.user_id) {
       return { error: { message: 'user_id is required' } };
@@ -208,10 +207,6 @@ export async function createQuote(quoteData) {
     if (!quoteData.quote_number) {
       return { error: { message: 'quote_number is required' } };
     }
-    
-    console.log('Quote user_id:', quoteData.user_id);
-    console.log('Quote client_id:', quoteData.client_id);
-    console.log('Quote number:', quoteData.quote_number);
     
     // First, create the quote
     const quoteInsertData = {
@@ -233,18 +228,6 @@ export async function createQuote(quoteData) {
       terms_conditions: quoteData.terms_conditions || ''
     };
     
-    // Additional validation and debugging
-    console.log('Final quote insert data:', quoteInsertData);
-    console.log('Data types:', {
-      user_id: typeof quoteInsertData.user_id,
-      client_id: typeof quoteInsertData.client_id,
-      quote_number: typeof quoteInsertData.quote_number,
-      title: typeof quoteInsertData.title,
-      total_amount: typeof quoteInsertData.total_amount
-    });
-    
-    console.log('Inserting quote with data:', quoteInsertData);
-    
     const { data: quote, error: quoteError } = await supabase
       .from('quotes')
       .insert(quoteInsertData)
@@ -253,16 +236,8 @@ export async function createQuote(quoteData) {
     
     if (quoteError) {
       console.error('Error creating quote:', quoteError);
-      console.error('Error details:', {
-        code: quoteError.code,
-        message: quoteError.message,
-        details: quoteError.details,
-        hint: quoteError.hint
-      });
       return { error: quoteError };
     }
-    
-    console.log('Quote created successfully:', quote);
     
     // Then create quote tasks if any
     if (quoteData.tasks && quoteData.tasks.length > 0) {

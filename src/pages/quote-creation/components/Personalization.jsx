@@ -48,11 +48,11 @@ const Personalization = ({
   };
 
   const handleResetColors = () => {
-    // Reset template to blanc (white) as default
-    const blancTemplate = QuoteTemplates.find(t => t.id === 'blanc');
-    onTemplateChange('blanc');
-    onColorChange('primary', blancTemplate.primaryColor);
-    onColorChange('secondary', blancTemplate.secondaryColor);
+    // Reset template to minimaliste as default
+    const minimalisteTemplate = QuoteTemplates.find(t => t.id === 'minimaliste');
+    onTemplateChange('minimaliste');
+    onColorChange('primary', minimalisteTemplate.primaryColor);
+    onColorChange('secondary', minimalisteTemplate.secondaryColor);
   };
 
   return (

@@ -16,6 +16,7 @@ const QuotePreview = ({
   projectInfo,
   quoteNumber,
   companyInfo: parentCompanyInfo,
+  financialConfig: parentFinancialConfig,
   onPrevious, 
   onSave, 
   onSend,
@@ -40,15 +41,15 @@ const QuotePreview = ({
 
   // Customization
   const [customization, setCustomization] = useState({
-    template: 'blanc',
+    template: 'minimaliste',
     colors: {
-      primary: '#FF6B00',  // Vibrant orange
-      secondary: '#FF8533' // Lighter orange
+      primary: '#374151',  // Dark gray (Minimaliste)
+      secondary: '#1f2937' // Darker gray (Minimaliste)
     }
   });
 
   // Financial Configuration
-  const [financialConfig, setFinancialConfig] = useState({
+  const [financialConfig, setFinancialConfig] = useState(parentFinancialConfig || {
     vatConfig: {
       display: false,
       rate: 21
@@ -106,6 +107,11 @@ const QuotePreview = ({
     };
 
     loadCompanyData();
+    
+    // Update financial config when prop changes (for editing mode)
+    if (parentFinancialConfig) {
+      setFinancialConfig(parentFinancialConfig);
+    }
     
     // Load saved signature data if available
     const savedSignatureData = localStorage.getItem('quote-signature-data');

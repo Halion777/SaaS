@@ -394,7 +394,7 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, isSavin
           onClick={onPrevious}
           iconName="ArrowLeft"
           iconPosition="left"
-          disabled={isSaving || uploadingFiles.size > 0}
+          disabled={isSaving}
         >
           Étape précédente
         </Button>
@@ -402,9 +402,9 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, isSavin
           onClick={onNext}
           iconName="ArrowRight"
           iconPosition="right"
-          disabled={isSaving || uploadingFiles.size > 0}
+          disabled={isSaving}
         >
-          {uploadingFiles.size > 0 ? 'Upload en cours...' : 'Étape suivante'}
+          Étape suivante
         </Button>
       </div>
     </div>
