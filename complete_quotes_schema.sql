@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS public.quotes (
     company_profile_id UUID REFERENCES public.company_profiles(id) ON DELETE SET NULL,
     client_id UUID REFERENCES public.clients(id) ON DELETE SET NULL,
     quote_number VARCHAR(50) UNIQUE NOT NULL,
-    title VARCHAR(255) NOT NULL,
+    title TEXT,
     description TEXT,
     status VARCHAR(50) DEFAULT 'draft', -- draft, sent, viewed, accepted, rejected, expired
     project_categories TEXT[] DEFAULT '{}', -- Array of project categories (plomberie, electricite, etc.)
@@ -770,3 +770,242 @@ COMMENT ON COLUMN public.quote_signatures.customer_comment IS 'Customer comment 
 
 -- Create a scheduled job to auto-expire quotes (if using pg_cron extension)
 -- SELECT cron.schedule('auto-expire-quotes', '0 1 * * *', 'SELECT auto_expire_quotes();');
+
+-- ================================
+-- Quotes Follow-up Backend Schema
+-- Backend-only: no frontend changes required
+-- ================================
+
+-- Rules for follow-ups per user (delays, quiet hours, max stages)
+CREATE TABLE IF NOT EXISTS public.quote_follow_up_rules (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    -- Stage delays in days, e.g., {3,7,14}
+    stage_delays INTEGER[] NOT NULL DEFAULT '{3,7,14}',
+    max_stages SMALLINT NOT NULL DEFAULT 3,
+    default_channel VARCHAR(20) NOT NULL DEFAULT 'email',
+    timezone TEXT DEFAULT 'UTC',
+    quiet_hours_start SMALLINT, -- 0-23 local hour
+    quiet_hours_end SMALLINT,   -- 0-23 local hour
+    weekdays JSONB DEFAULT '[1,2,3,4,5]'::jsonb, -- 1=Mon ... 7=Sun
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE (user_id)
+);
+
+-- Scheduled follow-ups for quotes
+CREATE TABLE IF NOT EXISTS public.quote_follow_ups (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    quote_id UUID NOT NULL REFERENCES public.quotes(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    client_id UUID REFERENCES public.clients(id) ON DELETE SET NULL,
+    stage SMALLINT NOT NULL,
+    scheduled_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    next_attempt_at TIMESTAMP WITH TIME ZONE,
+    attempts SMALLINT NOT NULL DEFAULT 0,
+    max_attempts SMALLINT NOT NULL DEFAULT 3,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending', -- pending, scheduled, sent, failed, stopped
+    channel VARCHAR(20) NOT NULL DEFAULT 'email',  -- email (others later)
+    template_subject TEXT,
+    template_html TEXT,
+    template_text TEXT,
+    last_error TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Email outbox/queue (processed by Edge Function/worker)
+CREATE TABLE IF NOT EXISTS public.email_outbox (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    follow_up_id UUID REFERENCES public.quote_follow_ups(id) ON DELETE SET NULL,
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    to_email TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    html TEXT,
+    text TEXT,
+    provider VARCHAR(50) DEFAULT 'resend',
+    provider_message_id TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'queued', -- queued, sending, sent, delivered, opened, bounced, failed
+    error TEXT,
+    scheduled_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    sent_at TIMESTAMP WITH TIME ZONE,
+    delivered_at TIMESTAMP WITH TIME ZONE,
+    opened_at TIMESTAMP WITH TIME ZONE,
+    bounced_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Quote events timeline
+CREATE TABLE IF NOT EXISTS public.quote_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    quote_id UUID NOT NULL REFERENCES public.quotes(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    type VARCHAR(50) NOT NULL, -- sent, viewed, followup_scheduled, followup_sent, delivered, opened, bounced, accepted, rejected
+    meta JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes for follow-up subsystem
+CREATE INDEX IF NOT EXISTS idx_quote_follow_up_rules_user_id ON public.quote_follow_up_rules(user_id);
+CREATE INDEX IF NOT EXISTS idx_quote_follow_ups_quote_id ON public.quote_follow_ups(quote_id);
+CREATE INDEX IF NOT EXISTS idx_quote_follow_ups_user_id ON public.quote_follow_ups(user_id);
+CREATE INDEX IF NOT EXISTS idx_quote_follow_ups_scheduled_at ON public.quote_follow_ups(scheduled_at);
+CREATE INDEX IF NOT EXISTS idx_email_outbox_status ON public.email_outbox(status);
+CREATE INDEX IF NOT EXISTS idx_email_outbox_user_id ON public.email_outbox(user_id);
+CREATE INDEX IF NOT EXISTS idx_quote_events_quote_id ON public.quote_events(quote_id);
+CREATE INDEX IF NOT EXISTS idx_quote_events_type ON public.quote_events(type);
+
+-- Enable RLS
+ALTER TABLE public.quote_follow_up_rules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.quote_follow_ups ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.email_outbox ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.quote_events ENABLE ROW LEVEL SECURITY;
+
+-- Policies
+CREATE POLICY "Users manage their own follow-up rules" ON public.quote_follow_up_rules
+  FOR ALL USING (user_id = auth.uid());
+
+CREATE POLICY "Users manage their own follow-ups" ON public.quote_follow_ups
+  FOR ALL USING (
+    user_id = auth.uid()
+  );
+
+CREATE POLICY "Users manage their own outbox" ON public.email_outbox
+  FOR ALL USING (user_id = auth.uid());
+
+CREATE POLICY "Users view their own quote events" ON public.quote_events
+  FOR SELECT USING (user_id = auth.uid());
+
+-- Triggers for updated_at
+CREATE TRIGGER update_quote_follow_up_rules_updated_at
+  BEFORE UPDATE ON public.quote_follow_up_rules
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_quote_follow_ups_updated_at
+  BEFORE UPDATE ON public.quote_follow_ups
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_email_outbox_updated_at
+  BEFORE UPDATE ON public.email_outbox
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Helper: get delay for a given stage with user defaults
+CREATE OR REPLACE FUNCTION public.get_follow_up_delay_days(p_user_id UUID, p_stage SMALLINT)
+RETURNS INTEGER AS $$
+DECLARE
+  delays INTEGER[];
+  d INTEGER;
+BEGIN
+  SELECT stage_delays INTO delays
+  FROM public.quote_follow_up_rules
+  WHERE user_id = p_user_id;
+
+  IF delays IS NULL OR array_length(delays, 1) IS NULL THEN
+    delays := '{3,7,14}';
+  END IF;
+
+  IF p_stage <= array_length(delays, 1) THEN
+    d := delays[p_stage];
+  ELSE
+    d := 14; -- fallback
+  END IF;
+
+  RETURN d;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create a follow-up for a quote at a specific stage
+CREATE OR REPLACE FUNCTION public.create_follow_up_for_quote(p_quote_id UUID, p_stage SMALLINT)
+RETURNS UUID AS $$
+DECLARE
+  v_user_id UUID;
+  v_client_id UUID;
+  v_delay_days INTEGER;
+  v_follow_up_id UUID;
+BEGIN
+  SELECT user_id, client_id INTO v_user_id, v_client_id
+  FROM public.quotes WHERE id = p_quote_id;
+
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'Quote not found: %', p_quote_id;
+  END IF;
+
+  v_delay_days := public.get_follow_up_delay_days(v_user_id, p_stage);
+
+  INSERT INTO public.quote_follow_ups (
+    quote_id, user_id, client_id, stage, scheduled_at, status, channel
+  ) VALUES (
+    p_quote_id, v_user_id, v_client_id, p_stage, NOW() + make_interval(days => v_delay_days), 'pending', 'email'
+  ) RETURNING id INTO v_follow_up_id;
+
+  INSERT INTO public.quote_events (quote_id, user_id, type, meta)
+  VALUES (p_quote_id, v_user_id, 'followup_scheduled', jsonb_build_object('stage', p_stage, 'in_days', v_delay_days));
+
+  RETURN v_follow_up_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- On quote status change to 'sent', create stage 1 follow-up
+CREATE OR REPLACE FUNCTION public.on_quote_status_sent()
+RETURNS TRIGGER AS $$
+BEGIN
+  PERFORM public.create_follow_up_for_quote(NEW.id, 1);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_on_quote_sent ON public.quotes;
+CREATE TRIGGER trg_on_quote_sent
+  AFTER UPDATE ON public.quotes
+  FOR EACH ROW
+  WHEN (NEW.status = 'sent' AND (OLD.status IS DISTINCT FROM NEW.status))
+  EXECUTE FUNCTION public.on_quote_status_sent();
+
+-- Stop follow-ups when quote is accepted or rejected
+CREATE OR REPLACE FUNCTION public.on_quote_finalized()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE public.quote_follow_ups SET status = 'stopped'
+  WHERE quote_id = NEW.id AND status IN ('pending','scheduled');
+
+  INSERT INTO public.quote_events (quote_id, user_id, type)
+  VALUES (NEW.id, NEW.user_id, CASE WHEN NEW.status = 'accepted' THEN 'accepted' ELSE 'rejected' END);
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_on_quote_finalized ON public.quotes;
+CREATE TRIGGER trg_on_quote_finalized
+  AFTER UPDATE ON public.quotes
+  FOR EACH ROW
+  WHEN (NEW.status IN ('accepted','rejected') AND (OLD.status IS DISTINCT FROM NEW.status))
+  EXECUTE FUNCTION public.on_quote_finalized();
+
+-- Convenience RPCs
+CREATE OR REPLACE FUNCTION public.schedule_all_followups_for_quote(p_quote_id UUID)
+RETURNS VOID AS $$
+DECLARE
+  v_user_id UUID;
+  v_max SMALLINT;
+  i SMALLINT := 1;
+BEGIN
+  SELECT user_id INTO v_user_id FROM public.quotes WHERE id = p_quote_id;
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'Quote not found: %', p_quote_id;
+  END IF;
+  SELECT COALESCE(max_stages, 3) INTO v_max FROM public.quote_follow_up_rules WHERE user_id = v_user_id;
+  IF v_max IS NULL THEN v_max := 3; END IF;
+
+  WHILE i <= v_max LOOP
+    PERFORM public.create_follow_up_for_quote(p_quote_id, i);
+    i := i + 1;
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON TABLE public.quote_follow_up_rules IS 'Per-user rules controlling quote follow-up scheduling';
+COMMENT ON TABLE public.quote_follow_ups IS 'Scheduled follow-up actions for quotes';
+COMMENT ON TABLE public.email_outbox IS 'Outbox/queue for transactional emails to be sent by a worker';
+COMMENT ON TABLE public.quote_events IS 'Timeline of events related to quotes (follow-ups, deliveries, opens, etc.)';

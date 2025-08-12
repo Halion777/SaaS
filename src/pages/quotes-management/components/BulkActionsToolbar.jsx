@@ -1,29 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
-import Select from '../../../components/ui/Select';
 
 const BulkActionsToolbar = ({ selectedCount, onBulkAction, onClearSelection }) => {
-  const [selectedAction, setSelectedAction] = useState('');
-
-  const actionOptions = [
-    { value: '', label: 'Choisir une action...' },
-    { value: 'send-reminder', label: 'Envoyer un rappel' },
-    { value: 'mark-sent', label: 'Marquer comme envoyé' },
-    { value: 'mark-accepted', label: 'Marquer comme accepté' },
-    { value: 'duplicate', label: 'Dupliquer les devis' },
-    { value: 'export', label: 'Exporter en PDF' },
-    { value: 'ai-optimize', label: 'Optimiser avec IA' },
-    { value: 'delete', label: 'Supprimer' }
-  ];
-
-  const handleExecuteAction = () => {
-    if (selectedAction) {
-      onBulkAction(selectedAction);
-      setSelectedAction('');
-    }
-  };
-
   if (selectedCount === 0) return null;
 
   return (
@@ -46,27 +25,6 @@ const BulkActionsToolbar = ({ selectedCount, onBulkAction, onClearSelection }) =
             className="text-muted-foreground hover:text-foreground"
           >
             Désélectionner
-          </Button>
-        </div>
-
-        <div className="flex items-center space-x-3 w-full sm:w-auto">
-          <div className="flex-1 sm:flex-none sm:w-64">
-            <Select
-              options={actionOptions}
-              value={selectedAction}
-              onChange={setSelectedAction}
-              placeholder="Choisir une action..."
-            />
-          </div>
-          
-          <Button
-            variant="default"
-            onClick={handleExecuteAction}
-            disabled={!selectedAction}
-            iconName="Play"
-            iconPosition="left"
-          >
-            Exécuter
           </Button>
         </div>
       </div>

@@ -4,8 +4,20 @@ import Button from '../../components/ui/Button';
 import MainSidebar from '../../components/ui/MainSidebar';
 import FilterToolbar from './components/FilterToolbar';
 import { useScrollPosition } from '../../utils/useScrollPosition';
+import { useAuth } from '../../context/AuthContext';
+import { useMultiUser } from '../../context/MultiUserContext';
+import { 
+  listScheduledFollowUps, 
+  createFollowUpForQuote, 
+  stopFollowUpsForQuote,
+  logQuoteEvent 
+} from '../../services/followUpService';
+import { fetchQuotes } from '../../services/quotesService';
+import { useNavigate } from 'react-router-dom';
 
 const FollowUpManagement = () => {
+  const { user } = useAuth();
+  const { currentProfile } = useMultiUser();
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
@@ -18,99 +30,14 @@ const FollowUpManagement = () => {
     days: 'all'
   });
   const filterScrollRef = useScrollPosition('followup-filter-scroll');
-  const [followUps, setFollowUps] = useState([
-    {
-      id: 1,
-      name: 'Pierre Leblanc',
-      project: 'DEV-2024-003 - Pose de parquet',
-      daysAgo: 5,
-      nextFollowUp: '2024-01-20',
-      potentialRevenue: 2800,
-      priority: 'high',
-      status: 'pending',
-      type: 'quote',
-      hasResponse: false,
-      isPaid: false
-    },
-    {
-      id: 2,
-      name: 'Sophie Durand',
-      project: 'DEV-2024-004 - Rénovation cuisine',
-      daysAgo: 3,
-      nextFollowUp: '2024-01-18',
-      potentialRevenue: 8500,
-      priority: 'high',
-      status: 'scheduled',
-      type: 'quote',
-      hasResponse: false,
-      isPaid: false
-    },
-    {
-      id: 3,
-      name: 'Michel Bernard',
-      project: 'DEV-2024-005 - Installation électrique',
-      daysAgo: 8,
-      nextFollowUp: '2024-01-22',
-      potentialRevenue: 1200,
-      priority: 'medium',
-      status: 'pending',
-      type: 'quote',
-      hasResponse: false,
-      isPaid: false
-    },
-    {
-      id: 4,
-      name: 'Marie Dubois',
-      project: 'FAC-2024-001 - Rénovation salle de bain',
-      daysAgo: 2,
-      nextFollowUp: '2024-01-15',
-      potentialRevenue: 3200,
-      priority: 'high',
-      status: 'pending',
-      type: 'invoice',
-      hasResponse: false,
-      isPaid: false
-    },
-    {
-      id: 5,
-      name: 'Jean Martin',
-      project: 'FAC-2024-002 - Peinture intérieure',
-      daysAgo: 1,
-      nextFollowUp: '2024-01-16',
-      potentialRevenue: 1800,
-      priority: 'medium',
-      status: 'scheduled',
-      type: 'invoice',
-      hasResponse: false,
-      isPaid: false
-    },
-    {
-      id: 6,
-      name: 'Claire Moreau',
-      project: 'DEV-2024-006 - Installation climatisation',
-      daysAgo: 2,
-      nextFollowUp: '2024-01-17',
-      potentialRevenue: 4500,
-      priority: 'medium',
-      status: 'completed',
-      type: 'quote',
-      hasResponse: true,
-      isPaid: false
-    },
-    {
-      id: 7,
-      name: 'Paul Durand',
-      project: 'FAC-2024-003 - Électricité complète',
-      daysAgo: 0,
-      nextFollowUp: '2024-01-20',
-      potentialRevenue: 2800,
-      priority: 'low',
-      status: 'completed',
-      type: 'invoice',
-      hasResponse: false,
-      isPaid: true
-    }
-  ]);
+  
+  // Real data states
+  const [followUps, setFollowUps] = useState([]);
+  const [quotes, setQuotes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const navigate = useNavigate();
 
   // Handle sidebar offset for responsive layout
   useEffect(() => {
@@ -181,17 +108,172 @@ const FollowUpManagement = () => {
     };
   }, []);
 
-  // Auto-switch view mode on resize
+  // Fetch real data from backend
   useEffect(() => {
-    const handleViewModeResize = () => {
-      if (window.innerWidth < 1024 && viewMode === 'table') {
-        setViewMode('card');
+    const loadData = async () => {
+      if (!user || !currentProfile) return;
+      
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch quotes
+        const { data: quotesData, error: quotesError } = await fetchQuotes();
+        if (quotesError) {
+          console.error('Error fetching quotes:', quotesError);
+          setError('Erreur lors du chargement des devis');
+          return;
+        }
+        
+        // Fetch follow-ups
+        const { data: followUpsData, error: followUpsError } = await listScheduledFollowUps({ 
+          status: 'all', 
+          limit: 1000 
+        });
+        
+        if (followUpsError) {
+          console.error('Error fetching follow-ups:', followUpsError);
+          setError('Erreur lors du chargement des relances');
+          return;
+        }
+        
+        // Transform quotes data
+        const transformedQuotes = (quotesData || []).map(quote => ({
+          id: quote.id,
+          number: quote.quote_number,
+          clientName: quote.client?.name || 'Client inconnu',
+          amount: parseFloat(quote.total_with_tax || quote.total_amount || 0),
+          status: quote.status,
+          createdAt: quote.created_at,
+          description: quote.project_description || 'Aucune description',
+          client: quote.client
+        }));
+        
+        setQuotes(transformedQuotes);
+        
+        // Transform follow-ups data to match the expected format
+        const transformedFollowUps = (followUpsData || []).map(followUp => {
+          const quote = transformedQuotes.find(q => q.id === followUp.quote_id);
+          if (!quote) return null;
+          
+          const daysAgo = Math.floor((new Date() - new Date(followUp.created_at)) / (1000 * 60 * 60 * 24));
+          const nextFollowUp = followUp.scheduled_at || followUp.created_at;
+          
+          return {
+            id: followUp.id,
+            name: quote.clientName,
+            project: `${quote.number} - ${quote.description}`,
+            daysAgo: daysAgo,
+            nextFollowUp: nextFollowUp,
+            potentialRevenue: quote.amount,
+            priority: followUp.stage === 1 ? 'high' : followUp.stage === 2 ? 'medium' : 'low',
+            status: followUp.status,
+            type: 'quote',
+            hasResponse: false, // This would need to be determined from actual response data
+            isPaid: quote.status === 'accepted',
+            quoteId: followUp.quote_id,
+            stage: followUp.stage,
+            scheduledAt: followUp.scheduled_at,
+            attempts: followUp.attempts || 0
+          };
+        }).filter(Boolean); // Remove null entries
+        
+        setFollowUps(transformedFollowUps);
+        
+      } catch (err) {
+        console.error('Error loading data:', err);
+        setError('Erreur lors du chargement des données');
+      } finally {
+        setLoading(false);
       }
     };
+    
+    loadData();
+  }, [user, currentProfile]);
 
-    window.addEventListener('resize', handleViewModeResize);
-    return () => window.removeEventListener('resize', handleViewModeResize);
-  }, [viewMode]);
+  // Auto-switch view mode on resize
+  useEffect(() => {
+    if (window.innerWidth < 1024) {
+      setViewMode('card');
+    }
+  }, []);
+
+  // Refresh data
+  const handleRefresh = async () => {
+    if (user && currentProfile) {
+      setLoading(true);
+      try {
+        // Fetch quotes
+        const { data: quotesData, error: quotesError } = await fetchQuotes();
+        if (quotesError) {
+          console.error('Error fetching quotes:', quotesError);
+          setError('Erreur lors du chargement des devis');
+          return;
+        }
+        
+        // Fetch follow-ups
+        const { data: followUpsData, error: followUpsError } = await listScheduledFollowUps({ 
+          status: 'all', 
+          limit: 1000 
+        });
+        
+        if (followUpsError) {
+          console.error('Error fetching follow-ups:', followUpsError);
+          setError('Erreur lors du chargement des relances');
+          return;
+        }
+        
+        // Transform quotes data
+        const transformedQuotes = (quotesData || []).map(quote => ({
+          id: quote.id,
+          number: quote.quote_number,
+          clientName: quote.client?.name || 'Client inconnu',
+          amount: parseFloat(quote.total_with_tax || quote.total_amount || 0),
+          status: quote.status,
+          createdAt: quote.created_at,
+          description: quote.project_description || 'Aucune description',
+          client: quote.client
+        }));
+        
+        setQuotes(transformedQuotes);
+        
+        // Transform follow-ups data
+        const transformedFollowUps = (followUpsData || []).map(followUp => {
+          const quote = transformedQuotes.find(q => q.id === followUp.quote_id);
+          if (!quote) return null;
+          
+          const daysAgo = Math.floor((new Date() - new Date(followUp.created_at)) / (1000 * 60 * 60 * 24));
+          const nextFollowUp = followUp.scheduled_at || followUp.created_at;
+          
+          return {
+            id: followUp.id,
+            name: quote.clientName,
+            project: `${quote.number} - ${quote.description}`,
+            daysAgo: daysAgo,
+            nextFollowUp: nextFollowUp,
+            potentialRevenue: quote.amount,
+            priority: followUp.stage === 1 ? 'high' : followUp.stage === 2 ? 'medium' : 'low',
+            status: followUp.status,
+            type: 'quote',
+            hasResponse: false,
+            isPaid: quote.status === 'accepted',
+            quoteId: followUp.quote_id,
+            stage: followUp.stage,
+            scheduledAt: followUp.scheduled_at,
+            attempts: followUp.attempts || 0
+          };
+        }).filter(Boolean);
+        
+        setFollowUps(transformedFollowUps);
+        setError(null);
+      } catch (err) {
+        console.error('Error refreshing data:', err);
+        setError('Erreur lors de l\'actualisation des données');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
 
   // Filter to only show items that need follow-up (no response or not paid)
   const needsFollowUp = (followUp) => {
@@ -521,39 +603,29 @@ const FollowUpManagement = () => {
               <div>
                 <div className="flex items-center">
                   <Icon name="MessageCircle" size={24} className="text-primary mr-3" />
-                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Relances</h1>
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des relances</h1>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Relancez vos devis sans réponse et factures non payées
+                  Suivez et gérez vos relances de devis et factures
                 </p>
               </div>
-              <div className="flex items-center space-x-2 sm:space-x-3">
-                
+              
+              <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                <Button
+                  variant="outline"
+                  onClick={handleRefresh}
+                  iconName={loading ? "Loader2" : "RefreshCw"}
+                  iconPosition="left"
+                  className="hidden md:flex text-xs sm:text-sm"
+                  disabled={loading}
+                >
+                  {loading ? 'Actualisation...' : 'Actualiser'}
+                </Button>
               </div>
             </div>
           </header>
 
-          {/* Enhanced Filter Tabs */}
-          <div ref={filterScrollRef} className="flex space-x-1 bg-muted/50 rounded-lg p-1 overflow-x-auto scrollbar-hide">
-            <button
-              onClick={() => setActiveFilter('quotes')}
-              className={`flex-1 py-3 px-4 sm:px-6 rounded-md text-sm sm:text-base font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0 flex items-center justify-center space-x-2 ${
-                activeFilter === 'quotes'
-                  ? 'bg-background text-foreground shadow-sm border border-primary/20'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
-              }`}
-            >
-              <Icon name="FileText" size={16} className="text-primary" />
-              <span>Devis</span>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                activeFilter === 'quotes'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground'
-              }`}>
-                {quoteFollowUps.length}
-              </span>
-            </button>
-          </div>
+
 
           {/* KPI Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
@@ -594,51 +666,89 @@ const FollowUpManagement = () => {
             filteredCount={filteredFollowUps.length}
           />
 
+          {/* View Toggle */}
+          <div className="flex items-center justify-between p-4 border-b border-border">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium text-muted-foreground">Vue:</span>
+              <div className="flex bg-muted rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                    viewMode === 'table'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Icon name="Table" size={14} className="mr-1" />
+                  Tableau
+                </button>
+                <button
+                  onClick={() => setViewMode('card')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                    viewMode === 'card'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Icon name="Grid" size={14} className="mr-1" />
+                  Cartes
+                </button>
+              </div>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {filteredFollowUps.length} relance(s)
+            </div>
+          </div>
+
           {/* Follow-up Items */}
-          {filteredFollowUps.length === 0 ? (
+          {loading ? (
+            <div className="bg-card border border-border rounded-lg p-8 text-center">
+              <Icon name="Loader" size={48} className="text-muted-foreground mx-auto mb-4 animate-spin" />
+              <h3 className="text-lg font-medium text-foreground mb-2">Chargement des données...</h3>
+              <p className="text-muted-foreground">
+                Veuillez patienter pendant le chargement des données.
+              </p>
+            </div>
+          ) : error ? (
+            <div className="bg-card border border-border rounded-lg p-8 text-center">
+              <Icon name="AlertCircle" size={48} className="text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">Erreur de chargement</h3>
+              <p className="text-muted-foreground">
+                {error}. Veuillez réessayer ou rafraîchir la page.
+              </p>
+              <Button
+                variant="outline"
+                onClick={handleRefresh}
+                className="mt-4"
+              >
+                Rafraîchir
+              </Button>
+            </div>
+          ) : filteredFollowUps.length === 0 ? (
             <div className="bg-card border border-border rounded-lg p-8 text-center">
               <Icon name="MessageCircle" size={48} className="text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">Aucune relance nécessaire</h3>
-              <p className="text-muted-foreground">
-                Tous vos devis ont reçu une réponse et toutes vos factures sont payées
+              <h3 className="text-lg font-medium text-foreground mb-2">Aucune relance trouvée</h3>
+              <p className="text-muted-foreground mb-4">
+                {followUps.length === 0 
+                  ? "Aucune relance n'est actuellement programmée. Les relances apparaîtront automatiquement pour vos devis envoyés."
+                  : "Aucune relance ne correspond aux filtres appliqués. Essayez de modifier vos critères de recherche."
+                }
               </p>
+              {followUps.length === 0 && (
+                <Button onClick={() => navigate('/quotes-management')} variant="default" className="gap-2">
+                  <Icon name="ArrowRight" size={16} />
+                  Aller aux devis
+                </Button>
+              )}
+              {followUps.length > 0 && (
+                <Button onClick={() => setFilters({ type: 'all', priority: 'all', status: 'all', days: 'all' })} variant="outline" className="gap-2">
+                  <Icon name="RotateCcw" size={16} />
+                  Effacer les filtres
+                </Button>
+              )}
             </div>
           ) : (
             <div className="bg-card border border-border rounded-lg overflow-hidden">
-              {/* View Toggle */}
-              <div className="flex items-center justify-between p-4 border-b border-border">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-muted-foreground">Vue:</span>
-                  <div className="flex bg-muted rounded-lg p-1">
-                    <button
-                      onClick={() => setViewMode('table')}
-                      className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                        viewMode === 'table'
-                          ? 'bg-background text-foreground shadow-sm'
-                          : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      <Icon name="Table" size={14} className="mr-1" />
-                      Tableau
-                    </button>
-                    <button
-                      onClick={() => setViewMode('card')}
-                      className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                        viewMode === 'card'
-                          ? 'bg-background text-foreground shadow-sm'
-                          : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      <Icon name="Grid" size={14} className="mr-1" />
-                      Cartes
-                    </button>
-                  </div>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {filteredFollowUps.length} relance(s)
-                </div>
-              </div>
-
               {/* Content */}
               {viewMode === 'table' ? (
                 renderTableView()

@@ -26,7 +26,6 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
     let filtered = quotes.filter(quote => 
       quote.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       quote.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      quote.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       quote.status.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -107,95 +106,65 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
       <table className="w-full">
         <thead className="bg-muted/50">
           <tr>
-            <th className="w-12 p-3 md:p-4">
+            <th className="p-3 md:p-4 text-left">
               <Checkbox
-                checked={selectedQuotes.length === quotes.length && quotes.length > 0}
+                checked={selectedQuotes.length === sortedAndFilteredQuotes.length && sortedAndFilteredQuotes.length > 0}
                 onChange={onSelectAll}
-                indeterminate={selectedQuotes.length > 0 && selectedQuotes.length < quotes.length}
                 aria-label="Select all quotes"
               />
             </th>
-            <th className="text-left p-3 md:p-4 font-medium text-foreground">
-              <button
-                onClick={() => handleSort('number')}
-                className="flex items-center space-x-1 hover:text-primary transition-colors"
-              >
-                <span>N° Devis</span>
-                <Icon 
-                  name={sortConfig.key === 'number' ? 
-                    (sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown') : 
-                    'ChevronsUpDown'
-                  } 
-                  size={16} 
-                />
-              </button>
+            <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('number')}>
+              <div className="flex items-center space-x-1">
+                <span>Numéro</span>
+                {sortConfig.key === 'number' && (
+                  <Icon name={sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown'} size={14} />
+                )}
+              </div>
             </th>
-            <th className="text-left p-3 md:p-4 font-medium text-foreground">
-              <button
-                onClick={() => handleSort('clientName')}
-                className="flex items-center space-x-1 hover:text-primary transition-colors"
-              >
+            <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('clientName')}>
+              <div className="flex items-center space-x-1">
                 <span>Client</span>
-                <Icon 
-                  name={sortConfig.key === 'clientName' ? 
-                    (sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown') : 
-                    'ChevronsUpDown'
-                  } 
-                  size={16} 
-                />
-              </button>
+                {sortConfig.key === 'clientName' && (
+                  <Icon name={sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown'} size={14} />
+                )}
+              </div>
             </th>
-            <th className="text-left p-3 md:p-4 font-medium text-foreground">Description</th>
-            <th className="text-left p-3 md:p-4 font-medium text-foreground">
-              <button
-                onClick={() => handleSort('amount')}
-                className="flex items-center space-x-1 hover:text-primary transition-colors"
-              >
+            <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('amount')}>
+              <div className="flex items-center space-x-1">
                 <span>Montant</span>
-                <Icon 
-                  name={sortConfig.key === 'amount' ? 
-                    (sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown') : 
-                    'ChevronsUpDown'
-                  } 
-                  size={16} 
-                />
-              </button>
+                {sortConfig.key === 'amount' && (
+                  <Icon name={sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown'} size={14} />
+                )}
+              </div>
             </th>
-            <th className="text-left p-3 md:p-4 font-medium text-foreground">Statut</th>
-            <th className="text-left p-3 md:p-4 font-medium text-foreground">
-              <button
-                onClick={() => handleSort('createdAt')}
-                className="flex items-center space-x-1 hover:text-primary transition-colors"
-              >
-                <span>Date</span>
-                <Icon 
-                  name={sortConfig.key === 'createdAt' ? 
-                    (sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown') : 
-                    'ChevronsUpDown'
-                  } 
-                  size={16} 
-                />
-              </button>
+            <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('status')}>
+              <div className="flex items-center space-x-1">
+                <span>Statut</span>
+                {sortConfig.key === 'status' && (
+                  <Icon name={sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown'} size={14} />
+                )}
+              </div>
             </th>
-            <th className="text-left p-3 md:p-4 font-medium text-foreground">
-              <button
-                onClick={() => handleSort('aiScore')}
-                className="flex items-center space-x-1 hover:text-primary transition-colors"
-              >
-                <span>Score IA</span>
-                <Icon 
-                  name={sortConfig.key === 'aiScore' ? 
-                    (sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown') : 
-                    'ChevronsUpDown'
-                  } 
-                  size={16} 
-                />
-              </button>
+            <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('createdAt')}>
+              <div className="flex items-center space-x-1">
+                <span>Créé le</span>
+                {sortConfig.key === 'createdAt' && (
+                  <Icon name={sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown'} size={14} />
+                )}
+              </div>
             </th>
-            <th className="text-right p-3 md:p-4 font-medium text-foreground">Actions</th>
+            <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground">
+              Score IA
+            </th>
+            <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground">
+              Relances
+            </th>
+            <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground">
+              Actions
+            </th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-border">
           {sortedAndFilteredQuotes.map((quote) => (
             <tr 
               key={quote.id} 
@@ -211,7 +180,6 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
               </td>
               <td className="p-3 md:p-4 font-medium text-foreground">{quote.number}</td>
               <td className="p-3 md:p-4 text-foreground">{quote.clientName}</td>
-              <td className="p-3 md:p-4 text-muted-foreground text-sm truncate max-w-[200px]">{quote.description}</td>
               <td className="p-3 md:p-4 font-medium text-foreground">{formatAmount(quote.amount)}</td>
               <td className="p-3 md:p-4">
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-center ${getStatusColor(quote.status)}`}>
@@ -226,6 +194,11 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                   </span>
                   <Icon name="Sparkles" size={14} className="text-accent" />
                 </div>
+              </td>
+              <td className="p-3 md:p-4">
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-center ${quote.followUpStatusColor || 'bg-gray-100 text-gray-700'}`}>
+                  {quote.followUpStatusLabel || 'Aucune'}
+                </span>
               </td>
               <td className="p-3 md:p-4" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-end space-x-1">
@@ -251,6 +224,25 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                   <Button
                     variant="ghost"
                     size="icon"
+                    onClick={() => onQuoteAction('followup', quote)}
+                    title="Gérer les relances"
+                    className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                  >
+                    <Icon name="MessageCircle" size={16} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onQuoteAction('sendFollowUpNow', quote)}
+                    title="Envoyer relance maintenant"
+                    disabled={quote.status !== 'sent'}
+                    className="h-8 w-8 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                  >
+                    <Icon name="Send" size={16} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => onQuoteAction('optimize', quote)}
                     title="Optimiser avec IA"
                     className="h-8 w-8 text-accent hover:text-accent hover:bg-accent/10"
@@ -267,69 +259,83 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
   );
 
   const renderCardView = () => (
-    <div className="p-3 md:p-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-        {sortedAndFilteredQuotes.map((quote) => (
-          <div 
-            key={quote.id}
-            className="bg-card border border-border rounded-lg p-3 space-y-3 hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => onQuoteSelect(quote)}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex items-center space-x-3">
-                <Checkbox
-                  checked={selectedQuotes.includes(quote.id)}
-                  onChange={() => onSelectQuote(quote.id)}
-                  onClick={(e) => e.stopPropagation()}
-                  aria-label={`Select quote ${quote.number}`}
-                />
-                <div>
-                  <h3 className="font-medium text-foreground">{quote.number}</h3>
-                  <p className="text-sm text-muted-foreground">{quote.clientName}</p>
-                </div>
-              </div>
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-center ${getStatusColor(quote.status)}`}>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {sortedAndFilteredQuotes.map((quote) => (
+        <div
+          key={quote.id}
+          className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+          onClick={() => onQuoteSelect(quote)}
+        >
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex-1">
+              <h3 className="font-semibold text-foreground mb-1">{quote.number}</h3>
+              <p className="text-sm text-muted-foreground mb-2">{quote.clientName}</p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(quote.status)}`}>
                 {getStatusText(quote.status)}
               </span>
-            </div>
-            
-            <p className="text-sm text-muted-foreground">{quote.description}</p>
-            
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-medium text-foreground">{formatAmount(quote.amount)}</span>
-              <span className="text-muted-foreground">{formatDate(quote.createdAt)}</span>
-            </div>
-            
-            <div className="flex items-center justify-between pt-2 border-t border-border">
-              <div className="flex items-center space-x-2">
-                <span className={`text-sm font-medium ${getAIScoreColor(quote.aiScore)}`}>
-                  Score IA: {quote.aiScore}%
-                </span>
-                <Icon name="Sparkles" size={14} className="text-accent" />
-              </div>
-              
-              <div className="flex items-center space-x-1" onClick={(e) => e.stopPropagation()}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onQuoteAction('edit', quote)}
-                  className="h-8 w-8"
-                >
-                  <Icon name="Edit" size={16} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onQuoteAction('optimize', quote)}
-                  className="h-8 w-8 text-accent hover:text-accent hover:bg-accent/10"
-                >
-                  <Icon name="Sparkles" size={16} />
-                </Button>
-              </div>
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${quote.followUpStatusColor || 'bg-gray-100 text-gray-700'}`}>
+                {quote.followUpStatusLabel || 'Aucune'}
+              </span>
             </div>
           </div>
-        ))}
-      </div>
+          
+          <div className="flex items-center justify-between mb-3">
+            <span className="font-semibold text-foreground">{quote.amountFormatted}</span>
+            <div className="flex items-center space-x-1">
+              <span className={`text-sm font-medium ${getAIScoreColor(quote.aiScore)}`}>
+                {quote.aiScore}%
+              </span>
+              <Icon name="Sparkles" size={14} className="text-accent" />
+            </div>
+          </div>
+          
+          <div className="text-xs text-muted-foreground mb-3">
+            Créé le {formatDate(quote.createdAt)}
+          </div>
+          
+          <div className="flex items-center justify-end space-x-1" onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onQuoteAction('edit', quote)}
+              title="Modifier"
+              className="h-7 w-7"
+            >
+              <Icon name="Edit" size={14} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onQuoteAction('followup', quote)}
+              title="Gérer les relances"
+              className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            >
+              <Icon name="MessageCircle" size={14} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onQuoteAction('sendFollowUpNow', quote)}
+              title="Envoyer relance maintenant"
+              disabled={quote.status !== 'sent'}
+              className="h-7 w-7 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+            >
+              <Icon name="Send" size={14} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onQuoteAction('optimize', quote)}
+              title="Optimiser avec IA"
+              className="h-7 w-7 text-accent hover:text-accent hover:bg-accent/10"
+            >
+              <Icon name="Sparkles" size={14} />
+            </Button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 

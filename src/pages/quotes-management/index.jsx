@@ -10,6 +10,13 @@ import AIAnalyticsPanel from './components/AIAnalyticsPanel';
 import { useAuth } from '../../context/AuthContext';
 import { useMultiUser } from '../../context/MultiUserContext';
 import { fetchQuotes, getQuoteStatistics } from '../../services/quotesService';
+import { 
+  listScheduledFollowUps, 
+  createFollowUpForQuote, 
+  stopFollowUpsForQuote,
+  logQuoteEvent 
+} from '../../services/followUpService';
+import FollowUpManagementPanel from './components/FollowUpManagementPanel';
 
 const QuotesManagement = () => {
   const navigate = useNavigate();
@@ -27,6 +34,12 @@ const QuotesManagement = () => {
     averageScore: 0
   });
   
+  // Follow-up related state
+  const [followUps, setFollowUps] = useState({});
+  const [followUpLoading, setFollowUpLoading] = useState(false);
+  const [showFollowUpPanel, setShowFollowUpPanel] = useState(false);
+  const [selectedQuoteForFollowUp, setSelectedQuoteForFollowUp] = useState(null);
+  
   const [selectedQuotes, setSelectedQuotes] = useState([]);
   const [selectedQuote, setSelectedQuote] = useState(null);
   const [filters, setFilters] = useState({
@@ -40,6 +53,30 @@ const QuotesManagement = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+
+  // Apply filters to quotes
+  useEffect(() => {
+    let filtered = [...quotes];
+    
+    if (filters.status) {
+      filtered = filtered.filter(q => q.status === filters.status);
+    }
+    
+    if (filters.client) {
+      filtered = filtered.filter(q => q.client?.id?.toString() === filters.client);
+    }
+    
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filtered = filtered.filter(q => 
+        q.number.toLowerCase().includes(searchLower) ||
+        q.clientName.toLowerCase().includes(searchLower) ||
+        q.description.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    setFilteredQuotes(filtered);
+  }, [quotes, filters]);
 
   // Fetch quotes data from backend
   useEffect(() => {
@@ -98,7 +135,6 @@ const QuotesManagement = () => {
         const sortedQuotes = transformedQuotes.sort((a, b) => getQuotePriority(a) - getQuotePriority(b));
         
         setQuotes(sortedQuotes);
-        setFilteredQuotes(sortedQuotes);
         
         // Calculate stats
         const total = sortedQuotes.length;
@@ -126,6 +162,83 @@ const QuotesManagement = () => {
     
     loadQuotes();
   }, [user, currentProfile]);
+
+  // Load follow-ups for quotes
+  useEffect(() => {
+    const loadFollowUps = async () => {
+      if (!user || !currentProfile || quotes.length === 0) return;
+      
+      try {
+        setFollowUpLoading(true);
+        
+        // Get all follow-ups for the current user's quotes
+        const { data: followUpsData, error: followUpsError } = await listScheduledFollowUps({ 
+          status: 'all', 
+          limit: 1000 
+        });
+        
+        if (followUpsError) {
+          console.error('Error fetching follow-ups:', followUpsError);
+          return;
+        }
+        
+        // Group follow-ups by quote_id
+        const followUpsByQuote = {};
+        if (followUpsData) {
+          followUpsData.forEach(fu => {
+            if (!followUpsByQuote[fu.quote_id]) {
+              followUpsByQuote[fu.quote_id] = [];
+            }
+            followUpsByQuote[fu.quote_id].push(fu);
+          });
+        }
+        
+        setFollowUps(followUpsByQuote);
+        
+        // Update quotes with follow-up status
+        updateQuotesWithFollowUpStatus(followUpsByQuote);
+      } catch (err) {
+        console.error('Error loading follow-ups:', err);
+      } finally {
+        setFollowUpLoading(false);
+      }
+    };
+    
+    loadFollowUps();
+  }, [user, currentProfile, quotes]);
+
+  // Update quotes with follow-up status
+  const updateQuotesWithFollowUpStatus = (followUpsData) => {
+    setQuotes(prevQuotes => 
+      prevQuotes.map(quote => {
+        const quoteFollowUps = followUpsData[quote.id] || [];
+        const followUpStatus = getFollowUpStatus(quote.id);
+        
+        return {
+          ...quote,
+          followUpStatus,
+          followUpStatusLabel: getFollowUpStatusLabel(followUpStatus),
+          followUpStatusColor: getFollowUpStatusColor(followUpStatus),
+          followUpCount: quoteFollowUps.length
+        };
+      })
+    );
+    
+    setFilteredQuotes(prevFilteredQuotes => 
+      prevFilteredQuotes.map(quote => {
+        const quoteFollowUps = followUpsData[quote.id] || [];
+        const followUpStatus = getFollowUpStatus(quote.id);
+        
+        return {
+          ...quote,
+          followUpStatus,
+          followUpStatusLabel: getFollowUpStatusLabel(followUpStatus),
+          followUpStatusColor: getFollowUpStatusColor(followUpStatus),
+          followUpCount: quoteFollowUps.length
+        };
+      })
+    );
+  };
 
   useEffect(() => {
     const handleSidebarToggle = (e) => {
@@ -201,6 +314,30 @@ const QuotesManagement = () => {
     );
   };
 
+  const handleFiltersChange = (newFilters) => {
+    setFilters(newFilters);
+  };
+
+  const handleClearFilters = () => {
+    setFilters({
+      status: '',
+      client: '',
+      search: '',
+      dateRange: { start: '', end: '' },
+      amountRange: { min: '', max: '' }
+    });
+  };
+
+  const handleBulkOptimize = () => {
+    if (selectedQuotes.length > 0) {
+      handleBulkAction('ai-optimize');
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedQuotes([]);
+  };
+
   const handleQuoteAction = async (action, quote) => {
     switch (action) {
       case 'edit':
@@ -220,6 +357,13 @@ const QuotesManagement = () => {
         setSelectedQuote(quote);
         setShowAIPanel(true);
         break;
+      case 'followup':
+        setSelectedQuoteForFollowUp(quote);
+        setShowFollowUpPanel(true);
+        break;
+      case 'sendFollowUpNow':
+        await handleSendFollowUpNow(quote);
+        break;
       case 'status':
         // Handle status updates if needed
         console.log(`Status update for quote ${quote.id}`);
@@ -229,9 +373,162 @@ const QuotesManagement = () => {
     }
   };
 
-  const handleQuoteSelect = (quote) => {
-    setSelectedQuote(quote);
-    setShowAIPanel(true);
+  // Follow-up action handlers
+  const handleSendFollowUpNow = async (quote) => {
+    if (!quote || quote.status !== 'sent') {
+      console.log('Quote must be in sent status to send follow-up');
+      return;
+    }
+
+    try {
+      // Create immediate follow-up
+      const followUpId = await createFollowUpForQuote(quote.id, 1);
+      
+      // Log the event
+      await logQuoteEvent({
+        quote_id: quote.id,
+        user_id: user.id,
+        type: 'followup_manual',
+        meta: { stage: 1, manual: true }
+      });
+
+      // Refresh follow-ups
+      const { data: followUpsData } = await listScheduledFollowUps({ status: 'all', limit: 1000 });
+      if (followUpsData) {
+        const followUpsByQuote = {};
+        followUpsData.forEach(fu => {
+          if (!followUpsByQuote[fu.quote_id]) {
+            followUpsByQuote[fu.quote_id] = [];
+          }
+          followUpsByQuote[fu.quote_id].push(fu);
+        });
+        setFollowUps(followUpsByQuote);
+      }
+
+      console.log('Follow-up created successfully:', followUpId);
+    } catch (error) {
+      console.error('Error creating follow-up:', error);
+    }
+  };
+
+  const handleStopFollowUps = async (quoteId) => {
+    try {
+      await stopFollowUpsForQuote(quoteId);
+      
+      // Refresh follow-ups
+      const { data: followUpsData } = await listScheduledFollowUps({ status: 'all', limit: 1000 });
+      if (followUpsData) {
+        const followUpsByQuote = {};
+        followUpsData.forEach(fu => {
+          if (!followUpsByQuote[fu.quote_id]) {
+            followUpsByQuote[fu.quote_id] = [];
+          }
+          followUpsByQuote[fu.quote_id].push(fu);
+        });
+        setFollowUps(followUpsByQuote);
+      }
+
+      console.log('Follow-ups stopped successfully');
+    } catch (error) {
+      console.error('Error stopping follow-ups:', error);
+    }
+  };
+
+  const getFollowUpStatus = (quoteId) => {
+    const quoteFollowUps = followUps[quoteId] || [];
+    if (quoteFollowUps.length === 0) return 'none';
+    
+    const hasPending = quoteFollowUps.some(fu => fu.status === 'pending');
+    const hasScheduled = quoteFollowUps.some(fu => fu.status === 'scheduled');
+    const hasSent = quoteFollowUps.some(fu => fu.status === 'sent');
+    
+    if (hasPending) return 'pending';
+    if (hasScheduled) return 'scheduled';
+    if (hasSent) return 'sent';
+    return 'none';
+  };
+
+  const getFollowUpStatusLabel = (status) => {
+    const labels = {
+      none: 'Aucune',
+      pending: 'En attente',
+      scheduled: 'Programmée',
+      sent: 'Envoyée'
+    };
+    return labels[status] || 'Aucune';
+  };
+
+  const getFollowUpStatusColor = (status) => {
+    const colors = {
+      none: 'bg-gray-100 text-gray-700',
+      pending: 'bg-orange-100 text-orange-700',
+      scheduled: 'bg-blue-100 text-blue-700',
+      sent: 'bg-green-100 text-green-700'
+    };
+    return colors[status] || 'bg-gray-100 text-gray-700';
+  };
+
+  // Helper functions
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format(amount);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  const getStatusLabel = (status) => {
+    const statusMap = {
+      draft: 'Brouillon',
+      sent: 'Envoyé',
+      accepted: 'Accepté',
+      rejected: 'Refusé',
+      expired: 'Expiré'
+    };
+    return statusMap[status] || status;
+  };
+
+  const isQuoteExpired = (expiresAt) => {
+    if (!expiresAt) return false;
+    return new Date(expiresAt) < new Date();
+  };
+
+  const getQuotePriority = (quote) => {
+    // Priority order: expired > sent > draft > accepted > rejected
+    const priorityMap = {
+      expired: 1,
+      sent: 2,
+      draft: 3,
+      accepted: 4,
+      rejected: 5
+    };
+    return priorityMap[quote.status] || 6;
+  };
+
+  // Action handlers
+  const handleRefresh = async () => {
+    // Refresh quotes data
+    window.location.reload();
+  };
+
+  const handleOptimizeQuote = async (quote) => {
+    // Handle quote optimization with AI
+    console.log('Optimizing quote:', quote.id);
+    // This would integrate with your AI service
+  };
+
+  const handleFollowUpRecommendation = async (quote) => {
+    // Handle follow-up recommendations
+    console.log('Getting follow-up recommendations for quote:', quote.id);
+    // This would integrate with your AI service
   };
 
   const handleBulkAction = async (action) => {
@@ -262,152 +559,9 @@ const QuotesManagement = () => {
     }
   };
 
-  const handleClearSelection = () => {
-    setSelectedQuotes([]);
-  };
-
-  const handleFiltersChange = (newFilters) => {
-    setFilters(newFilters);
-    
-    // Apply filters to quotes
-    if (quotes.length > 0) {
-      let filtered = [...quotes];
-      
-      // Filter by search term
-      if (newFilters.search) {
-        const searchTerm = newFilters.search.toLowerCase();
-        filtered = filtered.filter(q => 
-          q.number.toLowerCase().includes(searchTerm) ||
-          q.clientName.toLowerCase().includes(searchTerm) ||
-          q.description.toLowerCase().includes(searchTerm)
-        );
-      }
-      
-      // Filter by status
-      if (newFilters.status) {
-        filtered = filtered.filter(q => q.status === newFilters.status);
-      }
-      
-      // Filter by client
-      if (newFilters.client) {
-        filtered = filtered.filter(q => 
-          q.client && q.client.id && q.client.id.toString() === newFilters.client
-        );
-      }
-      
-      // Filter by date range
-      if (newFilters.dateRange.start || newFilters.dateRange.end) {
-        filtered = filtered.filter(q => {
-          const quoteDate = new Date(q.createdAt);
-          const startDate = newFilters.dateRange.start ? new Date(newFilters.dateRange.start) : null;
-          const endDate = newFilters.dateRange.end ? new Date(newFilters.dateRange.end) : null;
-          
-          if (startDate && endDate) {
-            return quoteDate >= startDate && quoteDate <= endDate;
-          } else if (startDate) {
-            return quoteDate >= startDate;
-          } else if (endDate) {
-            return quoteDate <= endDate;
-          }
-          return true;
-        });
-      }
-      
-      // Filter by amount range
-      if (newFilters.amountRange.min || newFilters.amountRange.max) {
-        filtered = filtered.filter(q => {
-          const amount = q.amount;
-          const min = newFilters.amountRange.min ? parseFloat(newFilters.amountRange.min) : 0;
-          const max = newFilters.amountRange.max ? parseFloat(newFilters.amountRange.max) : Infinity;
-          
-          return amount >= min && amount <= max;
-        });
-      }
-      
-      setFilteredQuotes(filtered);
-    }
-  };
-
-  const handleClearFilters = () => {
-    setFilters({
-      status: '',
-      client: '',
-      search: '',
-      dateRange: { start: '', end: '' },
-      amountRange: { min: '', max: '' }
-    });
-    setFilteredQuotes(quotes);
-  };
-
-  const handleOptimizeQuote = (quote) => {
-    console.log('Optimizing quote:', quote);
-    // Implement AI optimization logic
-  };
-
-  const handleFollowUpRecommendation = (recommendation) => {
-    console.log('Applying recommendation:', recommendation);
-    // Implement recommendation logic
-  };
-
-  const handleBulkOptimize = () => {
-    if (selectedQuotes.length > 0) {
-      handleBulkAction('ai-optimize');
-    }
-  };
-
-  const handleRefresh = () => {
-    if (user && currentProfile) {
-      // Trigger a reload by updating the dependency
-      setQuotes([]);
-      setLoading(true);
-      setError(null);
-    }
-  };
-
-  // Helper function to get status labels in French
-  const getStatusLabel = (status) => {
-    const statusLabels = {
-      'draft': 'Brouillon',
-      'sent': 'Envoyé',
-      'accepted': 'Accepté',
-      'rejected': 'Refusé',
-      'expired': 'Expiré'
-    };
-    return statusLabels[status] || status;
-  };
-
-  // Helper function to format currency
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
-  };
-
-  // Helper function to format dates
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    }).format(date);
-  };
-
-  // Helper function to check if quote is expired
-  const isQuoteExpired = (validUntil) => {
-    if (!validUntil) return false;
-    return new Date(validUntil) < new Date();
-  };
-
-  // Helper function to calculate quote priority
-  const getQuotePriority = (quote) => {
-    if (quote.status === 'accepted') return 1;
-    if (quote.status === 'sent') return 2;
-    if (quote.status === 'draft') return 3;
-    if (quote.isExpired) return 4;
-    return 5;
+  const handleQuoteSelect = (quote) => {
+    setSelectedQuote(quote);
+    // Remove automatic AI panel opening - user must click AI button explicitly
   };
 
   return (
@@ -446,6 +600,16 @@ const QuotesManagement = () => {
                 disabled={loading}
               >
                 {loading ? 'Actualisation...' : 'Actualiser'}
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={() => setShowFollowUpPanel(!showFollowUpPanel)}
+                iconName={showFollowUpPanel ? "PanelRightClose" : "MessageCircle"}
+                iconPosition="left"
+                className="hidden md:flex text-xs sm:text-sm"
+              >
+                Relances
               </Button>
               
               <Button
@@ -533,12 +697,12 @@ const QuotesManagement = () => {
           </div>
 
           {/* Filters */}
-                  <FilterBar
-          filters={filters}
-          onFiltersChange={handleFiltersChange}
-          onClearFilters={handleClearFilters}
+          <FilterBar
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+            onClearFilters={handleClearFilters}
           quotes={quotes}
-        />
+          />
 
           {/* Bulk Actions */}
           {selectedQuotes.length > 0 && (
@@ -644,6 +808,8 @@ const QuotesManagement = () => {
               />
             </div>
           )}
+
+
         </div>
       </main>
 
@@ -669,6 +835,90 @@ const QuotesManagement = () => {
               selectedQuote={selectedQuote}
               onOptimizeQuote={handleOptimizeQuote}
               onFollowUpRecommendation={handleFollowUpRecommendation}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Desktop Follow-up Panel */}
+      {showFollowUpPanel && (
+        <div className="hidden md:block fixed right-0 top-0 w-80 h-full bg-background border-l border-border overflow-y-auto z-50 shadow-lg">
+          <div className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h2 className="text-base sm:text-lg font-semibold text-foreground flex items-center">
+                <Icon name="MessageCircle" size={16} className="sm:w-[18px] sm:h-[18px] text-primary mr-2" />
+                Gestion des Relances
+              </h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowFollowUpPanel(false)}
+              >
+                <Icon name="X" size={18} className="sm:w-5 sm:h-5" />
+              </Button>
+            </div>
+            
+            <FollowUpManagementPanel
+              selectedQuote={selectedQuoteForFollowUp}
+              followUps={followUps}
+              onSendFollowUp={handleSendFollowUpNow}
+              onStopFollowUps={handleStopFollowUps}
+              loading={followUpLoading}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Panels */}
+      {showAIPanel && (
+        <div className="md:hidden fixed inset-0 bg-background z-50 overflow-y-auto">
+          <div className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h2 className="text-base sm:text-lg font-semibold text-foreground flex items-center">
+                <Icon name="Sparkles" size={16} className="sm:w-[18px] sm:h-[18px] text-primary mr-2" />
+                Analyse IA
+              </h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowAIPanel(false)}
+              >
+                <Icon name="X" size={18} className="sm:w-5 sm:h-5" />
+              </Button>
+            </div>
+            
+            <AIAnalyticsPanel
+              selectedQuote={selectedQuote}
+              onOptimizeQuote={handleOptimizeQuote}
+              onFollowUpRecommendation={handleFollowUpRecommendation}
+            />
+          </div>
+        </div>
+      )}
+
+      {showFollowUpPanel && (
+        <div className="md:hidden fixed inset-0 bg-background z-50 overflow-y-auto">
+          <div className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h2 className="text-base sm:text-lg font-semibold text-foreground flex items-center">
+                <Icon name="MessageCircle" size={16} className="sm:w-[18px] sm:h-[18px] text-primary mr-2" />
+                Gestion des Relances
+              </h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowFollowUpPanel(false)}
+              >
+                <Icon name="X" size={18} className="sm:w-5 sm:h-5" />
+              </Button>
+            </div>
+            
+            <FollowUpManagementPanel
+              selectedQuote={selectedQuoteForFollowUp}
+              followUps={followUps}
+              onSendFollowUp={handleSendFollowUpNow}
+              onStopFollowUps={handleStopFollowUps}
+              loading={followUpLoading}
             />
           </div>
         </div>
