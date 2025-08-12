@@ -719,11 +719,211 @@ const QuoteCreation = () => {
       // Debug logging
       
 
-      // Save to localStorage
+      // Create quote in database with draft status
+      const { data: createdQuote, error: createError } = await createQuote(quoteData);
+      
+      if (createError) {
+        console.error('Error creating draft quote in backend:', createError);
+        alert(`Erreur lors de la création du devis brouillon: ${createError.message || 'Erreur inconnue'}`);
+        return;
+      }
+
+      const quoteId = createdQuote.id;
+      
+      // Now save financial configuration to database
+      if (data.financialConfig && user?.id) {
+        try {
+          const financialConfigData = {
+            quote_id: quoteId,
+            vat_config: {
+              display: data.financialConfig.vatConfig?.display || false,
+              rate: data.financialConfig.vatConfig?.rate || 21,
+              is_inclusive: false
+            },
+            advance_config: {
+              enabled: data.financialConfig.advanceConfig?.enabled || false,
+              percentage: data.financialConfig.advanceConfig?.percentage || 30,
+              amount: data.financialConfig.advanceConfig?.amount || '',
+              due_date: data.financialConfig.advanceConfig?.dueDate || null
+            },
+            marketing_banner: {
+              text: data.financialConfig.marketingBannerConfig?.message || '',
+              color: '#3B82F6',
+              position: 'top'
+            },
+            payment_terms: {
+              net_days: 30,
+              early_payment_discount: 0
+            },
+            discount_config: {
+              rate: 0,
+              amount: 0,
+              type: 'percentage'
+            }
+          };
+          
+          // Insert financial configuration
+          const { error: financialConfigError } = await supabase
+            .from('quote_financial_configs')
+            .insert(financialConfigData);
+          
+          if (financialConfigError) {
+            console.error('Error saving financial config:', financialConfigError);
+            // Continue with quote creation even if financial config save fails
+          }
+        } catch (error) {
+          console.error('Error saving financial config:', error);
+          // Continue with quote creation even if financial config save fails
+        }
+      }
+      
+      // Now save company info to database (including logo and signature)
+      let companyProfileId = null;
+      if (data.companyInfo && user?.id) {
+        try {
+          // Convert base64 data to files for upload
+          let logoFile = null;
+          let signatureFile = null;
+          
+          if (data.companyInfo.logo?.data) {
+            // Convert base64 to file
+            const logoResponse = await fetch(data.companyInfo.logo.data);
+            const logoBlob = await logoResponse.blob();
+            
+            // Create a proper File object
+            logoFile = new File([logoBlob], data.companyInfo.logo.name, { 
+              type: data.companyInfo.logo.type 
+            });
+          }
+          
+          if (data.companyInfo.signature?.data) {
+            // Convert base64 to file
+            const signatureResponse = await fetch(data.companyInfo.signature.data);
+            const signatureBlob = await signatureResponse.blob();
+            
+            // Create a proper File object
+            signatureFile = new File([signatureBlob], data.companyInfo.signature.name, { 
+              type: data.companyInfo.signature.type 
+            });
+          }
+          
+          // Prepare company data for saving
+          const companyDataToSave = {
+            ...data.companyInfo,
+            logo: logoFile,
+            signature: signatureFile
+          };
+          
+          // Save company info to database
+          const companyResult = await saveCompanyInfo(companyDataToSave, user.id);
+          if (companyResult.success) {
+            companyProfileId = companyResult.data.id;
+            
+            // Update the quote with the company profile ID
+            const { error: updateQuoteError } = await supabase
+              .from('quotes')
+              .update({ company_profile_id: companyProfileId })
+              .eq('id', quoteId);
+            
+            if (updateQuoteError) {
+              console.error('Error updating quote with company profile:', updateQuoteError);
+              // Continue with quote creation even if update fails
+            }
+          } else {
+            console.warn('Company info save warning:', companyResult.error);
+            // Continue with quote creation even if company info save fails
+          }
+        } catch (error) {
+          console.error('Error saving company info:', error);
+          // Continue with quote creation even if company info save fails
+        }
+      }
+      
+      // Now upload quote files to storage (AFTER quote creation)
+      const savedFiles = [];
+      if (files.length > 0) {
+        try {
+          for (const file of files) {
+            if (file.data) {
+              // File has base64 data, convert to blob and upload
+              
+              // Convert base64 to file
+              const fileResponse = await fetch(file.data);
+              const fileBlob = await fileResponse.blob();
+              
+              // Create a proper File object with the correct name and type
+              const fileToUpload = new File([fileBlob], file.name, { type: file.type });
+              
+              // Upload file to storage (now with real quote ID)
+              const { data: uploadResult, error: uploadError } = await uploadQuoteFile(
+                fileToUpload, 
+                quoteId, // Use real quote ID now
+                user.id,
+                currentProfile?.id, // Pass profile ID for foreign key constraint
+                'attachment'
+              );
+              
+              if (uploadError) {
+                console.error('File upload failed:', uploadError);
+                alert(`Erreur lors de l'upload de ${file.name}: ${uploadError}`);
+                return;
+              }
+              
+              if (uploadResult.success) {
+                savedFiles.push({
+                  ...file,
+                  backendId: uploadResult.data.id,
+                  file_path: uploadResult.data.file_path,
+                  publicUrl: uploadResult.data.publicUrl
+                });
+              }
+            } else if (file.backendId) {
+              // File already uploaded (for editing existing quotes)
+              savedFiles.push(file);
+            } else {
+              console.warn('File has no data or backendId, skipping:', file);
+            }
+          }
+        } catch (error) {
+          console.error('Error uploading files:', error);
+          alert('Erreur lors de l\'upload des fichiers. Veuillez réessayer.');
+          return;
+        }
+      }
+
+      // Now update the quote with file references
+      if (savedFiles.length > 0) {
+        try {
+          const filesToInsert = savedFiles.map((file, index) => ({
+            quote_id: quoteId,
+            file_name: file.name || file.file_name || '',
+            file_path: file.file_path || file.path || file.file_path || file.url || '',
+            file_size: file.size || file.file_size || 0,
+            mime_type: file.type || file.mime_type || '',
+            file_category: 'attachment'
+          }));
+
+          const { error: filesInsertError } = await supabase
+            .from('quote_files')
+            .insert(filesToInsert);
+
+          if (filesInsertError) {
+            console.error('Error saving file references to database:', filesInsertError);
+            alert('Erreur lors de la sauvegarde des références de fichiers. Veuillez réessayer.');
+            return;
+          }
+        } catch (error) {
+          console.error('Error saving file references:', error);
+          alert('Erreur lors de la sauvegarde des références de fichiers. Veuillez réessayer.');
+          return;
+        }
+      }
+      
+      // Save to localStorage as backup with real quote ID
       const existingQuotes = JSON.parse(localStorage.getItem(`quotes-${user?.id}-${currentProfile?.id || 'default'}`) || '[]');
       existingQuotes.push({
         ...quoteData,
-        id: Date.now(),
+        id: quoteId, // Use real database ID
         createdAt: new Date().toISOString()
       });
       localStorage.setItem(`quotes-${user?.id}-${currentProfile?.id || 'default'}`, JSON.stringify(existingQuotes));
@@ -735,7 +935,7 @@ const QuoteCreation = () => {
       clearFormData();
 
       // Show success message and redirect
-      alert('Devis sauvegardé avec succès !');
+      alert('Devis brouillon sauvegardé avec succès !');
       navigate('/quotes-management');
     } catch (error) {
       console.error('Error saving quote:', error);
