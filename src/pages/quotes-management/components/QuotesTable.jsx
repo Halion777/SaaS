@@ -202,6 +202,17 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
               </td>
               <td className="p-3 md:p-4" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-end space-x-1">
+                  {quote.status === 'draft' && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onQuoteAction('markAsSent', quote)}
+                      title="Marquer comme envoyé"
+                      className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                    >
+                      <Icon name="Check" size={16} />
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -296,6 +307,17 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
           </div>
           
           <div className="flex items-center justify-end space-x-1" onClick={(e) => e.stopPropagation()}>
+            {quote.status === 'draft' && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onQuoteAction('markAsSent', quote)}
+                title="Marquer comme envoyé"
+                className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50"
+              >
+                <Icon name="Check" size={14} />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"

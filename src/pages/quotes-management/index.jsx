@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainSidebar from '../../components/ui/MainSidebar';
 import Icon from '../../components/AppIcon';
@@ -9,7 +9,7 @@ import BulkActionsToolbar from './components/BulkActionsToolbar';
 import AIAnalyticsPanel from './components/AIAnalyticsPanel';
 import { useAuth } from '../../context/AuthContext';
 import { useMultiUser } from '../../context/MultiUserContext';
-import { fetchQuotes, getQuoteStatistics } from '../../services/quotesService';
+import { fetchQuotes, getQuoteStatistics, updateQuoteStatus } from '../../services/quotesService';
 import { 
   listScheduledFollowUps, 
   createFollowUpForQuote, 
@@ -40,6 +40,8 @@ const QuotesManagement = () => {
   const [showFollowUpPanel, setShowFollowUpPanel] = useState(false);
   const [selectedQuoteForFollowUp, setSelectedQuoteForFollowUp] = useState(null);
   
+  // Ref to prevent infinite API calls
+  const followUpsLoadedRef = useRef(false);
   const [selectedQuotes, setSelectedQuotes] = useState([]);
   const [selectedQuote, setSelectedQuote] = useState(null);
   const [filters, setFilters] = useState({
@@ -166,7 +168,7 @@ const QuotesManagement = () => {
   // Load follow-ups for quotes
   useEffect(() => {
     const loadFollowUps = async () => {
-      if (!user || !currentProfile || quotes.length === 0) return;
+      if (!user || !currentProfile || quotes.length === 0 || followUpsLoadedRef.current) return;
       
       try {
         setFollowUpLoading(true);
@@ -194,6 +196,7 @@ const QuotesManagement = () => {
         }
         
         setFollowUps(followUpsByQuote);
+        followUpsLoadedRef.current = true;
         
         // Update quotes with follow-up status
         updateQuotesWithFollowUpStatus(followUpsByQuote);
@@ -205,7 +208,7 @@ const QuotesManagement = () => {
     };
     
     loadFollowUps();
-  }, [user, currentProfile, quotes]);
+  }, [user, currentProfile]); // Removed quotes from dependencies
 
   // Update quotes with follow-up status
   const updateQuotesWithFollowUpStatus = (followUpsData) => {
@@ -346,6 +349,9 @@ const QuotesManagement = () => {
       case 'duplicate':
         navigate(`/quote-creation?duplicate=${quote.id}`);
         break;
+      case 'markAsSent':
+        await handleMarkAsSent(quote);
+        break;
       case 'convert':
         if (quote.status === 'accepted') {
           navigate(`/invoices-management?convert=${quote.id}`);
@@ -393,17 +399,7 @@ const QuotesManagement = () => {
       });
 
       // Refresh follow-ups
-      const { data: followUpsData } = await listScheduledFollowUps({ status: 'all', limit: 1000 });
-      if (followUpsData) {
-        const followUpsByQuote = {};
-        followUpsData.forEach(fu => {
-          if (!followUpsByQuote[fu.quote_id]) {
-            followUpsByQuote[fu.quote_id] = [];
-          }
-          followUpsByQuote[fu.quote_id].push(fu);
-        });
-        setFollowUps(followUpsByQuote);
-      }
+      await refreshFollowUps();
 
       console.log('Follow-up created successfully:', followUpId);
     } catch (error) {
@@ -416,6 +412,16 @@ const QuotesManagement = () => {
       await stopFollowUpsForQuote(quoteId);
       
       // Refresh follow-ups
+      await refreshFollowUps();
+      
+      console.log('Follow-ups stopped successfully');
+    } catch (error) {
+      console.error('Error stopping follow-ups:', error);
+    }
+  };
+
+  const refreshFollowUps = async () => {
+    try {
       const { data: followUpsData } = await listScheduledFollowUps({ status: 'all', limit: 1000 });
       if (followUpsData) {
         const followUpsByQuote = {};
@@ -426,11 +432,47 @@ const QuotesManagement = () => {
           followUpsByQuote[fu.quote_id].push(fu);
         });
         setFollowUps(followUpsByQuote);
+        updateQuotesWithFollowUpStatus(followUpsByQuote);
+      }
+    } catch (error) {
+      console.error('Error refreshing follow-ups:', error);
+    }
+  };
+
+  const handleMarkAsSent = async (quote) => {
+    if (!quote || quote.status !== 'draft') {
+      console.log('Quote must be in draft status to mark as sent');
+      return;
+    }
+
+    try {
+      // Update quote status to 'sent' - this will trigger the database trigger
+      const { data: updatedQuote, error } = await updateQuoteStatus(quote.id, 'sent');
+      
+      if (error) {
+        console.error('Error updating quote status:', error);
+        return;
       }
 
-      console.log('Follow-ups stopped successfully');
+      // Update the local state
+      setQuotes(prevQuotes => 
+        prevQuotes.map(q => 
+          q.id === quote.id ? { ...q, status: 'sent' } : q
+        )
+      );
+      
+      setFilteredQuotes(prevFilteredQuotes => 
+        prevFilteredQuotes.map(q => 
+          q.id === quote.id ? { ...q, status: 'sent' } : q
+        )
+      );
+
+      // Refresh follow-ups to show the newly created ones
+      await refreshFollowUps();
+
+      console.log('Quote marked as sent successfully:', updatedQuote);
     } catch (error) {
-      console.error('Error stopping follow-ups:', error);
+      console.error('Error marking quote as sent:', error);
     }
   };
 
