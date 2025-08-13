@@ -31,6 +31,18 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
     // Debug: Log what's being received
     console.log('saveCompanyInfo called with:', { companyInfo, userId });
 
+    // Fetch existing profile up front (needed for cleanup decisions)
+    const { data: existingProfile, error: fetchError } = await supabase
+      .from('company_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_default', true)
+      .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows returned
+      return { success: false, error: `Database error: ${fetchError.message}` };
+    }
+
     // Handle logo upload if it's a new file
     let logoPath = companyInfo.logo;
     let logoFilename = null;
@@ -51,7 +63,7 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
         const { data: logoUploadData, error: logoError, filePath: logoFilePath } = await uploadFile(
           logoFile, 
           'company-assets', 
-          `${userId}/logo` // Single logo file per user
+          `${userId}/logos` // Keep one active logo; old is deleted above
         );
 
         if (logoError) {
@@ -66,6 +78,18 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
         console.error('Logo upload error:', uploadError);
         return { success: false, error: `Logo upload failed: ${uploadError.message}` };
       }
+    } else if (companyInfo.logo && typeof companyInfo.logo === 'object' && companyInfo.logo.path) {
+      // Keep existing provided path
+      logoPath = companyInfo.logo.path;
+      logoFilename = companyInfo.logo.filename || null;
+      logoSize = companyInfo.logo.size || null;
+      logoMimeType = companyInfo.logo.mimeType || null;
+    } else if (!companyInfo.logo && existingProfile?.logo_path) {
+      // No change; keep DB value
+      logoPath = existingProfile.logo_path;
+      logoFilename = existingProfile.logo_filename;
+      logoSize = existingProfile.logo_size;
+      logoMimeType = existingProfile.logo_mime_type;
     }
 
     // Handle signature upload if it's a new file
@@ -88,7 +112,7 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
         const { data: signatureUploadData, error: signatureError, filePath: signatureFilePath } = await uploadFile(
           signatureFile, 
           'company-assets', 
-          `${userId}/signature` // Single signature file per user
+          `${userId}/signatures` // Keep one active signature; old is deleted above
         );
 
         if (signatureError) {
@@ -103,19 +127,21 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
         console.error('Signature upload error:', uploadError);
         return { success: false, error: `Signature upload failed: ${uploadError.message}` };
       }
+    } else if (companyInfo.signature && typeof companyInfo.signature === 'object' && companyInfo.signature.path) {
+      // Keep existing provided path
+      signaturePath = companyInfo.signature.path;
+      signatureFilename = companyInfo.signature.filename || null;
+      signatureSize = companyInfo.signature.size || null;
+      signatureMimeType = companyInfo.signature.mimeType || null;
+    } else if (!companyInfo.signature && existingProfile?.signature_path) {
+      // No change; keep DB value
+      signaturePath = existingProfile.signature_path;
+      signatureFilename = existingProfile.signature_filename;
+      signatureSize = existingProfile.signature_size;
+      signatureMimeType = existingProfile.signature_mime_type;
     }
 
-    // Check if company profile already exists
-    const { data: existingProfile, error: fetchError } = await supabase
-      .from('company_profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('is_default', true)
-      .single();
-
-    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows returned
-      return { success: false, error: `Database error: ${fetchError.message}` };
-    }
+    // existingProfile is already fetched above
 
     const companyData = {
       user_id: userId,
@@ -129,11 +155,11 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
       phone: companyInfo.phone || '',
       email: companyInfo.email || '',
       website: companyInfo.website || '',
-      logo_path: logoPath,
+      logo_path: logoPath || existingProfile?.logo_path || null,
       logo_filename: logoFilename,
       logo_size: logoSize,
       logo_mime_type: logoMimeType,
-      signature_path: signaturePath,
+      signature_path: signaturePath || existingProfile?.signature_path || null,
       signature_filename: signatureFilename,
       signature_size: signatureSize,
       signature_mime_type: signatureMimeType,
@@ -176,14 +202,14 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
         filename: logoFilename,
         size: logoSize,
         mimeType: logoMimeType,
-        publicUrl: await getSignedUrl('company-assets', logoPath).then(result => result.data || null)
+        publicUrl: (await getSignedUrl('company-assets', logoPath)).data || null
       } : null,
       signature: signaturePath ? { 
         path: signaturePath,
         filename: signatureFilename,
         size: signatureSize,
         mimeType: signatureMimeType,
-        publicUrl: await getSignedUrl('company-assets', signaturePath).then(result => result.data || null)
+        publicUrl: (await getSignedUrl('company-assets', signaturePath)).data || null
       } : null
     };
 
@@ -226,7 +252,7 @@ export const loadCompanyInfo = async (userId) => {
       filename: data.logo_filename,
       size: data.logo_size,
       mimeType: data.logo_mime_type,
-      publicUrl: await getSignedUrl('company-assets', data.logo_path).then(result => result.data || null)
+      publicUrl: (await getSignedUrl('company-assets', data.logo_path)).data || null
     } : null;
 
     const signatureData = data.signature_path ? {
@@ -234,7 +260,7 @@ export const loadCompanyInfo = async (userId) => {
       filename: data.signature_filename,
       size: data.signature_size,
       mimeType: data.signature_mime_type,
-      publicUrl: await getSignedUrl('company-assets', data.signature_path).then(result => result.data || null)
+      publicUrl: (await getSignedUrl('company-assets', data.signature_path)).data || null
     } : null;
 
     return {

@@ -159,7 +159,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
             <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground">
               Relances
             </th>
-            <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground">
+            <th className="p-3 md:p-4 text-right text-xs sm:text-sm font-medium text-muted-foreground">
               Actions
             </th>
           </tr>
@@ -192,7 +192,6 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                   <span className={`font-medium ${getAIScoreColor(quote.aiScore)}`}>
                     {quote.aiScore}%
                   </span>
-                  <Icon name="Sparkles" size={14} className="text-accent" />
                 </div>
               </td>
               <td className="p-3 md:p-4">
@@ -254,11 +253,11 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => onQuoteAction('optimize', quote)}
-                    title="Optimiser avec IA"
-                    className="h-8 w-8 text-accent hover:text-accent hover:bg-accent/10"
+                    onClick={() => onQuoteAction('delete', quote)}
+                    title="Supprimer le devis"
+                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                   >
-                    <Icon name="Sparkles" size={16} />
+                    <Icon name="Trash" size={16} />
                   </Button>
                 </div>
               </td>
@@ -298,7 +297,6 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
               <span className={`text-sm font-medium ${getAIScoreColor(quote.aiScore)}`}>
                 {quote.aiScore}%
               </span>
-              <Icon name="Sparkles" size={14} className="text-accent" />
             </div>
           </div>
           
@@ -349,11 +347,11 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => onQuoteAction('optimize', quote)}
-              title="Optimiser avec IA"
-              className="h-7 w-7 text-accent hover:text-accent hover:bg-accent/10"
+              onClick={() => onQuoteAction('delete', quote)}
+              title="Supprimer le devis"
+              className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
             >
-              <Icon name="Sparkles" size={14} />
+              <Icon name="Trash" size={14} />
             </Button>
           </div>
         </div>

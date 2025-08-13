@@ -1,6 +1,105 @@
 // Google AI Service using Gemini API
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+// Language helpers
+function getAppLanguage(defaultLang = 'fr') {
+  try {
+    const lang = typeof window !== 'undefined' ? (localStorage.getItem('language') || defaultLang) : defaultLang;
+    return (lang || defaultLang).toLowerCase();
+  } catch (_) {
+    return defaultLang;
+  }
+}
+
+function getLanguageLabel(lang) {
+  const code = (lang || 'fr').toLowerCase();
+  if (code.startsWith('en')) return 'anglais';
+  if (code.startsWith('nl')) return 'néerlandais';
+  if (code.startsWith('fr')) return 'français';
+  return code;
+}
+
+// Dynamic length helpers to keep AI output proportional to input
+function getLengthConstraintsFromInput(inputText = '') {
+  const wordCount = (inputText || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+
+  let maxSentences;
+  let maxWords;
+
+  if (wordCount <= 2) {
+    maxSentences = 1;
+    maxWords = 10; // ultra concise
+  } else if (wordCount <= 8) {
+    maxSentences = 1;
+    maxWords = 20; // short single sentence
+  } else if (wordCount <= 20) {
+    maxSentences = 2;
+    maxWords = 40; // brief two sentences
+  } else {
+    maxSentences = 3;
+    maxWords = 70; // concise three sentences max
+  }
+
+  // Rough token cap from word cap
+  const maxOutputTokens = Math.max(60, Math.min(800, Math.round(maxWords * 1.6)));
+
+  return { wordCount, maxSentences, maxWords, maxOutputTokens };
+}
+
+function trimTextToLimits(text = '', maxSentences = 2, maxWords = 40) {
+  let trimmed = (text || '').trim();
+  if (!trimmed) return trimmed;
+
+  // Limit sentences first
+  const sentences = trimmed
+    .split(/(?<=[.!?])\s+/)
+    .filter(Boolean)
+    .slice(0, maxSentences);
+  trimmed = sentences.join(' ');
+
+  // Then limit total words
+  const words = trimmed.split(/\s+/).filter(Boolean);
+  if (words.length > maxWords) {
+    trimmed = words.slice(0, maxWords).join(' ');
+    // Ensure sensible ending punctuation
+    if (!/[.!?]$/.test(trimmed)) trimmed += '.';
+  }
+
+  return trimmed;
+}
+
+// More generous limits specifically for task descriptions
+function getTaskLengthConstraintsFromInput(inputText = '') {
+  const wordCount = (inputText || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+
+  let maxSentences;
+  let maxWords;
+
+  if (wordCount <= 2) {
+    maxSentences = 2;
+    maxWords = 30;
+  } else if (wordCount <= 8) {
+    maxSentences = 2;
+    maxWords = 50;
+  } else if (wordCount <= 20) {
+    maxSentences = 3;
+    maxWords = 80;
+  } else {
+    maxSentences = 4;
+    maxWords = 120;
+  }
+
+  const maxOutputTokens = Math.max(200, Math.round(maxWords * 1.8));
+
+  return { wordCount, maxSentences, maxWords, maxOutputTokens };
+}
+
 /**
  * Generate a project description using Google Gemini AI
  * @param {string} category - The selected project category
@@ -19,19 +118,23 @@ export const generateProjectDescriptionWithGemini = async (category, userContext
 
     // Initialize Google Generative AI (Free Tier)
     const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GOOGLE_AI_API_KEY);
+    const { maxSentences, maxWords, maxOutputTokens } = getLengthConstraintsFromInput(userContext);
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash", // Updated to latest free model
+      model: "gemini-1.5-flash",
       generationConfig: {
-        temperature: 0.7,
+        temperature: 0.5,
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 200,
+        maxOutputTokens,
       },
     });
     
     // Build the prompt based on category and context
+    const lang = getAppLanguage('fr-FR');
+    const langLabel = getLanguageLabel(lang);
     const prompt = `Tu es un expert en devis et estimation de projets de construction et rénovation. 
-    Ta tâche est d'écrire une description de projet professionnelle et détaillée en français.
+    Ta tâche est d'écrire une description de projet professionnelle en ${langLabel}, 
+    avec une longueur proportionnelle au contexte fourni.
 
 Écris une description de projet professionnelle pour un devis basée sur les informations suivantes:
 
@@ -39,11 +142,14 @@ Catégorie: ${category === 'autre' ? customCategory : category}
 Contexte fourni par l'utilisateur: ${userContext || 'Aucun contexte fourni'}
 
 La description doit:
-- Être professionnelle et détaillée
+ - Être professionnelle et claire
 - Inclure les éléments techniques pertinents
 - Être adaptée à la catégorie sélectionnée
-- Faire entre 2-4 phrases
-- Être en français
+ - Respecter des contraintes de longueur dynamiques:
+   • Si le contexte est très court (1-2 mots), produire 1 phrase très courte (≤ ${Math.min(maxWords, 12)} mots)
+   • Si le contexte est court, produire 1 phrase courte (≤ ${maxWords} mots)
+   • Sinon, maximum ${maxSentences} phrases et ≤ ${maxWords} mots au total
+  - Être en ${langLabel}
 - Être claire pour le client et l'équipe technique
 
 Format de réponse: Description du projet uniquement, sans introduction ni conclusion.`;
@@ -51,7 +157,8 @@ Format de réponse: Description du projet uniquement, sans introduction ni concl
     // Generate content with Gemini
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const text = response.text().trim();
+    let text = response.text().trim();
+    text = trimTextToLimits(text, maxSentences, maxWords);
     
     if (!text) {
       return { 
@@ -261,7 +368,7 @@ Réponds uniquement en JSON valide, sans texte supplémentaire.`;
  * @param {string} taskContext - The task context or description
  * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
  */
-export const generateTaskDescriptionWithGemini = async (taskContext) => {
+export const generateTaskDescriptionWithGemini = async (taskContext, projectContext = '') => {
   try {
     if (!import.meta.env.VITE_GOOGLE_AI_API_KEY) {
       return { 
@@ -272,32 +379,41 @@ export const generateTaskDescriptionWithGemini = async (taskContext) => {
 
     // Initialize Google Generative AI (Free Tier)
     const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GOOGLE_AI_API_KEY);
+    const { maxSentences, maxWords, maxOutputTokens } = getTaskLengthConstraintsFromInput(taskContext);
     const model = genAI.getGenerativeModel({ 
       model: "gemini-1.5-flash",
       generationConfig: {
-        temperature: 0.7,
+        temperature: 0.5,
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 800, // Increased to handle longer responses
+        maxOutputTokens: Math.max(120, maxOutputTokens),
       },
     });
     
     // Build the prompt for task description generation
-    const prompt = `Expert construction/rénovation. Crée description pour tâche technique.
+    const lang = getAppLanguage('fr-FR');
+    const langLabel = getLanguageLabel(lang);
+    const prompt = `Expert construction/rénovation. Crée une description de tâche technique en ${langLabel}. 
+Fournis des détails techniques concrets (étapes, prérequis, critères d’acceptation) tout en restant concise.
 
 CONTEXTE: "${taskContext}"
+CONTEXTE PROJET (si utile): "${projectContext || 'N/A'}"
 
 GÉNÈRE JSON:
 {
-  "description": "Description professionnelle (2-3 phrases max)",
+  "description": "Description proportionnelle au contexte en ${langLabel}, ${maxSentences} phrases maximum (≈ ≤ ${maxWords} mots), incluant étapes clés et points de contrôle",
   "estimatedDuration": "Durée en minutes (nombre)",
   "suggestedMaterials": [
     {
       "name": "Nom matériau",
       "quantity": "Quantité (nombre)",
-      "unit": "Unité (m, m², kg, pièce)"
+      "unit": "Unité (m, m², kg, pièce)",
+      "price": "Prix unitaire en euros (nombre, 0 si non précisé)"
     }
-  ]
+  ],
+  "laborPrice": "Prix main d’œuvre (en euros, nombre, 0 si non précisé)",
+  "unitLaborBasis": "Base du prix main d’œuvre (par tâche/heure, optionnel)",
+  "notes": "Courtes notes techniques, optionnel"
 }
 
 IMPORTANT: JSON valide uniquement, SANS marqueurs markdown.`;
@@ -366,6 +482,9 @@ IMPORTANT: JSON valide uniquement, SANS marqueurs markdown.`;
       }
       
       const taskData = JSON.parse(cleanContent);
+      if (typeof taskData?.description === 'string') {
+        taskData.description = trimTextToLimits(taskData.description, maxSentences, maxWords);
+      }
       return { 
         success: true, 
         data: taskData 
@@ -473,13 +592,14 @@ export const enhanceTranscriptionWithAI = async (transcribedText, categories = [
 
     // Initialize Google Generative AI (Free Tier)
     const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GOOGLE_AI_API_KEY);
+    const { maxSentences, maxWords, maxOutputTokens } = getLengthConstraintsFromInput(transcribedText);
     const model = genAI.getGenerativeModel({ 
       model: "gemini-1.5-flash",
       generationConfig: {
-        temperature: 0.3, // Lower temperature for more consistent editing
+        temperature: 0.2,
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 300,
+        maxOutputTokens,
       },
     });
     
@@ -487,8 +607,11 @@ export const enhanceTranscriptionWithAI = async (transcribedText, categories = [
     const mainCategory = categories?.includes('autre') ? customCategory : categories?.[0] || '';
     
     // Build the prompt for transcription enhancement with context
-    const prompt = `Tu es un expert en rédaction professionnelle française spécialisé dans la construction et rénovation. 
-    Ta tâche est d'améliorer un texte transcrit par reconnaissance vocale pour un devis professionnel.
+    const lang = getAppLanguage('fr-FR');
+    const langLabel = getLanguageLabel(lang);
+    const prompt = `Tu es un expert en rédaction professionnelle (${langLabel}) spécialisé dans la construction et rénovation. 
+    Ta tâche est d'améliorer un texte transcrit par reconnaissance vocale pour un devis professionnel, 
+    en conservant une longueur proportionnelle au texte d'origine.
 
 CONTEXTE DU PROJET:
 - Catégorie principale: ${mainCategory || 'Non spécifiée'}
@@ -498,22 +621,23 @@ CONTEXTE DU PROJET:
 TEXTE TRANSCRIT ORIGINAL:
 "${transcribedText}"
 
-AMÉLIORATIONS REQUISES:
+    AMÉLIORATIONS REQUISES (respecter la concision):
 - Corriger la grammaire et l'orthographe
 - Améliorer la clarté et la structure
 - Rendre le style plus professionnel et technique
 - Garder le sens et l'intention originale
 - Adapter le vocabulaire au contexte de la catégorie sélectionnée
 - Utiliser des termes techniques appropriés pour la construction
-- Structurer en 2-4 phrases claires et professionnelles
+    - Longueur maximale: ${maxSentences} phrase(s) et ≤ ${maxWords} mots
 - Inclure des détails techniques pertinents pour la catégorie
 
-FORMAT DE RÉPONSE: Texte amélioré uniquement, sans introduction ni commentaires.`;
+    FORMAT DE RÉPONSE: Texte amélioré uniquement en ${langLabel}, sans introduction ni commentaires.`;
     
     // Generate enhanced content with Gemini
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const enhancedText = response.text().trim();
+    let enhancedText = response.text().trim();
+    enhancedText = trimTextToLimits(enhancedText, maxSentences, maxWords);
     
     if (!enhancedText) {
       return { 

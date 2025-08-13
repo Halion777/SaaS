@@ -35,6 +35,14 @@ const QuotePreview = ({
   const [isGeneratingShare, setIsGeneratingShare] = useState(false);
   const [shareLink, setShareLink] = useState(null);
   const [shareLinkInfo, setShareLinkInfo] = useState(null);
+  const [includeMaterialsPrices, setIncludeMaterialsPrices] = useState(() => {
+    try {
+      const stored = localStorage.getItem('include-materials-prices');
+      return stored ? stored === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
   
   // Company Information
   const [companyInfo, setCompanyInfo] = useState(parentCompanyInfo || getDefaultCompanyInfo());
@@ -87,28 +95,42 @@ const QuotePreview = ({
           const dbCompanyInfo = await loadCompanyInfo(user.id);
           
           if (dbCompanyInfo) {
-            // Company info exists in database, use it as the source of truth
-            // This includes logo and signature from storage
-            setCompanyInfo(dbCompanyInfo);
-            
-            // Cache basic company info in localStorage for faster subsequent loads
-            // But NOT logo/signature - those come from database/storage
+            // Merge DB company info with any locally cached assets (when DB lacks them)
+            let merged = { ...dbCompanyInfo };
+            try {
+              const localLogo = localStorage.getItem(`company-logo-${user.id}`);
+              const localSig = localStorage.getItem(`company-signature-${user.id}`);
+              if (!merged.logo && localLogo) {
+                merged = { ...merged, logo: JSON.parse(localLogo) };
+              }
+              if (!merged.signature && localSig) {
+                merged = { ...merged, signature: JSON.parse(localSig) };
+              }
+            } catch (e) {
+              console.warn('Company assets local merge failed:', e);
+            }
+
+            setCompanyInfo(merged);
+
+            // Cache basic (non-asset) company info
             localStorage.setItem(`company-info-${user.id}`, JSON.stringify({
-              name: dbCompanyInfo.name,
-              vatNumber: dbCompanyInfo.vatNumber,
-              address: dbCompanyInfo.address,
-              postalCode: dbCompanyInfo.postalCode,
-              city: dbCompanyInfo.city,
-              state: dbCompanyInfo.state,
-              country: dbCompanyInfo.country,
-              phone: dbCompanyInfo.phone,
-              email: dbCompanyInfo.email,
-              website: dbCompanyInfo.website
+              name: merged.name,
+              vatNumber: merged.vatNumber,
+              address: merged.address,
+              postalCode: merged.postalCode,
+              city: merged.city,
+              state: merged.state,
+              country: merged.country,
+              phone: merged.phone,
+              email: merged.email,
+              website: merged.website
             }));
-            
-            // Clear any old logo/signature from localStorage since we're using database
-            localStorage.removeItem(`company-logo-${user.id}`);
-            localStorage.removeItem(`company-signature-${user.id}`);
+
+            // Only clear local asset cache if DB already has both assets
+            if (merged.logo && merged.signature) {
+              localStorage.removeItem(`company-logo-${user.id}`);
+              localStorage.removeItem(`company-signature-${user.id}`);
+            }
           } else {
             // No database record, try localStorage as fallback
             const localCompanyInfo = localStorage.getItem(`company-info-${user.id}`);
@@ -117,7 +139,7 @@ const QuotePreview = ({
               setCompanyInfo(prev => ({ ...prev, ...parsed }));
             }
             
-            // Load logo from localStorage (only if no database data)
+            // Load logo from localStorage
             const localLogoInfo = localStorage.getItem(`company-logo-${user.id}`);
             if (localLogoInfo) {
               const logoInfo = JSON.parse(localLogoInfo);
@@ -127,7 +149,7 @@ const QuotePreview = ({
               }));
             }
             
-            // Load signature from localStorage (only if no database data)
+            // Load signature from localStorage
             const localSignatureInfo = localStorage.getItem(`company-signature-${user.id}`);
             if (localSignatureInfo) {
               const signatureInfo = JSON.parse(localSignatureInfo);
@@ -391,9 +413,11 @@ const QuotePreview = ({
 
   // Calculate totals
   const totalPrice = tasks.reduce((sum, task) => {
-    const taskMaterialsTotal = task.materials.reduce((matSum, mat) => 
-      matSum + (mat.price * parseFloat(mat.quantity)), 0);
-    return sum + task.price + taskMaterialsTotal;
+    const taskMaterialsTotal = task.materials.reduce(
+      (matSum, mat) => matSum + ((parseFloat(mat.price) || 0) * (parseFloat(mat.quantity) || 0)),
+      0
+    );
+    return sum + (parseFloat(task.price) || 0) + taskMaterialsTotal;
   }, 0);
 
   const vatAmount = financialConfig.vatConfig.display ? (totalPrice * financialConfig.vatConfig.rate / 100) : 0;
@@ -406,6 +430,29 @@ const QuotePreview = ({
   const getTemplateClasses = () => {
     // Return white background with subtle border and ensure readability
     return 'bg-white border border-gray-200 text-black';
+  };
+
+  // Localization helpers for small labels
+  const getAppLanguage = () => {
+    try {
+      return (localStorage.getItem('language') || 'fr').toLowerCase();
+    } catch (_) {
+      return 'fr';
+    }
+  };
+  const lang = getAppLanguage();
+  const taskWord = lang.startsWith('en') ? 'Task' : lang.startsWith('nl') ? 'Taak' : 'Tâche';
+  const laborWord = lang.startsWith('en') ? 'Labor' : lang.startsWith('nl') ? 'Arbeid' : "Main d'œuvre";
+  const materialWord = lang.startsWith('en') ? 'Material' : lang.startsWith('nl') ? 'Materiaal' : 'Matériau';
+
+  // Build a concise, readable task label: take first sentence or N words
+  const buildConciseTaskLabel = (description, index, maxWords = 18) => {
+    const text = (description || '').replace(/\s+/g, ' ').trim();
+    if (!text) return `${taskWord} ${index + 1}`;
+    const sentence = text.split(/(?<=[.!?])\s+/)[0] || text;
+    const words = sentence.split(' ').slice(0, maxWords).join(' ');
+    const suffix = sentence.split(' ').length > maxWords ? '…' : '';
+    return `${taskWord} ${index + 1}: ${words}${suffix}`;
   };
 
   return (
@@ -645,42 +692,97 @@ const QuotePreview = ({
 
             {/* Project Info */}
             <div className={`mb-8 sm:mb-10 ${previewMode === 'mobile' ? 'px-4' : 'px-4 sm:px-8 lg:px-10'}`}>
-              <h3 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>PROJET: {projectInfo?.description || 'Nouveau devis'}</h3>
-              <p className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>{projectInfo?.description || 'Description du projet'}</p>
+              <h3 className={`font-semibold text-gray-800 mb-2 sm:mb-3 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>PROJET</h3>
+              <p className={`text-gray-700 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
+                {projectInfo?.description || 'Description du projet'}
+              </p>
+              {(projectInfo?.categories?.length || projectInfo?.deadline) && (
+                <div className={`mt-2 ${previewMode === 'mobile' ? 'text-[11px]' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
+                  {projectInfo?.categories?.length > 0 && (
+                    <p>Catégories: {(projectInfo.categories || []).join(', ')}</p>
+                  )}
+                  {projectInfo?.deadline && (
+                    <p>Échéance: {new Date(projectInfo.deadline).toLocaleDateString('fr-FR')}</p>
+                  )}
+                </div>
+              )}
             </div>
                 
             {/* Tasks Table */}
             <div className={`mb-8 sm:mb-10 ${previewMode === 'mobile' ? 'px-4' : 'px-4 sm:px-8 lg:px-10'}`}>
-              <h3 className={`font-semibold text-gray-800 mb-4 sm:mb-6 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>DÉTAIL DES PRESTATIONS</h3>
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <h3 className={`font-semibold text-gray-800 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>DÉTAIL DES PRESTATIONS</h3>
+                <label className="flex items-center space-x-2 text-xs sm:text-sm">
+                  <input
+                    type="checkbox"
+                    checked={includeMaterialsPrices}
+                    onChange={(e) => {
+                      const v = e.target.checked;
+                      setIncludeMaterialsPrices(v);
+                      try { localStorage.setItem('include-materials-prices', String(v)); } catch {}
+                    }}
+                  />
+                  <span className="text-gray-600">Afficher prix matériaux</span>
+                </label>
+              </div>
               <div className={`${previewMode === 'mobile' ? 'overflow-x-auto' : 'overflow-x-auto'}`}>
-                <table className={`w-full border-collapse ${previewMode === 'mobile' ? 'text-xs min-w-[500px]' : 'text-xs sm:text-sm min-w-[600px]'}`}>
+                <table className={`w-full border-collapse ${previewMode === 'mobile' ? 'text-xs min-w-[520px]' : 'text-xs sm:text-sm min-w-[700px]'}`}>
                   <thead>
                     <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
-                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-left' : 'p-3 sm:p-4 text-left'}`} style={{ color: customization.colors.primary }}>Description</th>
+                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-left' : 'p-3 sm:p-4 text-left'}`} style={{ color: customization.colors.primary }}>Élément</th>
                       <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-center w-16' : 'p-3 sm:p-4 text-center w-20 sm:w-24'}`} style={{ color: customization.colors.primary }}>Durée (h)</th>
-                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-20' : 'p-3 sm:p-4 text-right w-24 sm:w-32'}`} style={{ color: customization.colors.primary }}>Prix unitaire</th>
-                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-center w-20' : 'p-3 sm:p-4 text-center w-24 sm:w-32'}`} style={{ color: customization.colors.primary }}>Matériaux</th>
-                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-20' : 'p-3 sm:p-4 text-right w-24 sm:w-32'}`} style={{ color: customization.colors.primary }}>Total</th>
+                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-center w-24' : 'p-3 sm:p-4 text-center w-28 sm:w-32'}`} style={{ color: customization.colors.primary }}>Quantité</th>
+                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-24' : 'p-3 sm:p-4 text-right w-28 sm:w-32'}`} style={{ color: customization.colors.primary }}>PU HT</th>
+                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-24' : 'p-3 sm:p-4 text-right w-28 sm:w-32'}`} style={{ color: customization.colors.primary }}>Total HT</th>
                     </tr>
                   </thead>
                   <tbody>
                     {tasks.map((task, index) => {
-                      const taskMaterialsTotal = task.materials.reduce((sum, mat) => 
-                        sum + (mat.price * parseFloat(mat.quantity)), 0);
-                      const taskTotal = task.price + taskMaterialsTotal;
-                      
+                      const materials = task.materials || [];
+                      const taskMaterialsTotal = materials.reduce((sum, m) => sum + ((parseFloat(m.price || 0)) * (parseFloat(m.quantity || 0))), 0);
+                      const laborTotal = parseFloat(task.price || 0);
+                      const taskSubtotal = laborTotal + taskMaterialsTotal;
+
                       return (
-                        <tr key={task.id}>
-                          <td className={`border border-gray-300 ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>
-                            <div className="font-medium text-black">{task.description}</div>
-                          </td>
-                          <td className={`border border-gray-300 text-center text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{task.duration}</td>
-                          <td className={`border border-gray-300 text-right text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{task.price}€/h</td>
-                          <td className={`border border-gray-300 text-center text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>
-                            {task.materials.length > 0 ? task.materials.map(m => m.name).join(', ') : '-'}
-                          </td>
-                          <td className={`border border-gray-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{taskTotal.toFixed(2)}€</td>
-                        </tr>
+                        <React.Fragment key={task.id}>
+                          {/* Labor row */}
+                          <tr style={{ backgroundColor: `${customization.colors.primary}08` }}>
+                            <td className={`border border-gray-300 ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>
+                              <div className="font-medium text-black">{buildConciseTaskLabel(task.description, index)}</div>
+                              <div className="text-gray-500 text-[11px] sm:text-xs">{laborWord}</div>
+                            </td>
+                            <td className={`border border-gray-300 text-center text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{task.duration || '-'}</td>
+                            <td className={`border border-gray-300 text-center text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>1</td>
+                            <td className={`border border-gray-300 text-right text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{laborTotal.toFixed(2)}€</td>
+                            <td className={`border border-gray-300 text-right font-semibold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{laborTotal.toFixed(2)}€</td>
+                          </tr>
+
+                          {/* Material rows */}
+                          {materials.map((m, mi) => {
+                            const qty = parseFloat(m.quantity || 0);
+                            const pu = parseFloat(m.price || 0);
+                            const lineTotal = qty * pu;
+                            const stripe = mi % 2 === 0 ? `${customization.colors.primary}10` : 'transparent';
+                            return (
+                              <tr key={`${task.id}-${m.id}`} style={{ backgroundColor: stripe }}>
+                                <td className={`border border-gray-200 ${previewMode === 'mobile' ? 'p-1' : 'p-1.5 sm:p-2'} border-l-4`} style={{ borderLeftColor: customization.colors.primary }}>
+                                  <div className="text-black leading-tight text-[12px] sm:text-[13px]">{m.name}</div>
+                                  {m.unit && (<div className="text-gray-500 text-[10px] leading-tight sm:text-[11px]">{materialWord}</div>)}
+                                </td>
+                                <td className={`border border-gray-200 text-center text-black ${previewMode === 'mobile' ? 'p-1' : 'p-1.5 sm:p-2'}`}>-</td>
+                                <td className={`border border-gray-200 text-center text-black ${previewMode === 'mobile' ? 'p-1' : 'p-1.5 sm:p-2'}`}>{qty} {m.unit || ''}</td>
+                                <td className={`border border-gray-200 text-right text-black ${previewMode === 'mobile' ? 'p-1' : 'p-1.5 sm:p-2'}`}>{includeMaterialsPrices ? `${pu.toFixed(2)}€` : '•••'}</td>
+                                <td className={`border border-gray-200 text-right text-black font-medium ${previewMode === 'mobile' ? 'p-1' : 'p-1.5 sm:p-2'}`}>{includeMaterialsPrices ? `${lineTotal.toFixed(2)}€` : '•••'}</td>
+                              </tr>
+                            );
+                          })}
+
+                          {/* Task subtotal */}
+                          <tr style={{ backgroundColor: `${customization.colors.primary}15` }}>
+                            <td className={`border border-gray-300 bg-gray-50 font-semibold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">Sous-total tâche</td>
+                            <td className={`border border-gray-300 bg-gray-50 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{taskSubtotal.toFixed(2)}€</td>
+                          </tr>
+                        </React.Fragment>
                       );
                     })}
                   </tbody>

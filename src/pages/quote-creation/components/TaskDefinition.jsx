@@ -7,11 +7,112 @@ import { generateTaskDescriptionWithGemini } from '../../../services/googleAISer
 import { enhanceTranscriptionWithAI } from '../../../services/googleAIService';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
+// Helpers to detect multiple tasks and per-task details from natural language
+function extractMultiTaskInfo(text = '') {
+  const src = (text || '').toLowerCase();
+  const info = {
+    taskCount: 1,
+    durationValue: null,
+    durationUnit: null,
+    eachTaskMaterial: null // { name, quantity, unit, price }
+  };
+
+  // Task count ("2 tasks", fallback to room count)
+  const taskCountMatch = src.match(/(\d+)\s*(?:tasks?|tâches?)/i);
+  const roomCountMatch = src.match(/(\d+)\s*(?:rooms?|pi[eè]ces?)/i);
+  if (taskCountMatch) {
+    info.taskCount = parseInt(taskCountMatch[1], 10);
+  } else if (roomCountMatch) {
+    info.taskCount = parseInt(roomCountMatch[1], 10);
+  }
+
+  // Per-task duration ("1 day", "8 hours", "120 minutes")
+  const durationMatch = src.match(/(\d+)\s*(day|days|jour|jours|hour|hours|heure|heures|minute|minutes)/i);
+  if (durationMatch) {
+    const value = parseInt(durationMatch[1], 10);
+    const unitRaw = durationMatch[2];
+    let unit = 'minutes';
+    if (/day|jour/.test(unitRaw)) unit = 'days';
+    else if (/hour|heure/.test(unitRaw)) unit = 'hours';
+    else unit = 'minutes';
+    info.durationValue = value;
+    info.durationUnit = unit;
+  }
+
+  // Material per task with price: "each task need 1 paint box cost 20 euro"
+  const materialRegex = /each\s+task\s+need[s]?\s+(\d+(?:[.,]\d+)?)\s+([a-zA-Z\u00C0-\u017F\s]+?)\s+(?:cost|co[uû]te|à)\s*(\d+(?:[.,]\d+)?)\s*(?:€|euro|euros)/i;
+  const materialMatch = src.match(materialRegex);
+  if (materialMatch) {
+    const quantity = parseFloat(materialMatch[1].replace(',', '.')) || 1;
+    const name = materialMatch[2].trim();
+    const price = parseFloat(materialMatch[3].replace(',', '.')) || 0;
+    // Try to guess unit from name words
+    let unit = 'pièce';
+    if (/(box|bo[iî]te)/.test(name)) unit = 'boîte';
+    else if (/(kg)/.test(name)) unit = 'kg';
+    else if (/(l|litre)/.test(name)) unit = 'l';
+    info.eachTaskMaterial = { name, quantity, unit, price };
+  }
+
+  return info;
+}
+
+function minutesFrom(value, unit) {
+  if (value == null) return null;
+  switch (unit) {
+    case 'days':
+      return value * 8 * 60; // assume 8h working day
+    case 'hours':
+      return value * 60;
+    case 'minutes':
+    default:
+      return value;
+  }
+}
+
+function minutesToHoursCeil(minutes) {
+  const m = parseFloat(minutes);
+  if (isNaN(m) || m <= 0) return '';
+  return Math.ceil(m / 60);
+}
+
+// Extract labor price hints from prompt
+function extractLaborPriceInfo(text = '') {
+  const src = (text || '').toLowerCase();
+  const price = {
+    perTaskLaborPrice: null,
+    totalLaborPrice: null
+  };
+
+  // e.g., "each task cost 120 euro", "chaque tâche coûte 120€"
+  const perTaskRegex = /(each|chaque)\s+(?:task|tâche)\s+(?:cost|co[uû]te|prix|price|=|à)\s*(\d+(?:[.,]\d+)?)\s*(?:€|euro|euros)/i;
+  const perTaskMatch = src.match(perTaskRegex);
+  if (perTaskMatch) {
+    price.perTaskLaborPrice = parseFloat(perTaskMatch[2].replace(',', '.'));
+  }
+
+  // e.g., "total cost 300 euro", "coût total 300€", "budget 300€"
+  const totalRegex = /(?:total\s*(?:cost|co[uû]t|prix)|budget)\s*(\d+(?:[.,]\d+)?)\s*(?:€|euro|euros)?/i;
+  const totalMatch = src.match(totalRegex);
+  if (totalMatch) {
+    price.totalLaborPrice = parseFloat(totalMatch[1].replace(',', '.'));
+  }
+
+  // French explicit keys like "prix main d’œuvre: 20€" or "prix main d'oeuvre 20€"
+  const laborKeyRegex = /prix\s+main\s+d['’]oeuvre\s*[:=]?\s*(\d+(?:[.,]\d+)?)\s*(?:€|euro|euros)?/i;
+  const laborKeyMatch = src.match(laborKeyRegex);
+  if (laborKeyMatch) {
+    price.perTaskLaborPrice = parseFloat(laborKeyMatch[1].replace(',', '.'));
+  }
+
+  return price;
+}
+
 const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCategory }) => {
   const [currentTask, setCurrentTask] = useState({
     description: '',
     duration: '',
-    durationUnit: 'minutes',
+    durationUnit: 'hours',
     price: '',
     materials: [],
     hourlyRate: '',
@@ -702,11 +803,11 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
       resetTranscript();
       
       // Start speech recognition
-      SpeechRecognition.startListening({ 
-        continuous: true, 
-        language: 'fr-FR',
-        interimResults: false
-      });
+      let lang = 'fr-FR';
+      try {
+        lang = localStorage.getItem('language') || 'fr-FR';
+      } catch (_) {}
+      SpeechRecognition.startListening({ continuous: true, language: lang, interimResults: false });
       
       setIsRecording(true);
       setIsVoiceActive(true);
@@ -781,27 +882,60 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
       setIsGenerating(true);
       setIsVoiceActive(false);
       try {
+        // Detect multi-task info from the user's natural language
+        const info = extractMultiTaskInfo(transcription);
+        const laborPriceInfo = extractLaborPriceInfo(transcription);
+
         // Enhanced prompt for better AI task generation
         const enhancedPrompt = `Créez une description détaillée pour cette tâche: "${transcription}". 
         Incluez les spécifications techniques, les étapes de réalisation, et estimez les matériaux nécessaires.`;
         
-        const aiResponse = await generateTaskDescriptionWithGemini(transcription);
+        const projectCtx = Array.isArray(projectCategory) ? projectCategory.join(', ') : (projectCategory || '');
+        const aiResponse = await generateTaskDescriptionWithGemini(transcription, projectCtx);
         if (aiResponse.success && aiResponse.data) {
-          setCurrentTask(prev => ({
-            ...prev,
-            description: aiResponse.data.description,
-            duration: aiResponse.data.estimatedDuration || prev.duration,
-            materials: [
-              ...prev.materials,
-              ...aiResponse.data.suggestedMaterials?.map(mat => ({
-                id: Date.now() + Math.random(),
-                name: mat.name,
-                quantity: mat.quantity,
-                unit: mat.unit,
-                price: 0
-              })) || []
-            ]
+          // Build one or multiple tasks based on detected count
+          const baseDescription = aiResponse.data.description;
+          const durationMinutes = info.durationValue != null ? minutesFrom(info.durationValue, info.durationUnit) : (aiResponse.data.estimatedDuration || 0);
+          const suggestedMaterials = (aiResponse.data.suggestedMaterials || []).map(mat => ({
+            id: Date.now() + Math.random(),
+            name: mat.name,
+            quantity: mat.quantity,
+            unit: mat.unit,
+            price: parseFloat(mat.price) || 0
           }));
+
+          const newTasks = [];
+          const count = Math.max(1, info.taskCount || 1);
+          for (let i = 1; i <= count; i++) {
+            const taskMaterials = [...suggestedMaterials];
+            if (info.eachTaskMaterial) {
+              taskMaterials.push({ id: Date.now() + Math.random(), ...info.eachTaskMaterial });
+            }
+            // Determine labor price per task
+            let taskPrice = '';
+            if (laborPriceInfo.perTaskLaborPrice != null) {
+              taskPrice = laborPriceInfo.perTaskLaborPrice;
+            } else if (laborPriceInfo.totalLaborPrice != null && count > 0) {
+              taskPrice = parseFloat((laborPriceInfo.totalLaborPrice / count).toFixed(2));
+            } else if (aiResponse.data?.laborPrice != null) {
+              taskPrice = parseFloat(aiResponse.data.laborPrice) || '';
+            }
+            newTasks.push({
+              id: Date.now() + i,
+              description: count > 1 ? `${baseDescription} (Tâche ${i}/${count})` : baseDescription,
+              duration: minutesToHoursCeil(durationMinutes) || '',
+              durationUnit: 'hours',
+              price: taskPrice,
+              materials: taskMaterials,
+              hourlyRate: '',
+              pricingType: 'flat'
+            });
+          }
+
+          // Append generated tasks; user can verify and set prices
+          onTasksChange([...tasks, ...newTasks]);
+          // Reset current task form for clarity
+          setCurrentTask({ description: '', duration: '', durationUnit: 'hours', price: '', materials: [], hourlyRate: '', pricingType: 'flat' });
         } else {
           // Fallback: use the transcription directly
           setCurrentTask(prev => ({ ...prev, description: transcription }));
@@ -951,7 +1085,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
       onTasksChange([...tasks, task]);
       
       // Clear the form and editing state
-      setCurrentTask({ description: '', duration: '', price: '', materials: [], hourlyRate: '', pricingType: 'flat' });
+      setCurrentTask({ description: '', duration: '', durationUnit: 'hours', price: '', materials: [], hourlyRate: '', pricingType: 'flat' });
       setEditingPredefinedTask(null);
       clearMaterialForm();
     }
@@ -962,8 +1096,10 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
     setEditingPredefinedTask(predefinedTask);
     setCurrentTask({
       description: predefinedTask.title + ' - ' + predefinedTask.description,
-      duration: predefinedTask.duration,
-      durationUnit: predefinedTask.durationUnit || 'minutes',
+      duration: minutesToHoursCeil(
+        predefinedTask.durationUnit === 'hours' ? predefinedTask.duration * 60 : predefinedTask.duration
+      ),
+      durationUnit: 'hours',
       price: predefinedTask.price,
       materials: [],
       hourlyRate: '',
@@ -976,7 +1112,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
     setCurrentTask({
       description: '',
       duration: '',
-      durationUnit: 'minutes',
+      durationUnit: 'hours',
       price: '',
       materials: [],
       hourlyRate: '',
@@ -992,8 +1128,8 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
     setEditingExistingTask(task);
     setCurrentTask({
       description: task.description,
-      duration: task.duration,
-      durationUnit: task.durationUnit || 'minutes',
+      duration: task.durationUnit === 'minutes' ? minutesToHoursCeil(task.duration) : task.duration,
+      durationUnit: 'hours',
       price: task.price,
       materials: [...task.materials],
       hourlyRate: task.hourlyRate || '',
@@ -1008,7 +1144,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
       ...editingExistingTask,
       description: currentTask.description,
       duration: currentTask.duration,
-      durationUnit: currentTask.durationUnit,
+      durationUnit: 'hours',
       price: currentTask.price,
       materials: currentTask.materials,
       hourlyRate: currentTask.hourlyRate,
@@ -1024,7 +1160,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
     setCurrentTask({
       description: '',
       duration: '',
-      durationUnit: 'minutes',
+      durationUnit: 'hours',
       price: '',
       materials: [],
       hourlyRate: '',
@@ -1037,7 +1173,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
     setCurrentTask({
       description: '',
       duration: '',
-      durationUnit: 'minutes',
+      durationUnit: 'hours',
       price: '',
       materials: [],
       hourlyRate: '',
@@ -1052,13 +1188,25 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
     try {
       const enhancedPrompt = `Améliorez et détaillez cette description de tâche: "${currentTask.description}". 
       Ajoutez des spécifications techniques professionnelles et des recommandations d'optimisation.`;
-      
-      const aiResponse = await generateTaskDescriptionWithGemini(currentTask.description);
+      // Include project/category context and parse labor price from the user's text as hints
+      const laborPriceInfo = extractLaborPriceInfo(currentTask.description);
+      const projectCtx = Array.isArray(projectCategory) ? projectCategory.join(', ') : (projectCategory || '');
+      const aiResponse = await generateTaskDescriptionWithGemini(currentTask.description, projectCtx);
       if (aiResponse.success && aiResponse.data) {
+        // Determine task labor price from prompt or AI response
+        let taskPrice = currentTask.price;
+        if (laborPriceInfo.perTaskLaborPrice != null) {
+          taskPrice = laborPriceInfo.perTaskLaborPrice;
+        } else if (aiResponse.data?.laborPrice != null) {
+          taskPrice = parseFloat(aiResponse.data.laborPrice) || currentTask.price;
+        }
+
         setCurrentTask(prev => ({
           ...prev,
           description: aiResponse.data.description,
-          duration: aiResponse.data.estimatedDuration || prev.duration,
+          duration: minutesToHoursCeil(aiResponse.data.estimatedDuration) || prev.duration,
+          durationUnit: 'hours',
+          price: taskPrice,
           materials: [
             ...prev.materials,
             ...aiResponse.data.suggestedMaterials?.map(mat => ({
@@ -1066,7 +1214,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
               name: mat.name,
               quantity: mat.quantity,
               unit: mat.unit,
-              price: 0
+              price: parseFloat(mat.price) || 0
             })) || []
           ]
         }));

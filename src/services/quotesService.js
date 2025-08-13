@@ -1,5 +1,12 @@
 import { supabase } from './supabaseClient';
 
+// Helper to ensure DB varchar limits are respected
+function truncateString(value, max) {
+  if (value == null) return value;
+  const str = String(value);
+  return str.length > max ? str.slice(0, max) : str;
+}
+
 /**
  * Generate a unique quote number for the current user
  * @param {string} userId - User ID
@@ -66,6 +73,7 @@ export async function fetchQuotes() {
         ),
         quote_materials(
           id,
+          quote_task_id,
           name,
           description,
           quantity,
@@ -143,6 +151,7 @@ export async function fetchQuoteById(id) {
         ),
         quote_materials(
           id,
+          quote_task_id,
           name,
           description,
           quantity,
@@ -213,12 +222,13 @@ export async function createQuote(quoteData) {
       user_id: quoteData.user_id,
       profile_id: quoteData.profile_id || null,
       client_id: quoteData.client_id,
-      quote_number: quoteData.quote_number,
+      // DB limits: quote_number VARCHAR(50), title TEXT (ok), custom_category VARCHAR(255)
+      quote_number: truncateString(quoteData.quote_number, 50),
       title: quoteData.title || 'Nouveau devis',
       description: quoteData.description || '',
       status: quoteData.status || 'draft',
       project_categories: quoteData.project_categories || [],
-      custom_category: quoteData.custom_category || '',
+      custom_category: truncateString(quoteData.custom_category || '', 255),
       deadline: quoteData.deadline || null,
       total_amount: quoteData.total_amount || 0,
       tax_amount: quoteData.tax_amount || 0,
@@ -243,14 +253,17 @@ export async function createQuote(quoteData) {
     if (quoteData.tasks && quoteData.tasks.length > 0) {
       const tasksWithQuoteId = quoteData.tasks.map((task, index) => ({
         quote_id: quote.id,
-        name: task.name || task.description,
+        // DB limit: VARCHAR(255)
+        name: truncateString(task.name || task.description || '', 255),
         description: task.description,
         quantity: task.quantity || 1,
-        unit: task.unit || 'piece',
+        // DB limit: VARCHAR(50)
+        unit: truncateString(task.unit || 'piece', 50),
         unit_price: task.unit_price || task.price || 0,
         total_price: task.total_price || (task.quantity * (task.unit_price || task.price)) || 0,
         duration: task.duration,
-        duration_unit: task.duration_unit || 'minutes',
+        // DB limit: VARCHAR(20)
+        duration_unit: truncateString(task.duration_unit || 'minutes', 20),
         pricing_type: task.pricing_type || 'flat',
         hourly_rate: task.hourly_rate,
         order_index: index
@@ -270,10 +283,12 @@ export async function createQuote(quoteData) {
           const materialsWithTaskId = task.materials.map((material, matIndex) => ({
             quote_id: quote.id,
             quote_task_id: tasks[i].id,
-            name: material.name,
+            // DB limit: VARCHAR(255)
+            name: truncateString(material.name || '', 255),
             description: material.description,
             quantity: material.quantity || 1,
-            unit: material.unit || 'piece',
+            // DB limit: VARCHAR(50)
+            unit: truncateString(material.unit || 'piece', 50),
             unit_price: material.unit_price || material.price || 0,
             total_price: material.total_price || (material.quantity * (material.unit_price || material.price)) || 0,
             order_index: matIndex
@@ -292,10 +307,12 @@ export async function createQuote(quoteData) {
     if (quoteData.files && quoteData.files.length > 0) {
       const filesWithQuoteId = quoteData.files.map((file, index) => ({
         quote_id: quote.id,
-        file_name: file.file_name || file.name || '',
+        // DB limit: VARCHAR(255)
+        file_name: truncateString(file.file_name || file.name || '', 255),
         file_path: file.file_path || file.path || file.url || '',
         file_size: file.file_size || file.size || 0,
-        mime_type: file.mime_type || file.type || '',
+        // DB limit: VARCHAR(100)
+        mime_type: truncateString(file.mime_type || file.type || '', 100),
         file_category: file.file_category || 'attachment', // Use provided category or default
         uploaded_by: quoteData.profile_id || null
       }));
@@ -359,24 +376,48 @@ export async function updateQuote(id, quoteData) {
       if (quoteData.tasks.length > 0) {
         const tasksWithQuoteId = quoteData.tasks.map((task, index) => ({
           quote_id: id,
-          name: task.name || task.description,
+          name: truncateString(task.name || task.description || '', 255),
           description: task.description,
           quantity: task.quantity || 1,
-          unit: task.unit || 'piece',
+          unit: truncateString(task.unit || 'piece', 50),
           unit_price: task.unit_price || task.price || 0,
           total_price: task.total_price || (task.quantity * (task.unit_price || task.price)) || 0,
           duration: task.duration,
-          duration_unit: task.duration_unit || 'minutes',
+          duration_unit: truncateString(task.duration_unit || 'minutes', 20),
           pricing_type: task.pricing_type || 'flat',
           hourly_rate: task.hourly_rate,
           order_index: index
         }));
-        
-        const { error: tasksError } = await supabase
+
+        // Insert tasks and return IDs
+        const { data: newTasks, error: tasksError } = await supabase
           .from('quote_tasks')
-          .insert(tasksWithQuoteId);
-        
+          .insert(tasksWithQuoteId)
+          .select();
         if (tasksError) return { error: tasksError };
+
+        // Insert materials nested under each task (if provided)
+        for (let i = 0; i < quoteData.tasks.length; i++) {
+          const task = quoteData.tasks[i];
+          if (task.materials && task.materials.length > 0) {
+            const materialsWithTaskId = task.materials.map((material, matIndex) => ({
+              quote_id: id,
+              quote_task_id: newTasks[i].id,
+              name: truncateString(material.name || '', 255),
+              description: material.description,
+              quantity: material.quantity || 1,
+              unit: truncateString(material.unit || 'piece', 50),
+              unit_price: material.unit_price || material.price || 0,
+              total_price: material.total_price || (material.quantity * (material.unit_price || material.price)) || 0,
+              order_index: matIndex
+            }));
+
+            const { error: materialsError } = await supabase
+              .from('quote_materials')
+              .insert(materialsWithTaskId);
+            if (materialsError) return { error: materialsError };
+          }
+        }
       }
     }
     

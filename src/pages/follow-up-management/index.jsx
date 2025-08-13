@@ -381,9 +381,7 @@ const FollowUpManagement = () => {
     console.log('Follow up for:', id);
   };
 
-  const handleQuickAI = (id) => {
-    console.log('Quick AI for:', id);
-  };
+  // Removed Quick AI
 
   const renderTableView = () => (
     <div className="bg-card border border-border rounded-lg overflow-hidden">
@@ -477,17 +475,7 @@ const FollowUpManagement = () => {
                     >
                       Relancer
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="xs"
-                      onClick={() => handleQuickAI(followUp.id)}
-                      iconName="Zap"
-                      iconPosition="left"
-                      className="h-7 sm:h-8 text-xs"
-                      title="IA Rapide"
-                    >
-                      IA
-                    </Button>
+                    {/* Quick AI removed */}
                   </div>
                 </td>
               </tr>
@@ -566,16 +554,7 @@ const FollowUpManagement = () => {
                 >
                   Relancer
                 </Button>
-                <Button
-                  variant="outline"
-                  size="xs"
-                  onClick={() => handleQuickAI(followUp.id)}
-                  iconName="Zap"
-                  iconPosition="left"
-                  className="h-8 sm:h-9"
-                >
-                  IA Rapide
-                </Button>
+                {/* Quick AI removed */}
               </div>
             </div>
           </div>

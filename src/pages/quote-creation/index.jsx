@@ -180,18 +180,31 @@ const QuoteCreation = () => {
         duration: task.duration,
         durationUnit: task.duration_unit || 'minutes',
         price: task.unit_price || task.total_price,
-        materials: [], // Materials are stored separately
+        materials: [],
         hourlyRate: task.hourly_rate,
         pricingType: task.pricing_type || 'flat'
       }));
-      
-      const transformedMaterials = (quote.quote_materials || []).map(material => ({
-        id: material.id,
-        name: material.name,
-        description: material.description,
-        quantity: material.quantity,
-        unit: material.unit,
-        price: material.unit_price || material.total_price
+
+      // Group materials by their task
+      const materialsByTaskId = {};
+      (quote.quote_materials || []).forEach((material) => {
+        const mapped = {
+          id: material.id,
+          name: material.name,
+          description: material.description,
+          quantity: material.quantity,
+          unit: material.unit,
+          price: material.unit_price || material.total_price
+        };
+        const tid = material.quote_task_id;
+        if (!materialsByTaskId[tid]) materialsByTaskId[tid] = [];
+        materialsByTaskId[tid].push(mapped);
+      });
+
+      // Attach materials to corresponding tasks
+      const tasksWithMaterials = transformedTasks.map(t => ({
+        ...t,
+        materials: materialsByTaskId[t.id] || []
       }));
       
       // Get signed URLs for all files
@@ -330,7 +343,7 @@ const QuoteCreation = () => {
         description: quote.description || '',
         quoteNumber: isDuplicating ? null : quote.quote_number // Don't copy quote number when duplicating
       });
-      setTasks(transformedTasks);
+      setTasks(tasksWithMaterials);
       setFiles(transformedFiles);
       setFinancialConfig(financialConfig);
       

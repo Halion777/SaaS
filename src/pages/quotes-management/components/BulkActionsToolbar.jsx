@@ -34,36 +34,6 @@ const BulkActionsToolbar = ({ selectedCount, onBulkAction, onClearSelection }) =
         <Button
           variant="outline"
           size="sm"
-          onClick={() => onBulkAction('send-reminder')}
-          iconName="Send"
-          iconPosition="left"
-        >
-          Rappel
-        </Button>
-        
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onBulkAction('ai-optimize')}
-          iconName="Sparkles"
-          iconPosition="left"
-        >
-          Optimiser IA
-        </Button>
-        
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onBulkAction('duplicate')}
-          iconName="Copy"
-          iconPosition="left"
-        >
-          Dupliquer
-        </Button>
-        
-        <Button
-          variant="outline"
-          size="sm"
           onClick={() => onBulkAction('export')}
           iconName="Download"
           iconPosition="left"

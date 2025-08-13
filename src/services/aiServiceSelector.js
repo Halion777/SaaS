@@ -1,5 +1,4 @@
-// AI Service Selector - Choose between OpenAI and Google AI
-import { generateProjectDescription } from './openaiService';
+// AI Service Selector - Google AI only
 import { generateProjectDescriptionWithGemini, isGoogleAIServiceAvailable } from './googleAIService';
 
 /**
@@ -7,13 +6,8 @@ import { generateProjectDescriptionWithGemini, isGoogleAIServiceAvailable } from
  * @returns {string} 'openai' or 'google' or 'none'
  */
 export function getPreferredAIService() {
-  const hasOpenAI = !!import.meta.env.VITE_OPENAI_API_KEY;
   const hasGoogleAI = isGoogleAIServiceAvailable();
-  
-  // Priority: Google AI first (usually more reliable), then OpenAI
-  if (hasGoogleAI) return 'google';
-  if (hasOpenAI) return 'openai';
-  return 'none';
+  return hasGoogleAI ? 'google' : 'none';
 }
 
 /**
@@ -29,28 +23,20 @@ export async function generateProjectDescriptionWithBestService(category, userCo
   if (service === 'none') {
     return {
       success: false,
-      error: 'Aucun service IA configuré. Ajoutez une clé API OpenAI ou Google AI.',
+      error: 'Aucun service IA configuré. Ajoutez une clé API Google AI.',
       service: 'none'
     };
   }
   
   try {
-    let result;
-    
-    if (service === 'google') {
-      result = await generateProjectDescriptionWithGemini(category, userContext, customCategory);
-      result.service = 'google';
-    } else if (service === 'openai') {
-      result = await generateProjectDescription(category, userContext, customCategory);
-      result.service = 'openai';
-    }
-    
+    const result = await generateProjectDescriptionWithGemini(category, userContext, customCategory);
+    result.service = 'google';
     return result;
   } catch (error) {
     console.error(`Error with ${service} service:`, error);
     return {
       success: false,
-      error: `Erreur avec le service ${service === 'google' ? 'Google AI' : 'OpenAI'}`,
+      error: `Erreur avec le service Google AI`,
       service
     };
   }
@@ -69,13 +55,6 @@ export function getAIServiceInfo() {
       status: 'Disponible',
       icon: '🔵',
       description: 'Service IA Google Gemini'
-    };
-  } else if (service === 'openai') {
-    return {
-      name: 'OpenAI GPT',
-      status: 'Disponible',
-      icon: '🟢',
-      description: 'Service IA OpenAI GPT'
     };
   } else {
     return {

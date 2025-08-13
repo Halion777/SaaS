@@ -482,12 +482,12 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       // Reset previous transcript
       resetTranscript();
       
-      // Start speech recognition
-      SpeechRecognition.startListening({ 
-        continuous: true, 
-        language: 'fr-FR',
-        interimResults: false
-      });
+      // Start speech recognition using app language from localStorage
+      let lang = 'fr-FR';
+      try {
+        lang = localStorage.getItem('language') || 'fr-FR';
+      } catch (_) {}
+      SpeechRecognition.startListening({ continuous: true, language: lang, interimResults: false });
       
       setIsRecording(true);
       setRecordingTime(0);

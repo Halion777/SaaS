@@ -6,10 +6,10 @@ import Button from '../../components/ui/Button';
 import QuotesTable from './components/QuotesTable';
 import FilterBar from './components/FilterBar';
 import BulkActionsToolbar from './components/BulkActionsToolbar';
-import AIAnalyticsPanel from './components/AIAnalyticsPanel';
+// Analyse IA removed
 import { useAuth } from '../../context/AuthContext';
 import { useMultiUser } from '../../context/MultiUserContext';
-import { fetchQuotes, getQuoteStatistics, updateQuoteStatus } from '../../services/quotesService';
+import { fetchQuotes, getQuoteStatistics, updateQuoteStatus, deleteQuote, fetchQuoteById } from '../../services/quotesService';
 import { 
   listScheduledFollowUps, 
   createFollowUpForQuote, 
@@ -29,9 +29,9 @@ const QuotesManagement = () => {
   const [error, setError] = useState(null);
   const [stats, setStats] = useState({
     total: 0,
-    signed: 0,
-    pending: 0,
-    averageScore: 0
+    drafts: 0,
+    sent: 0,
+    averageAmount: 0
   });
   
   // Follow-up related state
@@ -43,7 +43,7 @@ const QuotesManagement = () => {
   // Ref to prevent infinite API calls
   const followUpsLoadedRef = useRef(false);
   const [selectedQuotes, setSelectedQuotes] = useState([]);
-  const [selectedQuote, setSelectedQuote] = useState(null);
+  // const [selectedQuote, setSelectedQuote] = useState(null);
   const [filters, setFilters] = useState({
     status: '',
     client: '',
@@ -51,7 +51,8 @@ const QuotesManagement = () => {
     dateRange: { start: '', end: '' },
     amountRange: { min: '', max: '' }
   });
-  const [showAIPanel, setShowAIPanel] = useState(false);
+  const [tableLoading, setTableLoading] = useState(false);
+  // const [showAIPanel, setShowAIPanel] = useState(false);
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
@@ -138,13 +139,14 @@ const QuotesManagement = () => {
         
         setQuotes(sortedQuotes);
         
-        // Calculate stats
+        // Calculate stats (actual data)
         const total = sortedQuotes.length;
-        const signed = sortedQuotes.filter(q => q.status === 'accepted').length;
-        const pending = sortedQuotes.filter(q => ['sent', 'draft'].includes(q.status)).length;
-        const averageScore = total > 0 ? Math.round(sortedQuotes.reduce((acc, q) => acc + q.aiScore, 0) / total) : 0;
+        const drafts = sortedQuotes.filter(q => q.status === 'draft').length;
+        const sent = sortedQuotes.filter(q => q.status === 'sent').length;
+        const amounts = sortedQuotes.map(q => parseFloat(q.amount) || 0);
+        const averageAmount = total > 0 ? (amounts.reduce((acc, v) => acc + v, 0) / total) : 0;
         
-        setStats({ total, signed, pending, averageScore });
+        setStats({ total, drafts, sent, averageAmount });
         
       } catch (err) {
         console.error('Error loading quotes:', err);
@@ -331,11 +333,7 @@ const QuotesManagement = () => {
     });
   };
 
-  const handleBulkOptimize = () => {
-    if (selectedQuotes.length > 0) {
-      handleBulkAction('ai-optimize');
-    }
-  };
+  // Removed bulk optimize (AI)
 
   const handleClearSelection = () => {
     setSelectedQuotes([]);
@@ -359,9 +357,23 @@ const QuotesManagement = () => {
           console.log('Quote must be accepted before converting to invoice');
         }
         break;
-      case 'optimize':
-        setSelectedQuote(quote);
-        setShowAIPanel(true);
+      // Removed optimize (AI)
+      case 'delete':
+        try {
+          setTableLoading(true);
+          const { error } = await deleteQuote(quote.id);
+          if (error) {
+            console.error('Error deleting quote:', error);
+            return;
+          }
+          setQuotes(prev => prev.filter(q => q.id !== quote.id));
+          setFilteredQuotes(prev => prev.filter(q => q.id !== quote.id));
+          setSelectedQuotes(prev => prev.filter(id => id !== quote.id));
+        } catch (err) {
+          console.error('Error deleting quote:', err);
+        } finally {
+          setTableLoading(false);
+        }
         break;
       case 'followup':
         setSelectedQuoteForFollowUp(quote);
@@ -561,17 +573,7 @@ const QuotesManagement = () => {
     window.location.reload();
   };
 
-  const handleOptimizeQuote = async (quote) => {
-    // Handle quote optimization with AI
-    console.log('Optimizing quote:', quote.id);
-    // This would integrate with your AI service
-  };
-
-  const handleFollowUpRecommendation = async (quote) => {
-    // Handle follow-up recommendations
-    console.log('Getting follow-up recommendations for quote:', quote.id);
-    // This would integrate with your AI service
-  };
+  // Removed AI handlers
 
   const handleBulkAction = async (action) => {
     if (selectedQuotes.length === 0) return;
@@ -579,17 +581,104 @@ const QuotesManagement = () => {
     try {
       switch (action) {
         case 'delete':
-          // Implement bulk delete logic
-          console.log(`Bulk delete for quotes:`, selectedQuotes);
+          setTableLoading(true);
+          await Promise.all(selectedQuotes.map(id => deleteQuote(id)));
+          setQuotes(prev => prev.filter(q => !selectedQuotes.includes(q.id)));
+          setFilteredQuotes(prev => prev.filter(q => !selectedQuotes.includes(q.id)));
           break;
-        case 'export':
-          // Implement bulk export logic
-          console.log(`Bulk export for quotes:`, selectedQuotes);
+        case 'export': {
+          // Export selected quotes as CSV (flattened rows)
+          const fullQuotes = await Promise.all(
+            selectedQuotes.map(async (id) => {
+              const { data } = await fetchQuoteById(id);
+              return data;
+            })
+          );
+
+          const rows = [];
+          fullQuotes.forEach((q) => {
+            const base = {
+              quote_id: q.id,
+              quote_number: q.quote_number,
+              status: q.status,
+              created_at: q.created_at,
+              client_name: q.client?.name || '',
+              client_email: q.client?.email || '',
+              total_amount: q.total_amount ?? '',
+              tax_amount: q.tax_amount ?? '',
+              final_amount: q.final_amount ?? '',
+              deadline: q.deadline ?? '',
+              category: Array.isArray(q.project_categories) ? q.project_categories.join('|') : '',
+            };
+
+            if (q.quote_tasks?.length) {
+              q.quote_tasks.forEach((t) => {
+                const taskRow = {
+                  ...base,
+                  task_id: t.id,
+                  task_name: t.name || '',
+                  task_description: (t.description || '').replace(/\n/g, ' '),
+                  task_quantity: t.quantity ?? '',
+                  task_unit: t.unit || '',
+                  task_unit_price: t.unit_price ?? '',
+                  task_total_price: t.total_price ?? '',
+                  task_duration: t.duration ?? '',
+                  task_duration_unit: t.duration_unit || '',
+                };
+
+                const materials = (q.quote_materials || []).filter((m) => m.quote_task_id === t.id);
+                if (materials.length) {
+                  materials.forEach((m) => {
+                    rows.push({
+                      ...taskRow,
+                      material_id: m.id,
+                      material_name: m.name || '',
+                      material_quantity: m.quantity ?? '',
+                      material_unit: m.unit || '',
+                      material_unit_price: m.unit_price ?? '',
+                      material_total_price: m.total_price ?? '',
+                    });
+                  });
+                } else {
+                  rows.push(taskRow);
+                }
+              });
+            } else {
+              rows.push(base);
+            }
+          });
+
+          const headers = [
+            'quote_id','quote_number','status','created_at','client_name','client_email','total_amount','tax_amount','final_amount','deadline','category',
+            'task_id','task_name','task_description','task_quantity','task_unit','task_unit_price','task_total_price','task_duration','task_duration_unit',
+            'material_id','material_name','material_quantity','material_unit','material_unit_price','material_total_price'
+          ];
+
+          const escapeCSV = (val) => {
+            if (val == null) return '';
+            const s = String(val);
+            if (/[",\n]/.test(s)) {
+              return '"' + s.replace(/"/g, '""') + '"';
+            }
+            return s;
+          };
+
+          const csv = [headers.join(',')]
+            .concat(rows.map((r) => headers.map((h) => escapeCSV(r[h])).join(',')))
+            .join('\n');
+
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          const dateStr = new Date().toISOString().slice(0,19).replace(/[:T]/g, '-');
+          a.href = url;
+          a.download = `quotes-export-${dateStr}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
           break;
-        case 'ai-optimize':
-          // Implement bulk AI optimization
-          console.log(`Bulk AI optimization for quotes:`, selectedQuotes);
-          break;
+        }
         default:
           console.log(`Bulk action ${action} for quotes:`, selectedQuotes);
       }
@@ -598,12 +687,15 @@ const QuotesManagement = () => {
       setSelectedQuotes([]);
     } catch (error) {
       console.error('Error performing bulk action:', error);
+    } finally {
+      if (action === 'delete') {
+        setTableLoading(false);
+      }
     }
   };
 
   const handleQuoteSelect = (quote) => {
-    setSelectedQuote(quote);
-    // Remove automatic AI panel opening - user must click AI button explicitly
+    // No-op (AI removed)
   };
 
   return (
@@ -644,25 +736,7 @@ const QuotesManagement = () => {
                 {loading ? 'Actualisation...' : 'Actualiser'}
               </Button>
               
-              <Button
-                variant="outline"
-                onClick={() => setShowFollowUpPanel(!showFollowUpPanel)}
-                iconName={showFollowUpPanel ? "PanelRightClose" : "MessageCircle"}
-                iconPosition="left"
-                className="hidden md:flex text-xs sm:text-sm"
-              >
-                Relances
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={() => setShowAIPanel(!showAIPanel)}
-                iconName={showAIPanel ? "PanelRightClose" : "PanelRightOpen"}
-                iconPosition="left"
-                className="hidden md:flex text-xs sm:text-sm"
-              >
-                Analyse IA
-              </Button>
+              {/* Relances and Analyse IA buttons removed */}
               
               <Button
                 variant="default"
@@ -679,7 +753,7 @@ const QuotesManagement = () => {
 
         </header>
 
-          {/* Stats Cards */}
+          {/* Stats Cards (actual data) */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div className="bg-card border border-border rounded-lg p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
@@ -698,13 +772,13 @@ const QuotesManagement = () => {
             <div className="bg-card border border-border rounded-lg p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Signés</p>
-                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-success">
-                    {loading ? '...' : stats.signed}
+                  <p className="text-xs sm:text-sm text-muted-foreground">Brouillons</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">
+                    {loading ? '...' : stats.drafts}
                   </p>
                 </div>
-                <div className="bg-success/10 rounded-full p-2 sm:p-2.5">
-                  <Icon name="CheckCircle" size={16} className="sm:w-5 sm:h-5 text-success" />
+                <div className="bg-muted rounded-full p-2 sm:p-2.5">
+                  <Icon name="ClipboardList" size={16} className="sm:w-5 sm:h-5 text-muted-foreground" />
                 </div>
               </div>
             </div>
@@ -712,9 +786,9 @@ const QuotesManagement = () => {
             <div className="bg-card border border-border rounded-lg p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">En attente</p>
-                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-amber-600">
-                    {loading ? '...' : stats.pending}
+                  <p className="text-xs sm:text-sm text-muted-foreground">Envoyés</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">
+                    {loading ? '...' : stats.sent}
                   </p>
                 </div>
                 <div className="bg-amber-100 rounded-full p-2 sm:p-2.5">
@@ -726,13 +800,13 @@ const QuotesManagement = () => {
             <div className="bg-card border border-border rounded-lg p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Score IA moyen</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Montant moyen</p>
                   <p className="text-lg sm:text-xl lg:text-2xl font-bold text-primary">
-                    {loading ? '...' : `${stats.averageScore}%`}
+                    {loading ? '...' : formatCurrency(stats.averageAmount || 0)}
                   </p>
                 </div>
-                <div className="bg-accent/10 rounded-full p-2 sm:p-2.5">
-                  <Icon name="Sparkles" size={16} className="sm:w-5 sm:h-5 text-accent" />
+                <div className="bg-primary/10 rounded-full p-2 sm:p-2.5">
+                  <Icon name="Euro" size={16} className="sm:w-5 sm:h-5 text-primary" />
                 </div>
               </div>
             </div>
@@ -756,7 +830,8 @@ const QuotesManagement = () => {
           )}
 
           {/* Quotes Table */}
-          <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+          <div className="relative">
+            <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
             {loading ? (
               <div className="p-8 text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
@@ -803,6 +878,12 @@ const QuotesManagement = () => {
                 onQuoteSelect={handleQuoteSelect}
               />
             )}
+            </div>
+            {tableLoading && (
+              <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+              </div>
+            )}
           </div>
           
           {/* Mobile Actions */}
@@ -817,70 +898,15 @@ const QuotesManagement = () => {
             >
               {loading ? 'Actualisation...' : 'Actualiser'}
             </Button>
-            
-            <Button
-              variant="outline"
-              fullWidth
-              onClick={() => setShowAIPanel(!showAIPanel)}
-              iconName="Sparkles"
-              iconPosition="left"
-              className="flex-1 text-xs sm:text-sm"
-            >
-              {showAIPanel ? 'Masquer' : 'Afficher'} l'analyse IA
-            </Button>
           </div>
 
-          {/* Mobile AI Panel */}
-          {showAIPanel && (
-            <div className="md:hidden bg-card border border-border rounded-lg p-3 sm:p-4 shadow-sm">
-              <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <h2 className="text-base sm:text-lg font-semibold text-foreground">Analyse IA</h2>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowAIPanel(false)}
-                >
-                  <Icon name="X" size={18} className="sm:w-5 sm:h-5" />
-                </Button>
-              </div>
-              <AIAnalyticsPanel
-                selectedQuote={selectedQuote}
-                onOptimizeQuote={handleOptimizeQuote}
-                onFollowUpRecommendation={handleFollowUpRecommendation}
-              />
-            </div>
-          )}
+          {/* Mobile AI Panel removed */}
 
 
         </div>
       </main>
 
-      {/* Desktop AI Panel */}
-      {showAIPanel && (
-        <div className="hidden md:block fixed right-0 top-0 w-80 h-full bg-background border-l border-border overflow-y-auto z-50 shadow-lg">
-          <div className="p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <h2 className="text-base sm:text-lg font-semibold text-foreground flex items-center">
-                <Icon name="Sparkles" size={16} className="sm:w-[18px] sm:h-[18px] text-primary mr-2" />
-                Analyse IA
-              </h2>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowAIPanel(false)}
-              >
-                <Icon name="X" size={18} className="sm:w-5 sm:h-5" />
-              </Button>
-            </div>
-            
-            <AIAnalyticsPanel
-              selectedQuote={selectedQuote}
-              onOptimizeQuote={handleOptimizeQuote}
-              onFollowUpRecommendation={handleFollowUpRecommendation}
-            />
-          </div>
-        </div>
-      )}
+      {/* Desktop AI Panel removed */}
 
       {/* Desktop Follow-up Panel */}
       {showFollowUpPanel && (
@@ -912,31 +938,7 @@ const QuotesManagement = () => {
       )}
 
       {/* Mobile Panels */}
-      {showAIPanel && (
-        <div className="md:hidden fixed inset-0 bg-background z-50 overflow-y-auto">
-          <div className="p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <h2 className="text-base sm:text-lg font-semibold text-foreground flex items-center">
-                <Icon name="Sparkles" size={16} className="sm:w-[18px] sm:h-[18px] text-primary mr-2" />
-                Analyse IA
-              </h2>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowAIPanel(false)}
-              >
-                <Icon name="X" size={18} className="sm:w-5 sm:h-5" />
-              </Button>
-            </div>
-            
-            <AIAnalyticsPanel
-              selectedQuote={selectedQuote}
-              onOptimizeQuote={handleOptimizeQuote}
-              onFollowUpRecommendation={handleFollowUpRecommendation}
-            />
-          </div>
-        </div>
-      )}
+      {/* Mobile Analyse IA panel removed */}
 
       {showFollowUpPanel && (
         <div className="md:hidden fixed inset-0 bg-background z-50 overflow-y-auto">

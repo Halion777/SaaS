@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 
 const FinancialConfig = ({ 
@@ -27,6 +27,26 @@ const FinancialConfig = ({
   const handleLanguageChange = (language) => {
     onDefaultConditionsChange(language, getDefaultText(language));
   };
+
+  // Detect app language from localStorage and sync default conditions once
+  const getAppLanguageCode = () => {
+    try {
+      const raw = (localStorage.getItem('language') || 'fr').toLowerCase();
+      if (raw.startsWith('en')) return 'EN';
+      if (raw.startsWith('nl')) return 'NL';
+      return 'FR';
+    } catch {
+      return 'FR';
+    }
+  };
+
+  useEffect(() => {
+    const appLang = getAppLanguageCode();
+    if (defaultConditions?.language !== appLang) {
+      handleLanguageChange(appLang);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -173,40 +193,19 @@ const FinancialConfig = ({
           </div>
         </div>
         
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          <button 
-            className={`flex items-center justify-center px-3 py-2 rounded-lg border-2 transition-all text-xs ${
-              defaultConditions.language === 'FR' 
-                ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-            }`}
-            onClick={() => handleLanguageChange('FR')}
+        {/* Single language tab based on selected app language */}
+        <div className="mb-4">
+          <div
+            className={
+              `inline-flex items-center px-3 py-2 rounded-lg border-2 text-xs ` +
+              `border-blue-500 bg-blue-50 text-blue-700`
+            }
           >
             <Icon name="Flag" size={12} className="mr-1" />
-            <span className="font-medium">Français</span>
-          </button>
-          <button 
-            className={`flex items-center justify-center px-3 py-2 rounded-lg border-2 transition-all text-xs ${
-              defaultConditions.language === 'NL' 
-                ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-            }`}
-            onClick={() => handleLanguageChange('NL')}
-          >
-            <Icon name="Flag" size={12} className="mr-1" />
-            <span className="font-medium">Nederlands</span>
-          </button>
-          <button 
-            className={`flex items-center justify-center px-3 py-2 rounded-lg border-2 transition-all text-xs ${
-              defaultConditions.language === 'EN' 
-                ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-            }`}
-            onClick={() => handleLanguageChange('EN')}
-          >
-            <Icon name="Flag" size={12} className="mr-1" />
-            <span className="font-medium">English</span>
-          </button>
+            <span className="font-medium">
+              {defaultConditions.language === 'EN' ? 'English' : defaultConditions.language === 'NL' ? 'Nederlands' : 'Français'}
+            </span>
+          </div>
         </div>
         
         <div className="bg-gray-50 rounded-lg border border-gray-100">
