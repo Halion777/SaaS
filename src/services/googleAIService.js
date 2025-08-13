@@ -120,7 +120,7 @@ export const generateProjectDescriptionWithGemini = async (category, userContext
     const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GOOGLE_AI_API_KEY);
     const { maxSentences, maxWords, maxOutputTokens } = getLengthConstraintsFromInput(userContext);
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: import.meta.env.VITE_GEMINI_MODEL || "gemini-2.0-flash-lite",
       generationConfig: {
         temperature: 0.5,
         topK: 40,
@@ -247,7 +247,7 @@ export function getGoogleAIServiceStatus() {
   return {
     available: isGoogleAIServiceAvailable(),
     provider: 'Google Gemini (Free Tier)',
-    model: 'gemini-1.5-flash',
+    model: (import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash-lite'),
     features: ['Project Description Generation', 'Task Suggestions'],
     limits: {
       requestsPerMinute: 15,
@@ -257,13 +257,91 @@ export function getGoogleAIServiceStatus() {
   };
 }
 
+// Best-effort JSON array parser for LLM outputs that may include fences, smart quotes, or trailing commas
+function safeParseJsonArray(possiblyFenced) {
+  if (!possiblyFenced || typeof possiblyFenced !== 'string') return null;
+  let s = possiblyFenced.trim();
+  // Strip markdown fences
+  if (s.startsWith('```')) {
+    s = s.replace(/^```json\s*/i, '').replace(/^```\s*/i, '');
+    s = s.replace(/```\s*$/i, '');
+  }
+  // Extract array slice between first '[' and last ']'
+  const first = s.indexOf('[');
+  let last = s.lastIndexOf(']');
+  if (first !== -1) {
+    if (last !== -1 && last > first) {
+      s = s.slice(first, last + 1);
+    } else {
+      // Missing closing bracket: truncate to last complete object '}' and close array
+      const lastBrace = s.lastIndexOf('}');
+      if (lastBrace > first) {
+        s = s.slice(first, lastBrace + 1) + ']';
+      }
+    }
+  }
+  // Normalize smart quotes and collapse newlines inside
+  s = s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+  s = s.replace(/[\r\n]+/g, ' ');
+  // Remove trailing commas before ] or }
+  s = s.replace(/,\s*([\]}])/g, '$1');
+  // Quote unquoted property names
+  s = s.replace(/([\{,]\s*)([A-Za-z_][A-Za-z0-9_]*)\s*:/g, '$1"$2":');
+  // Try parse straight away
+  try {
+    const parsed = JSON.parse(s);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch (_) {
+    // Convert single-quoted strings to double-quoted
+    const singleToDouble = s.replace(/'([^'\\]*(?:\\.[^'\\]*)*)'/g, (m, g1) => '"' + g1.replace(/"/g, '\\"') + '"');
+    try {
+      const parsed2 = JSON.parse(singleToDouble);
+      return Array.isArray(parsed2) ? parsed2 : null;
+    } catch (_) {
+      // Truncate to last complete object if there is a dangling partial at the end
+      const lastObjEnd = singleToDouble.lastIndexOf('}');
+      if (first !== -1 && lastObjEnd > first) {
+        let truncated = singleToDouble.slice(first, lastObjEnd + 1);
+        // Ensure it starts with '['
+        if (!truncated.trim().startsWith('[')) truncated = '[' + truncated;
+        // Remove trailing commas before closing and add ']'
+        truncated = truncated.replace(/,\s*$/,'');
+        truncated = truncated + ']';
+        truncated = truncated.replace(/,\s*([\]}])/g, '$1');
+        try {
+          const parsed3 = JSON.parse(truncated);
+          return Array.isArray(parsed3) ? parsed3 : null;
+        } catch (_) {}
+      }
+      // Try to pull tasks array if wrapped in an object
+      const match = singleToDouble.match(/"tasks"\s*:\s*(\[[\s\S]*\])/);
+      if (match) {
+        try {
+          const arr = JSON.parse(match[1]);
+          return Array.isArray(arr) ? arr : null;
+        } catch (_) {}
+      }
+      return null;
+    }
+  }
+}
+
+// In-memory cache to avoid repeated API calls across step navigation
+const __taskSuggestionsCache = new Map();
+function buildTaskSuggestionsCacheKey(category, projectDescription, maxTasks) {
+  const cat = (category || '').toString().trim().toLowerCase();
+  const desc = (projectDescription || '').toString().trim().toLowerCase().slice(0, 500);
+  const n = Number(maxTasks || 3);
+  return `${cat}::${n}::${desc}`;
+}
+
 /**
  * Generate task suggestions using Google Gemini
  * @param {string} category - The selected project category
  * @param {string} projectDescription - The project description
  * @returns {Promise<{success: boolean, data?: Array, error?: string}>}
  */
-export const generateTaskSuggestionsWithGemini = async (category, projectDescription) => {
+export const generateTaskSuggestionsWithGemini = async (category, projectDescription, maxTasks = 3) => {
   try {
     if (!import.meta.env.VITE_GOOGLE_AI_API_KEY) {
       return { 
@@ -272,41 +350,62 @@ export const generateTaskSuggestionsWithGemini = async (category, projectDescrip
       };
     }
 
+    // Check cache first to avoid re-generation on navigation
+    const cacheKey = buildTaskSuggestionsCacheKey(category, projectDescription, maxTasks);
+    if (__taskSuggestionsCache.has(cacheKey)) {
+      const cached = __taskSuggestionsCache.get(cacheKey);
+      return { success: true, data: JSON.parse(JSON.stringify(cached)) };
+    }
+
     // Initialize Google Generative AI (Free Tier)
     const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GOOGLE_AI_API_KEY);
+    const { maxSentences, maxWords, maxOutputTokens } = getTaskLengthConstraintsFromInput(projectDescription || '');
+    const perTaskTokenBudget = 180; // approx tokens per task item
+    const scaledTokenCap = Math.min(2048, Math.max(512, perTaskTokenBudget * (maxTasks || 3)));
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash", // Updated to latest free model
+      model: import.meta.env.VITE_GEMINI_MODEL || "gemini-2.0-flash-lite",
       generationConfig: {
-        temperature: 0.7,
+        temperature: 0.3,
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 300,
+        maxOutputTokens: Math.max(scaledTokenCap, maxOutputTokens),
+        responseMimeType: 'application/json'
       },
     });
     
     // Build the prompt for task suggestions
-    const prompt = `Tu es un expert en estimation de projets de construction et rénovation. 
-    Ta tâche est de suggérer des tâches techniques basées sur la catégorie et description du projet.
+    const lang = getAppLanguage('fr-FR');
+    const langLabel = getLanguageLabel(lang);
+    const prompt = `Tu es un expert en estimation de projets de construction/rénovation.
+Ta tâche est de proposer des tâches adaptées à la catégorie et à la description du projet, avec des informations actionnables.
 
-Suggère 3-5 tâches techniques pour ce projet:
+Propose AU PLUS ${maxTasks} tâches concises pour ce projet (${maxTasks} maximum):
 
 Catégorie: ${category}
 Description: ${projectDescription}
 
-Format de réponse: JSON array avec chaque tâche ayant:
+Réponds UNIQUEMENT par un tableau JSON (pas de markdown ni de texte hors JSON). Chaque tâche doit respecter EXACTEMENT ce schéma:
 {
-  "title": "Nom de la tâche",
-  "description": "Description technique détaillée",
-  "estimatedDuration": "Durée estimée en minutes",
-  "complexity": "simple/moyen/complexe"
+  "title": "Nom court de la tâche",
+  "description": "Description professionnelle concise en ${langLabel} (≤ ${Math.max(25, Math.min(60, maxWords))} mots)",
+  "estimatedDuration": 120,
+  "laborPrice": 150,
+  "suggestedMaterials": [
+    { "name": "Nom matériau", "quantity": 1, "unit": "pièce", "price": 10 }
+  ]
 }
 
-Réponds uniquement en JSON valide, sans texte supplémentaire.`;
+Contraintes:
+- Utilise des NOMBRES pour estimatedDuration, laborPrice, quantity et price (pas de chaînes).
+- Limite suggestedMaterials à 3 éléments maximum par tâche.
+- Si le contexte est long, réduis la longueur des descriptions, PAS la structure JSON.
+`;
     
     // Generate content with Gemini
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const content = response.text().trim();
+    // Debug logs removed
     
     if (!content) {
       return { 
@@ -317,13 +416,35 @@ Réponds uniquement en JSON valide, sans texte supplémentaire.`;
 
     // Try to parse JSON response
     try {
-      const suggestions = JSON.parse(content);
-      return { 
-        success: true, 
-        data: suggestions 
-      };
+      let clean = content;
+      if (clean.includes('```json')) clean = clean.replace(/```json\s*/g, '').replace(/```\s*$/g, '');
+      else if (clean.includes('```')) clean = clean.replace(/```/g, '');
+      
+      let suggestions;
+      try {
+        suggestions = JSON.parse(clean);
+      } catch (e) {
+        const fallback = safeParseJsonArray(clean);
+        if (!fallback) throw e;
+        suggestions = fallback;
+      }
+      if (!Array.isArray(suggestions)) {
+        // Try to detect array under a known key
+        const fallback = safeParseJsonArray(JSON.stringify(suggestions));
+        if (fallback) suggestions = fallback;
+      }
+      // Post-process descriptions to respect length caps
+      const processed = Array.isArray(suggestions) ? suggestions.map(s => ({
+        ...s,
+        description: typeof s.description === 'string' ? trimTextToLimits(s.description, maxSentences, maxWords) : s.description
+      })) : [];
+      
+      // Save to cache
+      __taskSuggestionsCache.set(cacheKey, processed);
+      return { success: true, data: processed };
     } catch (parseError) {
       console.error('Error parsing Google AI response:', parseError);
+      
       return { 
         success: false, 
         error: 'Format de réponse invalide de Google AI' 
@@ -381,7 +502,7 @@ export const generateTaskDescriptionWithGemini = async (taskContext, projectCont
     const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GOOGLE_AI_API_KEY);
     const { maxSentences, maxWords, maxOutputTokens } = getTaskLengthConstraintsFromInput(taskContext);
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: import.meta.env.VITE_GEMINI_MODEL || "gemini-2.0-flash-lite",
       generationConfig: {
         temperature: 0.5,
         topK: 40,
@@ -594,7 +715,7 @@ export const enhanceTranscriptionWithAI = async (transcribedText, categories = [
     const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GOOGLE_AI_API_KEY);
     const { maxSentences, maxWords, maxOutputTokens } = getLengthConstraintsFromInput(transcribedText);
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: import.meta.env.VITE_GEMINI_MODEL || "gemini-2.0-flash-lite",
       generationConfig: {
         temperature: 0.2,
         topK: 40,

@@ -1577,6 +1577,8 @@ const QuoteCreation = () => {
           <TaskDefinition
             tasks={tasks}
             projectCategory={projectInfo.categories}
+            projectDescription={projectInfo.description}
+            projectCustomCategory={projectInfo.customCategory}
             onTasksChange={handleTasksChange}
             onNext={handleNext}
             onPrevious={handlePrevious}

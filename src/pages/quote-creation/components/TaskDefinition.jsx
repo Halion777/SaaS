@@ -5,6 +5,7 @@ import Select from '../../../components/ui/Select';
 import Icon from '../../../components/AppIcon';
 import { generateTaskDescriptionWithGemini } from '../../../services/googleAIService';
 import { enhanceTranscriptionWithAI } from '../../../services/googleAIService';
+import { generateTaskSuggestionsWithGemini } from '../../../services/googleAIService';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
 // Helpers to detect multiple tasks and per-task details from natural language
@@ -108,7 +109,7 @@ function extractLaborPriceInfo(text = '') {
   return price;
 }
 
-const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCategory }) => {
+const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCategory, projectDescription, projectCustomCategory }) => {
   const [currentTask, setCurrentTask] = useState({
     description: '',
     duration: '',
@@ -785,6 +786,66 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
     { value: 'days', label: 'Jours' }
   ];
 
+  // AI suggestions state
+  const [aiSuggestions, setAiSuggestions] = useState([]);
+  const [isLoadingAISuggestions, setIsLoadingAISuggestions] = useState(false);
+  const [suggestionsCacheKey, setSuggestionsCacheKey] = useState(null);
+
+  // Load AI suggestions when category or description changes
+  useEffect(() => {
+    const loadSuggestions = async () => {
+      const categoriesRaw = Array.isArray(projectCategory) ? projectCategory : [projectCategory];
+      const categories = (categoriesRaw || []).filter(Boolean);
+      if (categories.length === 0 || !projectDescription || !projectDescription.trim()) {
+        setAiSuggestions([]);
+        setSuggestionsCacheKey(null);
+        return;
+      }
+
+      // Cache key to avoid re-calls when navigating back to step 2
+      const cacheKey = JSON.stringify({ c: [...categories].sort(), cc: projectCustomCategory || '', d: (projectDescription || '').trim().slice(0, 150) });
+      if (cacheKey === suggestionsCacheKey && aiSuggestions.length > 0) {
+        return;
+      }
+
+      setIsLoadingAISuggestions(true);
+      try {
+        let aggregated = [];
+        const isMulti = categories.length > 1;
+        const perCategoryMax = isMulti ? 3 : 6;
+        for (const cat of categories) {
+          const res = await generateTaskSuggestionsWithGemini(cat, projectDescription, perCategoryMax);
+          if (res.success && Array.isArray(res.data)) {
+            const mapped = res.data.map((t, idx) => ({
+              id: `ai-${cat}-${Date.now()}-${idx}`,
+              title: t.title,
+              description: t.description,
+              duration: minutesToHoursCeil(t.estimatedDuration) || '',
+              durationUnit: 'hours',
+              price: typeof t.laborPrice === 'number' ? t.laborPrice : parseFloat(t.laborPrice) || '',
+              materials: (t.suggestedMaterials || []).map(m => ({
+                id: Date.now() + Math.random(),
+                name: m.name,
+                quantity: m.quantity,
+                unit: m.unit,
+                price: parseFloat(m.price) || 0
+              }))
+            }));
+            aggregated = aggregated.concat(mapped);
+          }
+        }
+        setAiSuggestions(aggregated);
+        setSuggestionsCacheKey(cacheKey);
+      } catch (e) {
+        console.error('AI suggestions error', e);
+        setAiSuggestions([]);
+      } finally {
+        setIsLoadingAISuggestions(false);
+      }
+    };
+    loadSuggestions();
+  }, [projectCategory, projectDescription, projectCustomCategory]);
+
   // Voice recording functions
   const startRecording = async () => {
     try {
@@ -842,10 +903,13 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
       setIsTranscribing(true);
       
       // Enhance transcription with AI using project context
+      const categories = Array.isArray(projectCategory)
+        ? projectCategory
+        : (projectCategory ? [projectCategory] : []);
       const enhancedResult = await enhanceTranscriptionWithAI(
-        rawTranscript, 
-        [projectCategory], // Pass the project category
-        '' // No custom category for tasks
+        rawTranscript,
+        categories,
+        projectCustomCategory || ''
       );
       
       if (enhancedResult.success && enhancedResult.data) {
@@ -890,7 +954,10 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         const enhancedPrompt = `Créez une description détaillée pour cette tâche: "${transcription}". 
         Incluez les spécifications techniques, les étapes de réalisation, et estimez les matériaux nécessaires.`;
         
-        const projectCtx = Array.isArray(projectCategory) ? projectCategory.join(', ') : (projectCategory || '');
+        const categories = Array.isArray(projectCategory)
+          ? projectCategory
+          : (projectCategory ? [projectCategory] : []);
+        const projectCtx = [...categories, projectCustomCategory || ''].filter(Boolean).join(', ');
         const aiResponse = await generateTaskDescriptionWithGemini(transcription, projectCtx);
         if (aiResponse.success && aiResponse.data) {
           // Build one or multiple tasks based on detected count
@@ -1091,17 +1158,15 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
     }
   };
 
-  const addPredefinedTask = (predefinedTask) => {
-    // Instead of adding directly, open it for editing
-    setEditingPredefinedTask(predefinedTask);
+  const addPredefinedTask = (task) => {
+    // Open AI-suggested task for editing with its materials and price
+    setEditingPredefinedTask(task);
     setCurrentTask({
-      description: predefinedTask.title + ' - ' + predefinedTask.description,
-      duration: minutesToHoursCeil(
-        predefinedTask.durationUnit === 'hours' ? predefinedTask.duration * 60 : predefinedTask.duration
-      ),
+      description: task.title ? `${task.title} - ${task.description}` : task.description,
+      duration: task.duration,
       durationUnit: 'hours',
-      price: predefinedTask.price,
-      materials: [],
+      price: task.price || '',
+      materials: task.materials || [],
       hourlyRate: '',
       pricingType: 'flat'
     });
@@ -1190,7 +1255,10 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
       Ajoutez des spécifications techniques professionnelles et des recommandations d'optimisation.`;
       // Include project/category context and parse labor price from the user's text as hints
       const laborPriceInfo = extractLaborPriceInfo(currentTask.description);
-      const projectCtx = Array.isArray(projectCategory) ? projectCategory.join(', ') : (projectCategory || '');
+      const categories = Array.isArray(projectCategory)
+        ? projectCategory
+        : (projectCategory ? [projectCategory] : []);
+      const projectCtx = [...categories, projectCustomCategory || ''].filter(Boolean).join(', ');
       const aiResponse = await generateTaskDescriptionWithGemini(currentTask.description, projectCtx);
       if (aiResponse.success && aiResponse.data) {
         // Determine task labor price from prompt or AI response
@@ -1278,43 +1346,32 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
     <div className="space-y-4 sm:space-y-6">
 
 
-      {/* Predefined Tasks Section */}
+      {/* AI Suggested Tasks Section */}
       <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
         <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
-          <Icon name="Package" size={20} className="sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3" />
-          Tâches prédéfinies
-          {projectCategory && (
-            <div className="ml-2 flex space-x-1">
-              {(Array.isArray(projectCategory) ? projectCategory : [projectCategory]).map(cat => (
-                <span 
-                  key={cat} 
-                  className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full"
-                >
-                  {getCategoryLabel(cat)}
-                </span>
-              ))}
-            </div>
-          )}
+          <Icon name="Sparkles" size={20} className="sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3" />
+          Suggestions IA de tâches
         </h2>
         
-        {!projectCategory || projectCategory.length === 0 ? (
+        {!projectCategory || (Array.isArray(projectCategory) && projectCategory.length === 0) ? (
           <div className="text-center py-8">
             <Icon name="Info" size={48} className="text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">
-              Sélectionnez d'abord une catégorie de projet pour voir les tâches prédéfinies disponibles
+              Sélectionnez une catégorie et décrivez le projet pour obtenir des suggestions IA
             </p>
           </div>
-        ) : predefinedTasks.length > 0 ? (
+        ) : isLoadingAISuggestions ? (
+          <div className="text-center py-8">
+            <Icon name="Loader2" size={32} className="animate-spin text-primary mx-auto mb-2" />
+            <p className="text-muted-foreground">Génération des tâches suggérées…</p>
+          </div>
+        ) : aiSuggestions.length > 0 ? (
           <>
             <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4">
-              Ajoutez rapidement des tâches courantes pour {
-                (Array.isArray(projectCategory) ? projectCategory : [projectCategory])
-                  .map(getCategoryLabel)
-                  .join(', ')
-              } avec tarifs recommandés
+              Suggestions basées sur votre description et catégorie, avec durées, matériaux et prix de main d'œuvre.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-              {predefinedTasks.map(task => {
+              {aiSuggestions.map(task => {
                 return (
                   <div 
                     key={task.id} 
@@ -1328,27 +1385,29 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center">
                         <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center mr-2 sm:mr-3">
-                          <Icon name={task.icon} size={14} className="sm:w-4 sm:h-4 text-primary" />
+                          <Icon name="ListChecks" size={14} className="sm:w-4 sm:h-4 text-primary" />
                         </div>
                         <h3 className="text-sm sm:text-base font-medium">{task.title}</h3>
                       </div>
-                      <div className="text-base sm:text-lg font-semibold">{task.price}€</div>
+                      <div className="text-base sm:text-lg font-semibold">{task.price || 0}€</div>
                     </div>
                     <p className="text-xs sm:text-sm text-muted-foreground">{task.description}</p>
-                                                              <div className="flex items-center mt-2 text-xs text-muted-foreground">
+                    <div className="flex items-center mt-2 text-xs text-muted-foreground">
                       <Icon name="Clock" size={12} className="mr-1" />
-                      <span>{formatDuration(task.duration, 'minutes')}</span>
-                        {task.category && (
-                          <span className="ml-2 px-1 py-0.5 bg-muted/30 rounded text-[0.6rem]">
-                            {getCategoryLabel(task.category)}
-                          </span>
-                        )}
-                        {editingPredefinedTask?.id === task.id && (
-                          <span className="ml-2 px-1 py-0.5 bg-primary/30 text-primary rounded text-[0.6rem]">
-                            En cours d'édition
-                          </span>
-                        )}
+                      <span>{formatDuration(task.duration, 'hours')}</span>
+                    </div>
+                    {task.materials?.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-xs text-muted-foreground mb-1">Matériaux suggérés:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {task.materials.map((m) => (
+                            <span key={m.id} className="text-[11px] bg-muted px-1.5 py-0.5 rounded">
+                              {m.name} ({m.quantity} {m.unit}) {m.price ? `· ${m.price}€` : ''}
+                            </span>
+                          ))}
+                        </div>
                       </div>
+                    )}
                   </div>
                 );
               })}
@@ -1357,9 +1416,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         ) : (
           <div className="text-center py-8">
             <Icon name="Package" size={48} className="text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">
-              Aucune tâche prédéfinie disponible pour cette catégorie. Créez vos propres tâches ci-dessous.
-            </p>
+            <p className="text-muted-foreground">Aucune suggestion IA disponible. Décrivez davantage le projet.</p>
           </div>
         )}
       </div>

@@ -6,6 +6,7 @@ import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
 import { fetchClients, createClient } from '../../../services/clientsService';
 import { generateProjectDescriptionWithGemini, isGoogleAIServiceAvailable } from '../../../services/googleAIService';
+import { generateTaskSuggestionsWithGemini } from '../../../services/googleAIService';
 import { enhanceTranscriptionWithAI } from '../../../services/googleAIService';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
@@ -416,11 +417,12 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
     return peppolRegex.test(peppolId);
   };
 
+  // Removed auto-enhance while typing: enhance only on Sparkles click
+
   const handleProjectChange = (field, value) => {
     const updatedProjectInfo = { ...projectInfo, [field]: value };
     onProjectInfoChange(updatedProjectInfo);
     
-    // Clear AI error when user modifies the description or categories
     if (field === 'description' || field === 'categories' || field === 'customCategory') {
       setAiError(null);
     }
@@ -1014,7 +1016,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
 
           <div className="relative">
             <Input
-              label="Date"
+              label="Valid until"
               type="date"
               value={projectInfo.deadline}
               onChange={(e) => handleProjectChange('deadline', e.target.value)}
