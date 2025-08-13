@@ -54,7 +54,13 @@ serve(async (req) => {
       .limit(100)
     if (dueErr) throw dueErr
 
+    // Process at most one follow-up per quote at a time
+    const processedQuotes = new Set<string>();
     for (const fu of dueFollowUps || []) {
+      if (processedQuotes.has(String(fu.quote_id))) {
+        // Skip duplicates for the same quote in this run
+        continue;
+      }
       // Get destination email
       const { data: quote, error: qErr } = await admin
         .from('quotes')
@@ -93,6 +99,7 @@ serve(async (req) => {
         // Mark outbox and follow-up as sent
         await admin.from('email_outbox').update({ status: 'sent', provider_message_id: resp.id, sent_at: new Date().toISOString() }).eq('id', outbox.id)
         await admin.from('quote_follow_ups').update({ status: 'sent', attempts: (1) }).eq('id', fu.id)
+        processedQuotes.add(String(fu.quote_id))
         await admin.from('quote_events').insert({ quote_id: fu.quote_id, user_id: fu.user_id, type: 'followup_sent', meta: { stage: fu.stage } })
       } catch (err: any) {
         await admin.from('email_outbox').insert({ follow_up_id: fu.id, user_id: fu.user_id, to_email: client.email, subject, html, text, status: 'failed', error: err?.message || 'send failed' })

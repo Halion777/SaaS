@@ -210,21 +210,59 @@ const QuotesManagement = () => {
     };
     
     loadFollowUps();
-  }, [user, currentProfile]); // Removed quotes from dependencies
+  }, [user, currentProfile, quotes]);
+
+  // Keep relances column in sync whenever follow-ups change
+  useEffect(() => {
+    if (quotes.length === 0) return;
+    updateQuotesWithFollowUpStatus(followUps);
+  }, [followUps]);
 
   // Update quotes with follow-up status
   const updateQuotesWithFollowUpStatus = (followUpsData) => {
+    const selectFollowUp = (arr) => {
+      if (!arr || arr.length === 0) return null;
+      // pending/scheduled: choose earliest due
+      const candidates = arr
+        .filter(f => f.status === 'pending' || f.status === 'scheduled')
+        .map(f => ({
+          ...f,
+          dueAt: f.next_attempt_at || f.scheduled_at
+        }))
+        .filter(f => !!f.dueAt)
+        .sort((a, b) => new Date(a.dueAt) - new Date(b.dueAt));
+      if (candidates.length > 0) return candidates[0];
+      // failed preferred over stopped, then sent, else any
+      const failed = arr.find(f => f.status === 'failed');
+      if (failed) return failed;
+      const stopped = arr.find(f => f.status === 'stopped');
+      if (stopped) return stopped;
+      const sent = arr.find(f => f.status === 'sent');
+      if (sent) return sent;
+      return arr[0];
+    };
+
     setQuotes(prevQuotes => 
       prevQuotes.map(quote => {
         const quoteFollowUps = followUpsData[quote.id] || [];
-        const followUpStatus = getFollowUpStatus(quote.id);
+        const picked = selectFollowUp(quoteFollowUps);
+        const followUpStatus = picked?.status || 'none';
+        const meta = picked ? {
+          stage: picked.stage,
+          dueAt: picked.next_attempt_at || picked.scheduled_at || null,
+          attempts: picked.attempts,
+          maxAttempts: picked.max_attempts,
+          lastError: picked.last_error || null,
+          channel: picked.channel || 'email'
+        } : null;
         
         return {
           ...quote,
           followUpStatus,
           followUpStatusLabel: getFollowUpStatusLabel(followUpStatus),
           followUpStatusColor: getFollowUpStatusColor(followUpStatus),
-          followUpCount: quoteFollowUps.length
+          followUpCount: quoteFollowUps.length,
+          followUpMeta: meta
         };
       })
     );
@@ -232,14 +270,24 @@ const QuotesManagement = () => {
     setFilteredQuotes(prevFilteredQuotes => 
       prevFilteredQuotes.map(quote => {
         const quoteFollowUps = followUpsData[quote.id] || [];
-        const followUpStatus = getFollowUpStatus(quote.id);
+        const picked = selectFollowUp(quoteFollowUps);
+        const followUpStatus = picked?.status || 'none';
+        const meta = picked ? {
+          stage: picked.stage,
+          dueAt: picked.next_attempt_at || picked.scheduled_at || null,
+          attempts: picked.attempts,
+          maxAttempts: picked.max_attempts,
+          lastError: picked.last_error || null,
+          channel: picked.channel || 'email'
+        } : null;
         
         return {
           ...quote,
           followUpStatus,
           followUpStatusLabel: getFollowUpStatusLabel(followUpStatus),
           followUpStatusColor: getFollowUpStatusColor(followUpStatus),
-          followUpCount: quoteFollowUps.length
+          followUpCount: quoteFollowUps.length,
+          followUpMeta: meta
         };
       })
     );
@@ -400,7 +448,7 @@ const QuotesManagement = () => {
 
     try {
       // Create immediate follow-up
-      const followUpId = await createFollowUpForQuote(quote.id, 1);
+      await createFollowUpForQuote(quote.id, 1);
       
       // Log the event
       await logQuoteEvent({
@@ -410,7 +458,7 @@ const QuotesManagement = () => {
         meta: { stage: 1, manual: true }
       });
 
-      // Refresh follow-ups
+      // Refresh follow-ups (sync actual data)
       await refreshFollowUps();
 
       console.log('Follow-up created successfully:', followUpId);
@@ -507,7 +555,9 @@ const QuotesManagement = () => {
       none: 'Aucune',
       pending: 'En attente',
       scheduled: 'Programmée',
-      sent: 'Envoyée'
+      sent: 'Envoyée',
+      stopped: 'Arrêtée',
+      failed: 'Échouée'
     };
     return labels[status] || 'Aucune';
   };
@@ -517,7 +567,9 @@ const QuotesManagement = () => {
       none: 'bg-gray-100 text-gray-700',
       pending: 'bg-orange-100 text-orange-700',
       scheduled: 'bg-blue-100 text-blue-700',
-      sent: 'bg-green-100 text-green-700'
+      sent: 'bg-green-100 text-green-700',
+      stopped: 'bg-gray-200 text-gray-700',
+      failed: 'bg-red-100 text-red-700'
     };
     return colors[status] || 'bg-gray-100 text-gray-700';
   };
@@ -831,7 +883,7 @@ const QuotesManagement = () => {
 
           {/* Quotes Table */}
           <div className="relative">
-            <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+          <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
             {loading ? (
               <div className="p-8 text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>

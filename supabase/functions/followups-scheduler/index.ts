@@ -45,7 +45,7 @@ serve(async (req) => {
       }
     }
 
-    // Schedule stage-1 follow-ups for quotes that are sent but have no follow-ups yet
+    // Schedule stage-1 follow-ups for quotes that are sent but have no ACTIVE follow-ups yet
     const { data: quotes, error: qErr } = await admin
       .from('quotes')
       .select('id, user_id')
@@ -58,6 +58,7 @@ serve(async (req) => {
         .from('quote_follow_ups')
         .select('id', { count: 'exact', head: true })
         .eq('quote_id', q.id)
+        .in('status', ['pending', 'scheduled'])
       if (fuErr) throw fuErr
       if ((count || 0) === 0) {
         const { error: rpcErr } = await admin.rpc('create_follow_up_for_quote', { p_quote_id: q.id, p_stage: 1 })

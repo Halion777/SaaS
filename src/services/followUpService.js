@@ -46,6 +46,18 @@ export async function scheduleFollowUpsForQuote(quoteId) {
 }
 
 export async function createFollowUpForQuote(quoteId, stage) {
+  // Prevent duplicates: if there is already a pending/scheduled follow-up, return its id
+  const { data: existing, error: existingErr } = await supabase
+    .from('quote_follow_ups')
+    .select('id, status')
+    .eq('quote_id', quoteId)
+    .in('status', ['pending', 'scheduled'])
+    .limit(1)
+    .maybeSingle();
+  if (!existingErr && existing?.id) {
+    return existing.id;
+  }
+
   const { data, error } = await supabase.rpc('create_follow_up_for_quote', {
     p_quote_id: quoteId,
     p_stage: stage,

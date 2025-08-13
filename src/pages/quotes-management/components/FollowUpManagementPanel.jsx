@@ -23,6 +23,8 @@ const FollowUpManagementPanel = ({
 
   const quoteFollowUps = followUps[selectedQuote.id] || [];
   const hasFollowUps = quoteFollowUps.length > 0;
+  const hasActiveFollowUp = quoteFollowUps.some(fu => fu.status === 'pending' || fu.status === 'scheduled');
+  const hasAnySentFollowUp = quoteFollowUps.some(fu => fu.status === 'sent');
 
   const getFollowUpStatusColor = (status) => {
     const colors = {
@@ -81,7 +83,7 @@ const FollowUpManagementPanel = ({
           <Button
             variant="outline"
             onClick={() => onSendFollowUp(selectedQuote)}
-            disabled={selectedQuote.status !== 'sent' || loading}
+            disabled={selectedQuote.status !== 'sent' || loading || hasActiveFollowUp || hasAnySentFollowUp}
             iconName="Send"
             iconPosition="left"
             className="w-full"

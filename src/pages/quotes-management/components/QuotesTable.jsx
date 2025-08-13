@@ -195,9 +195,19 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                 </div>
               </td>
               <td className="p-3 md:p-4">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-center ${quote.followUpStatusColor || 'bg-gray-100 text-gray-700'}`}>
-                  {quote.followUpStatusLabel || 'Aucune'}
-                </span>
+                <div className="flex flex-col gap-1">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-center ${quote.followUpStatusColor || 'bg-gray-100 text-gray-700'}`}>
+                    {quote.followUpStatusLabel || 'Aucune'}
+                  </span>
+                  {quote.followUpMeta && (
+                    <span className="text-[10px] text-muted-foreground">
+                      {quote.followUpMeta.stage ? `Étape ${quote.followUpMeta.stage}` : ''}
+                      {quote.followUpMeta.dueAt ? `${quote.followUpMeta.stage ? ' • ' : ''}${new Date(quote.followUpMeta.dueAt).toLocaleString('fr-FR')}` : ''}
+                      {quote.followUpMeta.lastError && quote.followUpStatus === 'failed' ? ` • ${quote.followUpMeta.lastError.substring(0, 40)}` : ''}
+                      {quote.followUpMeta.maxAttempts && quote.followUpMeta.attempts >= quote.followUpMeta.maxAttempts ? ' • épuisé' : ''}
+                    </span>
+                  )}
+                </div>
               </td>
               <td className="p-3 md:p-4" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-end space-x-1">
@@ -240,16 +250,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                   >
                     <Icon name="MessageCircle" size={16} />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onQuoteAction('sendFollowUpNow', quote)}
-                    title="Envoyer relance maintenant"
-                    disabled={quote.status !== 'sent'}
-                    className="h-8 w-8 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                  >
-                    <Icon name="Send" size={16} />
-                  </Button>
+                  {/* Send reminder icon removed: manage via Follow-up panel */}
                   <Button
                     variant="ghost"
                     size="icon"
