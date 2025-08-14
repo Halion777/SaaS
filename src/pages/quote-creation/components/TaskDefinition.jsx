@@ -1015,13 +1015,11 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
           }
 
           // Append generated tasks; user can verify and set prices
-          try { console.log('[Task][AI] Mapped tasks to append:', newTasks); } catch (_) {}
           onTasksChange([...tasks, ...newTasks]);
           // Reset current task form for clarity
           setCurrentTask({ description: '', duration: '', durationUnit: 'hours', price: '', materials: [], hourlyRate: '', pricingType: 'flat' });
         } else {
           // Fallback: use the transcription directly
-          try { console.log('[Task][AI] Fallback using raw transcription'); } catch (_) {}
           setCurrentTask(prev => ({ ...prev, description: transcription }));
         }
       } catch (error) {
@@ -1324,12 +1322,10 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
           hourlyRate: hourlyRate ? String(hourlyRate) : prev.hourlyRate,
           pricingType: pricingType
         }));
-        try { console.log('[Task][AI] Mapped single task:', { pricingType, hourlyRate, price: computedPrice, durationHours: nextDuration, materials: mappedMaterials }); } catch (_) {}
         
         // Show warning if response was partial
         if (aiResponse.warning) {
-          // You can add a toast notification here if you have one
-          console.warn('AI Response Warning:', aiResponse.warning);
+          // Optional: toast warning if available
         }
       }
     } catch (error) {

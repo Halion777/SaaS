@@ -458,8 +458,6 @@ Contraintes:
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const content = response.text().trim();
-    try { console.log('[AI][Task] Raw content:', content); } catch (_) {}
-    // Debug logs removed
     
     if (!content) {
       return { 
@@ -667,15 +665,12 @@ CONTEXTE PROJET (si utile): "${projectContext || 'N/A'}"
       if (typeof taskData?.description === 'string') {
         taskData.description = trimTextToLimits(taskData.description, maxSentences, maxWords);
       }
-      try { console.log('[AI][Task] Parsed data:', taskData); } catch (_) {}
-     
       return { 
         success: true, 
         data: taskData 
       };
     } catch (parseError) {
       console.error('Error parsing Google AI response:', parseError);
-      console.error('Raw content:', content);
       
       // Try to extract partial data if possible
       try {
@@ -715,7 +710,6 @@ CONTEXTE PROJET (si utile): "${projectContext || 'N/A'}"
             }
           }
           
-          try { console.log('[AI][Task] Partial data:', partialData); } catch (_) {}
           return {
             success: true,
             data: partialData,
@@ -723,7 +717,7 @@ CONTEXTE PROJET (si utile): "${projectContext || 'N/A'}"
           };
         }
       } catch (fallbackError) {
-        console.error('Fallback parsing also failed:', fallbackError);
+        console.error('Fallback parsing failed:', fallbackError);
       }
       
       return { 

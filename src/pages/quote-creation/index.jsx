@@ -136,6 +136,8 @@ const QuoteCreation = () => {
         setLastSaved(d.lastSaved || new Date().toISOString());
         // Persist as current draft for continuity
         try { localStorage.setItem(getDraftKey(), JSON.stringify(d)); } catch {}
+        // Bind this editing session to the backend draft row id so autosave updates the same row
+        try { localStorage.setItem(getDraftRowIdKey(), data.id); } catch {}
       } catch (err) {
         console.error('Exception resuming draft:', err);
       }
@@ -148,14 +150,20 @@ const QuoteCreation = () => {
       setIsEditing(true);
       setEditingQuoteId(editId);
         loadExistingQuote(editId, false);
+        // Ensure a fresh backend draft row will be created if user starts autosaving while editing
+        try { localStorage.removeItem(getDraftRowIdKey()); } catch {}
       }
     } else if (duplicateId) {
       setIsEditing(false);
       setEditingQuoteId(duplicateId);
       loadExistingQuote(duplicateId, true);
+      // New session: clear any previous draft row binding to avoid overriding previous draft
+      try { localStorage.removeItem(getDraftRowIdKey()); } catch {}
     } else {
       setIsEditing(false);
       setEditingQuoteId(null);
+      // Brand-new quote session: clear any previous draft row binding to force insert of a new draft row
+      try { localStorage.removeItem(getDraftRowIdKey()); } catch {}
     }
   }, [searchParams]);
 
@@ -450,12 +458,12 @@ const QuoteCreation = () => {
   // Do not auto-load draft into the form on page open; only clean expired local draft
   useEffect(() => {
     if (user?.id) {
-      try {
-        const local = JSON.parse(localStorage.getItem(getDraftKey()) || 'null');
-        if (local?.lastSaved && isDraftExpired(local.lastSaved)) {
-          localStorage.removeItem(getDraftKey());
-        }
-      } catch {}
+        try {
+          const local = JSON.parse(localStorage.getItem(getDraftKey()) || 'null');
+          if (local?.lastSaved && isDraftExpired(local.lastSaved)) {
+            localStorage.removeItem(getDraftKey());
+          }
+        } catch {}
       
       // Also load company info from localStorage
       try {
@@ -1511,10 +1519,14 @@ const QuoteCreation = () => {
     if (user?.id) {
       // Clear draft data
       localStorage.removeItem(getDraftKey());
-      localStorage.removeItem(getDraftRowIdKey());
+      // Delete only the current session's backend draft row, not all drafts
       try {
-        deleteQuoteDraft(user.id, currentProfile?.id || null);
+        const rowId = localStorage.getItem(getDraftRowIdKey());
+        if (rowId) {
+          deleteQuoteDraftById(rowId);
+        }
       } catch (_) {}
+      localStorage.removeItem(getDraftRowIdKey());
       
       // Clear company info
       localStorage.removeItem(`company-info-${user.id}`);
