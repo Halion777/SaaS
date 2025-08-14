@@ -326,6 +326,59 @@ function safeParseJsonArray(possiblyFenced) {
   }
 }
 
+// Best-effort JSON object parser with similar robustness to safeParseJsonArray
+function safeParseJsonObject(possiblyFenced) {
+  if (!possiblyFenced || typeof possiblyFenced !== 'string') return null;
+  let s = possiblyFenced.trim();
+  // Strip markdown fences
+  if (s.startsWith('```')) {
+    s = s.replace(/^```json\s*/i, '').replace(/^```\s*/i, '');
+    s = s.replace(/```\s*$/i, '');
+  }
+  // If multiple blocks present, try to carve first balanced { ... }
+  const startObj = s.indexOf('{');
+  const lastObj = s.lastIndexOf('}');
+  if (startObj !== -1 && lastObj !== -1 && lastObj > startObj) {
+    s = s.slice(startObj, lastObj + 1);
+  }
+  // Normalize smart quotes and collapse newlines inside
+  s = s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+  s = s.replace(/[\r\n]+/g, ' ');
+  // Remove trailing commas before ] or }
+  s = s.replace(/,\s*([\]}])/g, '$1');
+  // Quote unquoted property names
+  s = s.replace(/([\{,]\s*)([A-Za-z_][A-Za-z0-9_]*)\s*:/g, '$1"$2":');
+  // Try parse straight away
+  try {
+    const parsed = JSON.parse(s);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+  } catch (_) {
+    // Convert single-quoted strings to double-quoted
+    const singleToDouble = s.replace(/'([^'\\]*(?:\\.[^'\\]*)*)'/g, (m, g1) => '"' + g1.replace(/"/g, '\\"') + '"');
+    try {
+      const parsed2 = JSON.parse(singleToDouble);
+      return parsed2 && typeof parsed2 === 'object' && !Array.isArray(parsed2) ? parsed2 : null;
+    } catch (_) {
+      // If materials array is valid but object wrapper is broken, try to reconstruct
+      const desc = singleToDouble.match(/"description"\s*:\s*"([^"]*)"/);
+      const dur = singleToDouble.match(/"estimatedDuration"\s*:\s*"?(\d+(?:[.,]\d+)?)"?/);
+      const labor = singleToDouble.match(/"laborPrice"\s*:\s*"?(\d+(?:[.,]\d+)?)"?/);
+      const unit = singleToDouble.match(/"unitLaborBasis"\s*:\s*"([^"]*)"/);
+      const mats = safeParseJsonArray(singleToDouble);
+      if (desc || dur || labor || unit || (Array.isArray(mats) && mats.length >= 0)) {
+        return {
+          description: desc ? desc[1] : undefined,
+          estimatedDuration: dur ? parseFloat(dur[1].replace(',', '.')) : undefined,
+          suggestedMaterials: Array.isArray(mats) ? mats : undefined,
+          laborPrice: labor ? parseFloat(labor[1].replace(',', '.')) : undefined,
+          unitLaborBasis: unit ? unit[1] : undefined
+        };
+      }
+      return null;
+    }
+  }
+}
+
 // In-memory cache to avoid repeated API calls across step navigation
 const __taskSuggestionsCache = new Map();
 function buildTaskSuggestionsCacheKey(category, projectDescription, maxTasks) {
@@ -405,6 +458,7 @@ Contraintes:
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const content = response.text().trim();
+    try { console.log('[AI][Task] Raw content:', content); } catch (_) {}
     // Debug logs removed
     
     if (!content) {
@@ -564,48 +618,47 @@ IMPORTANT: JSON valide uniquement, SANS marqueurs markdown.`;
       // Trim whitespace
       cleanContent = cleanContent.trim();
       
-      // Check if the JSON is complete (has balanced braces and brackets)
-      const openBraces = (cleanContent.match(/\{/g) || []).length;
-      const closeBraces = (cleanContent.match(/\}/g) || []).length;
-      const openBrackets = (cleanContent.match(/\[/g) || []).length;
-      const closeBrackets = (cleanContent.match(/\]/g) || []).length;
-      
-      // If JSON is incomplete, try to complete it
-      if (openBraces > closeBraces || openBrackets > closeBrackets) {
-        // Find the last complete object/array and truncate there
-        let lastCompleteIndex = cleanContent.lastIndexOf('}');
-        if (lastCompleteIndex === -1) {
-          lastCompleteIndex = cleanContent.lastIndexOf(']');
-        }
-        
-        if (lastCompleteIndex > 0) {
-          // Find the matching opening brace/bracket
-          let braceCount = 0;
-          let bracketCount = 0;
-          let startIndex = -1;
-          
-          for (let i = lastCompleteIndex; i >= 0; i--) {
-            if (cleanContent[i] === '}') braceCount++;
-            else if (cleanContent[i] === '{') braceCount--;
-            else if (cleanContent[i] === ']') bracketCount++;
-            else if (cleanContent[i] === '[') bracketCount--;
-            
-            if (braceCount === 0 && bracketCount === 0) {
-              startIndex = i;
-              break;
+      // Try to carve out the outermost complete JSON block first (prefers top-level object/array)
+      const extractOutermost = (text) => {
+        const pickBlock = (openChar, closeChar) => {
+          const start = text.indexOf(openChar);
+          if (start === -1) return null;
+          let depth = 0;
+          for (let i = start; i < text.length; i++) {
+            const ch = text[i];
+            if (ch === openChar) depth++;
+            else if (ch === closeChar) {
+              depth--;
+              if (depth === 0) return text.substring(start, i + 1);
             }
           }
-          
-          if (startIndex >= 0) {
-            cleanContent = cleanContent.substring(startIndex, lastCompleteIndex + 1);
-          }
-        }
-      }
+          return null;
+        };
+        // Prefer object; if none, try array
+        return pickBlock('{', '}') || pickBlock('[', ']');
+      };
+      const outer = extractOutermost(cleanContent);
+      if (outer) cleanContent = outer;
       
-      const taskData = JSON.parse(cleanContent);
+      // Prefer strict parse; if it fails downstream, fall back to a robust parser
+      let taskData;
+      try {
+        taskData = JSON.parse(cleanContent);
+      } catch (_) {
+        taskData = safeParseJsonObject(cleanContent);
+      }
+      // Sometimes the model returns an array with a single object
+      if (Array.isArray(taskData)) {
+        taskData = taskData[0] || {};
+      }
+      if (!taskData || typeof taskData !== 'object') {
+        throw new Error('Invalid JSON object');
+      }
       if (typeof taskData?.description === 'string') {
         taskData.description = trimTextToLimits(taskData.description, maxSentences, maxWords);
       }
+      try { console.log('[AI][Task] Parsed data:', taskData); } catch (_) {}
+     
       return { 
         success: true, 
         data: taskData 
@@ -620,12 +673,16 @@ IMPORTANT: JSON valide uniquement, SANS marqueurs markdown.`;
         const descriptionMatch = content.match(/"description":\s*"([^"]+)"/);
         const durationMatch = content.match(/"estimatedDuration":\s*(\d+)/);
         const materialsMatch = content.match(/"suggestedMaterials":\s*\[([^\]]*)\]/);
+        const laborPriceMatch = content.match(/"laborPrice":\s*"?(\d+(?:[.,]\d+)?)"?/);
+        const unitBasisMatch = content.match(/"unitLaborBasis":\s*"([^"]*)"/);
         
         if (descriptionMatch) {
           const partialData = {
             description: descriptionMatch[1],
             estimatedDuration: durationMatch ? parseInt(durationMatch[1]) : 60,
-            suggestedMaterials: []
+            suggestedMaterials: [],
+            laborPrice: laborPriceMatch ? parseFloat(laborPriceMatch[1].replace(',', '.')) : undefined,
+            unitLaborBasis: unitBasisMatch ? unitBasisMatch[1] : undefined
           };
           
           // Try to extract materials if available
@@ -634,18 +691,21 @@ IMPORTANT: JSON valide uniquement, SANS marqueurs markdown.`;
             if (materialMatches) {
               partialData.suggestedMaterials = materialMatches.map(mat => {
                 const nameMatch = mat.match(/"name":\s*"([^"]+)"/);
-                const quantityMatch = mat.match(/"quantity":\s*(\d+)/);
+                const quantityMatch = mat.match(/"quantity":\s*"?(\d+(?:[.,]\d+)?)"?/);
                 const unitMatch = mat.match(/"unit":\s*"([^"]+)"/);
+                const priceMatch = mat.match(/"price":\s*"?(\d+(?:[.,]\d+)?)"?/);
                 
                 return {
                   name: nameMatch ? nameMatch[1] : 'Matériau non spécifié',
-                  quantity: quantityMatch ? parseInt(quantityMatch[1]) : 1,
-                  unit: unitMatch ? unitMatch[1] : 'pièce'
+                  quantity: quantityMatch ? parseFloat(quantityMatch[1].replace(',', '.')) : 1,
+                  unit: unitMatch ? unitMatch[1] : 'pièce',
+                  price: priceMatch ? parseFloat(priceMatch[1].replace(',', '.')) : 0
                 };
               });
             }
           }
           
+          try { console.log('[AI][Task] Partial data:', partialData); } catch (_) {}
           return {
             success: true,
             data: partialData,

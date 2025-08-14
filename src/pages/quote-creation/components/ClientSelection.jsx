@@ -444,9 +444,10 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         return;
       }
       
-      // Generate AI description with Google Gemini
+      // Generate AI description with Google Gemini using all selected categories
+      const categories = Array.isArray(projectInfo.categories) ? projectInfo.categories : (selectedCategory ? [selectedCategory] : []);
       const result = await generateProjectDescriptionWithGemini(
-        selectedCategory,
+        categories,
         projectInfo.description,
         projectInfo.customCategory
       );
@@ -967,17 +968,41 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       </div>
       
       {selectedClient && (
-        <div className="bg-success/10 border border-success/20 rounded-lg p-3 sm:p-4">
-          <div className="flex items-center">
-            <Icon name="CheckCircle" size={18} className="sm:w-5 sm:h-5 text-success mr-2 sm:mr-3" />
+        <div className="border border-border rounded-lg p-3 sm:p-4 bg-card">
+          <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm sm:text-base font-medium text-foreground">{selectedClient.label}</p>
-              <p className="text-xs sm:text-sm text-muted-foreground">{selectedClient.description}</p>
-              {selectedClient.type && (
-                <p className="text-xs text-muted-foreground">
-                  Type: {selectedClient.type === 'particulier' ? 'Particulier' : 'Professionnel'}
-                </p>
-              )}
+              <div className="flex items-center gap-2">
+                <p className="text-sm sm:text-base font-semibold text-foreground">{selectedClient.label || selectedClient.name}</p>
+                {selectedClient.type && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                    {selectedClient.type === 'particulier' ? 'Particulier' : 'Professionnel'}
+                  </span>
+                )}
+              </div>
+              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs sm:text-sm text-muted-foreground">
+                {selectedClient.email && (
+                  <span className="inline-flex items-center gap-1">
+                    <Icon name="AtSign" size={12} className="text-primary" />{selectedClient.email}
+                  </span>
+                )}
+                {selectedClient.phone && (
+                  <span className="inline-flex items-center gap-1">
+                    <Icon name="Phone" size={12} className="text-rose-500" />{selectedClient.phone}
+                  </span>
+                )}
+                {(selectedClient.address || selectedClient.city || selectedClient.postalCode || selectedClient.postal_code) && (
+                  <span className="inline-flex items-center gap-1">
+                    <Icon name="MapPin" size={12} className="text-amber-600" />
+                    {selectedClient.address || ''}{selectedClient.address && (selectedClient.city || selectedClient.postalCode || selectedClient.postal_code) ? ', ' : ''}
+                    {selectedClient.city || ''} {selectedClient.postalCode || selectedClient.postal_code || ''}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-50 text-green-700 border border-green-200 inline-flex items-center gap-1">
+                <Icon name="CheckCircle" size={12} className="text-green-600" /> Sélectionné
+              </span>
             </div>
           </div>
         </div>

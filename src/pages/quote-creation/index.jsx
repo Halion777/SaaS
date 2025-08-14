@@ -140,13 +140,13 @@ const QuoteCreation = () => {
         console.error('Exception resuming draft:', err);
       }
     };
-
+    
     if (editId) {
       if (editId.startsWith('draft-')) {
         resumeDraftById(editId);
       } else {
-        setIsEditing(true);
-        setEditingQuoteId(editId);
+      setIsEditing(true);
+      setEditingQuoteId(editId);
         loadExistingQuote(editId, false);
       }
     } else if (duplicateId) {
@@ -209,17 +209,17 @@ const QuoteCreation = () => {
         hourlyRate: task.hourly_rate,
         pricingType: task.pricing_type || 'flat'
       }));
-
+      
       // Group materials by their task
       const materialsByTaskId = {};
       (quote.quote_materials || []).forEach((material) => {
         const mapped = {
-          id: material.id,
-          name: material.name,
-          description: material.description,
-          quantity: material.quantity,
-          unit: material.unit,
-          price: material.unit_price || material.total_price
+        id: material.id,
+        name: material.name,
+        description: material.description,
+        quantity: material.quantity,
+        unit: material.unit,
+        price: material.unit_price || material.total_price
         };
         const tid = material.quote_task_id;
         if (!materialsByTaskId[tid]) materialsByTaskId[tid] = [];
@@ -456,7 +456,7 @@ const QuoteCreation = () => {
           localStorage.removeItem(getDraftKey());
         }
       } catch {}
-
+      
       // Also load company info from localStorage
       try {
         const companyInfoKey = `company-info-${user.id}`;
@@ -559,7 +559,7 @@ const QuoteCreation = () => {
     if (currentStep < 4) {
       // Auto-save before moving to next step
       const savedTime = new Date().toISOString();
-        const quoteData = {
+      const quoteData = {
           selectedClient: normalizeSelectedClient(selectedClient),
         projectInfo,
         tasks,
@@ -584,7 +584,7 @@ const QuoteCreation = () => {
     if (currentStep > 1) {
       // Auto-save before moving to previous step
       const savedTime = new Date().toISOString();
-        const quoteData = {
+      const quoteData = {
           selectedClient: normalizeSelectedClient(selectedClient),
         projectInfo,
         tasks,
@@ -1689,55 +1689,67 @@ const QuoteCreation = () => {
               {/* Step box */}
               <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-center">
                 <span className="text-3xl sm:text-4xl font-extrabold text-primary">Étape {currentStep}/4</span>
-              </div>
+            </div>
               {/* Recommendation box */}
               <div className="bg-card border border-border rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center">
+                <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center">
                   <Icon name="Sparkles" size={14} className="mr-2 text-primary" />
                   Recommandations
                 </h3>
                 {currentStep === 1 && (
                   <>
-                    <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-2">
-                      <li>Sélectionnez au moins une catégorie (obligatoire) pour activer les suggestions de tâches.</li>
-                      <li>Vous pouvez choisir plusieurs catégories si nécessaire.</li>
-                      <li>Cliquez sur l’icône micro pour dicter; l’IA nettoie et reformule proprement.</li>
-                      <li>Utilisez le bouton « Améliorer » pour une description courte, claire et professionnelle.</li>
-                      <li>La langue suit vos préférences de compte.</li>
-                    </ul>
-                    <div className="text-xs sm:text-sm text-muted-foreground pt-2">Astuce: plus votre description est précise, meilleures seront les suggestions de tâches.</div>
+                    <div className="space-y-2">
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Sparkles" size={14} className="mt-0.5 mr-2 text-primary" />Sélectionnez au moins une catégorie (obligatoire) pour activer les suggestions de tâches.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Sparkles" size={14} className="mt-0.5 mr-2 text-primary" />Vous pouvez choisir plusieurs catégories si nécessaire.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Mic" size={14} className="mt-0.5 mr-2 text-primary" />Cliquez sur l’icône micro pour dicter; l’IA nettoie et reformule proprement.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Wand2" size={14} className="mt-0.5 mr-2 text-primary" />Utilisez « Améliorer » pour une description courte, claire et professionnelle.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Globe" size={14} className="mt-0.5 mr-2 text-primary" />La langue suit vos préférences de compte.</div>
+          </div>
+                    <div className="mt-3 p-2 rounded-md bg-blue-50 border border-blue-100 text-[12px] text-blue-700 flex items-start">
+                      <Icon name="Info" size={14} className="mr-2 mt-0.5" />
+                      Astuce: plus votre description est précise, meilleures seront les suggestions de tâches.
+                    </div>
                   </>
                 )}
                 {currentStep === 2 && (
                   <>
-                    <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-2">
-                      <li>Dictez/écrivez; l’IA génère description, durée, prix et matériaux proposés.</li>
-                      <li>Cliquez sur une suggestion pour préremplir; modifiez librement avant d’ajouter.</li>
-                      <li>Vérifiez les prix et les quantités de matériaux; ajustez selon votre tarif.</li>
-                      <li>L’unité de durée par défaut est l’heure; renseignez la durée pour un prix cohérent.</li>
-                    </ul>
-                    <div className="text-xs sm:text-sm text-muted-foreground pt-2">Astuce: ajoutez les tâches une par une pour garder un devis clair.</div>
+                    <div className="space-y-2">
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Mic" size={14} className="mt-0.5 mr-2 text-primary" />Dictez/écrivez; l’IA génère description, durée, prix et matériaux proposés.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Hand" size={14} className="mt-0.5 mr-2 text-primary" />Cliquez sur une suggestion pour préremplir; modifiez librement avant d’ajouter.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Coins" size={14} className="mt-0.5 mr-2 text-primary" />Vérifiez les prix et quantités de matériaux; ajustez selon votre tarif.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Clock" size={14} className="mt-0.5 mr-2 text-primary" />Durée par défaut en heures; renseignez la durée pour un prix cohérent.</div>
+                    </div>
+                    <div className="mt-3 p-2 rounded-md bg-blue-50 border border-blue-100 text-[12px] text-blue-700 flex items-start">
+                      <Icon name="Info" size={14} className="mr-2 mt-0.5" />
+                      Astuce: ajoutez les tâches une par une pour garder un devis clair.
+                    </div>
                   </>
                 )}
                 {currentStep === 3 && (
                   <>
-                    <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-2">
-                      <li>Ajoutez des fichiers utiles (photos avant/après, croquis, documents PDF).</li>
-                      <li>Glissez‑déposez ou cliquez pour sélectionner; privilégiez PDF/JPG/PNG légers.</li>
-                      <li>Nommez vos fichiers clairement pour le client.</li>
-                    </ul>
-                    <div className="text-xs sm:text-sm text-muted-foreground pt-2">Astuce: des visuels clairs augmentent le taux d’acceptation.</div>
+                    <div className="space-y-2">
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Image" size={14} className="mt-0.5 mr-2 text-primary" />Ajoutez des fichiers utiles (photos avant/après, croquis, PDF).</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Upload" size={14} className="mt-0.5 mr-2 text-primary" />Glissez‑déposez ou cliquez pour sélectionner; privilégiez PDF/JPG/PNG légers.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Type" size={14} className="mt-0.5 mr-2 text-primary" />Nommez vos fichiers clairement pour le client.</div>
+                    </div>
+                    <div className="mt-3 p-2 rounded-md bg-blue-50 border border-blue-100 text-[12px] text-blue-700 flex items-start">
+                      <Icon name="Info" size={14} className="mr-2 mt-0.5" />
+                      Astuce: des visuels clairs augmentent le taux d’acceptation.
+                    </div>
                   </>
                 )}
                 {currentStep === 4 && (
                   <>
-                    <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-2">
-                      <li>Configurez la TVA et l’acompte dans « Configuration ».</li>
-                      <li>Personnalisez le modèle et les couleurs.</li>
-                      <li>Téléchargez le devis en PDF ou partagez un lien public.</li>
-                      <li>Vous pouvez masquer l’affichage du prix des matériaux dans les Préférences du compte.</li>
-                    </ul>
-                    <div className="text-xs sm:text-sm text-muted-foreground pt-2">Astuce: un devis simple et lisible se signe plus vite.</div>
+                    <div className="space-y-2">
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Percent" size={14} className="mt-0.5 mr-2 text-primary" />Configurez la TVA et l’acompte dans « Configuration ».</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Palette" size={14} className="mt-0.5 mr-2 text-primary" />Personnalisez le modèle et les couleurs.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Download" size={14} className="mt-0.5 mr-2 text-primary" />Téléchargez le devis en PDF.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="EyeOff" size={14} className="mt-0.5 mr-2 text-primary" />Masquez les prix des matériaux dans les Préférences du compte si besoin.</div>
+                    </div>
+                    <div className="mt-3 p-2 rounded-md bg-blue-50 border border-blue-100 text-[12px] text-blue-700 flex items-start">
+                      <Icon name="Info" size={14} className="mr-2 mt-0.5" />
+                      Astuce: un devis simple et lisible se signe plus vite.
+                    </div>
                   </>
                 )}
               </div>

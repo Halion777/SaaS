@@ -810,13 +810,13 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
 
       setIsLoadingAISuggestions(true);
       try {
-        let aggregated = [];
-        const isMulti = categories.length > 1;
-        const perCategoryMax = isMulti ? 3 : 6;
-        for (const cat of categories) {
-          const res = await generateTaskSuggestionsWithGemini(cat, projectDescription, perCategoryMax);
-          if (res.success && Array.isArray(res.data)) {
-            const mapped = res.data.map((t, idx) => ({
+        const n = categories.length;
+        const perCategoryMax = n === 1 ? 6 : n === 2 ? 3 : 2;
+        const results = await Promise.all(
+          categories.map(async (cat) => {
+            const res = await generateTaskSuggestionsWithGemini(cat, projectDescription, perCategoryMax);
+            const rows = (res.success && Array.isArray(res.data)) ? res.data.slice(0, perCategoryMax) : [];
+            return rows.map((t, idx) => ({
               id: `ai-${cat}-${Date.now()}-${idx}`,
               title: t.title,
               description: t.description,
@@ -829,12 +829,12 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                 quantity: m.quantity,
                 unit: m.unit,
                 price: parseFloat(m.price) || 0
-              }))
+              })),
+              category: cat
             }));
-            aggregated = aggregated.concat(mapped);
-          }
-        }
-        setAiSuggestions(aggregated);
+          })
+        );
+        setAiSuggestions(results.flat());
         setSuggestionsCacheKey(cacheKey);
       } catch (e) {
         console.error('AI suggestions error', e);
@@ -959,7 +959,9 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
           : (projectCategory ? [projectCategory] : []);
         const projectCtx = [...categories, projectCustomCategory || ''].filter(Boolean).join(', ');
         const aiResponse = await generateTaskDescriptionWithGemini(transcription, projectCtx);
+        
         if (aiResponse.success && aiResponse.data) {
+        
           // Build one or multiple tasks based on detected count
           const baseDescription = aiResponse.data.description;
           const durationMinutes = info.durationValue != null ? minutesFrom(info.durationValue, info.durationUnit) : (aiResponse.data.estimatedDuration || 0);
@@ -978,14 +980,27 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
             if (info.eachTaskMaterial) {
               taskMaterials.push({ id: Date.now() + Math.random(), ...info.eachTaskMaterial });
             }
-            // Determine labor price per task
+            // Determine labor price per task and hourly basis
             let taskPrice = '';
+            let hourlyRate = '';
+            let pricingType = 'flat';
+            const unitBasis = (aiResponse.data?.unitLaborBasis || '').toString().toLowerCase();
+            const mentionsHourly = /per\s*hour|par\s*heure|hourly|heure\b/i.test(transcription);
+            if ((unitBasis === 'hour' || mentionsHourly) && aiResponse.data?.laborPrice != null) {
+              hourlyRate = parseFloat(aiResponse.data.laborPrice) || '';
+              pricingType = 'hourly';
+            }
             if (laborPriceInfo.perTaskLaborPrice != null) {
               taskPrice = laborPriceInfo.perTaskLaborPrice;
             } else if (laborPriceInfo.totalLaborPrice != null && count > 0) {
               taskPrice = parseFloat((laborPriceInfo.totalLaborPrice / count).toFixed(2));
             } else if (aiResponse.data?.laborPrice != null) {
               taskPrice = parseFloat(aiResponse.data.laborPrice) || '';
+            }
+            // If hourly, compute price from duration if possible
+            const durationHours = minutesToHoursCeil(durationMinutes) || 0;
+            if (pricingType === 'hourly' && hourlyRate && durationHours) {
+              taskPrice = parseFloat((hourlyRate * durationHours).toFixed(2));
             }
             newTasks.push({
               id: Date.now() + i,
@@ -994,17 +1009,19 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
               durationUnit: 'hours',
               price: taskPrice,
               materials: taskMaterials,
-              hourlyRate: '',
-              pricingType: 'flat'
+              hourlyRate: hourlyRate,
+              pricingType: pricingType
             });
           }
 
           // Append generated tasks; user can verify and set prices
+          try { console.log('[Task][AI] Mapped tasks to append:', newTasks); } catch (_) {}
           onTasksChange([...tasks, ...newTasks]);
           // Reset current task form for clarity
           setCurrentTask({ description: '', duration: '', durationUnit: 'hours', price: '', materials: [], hourlyRate: '', pricingType: 'flat' });
         } else {
           // Fallback: use the transcription directly
+          try { console.log('[Task][AI] Fallback using raw transcription'); } catch (_) {}
           setCurrentTask(prev => ({ ...prev, description: transcription }));
         }
       } catch (error) {
@@ -1261,31 +1278,51 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
       const projectCtx = [...categories, projectCustomCategory || ''].filter(Boolean).join(', ');
       const aiResponse = await generateTaskDescriptionWithGemini(currentTask.description, projectCtx);
       if (aiResponse.success && aiResponse.data) {
-        // Determine task labor price from prompt or AI response
-        let taskPrice = currentTask.price;
+        // Determine task labor price and pricing mode (flat vs hourly)
+        let pricingType = 'flat';
+        let hourlyRate = '';
+        let computedPrice = currentTask.price;
+        const unitBasis = (aiResponse.data?.unitLaborBasis || '').toString().toLowerCase();
+        const hints = `${unitBasis} ${(aiResponse.data?.description || '')}`;
+        const mentionsHourly = /per\s*hour|par\s*heure|hourly|\bheures?\b|\bheure\b/i.test(hints);
+
+        const aiLaborPrice = aiResponse.data?.laborPrice != null ? parseFloat(aiResponse.data.laborPrice) : undefined;
+
         if (laborPriceInfo.perTaskLaborPrice != null) {
-          taskPrice = laborPriceInfo.perTaskLaborPrice;
-        } else if (aiResponse.data?.laborPrice != null) {
-          taskPrice = parseFloat(aiResponse.data.laborPrice) || currentTask.price;
+          computedPrice = laborPriceInfo.perTaskLaborPrice;
+        } else if (mentionsHourly && aiLaborPrice != null && !isNaN(aiLaborPrice)) {
+          pricingType = 'hourly';
+          hourlyRate = aiLaborPrice;
+          const hours = minutesToHoursCeil(aiResponse.data.estimatedDuration) || 0;
+          if (hours && !isNaN(hours)) {
+            computedPrice = parseFloat((hours * aiLaborPrice).toFixed(2));
+          }
+        } else if (aiLaborPrice != null && !isNaN(aiLaborPrice)) {
+          computedPrice = aiLaborPrice;
         }
 
+        const mappedMaterials = (aiResponse.data.suggestedMaterials || []).map(mat => ({
+          id: Date.now() + Math.random(),
+          name: mat.name,
+          quantity: parseFloat(mat.quantity) || 0,
+          unit: mat.unit || 'pièce',
+          price: parseFloat(mat.price) || 0
+        }));
+
+        const nextDuration = minutesToHoursCeil(aiResponse.data.estimatedDuration) || currentTask.duration;
+
+        // Apply mapping
         setCurrentTask(prev => ({
           ...prev,
           description: aiResponse.data.description,
-          duration: minutesToHoursCeil(aiResponse.data.estimatedDuration) || prev.duration,
+          duration: nextDuration,
           durationUnit: 'hours',
-          price: taskPrice,
-          materials: [
-            ...prev.materials,
-            ...aiResponse.data.suggestedMaterials?.map(mat => ({
-              id: Date.now() + Math.random(),
-              name: mat.name,
-              quantity: mat.quantity,
-              unit: mat.unit,
-              price: parseFloat(mat.price) || 0
-            })) || []
-          ]
+          price: computedPrice,
+          materials: [...prev.materials, ...mappedMaterials],
+          hourlyRate: hourlyRate,
+          pricingType: pricingType
         }));
+        try { console.log('[Task][AI] Mapped single task:', { pricingType, hourlyRate, price: computedPrice, durationHours: nextDuration, materials: mappedMaterials }); } catch (_) {}
         
         // Show warning if response was partial
         if (aiResponse.warning) {
@@ -1387,7 +1424,14 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                         <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center mr-2 sm:mr-3">
                           <Icon name="ListChecks" size={14} className="sm:w-4 sm:h-4 text-primary" />
                         </div>
+                        <div>
                         <h3 className="text-sm sm:text-base font-medium">{task.title}</h3>
+                          {task.category && (
+                            <span className="inline-block mt-0.5 text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                              {task.category}
+                            </span>
+                          )}
+                      </div>
                       </div>
                       <div className="text-base sm:text-lg font-semibold">{task.price || 0}€</div>
                     </div>
