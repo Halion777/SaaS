@@ -132,6 +132,7 @@ const QuoteCreation = () => {
         setTasks(d.tasks || []);
         setFiles(d.files || []);
         setCompanyInfo(d.companyInfo || null);
+        setFinancialConfig(d.financialConfig || null);
         setCurrentStep(d.currentStep || 1);
         setLastSaved(d.lastSaved || new Date().toISOString());
         // Persist as current draft for continuity
@@ -408,6 +409,7 @@ const QuoteCreation = () => {
           files,
           currentStep,
           companyInfo,
+          financialConfig,
           lastSaved: savedTime
         };
         
@@ -453,7 +455,7 @@ const QuoteCreation = () => {
       clearInterval(interval);
       clearTimeout(timeoutId);
     };
-  }, [selectedClient, projectInfo, tasks, files, currentStep, companyInfo, user?.id, currentProfile?.id]);
+  }, [selectedClient, projectInfo, tasks, files, currentStep, companyInfo, financialConfig, user?.id, currentProfile?.id]);
 
   // Do not auto-load draft into the form on page open; only clean expired local draft
   useEffect(() => {
@@ -574,6 +576,7 @@ const QuoteCreation = () => {
         files,
         currentStep: currentStep + 1,
         companyInfo,
+        financialConfig,
         lastSaved: savedTime
       };
       localStorage.setItem(getDraftKey(), JSON.stringify(quoteData));
@@ -599,6 +602,7 @@ const QuoteCreation = () => {
         files,
         currentStep: currentStep - 1,
         companyInfo,
+        financialConfig,
         lastSaved: savedTime
       };
       localStorage.setItem(getDraftKey(), JSON.stringify(quoteData));
@@ -1429,6 +1433,7 @@ const QuoteCreation = () => {
         files,
         currentStep: newStep,
         companyInfo,
+        financialConfig,
         lastSaved: savedTime
       };
       localStorage.setItem(getDraftKey(), JSON.stringify(quoteData));
@@ -1495,6 +1500,7 @@ const QuoteCreation = () => {
         files,
         currentStep: 4,
         companyInfo,
+        financialConfig,
         lastSaved: savedTime
       };
       localStorage.setItem(getDraftKey(), JSON.stringify(quoteData));
@@ -1611,6 +1617,7 @@ const QuoteCreation = () => {
             onSave={handleSave}
             onSend={handleSend}
             onCompanyInfoChange={handleCompanyInfoChange}
+            onFinancialConfigChange={setFinancialConfig}
             isSaving={isSaving}
           />
         );

@@ -24,6 +24,7 @@ const QuotePreview = ({
   onSave, 
   onSend,
   onCompanyInfoChange,
+  onFinancialConfigChange,
   isSaving = false
 }) => {
   const { user } = useAuth();
@@ -232,6 +233,13 @@ const QuotePreview = ({
       } catch (_) {}
     }
   }, [user?.id]);
+
+  // Bubble up financial config changes to parent (for autosave)
+  useEffect(() => {
+    if (typeof onFinancialConfigChange === 'function') {
+      onFinancialConfigChange(financialConfig);
+    }
+  }, [financialConfig, onFinancialConfigChange]);
 
   const handleCompanyInfoSave = (info) => {
     setCompanyInfo(info);
