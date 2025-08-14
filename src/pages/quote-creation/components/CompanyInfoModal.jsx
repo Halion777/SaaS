@@ -44,7 +44,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
       if (localLogoInfo && companyInfo.logo && typeof companyInfo.logo === 'string' && companyInfo.logo.startsWith('http')) {
         // Database has real logo, localStorage has placeholder - remove localStorage
         localStorage.removeItem(`company-logo-${user.id}`);
-        console.log('Removed localStorage logo placeholder - database has real logo');
+        
       }
       
       // Check for signature conflicts
@@ -52,7 +52,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
       if (localSignatureInfo && companyInfo.signature && typeof companyInfo.signature === 'string' && companyInfo.signature.startsWith('http')) {
         // Database has real signature, localStorage has placeholder - remove localStorage
         localStorage.removeItem(`company-signature-${user.id}`);
-        console.log('Removed localStorage signature placeholder - database has real signature');
+        
       }
       
       // Check for company info conflicts
@@ -75,7 +75,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
               website: companyInfo.website
             };
             localStorage.setItem(`company-info-${user.id}`, JSON.stringify(companyInfoToSave));
-            console.log('Updated localStorage company info with database data');
+            
           }
         } catch (error) {
           console.error('Error parsing localStorage company info:', error);
@@ -134,15 +134,13 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
     const updatedInfo = { ...companyInfo, [field]: value };
     setCompanyInfo(updatedInfo);
     
-    console.log('Text field change:', field, value);
-    console.log('Updated company info:', updatedInfo);
+   
     
     // Save to localStorage for draft
     if (user?.id) {
       const storageKey = `company-info-${user.id}`;
       localStorage.setItem(storageKey, JSON.stringify(updatedInfo));
-      console.log('Company info saved to localStorage with key:', storageKey);
-      console.log('localStorage content:', localStorage.getItem(storageKey));
+      
     }
     
     // Notify parent component immediately
@@ -198,7 +196,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
           data: e.target.result // This is the base64 string
         };
         
-        console.log('Logo data to store:', logoData);
+        
         
         // Update state
         setCompanyInfo(prev => ({ ...prev, logo: logoData }));
@@ -207,7 +205,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
         if (user?.id) {
           const storageKey = `company-logo-${user.id}`;
           localStorage.setItem(storageKey, JSON.stringify(logoData));
-          console.log('Logo saved to localStorage with key:', storageKey);
+          
         }
         
         // Notify parent component immediately
@@ -232,7 +230,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
           data: e.target.result // This is the base64 string
         };
         
-        console.log('Signature data to store:', signatureData);
+        
         
         // Update state
         setCompanyInfo(prev => ({ ...prev, signature: signatureData }));
@@ -241,7 +239,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
         if (user?.id) {
           const storageKey = `company-signature-${user.id}`;
           localStorage.setItem(storageKey, JSON.stringify(signatureData));
-          console.log('Signature saved to localStorage with key:', storageKey);
+          
         }
         
         // Notify parent component immediately
@@ -332,7 +330,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
       
       if (user?.id) {
         localStorage.setItem(`company-info-${user.id}`, JSON.stringify(companyInfoToSave));
-        console.log('Company info saved to localStorage for draft');
+        
       }
       
       // Logo and signature are already saved to localStorage when uploaded

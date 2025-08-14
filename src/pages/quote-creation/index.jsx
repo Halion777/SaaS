@@ -21,7 +21,6 @@ const getStorageSignedUrl = async (bucket, path) => {
   if (!path) return null;
   
   // Debug: Log what we're trying to get signed URL for
-  console.log(`Getting signed URL for bucket: ${bucket}, path: ${path}`);
   
   try {
     // Get signed URL for private bucket access
@@ -35,7 +34,6 @@ const getStorageSignedUrl = async (bucket, path) => {
     }
     
     // Debug: Log the result
-    console.log(`Signed URL result for ${bucket}/${path}:`, data?.signedUrl ? 'SUCCESS' : 'FAILED');
     
     return data.signedUrl;
   } catch (error) {
@@ -246,7 +244,6 @@ const QuoteCreation = () => {
       // Load company info from database
       if (quote.company_profile) {
         // Debug: Log the company profile data
-        console.log('Company profile from database:', quote.company_profile);
         
         const companyInfo = {
           name: quote.company_profile.company_name || '',
@@ -278,8 +275,6 @@ const QuoteCreation = () => {
         };
         
         // Debug: Log the logo and signature data
-        console.log('Logo data loaded:', companyInfo.logo);
-        console.log('Signature data loaded:', companyInfo.signature);
         
         // Save company info to localStorage for display
         if (user?.id) {

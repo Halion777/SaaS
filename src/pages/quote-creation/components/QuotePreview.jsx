@@ -236,17 +236,6 @@ const QuotePreview = ({
         const dbCompanyInfo = await loadCompanyInfo(user.id);
         
         if (dbCompanyInfo) {
-          // DEBUG: Log what we're getting when refreshing
-          console.log('=== REFRESHING COMPANY INFO FROM DATABASE ===');
-          console.log('Full dbCompanyInfo:', dbCompanyInfo);
-          console.log('Logo data:', dbCompanyInfo.logo);
-          console.log('Logo type:', typeof dbCompanyInfo.logo);
-          console.log('Logo keys:', dbCompanyInfo.logo ? Object.keys(dbCompanyInfo.logo) : 'No logo');
-          console.log('Signature data:', dbCompanyInfo.signature);
-          console.log('Signature type:', typeof dbCompanyInfo.signature);
-          console.log('Signature keys:', dbCompanyInfo.signature ? Object.keys(dbCompanyInfo.signature) : 'No signature');
-          console.log('==========================================');
-          
           setCompanyInfo(dbCompanyInfo);
           
           // Update cache for basic company info only

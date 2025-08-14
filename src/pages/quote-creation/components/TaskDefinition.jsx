@@ -890,7 +890,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
       if (transcript && transcript.trim()) {
         await processTranscription(transcript.trim());
       } else {
-        console.log('No transcript available');
+      
       }
       
     } catch (error) {
