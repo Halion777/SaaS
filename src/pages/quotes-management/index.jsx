@@ -9,7 +9,7 @@ import BulkActionsToolbar from './components/BulkActionsToolbar';
 // Analyse IA removed
 import { useAuth } from '../../context/AuthContext';
 import { useMultiUser } from '../../context/MultiUserContext';
-import { fetchQuotes, getQuoteStatistics, updateQuoteStatus, deleteQuote, fetchQuoteById, loadQuoteDraft, deleteQuoteDraftById } from '../../services/quotesService';
+import { fetchQuotes, getQuoteStatistics, updateQuoteStatus, deleteQuote, fetchQuoteById, loadQuoteDraft, deleteQuoteDraftById, listQuoteDrafts } from '../../services/quotesService';
 import { 
   listScheduledFollowUps, 
   createFollowUpForQuote, 
@@ -136,12 +136,12 @@ const QuotesManagement = () => {
           return;
         }
 
-        // Additionally merge backend draft so it always appears (no local list)
-          const additionalDrafts = [];
+        // Additionally merge ALL backend drafts so they appear as placeholders
+        const additionalDrafts = [];
         try {
-          const { data: draft } = await loadQuoteDraft(user.id, currentProfile?.id || null);
-          if (draft?.draft_data) {
-            const d = draft.draft_data;
+          const { data: drafts } = await listQuoteDrafts(user.id, currentProfile?.id || null);
+          (drafts || []).forEach(draft => {
+            const d = draft.draft_data || {};
             additionalDrafts.push({
               id: `draft-${draft.id}`,
               number: '(brouillon non envoyé)',
@@ -163,7 +163,7 @@ const QuotesManagement = () => {
               validUntil: d.projectInfo?.deadline || null,
               validUntilFormatted: d.projectInfo?.deadline ? formatDate(d.projectInfo.deadline) : '',
             });
-          }
+          });
         } catch (_) {}
         // Local drafts list removed for a simpler flow
         

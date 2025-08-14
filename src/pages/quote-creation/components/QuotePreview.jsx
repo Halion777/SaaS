@@ -358,11 +358,8 @@ const QuotePreview = ({
       const captureEl = document.querySelector('#quote-preview-capture');
       await generateQuotePDF(quoteData, quoteNumber, captureEl);
       
-      // Show success message
-      alert('PDF généré avec succès !');
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('Erreur lors de la génération du PDF. Veuillez réessayer.');
     } finally {
       setIsGeneratingPDF(false);
     }

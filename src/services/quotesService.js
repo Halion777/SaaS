@@ -393,7 +393,7 @@ export async function updateQuote(id, quoteData) {
           hourly_rate: task.hourly_rate,
           order_index: index
         }));
-
+        
         // Insert tasks and return IDs
         const { data: newTasks, error: tasksError } = await supabase
           .from('quote_tasks')
@@ -578,15 +578,26 @@ export async function getQuoteStatistics() {
  */
 export async function saveQuoteDraft(draftData) {
   try {
+    // If a draft row id is provided, update that row; otherwise insert a new draft
+    if (draftData.id) {
+      const { data, error } = await supabase
+        .from('quote_drafts')
+        .update({
+          draft_data: draftData.draft_data,
+          last_saved: new Date().toISOString()
+        })
+        .eq('id', draftData.id)
+        .select()
+        .single();
+      return { data, error };
+    }
     const { data, error } = await supabase
       .from('quote_drafts')
-      .upsert({
+      .insert({
         user_id: draftData.user_id,
         profile_id: draftData.profile_id,
         draft_data: draftData.draft_data,
         last_saved: new Date().toISOString()
-      }, {
-        onConflict: 'user_id,profile_id'
       })
       .select()
       .single();
@@ -610,6 +621,7 @@ export async function loadQuoteDraft(userId, profileId) {
       .from('quote_drafts')
       .select('*')
       .eq('user_id', userId)
+      .order('last_saved', { ascending: false })
       .limit(1);
     if (profileId) {
       query = query.eq('profile_id', profileId);
@@ -683,6 +695,31 @@ export async function loadRecentQuoteDrafts(userId, limit = 3) {
     return { data, error };
   } catch (error) {
     console.error('Error loading recent quote drafts:', error);
+    return { error };
+  }
+}
+
+/**
+ * List all drafts for a user (optionally scoped to a profile)
+ * @param {string} userId
+ * @param {string|null} profileId
+ */
+export async function listQuoteDrafts(userId, profileId = null) {
+  try {
+    let query = supabase
+      .from('quote_drafts')
+      .select('*')
+      .eq('user_id', userId)
+      .order('last_saved', { ascending: false });
+    if (profileId) {
+      query = query.eq('profile_id', profileId);
+    } else {
+      query = query.is('profile_id', null);
+    }
+    const { data, error } = await query;
+    return { data, error };
+  } catch (error) {
+    console.error('Error listing quote drafts:', error);
     return { error };
   }
 }

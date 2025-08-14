@@ -84,8 +84,28 @@ const QuoteCreation = () => {
   const getDraftKey = () => {
     return `quote-draft-${user?.id}-${currentProfile?.id || 'default'}`;
   };
+  const getDraftRowIdKey = () => {
+    return `quote-draft-rowid-${user?.id}-${currentProfile?.id || 'default'}`;
+  };
 
   // Deprecated: drafts list/session id removed for a cleaner flow
+
+  // Normalize selected client to a minimal, non-duplicated structure for drafts
+  const normalizeSelectedClient = (sel) => {
+    if (!sel) return null;
+    const c = sel.client || sel;
+    const id = c.id || sel.id || sel.value || null;
+    return id ? {
+      id,
+      value: id, // keep compatibility for consumers reading .value
+      name: c.name || sel.label || '',
+      email: c.email || sel.email || '',
+      phone: c.phone || sel.phone || '',
+      address: c.address || sel.address || '',
+      city: c.city || sel.city || '',
+      postal_code: c.postal_code || sel.postalCode || ''
+    } : null;
+  };
 
   // Resume draft or edit existing quote based on URL params
   useEffect(() => {
@@ -102,7 +122,6 @@ const QuoteCreation = () => {
           .single();
         if (error || !data) {
           console.error('Error loading draft by id:', error);
-          alert('Erreur lors du chargement du brouillon.');
           return;
         }
         const d = data.draft_data || {};
@@ -119,7 +138,6 @@ const QuoteCreation = () => {
         try { localStorage.setItem(getDraftKey(), JSON.stringify(d)); } catch {}
       } catch (err) {
         console.error('Exception resuming draft:', err);
-        alert('Erreur lors du chargement du brouillon.');
       }
     };
 
@@ -153,18 +171,15 @@ const QuoteCreation = () => {
       
       if (error) {
         console.error('Error loading quote:', error);
-        alert('Erreur lors du chargement du devis. Veuillez réessayer.');
         return;
       }
       
       if (!quote) {
-        alert('Devis non trouvé.');
         return;
       }
       
       // Check if user has permission to edit this quote
       if (quote.user_id !== user.id) {
-        alert('Vous n\'avez pas la permission de modifier ce devis.');
         navigate('/quotes-management');
         return;
       }
@@ -363,7 +378,6 @@ const QuoteCreation = () => {
       
     } catch (error) {
       console.error('Error loading quote:', error);
-      alert('Erreur lors du chargement du devis. Veuillez réessayer.');
     } finally {
       setIsLoadingQuote(false);
     }
@@ -380,7 +394,7 @@ const QuoteCreation = () => {
         setIsAutoSaving(true);
         const savedTime = new Date().toISOString();
         const quoteData = {
-          selectedClient,
+          selectedClient: normalizeSelectedClient(selectedClient),
           projectInfo,
           tasks,
           files,
@@ -400,11 +414,16 @@ const QuoteCreation = () => {
         // Also save to backend draft table for cross-device and quotes-management visibility
         try {
           if (user?.id) {
-            await saveQuoteDraft({
+            const existingRowId = localStorage.getItem(getDraftRowIdKey());
+            const { data: saved, error: draftErr } = await saveQuoteDraft({
+              id: existingRowId || undefined,
               user_id: user.id,
               profile_id: currentProfile?.id || null,
               draft_data: quoteData
             });
+            if (!draftErr && saved?.id && !existingRowId) {
+              localStorage.setItem(getDraftRowIdKey(), saved.id);
+            }
           }
         } catch (e) {
           console.warn('Draft autosave (backend) failed:', e?.message || e);
@@ -416,11 +435,11 @@ const QuoteCreation = () => {
       }
     };
 
-    // Auto-save every 15 seconds (more frequent)
-    const interval = setInterval(autoSave, 15000);
+    // Auto-save every 30 seconds
+    const interval = setInterval(autoSave, 30000);
     
     // Also auto-save immediately when data changes (debounced)
-    const timeoutId = setTimeout(autoSave, 2000);
+    const timeoutId = setTimeout(autoSave, 5000);
     
     return () => {
       clearInterval(interval);
@@ -540,8 +559,8 @@ const QuoteCreation = () => {
     if (currentStep < 4) {
       // Auto-save before moving to next step
       const savedTime = new Date().toISOString();
-      const quoteData = {
-        selectedClient,
+        const quoteData = {
+          selectedClient: normalizeSelectedClient(selectedClient),
         projectInfo,
         tasks,
         files,
@@ -565,8 +584,8 @@ const QuoteCreation = () => {
     if (currentStep > 1) {
       // Auto-save before moving to previous step
       const savedTime = new Date().toISOString();
-      const quoteData = {
-        selectedClient,
+        const quoteData = {
+          selectedClient: normalizeSelectedClient(selectedClient),
         projectInfo,
         tasks,
         files,
@@ -658,15 +677,12 @@ const QuoteCreation = () => {
         
         if (updateError) {
           console.error('Error updating quote:', updateError);
-          alert(`Erreur lors de la mise à jour du devis: ${updateError.message || 'Erreur inconnue'}`);
           return;
         }
 
 
         // Clear all quote creation data from localStorage after successful update
         clearAllQuoteData();
-        
-        alert('Devis mis à jour avec succès !');
         navigate('/quotes-management');
         return;
       }
@@ -746,7 +762,6 @@ const QuoteCreation = () => {
       
       if (createError) {
         console.error('Error creating draft quote in backend:', createError);
-        alert(`Erreur lors de la création du devis brouillon: ${createError.message || 'Erreur inconnue'}`);
         return;
       }
 
@@ -887,7 +902,6 @@ const QuoteCreation = () => {
               
               if (uploadError) {
                 console.error('File upload failed:', uploadError);
-                alert(`Erreur lors de l'upload de ${file.name}: ${uploadError}`);
                 return;
               }
               
@@ -908,7 +922,6 @@ const QuoteCreation = () => {
           }
         } catch (error) {
           console.error('Error uploading files:', error);
-          alert('Erreur lors de l\'upload des fichiers. Veuillez réessayer.');
           return;
         }
       }
@@ -931,12 +944,10 @@ const QuoteCreation = () => {
 
           if (filesInsertError) {
             console.error('Error saving file references to database:', filesInsertError);
-            alert('Erreur lors de la sauvegarde des références de fichiers. Veuillez réessayer.');
             return;
           }
         } catch (error) {
           console.error('Error saving file references:', error);
-          alert('Erreur lors de la sauvegarde des références de fichiers. Veuillez réessayer.');
           return;
         }
       }
@@ -956,12 +967,10 @@ const QuoteCreation = () => {
       // Clear form data for clean state
       clearFormData();
 
-      // Show success message and redirect
-      alert('Devis brouillon sauvegardé avec succès !');
+      // Redirect
       navigate('/quotes-management');
     } catch (error) {
       console.error('Error saving quote:', error);
-      alert('Erreur lors de la sauvegarde du devis. Veuillez réessayer.');
     } finally {
       setIsSaving(false);
     }
@@ -977,7 +986,6 @@ const QuoteCreation = () => {
       
       if (!user?.id) {
         console.error('No user ID available');
-        alert('Erreur d\'authentification. Veuillez vous reconnecter.');
         return;
       }
       
@@ -1034,15 +1042,12 @@ const QuoteCreation = () => {
         
         if (updateError) {
           console.error('Error updating quote:', updateError);
-          alert(`Erreur lors de la mise à jour du devis: ${updateError.message || 'Erreur inconnue'}`);
           return;
         }
 
 
         // Clear all quote creation data from localStorage after successful edit
         clearAllQuoteData();
-        
-        alert(`Devis mis à jour et envoyé avec succès à ${selectedClient?.label?.split(' - ')[0] || 'le client'} !`);
         navigate('/quotes-management');
         return;
       }
@@ -1118,7 +1123,6 @@ const QuoteCreation = () => {
       
       if (createError) {
         console.error('Error creating quote in backend:', createError);
-        alert(`Erreur lors de la création du devis: ${createError.message || 'Erreur inconnue'}`);
         return;
       }
 
@@ -1302,7 +1306,6 @@ const QuoteCreation = () => {
               
               if (uploadError) {
                 console.error('File upload failed:', uploadError);
-                alert(`Erreur lors de l'upload de ${file.name}: ${uploadError}`);
                 return;
               }
               
@@ -1324,7 +1327,6 @@ const QuoteCreation = () => {
           }
         } catch (error) {
           console.error('Error uploading files:', error);
-          alert('Erreur lors de l\'upload des fichiers. Veuillez réessayer.');
           return;
         }
       }
@@ -1348,14 +1350,12 @@ const QuoteCreation = () => {
 
           if (filesInsertError) {
             console.error('Error saving file references to database:', filesInsertError);
-            alert('Erreur lors de la sauvegarde des références de fichiers. Veuillez réessayer.');
             return;
           }
           
   
         } catch (error) {
           console.error('Error saving file references:', error);
-          alert('Erreur lors de la sauvegarde des références de fichiers. Veuillez réessayer.');
           return;
         }
       }
@@ -1381,12 +1381,10 @@ const QuoteCreation = () => {
       // Clear form data for clean state
       clearFormData();
 
-      // Show success message and redirect
-      alert(`Devis envoyé avec succès à ${selectedClient?.label?.split(' - ')[0] || 'le client'} !`);
+      // Redirect
       navigate('/quotes-management');
     } catch (error) {
       console.error('Error sending quote:', error);
-      alert('Erreur lors de l\'envoi du devis. Veuillez réessayer.');
     } finally {
       setIsSaving(false);
     }
@@ -1435,7 +1433,7 @@ const QuoteCreation = () => {
       // Auto-save before changing step
       const savedTime = new Date().toISOString();
       const quoteData = {
-        selectedClient,
+        selectedClient: normalizeSelectedClient(selectedClient),
         projectInfo,
         tasks,
         files,
@@ -1531,6 +1529,7 @@ const QuoteCreation = () => {
     if (user?.id) {
       // Clear draft data
       localStorage.removeItem(getDraftKey());
+      localStorage.removeItem(getDraftRowIdKey());
       try {
         deleteQuoteDraft(user.id, currentProfile?.id || null);
       } catch (_) {}
