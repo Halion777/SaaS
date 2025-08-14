@@ -558,10 +558,11 @@ export const generateTaskDescriptionWithGemini = async (taskContext, projectCont
     const model = genAI.getGenerativeModel({ 
       model: import.meta.env.VITE_GEMINI_MODEL || "gemini-2.0-flash-lite",
       generationConfig: {
-        temperature: 0.5,
+        temperature: 0.2,
         topK: 40,
-        topP: 0.95,
-        maxOutputTokens: Math.max(120, maxOutputTokens),
+        topP: 0.9,
+        maxOutputTokens: Math.max(220, maxOutputTokens),
+        responseMimeType: 'application/json'
       },
     });
     
@@ -569,29 +570,38 @@ export const generateTaskDescriptionWithGemini = async (taskContext, projectCont
     const lang = getAppLanguage('fr-FR');
     const langLabel = getLanguageLabel(lang);
     const prompt = `Expert construction/rénovation. Crée une description de tâche technique en ${langLabel}. 
-Fournis des détails techniques concrets (étapes, prérequis, critères d’acceptation) tout en restant concise.
+ Fournis des détails techniques concrets (étapes, prérequis, critères d’acceptation) tout en restant concise.
 
 CONTEXTE: "${taskContext}"
 CONTEXTE PROJET (si utile): "${projectContext || 'N/A'}"
 
-GÉNÈRE JSON:
+ GÉNÈRE JSON (UNIQUEMENT le JSON, sans markdown):
 {
   "description": "Description proportionnelle au contexte en ${langLabel}, ${maxSentences} phrases maximum (≈ ≤ ${maxWords} mots), incluant étapes clés et points de contrôle",
-  "estimatedDuration": "Durée en minutes (nombre)",
+  "estimatedDuration": 120,
   "suggestedMaterials": [
     {
       "name": "Nom matériau",
-      "quantity": "Quantité (nombre)",
+      "quantity": 1,
       "unit": "Unité (m, m², kg, pièce)",
-      "price": "Prix unitaire en euros (nombre, 0 si non précisé)"
+      "price": 10
     }
   ],
-  "laborPrice": "Prix main d’œuvre (en euros, nombre, 0 si non précisé)",
-  "unitLaborBasis": "Base du prix main d’œuvre (par tâche/heure, optionnel)",
+  "laborPrice": 150,
+  "unitLaborBasis": "hour|task",
   "notes": "Courtes notes techniques, optionnel"
 }
 
-IMPORTANT: JSON valide uniquement, SANS marqueurs markdown.`;
+ CONTRAINTES:
+ - Utilise des NOMBRES (pas de chaînes) pour estimatedDuration, laborPrice, suggestedMaterials[].quantity et suggestedMaterials[].price.
+ - RENSEIGNE TOUJOURS laborPrice (nombre):
+   • Si l'utilisateur donne un tarif horaire, mets unitLaborBasis="hour" et laborPrice=tarif horaire.
+   • Sinon, si une durée est fournie/sous-entendue, DÉDUIS un tarif horaire réaliste pour le métier et calcule un coût (laborPrice=tarif horaire). Mets unitLaborBasis="hour".
+   • Si rien n'est précisé, fournis un PRIX FORFAITAIRE réaliste (unitLaborBasis="task").
+  - La tarification doit être un BAS DE FOURCHETTE du marché (estimation minimale réaliste pour ce type de tâche), jamais un tarif premium.
+  - Si l'incertitude est élevée, choisis la borne basse plausible du marché pour ce métier.
+  - Les prix matériaux également au niveau d'entrée de gamme (réalistes), pas premium.
+  - La sortie doit être du JSON strict, sans texte additionnel.`;
     
     // Generate content with Gemini
     const result = await model.generateContent(prompt);

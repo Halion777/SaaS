@@ -1311,15 +1311,17 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
 
         const nextDuration = minutesToHoursCeil(aiResponse.data.estimatedDuration) || currentTask.duration;
 
-        // Apply mapping
+        // Apply mapping (ensure controlled fields are strings)
         setCurrentTask(prev => ({
           ...prev,
           description: aiResponse.data.description,
-          duration: nextDuration,
+          duration: nextDuration === '' ? '' : String(nextDuration),
           durationUnit: 'hours',
-          price: computedPrice,
+          price: (computedPrice === '' || computedPrice == null || isNaN(parseFloat(computedPrice)))
+            ? prev.price
+            : String(parseFloat(computedPrice)),
           materials: [...prev.materials, ...mappedMaterials],
-          hourlyRate: hourlyRate,
+          hourlyRate: hourlyRate ? String(hourlyRate) : prev.hourlyRate,
           pricingType: pricingType
         }));
         try { console.log('[Task][AI] Mapped single task:', { pricingType, hourlyRate, price: computedPrice, durationHours: nextDuration, materials: mappedMaterials }); } catch (_) {}
