@@ -7,39 +7,36 @@ import html2canvas from 'html2canvas';
  * @param {string} quoteNumber - Quote number
  * @returns {Promise<Blob>} PDF blob
  */
-export const generateQuotePDF = async (quoteData, quoteNumber) => {
+export const generateQuotePDF = async (quoteData, quoteNumber, elementToCapture) => {
   try {
-    // Create a temporary div to render the quote content
-    const tempDiv = document.createElement('div');
-    tempDiv.style.position = 'absolute';
-    tempDiv.style.left = '-9999px';
-    tempDiv.style.top = '0';
-    tempDiv.style.width = '800px';
-    tempDiv.style.backgroundColor = 'white';
-    tempDiv.style.padding = '40px';
-    tempDiv.style.fontFamily = 'Arial, sans-serif';
-    tempDiv.style.fontSize = '12px';
-    tempDiv.style.lineHeight = '1.4';
-    
-    // Generate HTML content for the quote
-    const quoteHTML = generateQuoteHTML(quoteData, quoteNumber);
-    tempDiv.innerHTML = quoteHTML;
-    
-    // Add to DOM temporarily
-    document.body.appendChild(tempDiv);
-    
-    // Convert to canvas
-    const canvas = await html2canvas(tempDiv, {
-      width: 800,
-      height: tempDiv.scrollHeight,
+    let target = elementToCapture;
+    // Fallback to generated HTML if no element is provided
+    if (!target) {
+      const tempDiv = document.createElement('div');
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.top = '0';
+      tempDiv.style.width = '900px';
+      tempDiv.style.backgroundColor = 'white';
+      tempDiv.style.padding = '0';
+      tempDiv.style.fontFamily = 'Arial, sans-serif';
+      tempDiv.innerHTML = generateQuoteHTML(quoteData, quoteNumber);
+      document.body.appendChild(tempDiv);
+      target = tempDiv;
+    }
+
+    const canvas = await html2canvas(target, {
       scale: 2,
       useCORS: true,
       allowTaint: true,
-      backgroundColor: '#ffffff'
+      backgroundColor: '#ffffff',
+      logging: false
     });
-    
-    // Remove temporary div
-    document.body.removeChild(tempDiv);
+
+    // If we created a temp node, remove it now
+    if (elementToCapture == null && target && target.parentNode) {
+      target.parentNode.removeChild(target);
+    }
     
     // Create PDF
     const pdf = new jsPDF('p', 'mm', 'a4');
@@ -62,7 +59,7 @@ export const generateQuotePDF = async (quoteData, quoteNumber) => {
     }
     
     // Generate filename
-    const filename = `devis-${quoteNumber}-${new Date().toISOString().split('T')[0]}.pdf`;
+    const filename = `devis-${quoteNumber || 'N/A'}-${new Date().toISOString().split('T')[0]}.pdf`;
     
     // Save PDF
     pdf.save(filename);

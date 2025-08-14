@@ -143,41 +143,7 @@ const QuoteCreation = () => {
     }
   }, [searchParams]);
 
-  // Handle browser back button and page unload to clear localStorage
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      // Clear localStorage when user leaves the page
-      if (isEditing) {
-        clearAllQuoteData();
-      }
-    };
-
-    const handlePopState = () => {
-      // Clear localStorage when user navigates back
-      if (isEditing) {
-        clearAllQuoteData();
-      }
-    };
-
-    // Add event listeners
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('popstate', handlePopState);
-
-    // Cleanup event listeners
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [isEditing]);
-
-  // Cleanup localStorage when component unmounts (if editing)
-  useEffect(() => {
-    return () => {
-      if (isEditing) {
-        clearAllQuoteData();
-      }
-    };
-  }, [isEditing]);
+  // No automatic clearing on back/unload: drafts must persist until explicit save/send
 
   // Load existing quote data for editing or duplicating
   const loadExistingQuote = async (quoteId, isDuplicating = false) => {

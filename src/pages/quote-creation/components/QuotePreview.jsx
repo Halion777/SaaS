@@ -355,7 +355,9 @@ const QuotePreview = ({
         signatureData
       };
       
-      await generateQuotePDF(quoteData, quoteNumber);
+      // Capture the live preview container for pixel-perfect PDF
+      const captureEl = document.querySelector('#quote-preview-capture');
+      await generateQuotePDF(quoteData, quoteNumber, captureEl);
       
       // Show success message
       alert('PDF généré avec succès !');
@@ -599,7 +601,7 @@ const QuotePreview = ({
           </div>
         )}
 
-        <div className={`${getTemplateClasses()} rounded-lg shadow-lg ${
+        <div id="quote-preview-capture" className={`${getTemplateClasses()} rounded-lg shadow-lg ${
           previewMode === 'mobile' ? 'max-w-sm mx-auto p-4' : 
           'w-full p-4 sm:p-8 lg:p-10'
         }`}>
