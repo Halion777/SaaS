@@ -55,7 +55,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [isTranscribing, setIsTranscribing] = useState(false);
-  const [wasGeneratedByAI, setWasGeneratedByAI] = useState(false);
+  const [aiGenerated, setAiGenerated] = useState(false);
 
   // Fetch existing clients on component mount
   useEffect(() => {
@@ -425,6 +425,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
     
     if (field === 'description' || field === 'categories' || field === 'customCategory') {
       setAiError(null);
+      if (field === 'description') setAiGenerated(false);
     }
   };
 
@@ -456,6 +457,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
           ...projectInfo, 
           description: result.data 
         });
+        setAiGenerated(true);
       } else {
         setAiError(result.error || 'Erreur lors de la génération de la description');
       }
@@ -540,6 +542,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         
         // Show success message
         setAiError(null);
+        setAiGenerated(true);
       } else {
         // If AI enhancement fails, use the raw transcription
         onProjectInfoChange({ 
@@ -1125,8 +1128,8 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
               </div>
             )}
             
-            {/* Success Message - Show only when description is successfully generated */}
-            {!aiError && projectInfo.description && !isRecording && !isTranscribing && (
+            {/* Success Message - only after an AI action (generate or enhance) */}
+            {!aiError && aiGenerated && !isRecording && !isTranscribing && (
               <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
                 <div className="flex items-center space-x-2">
                   <Icon name="CheckCircle" size={14} className="text-green-600" />
