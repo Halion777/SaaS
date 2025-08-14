@@ -1598,13 +1598,6 @@ const QuoteCreation = () => {
     }
   };
 
-  // Enhanced clearDraft with comprehensive localStorage cleanup
-  const clearDraft = () => {
-    if (confirm('Êtes-vous sûr de vouloir effacer ce brouillon ?')) {
-      // Only clear form data locally. Do not delete localStorage or backend draft.
-      clearFormData();
-    }
-  };
 
 
 

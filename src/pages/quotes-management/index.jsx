@@ -137,7 +137,7 @@ const QuotesManagement = () => {
         }
 
         // Additionally merge backend draft so it always appears (no local list)
-        const additionalDrafts = [];
+          const additionalDrafts = [];
         try {
           const { data: draft } = await loadQuoteDraft(user.id, currentProfile?.id || null);
           if (draft?.draft_data) {
@@ -175,7 +175,7 @@ const QuotesManagement = () => {
         }
         
         // Transform backend data to match frontend structure
-        const transformedQuotes = (quotesData || []).map(quote => ({
+          const transformedQuotes = (quotesData || []).map(quote => ({
           id: quote.id,
           number: quote.quote_number,
           clientName: quote.client?.name || 'Client inconnu',
@@ -185,7 +185,7 @@ const QuotesManagement = () => {
           statusLabel: getStatusLabel(quote.status),
           createdAt: quote.created_at,
           createdAtFormatted: formatDate(quote.created_at),
-          aiScore: Math.floor(Math.random() * 40) + 60, // Placeholder AI score
+          // aiScore removed
           description: quote.project_description || 'Aucune description',
           client: quote.client,
           companyProfile: quote.company_profile,
@@ -204,8 +204,43 @@ const QuotesManagement = () => {
         // Sort quotes by priority
         const merged = [...transformedQuotes, ...additionalDrafts];
         const sortedQuotes = merged.sort((a, b) => getQuotePriority(a) - getQuotePriority(b));
-
-        setQuotes(sortedQuotes);
+        
+        // Merge existing follow-ups (if already loaded) to avoid transient 'Aucune'
+        if (followUps && Object.keys(followUps).length > 0) {
+          const merged = sortedQuotes.map(quote => {
+            const quoteFollowUps = followUps[quote.id] || [];
+            // Reuse selection logic from updateQuotesWithFollowUpStatus
+            const candidates = quoteFollowUps
+              .filter(f => f.status === 'pending' || f.status === 'scheduled')
+              .map(f => ({ ...f, dueAt: f.next_attempt_at || f.scheduled_at }))
+              .filter(f => !!f.dueAt)
+              .sort((a, b) => new Date(a.dueAt) - new Date(b.dueAt));
+            let picked = candidates[0];
+            if (!picked) picked = quoteFollowUps.find(f => f.status === 'failed')
+              || quoteFollowUps.find(f => f.status === 'stopped')
+              || quoteFollowUps.find(f => f.status === 'sent')
+              || quoteFollowUps[0];
+            const followUpStatus = picked?.status || 'none';
+            return {
+              ...quote,
+              followUpStatus,
+              followUpStatusLabel: getFollowUpStatusLabel(followUpStatus),
+              followUpStatusColor: getFollowUpStatusColor(followUpStatus),
+              followUpCount: quoteFollowUps.length,
+              followUpMeta: picked ? {
+                stage: picked.stage,
+                dueAt: picked.next_attempt_at || picked.scheduled_at || null,
+                attempts: picked.attempts,
+                maxAttempts: picked.max_attempts,
+                lastError: picked.last_error || null,
+                channel: picked.channel || 'email'
+              } : null
+            };
+          });
+          setQuotes(merged);
+        } else {
+          setQuotes(sortedQuotes);
+        }
         
         // Calculate stats (actual data)
         const total = sortedQuotes.length;

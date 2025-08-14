@@ -80,11 +80,6 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
     return statusMap[status] || status;
   };
 
-  const getAIScoreColor = (score) => {
-    if (score >= 80) return 'text-success';
-    if (score >= 60) return 'text-amber-600';
-    return 'text-destructive';
-  };
 
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('fr-FR', {
