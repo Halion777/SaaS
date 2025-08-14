@@ -1618,6 +1618,7 @@ const QuoteCreation = () => {
             quoteNumber={projectInfo.quoteNumber}
             companyInfo={companyInfo}
             financialConfig={financialConfig}
+            quoteId={editingQuoteId}
             onPrevious={handlePrevious}
             onSave={handleSave}
             onSend={handleSend}

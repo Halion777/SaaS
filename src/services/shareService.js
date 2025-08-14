@@ -18,21 +18,32 @@ export const generatePublicShareLink = async (quoteId, userId) => {
     expiresAt.setDate(expiresAt.getDate() + 30); // Link expires in 30 days
 
     // Save share record to database
-    const { data, error } = await supabase
+    let insertPayload = {
+      quote_id: quoteId,
+      user_id: userId,
+      share_token: shareToken,
+      expires_at: expiresAt.toISOString(),
+      is_active: true,
+      access_count: 0
+    };
+
+    let insertResult = await supabase
       .from('quote_shares')
-      .insert({
-        quote_id: quoteId,
-        user_id: userId,
-        share_token: shareToken,
-        expires_at: expiresAt.toISOString(),
-        is_active: true,
-        access_count: 0
-      })
+      .insert(insertPayload)
       .select()
       .single();
 
-    if (error) {
-      console.error('Error creating share link:', error);
+    // Fallback: if schema has no user_id column, retry without it
+    if (insertResult.error && /user_id/.test(insertResult.error.message || '')) {
+      const { user_id, ...withoutUserId } = insertPayload;
+      insertResult = await supabase
+        .from('quote_shares')
+        .insert(withoutUserId)
+        .select()
+        .single();
+    }
+
+    if (insertResult.error) {
       return { success: false, error: 'Failed to create share link' };
     }
 
@@ -42,7 +53,7 @@ export const generatePublicShareLink = async (quoteId, userId) => {
     return { 
       success: true, 
       data: publicUrl,
-      shareId: data.id,
+      shareId: insertResult.data.id,
       expiresAt: expiresAt.toISOString()
     };
   } catch (error) {
@@ -58,7 +69,7 @@ export const generatePublicShareLink = async (quoteId, userId) => {
  */
 export const getShareLinkInfo = async (quoteId) => {
   try {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('quote_shares')
       .select('*')
       .eq('quote_id', quoteId)
@@ -71,7 +82,18 @@ export const getShareLinkInfo = async (quoteId) => {
       if (error.code === 'PGRST116') { // No rows returned
         return { success: true, data: null };
       }
-      return { success: false, error: 'Failed to get share link info' };
+      // Fallback: some schemas might not have created_at sorting supported
+      // Try again without order/limit
+      const retry = await supabase
+        .from('quote_shares')
+        .select('*')
+        .eq('quote_id', quoteId)
+        .eq('is_active', true)
+        .single();
+      if (retry.error) {
+        return { success: false, error: 'Failed to get share link info' };
+      }
+      data = retry.data;
     }
 
     return { success: true, data };
@@ -150,7 +172,7 @@ export const getQuoteByShareToken = async (shareToken) => {
           duration, duration_unit, pricing_type, hourly_rate, order_index
         ),
         quote_materials(
-          id, name, description, quantity, unit, unit_price, total_price, order_index
+          id, quote_task_id, name, description, quantity, unit, unit_price, total_price, order_index
         ),
         quote_files(
           id, file_name, file_path, file_size, mime_type, file_category, uploaded_by, created_at

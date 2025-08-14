@@ -19,6 +19,7 @@ const QuotePreview = ({
   quoteNumber,
   companyInfo: parentCompanyInfo,
   financialConfig: parentFinancialConfig,
+  quoteId,
   onPrevious, 
   onSave, 
   onSend,
@@ -88,7 +89,7 @@ const QuotePreview = ({
     },
     defaultConditions: {
       language: 'FR',
-      text: 'Conditions générales:\n• Devis valable 30 jours\n• Acompte de 30% à la commande\n• Solde à la livraison\n• Délai de paiement: 30 jours\n• TVA comprise\n• Matériaux et main d\'œuvre garantis 1 an'
+      text: '\n• Devis valable 30 jours\n• Acompte de 30% à la commande\n• Solde à la livraison\n• Délai de paiement: 30 jours\n• TVA comprise\n• Matériaux et main d\'œuvre garantis 1 an'
     }
   });
 
@@ -369,28 +370,37 @@ const QuotePreview = ({
     }
   };
 
+  // Preload existing share link if any
+  useEffect(() => {
+    const fetchExistingShare = async () => {
+      if (!quoteId) return;
+      const res = await getShareLinkInfo(quoteId);
+      if (res?.success && res.data) {
+        const url = `${window.location.origin}/quote-share/${res.data.share_token}`;
+        setShareLink(url);
+        setShareLinkInfo(res.data);
+      }
+    };
+    fetchExistingShare();
+  }, [quoteId]);
+
   // Handle share link generation
   const handleGenerateShareLink = async () => {
     try {
       setIsGeneratingShare(true);
-      
-      // For now, we'll generate a temporary share link
-      // In a real implementation, you'd need the quote ID from the database
-      const tempShareToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      const tempShareLink = `${window.location.origin}/quote-share/${tempShareToken}`;
-      
-      setShareLink(tempShareLink);
-      setShareLinkInfo({
-        share_token: tempShareToken,
-        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        access_count: 0
-      });
-      
-      // Show success message
-      alert('Lien de partage généré avec succès !');
+      if (!quoteId) {
+        // Requires an existing quote in DB
+        return;
+      }
+      const res = await generatePublicShareLink(quoteId, user?.id);
+      if (!res?.success) {
+        return;
+      }
+      setShareLink(res.data);
+      setShareLinkInfo({ id: res.shareId, expires_at: res.expiresAt });
+      try { await navigator.clipboard.writeText(res.data); } catch (_) {}
     } catch (error) {
       console.error('Error generating share link:', error);
-      alert('Erreur lors de la génération du lien de partage. Veuillez réessayer.');
     } finally {
       setIsGeneratingShare(false);
     }
@@ -405,10 +415,8 @@ const QuotePreview = ({
       
       setShareLink(null);
       setShareLinkInfo(null);
-      alert('Lien de partage désactivé avec succès !');
     } catch (error) {
       console.error('Error deactivating share link:', error);
-      alert('Erreur lors de la désactivation du lien de partage.');
     }
   };
 
@@ -416,11 +424,16 @@ const QuotePreview = ({
   const handleCopyShareLink = async () => {
     try {
       await navigator.clipboard.writeText(shareLink);
-      alert('Lien copié dans le presse-papiers !');
+      // Auto-close share controls after copy
+      setShareLink(null);
+      setShareLinkInfo(null);
     } catch (error) {
       console.error('Error copying to clipboard:', error);
-      alert('Erreur lors de la copie du lien.');
     }
+  };
+
+  const handleOpenShareLink = () => {
+    if (shareLink) window.open(shareLink, '_blank', 'noopener');
   };
 
   // Calculate totals
@@ -464,6 +477,21 @@ const QuotePreview = ({
     return n.toLocaleString(numberLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
   const formatMoney = (value) => `${formatNumber(value)}€`;
+
+  // Normalize general conditions text: remove redundant leading label since we already render a heading
+  const normalizeConditionsText = (text) => {
+    if (!text || typeof text !== 'string') return '';
+    const patterns = [
+      /^\s*(general\s*conditions?)\s*[:：]-?\s*/i,
+      /^\s*(conditions?\s*générales?)\s*[:：]-?\s*/i,
+      /^\s*(algemene\s*voorwaarden)\s*[:：]-?\s*/i
+    ];
+    let cleaned = text;
+    for (const p of patterns) {
+      cleaned = cleaned.replace(p, '');
+    }
+    return cleaned.trim();
+  };
 
   // Client name helper: prefer raw client name; strip any leading emoji/symbols from label fallback
   const getClientDisplayName = (sel) => {
@@ -850,7 +878,7 @@ const QuotePreview = ({
             <div className={`mb-8 sm:mb-10 ${previewMode === 'mobile' ? 'px-4' : 'px-4 sm:px-8 lg:px-10'}`}>
               <h3 className={`font-semibold text-black mb-4 sm:mb-6 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>CONDITIONS GÉNÉRALES</h3>
               <div className={`text-black whitespace-pre-wrap ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`}>
-                {financialConfig.defaultConditions.text}
+                {normalizeConditionsText(financialConfig.defaultConditions.text)}
               </div>
             </div>
 
@@ -972,17 +1000,10 @@ const QuotePreview = ({
               disabled={isSaving || isGeneratingShare}
               onClick={handleGenerateShareLink}
             >
-              {isGeneratingShare ? (
-                <>
-                  <span className="hidden sm:inline">Génération...</span>
-                  <span className="sm:hidden">...</span>
-                </>
-              ) : (
-                <>
-                  <span className="hidden sm:inline">Créer lien public</span>
-                  <span className="sm:hidden">Lien</span>
-                </>
-              )}
+              <>
+                <span className="hidden sm:inline">Lien public</span>
+                <span className="sm:hidden">Lien</span>
+              </>
             </Button>
           ) : (
             <div className="flex space-x-2">
@@ -996,6 +1017,17 @@ const QuotePreview = ({
               >
                 <span className="hidden sm:inline">Copier</span>
                 <span className="sm:hidden">Copier</span>
+              </Button>
+              <Button
+                variant="outline"
+                iconName="ExternalLink"
+                iconPosition="left"
+                size="sm"
+                className="text-xs sm:text-sm"
+                onClick={handleOpenShareLink}
+              >
+                <span className="hidden sm:inline">Ouvrir</span>
+                <span className="sm:hidden">Ouvrir</span>
               </Button>
               <Button
                 variant="outline"
@@ -1033,34 +1065,7 @@ const QuotePreview = ({
         </div>
       </div>
 
-      {/* Share Link Display */}
-      {shareLink && (
-        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h4 className="text-sm font-medium text-blue-800 mb-2">Lien de partage généré</h4>
-          <div className="flex items-center space-x-2">
-            <input
-              type="text"
-              value={shareLink}
-              readOnly
-              className="flex-1 px-3 py-2 text-sm border border-blue-300 rounded-md bg-white text-blue-900"
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCopyShareLink}
-              className="text-blue-600 border-blue-300 hover:bg-blue-50"
-            >
-              Copier
-            </Button>
-          </div>
-          {shareLinkInfo && (
-            <div className="mt-2 text-xs text-blue-600">
-              <p>Expire le: {new Date(shareLinkInfo.expires_at).toLocaleDateString('fr-FR')}</p>
-              <p>Accès: {shareLinkInfo.access_count || 0} fois</p>
-            </div>
-          )}
-        </div>
-      )}
+      {/* no extra share panel */}
 
       {/* Modals */}
       {showCompanyModal && (

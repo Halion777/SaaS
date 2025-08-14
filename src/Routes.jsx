@@ -38,6 +38,7 @@ import StatisticsPage from './pages/statistics';
 import MultiUserProfilesPage from './pages/multi-user-profiles';
 import NotFound from './pages/NotFound';
 import StripeSuccessPage from './pages/stripe-success';
+import PublicQuoteShareViewer from './pages/quote-share';
 
 const AppRoutes = () => {
   return (
@@ -46,6 +47,7 @@ const AppRoutes = () => {
       <GlobalProfile />
       <Routes>
           {/* Public pages - redirect authenticated users to dashboard */}
+          <Route path="/quote-share/:token" element={<PublicQuoteShareViewer />} />
           <Route path="/" element={
             <PublicRoute>
               <HomePage />
