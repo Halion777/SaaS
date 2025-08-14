@@ -952,14 +952,7 @@ const QuoteCreation = () => {
         }
       }
       
-      // Save to localStorage as backup with real quote ID
-      const existingQuotes = JSON.parse(localStorage.getItem(`quotes-${user?.id}-${currentProfile?.id || 'default'}`) || '[]');
-      existingQuotes.push({
-        ...quoteData,
-        id: quoteId, // Use real database ID
-        createdAt: new Date().toISOString()
-      });
-      localStorage.setItem(`quotes-${user?.id}-${currentProfile?.id || 'default'}`, JSON.stringify(existingQuotes));
+      // Removed legacy local backup of quotes list; rely on backend only
 
       // Clear all quote creation data from localStorage
       clearAllQuoteData();
@@ -1362,18 +1355,7 @@ const QuoteCreation = () => {
 
       
 
-      // Save to localStorage as backup
-      const existingQuotes = JSON.parse(localStorage.getItem(`quotes-${user?.id}-${currentProfile?.id || 'default'}`) || '[]');
-      existingQuotes.push({
-        id: quoteId,
-        quote_number: finalQuoteNumber,
-        client_id: selectedClient?.id || selectedClient?.value,
-        status: 'sent',
-        title: projectInfo.description || 'Nouveau devis',
-        total_amount: totalAmount,
-        createdAt: new Date().toISOString()
-      });
-      localStorage.setItem(`quotes-${user?.id}-${currentProfile?.id || 'default'}`, JSON.stringify(existingQuotes));
+      // Removed legacy local backup of quotes list; rely on backend only
 
       // Clear all quote creation data from localStorage
       clearAllQuoteData();
