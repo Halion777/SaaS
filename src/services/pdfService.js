@@ -40,8 +40,9 @@ export const generateQuotePDF = async (quoteData, quoteNumber, elementToCapture)
     
     // Create PDF
     const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgWidth = 210;
-    const pageHeight = 295;
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = pageWidth;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
     let heightLeft = imgHeight;
     let position = 0;
@@ -51,7 +52,7 @@ export const generateQuotePDF = async (quoteData, quoteNumber, elementToCapture)
     heightLeft -= pageHeight;
     
     // Add additional pages if needed
-    while (heightLeft >= 0) {
+    while (heightLeft > 0) {
       position = heightLeft - imgHeight;
       pdf.addPage();
       pdf.addImage(canvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, position, imgWidth, imgHeight);

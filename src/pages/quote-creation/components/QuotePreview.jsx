@@ -805,8 +805,8 @@ const QuotePreview = ({
                                   <div className="leading-tight text-[12px] sm:text-[13px]">{m.name}</div>
                                 </td>
                                 <td className={`border border-gray-200 text-center text-black ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>{formatNumber(qty)} {m.unit || ''}</td>
-                                <td className={`border border-gray-200 text-right text-black ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>{includeMaterialsPrices ? formatMoney(pu) : '•••'}</td>
-                                <td className={`border border-gray-200 text-right text-black font-medium ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>{includeMaterialsPrices ? formatMoney(lineTotal) : '•••'}</td>
+                                <td className={`border border-gray-200 text-right text-black ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>{includeMaterialsPrices ? formatMoney(pu) : ''}</td>
+                                <td className={`border border-gray-200 text-right text-black font-medium ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>{includeMaterialsPrices ? formatMoney(lineTotal) : ''}</td>
                               </tr>
                             );
                           })}
