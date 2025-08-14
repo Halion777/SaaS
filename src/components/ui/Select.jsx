@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronDown, Check, Search, X } from "lucide-react";
 import { cn } from "../../utils/cn";
-import Button from "./Button";
+// Removed Button to avoid nested <button> inside the trigger button
 import Input from "./Input";
 
 const Select = React.forwardRef(({
@@ -175,14 +175,16 @@ const Select = React.forwardRef(({
                         )}
 
                         {clearable && hasValue && !loading && (
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-4 w-4"
+                            <span
+                                role="button"
+                                tabIndex={0}
+                                aria-label="Clear selection"
                                 onClick={handleClear}
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClear(e); } }}
+                                className="h-4 w-4 inline-flex items-center justify-center rounded hover:bg-muted cursor-pointer"
                             >
                                 <X className="h-3 w-3" />
-                            </Button>
+                            </span>
                         )}
 
                         <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />

@@ -1019,12 +1019,10 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
               label="Valid until"
               type="date"
               value={projectInfo.deadline}
+              min={new Date().toISOString().split('T')[0]}
               onChange={(e) => handleProjectChange('deadline', e.target.value)}
               required
             />
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <Icon name="Calendar" size={16} className="text-muted-foreground" />
-            </div>
           </div>
           
                       <div>

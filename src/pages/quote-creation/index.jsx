@@ -11,7 +11,7 @@ import TaskDefinition from './components/TaskDefinition';
 import FileUpload from './components/FileUpload';
 import QuotePreview from './components/QuotePreview';
 import AIScoring from './components/AIScoring';
-import { generateQuoteNumber, createQuote, fetchQuoteById, updateQuote } from '../../services/quotesService';
+import { generateQuoteNumber, createQuote, fetchQuoteById, updateQuote, saveQuoteDraft, loadQuoteDraft, deleteQuoteDraft, deleteQuoteDraftById } from '../../services/quotesService';
 import { uploadQuoteFile, uploadQuoteSignature } from '../../services/quoteFilesService';
 import { saveCompanyInfo } from '../../services/companyInfoService';
 import { supabase } from '../../services/supabaseClient';
@@ -73,24 +73,70 @@ const QuoteCreation = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Draft expiration (24 hours)
+  const DRAFT_TTL_MS = 24 * 60 * 60 * 1000;
+  const isDraftExpired = (isoTimestamp) => {
+    if (!isoTimestamp) return false;
+    const saved = new Date(isoTimestamp).getTime();
+    if (Number.isNaN(saved)) return false;
+    return Date.now() - saved > DRAFT_TTL_MS;
+  };
+
   // Helper function to generate draft key with user and profile IDs
   const getDraftKey = () => {
     return `quote-draft-${user?.id}-${currentProfile?.id || 'default'}`;
   };
 
-  // Check URL parameters for edit mode
+  // Deprecated: drafts list/session id removed for a cleaner flow
+
+  // Resume draft or edit existing quote based on URL params
   useEffect(() => {
     const editId = searchParams.get('edit');
     const duplicateId = searchParams.get('duplicate');
-    
+
+    const resumeDraftById = async (draftIdWithPrefix) => {
+      try {
+        const draftId = draftIdWithPrefix.replace(/^draft-/, '');
+        const { data, error } = await supabase
+          .from('quote_drafts')
+          .select('*')
+          .eq('id', draftId)
+          .single();
+        if (error || !data) {
+          console.error('Error loading draft by id:', error);
+          alert('Erreur lors du chargement du brouillon.');
+          return;
+        }
+        const d = data.draft_data || {};
+        setIsEditing(false);
+        setEditingQuoteId(null);
+        setSelectedClient(d.selectedClient || null);
+        setProjectInfo(d.projectInfo || { categories: [], customCategory: '', deadline: '', description: '' });
+        setTasks(d.tasks || []);
+        setFiles(d.files || []);
+        setCompanyInfo(d.companyInfo || null);
+        setCurrentStep(d.currentStep || 1);
+        setLastSaved(d.lastSaved || new Date().toISOString());
+        // Persist as current draft for continuity
+        try { localStorage.setItem(getDraftKey(), JSON.stringify(d)); } catch {}
+      } catch (err) {
+        console.error('Exception resuming draft:', err);
+        alert('Erreur lors du chargement du brouillon.');
+      }
+    };
+
     if (editId) {
-      setIsEditing(true);
-      setEditingQuoteId(editId);
-      loadExistingQuote(editId, false); // false = not duplicating
+      if (editId.startsWith('draft-')) {
+        resumeDraftById(editId);
+      } else {
+        setIsEditing(true);
+        setEditingQuoteId(editId);
+        loadExistingQuote(editId, false);
+      }
     } else if (duplicateId) {
       setIsEditing(false);
       setEditingQuoteId(duplicateId);
-      loadExistingQuote(duplicateId, true); // true = duplicating
+      loadExistingQuote(duplicateId, true);
     } else {
       setIsEditing(false);
       setEditingQuoteId(null);
@@ -364,7 +410,7 @@ const QuoteCreation = () => {
 
 
 
-  // Enhanced auto-save functionality with localStorage only
+  // Enhanced auto-save functionality: localStorage + backend draft table
   useEffect(() => {
     const autoSave = async () => {
       // Auto-save if there's any data to save
@@ -382,12 +428,25 @@ const QuoteCreation = () => {
           lastSaved: savedTime
         };
         
-        // Save to localStorage only
+        // Save to localStorage (current in-progress draft only)
         try {
           localStorage.setItem(getDraftKey(), JSON.stringify(quoteData));
           setLastSaved(savedTime);
         } catch (localStorageError) {
           console.error('Error saving to localStorage:', localStorageError);
+        }
+
+        // Also save to backend draft table for cross-device and quotes-management visibility
+        try {
+          if (user?.id) {
+            await saveQuoteDraft({
+              user_id: user.id,
+              profile_id: currentProfile?.id || null,
+              draft_data: quoteData
+            });
+          }
+        } catch (e) {
+          console.warn('Draft autosave (backend) failed:', e?.message || e);
         }
         
         setTimeout(() => {
@@ -408,27 +467,16 @@ const QuoteCreation = () => {
     };
   }, [selectedClient, projectInfo, tasks, files, currentStep, companyInfo, user?.id, currentProfile?.id]);
 
-  // Load draft data on component mount
+  // Do not auto-load draft into the form on page open; only clean expired local draft
   useEffect(() => {
     if (user?.id) {
-      const draftKey = getDraftKey();
-      const savedDraft = localStorage.getItem(draftKey);
-      
-        if (savedDraft) {
-        try {
-          const draftData = JSON.parse(savedDraft);
-  
-          
-          if (draftData.projectInfo) setProjectInfo(draftData.projectInfo);
-          if (draftData.selectedClient) setSelectedClient(draftData.selectedClient);
-          if (draftData.tasks) setTasks(draftData.tasks);
-          if (draftData.files) setFiles(draftData.files);
-          if (draftData.companyInfo) setCompanyInfo(draftData.companyInfo);
-      } catch (error) {
-        console.error('Error loading draft:', error);
+      try {
+        const local = JSON.parse(localStorage.getItem(getDraftKey()) || 'null');
+        if (local?.lastSaved && isDraftExpired(local.lastSaved)) {
+          localStorage.removeItem(getDraftKey());
         }
-      }
-      
+      } catch {}
+
       // Also load company info from localStorage
       try {
         const companyInfoKey = `company-info-${user.id}`;
@@ -699,7 +747,7 @@ const QuoteCreation = () => {
         description: projectInfo.description || '',
         project_categories: projectInfo.categories || [],
         custom_category: projectInfo.customCategory || '',
-        deadline: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : null,
+        start_date: new Date().toISOString().split('T')[0],
         total_amount: totalAmount,
         tax_amount: data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0,
         discount_amount: 0,
@@ -1522,6 +1570,9 @@ const QuoteCreation = () => {
     if (user?.id) {
       // Clear draft data
       localStorage.removeItem(getDraftKey());
+      try {
+        deleteQuoteDraft(user.id, currentProfile?.id || null);
+      } catch (_) {}
       
       // Clear company info
       localStorage.removeItem(`company-info-${user.id}`);
@@ -1550,10 +1601,7 @@ const QuoteCreation = () => {
   // Enhanced clearDraft with comprehensive localStorage cleanup
   const clearDraft = () => {
     if (confirm('Êtes-vous sûr de vouloir effacer ce brouillon ?')) {
-      // Clear all quote-related localStorage data
-      clearAllQuoteData();
-      
-      // Clear form data
+      // Only clear form data locally. Do not delete localStorage or backend draft.
       clearFormData();
     }
   };
@@ -1683,17 +1731,7 @@ const QuoteCreation = () => {
                   </div>
               )}
               
-              <Button
-                variant="outline"
-                onClick={clearDraft}
-                iconName="Trash2"
-                iconPosition="left"
-                  size="sm"
-                  className="w-auto"
-              >
-                  <span className="hidden sm:inline">Effacer le brouillon</span>
-                  <span className="sm:hidden">Effacer</span>
-              </Button>
+              {/* Clear draft button removed per new flow */}
               
 
               </div>

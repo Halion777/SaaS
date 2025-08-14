@@ -9,7 +9,7 @@ import BulkActionsToolbar from './components/BulkActionsToolbar';
 // Analyse IA removed
 import { useAuth } from '../../context/AuthContext';
 import { useMultiUser } from '../../context/MultiUserContext';
-import { fetchQuotes, getQuoteStatistics, updateQuoteStatus, deleteQuote, fetchQuoteById } from '../../services/quotesService';
+import { fetchQuotes, getQuoteStatistics, updateQuoteStatus, deleteQuote, fetchQuoteById, loadQuoteDraft, deleteQuoteDraftById } from '../../services/quotesService';
 import { 
   listScheduledFollowUps, 
   createFollowUpForQuote, 
@@ -93,13 +93,79 @@ const QuotesManagement = () => {
         // Fetch quotes
         const { data: quotesData, error: quotesError } = await fetchQuotes();
         
-        // Handle case when no quotes exist (this is not an error)
+        // If none in quotes yet, try showing a draft placeholder
         if (!quotesData || quotesData.length === 0) {
+          try {
+            const { data: draft, error: draftError } = await loadQuoteDraft(user.id, currentProfile?.id || null);
+            if (draftError) {
+              console.log('QuotesManagement: loadQuoteDraft error', draftError);
+            }
+            if (draft?.draft_data) {
+              console.log('QuotesManagement: loaded backend draft for display', draft);
+              const d = draft.draft_data;
+              const placeholder = {
+                id: `draft-${draft.id}`,
+                number: '(brouillon non envoyé)',
+                clientName: d.selectedClient?.client?.name || d.selectedClient?.label || 'Client inconnu',
+                amount: 0,
+                amountFormatted: formatCurrency(0),
+                status: 'draft',
+                statusLabel: getStatusLabel('draft'),
+                isDraftPlaceholder: true,
+                createdAt: draft.last_saved,
+                createdAtFormatted: formatDate(draft.last_saved),
+                description: d.projectInfo?.description || 'Brouillon en cours',
+                client: d.selectedClient?.client || null,
+                tasks: d.tasks || [],
+                materials: [],
+                files: d.files || [],
+                deadline: d.projectInfo?.deadline || null,
+                deadlineFormatted: d.projectInfo?.deadline ? formatDate(d.projectInfo.deadline) : '',
+                validUntil: d.projectInfo?.deadline || null,
+                validUntilFormatted: d.projectInfo?.deadline ? formatDate(d.projectInfo.deadline) : '',
+              };
+              setQuotes([placeholder]);
+              setFilteredQuotes([placeholder]);
+              setStats({ total: 1, drafts: 1, sent: 0, averageAmount: 0 });
+              return;
+            }
+          } catch (e) { console.log('QuotesManagement: loadQuoteDraft exception', e); }
           setQuotes([]);
           setFilteredQuotes([]);
           setStats({ total: 0, signed: 0, pending: 0, averageScore: 0 });
           return;
         }
+
+        // Additionally merge backend draft so it always appears (no local list)
+        const additionalDrafts = [];
+        try {
+          const { data: draft } = await loadQuoteDraft(user.id, currentProfile?.id || null);
+          if (draft?.draft_data) {
+            const d = draft.draft_data;
+            additionalDrafts.push({
+              id: `draft-${draft.id}`,
+              number: '(brouillon non envoyé)',
+              clientName: d.selectedClient?.client?.name || d.selectedClient?.label || 'Client inconnu',
+              amount: 0,
+              amountFormatted: formatCurrency(0),
+              status: 'draft',
+              statusLabel: getStatusLabel('draft'),
+              isDraftPlaceholder: true,
+              createdAt: draft.last_saved,
+              createdAtFormatted: formatDate(draft.last_saved),
+              description: d.projectInfo?.description || 'Brouillon en cours',
+              client: d.selectedClient?.client || null,
+              tasks: d.tasks || [],
+              materials: [],
+              files: d.files || [],
+              deadline: d.projectInfo?.deadline || null,
+              deadlineFormatted: d.projectInfo?.deadline ? formatDate(d.projectInfo.deadline) : '',
+              validUntil: d.projectInfo?.deadline || null,
+              validUntilFormatted: d.projectInfo?.deadline ? formatDate(d.projectInfo.deadline) : '',
+            });
+          }
+        } catch (_) {}
+        // Local drafts list removed for a simpler flow
         
         // Only set error for actual errors, not for empty data
         if (quotesError) {
@@ -109,7 +175,7 @@ const QuotesManagement = () => {
         }
         
         // Transform backend data to match frontend structure
-        const transformedQuotes = quotesData.map(quote => ({
+        const transformedQuotes = (quotesData || []).map(quote => ({
           id: quote.id,
           number: quote.quote_number,
           clientName: quote.client?.name || 'Client inconnu',
@@ -126,17 +192,19 @@ const QuotesManagement = () => {
           tasks: quote.quote_tasks || [],
           materials: quote.quote_materials || [],
           files: quote.quote_files || [],
-          deadline: quote.deadline,
-          deadlineFormatted: formatDate(quote.deadline),
-          validUntil: quote.expires_at,
-          validUntilFormatted: formatDate(quote.expires_at),
-          isExpired: isQuoteExpired(quote.expires_at),
+          // start_date (DB) or legacy deadline as start; validUntil from valid_until
+          deadline: quote.start_date || quote.deadline,
+          deadlineFormatted: formatDate(quote.start_date || quote.deadline),
+          validUntil: quote.valid_until || quote.expires_at,
+          validUntilFormatted: formatDate(quote.valid_until || quote.expires_at),
+          isExpired: isQuoteExpired(quote.valid_until || quote.expires_at),
           terms: quote.terms_conditions
         }));
         
         // Sort quotes by priority
-        const sortedQuotes = transformedQuotes.sort((a, b) => getQuotePriority(a) - getQuotePriority(b));
-        
+        const merged = [...transformedQuotes, ...additionalDrafts];
+        const sortedQuotes = merged.sort((a, b) => getQuotePriority(a) - getQuotePriority(b));
+
         setQuotes(sortedQuotes);
         
         // Calculate stats (actual data)
@@ -409,14 +477,27 @@ const QuotesManagement = () => {
       case 'delete':
         try {
           setTableLoading(true);
-          const { error } = await deleteQuote(quote.id);
-          if (error) {
-            console.error('Error deleting quote:', error);
-            return;
+          if (String(quote.id).startsWith('draft-') || quote.isDraftPlaceholder) {
+            // Delete backend draft by row id if present
+            try {
+              const draftRowId = String(quote.id).replace('draft-', '');
+              await deleteQuoteDraftById(draftRowId);
+            } catch (_) {}
+            // Remove from local drafts list
+            // Local drafts list deprecated – nothing to remove beyond current draft
+            setQuotes(prev => prev.filter(q => q.id !== quote.id));
+            setFilteredQuotes(prev => prev.filter(q => q.id !== quote.id));
+            setSelectedQuotes(prev => prev.filter(id => id !== quote.id));
+          } else {
+            const { error } = await deleteQuote(quote.id);
+            if (error) {
+              console.error('Error deleting quote:', error);
+              return;
+            }
+            setQuotes(prev => prev.filter(q => q.id !== quote.id));
+            setFilteredQuotes(prev => prev.filter(q => q.id !== quote.id));
+            setSelectedQuotes(prev => prev.filter(id => id !== quote.id));
           }
-          setQuotes(prev => prev.filter(q => q.id !== quote.id));
-          setFilteredQuotes(prev => prev.filter(q => q.id !== quote.id));
-          setSelectedQuotes(prev => prev.filter(id => id !== quote.id));
         } catch (err) {
           console.error('Error deleting quote:', err);
         } finally {
@@ -634,7 +715,13 @@ const QuotesManagement = () => {
       switch (action) {
         case 'delete':
           setTableLoading(true);
-          await Promise.all(selectedQuotes.map(id => deleteQuote(id)));
+          await Promise.all(selectedQuotes.map(async (id) => {
+            if (String(id).startsWith('draft-')) {
+              try { await deleteQuoteDraftById(String(id).replace('draft-', '')); } catch (_) {}
+            } else {
+              await deleteQuote(id);
+            }
+          }));
           setQuotes(prev => prev.filter(q => !selectedQuotes.includes(q.id)));
           setFilteredQuotes(prev => prev.filter(q => !selectedQuotes.includes(q.id)));
           break;

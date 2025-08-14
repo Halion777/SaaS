@@ -37,7 +37,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
         if (sortConfig.key === 'amount') {
           aValue = parseFloat(aValue);
           bValue = parseFloat(bValue);
-        } else if (sortConfig.key === 'createdAt') {
+        } else if (sortConfig.key === 'createdAt' || sortConfig.key === 'validUntil') {
           aValue = new Date(aValue);
           bValue = new Date(bValue);
         }
@@ -153,8 +153,13 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                 )}
               </div>
             </th>
-            <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground">
-              Score IA
+            <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('validUntil')}>
+              <div className="flex items-center space-x-1">
+                <span>Valide jusqu'au</span>
+                {sortConfig.key === 'validUntil' && (
+                  <Icon name={sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown'} size={14} />
+                )}
+              </div>
             </th>
             <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground">
               Relances
@@ -187,13 +192,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                 </span>
               </td>
               <td className="p-3 md:p-4 text-muted-foreground">{formatDate(quote.createdAt)}</td>
-              <td className="p-3 md:p-4">
-                <div className="flex items-center space-x-2">
-                  <span className={`font-medium ${getAIScoreColor(quote.aiScore)}`}>
-                    {quote.aiScore}%
-                  </span>
-                </div>
-              </td>
+              <td className="p-3 md:p-4 text-foreground">{quote.validUntil ? formatDate(quote.validUntil) : '-'}</td>
               <td className="p-3 md:p-4">
                 <div className="flex flex-col gap-1">
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-center ${quote.followUpStatusColor || 'bg-gray-100 text-gray-700'}`}>
@@ -211,7 +210,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
               </td>
               <td className="p-3 md:p-4" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-end space-x-1">
-                  {quote.status === 'draft' && (
+                  {quote.status === 'draft' && !quote.isDraftPlaceholder && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -231,25 +230,29 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                   >
                     <Icon name="Edit" size={16} />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onQuoteAction('convert', quote)}
-                    title="Convertir en facture"
-                    disabled={quote.status !== 'accepted'}
-                    className="h-8 w-8"
-                  >
-                    <Icon name="Receipt" size={16} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onQuoteAction('followup', quote)}
-                    title="Gérer les relances"
-                    className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                  >
-                    <Icon name="MessageCircle" size={16} />
-                  </Button>
+                  {!quote.isDraftPlaceholder && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onQuoteAction('convert', quote)}
+                      title="Convertir en facture"
+                      disabled={quote.status !== 'accepted'}
+                      className="h-8 w-8"
+                    >
+                      <Icon name="Receipt" size={16} />
+                    </Button>
+                  )}
+                  {!quote.isDraftPlaceholder && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onQuoteAction('followup', quote)}
+                      title="Gérer les relances"
+                      className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    >
+                      <Icon name="MessageCircle" size={16} />
+                    </Button>
+                  )}
                   {/* Send reminder icon removed: manage via Follow-up panel */}
                   <Button
                     variant="ghost"
@@ -294,11 +297,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
           
           <div className="flex items-center justify-between mb-3">
             <span className="font-semibold text-foreground">{quote.amountFormatted}</span>
-            <div className="flex items-center space-x-1">
-              <span className={`text-sm font-medium ${getAIScoreColor(quote.aiScore)}`}>
-                {quote.aiScore}%
-              </span>
-            </div>
+            <div className="text-xs text-muted-foreground">Valide jusqu'au {quote.validUntil ? formatDate(quote.validUntil) : '-'}</div>
           </div>
           
           <div className="text-xs text-muted-foreground mb-3">
@@ -306,7 +305,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
           </div>
           
           <div className="flex items-center justify-end space-x-1" onClick={(e) => e.stopPropagation()}>
-            {quote.status === 'draft' && (
+            {quote.status === 'draft' && !quote.isDraftPlaceholder && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -326,25 +325,18 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
             >
               <Icon name="Edit" size={14} />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onQuoteAction('followup', quote)}
-              title="Gérer les relances"
-              className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-            >
-              <Icon name="MessageCircle" size={14} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onQuoteAction('sendFollowUpNow', quote)}
-              title="Envoyer relance maintenant"
-              disabled={quote.status !== 'sent'}
-              className="h-7 w-7 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-            >
-              <Icon name="Send" size={14} />
-            </Button>
+            {!quote.isDraftPlaceholder && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onQuoteAction('followup', quote)}
+                title="Gérer les relances"
+                className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              >
+                <Icon name="MessageCircle" size={14} />
+              </Button>
+            )}
+            {/* Send reminder icon removed in card view */}
             <Button
               variant="ghost"
               size="icon"

@@ -229,7 +229,7 @@ export async function createQuote(quoteData) {
       status: quoteData.status || 'draft',
       project_categories: quoteData.project_categories || [],
       custom_category: truncateString(quoteData.custom_category || '', 255),
-      deadline: quoteData.deadline || null,
+      start_date: quoteData.start_date || null,
       total_amount: quoteData.total_amount || 0,
       tax_amount: quoteData.tax_amount || 0,
       discount_amount: quoteData.discount_amount || 0,
@@ -353,7 +353,7 @@ export async function updateQuote(id, quoteData) {
         status: quoteData.status,
         project_categories: quoteData.project_categories,
         custom_category: quoteData.custom_category,
-        deadline: quoteData.deadline,
+        start_date: quoteData.start_date,
         total_amount: quoteData.total_amount,
         tax_amount: quoteData.tax_amount,
         discount_amount: quoteData.discount_amount,
@@ -601,12 +601,17 @@ export async function saveQuoteDraft(draftData) {
  */
 export async function loadQuoteDraft(userId, profileId) {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('quote_drafts')
       .select('*')
       .eq('user_id', userId)
-      .eq('profile_id', profileId)
-      .single();
+      .limit(1);
+    if (profileId) {
+      query = query.eq('profile_id', profileId);
+    } else {
+      query = query.is('profile_id', null);
+    }
+    const { data, error } = await query.single();
     
     return { data, error };
   } catch (error) {
@@ -623,15 +628,56 @@ export async function loadQuoteDraft(userId, profileId) {
  */
 export async function deleteQuoteDraft(userId, profileId) {
   try {
-    const { error } = await supabase
+    let query = supabase
       .from('quote_drafts')
       .delete()
-      .eq('user_id', userId)
-      .eq('profile_id', profileId);
+      .eq('user_id', userId);
+    if (profileId) {
+      query = query.eq('profile_id', profileId);
+    } else {
+      query = query.is('profile_id', null);
+    }
+    const { error } = await query;
     
     return { success: !error, error };
   } catch (error) {
     console.error('Error deleting quote draft:', error);
+    return { error };
+  }
+}
+
+/**
+ * Delete quote draft by its row id
+ * @param {string} draftId - quote_drafts.id
+ */
+export async function deleteQuoteDraftById(draftId) {
+  try {
+    const { error } = await supabase
+      .from('quote_drafts')
+      .delete()
+      .eq('id', draftId);
+    return { success: !error, error };
+  } catch (error) {
+    console.error('Error deleting quote draft by id:', error);
+    return { error };
+  }
+}
+/**
+ * Load recent drafts for the current user (any profile)
+ * @param {string} userId
+ * @param {number} limit
+ */
+export async function loadRecentQuoteDrafts(userId, limit = 3) {
+  try {
+    const { data, error } = await supabase
+      .from('quote_drafts')
+      .select('*')
+      .eq('user_id', userId)
+      .order('last_saved', { ascending: false })
+      .limit(limit);
+    return { data, error };
+  } catch (error) {
+    console.error('Error loading recent quote drafts:', error);
     return { error };
   }
 }
