@@ -426,14 +426,23 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                   </div>
                 </div>
                 
+                {/* Show/Hide material prices in quote preview */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <h5 className="text-sm font-medium text-foreground">{t('profile.settings.preferences.notifications.title')}</h5>
-                    <p className="text-xs text-muted-foreground">{t('profile.settings.preferences.notifications.description')}</p>
+                    <h5 className="text-sm font-medium text-foreground">Afficher les prix des matériaux</h5>
+                    <p className="text-xs text-muted-foreground">Contrôle l'affichage des prix matériaux dans l'aperçu du devis</p>
                   </div>
-                  <Button variant="outline" size="sm">
-                    {t('common.configure')}
-                  </Button>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      defaultChecked={(localStorage.getItem('include-materials-prices') ?? 'true') === 'true'}
+                      onChange={(e) => {
+                        const v = e.target.checked;
+                        localStorage.setItem('include-materials-prices', String(v));
+                        window.dispatchEvent(new StorageEvent('storage', { key: 'include-materials-prices', newValue: String(v) }));
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

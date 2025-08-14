@@ -43,6 +43,16 @@ const QuotePreview = ({
       return true;
     }
   });
+  // Keep in sync with Account Settings preference
+  useEffect(() => {
+    const handleStorage = (e) => {
+      if (e.key === 'include-materials-prices') {
+        setIncludeMaterialsPrices(e.newValue === 'true');
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
   
   // Company Information
   const [companyInfo, setCompanyInfo] = useState(parentCompanyInfo || getDefaultCompanyInfo());
@@ -445,6 +455,26 @@ const QuotePreview = ({
   const laborWord = lang.startsWith('en') ? 'Labor' : lang.startsWith('nl') ? 'Arbeid' : "Main d'œuvre";
   const materialWord = lang.startsWith('en') ? 'Material' : lang.startsWith('nl') ? 'Materiaal' : 'Matériau';
 
+  // Formatting helpers
+  const numberLocale = lang.startsWith('en') ? 'en-GB' : lang.startsWith('nl') ? 'nl-NL' : 'fr-FR';
+  const formatNumber = (value) => {
+    const n = Number.isFinite(Number(value)) ? Number(value) : 0;
+    return n.toLocaleString(numberLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+  const formatMoney = (value) => `${formatNumber(value)}€`;
+
+  // Client name helper: prefer raw client name; strip any leading emoji/symbols from label fallback
+  const getClientDisplayName = (sel) => {
+    if (!sel) return 'Client';
+    if (sel.client?.name) return sel.client.name;
+    const label = sel.label || '';
+    try {
+      return label.replace(/^[^\p{L}\p{N}]+\s*/u, '');
+    } catch (_) {
+      return label.replace(/^[^A-Za-z0-9]+\s*/, '');
+    }
+  };
+
   // Build a concise, readable task label: take first sentence or N words
   const buildConciseTaskLabel = (description, index, maxWords = 18) => {
     const text = (description || '').replace(/\s+/g, ' ').trim();
@@ -653,7 +683,7 @@ const QuotePreview = ({
               <div>
                 <h3 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>CLIENT</h3>
                 <div className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
-                  <p className="font-medium">{selectedClient?.label?.split(' - ')[0] || 'Client'}</p>
+                  <p className="font-medium">{getClientDisplayName(selectedClient)}</p>
                   <p>{selectedClient?.email || 'email@client.com'}</p>
                   <p>{selectedClient?.phone || '06 12 34 56 78'}</p>
                   {/* Enhanced address display */}
@@ -701,9 +731,7 @@ const QuotePreview = ({
                   {projectInfo?.categories?.length > 0 && (
                     <p>Catégories: {(projectInfo.categories || []).join(', ')}</p>
                   )}
-                  {projectInfo?.deadline && (
-                    <p>Échéance: {new Date(projectInfo.deadline).toLocaleDateString('fr-FR')}</p>
-                  )}
+                  {/* Deadline is already displayed in the header; avoid duplication here */}
                 </div>
               )}
             </div>
@@ -712,28 +740,16 @@ const QuotePreview = ({
             <div className={`mb-8 sm:mb-10 ${previewMode === 'mobile' ? 'px-4' : 'px-4 sm:px-8 lg:px-10'}`}>
               <div className="flex items-center justify-between mb-3 sm:mb-4">
                 <h3 className={`font-semibold text-gray-800 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>DÉTAIL DES PRESTATIONS</h3>
-                <label className="flex items-center space-x-2 text-xs sm:text-sm">
-                  <input
-                    type="checkbox"
-                    checked={includeMaterialsPrices}
-                    onChange={(e) => {
-                      const v = e.target.checked;
-                      setIncludeMaterialsPrices(v);
-                      try { localStorage.setItem('include-materials-prices', String(v)); } catch {}
-                    }}
-                  />
-                  <span className="text-gray-600">Afficher prix matériaux</span>
-                </label>
               </div>
               <div className={`${previewMode === 'mobile' ? 'overflow-x-auto' : 'overflow-x-auto'}`}>
                 <table className={`w-full border-collapse ${previewMode === 'mobile' ? 'text-xs min-w-[520px]' : 'text-xs sm:text-sm min-w-[700px]'}`}>
                   <thead>
                     <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
-                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-left' : 'p-3 sm:p-4 text-left'}`} style={{ color: customization.colors.primary }}>Élément</th>
-                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-center w-16' : 'p-3 sm:p-4 text-center w-20 sm:w-24'}`} style={{ color: customization.colors.primary }}>Durée (h)</th>
-                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-center w-24' : 'p-3 sm:p-4 text-center w-28 sm:w-32'}`} style={{ color: customization.colors.primary }}>Quantité</th>
-                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-24' : 'p-3 sm:p-4 text-right w-28 sm:w-32'}`} style={{ color: customization.colors.primary }}>PU HT</th>
-                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-24' : 'p-3 sm:p-4 text-right w-28 sm:w-32'}`} style={{ color: customization.colors.primary }}>Total HT</th>
+                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 w-10 text-center' : 'p-3 sm:p-4 w-12 text-center'}`} style={{ color: customization.colors.primary }}>N°</th>
+                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-left' : 'p-3 sm:p-4 text-left'}`} style={{ color: customization.colors.primary }}>DÉSIGNATION</th>
+                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-center w-24' : 'p-3 sm:p-4 text-center w-28 sm:w-32'}`} style={{ color: customization.colors.primary }}>QTÉ</th>
+                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-24' : 'p-3 sm:p-4 text-right w-28 sm:w-32'}`} style={{ color: customization.colors.primary }}>PRIX U.</th>
+                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-24' : 'p-3 sm:p-4 text-right w-28 sm:w-32'}`} style={{ color: customization.colors.primary }}>TOTAL HT</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -745,16 +761,33 @@ const QuotePreview = ({
 
                       return (
                         <React.Fragment key={task.id}>
+                          {/* Section header with subtotal */}
+                          <tr style={{ backgroundColor: `${customization.colors.primary}10` }}>
+                            <td className={`border border-gray-300 font-semibold text-black text-center ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{index + 1}</td>
+                            <td className={`border border-gray-300 font-semibold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{buildConciseTaskLabel(task.description, index)}</td>
+                            <td className={`border border-gray-300 text-center ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}></td>
+                            <td className={`border border-gray-300 text-right ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}></td>
+                            <td className={`border border-gray-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{taskSubtotal.toFixed(2)}€</td>
+                          </tr>
+
                           {/* Labor row */}
-                          <tr style={{ backgroundColor: `${customization.colors.primary}08` }}>
-                            <td className={`border border-gray-300 ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>
-                              <div className="font-medium text-black">{buildConciseTaskLabel(task.description, index)}</div>
-                              <div className="text-gray-500 text-[11px] sm:text-xs">{laborWord}</div>
+                          <tr>
+                            <td className={`border border-gray-200 text-center text-black ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>{index + 1}.1</td>
+                            <td className={`border border-gray-200 text-black ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>
+                              <div className="font-medium">{laborWord}</div>
                             </td>
-                            <td className={`border border-gray-300 text-center text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{task.duration || '-'}</td>
-                            <td className={`border border-gray-300 text-center text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>1</td>
-                            <td className={`border border-gray-300 text-right text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{laborTotal.toFixed(2)}€</td>
-                            <td className={`border border-gray-300 text-right font-semibold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{laborTotal.toFixed(2)}€</td>
+                            {(() => {
+                              const hours = parseFloat(task.duration || 0);
+                              const laborQty = Number.isFinite(hours) && hours > 0 ? hours : 1;
+                              const unitPrice = laborQty > 0 ? laborTotal / laborQty : laborTotal;
+                              return (
+                                <>
+                                  <td className={`border border-gray-200 text-center text-black ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>{formatNumber(laborQty)} h</td>
+                                  <td className={`border border-gray-200 text-right text-black ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>{formatMoney(unitPrice)}</td>
+                                  <td className={`border border-gray-200 text-right font-semibold text-black ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>{formatMoney(laborTotal)}</td>
+                                </>
+                              );
+                            })()}
                           </tr>
 
                           {/* Material rows */}
@@ -762,26 +795,19 @@ const QuotePreview = ({
                             const qty = parseFloat(m.quantity || 0);
                             const pu = parseFloat(m.price || 0);
                             const lineTotal = qty * pu;
-                            const stripe = mi % 2 === 0 ? `${customization.colors.primary}10` : 'transparent';
+                            const stripe = mi % 2 === 0 ? `${customization.colors.primary}08` : 'transparent';
                             return (
                               <tr key={`${task.id}-${m.id}`} style={{ backgroundColor: stripe }}>
-                                <td className={`border border-gray-200 ${previewMode === 'mobile' ? 'p-1' : 'p-1.5 sm:p-2'} border-l-4`} style={{ borderLeftColor: customization.colors.primary }}>
-                                  <div className="text-black leading-tight text-[12px] sm:text-[13px]">{m.name}</div>
-                                  {m.unit && (<div className="text-gray-500 text-[10px] leading-tight sm:text-[11px]">{materialWord}</div>)}
+                                <td className={`border border-gray-200 text-center text-black ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>{index + 1}.{mi + 2}</td>
+                                <td className={`border border-gray-200 text-black ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>
+                                  <div className="leading-tight text-[12px] sm:text-[13px]">{m.name}</div>
                                 </td>
-                                <td className={`border border-gray-200 text-center text-black ${previewMode === 'mobile' ? 'p-1' : 'p-1.5 sm:p-2'}`}>-</td>
-                                <td className={`border border-gray-200 text-center text-black ${previewMode === 'mobile' ? 'p-1' : 'p-1.5 sm:p-2'}`}>{qty} {m.unit || ''}</td>
-                                <td className={`border border-gray-200 text-right text-black ${previewMode === 'mobile' ? 'p-1' : 'p-1.5 sm:p-2'}`}>{includeMaterialsPrices ? `${pu.toFixed(2)}€` : '•••'}</td>
-                                <td className={`border border-gray-200 text-right text-black font-medium ${previewMode === 'mobile' ? 'p-1' : 'p-1.5 sm:p-2'}`}>{includeMaterialsPrices ? `${lineTotal.toFixed(2)}€` : '•••'}</td>
+                                <td className={`border border-gray-200 text-center text-black ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>{formatNumber(qty)} {m.unit || ''}</td>
+                                <td className={`border border-gray-200 text-right text-black ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>{includeMaterialsPrices ? formatMoney(pu) : '•••'}</td>
+                                <td className={`border border-gray-200 text-right text-black font-medium ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>{includeMaterialsPrices ? formatMoney(lineTotal) : '•••'}</td>
                               </tr>
                             );
                           })}
-
-                          {/* Task subtotal */}
-                          <tr style={{ backgroundColor: `${customization.colors.primary}15` }}>
-                            <td className={`border border-gray-300 bg-gray-50 font-semibold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">Sous-total tâche</td>
-                            <td className={`border border-gray-300 bg-gray-50 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{taskSubtotal.toFixed(2)}€</td>
-                          </tr>
                         </React.Fragment>
                       );
                     })}
@@ -789,30 +815,28 @@ const QuotePreview = ({
                   <tfoot>
                     <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
                       <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">SOUS-TOTAL HT:</td>
-                      <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{totalPrice.toFixed(2)}€</td>
+                      <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{formatMoney(totalPrice)}</td>
                     </tr>
                     {financialConfig.vatConfig.display && (
                       <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
-                        <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">TOTAL HT:</td>
-                        <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{totalPrice.toFixed(2)}€</td>
-                      </tr>
-                    )}
-                    {financialConfig.vatConfig.display && (
-                      <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
                         <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">TVA ({financialConfig.vatConfig.rate}%):</td>
-                        <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{vatAmount.toFixed(2)}€</td>
+                        <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{formatMoney(vatAmount)}</td>
                       </tr>
                     )}
+                    <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
+                      <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">TOTAL TTC:</td>
+                      <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{formatMoney(totalWithVAT)}</td>
+                    </tr>
                     {financialConfig.advanceConfig.enabled && (
                       <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
                         <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">ACOMPTE À LA COMMANDE:</td>
-                        <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{advanceAmount.toFixed(2)}€</td>
+                        <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{formatMoney(advanceAmount)}</td>
                       </tr>
                     )}
                     {financialConfig.advanceConfig.enabled && (
                       <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
                         <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">SOLDE À LA LIVRAISON:</td>
-                        <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{balanceAmount.toFixed(2)}€</td>
+                        <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{formatMoney(balanceAmount)}</td>
                       </tr>
                     )}
                   </tfoot>
