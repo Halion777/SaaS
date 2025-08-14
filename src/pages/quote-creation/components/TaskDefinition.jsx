@@ -907,7 +907,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         ? projectCategory
         : (projectCategory ? [projectCategory] : []);
       const enhancedResult = await enhanceTranscriptionWithAI(
-        rawTranscript,
+        rawTranscript, 
         categories,
         projectCustomCategory || ''
       );
@@ -964,10 +964,10 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
           const baseDescription = aiResponse.data.description;
           const durationMinutes = info.durationValue != null ? minutesFrom(info.durationValue, info.durationUnit) : (aiResponse.data.estimatedDuration || 0);
           const suggestedMaterials = (aiResponse.data.suggestedMaterials || []).map(mat => ({
-            id: Date.now() + Math.random(),
-            name: mat.name,
-            quantity: mat.quantity,
-            unit: mat.unit,
+                id: Date.now() + Math.random(),
+                name: mat.name,
+                quantity: mat.quantity,
+                unit: mat.unit,
             price: parseFloat(mat.price) || 0
           }));
 
@@ -1392,7 +1392,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                       <div className="text-base sm:text-lg font-semibold">{task.price || 0}€</div>
                     </div>
                     <p className="text-xs sm:text-sm text-muted-foreground">{task.description}</p>
-                    <div className="flex items-center mt-2 text-xs text-muted-foreground">
+                                                              <div className="flex items-center mt-2 text-xs text-muted-foreground">
                       <Icon name="Clock" size={12} className="mr-1" />
                       <span>{formatDuration(task.duration, 'hours')}</span>
                     </div>
@@ -1403,9 +1403,9 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                           {task.materials.map((m) => (
                             <span key={m.id} className="text-[11px] bg-muted px-1.5 py-0.5 rounded">
                               {m.name} ({m.quantity} {m.unit}) {m.price ? `· ${m.price}€` : ''}
-                            </span>
+                          </span>
                           ))}
-                        </div>
+                      </div>
                       </div>
                     )}
                   </div>

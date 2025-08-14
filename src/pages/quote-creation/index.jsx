@@ -288,19 +288,18 @@ const QuoteCreation = () => {
         }
       }
       
-      // Load client signature if exists
+      // Load client signature if exists (prefer client type)
       if (quote.quote_signatures && quote.quote_signatures.length > 0) {
-        const clientSignature = quote.quote_signatures[0]; // Assuming one client signature per quote
+        const clientSignature = quote.quote_signatures.find(s => s.signature_type === 'client') || quote.quote_signatures[0];
+        const signatureUrl = clientSignature.signature_file_path 
+          ? await getStorageSignedUrl('signatures', clientSignature.signature_file_path) 
+          : (clientSignature.signature_data ? `data:image/png;base64,${clientSignature.signature_data}` : null);
         const signatureData = {
-          signature: clientSignature.signature_file_path ? 
-            await getStorageSignedUrl('signatures', clientSignature.signature_file_path) : 
-            (clientSignature.signature_data ? `data:image/png;base64,${clientSignature.signature_data}` : null),
+          signature: signatureUrl,
           clientComment: clientSignature.signer_email || '',
           signedAt: clientSignature.signed_at || new Date().toISOString()
         };
-        
-        // Save to localStorage for display
-        if (user?.id) {
+        if (user?.id && signatureUrl) {
           localStorage.setItem(`client-signature-${user.id}`, JSON.stringify(signatureData));
         }
       }
@@ -346,7 +345,8 @@ const QuoteCreation = () => {
       setProjectInfo({
         categories: quote.project_categories || [],
         customCategory: quote.custom_category || '',
-        deadline: quote.deadline || '',
+        // Use stored valid_until; fallback to legacy deadline if present
+        deadline: quote.valid_until || quote.deadline || '',
         description: quote.description || '',
         quoteNumber: isDuplicating ? null : quote.quote_number // Don't copy quote number when duplicating
       });

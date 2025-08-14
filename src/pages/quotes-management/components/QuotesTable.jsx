@@ -8,6 +8,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('table');
+  const [copiedMap, setCopiedMap] = useState({});
 
   // Auto-switch to card view on smaller screens
   useEffect(() => {
@@ -229,9 +230,23 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={async () => {
+                        await onQuoteAction('share', quote);
+                        setCopiedMap(prev => ({ ...prev, [quote.id]: true }));
+                        setTimeout(() => setCopiedMap(prev => ({ ...prev, [quote.id]: false })), 1500);
+                      }}
+                      title="Partager via lien public"
+                      className="h-8 w-8 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                    >
+                      <Icon name={copiedMap[quote.id] ? 'CheckCircle' : 'Share'} size={16} />
+                    </Button>
+                  )}
+                  {(!quote.isDraftPlaceholder && quote.status === 'sent') && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => onQuoteAction('convert', quote)}
                       title="Convertir en facture"
-                      disabled={quote.status !== 'accepted'}
                       className="h-8 w-8"
                     >
                       <Icon name="Receipt" size={16} />
@@ -299,7 +314,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
             Créé le {formatDate(quote.createdAt)}
           </div>
           
-          <div className="flex items-center justify-end space-x-1" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-end space-x-1" onClick={(e) => e.stopPropagation()}>
             {quote.status === 'draft' && !quote.isDraftPlaceholder && (
               <Button
                 variant="ghost"
@@ -320,6 +335,32 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
             >
               <Icon name="Edit" size={14} />
             </Button>
+              {!quote.isDraftPlaceholder && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={async () => {
+                    await onQuoteAction('share', quote);
+                    setCopiedMap(prev => ({ ...prev, [quote.id]: true }));
+                    setTimeout(() => setCopiedMap(prev => ({ ...prev, [quote.id]: false })), 1500);
+                  }}
+                  title="Partager via lien public"
+                  className="h-7 w-7 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                >
+                  <Icon name={copiedMap[quote.id] ? 'CheckCircle' : 'Share'} size={14} />
+                </Button>
+              )}
+              {(!quote.isDraftPlaceholder && quote.status === 'sent') && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onQuoteAction('convert', quote)}
+                  title="Convertir en facture"
+                  className="h-7 w-7"
+                >
+                  <Icon name="Receipt" size={14} />
+                </Button>
+              )}
             {!quote.isDraftPlaceholder && (
               <Button
                 variant="ghost"

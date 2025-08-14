@@ -174,7 +174,12 @@ export async function fetchQuoteById(id) {
           id,
           signer_name,
           signer_email,
+          signature_type,
+          signature_mode,
           signature_file_path,
+          signature_filename,
+          signature_size,
+          signature_mime_type,
           signature_data,
           signed_at,
           created_at

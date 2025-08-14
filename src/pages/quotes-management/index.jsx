@@ -495,6 +495,21 @@ const QuotesManagement = () => {
       case 'edit':
         navigate(`/quote-creation?edit=${quote.id}`);
         break;
+      case 'share': {
+        const { generatePublicShareLink, getShareLinkInfo } = await import('../../services/shareService');
+        const res = await getShareLinkInfo(quote.id);
+        if (res?.success && res.data?.share_token) {
+          const url = `${window.location.origin}/quote-share/${res.data.share_token}`;
+          try { await navigator.clipboard.writeText(url); } catch (_) {}
+        } else {
+          const created = await generatePublicShareLink(quote.id, user?.id);
+          if (created?.success) {
+            const url = created.data;
+            try { await navigator.clipboard.writeText(url); } catch (_) {}
+          }
+        }
+        break;
+      }
       case 'duplicate':
         navigate(`/quote-creation?duplicate=${quote.id}`);
         break;

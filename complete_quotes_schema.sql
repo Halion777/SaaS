@@ -46,7 +46,6 @@ CREATE TABLE IF NOT EXISTS public.quotes (
     status VARCHAR(50) DEFAULT 'draft', -- draft, sent, viewed, accepted, rejected, expired
     project_categories TEXT[] DEFAULT '{}', -- Array of project categories (plomberie, electricite, etc.)
     custom_category TEXT, -- Custom category when "autre" is selected
-    deadline DATE, -- Project deadline date
     total_amount DECIMAL(15,2) DEFAULT 0,
     tax_amount DECIMAL(15,2) DEFAULT 0,
     discount_amount DECIMAL(15,2) DEFAULT 0,
@@ -268,7 +267,7 @@ CREATE INDEX IF NOT EXISTS idx_quotes_valid_until ON public.quotes(valid_until);
 CREATE INDEX IF NOT EXISTS idx_quotes_created_at ON public.quotes(created_at);
 CREATE INDEX IF NOT EXISTS idx_quotes_is_public ON public.quotes(is_public);
 CREATE INDEX IF NOT EXISTS idx_quotes_project_categories_gin ON public.quotes USING GIN (project_categories);
-CREATE INDEX IF NOT EXISTS idx_quotes_deadline ON public.quotes(deadline);
+
 
 CREATE INDEX IF NOT EXISTS idx_quote_tasks_quote_id ON public.quote_tasks(quote_id);
 CREATE INDEX IF NOT EXISTS idx_quote_tasks_order_index ON public.quote_tasks(order_index);
@@ -762,7 +761,6 @@ COMMENT ON TABLE public.storage_files IS 'Centralized file storage metadata';
 -- Column comments for the new frontend fields
 COMMENT ON COLUMN public.quotes.project_categories IS 'Array of project categories (e.g., ["plomberie", "electricite", "menuiserie", "autre"])';
 COMMENT ON COLUMN public.quotes.custom_category IS 'Custom category when "autre" is selected from predefined categories';
-COMMENT ON COLUMN public.quotes.deadline IS 'Project deadline date for quote completion';
 COMMENT ON COLUMN public.quotes.terms_conditions IS 'Terms and conditions text for the quote';
 
 -- Column comments for quote signatures

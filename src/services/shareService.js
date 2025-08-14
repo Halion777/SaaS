@@ -14,36 +14,14 @@ export const generatePublicShareLink = async (quoteId, userId) => {
 
     // Generate a unique share token
     const shareToken = generateShareToken();
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30); // Link expires in 30 days
+    
+    // Update quotes table directly
+    const { error: updateError } = await supabase
+      .from('quotes')
+      .update({ share_token: shareToken, is_public: true })
+      .eq('id', quoteId);
 
-    // Save share record to database
-    let insertPayload = {
-      quote_id: quoteId,
-      user_id: userId,
-      share_token: shareToken,
-      expires_at: expiresAt.toISOString(),
-      is_active: true,
-      access_count: 0
-    };
-
-    let insertResult = await supabase
-      .from('quote_shares')
-      .insert(insertPayload)
-      .select()
-      .single();
-
-    // Fallback: if schema has no user_id column, retry without it
-    if (insertResult.error && /user_id/.test(insertResult.error.message || '')) {
-      const { user_id, ...withoutUserId } = insertPayload;
-      insertResult = await supabase
-        .from('quote_shares')
-        .insert(withoutUserId)
-        .select()
-        .single();
-    }
-
-    if (insertResult.error) {
+    if (updateError) {
       return { success: false, error: 'Failed to create share link' };
     }
 
@@ -53,8 +31,7 @@ export const generatePublicShareLink = async (quoteId, userId) => {
     return { 
       success: true, 
       data: publicUrl,
-      shareId: insertResult.data.id,
-      expiresAt: expiresAt.toISOString()
+      token: shareToken
     };
   } catch (error) {
     console.error('Error generating share link:', error);
@@ -69,34 +46,15 @@ export const generatePublicShareLink = async (quoteId, userId) => {
  */
 export const getShareLinkInfo = async (quoteId) => {
   try {
-    let { data, error } = await supabase
-      .from('quote_shares')
-      .select('*')
-      .eq('quote_id', quoteId)
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .limit(1)
+    const { data, error } = await supabase
+      .from('quotes')
+      .select('share_token, is_public')
+      .eq('id', quoteId)
       .single();
 
-    if (error) {
-      if (error.code === 'PGRST116') { // No rows returned
-        return { success: true, data: null };
-      }
-      // Fallback: some schemas might not have created_at sorting supported
-      // Try again without order/limit
-      const retry = await supabase
-        .from('quote_shares')
-        .select('*')
-        .eq('quote_id', quoteId)
-        .eq('is_active', true)
-        .single();
-      if (retry.error) {
-        return { success: false, error: 'Failed to get share link info' };
-      }
-      data = retry.data;
-    }
-
-    return { success: true, data };
+    if (error) return { success: false, error: 'Failed to get share link info' };
+    if (!data?.is_public || !data?.share_token) return { success: true, data: null };
+    return { success: true, data: { share_token: data.share_token } };
   } catch (error) {
     console.error('Error getting share link info:', error);
     return { success: false, error: 'Failed to get share link info' };
@@ -108,12 +66,12 @@ export const getShareLinkInfo = async (quoteId) => {
  * @param {string} shareId - Share ID
  * @returns {Promise<{success: boolean, error?: string}>}
  */
-export const deactivateShareLink = async (shareId) => {
+export const deactivateShareLink = async (quoteId) => {
   try {
     const { error } = await supabase
-      .from('quote_shares')
-      .update({ is_active: false })
-      .eq('id', shareId);
+      .from('quotes')
+      .update({ is_public: false, share_token: null })
+      .eq('id', quoteId);
 
     if (error) {
       return { success: false, error: 'Failed to deactivate share link' };
@@ -133,30 +91,7 @@ export const deactivateShareLink = async (shareId) => {
  */
 export const getQuoteByShareToken = async (shareToken) => {
   try {
-    // Get share record
-    const { data: shareData, error: shareError } = await supabase
-      .from('quote_shares')
-      .select('*')
-      .eq('share_token', shareToken)
-      .eq('is_active', true)
-      .single();
-
-    if (shareError || !shareData) {
-      return { success: false, error: 'Share link not found or expired' };
-    }
-
-    // Check if link has expired
-    if (new Date(shareData.expires_at) < new Date()) {
-      return { success: false, error: 'Share link has expired' };
-    }
-
-    // Update access count
-    await supabase
-      .from('quote_shares')
-      .update({ access_count: shareData.access_count + 1 })
-      .eq('id', shareData.id);
-
-    // Get quote data
+    // Fetch quote by token directly from quotes table
     const { data: quoteData, error: quoteError } = await supabase
       .from('quotes')
       .select(`
@@ -181,7 +116,8 @@ export const getQuoteByShareToken = async (shareToken) => {
           id, vat_config, advance_config, marketing_banner, payment_terms, discount_config, created_at
         )
       `)
-      .eq('id', shareData.quote_id)
+      .eq('share_token', shareToken)
+      .eq('is_public', true)
       .single();
 
     if (quoteError) {

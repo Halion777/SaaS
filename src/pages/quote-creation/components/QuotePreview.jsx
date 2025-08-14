@@ -221,6 +221,15 @@ const QuotePreview = ({
       } catch (error) {
         console.error('Error loading saved signature data:', error);
       }
+    } else if (user?.id) {
+      // Fallback: when editing, we persist client signature under a user-scoped key
+      try {
+        const fallback = localStorage.getItem(`client-signature-${user.id}`);
+        if (fallback) {
+          const parsed = JSON.parse(fallback);
+          setSignatureData(parsed);
+        }
+      } catch (_) {}
     }
   }, [user?.id]);
 
@@ -373,34 +382,12 @@ const QuotePreview = ({
     fetchExistingShare();
   }, [quoteId]);
 
-  // Handle share link generation
-  const handleGenerateShareLink = async () => {
-    try {
-      setIsGeneratingShare(true);
-      if (!quoteId) {
-        // Requires an existing quote in DB
-        return;
-      }
-      const res = await generatePublicShareLink(quoteId, user?.id);
-      if (!res?.success) {
-        return;
-      }
-      setShareLink(res.data);
-      setShareLinkInfo({ id: res.shareId, expires_at: res.expiresAt });
-      try { await navigator.clipboard.writeText(res.data); } catch (_) {}
-    } catch (error) {
-      console.error('Error generating share link:', error);
-    } finally {
-      setIsGeneratingShare(false);
-    }
-  };
+  
 
   // Handle share link deactivation
   const handleDeactivateShareLink = async () => {
     try {
-      if (shareLinkInfo?.id) {
-        await deactivateShareLink(shareLinkInfo.id);
-      }
+      await deactivateShareLink(quoteId);
       
       setShareLink(null);
       setShareLinkInfo(null);
@@ -979,58 +966,7 @@ const QuotePreview = ({
             )}
           </Button>
           
-          {!shareLink ? (
-            <Button
-              variant="outline"
-              iconName="Share"
-              iconPosition="left"
-              size="sm"
-              className="text-xs sm:text-sm"
-              disabled={isSaving || isGeneratingShare}
-              onClick={handleGenerateShareLink}
-            >
-              <>
-                <span className="hidden sm:inline">Lien public</span>
-                <span className="sm:hidden">Lien</span>
-              </>
-            </Button>
-          ) : (
-            <div className="flex space-x-2">
-              <Button
-                variant="outline"
-                iconName="Copy"
-                iconPosition="left"
-                size="sm"
-                className="text-xs sm:text-sm"
-                onClick={handleCopyShareLink}
-              >
-                <span className="hidden sm:inline">Copier</span>
-                <span className="sm:hidden">Copier</span>
-              </Button>
-              <Button
-                variant="outline"
-                iconName="ExternalLink"
-                iconPosition="left"
-                size="sm"
-                className="text-xs sm:text-sm"
-                onClick={handleOpenShareLink}
-              >
-                <span className="hidden sm:inline">Ouvrir</span>
-                <span className="sm:hidden">Ouvrir</span>
-              </Button>
-              <Button
-                variant="outline"
-                iconName="X"
-                iconPosition="left"
-                size="sm"
-                className="text-xs sm:text-sm text-red-600"
-                onClick={handleDeactivateShareLink}
-              >
-                <span className="hidden sm:inline">Désactiver</span>
-                <span className="sm:hidden">X</span>
-              </Button>
-            </div>
-          )}
+          {/* Share actions moved to quotes management */}
           
           <Button
             variant="outline"
