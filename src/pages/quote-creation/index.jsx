@@ -10,7 +10,7 @@ import ClientSelection from './components/ClientSelection';
 import TaskDefinition from './components/TaskDefinition';
 import FileUpload from './components/FileUpload';
 import QuotePreview from './components/QuotePreview';
-import AIScoring from './components/AIScoring';
+// AIScoring removed
 import { generateQuoteNumber, createQuote, fetchQuoteById, updateQuote, saveQuoteDraft, loadQuoteDraft, deleteQuoteDraft, deleteQuoteDraftById } from '../../services/quotesService';
 import { uploadQuoteFile, uploadQuoteSignature } from '../../services/quoteFilesService';
 import { saveCompanyInfo } from '../../services/companyInfoService';
@@ -1741,13 +1741,79 @@ const QuoteCreation = () => {
               {renderCurrentStep()}
             </div>
 
-            {/* AI Scoring Sidebar */}
-            <div className="lg:col-span-1">
-              <AIScoring
-                selectedClient={selectedClient}
-                tasks={tasks}
-                currentStep={currentStep}
-              />
+            {/* Recommendations Sidebar */}
+            <div className="lg:col-span-1 space-y-4">
+              {/* Step box */}
+              <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-center">
+                <span className="text-3xl sm:text-4xl font-extrabold text-primary">Étape {currentStep}/4</span>
+              </div>
+              {/* Recommendation box */}
+              <div className="bg-card border border-border rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center">
+                  <Icon name="Sparkles" size={14} className="mr-2 text-primary" />
+                  Recommandations
+                </h3>
+                {currentStep === 1 && (
+                  <>
+                    <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-2">
+                      <li>Sélectionnez au moins une catégorie (obligatoire) pour activer les suggestions de tâches.</li>
+                      <li>Vous pouvez choisir plusieurs catégories si nécessaire.</li>
+                      <li>Cliquez sur l’icône micro pour dicter; l’IA nettoie et reformule proprement.</li>
+                      <li>Utilisez le bouton « Améliorer » pour une description courte, claire et professionnelle.</li>
+                      <li>La langue suit vos préférences de compte.</li>
+                    </ul>
+                    <div className="text-xs sm:text-sm text-muted-foreground pt-2">Astuce: plus votre description est précise, meilleures seront les suggestions de tâches.</div>
+                  </>
+                )}
+                {currentStep === 2 && (
+                  <>
+                    <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-2">
+                      <li>Dictez/écrivez; l’IA génère description, durée, prix et matériaux proposés.</li>
+                      <li>Cliquez sur une suggestion pour préremplir; modifiez librement avant d’ajouter.</li>
+                      <li>Vérifiez les prix et les quantités de matériaux; ajustez selon votre tarif.</li>
+                      <li>L’unité de durée par défaut est l’heure; renseignez la durée pour un prix cohérent.</li>
+                    </ul>
+                    <div className="text-xs sm:text-sm text-muted-foreground pt-2">Astuce: ajoutez les tâches une par une pour garder un devis clair.</div>
+                  </>
+                )}
+                {currentStep === 3 && (
+                  <>
+                    <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-2">
+                      <li>Ajoutez des fichiers utiles (photos avant/après, croquis, documents PDF).</li>
+                      <li>Glissez‑déposez ou cliquez pour sélectionner; privilégiez PDF/JPG/PNG légers.</li>
+                      <li>Nommez vos fichiers clairement pour le client.</li>
+                    </ul>
+                    <div className="text-xs sm:text-sm text-muted-foreground pt-2">Astuce: des visuels clairs augmentent le taux d’acceptation.</div>
+                  </>
+                )}
+                {currentStep === 4 && (
+                  <>
+                    <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-2">
+                      <li>Configurez la TVA et l’acompte dans « Configuration ».</li>
+                      <li>Personnalisez le modèle et les couleurs.</li>
+                      <li>Téléchargez le devis en PDF ou partagez un lien public.</li>
+                      <li>Vous pouvez masquer l’affichage du prix des matériaux dans les Préférences du compte.</li>
+                    </ul>
+                    <div className="text-xs sm:text-sm text-muted-foreground pt-2">Astuce: un devis simple et lisible se signe plus vite.</div>
+                  </>
+                )}
+              </div>
+              {/* Notes box */}
+              <div className="bg-card border border-border rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-foreground mb-2">Notes</h3>
+                <div className="text-xs sm:text-sm text-muted-foreground">
+                  Brouillon auto‑enregistré. Vous pouvez le retrouver dans
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate('/quotes-management')}
+                    className="inline-flex items-center gap-1 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
+                  >
+                    <Icon name="ExternalLink" size={14} />
+                    Gestion des devis
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
