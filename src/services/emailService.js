@@ -1,9 +1,5 @@
-import { Resend } from 'resend';
 import { supabase } from './supabaseClient';
 
-// Initialize Resend with API key from environment
-const resend = new Resend(import.meta.env.VITE_RESEND_API_KEY);
-const FROM_EMAIL = import.meta.env.VITE_RESEND_FROM_EMAIL;
 const BASE_URL = import.meta.env.SITE_URL || window.location.origin;
 
 export class EmailService {
@@ -66,12 +62,12 @@ export class EmailService {
             <p>Si vous avez des questions ou souhaitez discuter des détails du projet, n'hésitez pas à nous contacter.</p>
             
             <p>Cordialement,<br>
-            L'équipe de votre plateforme artisanale</p>
+            L'équipe de votre plateforme Haliqo</p>
           </div>
           
           <div class="footer">
             <p>Cet email a été envoyé automatiquement. Merci de ne pas y répondre directement.</p>
-            <p>© ${new Date().getFullYear()} - Plateforme Artisanale</p>
+            <p>© ${new Date().getFullYear()} - Plateforme Haliqo</p>
           </div>
         </div>
       </body>
@@ -130,12 +126,12 @@ export class EmailService {
             <p><strong>Rappel :</strong> Vous pouvez envoyer un devis pour ce projet depuis votre tableau de bord des leads.</p>
             
             <p>Bonne chance !<br>
-            L'équipe de votre plateforme artisanale</p>
+            L'équipe de votre plateforme Haliqo</p>
           </div>
           
           <div class="footer">
             <p>Cet email a été envoyé automatiquement. Merci de ne pas y répondre directement.</p>
-            <p>© ${new Date().getFullYear()} - Plateforme Artisanale</p>
+            <p>© ${new Date().getFullYear()} - Plateforme Haliqo</p>
           </div>
         </div>
       </body>
@@ -193,12 +189,12 @@ export class EmailService {
             <p><strong>Prochaine étape :</strong> Connectez-vous à votre tableau de bord pour accéder aux détails complets du projet et préparer votre proposition.</p>
             
             <p>Bonne chance !<br>
-            L'équipe de votre plateforme artisanale</p>
+            L'équipe de votre plateforme Haliqo</p>
           </div>
           
           <div class="footer">
             <p>Cet email a été envoyé automatiquement. Merci de ne pas y répondre directement.</p>
-            <p>© ${new Date().getFullYear()} - Plateforme Artisanale</p>
+            <p>© ${new Date().getFullYear()} - Plateforme Haliqo</p>
           </div>
         </div>
       </body>
@@ -207,34 +203,55 @@ export class EmailService {
   }
   
   // ========================================
-  // EMAIL DELIVERY FUNCTIONS
+  // EMAIL DELIVERY FUNCTIONS (Edge Function)
   // ========================================
+  
+  /**
+   * Send email using Supabase Edge Function
+   */
+  static async sendEmailViaEdgeFunction(emailType, emailData) {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-emails', {
+        body: {
+          emailType,
+          emailData
+        }
+      });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        return { success: false, error };
+      }
+
+      return { success: true, data };
+    } catch (error) {
+      console.error('Email service error:', error);
+      return { success: false, error };
+    }
+  }
   
   /**
    * Send quote notification email to client
    */
   static async sendQuoteNotificationEmail(leadData, quoteData, artisanData) {
     try {
-      const html = this.generateQuoteNotificationEmail(leadData, quoteData, artisanData);
+      const emailData = {
+        client_email: leadData.client_email,
+        project_description: leadData.project_description,
+        leadData,
+        quoteData,
+        artisanData
+      };
       
-      const { data, error } = await resend.emails.send({
-        from: FROM_EMAIL,
-        to: [leadData.client_email],
-        subject: `Votre devis est prêt - ${leadData.project_description.substring(0, 50)}...`,
-        html: html
-      });
+      const result = await this.sendEmailViaEdgeFunction('quote_notification', emailData);
       
-      if (error) {
-        console.error('Resend email error:', error);
-        // Log failed email
-        await this.logEmailInDatabase('quote_notification', leadData.client_email, 'Quote Notification', 'failed', error.message);
-        return { success: false, error };
+      if (result.success) {
+        console.log('Quote notification email sent successfully via edge function');
+        return result;
+      } else {
+        console.error('Failed to send quote notification email:', result.error);
+        return result;
       }
-      
-      // Log successful email
-      await this.logEmailInDatabase('quote_notification', leadData.client_email, 'Quote Notification', 'sent');
-      console.log('Quote notification email sent successfully:', data);
-      return { success: true, data };
       
     } catch (error) {
       console.error('Email service error:', error);
@@ -247,26 +264,22 @@ export class EmailService {
    */
   static async sendNewLeadNotificationEmail(leadData, artisanData) {
     try {
-      const html = this.generateNewLeadNotificationEmail(leadData, artisanData);
+      const emailData = {
+        artisan_email: artisanData.email,
+        project_description: leadData.project_description,
+        leadData,
+        artisanData
+      };
       
-      const { data, error } = await resend.emails.send({
-        from: FROM_EMAIL,
-        to: [artisanData.email],
-        subject: `Nouveau projet disponible - ${leadData.project_description.substring(0, 50)}...`,
-        html: html
-      });
+      const result = await this.sendEmailViaEdgeFunction('new_lead_available', emailData);
       
-      if (error) {
-        console.error('Resend email error:', error);
-        // Log failed email
-        await this.logEmailInDatabase('new_lead_available', artisanData.email, 'New Lead Available', 'failed', error.message);
-        return { success: false, error };
+      if (result.success) {
+        console.log('New lead notification email sent successfully via edge function');
+        return result;
+      } else {
+        console.error('Failed to send new lead notification email:', result.error);
+        return result;
       }
-      
-      // Log successful email
-      await this.logEmailInDatabase('new_lead_available', artisanData.email, 'New Lead Available', 'sent');
-      console.log('New lead notification email sent successfully:', data);
-      return { success: true, data };
       
     } catch (error) {
       console.error('Email service error:', error);
@@ -279,26 +292,22 @@ export class EmailService {
    */
   static async sendLeadAssignmentEmail(leadData, artisanData) {
     try {
-      const html = this.generateLeadAssignmentEmail(leadData, artisanData);
+      const emailData = {
+        artisan_email: artisanData.email,
+        project_description: leadData.project_description,
+        leadData,
+        artisanData
+      };
       
-      const { data, error } = await resend.emails.send({
-        from: FROM_EMAIL,
-        to: [artisanData.email],
-        subject: `Projet assigné - ${leadData.project_description.substring(0, 50)}...`,
-        html: html
-      });
+      const result = await this.sendEmailViaEdgeFunction('lead_assigned', emailData);
       
-      if (error) {
-        console.error('Resend email error:', error);
-        // Log failed email
-        await this.logEmailInDatabase('lead_assigned', artisanData.email, 'Lead Assigned', 'failed', error.message);
-        return { success: false, error };
+      if (result.success) {
+        console.log('Lead assignment email sent successfully via edge function');
+        return result;
+      } else {
+        console.error('Failed to send lead assignment email:', result.error);
+        return result;
       }
-      
-      // Log successful email
-      await this.logEmailInDatabase('lead_assigned', artisanData.email, 'Lead Assigned', 'sent');
-      console.log('Lead assignment email sent successfully:', data);
-      return { success: true, data };
       
     } catch (error) {
       console.error('Email service error:', error);
@@ -311,74 +320,20 @@ export class EmailService {
    */
   static async sendWelcomeEmail(clientData) {
     try {
-      const html = `
-        <!DOCTYPE html>
-        <html lang="fr">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Bienvenue sur notre plateforme</title>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: #059669; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-            .content { background: #f0fdf4; padding: 30px; border-radius: 0 0 8px 8px; }
-            .footer { text-align: center; margin-top: 30px; color: #64748b; font-size: 14px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>🎉 Bienvenue sur notre plateforme !</h1>
-            </div>
-            
-            <div class="content">
-              <h2>Bonjour ${clientData.name},</h2>
-              
-              <p>Nous sommes ravis de vous accueillir sur notre plateforme artisanale !</p>
-              
-              <p>Votre demande de projet a été reçue avec succès. Nos artisans qualifiés vont l'examiner et vous proposer des devis dans les plus brefs délais.</p>
-              
-              <p><strong>Prochaines étapes :</strong></p>
-              <ul>
-                <li>Nos artisans analysent votre projet</li>
-                <li>Vous recevrez des devis par email</li>
-                <li>Vous pourrez comparer et choisir</li>
-                <li>L'artisan sélectionné commencera les travaux</li>
-              </ul>
-              
-              <p>Nous vous tiendrons informé de chaque étape par email.</p>
-              
-              <p>Merci de votre confiance !<br>
-              L'équipe de votre plateforme artisanale</p>
-            </div>
-            
-            <div class="footer">
-              <p>© ${new Date().getFullYear()} - Plateforme Artisanale</p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `;
+      const emailData = {
+        client_email: clientData.email,
+        clientData
+      };
       
-      const { data, error } = await resend.emails.send({
-        from: FROM_EMAIL,
-        to: [clientData.email],
-        subject: 'Bienvenue - Votre projet a été reçu',
-        html: html
-      });
+      const result = await this.sendEmailViaEdgeFunction('welcome_client', emailData);
       
-      if (error) {
-        console.error('Resend email error:', error);
-        // Log failed email
-        await this.logEmailInDatabase('welcome_client', clientData.email, 'Welcome Email', 'failed', error.message);
-        return { success: false, error };
+      if (result.success) {
+        console.log('Welcome email sent successfully via edge function');
+        return result;
+      } else {
+        console.error('Failed to send welcome email:', result.error);
+        return result;
       }
-      
-      // Log successful email
-      await this.logEmailInDatabase('welcome_client', clientData.email, 'Welcome Email', 'sent');
-      console.log('Welcome email sent successfully:', data);
-      return { success: true, data };
       
     } catch (error) {
       console.error('Email service error:', error);
@@ -389,33 +344,6 @@ export class EmailService {
   // ========================================
   // DATABASE LOGGING
   // ========================================
-
-  /**
-   * Log email in database for tracking
-   */
-  static async logEmailInDatabase(templateName, recipientEmail, subject, status, errorMessage = null) {
-    try {
-      const { error } = await supabase
-        .from('email_logs')
-        .insert({
-          template_name: templateName,
-          recipient_email: recipientEmail,
-          subject: subject,
-          status: status,
-          error_message: errorMessage,
-          metadata: {
-            sent_at: new Date().toISOString(),
-            service: 'resend'
-          }
-        });
-
-      if (error) {
-        console.error('Error logging email to database:', error);
-      }
-    } catch (error) {
-      console.error('Error logging email to database:', error);
-    }
-  }
 
   /**
    * Get email logs for monitoring
