@@ -386,32 +386,6 @@ export class EmailService {
     }
   }
   
-  /**
-   * Test email service connectivity
-   */
-  static async testEmailService() {
-    try {
-      const { data, error } = await resend.emails.send({
-        from: FROM_EMAIL,
-        to: ['test@example.com'],
-        subject: 'Test Email Service',
-        html: '<h1>Test Email</h1><p>This is a test email to verify the service is working.</p>'
-      });
-      
-      if (error) {
-        console.error('Resend test error:', error);
-        return { success: false, error };
-      }
-      
-      console.log('Test email sent successfully:', data);
-      return { success: true, data };
-      
-    } catch (error) {
-      console.error('Email service test error:', error);
-      return { success: false, error };
-    }
-  }
-
   // ========================================
   // DATABASE LOGGING
   // ========================================
