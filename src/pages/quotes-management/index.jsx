@@ -239,7 +239,7 @@ const QuotesManagement = () => {
           });
           setQuotes(merged);
         } else {
-          setQuotes(sortedQuotes);
+        setQuotes(sortedQuotes);
         }
         
         // Calculate stats (actual data)

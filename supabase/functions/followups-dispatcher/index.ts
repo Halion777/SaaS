@@ -13,7 +13,7 @@ const corsHeaders = {
 // Minimal email sender using Resend (or no-op if missing key)
 async function sendEmail({ to, subject, html, text }: { to: string; subject: string; html?: string; text?: string }) {
   const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-  const FROM_EMAIL = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@example.com'
+  const FROM_EMAIL = Deno.env.get('RESEND_FROM_EMAIL') || 'onboarding@resend.dev'
   if (!RESEND_API_KEY) {
     // No provider configured; simulate success
     return { id: 'simulated', status: 'sent' }

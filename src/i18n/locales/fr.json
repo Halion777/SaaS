@@ -638,8 +638,12 @@
       "category": "Catégorie de travaux",
       "selectCategory": "Sélectionnez une ou plusieurs catégories",
       "categoryError": "Veuillez sélectionner au moins une catégorie de travaux",
-      "address": "Adresse ou ville du chantier",
-      "addressPlaceholder": "Ex: 123 Rue de la Loi, Bruxelles",
+      "streetNumber": "Numéro de rue",
+      "streetNumberPlaceholder": "Ex: 123",
+      "fullAddress": "Adresse complète",
+      "fullAddressPlaceholder": "Ex: Rue de la Loi",
+      "city": "Ville",
+      "cityPlaceholder": "Ex: Bruxelles",
       "zipCode": "Code postal",
       "zipCodePlaceholder": "Ex: 1000",
       "description": "Description du projet",
@@ -659,7 +663,17 @@
       "phonePlaceholder": "04 12 34 56 78",
       "email": "Email",
       "emailPlaceholder": "votre@email.com",
-      "submit": "Envoyer ma demande"
+      "clientAddress": "Votre adresse",
+      "clientAddressPlaceholder": "Votre adresse personnelle",
+      "autoFilled": "Rempli automatiquement",
+      "communicationPreferences": "Préférences de communication",
+      "preferences": {
+        "email": "Email (recommandé)",
+        "phone": "Appels téléphoniques",
+        "sms": "Messages SMS"
+      },
+      "submit": "Envoyer ma demande",
+      "submitting": "Envoi de la demande..."
     }
   },
   "blog": {

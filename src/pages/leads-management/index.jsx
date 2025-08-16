@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import MainSidebar from '../../components/ui/MainSidebar';
 import { useScrollPosition } from '../../utils/useScrollPosition';
+import { LeadManagementService } from '../../services/leadManagementService';
+import { useAuth } from '../../context/AuthContext';
 
 const LeadsManagementPage = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
@@ -11,29 +13,38 @@ const LeadsManagementPage = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const tabsScrollRef = useScrollPosition('leads-tabs-scroll');
+  const { user } = useAuth();
+  
+  // State for leads and settings
+  const [leads, setLeads] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [settings, setSettings] = useState({
-    receiveQuotes: false,
-    professionalAddress: '123 Rue de la Loi, 1000 Bruxelles',
+    receiveLeads: false,
+    professionalAddress: '',
+    city: '',
+    postalCode: '',
     interventionRadius: '20',
     workCategories: {
-      plomberie: false,
-      electricite: false,
-      peinture: false,
-      menuiserie: false,
-      carrelage: false,
-      toiture: false,
-      maconnerie: false,
-      chauffage: false,
+      plumbing: false,
+      electrical: false,
+      painting: false,
+      carpentry: false,
+      tiling: false,
+      roofing: false,
+      masonry: false,
+      heating: false,
       renovation: false,
-      nettoyage: false,
+      cleaning: false,
       solar: false,
-      jardinage: false,
-      serrurerie: false,
-      vitrerie: false,
-      isolation: false,
-      climatisation: false,
-      autres: false
-    }
+      gardening: false,
+      locksmith: false,
+      glazing: false,
+      insulation: false,
+      airConditioning: false,
+      other: false
+    },
+    otherWorkCategory: ''
   });
 
   // Handle sidebar offset for responsive layout
@@ -97,6 +108,55 @@ const LeadsManagementPage = () => {
     };
   }, []);
 
+  // Load artisan preferences and leads
+  useEffect(() => {
+    if (user) {
+      loadArtisanPreferences();
+      loadLeads();
+    }
+  }, [user]);
+
+  const loadArtisanPreferences = async () => {
+    try {
+      const { success, data, error } = await LeadManagementService.getArtisanPreferences(user.id);
+      if (success && data) {
+        setSettings(prev => ({
+          ...prev,
+          receiveLeads: data.receive_leads || false,
+          professionalAddress: data.professional_address || '',
+          city: data.city || '',
+          postalCode: data.postal_code || '',
+          interventionRadius: data.intervention_radius?.toString() || '20',
+          workCategories: data.work_categories || prev.workCategories,
+          otherWorkCategory: data.other_work_category || ''
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading artisan preferences:', error);
+    }
+  };
+
+  const loadLeads = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const { success, data, error } = await LeadManagementService.getLeadsForArtisan(user.id);
+      if (success) {
+        setLeads(data || []);
+      } else {
+        setError(error?.message || error || 'Erreur lors du chargement des leads');
+      }
+    } catch (error) {
+      setError(error?.message || 'Erreur lors du chargement des leads');
+      console.error('Error loading leads:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSettingChange = (field, value) => {
     setSettings(prev => ({ ...prev, [field]: value }));
   };
@@ -111,20 +171,124 @@ const LeadsManagementPage = () => {
     }));
   };
 
-  const handleSaveSettings = () => {
-    console.log('Settings saved:', settings);
-    alert('Paramètres sauvegardés avec succès');
+  const handleSaveSettings = async () => {
+    if (!user) return;
+    
+    try {
+      const { success, error } = await LeadManagementService.updateArtisanPreferences(user.id, {
+        receive_leads: settings.receiveLeads,
+        professional_address: settings.professionalAddress,
+        city: settings.city,
+        postal_code: settings.postalCode,
+        intervention_radius: parseInt(settings.interventionRadius),
+        work_categories: settings.workCategories,
+        other_work_category: settings.otherWorkCategory
+      });
+      
+      if (success) {
+        alert('Paramètres sauvegardés avec succès');
+      } else {
+        alert('Erreur lors de la sauvegarde: ' + (error?.message || error));
+      }
+    } catch (error) {
+      alert('Erreur lors de la sauvegarde: ' + error.message);
+    }
+  };
+
+  const handleQuoteLead = (leadId) => {
+    // Navigate to quote creation with lead data
+    const params = new URLSearchParams({ lead_id: leadId });
+    window.location.href = `/quote-creation?${params.toString()}`;
   };
 
   const renderLeadsTab = () => (
     <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
       <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4">Demandes de devis reçues</h2>
-      <div className="flex items-center justify-center py-8 sm:py-12">
-        <div className="text-center">
-          <Icon name="Inbox" size={32} className="sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
-          <p className="text-xs sm:text-sm text-muted-foreground">Aucune demande de devis reçue pour le moment.</p>
+      
+      {loading ? (
+        <div className="flex items-center justify-center py-8 sm:py-12">
+          <div className="text-center">
+            <Icon name="Loader" size={32} className="sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-muted-foreground animate-spin" />
+            <p className="text-xs sm:text-sm text-muted-foreground">Chargement...</p>
+          </div>
         </div>
-      </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <Icon name="AlertCircle" className="w-12 h-12 text-destructive mx-auto mb-4" />
+          <p className="text-destructive">
+            {typeof error === 'string' ? error : error?.message || 'Erreur inconnue'}
+          </p>
+          <button
+            onClick={loadLeads}
+            className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+          >
+            Réessayer
+          </button>
+        </div>
+      ) : leads.length === 0 ? (
+        <div className="flex items-center justify-center py-8 sm:py-12">
+          <div className="text-center">
+            <Icon name="Inbox" size={32} className="sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
+            <p className="text-xs sm:text-sm text-muted-foreground">Aucune demande de devis reçue pour le moment.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {leads.map((lead) => (
+            <div key={lead.lead_id} className="border border-border rounded-lg p-4">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h3 className="font-medium text-foreground">{lead.client_name}</h3>
+                  <p className="text-sm text-muted-foreground">{lead.city}, {lead.zip_code}</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs text-muted-foreground">
+                    {lead.quotes_sent_count}/3 devis
+                  </span>
+                  {lead.quotes_sent_count >= 3 && (
+                    <span className="block text-xs text-destructive">Max atteint</span>
+                  )}
+                </div>
+              </div>
+              
+              <p className="text-sm text-foreground mb-3">{lead.project_description}</p>
+              
+              <div className="flex flex-wrap gap-2 mb-3">
+                {lead.project_categories?.map((category) => (
+                  <span key={category} className="px-2 py-1 bg-muted text-xs rounded">
+                    {category}
+                  </span>
+                ))}
+                {lead.custom_category && (
+                  <span className="px-2 py-1 bg-muted text-xs rounded">
+                    {lead.custom_category}
+                  </span>
+                )}
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-muted-foreground">
+                  {new Date(lead.created_at).toLocaleDateString('fr-FR')}
+                </span>
+                
+                                  {lead.can_send_quote ? (
+                    <Button
+                      onClick={() => handleQuoteLead(lead.lead_id)}
+                      variant="default"
+                      size="sm"
+                    >
+                      Devis
+                    </Button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">
+                      {lead.quote_status === 'max_reached' ? 'Max atteint' : 'Déjà appliqué'}
+                    </span>
+                  )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 
@@ -142,8 +306,8 @@ const LeadsManagementPage = () => {
           <label className="relative inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
-              checked={settings.receiveQuotes}
-              onChange={(e) => handleSettingChange('receiveQuotes', e.target.checked)}
+              checked={settings.receiveLeads}
+              onChange={(e) => handleSettingChange('receiveLeads', e.target.checked)}
               className="sr-only peer"
             />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -160,6 +324,26 @@ const LeadsManagementPage = () => {
           onChange={(e) => handleSettingChange('professionalAddress', e.target.value)}
           placeholder="Votre adresse professionnelle"
         />
+      </div>
+
+      {/* City and Postal Code */}
+      <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Input
+            label="Ville"
+            type="text"
+            value={settings.city}
+            onChange={(e) => handleSettingChange('city', e.target.value)}
+            placeholder="Votre ville"
+          />
+          <Input
+            label="Code postal"
+            type="text"
+            value={settings.postalCode}
+            onChange={(e) => handleSettingChange('postalCode', e.target.value)}
+            placeholder="Code postal"
+          />
+        </div>
       </div>
 
       {/* Intervention Radius */}
@@ -179,15 +363,15 @@ const LeadsManagementPage = () => {
         <p className="text-xs sm:text-sm text-muted-foreground mb-4">Sélectionnez les types de travaux pour lesquels vous souhaitez recevoir des demandes</p>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Left Column */}
+          {/* Column 1 */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-foreground">Plomberie</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={settings.workCategories.plomberie}
-                  onChange={() => handleCategoryToggle('plomberie')}
+                  checked={settings.workCategories.plumbing}
+                  onChange={() => handleCategoryToggle('plumbing')}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -199,8 +383,8 @@ const LeadsManagementPage = () => {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={settings.workCategories.electricite}
-                  onChange={() => handleCategoryToggle('electricite')}
+                  checked={settings.workCategories.electrical}
+                  onChange={() => handleCategoryToggle('electrical')}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -212,8 +396,8 @@ const LeadsManagementPage = () => {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={settings.workCategories.peinture}
-                  onChange={() => handleCategoryToggle('peinture')}
+                  checked={settings.workCategories.painting}
+                  onChange={() => handleCategoryToggle('painting')}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -225,8 +409,8 @@ const LeadsManagementPage = () => {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={settings.workCategories.menuiserie}
-                  onChange={() => handleCategoryToggle('menuiserie')}
+                  checked={settings.workCategories.carpentry}
+                  onChange={() => handleCategoryToggle('carpentry')}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -238,24 +422,8 @@ const LeadsManagementPage = () => {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={settings.workCategories.carrelage}
-                  onChange={() => handleCategoryToggle('carrelage')}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-              </label>
-            </div>
-          </div>
-
-          {/* Middle Column */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Toiture</span>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={settings.workCategories.toiture}
-                  onChange={() => handleCategoryToggle('toiture')}
+                  checked={settings.workCategories.tiling}
+                  onChange={() => handleCategoryToggle('tiling')}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -263,12 +431,28 @@ const LeadsManagementPage = () => {
             </div>
             
             <div className="flex items-center justify-between">
+              <span className="text-sm text-foreground">Toiture</span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.workCategories.roofing}
+                  onChange={() => handleCategoryToggle('roofing')}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+              </label>
+            </div>
+          </div>
+
+          {/* Column 2 */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
               <span className="text-sm text-foreground">Maçonnerie</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={settings.workCategories.maconnerie}
-                  onChange={() => handleCategoryToggle('maconnerie')}
+                  checked={settings.workCategories.masonry}
+                  onChange={() => handleCategoryToggle('masonry')}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -280,8 +464,8 @@ const LeadsManagementPage = () => {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={settings.workCategories.chauffage}
-                  onChange={() => handleCategoryToggle('chauffage')}
+                  checked={settings.workCategories.heating}
+                  onChange={() => handleCategoryToggle('heating')}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -306,17 +490,14 @@ const LeadsManagementPage = () => {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={settings.workCategories.nettoyage}
-                  onChange={() => handleCategoryToggle('nettoyage')}
+                  checked={settings.workCategories.cleaning}
+                  onChange={() => handleCategoryToggle('cleaning')}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
               </label>
             </div>
-          </div>
-
-          {/* Right Column */}
-          <div className="space-y-3">
+            
             <div className="flex items-center justify-between">
               <span className="text-sm text-foreground">Énergie solaire</span>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -335,21 +516,24 @@ const LeadsManagementPage = () => {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={settings.workCategories.jardinage}
-                  onChange={() => handleCategoryToggle('jardinage')}
+                  checked={settings.workCategories.gardening}
+                  onChange={() => handleCategoryToggle('gardening')}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
               </label>
             </div>
-            
+          </div>
+
+          {/* Column 3 */}
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-foreground">Serrurerie</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={settings.workCategories.serrurerie}
-                  onChange={() => handleCategoryToggle('serrurerie')}
+                  checked={settings.workCategories.locksmith}
+                  onChange={() => handleCategoryToggle('locksmith')}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -361,8 +545,8 @@ const LeadsManagementPage = () => {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={settings.workCategories.vitrerie}
-                  onChange={() => handleCategoryToggle('vitrerie')}
+                  checked={settings.workCategories.glazing}
+                  onChange={() => handleCategoryToggle('glazing')}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -374,26 +558,21 @@ const LeadsManagementPage = () => {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={settings.workCategories.isolation}
-                  onChange={() => handleCategoryToggle('isolation')}
+                  checked={settings.workCategories.insulation}
+                  onChange={() => handleCategoryToggle('insulation')}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
               </label>
             </div>
-          </div>
-        </div>
-        
-        {/* Additional Categories Row */}
-        <div className="mt-4 pt-4 border-t border-border">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            
             <div className="flex items-center justify-between">
               <span className="text-sm text-foreground">Climatisation</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={settings.workCategories.climatisation}
-                  onChange={() => handleCategoryToggle('climatisation')}
+                  checked={settings.workCategories.airConditioning}
+                  onChange={() => handleCategoryToggle('airConditioning')}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -405,8 +584,8 @@ const LeadsManagementPage = () => {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={settings.workCategories.autres}
-                  onChange={() => handleCategoryToggle('autres')}
+                  checked={settings.workCategories.other}
+                  onChange={() => handleCategoryToggle('other')}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -414,6 +593,19 @@ const LeadsManagementPage = () => {
             </div>
           </div>
         </div>
+        
+        {/* Conditional input for "Autres" category */}
+        {settings.workCategories.other && (
+          <div className="mt-4">
+            <Input
+              label="Précisez le type de travaux"
+              type="text"
+              value={settings.otherWorkCategory}
+              onChange={(e) => handleSettingChange('otherWorkCategory', e.target.value)}
+              placeholder="Ex: Ébénisterie, Ferronnerie, etc."
+            />
+          </div>
+        )}
       </div>
 
       {/* Save Button */}

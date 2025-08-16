@@ -14,6 +14,7 @@ import QuotePreview from './components/QuotePreview';
 import { generateQuoteNumber, createQuote, fetchQuoteById, updateQuote, saveQuoteDraft, loadQuoteDraft, deleteQuoteDraft, deleteQuoteDraftById } from '../../services/quotesService';
 import { uploadQuoteFile, uploadQuoteSignature } from '../../services/quoteFilesService';
 import { saveCompanyInfo } from '../../services/companyInfoService';
+import { LeadManagementService } from '../../services/leadManagementService';
 import { supabase } from '../../services/supabaseClient';
 
 // Helper function to get signed URL from Supabase storage
@@ -52,6 +53,7 @@ const QuoteCreation = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingQuoteId, setEditingQuoteId] = useState(null);
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
+  const [leadId, setLeadId] = useState(null);
   
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedClient, setSelectedClient] = useState(null);
@@ -111,6 +113,7 @@ const QuoteCreation = () => {
   useEffect(() => {
     const editId = searchParams.get('edit');
     const duplicateId = searchParams.get('duplicate');
+    const leadId = searchParams.get('lead_id');
 
     const resumeDraftById = async (draftIdWithPrefix) => {
       try {
@@ -160,6 +163,13 @@ const QuoteCreation = () => {
       loadExistingQuote(duplicateId, true);
       // New session: clear any previous draft row binding to avoid overriding previous draft
       try { localStorage.removeItem(getDraftRowIdKey()); } catch {}
+    } else if (leadId) {
+      // Handle lead-based quote creation
+      setIsEditing(false);
+      setEditingQuoteId(null);
+      loadLeadData(leadId);
+      // Clear any previous draft row binding for new quote from lead
+      try { localStorage.removeItem(getDraftRowIdKey()); } catch {}
     } else {
       setIsEditing(false);
       setEditingQuoteId(null);
@@ -169,6 +179,69 @@ const QuoteCreation = () => {
   }, [searchParams]);
 
   // No automatic clearing on back/unload: drafts must persist until explicit save/send
+
+  // Load lead data for quote creation
+  const loadLeadData = async (leadId) => {
+    if (!leadId || !user?.id) return;
+    
+    try {
+      setIsLoadingQuote(true);
+      const { data: leadData, error } = await LeadManagementService.getLeadDetailsForQuote(leadId);
+      
+      if (error) {
+        console.error('Error loading lead data:', error);
+        return;
+      }
+      
+      if (!leadData) {
+        console.error('No lead data found');
+        return;
+      }
+      
+      // Transform lead data to quote format
+      const transformedClient = {
+        id: null, // New client to be created
+        value: null,
+        label: leadData.client_name,
+        name: leadData.client_name,
+        email: leadData.client_email,
+        phone: leadData.client_phone,
+        address: leadData.client_address,
+        city: leadData.city,
+        postalCode: leadData.zip_code,
+        country: 'BE', // Default to Belgium
+        client: null, // Will be created when quote is saved
+        communicationPreferences: leadData.communication_preferences || { email: true, phone: false, sms: false }
+      };
+      
+      // Set the client data
+      setSelectedClient(transformedClient);
+      
+      // Set project information
+      setProjectInfo({
+        categories: leadData.project_categories || [],
+        customCategory: leadData.custom_category || '',
+        deadline: leadData.completion_date || '',
+        description: leadData.project_description || ''
+      });
+      
+      // Clear tasks and files for new quote
+      setTasks([]);
+      setFiles([]);
+      
+      // Don't automatically move to step 2 when leadId is present
+      // User must click "Ajouter le client" first
+      setCurrentStep(1);
+      
+      // Store the lead ID for later use
+      setLeadId(leadId);
+      
+      setIsLoadingQuote(false);
+    } catch (error) {
+      console.error('Error loading lead data:', error);
+      setIsLoadingQuote(false);
+    }
+  };
 
   // Load existing quote data for editing or duplicating
   const loadExistingQuote = async (quoteId, isDuplicating = false) => {
@@ -1133,6 +1206,30 @@ const QuoteCreation = () => {
 
       const quoteId = createdQuote.id;
       
+      // If this quote was created from a lead, create a lead quote record
+      if (leadId) {
+        try {
+          const { error: leadQuoteError } = await supabase
+            .from('lead_quotes')
+            .insert({
+              lead_id: leadId,
+              quote_id: quoteId,
+              artisan_user_id: user.id,
+              status: 'sent'
+            });
+          
+          if (leadQuoteError) {
+            console.error('Error creating lead quote record:', leadQuoteError);
+            // Continue with quote creation even if lead quote record fails
+          } else {
+            console.log('Lead quote record created successfully');
+          }
+        } catch (error) {
+          console.error('Error creating lead quote record:', error);
+          // Continue with quote creation even if lead quote record fails
+        }
+      }
+      
       // Now save financial configuration to database
       if (data.financialConfig && user?.id) {
         try {
@@ -1571,6 +1668,7 @@ const QuoteCreation = () => {
             onClientSelect={handleClientSelect}
             onProjectInfoChange={handleProjectInfoChange}
             onNext={handleNext}
+            leadId={leadId}
           />
         );
       case 2:

@@ -637,8 +637,12 @@
       "category": "Werkcategorie",
       "selectCategory": "Selecteer een categorie",
       "categoryError": "Selecteer een werkcategorie",
-      "address": "Werfadres of stad",
-      "addressPlaceholder": "Ex: 123 Wetstraat, Brussel",
+      "streetNumber": "Straatnummer",
+      "streetNumberPlaceholder": "Ex: 123",
+      "fullAddress": "Volledig adres",
+      "fullAddressPlaceholder": "Ex: Wetstraat",
+      "city": "Stad",
+      "cityPlaceholder": "Ex: Brussel",
       "zipCode": "Postcode",
       "zipCodePlaceholder": "Ex: 1000",
       "description": "Projectbeschrijving",
@@ -658,7 +662,17 @@
       "phonePlaceholder": "04 12 34 56 78",
       "email": "E-mail",
       "emailPlaceholder": "jouw@email.com",
-      "submit": "Mijn aanvraag versturen"
+      "clientAddress": "Jouw adres",
+      "clientAddressPlaceholder": "Jouw persoonlijke adres",
+      "autoFilled": "Automatisch ingevuld",
+      "communicationPreferences": "Communicatievoorkeuren",
+      "preferences": {
+        "email": "E-mail (aanbevolen)",
+        "phone": "Telefoongesprekken",
+        "sms": "SMS-berichten"
+      },
+      "submit": "Mijn aanvraag versturen",
+      "submitting": "Aanvraag versturen..."
     }
   },
   "blog": {

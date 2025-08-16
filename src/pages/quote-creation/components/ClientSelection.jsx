@@ -10,10 +10,63 @@ import { generateTaskSuggestionsWithGemini } from '../../../services/googleAISer
 import { enhanceTranscriptionWithAI } from '../../../services/googleAIService';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
-const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjectInfoChange, onNext }) => {
+const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjectInfoChange, onNext, leadId }) => {
   const { t } = useTranslation();
-  const [showNewClientForm, setShowNewClientForm] = useState(false);
-  const [clientType, setClientType] = useState('particulier');
+  const [showNewClientForm, setShowNewClientForm] = useState(!!leadId); // Auto-show form if leadId exists
+  const [clientType, setClientType] = useState(leadId ? 'particulier' : 'particulier');
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  
+  // Initialize clientAddedFromLead from localStorage if leadId exists
+  const [clientAddedFromLead, setClientAddedFromLead] = useState(() => {
+    if (leadId) {
+      try {
+        const stored = localStorage.getItem(`lead-client-added-${leadId}`);
+        return stored === 'true';
+      } catch (error) {
+        console.error('Error reading from localStorage:', error);
+        return false;
+      }
+    }
+    return false;
+  });
+
+  // Function to update clientAddedFromLead state and localStorage
+  const updateClientAddedFromLead = (value) => {
+    setClientAddedFromLead(value);
+    if (leadId) {
+      try {
+        localStorage.setItem(`lead-client-added-${leadId}`, value.toString());
+      } catch (error) {
+        console.error('Error writing to localStorage:', error);
+      }
+    }
+  };
+
+  // Update localStorage when leadId changes
+  useEffect(() => {
+    if (leadId) {
+      try {
+        const stored = localStorage.getItem(`lead-client-added-${leadId}`);
+        setClientAddedFromLead(stored === 'true');
+      } catch (error) {
+        console.error('Error reading from localStorage:', error);
+        setClientAddedFromLead(false);
+      }
+    } else {
+      setClientAddedFromLead(false);
+    }
+
+    // Cleanup function to remove localStorage entry when component unmounts
+    return () => {
+      if (leadId) {
+        try {
+          localStorage.removeItem(`lead-client-added-${leadId}`);
+        } catch (error) {
+          console.error('Error removing from localStorage:', error);
+        }
+      }
+    };
+  }, [leadId]);
   const [newClient, setNewClient] = useState({
     name: '',
     type: 'particulier',
@@ -56,6 +109,73 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
   const [recordingTime, setRecordingTime] = useState(0);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [aiGenerated, setAiGenerated] = useState(false);
+
+  // Auto-fill client form when leadId is present
+  useEffect(() => {
+    if (leadId && selectedClient) {
+      // Convert communication preferences to preferences array
+      const communicationPrefs = selectedClient.communicationPreferences || {};
+      const preferences = [];
+      
+      if (communicationPrefs.email) preferences.push('email');
+      if (communicationPrefs.phone) preferences.push('phone');
+      if (communicationPrefs.sms) preferences.push('sms');
+      if (communicationPrefs.mail) preferences.push('mail');
+      
+      // Pre-fill the new client form with lead data
+      setNewClient({
+        name: selectedClient.name || '',
+        type: 'particulier', // Default type
+        email: selectedClient.email || '',
+        phone: selectedClient.phone || '',
+        address: selectedClient.address || '',
+        city: selectedClient.city || '',
+        country: selectedClient.country || 'BE',
+        postalCode: selectedClient.postalCode || '',
+        contactPerson: '',
+        companySize: '',
+        regNumber: '',
+        peppolId: '',
+        enablePeppol: false,
+        preferences: preferences
+      });
+    }
+  }, [leadId, selectedClient]);
+
+  // Store lead client data for reuse when form is reopened
+  const [leadClientData, setLeadClientData] = useState(null);
+  
+  // Save lead client data when it's first loaded
+  useEffect(() => {
+    if (leadId && selectedClient && !leadClientData) {
+      setLeadClientData({
+        name: selectedClient.name || '',
+        email: selectedClient.email || '',
+        phone: selectedClient.phone || '',
+        address: selectedClient.address || '',
+        city: selectedClient.city || '',
+        country: selectedClient.country || 'BE',
+        postalCode: selectedClient.postalCode || '',
+        communicationPreferences: selectedClient.communicationPreferences || {}
+      });
+    }
+  }, [leadId, selectedClient, leadClientData]);
+
+
+
+  // Handle click outside category dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (categoryDropdownOpen && !event.target.closest('.category-dropdown')) {
+        setCategoryDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [categoryDropdownOpen]);
 
   // Fetch existing clients on component mount
   useEffect(() => {
@@ -142,28 +262,28 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
   ];
 
   const categoryOptions = [
-    { value: 'plomberie', label: 'Plomberie' },
-    { value: 'electricite', label: 'Électricité' },
-    { value: 'menuiserie', label: 'Menuiserie' },
-    { value: 'peinture', label: 'Peinture' },
-    { value: 'maconnerie', label: 'Maçonnerie' },
-    { value: 'carrelage', label: 'Carrelage' },
-    { value: 'toiture', label: 'Toiture' },
-    { value: 'chauffage', label: 'Chauffage' },
+    { value: 'plumbing', label: 'Plomberie' },
+    { value: 'electrical', label: 'Électricité' },
+    { value: 'carpentry', label: 'Menuiserie' },
+    { value: 'painting', label: 'Peinture' },
+    { value: 'masonry', label: 'Maçonnerie' },
+    { value: 'tiling', label: 'Carrelage' },
+    { value: 'roofing', label: 'Toiture' },
+    { value: 'heating', label: 'Chauffage' },
     { value: 'renovation', label: 'Rénovation générale' },
-    { value: 'nettoyage', label: 'Nettoyage' },
+    { value: 'cleaning', label: 'Nettoyage' },
     { value: 'solar', label: 'Installation solaire' },
-    { value: 'jardinage', label: 'Jardinage' },
-    { value: 'serrurerie', label: 'Serrurerie' },
-    { value: 'vitrerie', label: 'Vitrerie' },
-    { value: 'isolation', label: 'Isolation' },
-    { value: 'climatisation', label: 'Climatisation' },
-    { value: 'autre', label: 'Autre' }
+    { value: 'gardening', label: 'Jardinage' },
+    { value: 'locksmith', label: 'Serrurerie' },
+    { value: 'glazing', label: 'Vitrerie' },
+    { value: 'insulation', label: 'Isolation' },
+    { value: 'airConditioning', label: 'Climatisation' },
+    { value: 'other', label: 'Autre' }
   ];
 
   // Predefined tasks based on category
   const predefinedTasks = {
-    plomberie: [
+    plumbing: [
       'Installation robinetterie',
       'Réparation fuite',
       'Installation chauffe-eau',
@@ -173,7 +293,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       'Installation évier',
       'Installation machine à laver'
     ],
-    electricite: [
+    electrical: [
       'Installation prise électrique',
       'Installation interrupteur',
       'Installation luminaire',
@@ -183,7 +303,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       'Installation système d\'alarme',
       'Installation domotique'
     ],
-    menuiserie: [
+    carpentry: [
       'Installation porte',
       'Installation fenêtre',
       'Installation placard',
@@ -193,7 +313,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       'Installation meuble sur mesure',
       'Réparation meuble'
     ],
-    peinture: [
+    painting: [
       'Peinture mur intérieur',
       'Peinture plafond',
       'Peinture façade',
@@ -203,7 +323,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       'Application enduit',
       'Décoration murale'
     ],
-    maconnerie: [
+    masonry: [
       'Construction mur',
       'Réparation fissure',
       'Installation cheminée',
@@ -213,7 +333,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       'Installation allée',
       'Réparation façade'
     ],
-    carrelage: [
+    tiling: [
       'Pose carrelage sol',
       'Pose carrelage mural',
       'Pose faïence salle de bain',
@@ -223,7 +343,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       'Réparation carrelage',
       'Installation mosaïque'
     ],
-    toiture: [
+    roofing: [
       'Installation tuiles',
       'Installation ardoises',
       'Installation zinc',
@@ -233,7 +353,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       'Installation isolation toiture',
       'Installation cheminée'
     ],
-    chauffage: [
+    heating: [
       'Installation chaudière',
       'Installation radiateur',
       'Installation plancher chauffant',
@@ -359,10 +479,18 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         // Select the newly created client
       onClientSelect(clientData);
       setShowNewClientForm(false);
+      
+      // If this is a lead, mark that client has been added
+      if (leadId) {
+        updateClientAddedFromLead(true);
+      }
         
         // Show success message
         setCreateSuccess(true);
         setTimeout(() => setCreateSuccess(false), 3000); // Hide after 3 seconds
+        
+        // Don't automatically move to next step when creating client from lead
+        // User will manually navigate when ready
         
         // Refresh the clients list to get the latest data
         setClientsRefreshTrigger(prev => prev + 1);
@@ -434,8 +562,8 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       setIsGeneratingAI(true);
       setAiError(null);
       
-      // Get the selected category (use custom category if 'autre' is selected)
-      const selectedCategory = projectInfo.categories?.includes('autre') 
+      // Get the selected category (use custom category if 'other' is selected)
+      const selectedCategory = projectInfo.categories?.includes('other') 
         ? projectInfo.customCategory 
         : projectInfo.categories?.[0] || '';
       
@@ -585,7 +713,30 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
 
   // Enhanced validation logic
   const isFormValid = () => {
-    // Check if a client is selected (either existing or new)
+    // For lead_id cases: client must be successfully added (not just form filled)
+    if (leadId) {
+      // When lead_id is present, we need a successfully created client
+      // Check for either selectedClient.id or selectedClient.value (the client ID)
+      const isClientValid = clientAddedFromLead && selectedClient && (selectedClient.id || selectedClient.value);
+      
+      // Check if project information is complete
+      const isProjectValid = 
+        projectInfo.categories && 
+        projectInfo.categories.length > 0 &&
+        projectInfo.deadline &&
+        projectInfo.description &&
+        projectInfo.description.trim().length > 0;
+
+      // If "other" category is selected, custom category must be filled
+      const isCustomCategoryValid = !projectInfo.categories?.includes('other') || 
+        (projectInfo.customCategory && projectInfo.customCategory.trim().length > 0);
+
+
+
+      return isClientValid && isProjectValid && isCustomCategoryValid;
+    }
+
+    // For normal cases: check if a client is selected (either existing or new)
     const isClientValid = selectedClient || (
       newClient.name && 
       newClient.email && 
@@ -600,9 +751,11 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       projectInfo.description &&
       projectInfo.description.trim().length > 0;
 
-    // If "autre" category is selected, custom category must be filled
-    const isCustomCategoryValid = !projectInfo.categories?.includes('autre') || 
+    // If "other" category is selected, custom category must be filled
+    const isCustomCategoryValid = !projectInfo.categories?.includes('other') || 
       (projectInfo.customCategory && projectInfo.customCategory.trim().length > 0);
+
+
 
     return isClientValid && isProjectValid && isCustomCategoryValid;
   };
@@ -632,6 +785,23 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         
         {!showNewClientForm ? (
           <div className="space-y-3 sm:space-y-4">
+            {leadId && !clientAddedFromLead ? (
+              <div className="text-center py-4">
+                <Icon name="UserCheck" size={24} className="mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground mb-2">Client pré-rempli depuis la demande</p>
+                <p className="text-xs text-muted-foreground">Cliquez sur "Modifier les informations client" puis "Ajouter le client" pour continuer</p>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowNewClientForm(true)}
+                  iconName="Edit"
+                  iconPosition="left"
+                  className="mt-3"
+                >
+                  Modifier les informations client
+                </Button>
+              </div>
+            ) : (
+              <>
             {isLoadingClients ? (
               <div className="flex items-center justify-center py-4">
                 <Icon name="Loader2" size={20} className="animate-spin text-muted-foreground mr-2" />
@@ -680,8 +850,31 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
             >
               Ajouter un nouveau client
             </Button>
+              </>
+            )}
+            
+            {/* Success message when client has been added from lead */}
+            {leadId && clientAddedFromLead && (
+              <div className="text-center py-4">
+                <Icon name="CheckCircle" size={24} className="mx-auto text-green-600 mb-2" />
+                <p className="text-sm text-green-700 font-medium mb-1">Client ajouté avec succès !</p>
+                <p className="text-xs text-green-600">Vous pouvez maintenant passer à l'étape suivante</p>
+              </div>
+            )}
           </div>
         ) : (
+          <>
+            {leadId && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2 text-blue-800">
+                  <Icon name="Info" size={16} />
+                  <span className="text-sm font-medium">Formulaire pré-rempli</span>
+                </div>
+                <p className="text-xs text-blue-700 mt-1">
+                  Les informations du client sont automatiquement remplies depuis la demande. Vous pouvez les modifier si nécessaire.
+                </p>
+              </div>
+            )}
           <form onSubmit={handleNewClientSubmit} className="space-y-3 sm:space-y-4">
             {/* Error Display */}
             {createError && (
@@ -712,10 +905,13 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                 {typeOptions.map((option) => (
                   <div
                     key={option.value}
-                    onClick={() => handleClientTypeChange(option.value)}
-                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                    onClick={() => !leadId || option.value === 'particulier' ? handleClientTypeChange(option.value) : null}
+                    className={`p-3 rounded-lg border transition-colors ${
                       clientType === option.value
-                        ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/50'
+                        ? 'border-primary bg-primary/10' 
+                        : leadId && option.value === 'professionnel'
+                          ? 'border-border bg-muted/50 opacity-50 cursor-not-allowed'
+                          : 'border-border hover:bg-muted/50 cursor-pointer'
                     }`}
                   >
                     <div className="flex items-center justify-center space-x-2">
@@ -776,7 +972,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
             )}
 
             {/* Professional Client Form */}
-            {clientType === 'professionnel' && (
+            {clientType === 'professionnel' && !leadId && (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
@@ -907,9 +1103,16 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
 
             {/* Communication Preferences */}
             <div className="space-y-3">
+              <div className="flex items-center justify-between">
               <label className="block text-sm font-medium text-foreground">
                 Préférences de communication
               </label>
+                {leadId && (
+                  <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                    Pré-remplies depuis la demande
+                  </span>
+                )}
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {preferenceOptions.map((preference) => (
                   <div key={preference.value} className="flex items-center space-x-2">
@@ -934,6 +1137,29 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                 variant="outline"
                 onClick={() => {
                   setShowNewClientForm(false);
+                  // Reset form but preserve lead data for next time
+                  if (leadId && leadClientData) {
+                    // Reset to lead data instead of empty values
+                    setNewClient({
+                      name: leadClientData.name,
+                      type: 'particulier',
+                      email: leadClientData.email,
+                      phone: leadClientData.phone,
+                      address: leadClientData.address,
+                      city: leadClientData.city,
+                      country: leadClientData.country,
+                      postalCode: leadClientData.postalCode,
+                      contactPerson: '',
+                      companySize: '',
+                      regNumber: '',
+                      peppolId: '',
+                      enablePeppol: false,
+                      preferences: Object.entries(leadClientData.communicationPreferences || {})
+                        .filter(([_, value]) => value === true)
+                        .map(([key, _]) => key)
+                    });
+                  } else {
+                    // Reset to empty values for non-lead cases
                   setNewClient({ 
                     name: '', 
                     type: 'particulier', 
@@ -950,6 +1176,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                     enablePeppol: false, 
                     preferences: [] 
                   });
+                  }
                   setClientType('particulier');
                 }}
               >
@@ -964,6 +1191,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
               </Button>
             </div>
           </form>
+          </>
         )}
       </div>
       
@@ -973,7 +1201,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
             <div>
               <div className="flex items-center gap-2">
                 <p className="text-sm sm:text-base font-semibold text-foreground">{selectedClient.label || selectedClient.name}</p>
-                {selectedClient.type && (
+              {selectedClient.type && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                     {selectedClient.type === 'particulier' ? 'Particulier' : 'Professionnel'}
                   </span>
@@ -1016,22 +1244,90 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         </h2>
         
         <div className="space-y-3 sm:space-y-4">
-          <Select
-            label="Catégorie"
-            placeholder="Sélectionner une ou plusieurs catégories"
-            options={categoryOptions}
-            value={projectInfo.categories || []}
-            onChange={(e) => {
-              const selectedCategories = Array.isArray(e.target.value) 
-                ? e.target.value 
-                : [e.target.value];
-              handleProjectChange('categories', selectedCategories);
-            }}
-            multiple
-            required
-          />
+          {/* Category Selection */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Catégorie *
+            </label>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
+                className="w-full h-11 pl-4 pr-4 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left flex items-center justify-between"
+              >
+                <span className={projectInfo.categories?.length > 0 ? 'text-foreground' : 'text-muted-foreground'}>
+                  {projectInfo.categories?.length > 0 
+                    ? projectInfo.categories.map(cat => categoryOptions.find(c => c.value === cat)?.label).join(', ')
+                    : 'Sélectionner une ou plusieurs catégories'
+                  }
+                </span>
+                <div className="text-muted-foreground">
+                  <Icon name="ChevronDown" className={`w-4 h-4 transition-transform ${categoryDropdownOpen ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
+              
+              {/* Dropdown Options */}
+              {categoryDropdownOpen && (
+                <div className="category-dropdown absolute top-full left-0 right-0 mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-md z-10 max-h-60 overflow-y-auto">
+                  {categoryOptions.map(category => (
+                    <button
+                      key={category.value}
+                      type="button"
+                      onClick={() => {
+                        const currentCategories = projectInfo.categories || [];
+                        const newCategories = currentCategories.includes(category.value)
+                          ? currentCategories.filter(c => c !== category.value)
+                          : [...currentCategories, category.value];
+                        handleProjectChange('categories', newCategories);
+                      }}
+                      className={`w-full px-3 py-2 text-left text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground flex items-center rounded-sm ${
+                        projectInfo.categories?.includes(category.value) ? 'bg-accent text-accent-foreground' : 'text-foreground'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded mr-3 flex items-center justify-center ${
+                        projectInfo.categories?.includes(category.value) ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {projectInfo.categories?.includes(category.value) && (
+                          <Icon name="Check" className="w-3 h-3" />
+                        )}
+                      </div>
+                      <span className="flex-1">{category.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* Selected Categories Display */}
+            {projectInfo.categories && projectInfo.categories.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {projectInfo.categories.map(category => {
+                  const categoryInfo = categoryOptions.find(c => c.value === category);
+                  return (
+                    <span
+                      key={category}
+                      className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary text-sm rounded-full border border-primary/20"
+                    >
+                      <Icon name="CheckCircle" size={14} className="text-primary" />
+                      {categoryInfo?.label || category}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newCategories = projectInfo.categories.filter(c => c !== category);
+                          handleProjectChange('categories', newCategories);
+                        }}
+                        className="ml-1 hover:bg-primary/20 rounded-full p-0.5 transition-colors"
+                      >
+                        <Icon name="X" size={12} className="text-primary" />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </div>
           
-          {projectInfo.categories?.includes('autre') && (
+          {projectInfo.categories?.includes('other') && (
             <Input
               label="Catégorie personnalisée"
               type="text"
@@ -1170,7 +1466,9 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         </div>
       </div>
       
-      <div className="flex justify-end">
+      <div className="flex flex-col items-end space-y-2">
+
+        
         <Button
           onClick={onNext}
           disabled={!isFormValid()}
@@ -1182,6 +1480,14 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
           <span className="hidden sm:inline">Étape suivante</span>
           <span className="sm:hidden">Suivant</span>
         </Button>
+        
+        {/* Help text when button is disabled due to lead_id */}
+        {leadId && !clientAddedFromLead && (
+          <div className="text-xs text-muted-foreground text-center sm:text-right">
+            <Icon name="Info" size={12} className="inline mr-1" />
+            Vous devez d'abord ajouter le client pour continuer
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import EmailService from './emailService';
 
 // Helper to ensure DB varchar limits are respected
 function truncateString(value, max) {
@@ -331,6 +332,48 @@ export async function createQuote(quoteData) {
     
     // Note: Financial config is stored directly in the quotes table
     // No separate table needed for this data
+    
+    // Send quote notification email if this is from a lead
+    if (quoteData.lead_id) {
+      try {
+        // Get lead details
+        const { data: leadData } = await supabase
+          .from('lead_requests')
+          .select('*')
+          .eq('id', quoteData.lead_id)
+          .single();
+        
+        if (leadData) {
+          // Get artisan profile data
+          const { data: profileData } = await supabase
+            .from('company_profiles')
+            .select('company_name, name')
+            .eq('id', quoteData.profile_id)
+            .single();
+
+          // Send email notification
+          await EmailService.sendQuoteNotificationEmail(
+            leadData,
+            quote,
+            profileData || { name: 'Artisan' }
+          );
+          
+          // Update lead status to indicate quote was sent
+          try {
+            await supabase.rpc('update_lead_status_on_quote_sent', {
+              lead_uuid: quoteData.lead_id,
+              artisan_user_uuid: quoteData.user_id
+            });
+          } catch (statusError) {
+            console.error('Failed to update lead status:', statusError);
+            // Don't fail the quote creation if status update fails
+          }
+        }
+      } catch (emailError) {
+        console.error('Failed to send quote notification email:', emailError);
+        // Don't fail the quote creation if email fails
+      }
+    }
     
     // Return the created quote with all relations
     return await fetchQuoteById(quote.id);

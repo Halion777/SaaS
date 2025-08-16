@@ -637,8 +637,12 @@
       "category": "Work category",
       "selectCategory": "Select a category",
       "categoryError": "Please select a work category",
-      "address": "Site address or city",
-      "addressPlaceholder": "Ex: 123 Law Street, Brussels",
+      "streetNumber": "Street number",
+      "streetNumberPlaceholder": "Ex: 123",
+      "fullAddress": "Full address",
+      "fullAddressPlaceholder": "Ex: Law Street",
+      "city": "City",
+      "cityPlaceholder": "Ex: Brussels",
       "zipCode": "Postal code",
       "zipCodePlaceholder": "Ex: 1000",
       "description": "Project description",
@@ -658,7 +662,17 @@
       "phonePlaceholder": "04 12 34 56 78",
       "email": "Email",
       "emailPlaceholder": "your@email.com",
-      "submit": "Send my request"
+      "clientAddress": "Your Address",
+      "clientAddressPlaceholder": "Your personal address",
+     
+      "communicationPreferences": "Communication Preferences",
+      "preferences": {
+        "email": "Email (recommended)",
+        "phone": "Phone calls",
+        "sms": "SMS messages"
+      },
+      "submit": "Send my request",
+      "submitting": "Sending request..."
     }
   },
   "blog": {

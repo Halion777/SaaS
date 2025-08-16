@@ -7,15 +7,21 @@ import Input from '../../components/ui/Input';
 import Icon from '../../components/AppIcon';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import LeadManagementService from '../../services/leadManagementService';
+
 const FindArtisanPage = () => {
   const { t, i18n } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [priceDropdownOpen, setPriceDropdownOpen] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
   const [formData, setFormData] = useState({
     categories: [],
-    address: '',
+    streetNumber: '',
+    fullAddress: '',
+    city: '',
     zipCode: '',
     description: '',
     priceRange: '',
@@ -23,7 +29,14 @@ const FindArtisanPage = () => {
     fullName: '',
     phone: '',
     email: '',
-    projectImages: []
+    clientAddress: '',
+    communicationPreferences: {
+      email: true,
+      phone: false,
+      sms: false
+    },
+    projectImages: [], // Store File objects for preview
+    uploadedFilePaths: [] // Store uploaded file paths for submission
   });
   const fileInputRef = useRef(null);
   const categoryDropdownRef = useRef(null);
@@ -52,11 +65,33 @@ const FindArtisanPage = () => {
     };
   }, []);
 
+  // Cleanup uploaded files when component unmounts (if form wasn't submitted)
+  useEffect(() => {
+    return () => {
+      // If there are uploaded files and form wasn't submitted, clean them up
+      if (formData.uploadedFilePaths.length > 0 && !formSubmitted) {
+        LeadManagementService.deleteProjectFiles(formData.uploadedFilePaths)
+          .catch(error => console.error('Error cleaning up files on unmount:', error));
+      }
+    };
+  }, [formData.uploadedFilePaths, formSubmitted]);
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+    
+    // Auto-fill client address when work address changes
+    if (field === 'streetNumber' || field === 'fullAddress' || field === 'city' || field === 'zipCode') {
+      const newAddress = `${formData.streetNumber || ''} ${formData.fullAddress || ''}, ${formData.city || ''} ${formData.zipCode || ''}`.trim();
+      if (newAddress && newAddress !== ', ') {
+        setFormData(prev => ({
+          ...prev,
+          clientAddress: newAddress
+        }));
+      }
+    }
   };
 
   const handleCategoryToggle = (category) => {
@@ -73,35 +108,162 @@ const FindArtisanPage = () => {
     });
   };
 
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length > 0) {
-      // Store the file objects in the state
-      setFormData(prev => ({
-        ...prev,
-        projectImages: [...prev.projectImages, ...files]
-      }));
-    }
-  };
-
-  const removeImage = (index) => {
+  const handleCommunicationPreferenceChange = (preference) => {
     setFormData(prev => ({
       ...prev,
-      projectImages: prev.projectImages.filter((_, i) => i !== index)
+      communicationPreferences: {
+        ...prev.communicationPreferences,
+        [preference]: !prev.communicationPreferences[preference]
+      }
     }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setFormSubmitted(true);
+  const handleFileChange = async (event) => {
+    const files = Array.from(event.target.files);
     
-    // Check if at least one category is selected before proceeding
+    if (files.length > 0) {
+      try {
+        // Store the actual File objects for preview
+        setFormData(prev => ({
+          ...prev,
+          projectImages: [...prev.projectImages, ...files]
+        }));
+        
+        // Upload files to Supabase Storage in background
+        const { success, data: uploadedPaths, error } = await LeadManagementService.uploadProjectFiles(files);
+        
+        if (success) {
+          // Store the uploaded file paths for submission
+          setFormData(prev => ({
+            ...prev,
+            uploadedFilePaths: [...prev.uploadedFilePaths, ...uploadedPaths]
+          }));
+        } else {
+          console.error('File upload failed:', error);
+          // Remove the files from preview if upload failed
+          setFormData(prev => ({
+            ...prev,
+            projectImages: prev.projectImages.filter(file => !files.includes(file))
+          }));
+        }
+      } catch (error) {
+        console.error('Error uploading files:', error);
+        // Remove the files from preview if upload failed
+        setFormData(prev => ({
+          ...prev,
+          projectImages: prev.projectImages.filter(file => !files.includes(file))
+        }));
+      }
+    }
+  };
+
+  const removeImage = async (index) => {
+    try {
+      // Get the file path to delete from storage
+      const filePathToDelete = formData.uploadedFilePaths[index];
+      
+      if (filePathToDelete) {
+        // Delete file from Supabase Storage
+        const { success, error } = await LeadManagementService.deleteProjectFiles([filePathToDelete]);
+        
+        if (!success) {
+          console.error('Failed to delete file from storage:', error);
+          // You could show a user-friendly error message here
+        }
+      }
+      
+      // Remove from local state
+      setFormData(prev => {
+        const newProjectImages = prev.projectImages.filter((_, i) => i !== index);
+        const newUploadedFilePaths = prev.uploadedFilePaths.filter((_, i) => i !== index);
+        
+        return {
+          ...prev,
+          projectImages: newProjectImages,
+          uploadedFilePaths: newUploadedFilePaths
+        };
+      });
+      
+    } catch (error) {
+      console.error('Error removing image:', error);
+      // Even if storage deletion fails, remove from local state to avoid UI issues
+      setFormData(prev => {
+        const newProjectImages = prev.projectImages.filter((_, i) => i !== index);
+        const newUploadedFilePaths = prev.uploadedFilePaths.filter((_, i) => i !== index);
+        
+        return {
+          ...prev,
+          projectImages: newProjectImages,
+          uploadedFilePaths: newUploadedFilePaths
+        };
+      });
+    }
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    
     if (formData.categories.length === 0) {
+      setFormSubmitted(true);
       return;
     }
     
-    // Handle form submission
-    console.log('Form submitted:', formData);
+    setIsSubmitting(true);
+    setSubmitError(null);
+    
+    try {
+      // Prepare data for submission (use uploaded file paths instead of File objects)
+      // Only include files that are still in the uploadedFilePaths array
+      const submissionData = {
+        ...formData,
+        projectImages: formData.uploadedFilePaths // Use uploaded paths for submission
+      };
+      
+      // Create the lead request using our service
+      const { success, data: lead, error } = await LeadManagementService.createLeadRequest(submissionData);
+      
+      if (success) {
+        // Success! Lead created
+        setFormSubmitted(true);
+        
+        // Clear form data
+        setFormData({
+          categories: [],
+          streetNumber: '',
+          fullAddress: '',
+          city: '',
+          zipCode: '',
+          description: '',
+          priceRange: '',
+          completionDate: '',
+          fullName: '',
+          phone: '',
+          email: '',
+          clientAddress: '',
+          communicationPreferences: {
+            email: true,
+            phone: false,
+            sms: false
+          },
+          projectImages: [],
+          uploadedFilePaths: []
+        });
+        
+        // Clear file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        
+      } else {
+        throw error;
+      }
+      
+    } catch (error) {
+      console.error('Error submitting lead:', error);
+      setSubmitError('Une erreur est survenue lors de la soumission. Veuillez réessayer.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const priceRanges = [
@@ -391,16 +553,44 @@ const FindArtisanPage = () => {
                     )}
                   </div>
 
-                  {/* Address */}
+                  {/* Street Number */}
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      {t('findArtisan.form.address')} *
+                      {t('findArtisan.form.streetNumber')} *
                     </label>
                     <Input
                       type="text"
-                      placeholder={t('findArtisan.form.addressPlaceholder')}
-                      value={formData.address}
-                      onChange={(e) => handleInputChange('address', e.target.value)}
+                      placeholder={t('findArtisan.form.streetNumberPlaceholder')}
+                      value={formData.streetNumber}
+                      onChange={(e) => handleInputChange('streetNumber', e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  {/* Full Address */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      {t('findArtisan.form.fullAddress')} *
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder={t('findArtisan.form.fullAddressPlaceholder')}
+                      value={formData.fullAddress}
+                      onChange={(e) => handleInputChange('fullAddress', e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  {/* City */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      {t('findArtisan.form.city')} *
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder={t('findArtisan.form.cityPlaceholder')}
+                      value={formData.city}
+                      onChange={(e) => handleInputChange('city', e.target.value)}
                       required
                     />
                   </div>
@@ -516,7 +706,7 @@ const FindArtisanPage = () => {
                             <div key={index} className="relative group">
                               <div className="aspect-video rounded-md overflow-hidden bg-muted">
                                 <img 
-                                  src={URL.createObjectURL(file)} 
+                                  src={file instanceof File ? URL.createObjectURL(file) : file} 
                                   alt={`Project ${index}`}
                                   className="w-full h-full object-cover"
                                 />
@@ -540,16 +730,12 @@ const FindArtisanPage = () => {
                     <label className="block text-sm font-medium text-foreground mb-2">
                       {t('findArtisan.form.completionDate')}
                     </label>
-                    <div className="relative">
-                      <Input
-                        type="text"
-                        placeholder={t('findArtisan.form.selectDate')}
-                        value={formData.completionDate}
-                        onChange={(e) => handleInputChange('completionDate', e.target.value)}
-                        icon="Calendar"
-                        iconPosition="right"
-                      />
-                    </div>
+                    <Input
+                      type="date"
+                      value={formData.completionDate}
+                      onChange={(e) => handleInputChange('completionDate', e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                    />
                   </div>
 
                   {/* Contact Information */}
@@ -572,30 +758,91 @@ const FindArtisanPage = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-foreground mb-2">
-                          {t('findArtisan.form.phone')}
+                          {t('findArtisan.form.phone')} *
                         </label>
                         <Input
                           type="tel"
                           placeholder={t('findArtisan.form.phonePlaceholder')}
                           value={formData.phone}
                           onChange={(e) => handleInputChange('phone', e.target.value)}
+                          required
                         />
                       </div>
                     </div>
                   </div>
 
-                  {/* Email */}
+                  {/* Email and Client Address - on same row */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        {t('findArtisan.form.email')} *
+                      </label>
+                      <Input
+                        type="email"
+                        placeholder={t('findArtisan.form.emailPlaceholder')}
+                        value={formData.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        {t('findArtisan.form.clientAddress')} *
+                       
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder={t('findArtisan.form.clientAddressPlaceholder')}
+                        value={formData.clientAddress}
+                        onChange={(e) => handleInputChange('clientAddress', e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Communication Preferences */}
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t('findArtisan.form.email')} *
+                    <label className="block text-sm font-medium text-foreground mb-3">
+                      {t('findArtisan.form.communicationPreferences')}
                     </label>
-                    <Input
-                      type="email"
-                      placeholder={t('findArtisan.form.emailPlaceholder')}
-                      value={formData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      required
-                    />
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="pref-email"
+                          checked={formData.communicationPreferences.email}
+                          onChange={() => handleCommunicationPreferenceChange('email')}
+                          className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                        />
+                        <label htmlFor="pref-email" className="text-sm text-foreground">
+                          {t('findArtisan.form.preferences.email')}
+                        </label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="pref-phone"
+                          checked={formData.communicationPreferences.phone}
+                          onChange={() => handleCommunicationPreferenceChange('phone')}
+                          className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                        />
+                        <label htmlFor="pref-phone" className="text-sm text-foreground">
+                          {t('findArtisan.form.preferences.phone')}
+                        </label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="pref-sms"
+                          checked={formData.communicationPreferences.sms}
+                          onChange={() => handleCommunicationPreferenceChange('sms')}
+                          className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                        />
+                        <label htmlFor="pref-sms" className="text-sm text-foreground">
+                          {t('findArtisan.form.preferences.sms')}
+                        </label>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Submit Button */}
@@ -605,9 +852,13 @@ const FindArtisanPage = () => {
                       className="w-full h-12 text-lg font-semibold"
                       iconName="ArrowRight"
                       iconPosition="right"
+                      disabled={isSubmitting}
                     >
-                      {t('findArtisan.form.submit')}
+                      {isSubmitting ? t('findArtisan.form.submitting') : t('findArtisan.form.submit')}
                     </Button>
+                    {submitError && (
+                      <p className="text-sm text-destructive mt-2 text-center">{submitError}</p>
+                    )}
                   </div>
                 </form>
               </div>
