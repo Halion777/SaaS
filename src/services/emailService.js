@@ -12,7 +12,8 @@ export class EmailService {
    * Generate quote notification email template
    */
   static generateQuoteNotificationEmail(leadData, quoteData, artisanData) {
-    const quoteUrl = `${window.location.origin}/quote/${quoteData.id}?token=${quoteData.share_token}`;
+    // Fix the URL to use the correct share link format
+    const quoteUrl = `${leadData.site_url || window.location.origin}/quote-share/${quoteData.share_token}`;
     
     return `
       <!DOCTYPE html>
@@ -217,12 +218,12 @@ export class EmailService {
           emailData
         }
       });
-
+      
       if (error) {
         console.error('Edge function error:', error);
         return { success: false, error };
       }
-
+      
       return { success: true, data };
     } catch (error) {
       console.error('Email service error:', error);
@@ -332,6 +333,35 @@ export class EmailService {
         return result;
       } else {
         console.error('Failed to send welcome email:', result.error);
+        return result;
+      }
+      
+    } catch (error) {
+      console.error('Email service error:', error);
+      return { success: false, error };
+    }
+  }
+  
+  /**
+   * Send quote notification email for manually created quotes
+   */
+  static async sendQuoteNotificationEmail(clientData, quoteData, artisanData) {
+    try {
+      const emailData = {
+        client_email: clientData.client_email,
+        project_description: clientData.project_description,
+        clientData,
+        quoteData,
+        artisanData
+      };
+      
+      const result = await this.sendEmailViaEdgeFunction('quote_notification', emailData);
+      
+      if (result.success) {
+        console.log('Quote notification email sent successfully via edge function');
+        return result;
+      } else {
+        console.error('Failed to send quote notification email:', result.error);
         return result;
       }
       

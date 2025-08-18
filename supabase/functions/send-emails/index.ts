@@ -61,7 +61,7 @@ serve(async (req) => {
           from: fromEmail,
           to: [emailData.client_email],
           subject: `Votre devis est prêt - ${emailData.project_description?.substring(0, 50) || 'Projet'}...`,
-          html: generateQuoteNotificationEmail(emailData.leadData, emailData.quoteData, emailData.artisanData)
+          html: generateQuoteNotificationEmail(emailData, emailData.quoteData, emailData.artisanData)
         });
         break;
         
@@ -156,8 +156,13 @@ serve(async (req) => {
 });
 
 // Email template functions
-function generateQuoteNotificationEmail(leadData: any, quoteData: any, artisanData: any) {
-  const quoteUrl = `${leadData?.site_url || 'https://yourdomain.com'}/quote/${quoteData?.id}?token=${quoteData?.share_token}`;
+function generateQuoteNotificationEmail(clientData: any, quoteData: any, artisanData: any) {
+  // Handle both lead-based and direct client data
+  const isLeadData = clientData?.leadData;
+  const clientInfo = isLeadData ? clientData.leadData : clientData;
+  
+  // Fix the URL to use the correct share link format
+  const quoteUrl = `${clientData?.site_url || 'https://yourdomain.com'}/quote-share/${quoteData?.share_token}`;
   
   return `
     <!DOCTYPE html>
@@ -184,16 +189,16 @@ function generateQuoteNotificationEmail(leadData: any, quoteData: any, artisanDa
         </div>
         
         <div class="content">
-          <h2>Bonjour ${leadData?.client_name || 'Client'},</h2>
+          <h2>Bonjour ${clientInfo?.client_name || 'Client'},</h2>
           
           <p>Nous avons le plaisir de vous informer que votre devis pour le projet suivant est maintenant prêt :</p>
           
           <div class="project-details">
             <h3>📋 Détails du projet</h3>
-            <p><strong>Description :</strong> ${leadData?.project_description || 'Projet'}</p>
-            <p><strong>Localisation :</strong> ${leadData?.city || 'N/A'}, ${leadData?.zip_code || 'N/A'}</p>
-            <p><strong>Catégories :</strong> ${leadData?.project_categories?.join(', ') || 'N/A'}</p>
-            <p><strong>Date de réalisation souhaitée :</strong> ${leadData?.completion_date ? new Date(leadData.completion_date).toLocaleDateString('fr-FR') : 'Non spécifiée'}</p>
+            <p><strong>Description :</strong> ${clientInfo?.project_description || 'Projet'}</p>
+            <p><strong>Localisation :</strong> ${clientInfo?.city || 'N/A'}, ${clientInfo?.zip_code || 'N/A'}</p>
+            <p><strong>Catégories :</strong> ${clientInfo?.project_categories?.join(', ') || 'N/A'}</p>
+            <p><strong>Date de réalisation souhaitée :</strong> ${clientInfo?.completion_date ? new Date(clientInfo.completion_date).toLocaleDateString('fr-FR') : 'Non spécifiée'}</p>
           </div>
           
           <p>L'artisan <span class="highlight">${artisanData?.company_name || artisanData?.name || 'Artisan'}</span> a préparé un devis détaillé pour votre projet.</p>

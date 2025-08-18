@@ -664,12 +664,17 @@
       "emailPlaceholder": "your@email.com",
       "clientAddress": "Your Address",
       "clientAddressPlaceholder": "Your personal address",
-     
+      
       "communicationPreferences": "Communication Preferences",
       "preferences": {
         "email": "Email (recommended)",
         "phone": "Phone calls",
         "sms": "SMS messages"
+      },
+      "success": {
+        "title": "Request sent!",
+        "message": "Your request has been sent successfully. An artisan will contact you soon.",
+        "sendAnother": "Send another request"
       },
       "submit": "Send my request",
       "submitting": "Sending request..."

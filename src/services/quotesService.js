@@ -375,6 +375,63 @@ export async function createQuote(quoteData) {
       }
     }
     
+    // NEW: Send email notification for manually created quotes with status 'sent'
+    if (quoteData.status === 'sent' && quoteData.client_id) {
+      try {
+        // Get client details
+        const { data: client } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('id', quoteData.client_id)
+          .single();
+        
+        if (client?.email) {
+          // Get company profile for artisan info
+          const { data: companyProfile } = await supabase
+            .from('company_profiles')
+            .select('company_name, name')
+            .eq('id', quoteData.company_profile_id)
+            .single();
+          
+          // Send quote notification email
+          const emailResult = await EmailService.sendQuoteNotificationEmail({
+            client_email: client.email,
+            client_name: client.name,
+            project_description: quoteData.description || quoteData.title,
+            site_url: window.location.origin
+          }, quote, companyProfile || { company_name: 'Your Company', name: 'Artisan' });
+          
+          if (emailResult.success) {
+            console.log('Quote notification email sent successfully');
+            
+            // Log email sent event to quote_events table (proper way)
+            try {
+              await supabase
+                .from('quote_events')
+                .insert({
+                  quote_id: quote.id,
+                  user_id: null, // System event
+                  type: 'email_sent',
+                  meta: {
+                    email_type: 'quote_notification',
+                    recipient: client.email,
+                    timestamp: new Date().toISOString()
+                  }
+                });
+            } catch (eventError) {
+              console.warn('Failed to log email event:', eventError);
+              // Don't fail if this table doesn't exist
+            }
+          } else {
+            console.error('Failed to send quote notification email:', emailResult.error);
+          }
+        }
+      } catch (emailError) {
+        console.error('Failed to send quote notification email:', emailError);
+        // Don't fail quote creation if email fails
+      }
+    }
+    
     // Return the created quote with all relations
     return await fetchQuoteById(quote.id);
     

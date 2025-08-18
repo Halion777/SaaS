@@ -672,6 +672,11 @@
         "phone": "Appels téléphoniques",
         "sms": "Messages SMS"
       },
+      "success": {
+        "title": "Demande envoyée !",
+        "message": "Votre demande a été envoyée avec succès. Un artisan vous contactera prochainement.",
+        "sendAnother": "Envoyer une autre demande"
+      },
       "submit": "Envoyer ma demande",
       "submitting": "Envoi de la demande..."
     }

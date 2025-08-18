@@ -671,10 +671,15 @@
         "phone": "Telefoongesprekken",
         "sms": "SMS-berichten"
       },
+      "success": {
+        "title": "Aanvraag verzonden!",
+        "message": "Je aanvraag is succesvol verzonden. Een vakman neemt binnenkort contact met je op.",
+        "sendAnother": "Nog een aanvraag versturen"
+      },
       "submit": "Mijn aanvraag versturen",
       "submitting": "Aanvraag versturen..."
     }
-  },
+  },    
   "blog": {
     "hero": {
       "badge": "Blog in ontwikkeling",

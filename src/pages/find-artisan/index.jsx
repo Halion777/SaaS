@@ -8,20 +8,25 @@ import Icon from '../../components/AppIcon';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import LeadManagementService from '../../services/leadManagementService';
+import { getCountryOptions, getRegionOptionsForCountry } from '../../constants/countriesAndRegions';
 
 const FindArtisanPage = () => {
   const { t, i18n } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [priceDropdownOpen, setPriceDropdownOpen] = useState(false);
+  const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
+  const [regionDropdownOpen, setRegionDropdownOpen] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
   const [formData, setFormData] = useState({
     categories: [],
+    country: 'BE', // Default to Belgium
+    region: '',
     streetNumber: '',
     fullAddress: '',
-    city: '',
     zipCode: '',
     description: '',
     priceRange: '',
@@ -41,6 +46,8 @@ const FindArtisanPage = () => {
   const fileInputRef = useRef(null);
   const categoryDropdownRef = useRef(null);
   const priceDropdownRef = useRef(null);
+  const countryDropdownRef = useRef(null);
+  const regionDropdownRef = useRef(null);
 
   // Handle click outside dropdowns to close them
   useEffect(() => {
@@ -53,6 +60,16 @@ const FindArtisanPage = () => {
       // Close price dropdown if clicked outside
       if (priceDropdownRef.current && !priceDropdownRef.current.contains(event.target)) {
         setPriceDropdownOpen(false);
+      }
+
+      // Close country dropdown if clicked outside
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(event.target)) {
+        setCountryDropdownOpen(false);
+      }
+
+      // Close region dropdown if clicked outside
+      if (regionDropdownRef.current && !regionDropdownRef.current.contains(event.target)) {
+        setRegionDropdownOpen(false);
       }
     };
 
@@ -83,14 +100,22 @@ const FindArtisanPage = () => {
     }));
     
     // Auto-fill client address when work address changes
-    if (field === 'streetNumber' || field === 'fullAddress' || field === 'city' || field === 'zipCode') {
-      const newAddress = `${formData.streetNumber || ''} ${formData.fullAddress || ''}, ${formData.city || ''} ${formData.zipCode || ''}`.trim();
+    if (field === 'streetNumber' || field === 'fullAddress' || field === 'zipCode') {
+      const newAddress = `${formData.streetNumber || ''} ${formData.fullAddress || ''}, ${formData.zipCode || ''}`.trim();
       if (newAddress && newAddress !== ', ') {
         setFormData(prev => ({
           ...prev,
           clientAddress: newAddress
         }));
       }
+    }
+
+    // Reset region when country changes
+    if (field === 'country') {
+      setFormData(prev => ({
+        ...prev,
+        region: ''
+      }));
     }
   };
 
@@ -174,8 +199,8 @@ const FindArtisanPage = () => {
       
       // Remove from local state
       setFormData(prev => {
-        const newProjectImages = prev.projectImages.filter((_, i) => i !== index);
-        const newUploadedFilePaths = prev.uploadedFilePaths.filter((_, i) => i !== index);
+        const newProjectImages = prev.projectImages.filter((_, i) => index !== i);
+        const newUploadedFilePaths = prev.uploadedFilePaths.filter((_, i) => index !== i);
         
         return {
           ...prev,
@@ -188,8 +213,8 @@ const FindArtisanPage = () => {
       console.error('Error removing image:', error);
       // Even if storage deletion fails, remove from local state to avoid UI issues
       setFormData(prev => {
-        const newProjectImages = prev.projectImages.filter((_, i) => i !== index);
-        const newUploadedFilePaths = prev.uploadedFilePaths.filter((_, i) => i !== index);
+        const newProjectImages = prev.projectImages.filter((_, i) => index !== i);
+        const newUploadedFilePaths = prev.uploadedFilePaths.filter((_, i) => index !== i);
         
         return {
           ...prev,
@@ -203,13 +228,15 @@ const FindArtisanPage = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     
-    if (formData.categories.length === 0) {
+    // Check validation first
+    if (formData.categories.length === 0 || !formData.region) {
       setFormSubmitted(true);
       return;
     }
     
     setIsSubmitting(true);
     setSubmitError(null);
+    setSubmitSuccess(false); // Reset success state
     
     try {
       // Prepare data for submission (use uploaded file paths instead of File objects)
@@ -223,15 +250,17 @@ const FindArtisanPage = () => {
       const { success, data: lead, error } = await LeadManagementService.createLeadRequest(submissionData);
       
       if (success) {
-        // Success! Lead created
-        setFormSubmitted(true);
+        // Success! Lead created - reset validation state and show success
+        setFormSubmitted(false); // Reset validation errors
+        setSubmitSuccess(true); // Set success state
         
         // Clear form data
         setFormData({
           categories: [],
+          country: 'BE',
+          region: '',
           streetNumber: '',
           fullAddress: '',
-          city: '',
           zipCode: '',
           description: '',
           priceRange: '',
@@ -253,6 +282,9 @@ const FindArtisanPage = () => {
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
+        
+        // Show success message or redirect
+        // You can add a success state here if needed
         
       } else {
         throw error;
@@ -301,7 +333,7 @@ const FindArtisanPage = () => {
     { 
       value: 'tiling', 
       label: t('findArtisan.categories.tiling'),
-      icon: 'Grid'
+      icon: 'Square'
     },
     { 
       value: 'roofing', 
@@ -321,7 +353,7 @@ const FindArtisanPage = () => {
     { 
       value: 'renovation', 
       label: t('findArtisan.categories.renovation'),
-      icon: 'Tool'
+      icon: 'Hammer'
     },
     { 
       value: 'cleaning', 
@@ -336,12 +368,12 @@ const FindArtisanPage = () => {
     { 
       value: 'gardening', 
       label: t('findArtisan.categories.gardening'),
-      icon: 'Flower'
+      icon: 'TreePine'
     },
     { 
       value: 'locksmith', 
       label: t('findArtisan.categories.locksmith'),
-      icon: 'Lock'
+      icon: 'Key'
     },
     { 
       value: 'glazing', 
@@ -388,12 +420,28 @@ const FindArtisanPage = () => {
     }
   ];
 
+  // Get country and region options
+  const countryOptions = getCountryOptions();
+  const regionOptions = getRegionOptionsForCountry(formData.country);
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background">
       <Helmet>
         <title>{t('meta.findArtisan.title')}</title>
         <meta name="description" content={t('meta.findArtisan.description')} />
-        <html lang={i18n.language} />
+        <meta name="keywords" content={t('meta.findArtisan.keywords')} />
+        <link rel="canonical" href={window.location.href} />
+        
+        {/* Open Graph */}
+        <meta property="og:title" content={t('meta.findArtisan.title')} />
+        <meta property="og:description" content={t('meta.findArtisan.description')} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={window.location.href} />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={t('meta.findArtisan.title')} />
+        <meta name="twitter:description" content={t('meta.findArtisan.description')} />
       </Helmet>
       
       <Header />
@@ -494,373 +542,505 @@ const FindArtisanPage = () => {
                   {t('findArtisan.form.title')}
                 </h2>
                 
+                {submitSuccess ? (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <Icon name="CheckCircle" className="w-8 h-8 text-green-600" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-foreground mb-4">
+                      {t('findArtisan.form.success.title')}
+                    </h3>
+                    <p className="text-muted-foreground mb-6">
+                      {t('findArtisan.form.success.message')}
+                    </p>
+                    <Button
+                      onClick={() => {
+                        setSubmitSuccess(false);
+                        setFormSubmitted(false);
+                      }}
+                      variant="outline"
+                    >
+                      {t('findArtisan.form.success.sendAnother')}
+                    </Button>
+                  </div>
+                ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Work Category */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t('findArtisan.form.category')} *
-                    </label>
-                    <div className="relative" ref={categoryDropdownRef}>
-                      {/* Custom Dropdown Button */}
-                      <button
-                        type="button"
-                        onClick={() => setDropdownOpen(!dropdownOpen)}
-                        className="w-full h-11 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left flex items-center"
-                      >
-                        <div className="absolute left-3 text-muted-foreground">
-                          <Icon name="Briefcase" className="w-5 h-5" />
-                        </div>
-                        <span className={formData.categories.length > 0 ? 'text-foreground' : 'text-muted-foreground'}>
-                          {formData.categories.length > 0 
-                            ? formData.categories.map(cat => workCategories.find(c => c.value === cat)?.label).join(', ')
-                            : t('findArtisan.form.selectCategory')
-                          }
-                        </span>
-                        <div className="absolute right-3 text-muted-foreground">
-                          <Icon name="ChevronDown" className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
-                        </div>
-                      </button>
-                      
-                      {/* Dropdown Options */}
-                      {dropdownOpen && (
-                        <div className="absolute top-full left-0 right-0 mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-md z-10 max-h-60 overflow-y-auto overflow-x-hidden scrollbar-hide">
-                          {workCategories.map(category => (
-                            <button
-                              key={category.value}
-                              type="button"
-                              onClick={() => handleCategoryToggle(category.value)}
-                              className={`w-full px-3 py-2 text-left text-sm outline-none transition-transform duration-200 hover:scale-[1.02] flex items-center rounded-sm ${
-                                formData.categories.includes(category.value) ? 'bg-accent text-accent-foreground' : 'text-foreground'
-                              }`}
-                            >
-                              <div className={`w-6 h-6 rounded flex items-center justify-center mr-3 ${
-                                formData.categories.includes(category.value) ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                              }`}>
-                                <Icon name={category.icon} className="w-3 h-3" />
-                              </div>
-                              <span className="flex-1">{category.label}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Error message if no category selected */}
-                    {formSubmitted && formData.categories.length === 0 && (
-                      <p className="text-sm text-destructive mt-2">
-                        {t('findArtisan.form.categoryError')}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Street Number */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t('findArtisan.form.streetNumber')} *
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder={t('findArtisan.form.streetNumberPlaceholder')}
-                      value={formData.streetNumber}
-                      onChange={(e) => handleInputChange('streetNumber', e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  {/* Full Address */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t('findArtisan.form.fullAddress')} *
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder={t('findArtisan.form.fullAddressPlaceholder')}
-                      value={formData.fullAddress}
-                      onChange={(e) => handleInputChange('fullAddress', e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  {/* City */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t('findArtisan.form.city')} *
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder={t('findArtisan.form.cityPlaceholder')}
-                      value={formData.city}
-                      onChange={(e) => handleInputChange('city', e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  {/* Zip Code */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t('findArtisan.form.zipCode')} *
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder={t('findArtisan.form.zipCodePlaceholder')}
-                      value={formData.zipCode}
-                      onChange={(e) => handleInputChange('zipCode', e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  {/* Project Description */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t('findArtisan.form.description')} *
-                    </label>
-                    <textarea
-                      value={formData.description}
-                      onChange={(e) => handleInputChange('description', e.target.value)}
-                      placeholder={t('findArtisan.form.descriptionPlaceholder')}
-                      className="w-full h-32 px-4 py-3 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
-                      required
-                    />
-                  </div>
-
-                  {/* Price Range */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t('findArtisan.form.priceRange')}
-                    </label>
-                    <div className="relative" ref={priceDropdownRef}>
-                      {/* Custom Dropdown Button */}
-                      <button
-                        type="button"
-                        onClick={() => setPriceDropdownOpen(!priceDropdownOpen)}
-                        className="w-full h-11 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left flex items-center"
-                      >
-                        <div className="absolute left-3 text-muted-foreground">
-                          <Icon name="Euro" className="w-5 h-5" />
-                        </div>
-                        <span className={formData.priceRange ? 'text-foreground' : 'text-muted-foreground'}>
-                          {formData.priceRange 
-                            ? priceRanges.find(range => range.value === formData.priceRange)?.label
-                            : t('findArtisan.form.selectPriceRange')
-                          }
-                        </span>
-                        <div className="absolute right-3 text-muted-foreground">
-                          <Icon name="ChevronDown" className={`w-4 h-4 transition-transform ${priceDropdownOpen ? 'rotate-180' : ''}`} />
-                        </div>
-                      </button>
-                      
-                      {/* Dropdown Options */}
-                      {priceDropdownOpen && (
-                        <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
-                          {priceRanges.map(range => (
-                            <button
-                              key={range.value}
-                              type="button"
-                              onClick={() => {
-                                handleInputChange('priceRange', range.value);
-                                setPriceDropdownOpen(false);
-                              }}
-                              className={`w-full px-4 py-3 text-left hover:bg-muted/50 transition-colors flex items-center ${
-                                formData.priceRange === range.value ? 'bg-primary/10 text-primary' : 'text-foreground'
-                              }`}
-                            >
-                              <span className="text-sm">{range.label}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Image Upload */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t('findArtisan.form.photos')} <span className="text-muted-foreground text-xs">({t('findArtisan.form.optional')})</span>
-                    </label>
-                    <div className="space-y-3">
-                      <div 
-                        className="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer hover:bg-muted/20 transition-colors"
-                        onClick={() => fileInputRef.current?.click()}
-                      >
-                        <Icon name="Upload" className="w-6 h-6 mx-auto text-muted-foreground mb-2" />
-                        <p className="text-sm text-muted-foreground">
-                          {t('findArtisan.form.clickToAddPhotos')}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {t('findArtisan.form.fileTypes')}
-                        </p>
-                        <input
-                          type="file"
-                          ref={fileInputRef}
-                          className="hidden"
-                          accept="image/*"
-                          multiple
-                          onChange={handleFileChange}
-                        />
-                      </div>
-                      
-                      {/* Preview uploaded images */}
-                      {formData.projectImages.length > 0 && (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
-                          {formData.projectImages.map((file, index) => (
-                            <div key={index} className="relative group">
-                              <div className="aspect-video rounded-md overflow-hidden bg-muted">
-                                <img 
-                                  src={file instanceof File ? URL.createObjectURL(file) : file} 
-                                  alt={`Project ${index}`}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => removeImage(index)}
-                                className="absolute top-1 right-1 bg-background/80 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <Icon name="X" className="w-4 h-4 text-destructive" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Completion Date */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t('findArtisan.form.completionDate')}
-                    </label>
-                    <Input
-                      type="date"
-                      value={formData.completionDate}
-                      onChange={(e) => handleInputChange('completionDate', e.target.value)}
-                      min={new Date().toISOString().split('T')[0]}
-                    />
-                  </div>
-
-                  {/* Contact Information */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-4">
-                      {t('findArtisan.form.contactInfo')}
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          {t('findArtisan.form.fullName')} *
-                        </label>
-                        <Input
-                          type="text"
-                          placeholder={t('findArtisan.form.fullNamePlaceholder')}
-                          value={formData.fullName}
-                          onChange={(e) => handleInputChange('fullName', e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          {t('findArtisan.form.phone')} *
-                        </label>
-                        <Input
-                          type="tel"
-                          placeholder={t('findArtisan.form.phonePlaceholder')}
-                          value={formData.phone}
-                          onChange={(e) => handleInputChange('phone', e.target.value)}
-                          required
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Email and Client Address - on same row */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Work Category */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
-                        {t('findArtisan.form.email')} *
+                        {t('findArtisan.form.category')} *
                       </label>
-                      <Input
-                        type="email"
-                        placeholder={t('findArtisan.form.emailPlaceholder')}
-                        value={formData.email}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
-                        required
-                      />
+                      <div className="relative" ref={categoryDropdownRef}>
+                        {/* Custom Dropdown Button */}
+                        <button
+                          type="button"
+                          onClick={() => setDropdownOpen(!dropdownOpen)}
+                          className="w-full h-11 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left flex items-center"
+                        >
+                          <div className="absolute left-3 text-muted-foreground">
+                            <Icon name="Briefcase" className="w-5 h-5" />
+                          </div>
+                          <span className={formData.categories.length > 0 ? 'text-foreground' : 'text-muted-foreground'}>
+                            {formData.categories.length > 0 
+                              ? formData.categories.map(cat => workCategories.find(c => c.value === cat)?.label).join(', ')
+                              : t('findArtisan.form.selectCategory')
+                            }
+                          </span>
+                          <div className="absolute right-3 text-muted-foreground">
+                            <Icon name="ChevronDown" className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                          </div>
+                        </button>
+                        
+                        {/* Dropdown Options */}
+                        {dropdownOpen && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-md z-10 max-h-60 overflow-y-auto overflow-x-hidden scrollbar-hide">
+                            {workCategories.map(category => (
+                              <button
+                                key={category.value}
+                                type="button"
+                                onClick={() => handleCategoryToggle(category.value)}
+                                className={`w-full px-3 py-2 text-left text-sm outline-none transition-transform duration-200 hover:scale-[1.02] flex items-center rounded-sm ${
+                                  formData.categories.includes(category.value) ? 'bg-accent text-accent-foreground' : 'text-foreground'
+                                }`}
+                              >
+                                <div className={`w-6 h-6 rounded flex items-center justify-center mr-3 ${
+                                  formData.categories.includes(category.value) ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                                }`}>
+                                  <Icon name={category.icon} className="w-3 h-3" />
+                                </div>
+                                <span className="flex-1">{category.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Error message if no category selected */}
+                      {formSubmitted && formData.categories.length === 0 && (
+                        <p className="text-sm text-destructive mt-2">
+                          {t('findArtisan.form.categoryError')}
+                        </p>
+                      )}
                     </div>
+
+                    {/* Country Selection */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
-                        {t('findArtisan.form.clientAddress')} *
-                       
+                        Pays *
+                      </label>
+                      <div className="relative" ref={countryDropdownRef}>
+                        {/* Custom Dropdown Button */}
+                        <button
+                          type="button"
+                          onClick={() => setCountryDropdownOpen(!countryDropdownOpen)}
+                          className="w-full h-11 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left flex items-center"
+                        >
+                          <div className="absolute left-3 text-muted-foreground">
+                            <Icon name="Globe" className="w-5 h-5" />
+                          </div>
+                          <span className={formData.country ? 'text-foreground' : 'text-muted-foreground'}>
+                            {formData.country 
+                              ? countryOptions.find(c => c.value === formData.country)?.label
+                              : 'Sélectionner le pays'
+                            }
+                          </span>
+                          <div className="absolute right-3 text-muted-foreground">
+                            <Icon name="ChevronDown" className={`w-4 h-4 transition-transform ${countryDropdownOpen ? 'rotate-180' : ''}`} />
+                          </div>
+                        </button>
+                        
+                        {/* Dropdown Options */}
+                        {countryDropdownOpen && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-md z-10 max-h-60 overflow-y-auto overflow-x-hidden scrollbar-hide">
+                            {countryOptions.map(country => (
+                              <button
+                                key={country.value}
+                                type="button"
+                                onClick={() => {
+                                  handleInputChange('country', country.value);
+                                  setCountryDropdownOpen(false);
+                                }}
+                                className={`w-full px-3 py-2 text-left text-sm outline-none transition-transform duration-200 hover:scale-[1.02] flex items-center rounded-sm ${
+                                  formData.country === country.value ? 'bg-accent text-accent-foreground' : 'text-foreground'
+                                }`}
+                              >
+                                <div className={`w-6 h-6 rounded flex items-center justify-center mr-3 ${
+                                  formData.country === country.value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                                }`}>
+                                  <Icon name="Flag" className="w-3 h-3" />
+                                </div>
+                                <span className="flex-1">{country.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Region Selection */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Région/Province *
+                      </label>
+                      <div className="relative" ref={regionDropdownRef}>
+                        {/* Custom Dropdown Button */}
+                        <button
+                          type="button"
+                          onClick={() => setRegionDropdownOpen(!regionDropdownOpen)}
+                          disabled={!formData.country}
+                          className={`w-full h-11 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left flex items-center ${
+                            !formData.country ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                        >
+                          <div className="absolute left-3 text-muted-foreground">
+                            <Icon name="MapPin" className="w-5 h-5" />
+                          </div>
+                          <span className={formData.region ? 'text-foreground' : 'text-muted-foreground'}>
+                            {formData.region 
+                              ? formData.region
+                              : formData.country ? 'Sélectionner la région' : 'Sélectionnez d\'abord un pays'
+                            }
+                          </span>
+                          <div className="absolute right-3 text-muted-foreground">
+                            <Icon name="ChevronDown" className={`w-4 h-4 transition-transform ${regionDropdownOpen ? 'rotate-180' : ''}`} />
+                          </div>
+                        </button>
+                        
+                        {/* Dropdown Options */}
+                        {regionDropdownOpen && formData.country && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-md z-10 max-h-60 overflow-y-auto overflow-x-hidden scrollbar-hide">
+                            {regionOptions.map(region => (
+                              <button
+                                key={region.value}
+                                type="button"
+                                onClick={() => {
+                                  handleInputChange('region', region.value);
+                                  setRegionDropdownOpen(false);
+                                }}
+                                className={`w-full px-3 py-2 text-left text-sm outline-none transition-transform duration-200 hover:scale-[1.02] flex items-center rounded-sm ${
+                                  formData.region === region.value ? 'bg-accent text-accent-foreground' : 'text-foreground'
+                                }`}
+                              >
+                                <div className={`w-6 h-6 rounded flex items-center justify-center mr-3 ${
+                                  formData.region === region.value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                                }`}>
+                                  <Icon name="MapPin" className="w-3 h-3" />
+                                </div>
+                                <span className="flex-1">{region.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Error message if no region selected */}
+                      {formSubmitted && !formData.region && (
+                        <p className="text-sm text-destructive mt-2">
+                          Veuillez sélectionner une région
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Street Number */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        {t('findArtisan.form.streetNumber')} *
                       </label>
                       <Input
                         type="text"
-                        placeholder={t('findArtisan.form.clientAddressPlaceholder')}
-                        value={formData.clientAddress}
-                        onChange={(e) => handleInputChange('clientAddress', e.target.value)}
+                        placeholder={t('findArtisan.form.streetNumberPlaceholder')}
+                        value={formData.streetNumber}
+                        onChange={(e) => handleInputChange('streetNumber', e.target.value)}
                         required
                       />
                     </div>
-                  </div>
 
-                  {/* Communication Preferences */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-3">
-                      {t('findArtisan.form.communicationPreferences')}
-                    </label>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id="pref-email"
-                          checked={formData.communicationPreferences.email}
-                          onChange={() => handleCommunicationPreferenceChange('email')}
-                          className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
-                        />
-                        <label htmlFor="pref-email" className="text-sm text-foreground">
-                          {t('findArtisan.form.preferences.email')}
-                        </label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id="pref-phone"
-                          checked={formData.communicationPreferences.phone}
-                          onChange={() => handleCommunicationPreferenceChange('phone')}
-                          className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
-                        />
-                        <label htmlFor="pref-phone" className="text-sm text-foreground">
-                          {t('findArtisan.form.preferences.phone')}
-                        </label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id="pref-sms"
-                          checked={formData.communicationPreferences.sms}
-                          onChange={() => handleCommunicationPreferenceChange('sms')}
-                          className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
-                        />
-                        <label htmlFor="pref-sms" className="text-sm text-foreground">
-                          {t('findArtisan.form.preferences.sms')}
-                        </label>
+                    {/* Full Address */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        {t('findArtisan.form.fullAddress')} *
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder={t('findArtisan.form.fullAddressPlaceholder')}
+                        value={formData.fullAddress}
+                        onChange={(e) => handleInputChange('fullAddress', e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    {/* Zip Code */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        {t('findArtisan.form.zipCode')} *
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder={t('findArtisan.form.zipCodePlaceholder')}
+                        value={formData.zipCode}
+                        onChange={(e) => handleInputChange('zipCode', e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    {/* Project Description */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        {t('findArtisan.form.description')} *
+                      </label>
+                      <textarea
+                        value={formData.description}
+                        onChange={(e) => handleInputChange('description', e.target.value)}
+                        placeholder={t('findArtisan.form.descriptionPlaceholder')}
+                        className="w-full h-32 px-4 py-3 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
+                        required
+                      />
+                    </div>
+
+                    {/* Price Range */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        {t('findArtisan.form.priceRange')}
+                      </label>
+                      <div className="relative" ref={priceDropdownRef}>
+                        {/* Custom Dropdown Button */}
+                        <button
+                          type="button"
+                          onClick={() => setPriceDropdownOpen(!priceDropdownOpen)}
+                          className="w-full h-11 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left flex items-center"
+                        >
+                          <div className="absolute left-3 text-muted-foreground">
+                            <Icon name="Euro" className="w-5 h-5" />
+                          </div>
+                          <span className={formData.priceRange ? 'text-foreground' : 'text-muted-foreground'}>
+                            {formData.priceRange 
+                              ? priceRanges.find(range => range.value === formData.priceRange)?.label
+                              : t('findArtisan.form.selectPriceRange')
+                            }
+                          </span>
+                          <div className="absolute right-3 text-muted-foreground">
+                            <Icon name="ChevronDown" className={`w-4 h-4 transition-transform ${priceDropdownOpen ? 'rotate-180' : ''}`} />
+                          </div>
+                        </button>
+                        
+                        {/* Dropdown Options */}
+                        {priceDropdownOpen && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                            {priceRanges.map(range => (
+                              <button
+                                key={range.value}
+                                type="button"
+                                onClick={() => {
+                                  handleInputChange('priceRange', range.value);
+                                  setPriceDropdownOpen(false);
+                                }}
+                                className={`w-full px-4 py-3 text-left hover:bg-muted/50 transition-colors flex items-center ${
+                                  formData.priceRange === range.value ? 'bg-primary/10 text-primary' : 'text-foreground'
+                                }`}
+                              >
+                                <span className="text-sm">{range.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
 
-                  {/* Submit Button */}
-                  <div className="pt-4">
-                    <Button 
-                      type="submit" 
-                      className="w-full h-12 text-lg font-semibold"
-                      iconName="ArrowRight"
-                      iconPosition="right"
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? t('findArtisan.form.submitting') : t('findArtisan.form.submit')}
-                    </Button>
-                    {submitError && (
-                      <p className="text-sm text-destructive mt-2 text-center">{submitError}</p>
-                    )}
-                  </div>
-                </form>
+                    {/* Image Upload */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        {t('findArtisan.form.photos')} <span className="text-muted-foreground text-xs">({t('findArtisan.form.optional')})</span>
+                      </label>
+                      <div className="space-y-3">
+                        <div 
+                          className="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer hover:bg-muted/20 transition-colors"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <Icon name="Upload" className="w-6 h-6 mx-auto text-muted-foreground mb-2" />
+                          <p className="text-sm text-muted-foreground">
+                            {t('findArtisan.form.clickToAddPhotos')}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {t('findArtisan.form.fileTypes')}
+                          </p>
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            accept="image/*"
+                            multiple
+                            onChange={handleFileChange}
+                          />
+                        </div>
+                        
+                        {/* Preview uploaded images */}
+                        {formData.projectImages.length > 0 && (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
+                            {formData.projectImages.map((file, index) => (
+                              <div key={index} className="relative group">
+                                <div className="aspect-video rounded-md overflow-hidden bg-muted">
+                                  <img 
+                                    src={file instanceof File ? URL.createObjectURL(file) : file} 
+                                    alt={`Project ${index}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeImage(index)}
+                                  className="absolute top-1 right-1 bg-background/80 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <Icon name="X" className="w-4 h-4 text-destructive" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Completion Date */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        {t('findArtisan.form.completionDate')}
+                      </label>
+                      <Input
+                        type="date"
+                        value={formData.completionDate}
+                        onChange={(e) => handleInputChange('completionDate', e.target.value)}
+                        min={new Date().toISOString().split('T')[0]}
+                      />
+                    </div>
+
+                    {/* Contact Information */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-4">
+                        {t('findArtisan.form.contactInfo')}
+                      </label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">
+                            {t('findArtisan.form.fullName')} *
+                          </label>
+                          <Input
+                            type="text"
+                            placeholder={t('findArtisan.form.fullNamePlaceholder')}
+                            value={formData.fullName}
+                            onChange={(e) => handleInputChange('fullName', e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">
+                            {t('findArtisan.form.phone')} *
+                          </label>
+                          <Input
+                            type="tel"
+                            placeholder={t('findArtisan.form.phonePlaceholder')}
+                            value={formData.phone}
+                            onChange={(e) => handleInputChange('phone', e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Email and Client Address - on same row */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          {t('findArtisan.form.email')} *
+                        </label>
+                        <Input
+                          type="email"
+                          placeholder={t('findArtisan.form.emailPlaceholder')}
+                          value={formData.email}
+                          onChange={(e) => handleInputChange('email', e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          {t('findArtisan.form.clientAddress')} *
+                         
+                        </label>
+                        <Input
+                          type="text"
+                          placeholder={t('findArtisan.form.clientAddressPlaceholder')}
+                          value={formData.clientAddress}
+                          onChange={(e) => handleInputChange('clientAddress', e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Communication Preferences */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-3">
+                        {t('findArtisan.form.communicationPreferences')}
+                      </label>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="pref-email"
+                            checked={formData.communicationPreferences.email}
+                            onChange={() => handleCommunicationPreferenceChange('email')}
+                            className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                          />
+                          <label htmlFor="pref-email" className="text-sm text-foreground">
+                            {t('findArtisan.form.preferences.email')}
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="pref-phone"
+                            checked={formData.communicationPreferences.phone}
+                            onChange={() => handleCommunicationPreferenceChange('phone')}
+                            className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                          />
+                          <label htmlFor="pref-phone" className="text-sm text-foreground">
+                            {t('findArtisan.form.preferences.phone')}
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="pref-sms"
+                            checked={formData.communicationPreferences.sms}
+                            onChange={() => handleCommunicationPreferenceChange('sms')}
+                            className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                          />
+                          <label htmlFor="pref-sms" className="text-sm text-foreground">
+                            {t('findArtisan.form.preferences.sms')}
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Submit Button */}
+                    <div className="pt-4">
+                      <Button 
+                        type="submit" 
+                        className="w-full h-12 text-lg font-semibold"
+                        iconName="ArrowRight"
+                        iconPosition="right"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? t('findArtisan.form.submitting') : t('findArtisan.form.submit')}
+                      </Button>
+                      {submitError && (
+                        <p className="text-sm text-destructive mt-2 text-center">{submitError}</p>
+                      )}
+                      {submitSuccess && (
+                        <p className="text-sm text-green-600 mt-2 text-center font-medium">
+                          Votre demande a été envoyée avec succès ! Nous vous contacterons bientôt.
+                        </p>
+                      )}
+                    </div>
+                  </form>
+                )}
               </div>
             </div>
           </div>

@@ -701,7 +701,7 @@ const QuotePreview = ({
                   {selectedClient?.address && (
                     <div>
                       <p>{selectedClient.address}</p>
-                      {(selectedClient?.city || selectedClient?.postalCode) && (
+                      {(selectedClient?.city || selectedClient?.postalCode) && selectedClient.city !== 'N/A' && (
                         <p>{selectedClient.postalCode} {selectedClient.city}</p>
                       )}
                       {selectedClient?.country && <p>{selectedClient.country}</p>}
@@ -711,7 +711,7 @@ const QuotePreview = ({
                   {!selectedClient?.address && selectedClient?.client && (
                     <div>
                       {selectedClient.client.address && <p>{selectedClient.client.address}</p>}
-                      {(selectedClient.client.city || selectedClient.client.postalCode) && (
+                      {(selectedClient.client.city || selectedClient.client.postalCode) && selectedClient.client.city !== 'N/A' && (
                         <p>{selectedClient.client.postalCode} {selectedClient.client.city}</p>
                       )}
                       {selectedClient.client.country && <p>{selectedClient.client.country}</p>}

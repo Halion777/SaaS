@@ -16,6 +16,7 @@ import { uploadQuoteFile, uploadQuoteSignature } from '../../services/quoteFiles
 import { saveCompanyInfo } from '../../services/companyInfoService';
 import { LeadManagementService } from '../../services/leadManagementService';
 import { supabase } from '../../services/supabaseClient';
+import EmailService from '../../services/emailService';
 
 // Helper function to get signed URL from Supabase storage
 const getStorageSignedUrl = async (bucket, path) => {
@@ -1462,7 +1463,49 @@ const QuoteCreation = () => {
         }
       }
 
-      
+      // NEW: Send email notification after successfully creating the quote
+      if (createdQuote && selectedClient?.email) {
+        try {
+          // Send quote notification email
+          const emailResult = await EmailService.sendQuoteNotificationEmail({
+            client_email: selectedClient.email,
+            client_name: selectedClient.name,
+            project_description: projectInfo.description,
+            site_url: window.location.origin
+          }, createdQuote, {
+            company_name: companyInfo?.name || 'Your Company',
+            name: 'Artisan'
+          });
+          
+          if (emailResult.success) {
+            console.log('Quote notification email sent successfully');
+            
+            // Log email sent event to quote_events table (proper way)
+            try {
+              await supabase
+                .from('quote_events')
+                .insert({
+                  quote_id: createdQuote.id,
+                  user_id: null, // System event
+                  type: 'email_sent',
+                  meta: {
+                    email_type: 'quote_notification',
+                    recipient: selectedClient.email,
+                    timestamp: new Date().toISOString()
+                  }
+                });
+            } catch (eventError) {
+              console.warn('Failed to log email event:', eventError);
+              // Don't fail if this table doesn't exist
+            }
+          } else {
+            console.error('Failed to send quote notification email:', emailResult.error);
+          }
+        } catch (emailError) {
+          console.error('Error sending quote notification email:', emailError);
+          // Don't fail quote sending if email fails
+        }
+      }
 
       // Removed legacy local backup of quotes list; rely on backend only
 

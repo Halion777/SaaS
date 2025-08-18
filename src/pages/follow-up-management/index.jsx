@@ -36,6 +36,7 @@ const FollowUpManagement = () => {
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [processingFollowUp, setProcessingFollowUp] = useState(null);
 
   const navigate = useNavigate();
 
@@ -199,10 +200,13 @@ const FollowUpManagement = () => {
   }, []);
 
   // Refresh data
-  const handleRefresh = async () => {
-    if (user && currentProfile) {
+  const refreshData = async () => {
+    if (!user || !currentProfile) return;
+
+    try {
       setLoading(true);
-      try {
+      setError(null);
+
         // Fetch quotes
         const { data: quotesData, error: quotesError } = await fetchQuotes();
         if (quotesError) {
@@ -272,7 +276,11 @@ const FollowUpManagement = () => {
       } finally {
         setLoading(false);
       }
-    }
+  };
+
+  // Handle refresh button click
+  const handleRefresh = async () => {
+    await refreshData();
   };
 
   // Filter to only show items that need follow-up (no response or not paid)
@@ -377,8 +385,57 @@ const FollowUpManagement = () => {
     return type === 'invoice' ? 'Receipt' : 'FileText';
   };
 
-  const handleFollowUp = (id) => {
-    console.log('Follow up for:', id);
+    const handleFollowUp = async (id) => {
+    try {
+      // Set processing state
+      setProcessingFollowUp(id);
+      
+      // Find the follow-up details
+      const followUp = followUps.find(fu => fu.id === id);
+      
+      if (!followUp) {
+        console.error('Follow-up not found:', id);
+        return;
+      }
+
+      // Debug: log the follow-up object to see its structure
+      console.log('Follow-up object:', followUp);
+      console.log('Quote ID:', followUp.quoteId);
+      console.log('User ID:', user.id);
+
+      // Create immediate follow-up for the next stage
+      const nextStage = (followUp.stage || 1) + 1;
+      await createFollowUpForQuote(followUp.quoteId, nextStage, user.id);
+      
+      // Log the manual follow-up event
+      await logQuoteEvent({
+        quote_id: followUp.quoteId,
+        user_id: user.id,
+        type: 'followup_manual',
+        meta: { 
+          stage: nextStage, 
+          manual: true,
+          original_followup_id: id,
+          client_name: followUp.name,
+          project: followUp.project
+        }
+      });
+      
+      // Refresh the follow-ups list to show the new one
+      await refreshData();
+      
+      console.log('Manual follow-up sent successfully for stage', nextStage);
+      
+      // Show success feedback to user
+      alert(`Relance envoyée avec succès pour l'étape ${nextStage}`);
+      
+    } catch (error) {
+      console.error('Error sending manual follow-up:', error);
+      alert('Erreur lors de l\'envoi de la relance. Veuillez réessayer.');
+    } finally {
+      // Clear processing state
+      setProcessingFollowUp(null);
+    }
   };
 
   // Removed Quick AI
@@ -446,8 +503,7 @@ const FollowUpManagement = () => {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${
-                    followUp.type === 'quote' 
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${followUp.type === 'quote'
                       ? (followUp.hasResponse ? 'text-green-700 bg-green-100' : 'text-red-700 bg-red-100')
                       : (followUp.isPaid ? 'text-green-700 bg-green-100' : 'text-red-700 bg-red-100')
                   }`}>
@@ -468,12 +524,13 @@ const FollowUpManagement = () => {
                       variant="outline"
                       size="xs"
                       onClick={() => handleFollowUp(followUp.id)}
-                      iconName="Mail"
+                      iconName={processingFollowUp === followUp.id ? "Loader" : "Mail"}
                       iconPosition="left"
                       className="h-7 sm:h-8 text-xs"
                       title="Relancer"
+                      disabled={processingFollowUp === followUp.id}
                     >
-                      Relancer
+                      {processingFollowUp === followUp.id ? 'Envoi...' : 'Relancer'}
                     </Button>
                     {/* Quick AI removed */}
                   </div>
@@ -505,8 +562,7 @@ const FollowUpManagement = () => {
                 <span className="px-2 py-1 rounded-full text-xs font-medium text-center bg-blue-100 text-blue-800">
                   {getTypeLabel(followUp.type)}
                 </span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${
-                  followUp.type === 'quote' 
+                <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${followUp.type === 'quote'
                     ? (followUp.hasResponse ? 'text-green-700 bg-green-100' : 'text-red-700 bg-red-100')
                     : (followUp.isPaid ? 'text-green-700 bg-green-100' : 'text-red-700 bg-red-100')
                 }`}>
@@ -548,11 +604,12 @@ const FollowUpManagement = () => {
                   variant="outline"
                   size="xs"
                   onClick={() => handleFollowUp(followUp.id)}
-                  iconName="Mail"
+                  iconName={processingFollowUp === followUp.id ? "Loader" : "Mail"}
                   iconPosition="left"
                   className="h-8 sm:h-9"
+                  disabled={processingFollowUp === followUp.id}
                 >
-                  Relancer
+                  {processingFollowUp === followUp.id ? 'Envoi...' : 'Relancer'}
                 </Button>
                 {/* Quick AI removed */}
               </div>
@@ -568,8 +625,7 @@ const FollowUpManagement = () => {
       <MainSidebar />
       
       <main 
-        className={`transition-all duration-300 ease-out ${
-          isMobile ? 'pb-16 pt-4' : ''
+        className={`transition-all duration-300 ease-out ${isMobile ? 'pb-16 pt-4' : ''
         }`}
         style={{ 
           marginLeft: isMobile ? 0 : `${sidebarOffset}px`,
@@ -652,8 +708,7 @@ const FollowUpManagement = () => {
               <div className="flex bg-muted rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('table')}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                    viewMode === 'table'
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${viewMode === 'table'
                       ? 'bg-background text-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
@@ -663,8 +718,7 @@ const FollowUpManagement = () => {
                 </button>
                 <button
                   onClick={() => setViewMode('card')}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                    viewMode === 'card'
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${viewMode === 'card'
                       ? 'bg-background text-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
@@ -740,6 +794,6 @@ const FollowUpManagement = () => {
       </main>
     </div>
   );
-};
 
+};
 export default FollowUpManagement;

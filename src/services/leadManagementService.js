@@ -24,9 +24,10 @@ export class LeadManagementService {
           // Location details
           street_number: leadData.streetNumber,
           full_address: leadData.fullAddress,
-          city: leadData.city,
+          city: 'N/A', // Default value since city field was removed from form
           zip_code: leadData.zipCode,
           country: leadData.country || 'BE',
+          region: leadData.region,
           
           // Client information
           client_name: leadData.fullName,
@@ -197,104 +198,13 @@ export class LeadManagementService {
       
       if (error) throw error;
       
-      // Process leads to add distance information for priority 3 (AI distance calculation)
-      const processedLeads = await this.processLeadDistances(data || []);
-      
-      return { success: true, data: processedLeads, error: null };
+      return { success: true, data: data || [], error: null };
     } catch (error) {
       console.error('Error fetching leads for artisan:', error);
       return { success: false, data: [], error };
     }
   }
 
-  /**
-   * Process leads to add distance information for AI distance calculation
-   */
-  static async processLeadDistances(leads) {
-    try {
-      // Get user preferences to access professional address
-      const { data: userPrefs } = await supabase
-        .from('artisan_lead_preferences')
-        .select('professional_address, intervention_radius')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
-
-      if (!userPrefs?.professional_address) {
-        return leads;
-      }
-
-      // For leads with priority 3 (professional address available), 
-      // we'll add a note that AI distance calculation is needed
-      return leads.map(lead => {
-        if (lead.match_priority === 3) {
-          return {
-            ...lead,
-            distance_note: `Distance calculation needed from: ${userPrefs.professional_address}`,
-            max_distance: userPrefs.intervention_radius
-          };
-        }
-        return lead;
-      });
-    } catch (error) {
-      console.error('Error processing lead distances:', error);
-      return leads;
-    }
-  }
-
-  /**
-   * Calculate distance between two addresses using Google Maps API
-   * This is a placeholder - you'll need to implement with actual Google Maps API
-   */
-  static async calculateAddressDistance(fromAddress, toAddress) {
-    try {
-      // TODO: Implement Google Maps Distance Matrix API
-      // For now, return a placeholder
-      console.log(`Distance calculation needed: ${fromAddress} to ${toAddress}`);
-      
-      // You would typically call Google Maps API here:
-      // const response = await fetch(`https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(fromAddress)}&destinations=${encodeURIComponent(toAddress)}&key=${GOOGLE_MAPS_API_KEY}`);
-      // const data = await response.json();
-      // return data.rows[0].elements[0].distance.value / 1000; // Convert to km
-      
-      return null; // Placeholder
-    } catch (error) {
-      console.error('Error calculating distance:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Check if a lead is within user's intervention radius
-   */
-  static async isLeadWithinRadius(userId, leadAddress, maxRadius) {
-    try {
-      const { data: userPrefs } = await supabase
-        .from('artisan_lead_preferences')
-        .select('professional_address')
-        .eq('user_id', userId)
-        .single();
-
-      if (!userPrefs?.professional_address) {
-        return false;
-      }
-
-      const distance = await this.calculateAddressDistance(
-        userPrefs.professional_address, 
-        leadAddress
-      );
-
-      if (distance === null) {
-        // If distance calculation fails, show the lead anyway with a note
-        return true;
-      }
-
-      return distance <= maxRadius;
-    } catch (error) {
-      console.error('Error checking lead radius:', error);
-      return false;
-    }
-  }
-  
   /**
    * Get lead details for quote creation
    */

@@ -45,7 +45,7 @@ export async function scheduleFollowUpsForQuote(quoteId) {
   return { success: true };
 }
 
-export async function createFollowUpForQuote(quoteId, stage) {
+export async function createFollowUpForQuote(quoteId, stage, userId = null) {
   // Prevent duplicates: if there is already a pending/scheduled follow-up, return its id
   const { data: existing, error: existingErr } = await supabase
     .from('quote_follow_ups')
@@ -58,10 +58,21 @@ export async function createFollowUpForQuote(quoteId, stage) {
     return existing.id;
   }
 
-  const { data, error } = await supabase.rpc('create_follow_up_for_quote', {
-    p_quote_id: quoteId,
-    p_stage: stage,
-  });
+  // Create follow-up directly in the database instead of using RPC function
+  const { data, error } = await supabase
+    .from('quote_follow_ups')
+    .insert({
+      quote_id: quoteId,
+      user_id: userId, // Required field
+      stage: stage,
+      status: 'pending',
+      scheduled_at: new Date().toISOString(),
+      attempts: 0,
+      created_at: new Date().toISOString()
+    })
+    .select()
+    .single();
+    
   if (error) throw error;
   return data; // follow_up_id
 }
