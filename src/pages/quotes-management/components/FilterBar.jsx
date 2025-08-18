@@ -13,6 +13,10 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
     { value: '', label: 'Tous les statuts' },
     { value: 'draft', label: 'Brouillon' },
     { value: 'sent', label: 'Envoyé' },
+    { value: 'viewed', label: 'Consulté' },
+    { value: 'accepted', label: 'Accepté' },
+    { value: 'rejected', label: 'Rejeté' },
+    { value: 'expired', label: 'Expiré' },
   ];
 
   // Generate client options from actual quotes data

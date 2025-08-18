@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import EmailService from './emailService';
+import QuoteTrackingService from './quoteTrackingService';
 
 // Helper to ensure DB varchar limits are respected
 function truncateString(value, max) {
@@ -43,6 +44,18 @@ export async function generateQuoteNumber(userId) {
   } catch (error) {
     console.error('Error generating quote number:', error);
     return { error };
+  }
+}
+
+/**
+ * Get quote tracking data for enhanced status display
+ */
+export async function getQuoteTrackingData(quoteId) {
+  try {
+    return await QuoteTrackingService.getQuoteTrackingData(quoteId);
+  } catch (error) {
+    console.error('Error getting quote tracking data:', error);
+    return { success: false, error: error.message };
   }
 }
 
@@ -96,7 +109,29 @@ export async function fetchQuotes() {
       `)
       .order('created_at', { ascending: false });
     
-    return { data, error };
+    if (error) return { data, error };
+
+    // Enhance quotes with tracking data
+    const enhancedQuotes = await Promise.all(
+      data.map(async (quote) => {
+        try {
+          // Get tracking data for each quote
+          const trackingResult = await getQuoteTrackingData(quote.id);
+          if (trackingResult.success) {
+            return {
+              ...quote,
+              trackingData: trackingResult.data.trackingData
+            };
+          }
+          return quote;
+        } catch (trackingError) {
+          console.warn(`Error getting tracking data for quote ${quote.id}:`, trackingError);
+          return quote;
+        }
+      })
+    );
+    
+    return { data: enhancedQuotes, error };
   } catch (error) {
     console.error('Error fetching quotes:', error);
     return { error };
@@ -223,6 +258,9 @@ export async function createQuote(quoteData) {
       return { error: { message: 'quote_number is required' } };
     }
     
+    // Generate unique share token for the quote
+    const shareToken = `qt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     // First, create the quote
     const quoteInsertData = {
       user_id: quoteData.user_id,
@@ -241,7 +279,10 @@ export async function createQuote(quoteData) {
       discount_amount: quoteData.discount_amount || 0,
       final_amount: quoteData.final_amount || quoteData.total_amount || 0,
       valid_until: quoteData.valid_until || null,
-      terms_conditions: quoteData.terms_conditions || ''
+      terms_conditions: quoteData.terms_conditions || '',
+      sent_at: quoteData.status === 'sent' ? new Date().toISOString() : null,
+      share_token: shareToken,
+      is_public: quoteData.status === 'sent'
     };
     
     const { data: quote, error: quoteError } = await supabase
@@ -253,6 +294,23 @@ export async function createQuote(quoteData) {
     if (quoteError) {
       console.error('Error creating quote:', quoteError);
       return { error: quoteError };
+    }
+
+    // Create quote_shares record for tracking
+    if (quoteData.status === 'sent') {
+      const { error: sharesError } = await supabase
+        .from('quote_shares')
+        .insert({
+          quote_id: quote.id,
+          share_token: shareToken,
+          access_count: 0,
+          is_active: true
+        });
+      
+      if (sharesError) {
+        console.error('Error creating quote_shares record:', sharesError);
+        // Don't fail quote creation if shares tracking fails
+      }
     }
     
     // Then create quote tasks if any
@@ -351,11 +409,12 @@ export async function createQuote(quoteData) {
             .eq('id', quoteData.profile_id)
             .single();
 
-          // Send email notification
-          await EmailService.sendQuoteNotificationEmail(
-            leadData,
+          // Send email notification using new template system
+          await EmailService.sendQuoteSentEmail(
             quote,
-            profileData || { name: 'Artisan' }
+            { name: leadData.client_name, email: leadData.client_email },
+            profileData,
+            quoteData.user_id
           );
           
           // Update lead status to indicate quote was sent
@@ -393,18 +452,24 @@ export async function createQuote(quoteData) {
             .eq('id', quoteData.company_profile_id)
             .single();
           
-          // Send quote notification email
-          const emailResult = await EmailService.sendQuoteNotificationEmail({
-            client_email: client.email,
-            client_name: client.name,
-            project_description: quoteData.description || quoteData.title,
-            site_url: window.location.origin
-          }, quote, companyProfile || { company_name: 'Your Company', name: 'Artisan' });
+          // Send quote notification email using new template system
+          const emailResult = await EmailService.sendQuoteSentEmail(
+            quote,
+            client,
+            companyProfile,
+            quoteData.user_id
+          );
           
           if (emailResult.success) {
             console.log('Quote notification email sent successfully');
             
-            // Log email sent event to quote_events table (proper way)
+            // Update sent_at timestamp when email is sent
+            await supabase
+              .from('quotes')
+              .update({ sent_at: new Date().toISOString() })
+              .eq('id', quote.id);
+            
+            // Log email sent event to quote_events table
             try {
               await supabase
                 .from('quote_events')
@@ -420,7 +485,6 @@ export async function createQuote(quoteData) {
                 });
             } catch (eventError) {
               console.warn('Failed to log email event:', eventError);
-              // Don't fail if this table doesn't exist
             }
           } else {
             console.error('Failed to send quote notification email:', emailResult.error);

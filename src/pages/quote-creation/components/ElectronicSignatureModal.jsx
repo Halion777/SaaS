@@ -3,7 +3,7 @@ import SignatureCanvas from 'react-signature-canvas';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
 
-const ElectronicSignatureModal = ({ isOpen, onClose, onSign, quoteData }) => {
+const ElectronicSignatureModal = ({ isOpen, onClose, onSign, onComplete, quoteData, title, subtitle, clientName }) => {
   const [clientComment, setClientComment] = useState('');
   const [signatureMode, setSignatureMode] = useState('draw'); // 'draw' or 'upload'
   const [signatureImage, setSignatureImage] = useState(null);
@@ -81,10 +81,16 @@ const ElectronicSignatureModal = ({ isOpen, onClose, onSign, quoteData }) => {
         signature: signatureImage,
         signatureMode,
         signedAt: new Date().toISOString(),
-        quoteId: quoteData?.id
+        quoteId: quoteData?.id,
+        clientName: clientName || 'Client'
       };
       
-      onSign(signatureData);
+      // Call either onSign or onComplete, depending on which is provided
+      if (onSign) {
+        onSign(signatureData);
+      } else if (onComplete) {
+        onComplete(signatureData);
+      }
       setIsSigning(false);
       onClose();
     }, 1000);
@@ -115,7 +121,12 @@ const ElectronicSignatureModal = ({ isOpen, onClose, onSign, quoteData }) => {
       <div className="bg-card border border-border rounded-lg shadow-xl max-w-2xl w-full overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gray-50 flex-shrink-0">
-          <h2 className="text-xl font-semibold text-gray-800">Signature électronique</h2>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-800">{title || 'Signature électronique'}</h2>
+            {subtitle && (
+              <p className="text-sm text-gray-600 mt-1">{subtitle}</p>
+            )}
+          </div>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 transition-colors p-1 rounded-full hover:bg-gray-100"
@@ -135,7 +146,7 @@ const ElectronicSignatureModal = ({ isOpen, onClose, onSign, quoteData }) => {
               onChange={(e) => setClientComment(e.target.value)}
               rows={4}
               className="w-full p-3 border border-border rounded-lg bg-input text-foreground text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-              placeholder="Ex: J'accepte ce devis et ses conditions..."
+              placeholder={`Ex: ${clientName ? clientName + ' ' : ''}accepte ce devis et ses conditions...`}
             />
           </div>
 

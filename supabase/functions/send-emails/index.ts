@@ -56,16 +56,19 @@ serve(async (req) => {
     };
     
     switch (emailType) {
-      case 'quote_notification':
+      case 'templated_email':
+        // New template system for client emails
         emailResult = await sendEmail({
           from: fromEmail,
           to: [emailData.client_email],
-          subject: emailData.subject || `Votre devis est prêt - ${emailData.project_description?.substring(0, 50) || 'Projet'}...`,
-          html: generateQuoteNotificationEmail(emailData, emailData.quoteData, emailData.artisanData)
+          subject: emailData.subject,
+          html: emailData.html,
+          text: emailData.text
         });
         break;
         
       case 'new_lead_available':
+        // Keep: Business logic for artisans
         emailResult = await sendEmail({
           from: fromEmail,
           to: [emailData.artisan_email],
@@ -75,20 +78,12 @@ serve(async (req) => {
         break;
         
       case 'lead_assigned':
+        // Keep: Business logic for artisans
         emailResult = await sendEmail({
           from: fromEmail,
           to: [emailData.artisan_email],
           subject: `Projet assigné - ${emailData.project_description?.substring(0, 50) || 'Projet'}...`,
           html: generateLeadAssignmentEmail(emailData.leadData, emailData.artisanData)
-        });
-        break;
-        
-      case 'welcome_client':
-        emailResult = await sendEmail({
-          from: fromEmail,
-          to: [emailData.client_email],
-          subject: 'Bienvenue - Votre projet a été reçu',
-          html: generateWelcomeEmail(emailData.clientData)
         });
         break;
         
@@ -117,48 +112,7 @@ serve(async (req) => {
   }
 });
 
-// Simplified email template functions
-function generateQuoteNotificationEmail(clientData: any, quoteData: any, artisanData: any) {
-  // Handle both lead-based and direct client data
-  const isLeadData = clientData?.leadData;
-  const clientInfo = isLeadData ? clientData.leadData : clientData;
-  
-  // Get the custom message from emailData if available
-  const customMessage = clientData?.message || 'Veuillez trouver ci-joint notre devis pour votre projet.';
-  
-  // Fix the URL to use the correct share link format
-  const quoteUrl = `${clientData?.site_url || 'https://www.haliqo.com'}/quote-share/${quoteData?.share_token}`;
-  
-  return `
-    <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Votre devis est prêt</title>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .button { display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <h2>Bonjour ${clientInfo?.client_name || 'Client'},</h2>
-        
-        <p>${customMessage}</p>
-        
-        <div style="text-align: center;">
-          <a href="${quoteUrl}" class="button">Voir votre devis</a>
-        </div>
-        
-        <p>Cordialement,<br>
-        ${artisanData?.company_name || artisanData?.name || 'Votre équipe'}</p>
-      </div>
-    </body>
-    </html>
-  `;
-}
+// Email template functions for business logic (artisan communications)
 
 function generateNewLeadNotificationEmail(leadData: any, artisanData: any) {
   return `
@@ -230,31 +184,3 @@ function generateLeadAssignmentEmail(leadData: any, artisanData: any) {
   `;
 }
 
-function generateWelcomeEmail(clientData: any) {
-  return `
-    <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Bienvenue sur notre plateforme</title>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <h2>Bonjour ${clientData?.name || 'Client'},</h2>
-        
-        <p>Nous sommes ravis de vous accueillir sur notre plateforme !</p>
-        
-        <p>Votre demande de projet a été reçue avec succès. Nos artisans qualifiés vont l'examiner et vous proposer des devis dans les plus brefs délais.</p>
-        
-        <p>Merci de votre confiance !<br>
-        L'équipe de votre plateforme</p>
-      </div>
-    </body>
-    </html>
-  `;
-}

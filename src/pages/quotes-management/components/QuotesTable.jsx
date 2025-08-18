@@ -52,26 +52,73 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
     }));
   };
 
+  const getStatusBadge = (quote) => {
+    const { status, trackingData } = quote;
+    
+    // Enhanced status with tracking information
+    const statusConfig = {
+      draft: { label: 'Brouillon', className: 'bg-gray-100 text-gray-800' },
+      sent: { label: 'Envoyé', className: 'bg-blue-100 text-blue-800' },
+      viewed: { label: 'Consulté', className: 'bg-orange-100 text-orange-800' },
+      accepted: { label: 'Accepté', className: 'bg-green-100 text-green-800' },
+      rejected: { label: 'Rejeté', className: 'bg-red-100 text-red-800' },
+      expired: { label: 'Expiré', className: 'bg-yellow-100 text-yellow-800' }
+    };
+
+    const config = statusConfig[status] || { label: status, className: 'bg-gray-100 text-gray-800' };
+    
+    return (
+      <div className="flex flex-col gap-1">
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.className}`}>
+          {config.label}
+        </span>
+        
+        {/* Show tracking status for sent quotes */}
+        {status === 'sent' && trackingData && (
+          <div className="flex flex-col gap-1">
+            {trackingData.relanceStatus === 'not_viewed' && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                📧 Non ouvert
+              </span>
+            )}
+            {trackingData.relanceStatus === 'viewed_no_action' && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                👁️ Vue sans action
+              </span>
+            )}
+            {trackingData.relanceStatus === 'accepted' && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                ✅ Accepté
+              </span>
+            )}
+            {trackingData.relanceStatus === 'rejected' && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                ❌ Rejeté
+              </span>
+            )}
+            {trackingData.relanceStatus === 'expired' && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                ⏰ Expiré
+              </span>
+            )}
+          </div>
+        )}
+        
+
+      </div>
+    );
+  };
+
   const getStatusColor = (status) => {
     const colors = {
       draft: 'bg-muted text-muted-foreground',
       sent: 'bg-blue-100 text-blue-700',
+      viewed: 'bg-orange-100 text-orange-700',
       accepted: 'bg-green-100 text-success',
       rejected: 'bg-red-100 text-destructive',
       expired: 'bg-gray-100 text-gray-700'
     };
     return colors[status] || colors.draft;
-  };
-
-  const getStatusText = (status) => {
-    const statusMap = {
-      draft: 'Brouillon',
-      sent: 'Envoyé',
-      accepted: 'Accepté',
-      rejected: 'Refusé',
-      expired: 'Expiré'
-    };
-    return statusMap[status] || status;
   };
 
 
@@ -134,6 +181,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                 )}
               </div>
             </th>
+
             <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('createdAt')}>
               <div className="flex items-center space-x-1">
                 <span>Créé le</span>
@@ -176,9 +224,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
               <td className="p-3 md:p-4 text-foreground">{quote.clientName}</td>
               <td className="p-3 md:p-4 font-medium text-foreground">{formatAmount(quote.amount)}</td>
               <td className="p-3 md:p-4">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-center ${getStatusColor(quote.status)}`}>
-                  {getStatusText(quote.status)}
-                </span>
+                {getStatusBadge(quote)}
               </td>
               <td className="p-3 md:p-4 text-muted-foreground">{formatDate(quote.createdAt)}</td>
               <td className="p-3 md:p-4 text-foreground">{quote.validUntil ? formatDate(quote.validUntil) : '-'}</td>
@@ -187,14 +233,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-center ${quote.followUpStatusColor || 'bg-gray-100 text-gray-700'}`}>
                     {quote.followUpStatusLabel || 'Aucune'}
                   </span>
-                  {quote.followUpMeta && (
-                    <span className="text-[10px] text-muted-foreground">
-                      {quote.followUpMeta.stage ? `Étape ${quote.followUpMeta.stage}` : ''}
-                      {quote.followUpMeta.dueAt ? `${quote.followUpMeta.stage ? ' • ' : ''}${new Date(quote.followUpMeta.dueAt).toLocaleString('fr-FR')}` : ''}
-                      {quote.followUpMeta.lastError && quote.followUpStatus === 'failed' ? ` • ${quote.followUpMeta.lastError.substring(0, 40)}` : ''}
-                      {quote.followUpMeta.maxAttempts && quote.followUpMeta.attempts >= quote.followUpMeta.maxAttempts ? ' • épuisé' : ''}
-                    </span>
-                  )}
+                  {/* Per request: hide step number and time details in reminder column */}
                 </div>
               </td>
               <td className="p-3 md:p-4" onClick={(e) => e.stopPropagation()}>
@@ -230,17 +269,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                       <Icon name="Receipt" size={16} />
                     </Button>
                   )}
-                  {!quote.isDraftPlaceholder && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onQuoteAction('followup', quote)}
-                      title="Gérer les relances"
-                      className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                    >
-                      <Icon name="MessageCircle" size={16} />
-                    </Button>
-                  )}
+                  {/* Follow-up management icon removed per request */}
                   {/* Send reminder icon removed: manage via Follow-up panel */}
                   <Button
                     variant="ghost"
@@ -274,12 +303,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
               <p className="text-sm text-muted-foreground mb-2">{quote.clientName}</p>
             </div>
             <div className="flex items-center space-x-2">
-              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(quote.status)}`}>
-                {getStatusText(quote.status)}
-              </span>
-              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${quote.followUpStatusColor || 'bg-gray-100 text-gray-700'}`}>
-                {quote.followUpStatusLabel || 'Aucune'}
-              </span>
+              {getStatusBadge(quote)}
             </div>
           </div>
           
@@ -324,17 +348,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                 <Icon name="Receipt" size={14} />
               </Button>
             )}
-            {!quote.isDraftPlaceholder && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onQuoteAction('followup', quote)}
-                title="Gérer les relances"
-                className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-              >
-                <Icon name="MessageCircle" size={14} />
-              </Button>
-            )}
+            {/* Follow-up management icon removed per request */}
             {/* Send reminder icon removed in card view */}
             <Button
               variant="ghost"

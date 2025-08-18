@@ -8,11 +8,13 @@ import { useAuth } from '../../context/AuthContext';
 import { useMultiUser } from '../../context/MultiUserContext';
 import { 
   listScheduledFollowUps, 
-  createFollowUpForQuote, 
   stopFollowUpsForQuote,
-  logQuoteEvent 
+  logQuoteEvent
 } from '../../services/followUpService';
 import { fetchQuotes } from '../../services/quotesService';
+import EmailService from '../../services/emailService';
+import { supabase } from '../../services/supabaseClient';
+
 import { useNavigate } from 'react-router-dom';
 
 const FollowUpManagement = () => {
@@ -137,6 +139,8 @@ const FollowUpManagement = () => {
           setError('Erreur lors du chargement des relances');
           return;
         }
+
+
         
         // Transform quotes data
         const transformedQuotes = (quotesData || []).map(quote => ({
@@ -160,6 +164,14 @@ const FollowUpManagement = () => {
           const daysAgo = Math.floor((new Date() - new Date(followUp.created_at)) / (1000 * 60 * 60 * 24));
           const nextFollowUp = followUp.scheduled_at || followUp.created_at;
           
+          // Get tracking data from follow-up metadata
+          const trackingData = followUp.meta || {};
+          const followUpType = trackingData.follow_up_type || 'general';
+          const isAutomated = trackingData.automated || false;
+          
+          // Determine if client has responded based on tracking
+          const hasResponse = quote.status === 'accepted' || quote.status === 'rejected';
+          
           return {
             id: followUp.id,
             name: quote.clientName,
@@ -170,12 +182,17 @@ const FollowUpManagement = () => {
             priority: followUp.stage === 1 ? 'high' : followUp.stage === 2 ? 'medium' : 'low',
             status: followUp.status,
             type: 'quote',
-            hasResponse: false, // This would need to be determined from actual response data
+            hasResponse: hasResponse,
             isPaid: quote.status === 'accepted',
             quoteId: followUp.quote_id,
             stage: followUp.stage,
             scheduledAt: followUp.scheduled_at,
-            attempts: followUp.attempts || 0
+            attempts: followUp.attempts || 0,
+            // New tracking data
+            followUpType: followUpType,
+            isAutomated: isAutomated,
+            templateSubject: followUp.template_subject,
+            trackingData: trackingData
           };
         }).filter(Boolean); // Remove null entries
         
@@ -241,32 +258,45 @@ const FollowUpManagement = () => {
         
         setQuotes(transformedQuotes);
         
-        // Transform follow-ups data
-        const transformedFollowUps = (followUpsData || []).map(followUp => {
-          const quote = transformedQuotes.find(q => q.id === followUp.quote_id);
-          if (!quote) return null;
-          
-          const daysAgo = Math.floor((new Date() - new Date(followUp.created_at)) / (1000 * 60 * 60 * 24));
-          const nextFollowUp = followUp.scheduled_at || followUp.created_at;
-          
-          return {
-            id: followUp.id,
-            name: quote.clientName,
-            project: `${quote.number} - ${quote.description}`,
-            daysAgo: daysAgo,
-            nextFollowUp: nextFollowUp,
-            potentialRevenue: quote.amount,
-            priority: followUp.stage === 1 ? 'high' : followUp.stage === 2 ? 'medium' : 'low',
-            status: followUp.status,
-            type: 'quote',
-            hasResponse: false,
-            isPaid: quote.status === 'accepted',
-            quoteId: followUp.quote_id,
-            stage: followUp.stage,
-            scheduledAt: followUp.scheduled_at,
-            attempts: followUp.attempts || 0
-          };
-        }).filter(Boolean);
+                 // Transform follow-ups data
+         const transformedFollowUps = (followUpsData || []).map(followUp => {
+           const quote = transformedQuotes.find(q => q.id === followUp.quote_id);
+           if (!quote) return null;
+           
+           const daysAgo = Math.floor((new Date() - new Date(followUp.created_at)) / (1000 * 60 * 60 * 24));
+           const nextFollowUp = followUp.scheduled_at || followUp.scheduled_at;
+           
+           // Get tracking data from follow-up metadata
+           const trackingData = followUp.meta || {};
+           const followUpType = trackingData.follow_up_type || 'general';
+           const isAutomated = trackingData.automated || false;
+           
+           // Determine if client has responded based on tracking
+           const hasResponse = quote.status === 'accepted' || quote.status === 'rejected';
+           
+           return {
+             id: followUp.id,
+             name: quote.clientName,
+             project: `${quote.number} - ${quote.description}`,
+             daysAgo: daysAgo,
+             nextFollowUp: nextFollowUp,
+             potentialRevenue: quote.amount,
+             priority: followUp.stage === 1 ? 'high' : followUp.stage === 2 ? 'medium' : 'low',
+             status: followUp.status,
+             type: 'quote',
+             hasResponse: hasResponse,
+             isPaid: quote.status === 'accepted',
+             quoteId: followUp.quote_id,
+             stage: followUp.stage,
+             scheduledAt: followUp.scheduled_at,
+             attempts: followUp.attempts || 0,
+             // New tracking data
+             followUpType: followUpType,
+             isAutomated: isAutomated,
+             templateSubject: followUp.template_subject,
+             trackingData: trackingData
+           };
+         }).filter(Boolean);
         
         setFollowUps(transformedFollowUps);
         setError(null);
@@ -282,6 +312,8 @@ const FollowUpManagement = () => {
   const handleRefresh = async () => {
     await refreshData();
   };
+
+
 
   // Filter to only show items that need follow-up (no response or not paid)
   const needsFollowUp = (followUp) => {
@@ -381,11 +413,36 @@ const FollowUpManagement = () => {
     return labels[type] || 'Devis';
   };
 
+  const getFollowUpTypeLabel = (followUpType) => {
+    const labels = {
+      'email_not_opened': 'Email non ouvert',
+      'viewed_no_action': 'Vue sans action',
+      'general': 'Général',
+      'manual': 'Manuel'
+    };
+    return labels[followUpType] || 'Général';
+  };
+
+  const getFollowUpTypeColor = (followUpType) => {
+    const colors = {
+      'email_not_opened': 'text-red-700 bg-red-100',
+      'viewed_no_action': 'text-amber-700 bg-amber-100',
+      'general': 'text-blue-700 bg-blue-100',
+      'manual': 'text-purple-700 bg-purple-100'
+    };
+    return colors[followUpType] || 'text-blue-700 bg-blue-100';
+  };
+
   const getTypeIcon = (type) => {
     return type === 'invoice' ? 'Receipt' : 'FileText';
   };
 
-    const handleFollowUp = async (id) => {
+    /**
+   * Handle manual follow-up button click
+   * Sends immediate email reminder WITHOUT changing stages or creating new follow-up records
+   * Stages only advance based on client behavior tracking, not manual actions
+   */
+  const handleFollowUp = async (id) => {
     try {
       // Set processing state
       setProcessingFollowUp(id);
@@ -398,36 +455,82 @@ const FollowUpManagement = () => {
         return;
       }
 
-      // Debug: log the follow-up object to see its structure
-      console.log('Follow-up object:', followUp);
-      console.log('Quote ID:', followUp.quoteId);
-      console.log('User ID:', user.id);
-
-      // Create immediate follow-up for the next stage
-      const nextStage = (followUp.stage || 1) + 1;
-      await createFollowUpForQuote(followUp.quoteId, nextStage, user.id);
       
-      // Log the manual follow-up event
+
+      // Get quote and client details for email
+      const quote = quotes.find(q => q.id === followUp.quoteId);
+      if (!quote) {
+        throw new Error('Quote not found for follow-up');
+      }
+
+      // Get company profile for email
+      const { data: companyProfile } = await supabase
+        .from('company_profiles')
+        .select('company_name')
+        .eq('user_id', user.id)
+        .eq('is_default', true)
+        .single();
+
+      // Send immediate follow-up email
+      const emailResult = await EmailService.sendFollowUpEmail(
+        quote,
+        { name: followUp.name, email: quote.client?.email },
+        companyProfile,
+        'general_followup',
+        user.id,
+        followUp.daysAgo
+      );
+
+      if (!emailResult.success) {
+        throw new Error(`Failed to send follow-up email: ${emailResult.error}`);
+      }
+
+      // ✅ Email sent successfully - now log the action
+      // ❌ NO stage advancement - keep current stage
+      // ❌ NO new follow-up records - maintain existing automated workflow
+      // Log the manual follow-up event (NO stage advancement, NO new records)
       await logQuoteEvent({
         quote_id: followUp.quoteId,
         user_id: user.id,
         type: 'followup_manual',
         meta: { 
-          stage: nextStage, 
+          stage: followUp.stage || 1, // Keep current stage - NO advancement
           manual: true,
           original_followup_id: id,
           client_name: followUp.name,
-          project: followUp.project
+          project: followUp.project,
+          email_sent: true,
+          email_result: emailResult,
+          note: 'Manual reminder sent without changing automated workflow'
         }
       });
+
+      // Log relance action for tracking (NO stage change)
+      try {
+        await QuoteTrackingService.logRelanceAction(
+          followUp.quoteId, 
+          'manual_followup', 
+          'manual_action', 
+          `Relance manuelle envoyée - Email envoyé (Stage ${followUp.stage || 1} maintenu)`
+        );
+      } catch (relanceError) {
+        console.warn('Error logging relance action:', relanceError);
+      }
       
-      // Refresh the follow-ups list to show the new one
+      // Refresh the follow-ups list (no new records created)
       await refreshData();
       
-      console.log('Manual follow-up sent successfully for stage', nextStage);
+    
       
-      // Show success feedback to user
-      alert(`Relance envoyée avec succès pour l'étape ${nextStage}`);
+      // Show success feedback to user (no stage mention)
+      alert('Relance envoyée avec succès !');
+      
+      // ✅ SUCCESS SUMMARY:
+      // - Immediate email sent to client
+      // - Action logged for tracking
+      // - Current stage maintained
+      // - No new follow-up records created
+      // - Automated workflow unchanged
       
     } catch (error) {
       console.error('Error sending manual follow-up:', error);
@@ -454,7 +557,8 @@ const FollowUpManagement = () => {
               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Montant</th>
               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Réponse/Paiement</th>
               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Priorité</th>
-              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Actions</th>
+                             <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Type Relance</th>
+               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -513,12 +617,24 @@ const FollowUpManagement = () => {
                     }
                   </span>
                 </td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getPriorityColor(followUp.priority)}`}>
-                    {getPriorityLabel(followUp.priority)}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
+                                 <td className="px-4 py-3">
+                   <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getPriorityColor(followUp.priority)}`}>
+                     {getPriorityLabel(followUp.priority)}
+                   </span>
+                 </td>
+                 <td className="px-4 py-3">
+                   <div className="flex flex-col gap-1">
+                     <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getFollowUpTypeColor(followUp.followUpType)}`}>
+                       {getFollowUpTypeLabel(followUp.followUpType)}
+                     </span>
+                     {followUp.isAutomated && (
+                       <span className="px-2 py-1 rounded-full text-xs font-medium text-center bg-green-100 text-green-700">
+                         Auto
+                       </span>
+                     )}
+                   </div>
+                 </td>
+                 <td className="px-4 py-3">
                   <div className="flex gap-1">
                     <Button
                       variant="outline"
@@ -574,6 +690,14 @@ const FollowUpManagement = () => {
                 <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getPriorityColor(followUp.priority)}`}>
                   {getPriorityLabel(followUp.priority)}
                 </span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getFollowUpTypeColor(followUp.followUpType)}`}>
+                  {getFollowUpTypeLabel(followUp.followUpType)}
+                </span>
+                {followUp.isAutomated && (
+                  <span className="px-2 py-1 rounded-full text-xs font-medium text-center bg-green-100 text-green-700">
+                    Auto
+                  </span>
+                )}
               </div>
             </div>
 
@@ -591,6 +715,12 @@ const FollowUpManagement = () => {
                 <Icon name="Calendar" size={12} className="sm:w-3.5 sm:h-3.5" />
                 <span>Prochaine relance: {followUp.nextFollowUp}</span>
               </div>
+              {followUp.templateSubject && (
+                <div className="flex items-start space-x-2 text-xs sm:text-sm text-muted-foreground">
+                  <Icon name="MessageSquare" size={12} className="sm:w-3.5 sm:h-3.5 mt-0.5" />
+                  <span className="break-words">{followUp.templateSubject}</span>
+                </div>
+              )}
             </div>
 
             {/* Revenue and actions */}
@@ -700,6 +830,8 @@ const FollowUpManagement = () => {
             onFiltersChange={handleFiltersChange} 
             filteredCount={filteredFollowUps.length}
           />
+
+          
 
           {/* View Toggle */}
           <div className="flex items-center justify-between p-4 border-b border-border">

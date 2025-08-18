@@ -19,6 +19,7 @@ import { LeadManagementService } from '../../services/leadManagementService';
 import { supabase } from '../../services/supabaseClient';
 import EmailService from '../../services/emailService';
 import { generatePublicShareLink } from '../../services/shareService';
+import { getPublicUrl } from '../../services/storageService';
 
 // Helper function to get signed URL for private bucket access
 const getSignedUrlForBucket = async (bucket, path) => {
@@ -538,6 +539,87 @@ const QuoteCreation = () => {
     };
   }, [selectedClient, projectInfo, tasks, files, currentStep, companyInfo, financialConfig, user?.id, currentProfile?.id]);
 
+  // Load company info from database and localStorage
+  useEffect(() => {
+    const loadCompanyInfo = async () => {
+      if (!user?.id) return;
+      
+      try {
+        // First try to load from database
+        const { data: companyProfile, error } = await supabase
+          .from('company_profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('is_default', true)
+          .single();
+
+        if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+          console.error('Error loading company profile from database:', error);
+        } else if (companyProfile) {
+          // Convert database format to frontend format
+          const dbCompanyInfo = {
+            name: companyProfile.company_name,
+            vatNumber: companyProfile.vat_number,
+            address: companyProfile.address,
+            postalCode: companyProfile.postal_code,
+            city: companyProfile.city,
+            state: companyProfile.state,
+            country: companyProfile.country,
+            phone: companyProfile.phone,
+            email: companyProfile.email,
+            website: companyProfile.website,
+            logo: companyProfile.logo_path ? {
+              name: companyProfile.logo_filename || 'company-logo',
+              size: companyProfile.logo_size || 0,
+              type: companyProfile.logo_mime_type || 'image/*',
+              path: companyProfile.logo_path,
+              publicUrl: getPublicUrl('company-assets', companyProfile.logo_path)
+            } : null,
+            signature: companyProfile.signature_path ? {
+              name: companyProfile.signature_filename || 'company-signature',
+              size: companyProfile.signature_size || 0,
+              type: companyProfile.signature_mime_type || 'image/*',
+              path: companyProfile.signature_path,
+              publicUrl: getPublicUrl('company-assets', companyProfile.signature_path)
+            } : null
+          };
+          
+          setCompanyInfo(dbCompanyInfo);
+          
+          // Also save to localStorage for future use
+          try {
+            localStorage.setItem(`company-info-${user.id}`, JSON.stringify({
+              name: dbCompanyInfo.name,
+              vatNumber: dbCompanyInfo.vatNumber,
+              address: dbCompanyInfo.address,
+              postalCode: dbCompanyInfo.postalCode,
+              city: dbCompanyInfo.city,
+              state: dbCompanyInfo.state,
+              country: dbCompanyInfo.country,
+              phone: dbCompanyInfo.phone,
+              email: dbCompanyInfo.email,
+              website: dbCompanyInfo.website
+            }));
+            
+            if (dbCompanyInfo.logo) {
+              localStorage.setItem(`company-logo-${user.id}`, JSON.stringify(dbCompanyInfo.logo));
+            }
+            
+            if (dbCompanyInfo.signature) {
+              localStorage.setItem(`company-signature-${user.id}`, JSON.stringify(dbCompanyInfo.signature));
+            }
+          } catch (localStorageError) {
+            console.warn('Failed to save company info to localStorage:', localStorageError);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading company info:', error);
+      }
+    };
+
+    loadCompanyInfo();
+  }, [user?.id, currentProfile?.id]);
+
   // Do not auto-load draft into the form on page open; only clean expired local draft
   useEffect(() => {
     if (user?.id) {
@@ -548,7 +630,7 @@ const QuoteCreation = () => {
           }
         } catch {}
       
-      // Also load company info from localStorage
+      // Also load company info from localStorage (as fallback)
       try {
         const companyInfoKey = `company-info-${user.id}`;
         const savedCompanyInfo = localStorage.getItem(companyInfoKey);
@@ -1484,30 +1566,42 @@ const QuoteCreation = () => {
           if (!shareToken) {
             const shareResult = await generatePublicShareLink(createdQuote.id, user?.id);
             if (shareResult?.success) {
-              shareToken = shareResult.token;
+              shareToken = shareResult.data?.share_token || shareResult.token;
               // Update the createdQuote object with the new share token
               createdQuote.share_token = shareToken;
+              
+              // Update the quote in database with the share token
+              const { error: updateError } = await supabase
+                .from('quotes')
+                .update({ share_token: shareToken })
+                .eq('id', createdQuote.id);
+              
+              if (updateError) {
+                console.warn('Failed to update quote with share token:', updateError);
+              }
             } else {
               console.error('Failed to generate share token for email:', shareResult?.error);
             }
           }
 
-          // Send quote notification email with custom message if provided
-          const emailResult = await EmailService.sendQuoteNotificationEmail({
-            client_email: selectedClient.email,
-            client_name: selectedClient.name,
-            project_description: projectInfo.description,
-            site_url: window.location.origin
-          }, createdQuote, {
-            company_name: companyInfo?.name || 'Your Company',
-            name: 'Artisan'
-          }, sendData?.emailData?.message, // Pass the custom message
-          sendData?.emailData?.subject); // Pass the custom subject
+          // Send quote notification email using new template system
+          const emailResult = await EmailService.sendQuoteSentEmail(
+            createdQuote,
+            selectedClient,
+            companyInfo,
+            user.id
+          );
           
           if (emailResult.success) {
             console.log('Quote notification email sent successfully');
             
-            // Log email sent event to quote_events table (proper way)
+            // Update sent_at timestamp when email is sent
+            await supabase
+              .from('quotes')
+              .update({ sent_at: new Date().toISOString() })
+              .eq('id', createdQuote.id);
+            
+            // Log email sent event to quote_events table
             try {
               await supabase
                 .from('quote_events')
@@ -1515,6 +1609,7 @@ const QuoteCreation = () => {
                   quote_id: createdQuote.id,
                   user_id: null, // System event
                   type: 'email_sent',
+                  share_token: shareToken, // Use dedicated column
                   meta: {
                     email_type: 'quote_notification',
                     recipient: selectedClient.email,
@@ -1523,7 +1618,6 @@ const QuoteCreation = () => {
                 });
             } catch (eventError) {
               console.warn('Failed to log email event:', eventError);
-              // Don't fail if this table doesn't exist
             }
           } else {
             console.error('Failed to send quote notification email:', emailResult.error);

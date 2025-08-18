@@ -16,7 +16,7 @@ import {
   stopFollowUpsForQuote,
   logQuoteEvent 
 } from '../../services/followUpService';
-import FollowUpManagementPanel from './components/FollowUpManagementPanel';
+
 
 const QuotesManagement = () => {
   const navigate = useNavigate();
@@ -31,14 +31,16 @@ const QuotesManagement = () => {
     total: 0,
     drafts: 0,
     sent: 0,
+    viewed: 0,
+    accepted: 0,
+    rejected: 0,
+    expired: 0,
     averageAmount: 0
   });
   
   // Follow-up related state
   const [followUps, setFollowUps] = useState({});
   const [followUpLoading, setFollowUpLoading] = useState(false);
-  const [showFollowUpPanel, setShowFollowUpPanel] = useState(false);
-  const [selectedQuoteForFollowUp, setSelectedQuoteForFollowUp] = useState(null);
   
   // Ref to prevent infinite API calls
   const followUpsLoadedRef = useRef(false);
@@ -127,7 +129,7 @@ const QuotesManagement = () => {
               };
               setQuotes([placeholder]);
               setFilteredQuotes([placeholder]);
-              setStats({ total: 1, drafts: 1, sent: 0, averageAmount: 0 });
+              setStats({ total: 1, drafts: 1, sent: 0, viewed: 0, accepted: 0, rejected: 0, expired: 0, averageAmount: 0 });
               return;
             }
           } catch (e) { console.log('QuotesManagement: loadQuoteDraft exception', e); }
@@ -247,10 +249,23 @@ const QuotesManagement = () => {
         const total = sortedQuotes.length;
         const drafts = sortedQuotes.filter(q => q.status === 'draft').length;
         const sent = sortedQuotes.filter(q => q.status === 'sent').length;
+        const viewed = sortedQuotes.filter(q => q.status === 'viewed').length;
+        const accepted = sortedQuotes.filter(q => q.status === 'accepted').length;
+        const rejected = sortedQuotes.filter(q => q.status === 'rejected').length;
+        const expired = sortedQuotes.filter(q => q.status === 'expired').length;
         const amounts = sortedQuotes.map(q => parseFloat(q.amount) || 0);
         const averageAmount = total > 0 ? (amounts.reduce((acc, v) => acc + v, 0) / total) : 0;
         
-        setStats({ total, drafts, sent, averageAmount });
+        setStats({ 
+          total, 
+          drafts, 
+          sent, 
+          viewed,
+          accepted,
+          rejected,
+          expired,
+          averageAmount 
+        });
         
       } catch (err) {
         console.error('Error loading quotes:', err);
@@ -261,7 +276,7 @@ const QuotesManagement = () => {
           // If it's just no data, set empty state
           setQuotes([]);
           setFilteredQuotes([]);
-          setStats({ total: 0, signed: 0, pending: 0, averageScore: 0 });
+          setStats({ total: 0, drafts: 0, sent: 0, viewed: 0, accepted: 0, rejected: 0, expired: 0, averageAmount: 0 });
         }
       } finally {
         setLoading(false);
@@ -1087,65 +1102,7 @@ const QuotesManagement = () => {
 
       {/* Desktop AI Panel removed */}
 
-      {/* Desktop Follow-up Panel */}
-      {showFollowUpPanel && (
-        <div className="hidden md:block fixed right-0 top-0 w-80 h-full bg-background border-l border-border overflow-y-auto z-50 shadow-lg">
-          <div className="p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <h2 className="text-base sm:text-lg font-semibold text-foreground flex items-center">
-                <Icon name="MessageCircle" size={16} className="sm:w-[18px] sm:h-[18px] text-primary mr-2" />
-                Gestion des Relances
-              </h2>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowFollowUpPanel(false)}
-              >
-                <Icon name="X" size={18} className="sm:w-5 sm:h-5" />
-              </Button>
-            </div>
-            
-            <FollowUpManagementPanel
-              selectedQuote={selectedQuoteForFollowUp}
-              followUps={followUps}
-              onSendFollowUp={handleSendFollowUpNow}
-              onStopFollowUps={handleStopFollowUps}
-              loading={followUpLoading}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Mobile Panels */}
-      {/* Mobile Analyse IA panel removed */}
-
-      {showFollowUpPanel && (
-        <div className="md:hidden fixed inset-0 bg-background z-50 overflow-y-auto">
-          <div className="p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <h2 className="text-base sm:text-lg font-semibold text-foreground flex items-center">
-                <Icon name="MessageCircle" size={16} className="sm:w-[18px] sm:h-[18px] text-primary mr-2" />
-                Gestion des Relances
-              </h2>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowFollowUpPanel(false)}
-              >
-                <Icon name="X" size={18} className="sm:w-5 sm:h-5" />
-              </Button>
-            </div>
-            
-            <FollowUpManagementPanel
-              selectedQuote={selectedQuoteForFollowUp}
-              followUps={followUps}
-              onSendFollowUp={handleSendFollowUpNow}
-              onStopFollowUps={handleStopFollowUps}
-              loading={followUpLoading}
-            />
-          </div>
-        </div>
-      )}
+      {/* Follow-up side panel removed per request */}
     </div>
   );
 };

@@ -58,12 +58,12 @@ export class LeadManagementService {
         // Don't fail the lead creation if assignment fails
       }
       
-      // Send welcome email to client
+      // Send welcome email to client using new template system
       try {
         await EmailService.sendWelcomeEmail({
           name: leadData.fullName,
           email: leadData.email
-        });
+        }, null, userId);
       } catch (emailError) {
         console.error('Failed to send welcome email:', emailError);
         // Don't fail the lead creation if email fails
@@ -258,11 +258,12 @@ export class LeadManagementService {
               .eq('id', profileId)
               .single();
 
-            // Send email notification
-            await EmailService.sendQuoteNotificationEmail(
-              leadData,
-              { id: data.quote_id, share_token: data.share_token },
-              profileData || { name: 'Artisan' }
+            // Send email notification using new template system
+            await EmailService.sendQuoteSentEmail(
+              { id: data.quote_id, share_token: data.share_token, quote_number: `Q-${Date.now()}`, title: leadData.project_description, total_with_tax: 0 },
+              { name: leadData.client_name, email: leadData.client_email },
+              profileData,
+              userId
             );
           }
         } catch (emailError) {

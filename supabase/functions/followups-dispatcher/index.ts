@@ -48,7 +48,11 @@ serve(async (req) => {
     const nowIso = new Date().toISOString()
     const { data: dueFollowUps, error: dueErr } = await admin
       .from('quote_follow_ups')
-      .select('id, quote_id, user_id, client_id, stage, template_subject, template_html, template_text')
+      .select(`
+        id, quote_id, user_id, client_id, stage, 
+        template_subject, template_html, template_text,
+        meta, created_at
+      `)
       .in('status', ['pending', 'scheduled'])
       .lte('scheduled_at', nowIso)
       .limit(100)
@@ -100,14 +104,85 @@ serve(async (req) => {
         await admin.from('email_outbox').update({ status: 'sent', provider_message_id: resp.id, sent_at: new Date().toISOString() }).eq('id', outbox.id)
         await admin.from('quote_follow_ups').update({ status: 'sent', attempts: (1) }).eq('id', fu.id)
         processedQuotes.add(String(fu.quote_id))
-        await admin.from('quote_events').insert({ quote_id: fu.quote_id, user_id: fu.user_id, type: 'followup_sent', meta: { stage: fu.stage } })
+        
+        // Enhanced event logging with intelligent follow-up metadata
+        const eventMeta = {
+          stage: fu.stage,
+          follow_up_id: fu.id,
+          follow_up_type: fu.meta?.follow_up_type || 'general',
+          automated: fu.meta?.automated || false,
+          template_subject: fu.template_subject,
+          client_email: client.email
+        }
+        
+        await admin.from('quote_events').insert({ 
+          quote_id: fu.quote_id, 
+          user_id: fu.user_id, 
+          type: 'followup_sent', 
+          meta: eventMeta 
+        })
+        
+        // Log to access logs for tracking
+        await admin.from('quote_access_logs').insert({
+          quote_id: fu.quote_id,
+          action: 'followup_sent',
+          accessed_at: new Date().toISOString(),
+          meta: {
+            follow_up_type: fu.meta?.follow_up_type || 'general',
+            stage: fu.stage,
+            automated: fu.meta?.automated || false
+          }
+        })
       } catch (err: any) {
-        await admin.from('email_outbox').insert({ follow_up_id: fu.id, user_id: fu.user_id, to_email: client.email, subject, html, text, status: 'failed', error: err?.message || 'send failed' })
-        await admin.from('quote_follow_ups').update({ status: 'failed', last_error: err?.message || 'send failed' }).eq('id', fu.id)
+        const errorMessage = err?.message || 'send failed'
+        
+        // Log failed outbox
+        await admin.from('email_outbox').insert({ 
+          follow_up_id: fu.id, 
+          user_id: fu.user_id, 
+          to_email: client.email, 
+          subject, 
+          html, 
+          text, 
+          status: 'failed', 
+          error: errorMessage 
+        })
+        
+        // Update follow-up status
+        await admin.from('quote_follow_ups').update({ 
+          status: 'failed', 
+          last_error: errorMessage,
+          last_attempt: new Date().toISOString()
+        }).eq('id', fu.id)
+        
+        // Log failure event
+        await admin.from('quote_events').insert({
+          quote_id: fu.quote_id,
+          user_id: fu.user_id,
+          type: 'followup_failed',
+          meta: {
+            stage: fu.stage,
+            follow_up_id: fu.id,
+            error: errorMessage,
+            follow_up_type: fu.meta?.follow_up_type || 'general'
+          }
+        })
       }
     }
 
-    return new Response(JSON.stringify({ ok: true, processed: dueFollowUps?.length || 0 }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }})
+    // Count follow-ups by type for better reporting
+    const followUpTypes = dueFollowUps?.reduce((acc, fu) => {
+      const type = fu.meta?.follow_up_type || 'general'
+      acc[type] = (acc[type] || 0) + 1
+      return acc
+    }, {} as Record<string, number>) || {}
+    
+    return new Response(JSON.stringify({ 
+      ok: true, 
+      processed: dueFollowUps?.length || 0,
+      followUpTypes,
+      timestamp: nowIso
+    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }})
   } catch (e: any) {
     return new Response(JSON.stringify({ error: e?.message || 'Unknown error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }})
   }

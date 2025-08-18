@@ -525,22 +525,62 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Function to auto-expire quotes
+-- Function to auto-expire quotes when valid_until date passes
 CREATE OR REPLACE FUNCTION public.auto_expire_quotes()
 RETURNS INTEGER AS $$
 DECLARE
-  expired_count INTEGER;
+    expired_count INTEGER := 0;
 BEGIN
-  UPDATE public.quotes
-  SET 
-    status = 'expired',
-    updated_at = NOW()
-  WHERE status IN ('draft', 'sent') 
+    UPDATE public.quotes 
+    SET status = 'expired'
+    WHERE status IN ('sent', 'draft') 
     AND expires_at IS NOT NULL 
-    AND NOW() > expires_at;
-  
-  GET DIAGNOSTICS expired_count = ROW_COUNT;
-  RETURN expired_count;
+    AND expires_at < CURRENT_TIMESTAMP;
+    
+    GET DIAGNOSTICS expired_count = ROW_COUNT;
+    
+    RETURN expired_count;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to update quote status when client accepts/rejects
+CREATE OR REPLACE FUNCTION public.update_quote_status_on_client_action(
+    p_quote_id UUID,
+    p_new_status TEXT,
+    p_rejection_reason TEXT DEFAULT NULL
+)
+RETURNS BOOLEAN AS $$
+DECLARE
+    v_quote_exists BOOLEAN;
+    v_current_status TEXT;
+BEGIN
+    -- Check if quote exists and get current status
+    SELECT EXISTS(SELECT 1 FROM public.quotes WHERE id = p_quote_id), status
+    INTO v_quote_exists, v_current_status
+    FROM public.quotes 
+    WHERE id = p_quote_id;
+    
+    IF NOT v_quote_exists THEN
+        RETURN FALSE;
+    END IF;
+    
+    -- Only allow status changes from 'sent' to 'accepted' or 'rejected'
+    IF v_current_status != 'sent' THEN
+        RETURN FALSE;
+    END IF;
+    
+    -- Update quote status
+    UPDATE public.quotes 
+    SET 
+        status = p_new_status,
+        updated_at = NOW(),
+        CASE 
+            WHEN p_new_status = 'accepted' THEN accepted_at = NOW()
+            WHEN p_new_status = 'rejected' THEN rejected_at = NOW()
+        END
+    WHERE id = p_quote_id;
+    
+    RETURN TRUE;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
