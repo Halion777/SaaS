@@ -10,6 +10,7 @@ import ClientSelection from './components/ClientSelection';
 import TaskDefinition from './components/TaskDefinition';
 import FileUpload from './components/FileUpload';
 import QuotePreview from './components/QuotePreview';
+import QuoteSendModal from './components/QuoteSendModal';
 // AIScoring removed
 import { generateQuoteNumber, createQuote, fetchQuoteById, updateQuote, saveQuoteDraft, loadQuoteDraft, deleteQuoteDraft, deleteQuoteDraftById } from '../../services/quotesService';
 import { uploadQuoteFile, uploadQuoteSignature } from '../../services/quoteFilesService';
@@ -17,18 +18,23 @@ import { saveCompanyInfo } from '../../services/companyInfoService';
 import { LeadManagementService } from '../../services/leadManagementService';
 import { supabase } from '../../services/supabaseClient';
 import EmailService from '../../services/emailService';
+import { generatePublicShareLink } from '../../services/shareService';
 
-// Helper function to get signed URL from Supabase storage
-const getStorageSignedUrl = async (bucket, path) => {
-  if (!path) return null;
-  
+// Helper function to get signed URL for private bucket access
+const getSignedUrlForBucket = async (bucket, path) => {
   // Debug: Log what we're trying to get signed URL for
   
   try {
-    // Get signed URL for private bucket access
+    // For company-assets bucket, use public URL since it's now public
+    if (bucket === 'company-assets') {
+      const { getPublicUrl } = await import('../../services/storageService');
+      return getPublicUrl(bucket, path);
+    }
+    
+    // Get signed URL for other private buckets
     const { data, error } = await supabase.storage
       .from(bucket)
-      .createSignedUrl(path, 3600); // 1 hour expiry
+      .createSignedUrl(path, 2592000); // 30 days expiry
     
     if (error) {
       console.error(`Error getting signed URL for ${bucket}/${path}:`, error);
@@ -73,6 +79,7 @@ const QuoteCreation = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showQuoteSendModal, setShowQuoteSendModal] = useState(false);
 
   // Draft expiration (24 hours)
   const DRAFT_TTL_MS = 24 * 60 * 60 * 1000;
@@ -318,7 +325,7 @@ const QuoteCreation = () => {
       // Get signed URLs for all files
       const transformedFiles = [];
       for (const file of quote.quote_files || []) {
-        const signedUrl = await getStorageSignedUrl('quote-files', file.file_path);
+        const signedUrl = await getSignedUrlForBucket('quote-files', file.file_path);
 
         
         transformedFiles.push({
@@ -360,7 +367,7 @@ const QuoteCreation = () => {
             type: quote.company_profile.logo_mime_type || 'image/*',
             data: null, // Will be loaded from storage
             path: quote.company_profile.logo_path,
-            publicUrl: await getStorageSignedUrl('company-assets', quote.company_profile.logo_path)
+            publicUrl: await getSignedUrlForBucket('company-assets', quote.company_profile.logo_path)
           } : null,
           signature: quote.company_profile.signature_path ? {
             name: quote.company_profile.signature_filename || 'company-signature',
@@ -368,7 +375,7 @@ const QuoteCreation = () => {
             type: quote.company_profile.signature_mime_type || 'image/*',
             data: null, // Will be loaded from storage
             path: quote.company_profile.signature_path,
-            publicUrl: await getStorageSignedUrl('company-assets', quote.company_profile.signature_path)
+            publicUrl: await getSignedUrlForBucket('company-assets', quote.company_profile.signature_path)
           } : null
         };
         
@@ -390,7 +397,7 @@ const QuoteCreation = () => {
       if (quote.quote_signatures && quote.quote_signatures.length > 0) {
         const clientSignature = quote.quote_signatures.find(s => s.signature_type === 'client') || quote.quote_signatures[0];
         const signatureUrl = clientSignature.signature_file_path 
-          ? await getStorageSignedUrl('signatures', clientSignature.signature_file_path) 
+          ? await getSignedUrlForBucket('signatures', clientSignature.signature_file_path) 
           : (clientSignature.signature_data ? `data:image/png;base64,${clientSignature.signature_data}` : null);
         const signatureData = {
           signature: signatureUrl,
@@ -1057,6 +1064,12 @@ const QuoteCreation = () => {
 
   // Enhanced handleSend with better data structure and backend integration
   const handleSend = async (data) => {
+    // Store the data for later use and show the send modal
+    setShowQuoteSendModal(true);
+  };
+
+  // Actual quote sending logic
+  const processQuoteSend = async (sendData) => {
     try {
       setIsSaving(true);
       
@@ -1087,11 +1100,11 @@ const QuoteCreation = () => {
           custom_category: projectInfo.customCategory || '',
           deadline: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : null,
           total_amount: totalAmount,
-          tax_amount: data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0,
+          tax_amount: sendData.financialConfig?.vatConfig?.display ? (totalAmount * (sendData.financialConfig.vatConfig.rate || 20) / 100) : 0,
           discount_amount: 0,
-          final_amount: totalAmount + (data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0),
-          valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          terms_conditions: data.financialConfig?.defaultConditions?.text || '',
+          final_amount: totalAmount + (sendData.financialConfig?.vatConfig?.display ? (totalAmount * (sendData.financialConfig.vatConfig.rate || 20) / 100) : 0),
+          valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).split('T')[0],
+          terms_conditions: sendData.financialConfig?.defaultConditions?.text || '',
           tasks: tasks.map((task, index) => ({
             name: task.description || task.name || '',
             description: task.description || task.name || '',
@@ -1175,11 +1188,11 @@ const QuoteCreation = () => {
         custom_category: projectInfo.customCategory || '',
         deadline: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : null,
         total_amount: totalAmount,
-        tax_amount: data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0,
+        tax_amount: sendData.financialConfig?.vatConfig?.display ? (totalAmount * (sendData.financialConfig.vatConfig.rate || 20) / 100) : 0,
         discount_amount: 0,
-        final_amount: totalAmount + (data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0),
-        valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        terms_conditions: data.financialConfig?.defaultConditions?.text || '',
+        final_amount: totalAmount + (sendData.financialConfig?.vatConfig?.display ? (totalAmount * (sendData.financialConfig.vatConfig.rate || 20) / 100) : 0),
+        valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).split('T')[0],
+        terms_conditions: sendData.financialConfig?.defaultConditions?.text || '',
         tasks: tasks.map((task, index) => ({
           name: task.description || task.name || '',
           description: task.description || task.name || '',
@@ -1232,23 +1245,23 @@ const QuoteCreation = () => {
       }
       
       // Now save financial configuration to database
-      if (data.financialConfig && user?.id) {
+      if (sendData.financialConfig && user?.id) {
         try {
           const financialConfigData = {
             quote_id: quoteId,
             vat_config: {
-              display: data.financialConfig.vatConfig?.display || false,
-              rate: data.financialConfig.vatConfig?.rate || 21,
+              display: sendData.financialConfig.vatConfig?.display || false,
+              rate: sendData.financialConfig.vatConfig?.rate || 21,
               is_inclusive: false
             },
             advance_config: {
-              enabled: data.financialConfig.advanceConfig?.enabled || false,
-              percentage: data.financialConfig.advanceConfig?.percentage || 30,
-              amount: data.financialConfig.advanceConfig?.amount || '',
-              due_date: data.financialConfig.advanceConfig?.dueDate || null
+              enabled: sendData.financialConfig.advanceConfig?.enabled || false,
+              percentage: sendData.financialConfig.advanceConfig?.percentage || 30,
+              amount: sendData.financialConfig.advanceConfig?.amount || '',
+              due_date: sendData.financialConfig.advanceConfig?.dueDate || null
             },
             marketing_banner: {
-              text: data.financialConfig.marketingBannerConfig?.message || '',
+              text: sendData.financialConfig.marketingBannerConfig?.message || '',
               color: '#3B82F6',
               position: 'top'
             },
@@ -1280,7 +1293,7 @@ const QuoteCreation = () => {
 
       // Now save company info to database (including logo and signature)
       let companyProfileId = null;
-      if (data.companyInfo && user?.id) {
+      if (sendData.companyInfo && user?.id) {
         try {
   
           
@@ -1288,31 +1301,31 @@ const QuoteCreation = () => {
           let logoFile = null;
           let signatureFile = null;
           
-          if (data.companyInfo.logo?.data) {
+          if (sendData.companyInfo.logo?.data) {
             // Convert base64 to file
-            const logoResponse = await fetch(data.companyInfo.logo.data);
+            const logoResponse = await fetch(sendData.companyInfo.logo.data);
             const logoBlob = await logoResponse.blob();
             
             // Create a proper File object
-            logoFile = new File([logoBlob], data.companyInfo.logo.name, { 
-              type: data.companyInfo.logo.type 
+            logoFile = new File([logoBlob], sendData.companyInfo.logo.name, { 
+              type: sendData.companyInfo.logo.type 
             });
           }
           
-          if (data.companyInfo.signature?.data) {
+          if (sendData.companyInfo.signature?.data) {
             // Convert base64 to file
-            const signatureResponse = await fetch(data.companyInfo.signature.data);
+            const signatureResponse = await fetch(sendData.companyInfo.signature.data);
             const signatureBlob = await signatureResponse.blob();
             
             // Create a proper File object
-            signatureFile = new File([signatureBlob], data.companyInfo.signature.name, { 
-              type: data.companyInfo.signature.type 
+            signatureFile = new File([signatureBlob], sendData.companyInfo.signature.name, { 
+              type: sendData.companyInfo.signature.type 
             });
           }
           
           // Prepare company data for saving
           const companyDataToSave = {
-            ...data.companyInfo,
+            ...sendData.companyInfo,
             logo: logoFile,
             signature: signatureFile
           };
@@ -1344,12 +1357,12 @@ const QuoteCreation = () => {
 
       // Now save client signature to database and storage
       let clientSignatureId = null;
-      if (data.signatureData?.signature && user?.id) {
+      if (sendData.signatureData?.signature && user?.id) {
         try {
   
           
           // Convert base64 to file for upload
-          const signatureResponse = await fetch(data.signatureData.signature);
+          const signatureResponse = await fetch(sendData.signatureData.signature);
           const signatureBlob = await signatureResponse.blob();
           
           // Create a proper File object
@@ -1464,9 +1477,22 @@ const QuoteCreation = () => {
       }
 
       // NEW: Send email notification after successfully creating the quote
-      if (createdQuote && selectedClient?.email) {
+      if (createdQuote && selectedClient?.email && sendData?.method === 'email') {
         try {
-          // Send quote notification email
+          // Ensure the quote has a share token before sending email
+          let shareToken = createdQuote.share_token;
+          if (!shareToken) {
+            const shareResult = await generatePublicShareLink(createdQuote.id, user?.id);
+            if (shareResult?.success) {
+              shareToken = shareResult.token;
+              // Update the createdQuote object with the new share token
+              createdQuote.share_token = shareToken;
+            } else {
+              console.error('Failed to generate share token for email:', shareResult?.error);
+            }
+          }
+
+          // Send quote notification email with custom message if provided
           const emailResult = await EmailService.sendQuoteNotificationEmail({
             client_email: selectedClient.email,
             client_name: selectedClient.name,
@@ -1475,7 +1501,8 @@ const QuoteCreation = () => {
           }, createdQuote, {
             company_name: companyInfo?.name || 'Your Company',
             name: 'Artisan'
-          });
+          }, sendData?.emailData?.message, // Pass the custom message
+          sendData?.emailData?.subject); // Pass the custom subject
           
           if (emailResult.success) {
             console.log('Quote notification email sent successfully');
@@ -1861,7 +1888,7 @@ const QuoteCreation = () => {
                     <div className="space-y-2">
                       <div className="flex items-start text-sm text-muted-foreground"><Icon name="Sparkles" size={14} className="mt-0.5 mr-2 text-primary" />Sélectionnez au moins une catégorie (obligatoire) pour activer les suggestions de tâches.</div>
                       <div className="flex items-start text-sm text-muted-foreground"><Icon name="Sparkles" size={14} className="mt-0.5 mr-2 text-primary" />Vous pouvez choisir plusieurs catégories si nécessaire.</div>
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Mic" size={14} className="mt-0.5 mr-2 text-primary" />Cliquez sur l’icône micro pour dicter; l’IA nettoie et reformule proprement.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Mic" size={14} className="mt-0.5 mr-2 text-primary" />Cliquez sur l'icône micro pour dicter; l'IA nettoie et reformule proprement.</div>
                       <div className="flex items-start text-sm text-muted-foreground"><Icon name="Wand2" size={14} className="mt-0.5 mr-2 text-primary" />Utilisez « Améliorer » pour une description courte, claire et professionnelle.</div>
                       <div className="flex items-start text-sm text-muted-foreground"><Icon name="Globe" size={14} className="mt-0.5 mr-2 text-primary" />La langue suit vos préférences de compte.</div>
           </div>
@@ -1874,8 +1901,8 @@ const QuoteCreation = () => {
                 {currentStep === 2 && (
                   <>
                     <div className="space-y-2">
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Mic" size={14} className="mt-0.5 mr-2 text-primary" />Dictez/écrivez; l’IA génère description, durée, prix et matériaux proposés.</div>
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Hand" size={14} className="mt-0.5 mr-2 text-primary" />Cliquez sur une suggestion pour préremplir; modifiez librement avant d’ajouter.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Mic" size={14} className="mt-0.5 mr-2 text-primary" />Dictez/écrivez; l'IA génère description, durée, prix et matériaux proposés.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Hand" size={14} className="mt-0.5 mr-2 text-primary" />Cliquez sur une suggestion pour préremplir; modifiez librement avant d'ajouter.</div>
                       <div className="flex items-start text-sm text-muted-foreground"><Icon name="Coins" size={14} className="mt-0.5 mr-2 text-primary" />Vérifiez les prix et quantités de matériaux; ajustez selon votre tarif.</div>
                       <div className="flex items-start text-sm text-muted-foreground"><Icon name="Clock" size={14} className="mt-0.5 mr-2 text-primary" />Durée par défaut en heures; renseignez la durée pour un prix cohérent.</div>
                     </div>
@@ -1894,14 +1921,14 @@ const QuoteCreation = () => {
                     </div>
                     <div className="mt-3 p-2 rounded-md bg-blue-50 border border-blue-100 text-[12px] text-blue-700 flex items-start">
                       <Icon name="Info" size={14} className="mr-2 mt-0.5" />
-                      Astuce: des visuels clairs augmentent le taux d’acceptation.
+                      Astuce: des visuels clairs augmentent le taux d'acceptation.
                     </div>
                   </>
                 )}
                 {currentStep === 4 && (
                   <>
                     <div className="space-y-2">
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Percent" size={14} className="mt-0.5 mr-2 text-primary" />Configurez la TVA et l’acompte dans « Configuration ».</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Percent" size={14} className="mt-0.5 mr-2 text-primary" />Configurez la TVA et l'acompte dans « Configuration ».</div>
                       <div className="flex items-start text-sm text-muted-foreground"><Icon name="Palette" size={14} className="mt-0.5 mr-2 text-primary" />Personnalisez le modèle et les couleurs.</div>
                       <div className="flex items-start text-sm text-muted-foreground"><Icon name="Download" size={14} className="mt-0.5 mr-2 text-primary" />Téléchargez le devis en PDF.</div>
                       <div className="flex items-start text-sm text-muted-foreground"><Icon name="EyeOff" size={14} className="mt-0.5 mr-2 text-primary" />Masquez les prix des matériaux dans les Préférences du compte si besoin.</div>
@@ -1934,6 +1961,20 @@ const QuoteCreation = () => {
         </div>
       </div>
 
+      {/* Quote Send Modal */}
+      <QuoteSendModal
+        isOpen={showQuoteSendModal}
+        onClose={() => setShowQuoteSendModal(false)}
+        onSend={processQuoteSend}
+        selectedClient={selectedClient}
+        projectInfo={projectInfo}
+        companyInfo={companyInfo}
+        quoteNumber={projectInfo.quoteNumber}
+        tasks={tasks}
+        files={files}
+        financialConfig={financialConfig}
+        signatureData={null}
+      />
 
     </div>
   );

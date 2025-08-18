@@ -838,11 +838,18 @@ CREATE TABLE IF NOT EXISTS public.email_outbox (
 CREATE TABLE IF NOT EXISTS public.quote_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     quote_id UUID NOT NULL REFERENCES public.quotes(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    user_id UUID NULL, -- Allow null for system events
     type VARCHAR(50) NOT NULL, -- sent, viewed, followup_scheduled, followup_sent, delivered, opened, bounced, accepted, rejected
     meta JSONB DEFAULT '{}',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    constraint quote_events_pkey primary key (id),
+    constraint quote_events_quote_id_fkey foreign KEY (quote_id) references quotes (id) on delete CASCADE,
+    constraint quote_events_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE,
+    constraint quote_events_user_id_check check (
+      user_id is not null or 
+      (user_id is null and type in ('email_sent', 'system_event', 'quote_created', 'quote_updated'))
+    )
+) TABLESPACE pg_default;
 
 -- Indexes for follow-up subsystem
 CREATE INDEX IF NOT EXISTS idx_quote_follow_up_rules_user_id ON public.quote_follow_up_rules(user_id);
@@ -873,7 +880,28 @@ CREATE POLICY "Users manage their own outbox" ON public.email_outbox
   FOR ALL USING (user_id = auth.uid());
 
 CREATE POLICY "Users view their own quote events" ON public.quote_events
-  FOR SELECT USING (user_id = auth.uid());
+  FOR SELECT USING (
+    user_id = auth.uid() OR 
+    user_id IS NULL -- Allow viewing system events
+  );
+
+CREATE POLICY "Users insert their own quote events" ON public.quote_events
+  FOR INSERT WITH CHECK (
+    user_id = auth.uid() OR 
+    (user_id IS NULL AND type IN ('email_sent', 'system_event', 'quote_created', 'quote_updated'))
+  );
+
+CREATE POLICY "Users can update their own quote events" ON public.quote_events
+  FOR UPDATE USING (
+    user_id = auth.uid() OR 
+    user_id IS NULL -- Allow updating system events
+  );
+
+CREATE POLICY "Users can delete their own quote events" ON public.quote_events
+  FOR DELETE USING (
+    user_id = auth.uid() OR 
+    user_id IS NULL -- Allow deleting system events
+  );
 
 -- Triggers for updated_at
 CREATE TRIGGER update_quote_follow_up_rules_updated_at
@@ -1007,3 +1035,21 @@ COMMENT ON TABLE public.quote_follow_up_rules IS 'Per-user rules controlling quo
 COMMENT ON TABLE public.quote_follow_ups IS 'Scheduled follow-up actions for quotes';
 COMMENT ON TABLE public.email_outbox IS 'Outbox/queue for transactional emails to be sent by a worker';
 COMMENT ON TABLE public.quote_events IS 'Timeline of events related to quotes (follow-ups, deliveries, opens, etc.)';
+
+-- Create trigger to automatically generate share token for new quotes
+CREATE OR REPLACE FUNCTION generate_share_token_for_quote()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.share_token IS NULL THEN
+    NEW.share_token := generate_share_token();
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Apply trigger to quotes table
+DROP TRIGGER IF EXISTS trg_generate_share_token ON public.quotes;
+CREATE TRIGGER trg_generate_share_token
+  BEFORE INSERT ON public.quotes
+  FOR EACH ROW
+  EXECUTE FUNCTION generate_share_token_for_quote();

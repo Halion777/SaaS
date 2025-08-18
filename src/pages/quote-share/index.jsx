@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getQuoteByShareToken } from '../../services/shareService';
-import { getSignedUrl } from '../../services/storageService';
+import { getSignedUrl, getPublicUrl } from '../../services/storageService';
 import ClientQuoteService from '../../services/clientQuoteService';
 import ElectronicSignatureModal from '../quote-creation/components/ElectronicSignatureModal';
 import Button from '../../components/ui/Button';
@@ -63,12 +63,12 @@ const PublicQuoteShareViewer = () => {
         // Build signed URLs for private assets if present
         try {
           if (q?.company_profile?.logo_path) {
-            const { data } = await getSignedUrl('company-assets', q.company_profile.logo_path, 3600);
-            if (data) setLogoUrl(data);
+            const logoUrl = getPublicUrl('company-assets', q.company_profile.logo_path);
+            setLogoUrl(logoUrl);
           }
           if (q?.company_profile?.signature_path) {
-            const { data } = await getSignedUrl('company-assets', q.company_profile.signature_path, 3600);
-            if (data) setSignatureUrl(data);
+            const signatureUrl = getPublicUrl('company-assets', q.company_profile.signature_path);
+            setSignatureUrl(signatureUrl);
           }
         } catch (_) {}
       } catch (e) {

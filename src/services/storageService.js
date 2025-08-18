@@ -70,13 +70,33 @@ export function getPublicUrl(bucket, filePath) {
  * Get a signed URL for a private file (authenticated access)
  * @param {string} bucket - Storage bucket name
  * @param {string} filePath - Path to file within bucket
- * @param {number} expiresIn - Expiration time in seconds (default: 1 hour)
+ * @param {number} expiresIn - Expiration time in seconds (default: 30 days)
  * @returns {Promise<{data: string, error: string}>} Signed URL or error
  */
-export async function getSignedUrl(bucket, filePath, expiresIn = 3600) {
+export async function getSignedUrl(bucket, filePath, expiresIn = 2592000) { // 30 days default
   try {
     if (!filePath) {
       return { error: 'File path is required' };
+    }
+
+    // Check if file exists before creating signed URL
+    const { data: fileExists, error: checkError } = await supabase
+      .storage
+      .from(bucket)
+      .list(filePath.split('/').slice(0, -1).join('/'));
+
+    if (checkError) {
+      console.error('Error checking file existence:', checkError);
+      return { error: 'Unable to verify file exists' };
+    }
+
+    // Check if the specific file exists
+    const fileName = filePath.split('/').pop();
+    const fileExistsInFolder = fileExists?.some(file => file.name === fileName);
+
+    if (!fileExistsInFolder) {
+      console.warn(`File not found: ${bucket}/${filePath}`);
+      return { error: 'File not found in storage' };
     }
 
     const { data, error } = await supabase

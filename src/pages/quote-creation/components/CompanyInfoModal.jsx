@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import AppIcon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
-import Image from '../../../components/AppImage';
 import { validateCompanyInfo, removeCompanyAsset } from '../../../services/companyInfoService';
 import { useAuth } from '../../../context/AuthContext';
-import Icon from '../../../components/AppIcon'; // Added missing import for Icon
+import Icon from '../../../components/AppIcon';
+import { uploadFile, deleteFile, getPublicUrl } from '../../../services/storageService';
 
 const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initialData = {} }) => {
   const { user } = useAuth();
@@ -27,6 +27,8 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
   const [isSaving, setIsSaving] = useState(false);
   const [isRemovingLogo, setIsRemovingLogo] = useState(false);
   const [isRemovingSignature, setIsRemovingSignature] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isUploadingSignature, setIsUploadingSignature] = useState(false);
 
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
@@ -88,47 +90,89 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
 
   // Load saved company info and files from localStorage
   useEffect(() => {
-    if (isOpen && user?.id) {
-      // Simple: just load from localStorage if available
-      const savedCompanyInfo = localStorage.getItem(`company-info-${user.id}`);
-      if (savedCompanyInfo) {
+    const loadCompanyInfo = async () => {
+      if (!user?.id) return;
+
+      try {
+        // First try to load from localStorage to preserve any unsaved changes
+        const savedCompanyInfo = localStorage.getItem(`company-info-${user.id}`);
+        const savedLogo = localStorage.getItem(`company-logo-${user.id}`);
+        const savedSignature = localStorage.getItem(`company-signature-${user.id}`);
+
+        // Load company info from database
+        const { loadCompanyInfo } = await import('../../../services/companyInfoService');
+        const result = await loadCompanyInfo(user.id);
+
+        if (result.success && result.data) {
+          // Merge database data with any local changes (preserve uploaded files)
+          let mergedCompanyInfo = {
+            ...result.data,
+            // Preserve logo from localStorage if it exists, otherwise use database
+            logo: savedLogo ? JSON.parse(savedLogo) : result.data.logo,
+            // Preserve signature from localStorage if it exists, otherwise use database  
+            signature: savedSignature ? JSON.parse(savedSignature) : result.data.signature
+          };
+
+          // Generate signed URLs for any images that only have paths (from database)
+          if (mergedCompanyInfo.logo?.path && !mergedCompanyInfo.logo?.url) {
+            try {
+              // Get public URL for logo (bucket is now public)
+              const logoUrl = getPublicUrl('company-assets', mergedCompanyInfo.logo.path);
+              mergedCompanyInfo.logo.url = logoUrl;
+            } catch (error) {
+              // If we can't get signed URL, remove the logo to avoid display errors
+              mergedCompanyInfo.logo = null;
+            }
+          }
+
+          if (mergedCompanyInfo.signature?.path && !mergedCompanyInfo.signature?.url) {
+            try {
+              // Get public URL for signature (bucket is now public)
+              const signatureUrl = getPublicUrl('company-assets', mergedCompanyInfo.signature.path);
+              mergedCompanyInfo.signature.url = signatureUrl;
+            } catch (error) {
+              // If we can't get signed URL, remove the signature to avoid display errors
+              mergedCompanyInfo.signature = null;
+            }
+          }
+
+          setCompanyInfo(mergedCompanyInfo);
+        } else {
+          // If no database data, try to use localStorage
+          if (savedCompanyInfo) {
+            const parsedInfo = JSON.parse(savedCompanyInfo);
+            const mergedInfo = {
+              ...parsedInfo,
+              logo: savedLogo ? JSON.parse(savedLogo) : null,
+              signature: savedSignature ? JSON.parse(savedSignature) : null
+            };
+            setCompanyInfo(mergedInfo);
+          }
+        }
+      } catch (error) {
+        // Fallback to localStorage if database fails
         try {
-          const parsed = JSON.parse(savedCompanyInfo);
-          setCompanyInfo(prev => ({ ...prev, ...parsed }));
-        } catch (error) {
-          console.error('Error loading saved company info:', error);
+          const savedCompanyInfo = localStorage.getItem(`company-info-${user.id}`);
+          const savedLogo = localStorage.getItem(`company-logo-${user.id}`);
+          const savedSignature = localStorage.getItem(`company-signature-${user.id}`);
+          
+          if (savedCompanyInfo) {
+            const parsedInfo = JSON.parse(savedCompanyInfo);
+            const mergedInfo = {
+              ...parsedInfo,
+              logo: savedLogo ? JSON.parse(savedLogo) : null,
+              signature: savedSignature ? JSON.parse(savedSignature) : null
+            };
+            setCompanyInfo(mergedInfo);
+          }
+        } catch (localError) {
+          // Ignore localStorage errors
         }
       }
-      
-      // Load logo from localStorage if available
-      const savedLogoInfo = localStorage.getItem(`company-logo-${user.id}`);
-      if (savedLogoInfo) {
-        try {
-          const logoInfo = JSON.parse(savedLogoInfo);
-          setCompanyInfo(prev => ({
-            ...prev,
-            logo: logoInfo
-          }));
-        } catch (error) {
-          console.error('Error loading saved logo info:', error);
-        }
-      }
-      
-      // Load signature from localStorage if available
-      const savedSignatureInfo = localStorage.getItem(`company-signature-${user.id}`);
-      if (savedSignatureInfo) {
-        try {
-          const signatureInfo = JSON.parse(savedSignatureInfo);
-          setCompanyInfo(prev => ({
-            ...prev,
-            signature: signatureInfo
-          }));
-        } catch (error) {
-          console.error('Error loading saved signature info:', error);
-        }
-      }
-    }
-  }, [isOpen, user?.id]);
+    };
+
+    loadCompanyInfo();
+  }, [user?.id]); // Only run when user.id changes (modal opens)
 
   const handleInputChange = (field, value) => {
     const updatedInfo = { ...companyInfo, [field]: value };
@@ -183,123 +227,241 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
     }
   };
 
-  const handleLogoUpload = (e) => {
+  const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Same approach as client signature: convert to base64 immediately
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const logoData = {
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          data: e.target.result // This is the base64 string
-        };
+      setIsUploadingLogo(true);
+      try {
+        // Delete old logo file from storage if it exists
+        if (companyInfo.logo?.path) {
+          try {
+            const { error: deleteError } = await deleteFile('company-assets', companyInfo.logo.path);
+            if (deleteError) {
+              console.warn('Warning: Could not delete old logo file:', deleteError);
+              // Continue with upload even if deletion fails
+            }
+          } catch (deleteError) {
+            console.warn('Warning: Could not delete old logo file:', deleteError);
+            // Continue with upload even if deletion fails
+          }
+        }
+
+        // Upload to company-assets bucket in logos folder
+        const { data, error, filePath } = await uploadFile(file, 'company-assets', `${user?.id}/logos`);
         
-        
-        
-        // Update state
-        setCompanyInfo(prev => ({ ...prev, logo: logoData }));
-        
-        // Save to localStorage for draft
-        if (user?.id) {
-          const storageKey = `company-logo-${user.id}`;
-          localStorage.setItem(storageKey, JSON.stringify(logoData));
+        if (error) {
+          alert(`Erreur lors de l'upload du logo: ${error.message || error}`);
+          return;
+        }
+
+        if (filePath) {
+          // Get public URL for the uploaded file (bucket is now public)
+          const logoUrl = getPublicUrl('company-assets', filePath);
           
+          if (logoUrl) {
+            setCompanyInfo(prev => ({
+              ...prev,
+              logo: {
+                path: filePath,
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                url: logoUrl
+              }
+            }));
+            
+            // Save to localStorage for draft (only storage info, not base64)
+            if (user?.id) {
+              const storageKey = `company-logo-${user.id}`;
+              localStorage.setItem(storageKey, JSON.stringify({ path: filePath, name: file.name, size: file.size, type: file.type }));
+            }
+            
+            // Notify parent component immediately with updated state
+            if (onCompanyInfoChange) {
+              onCompanyInfoChange(companyInfo);
+            }
+          }
         }
-        
-        // Notify parent component immediately
-        if (onCompanyInfoChange) {
-          onCompanyInfoChange({ ...companyInfo, logo: logoData });
-        }
-      };
-      reader.readAsDataURL(file);
+      } catch (error) {
+        alert('Erreur lors de l\'upload du logo');
+      } finally {
+        setIsUploadingLogo(false);
+      }
     }
   };
 
-  const handleSignatureUpload = (e) => {
+  const handleSignatureUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Same approach as client signature: convert to base64 immediately
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const signatureData = {
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          data: e.target.result // This is the base64 string
-        };
+      setIsUploadingSignature(true);
+      try {
+        // Delete old signature file from storage if it exists
+        if (companyInfo.signature?.path) {
+          try {
+            const { error: deleteError } = await deleteFile('company-assets', companyInfo.signature.path);
+            if (deleteError) {
+              console.warn('Warning: Could not delete old signature file:', deleteError);
+              // Continue with upload even if deletion fails
+            }
+          } catch (deleteError) {
+            console.warn('Warning: Could not delete old signature file:', deleteError);
+            // Continue with upload even if deletion fails
+          }
+        }
+
+        // Upload to company-assets bucket in signatures folder
+        const { data, error, filePath } = await uploadFile(file, 'company-assets', `${user?.id}/signatures`);
         
-        
-        
-        // Update state
-        setCompanyInfo(prev => ({ ...prev, signature: signatureData }));
-        
-        // Save to localStorage for draft
-        if (user?.id) {
-          const storageKey = `company-signature-${user.id}`;
-          localStorage.setItem(storageKey, JSON.stringify(signatureData));
+        if (error) {
+          alert(`Erreur lors de l'upload de la signature: ${error.message || error}`);
+          return;
+        }
+
+        if (filePath) {
+          // Get public URL for the uploaded file (bucket is now public)
+          const signatureUrl = getPublicUrl('company-assets', filePath);
           
+          if (signatureUrl) {
+            setCompanyInfo(prev => ({
+              ...prev,
+              signature: {
+                path: filePath,
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                url: signatureUrl
+              }
+            }));
+            
+            // Save to localStorage for draft (only storage info, not base64)
+            if (user?.id) {
+              const storageKey = `company-signature-${user.id}`;
+              localStorage.setItem(storageKey, JSON.stringify({ path: filePath, name: file.name, size: file.size, type: file.type }));
+            }
+            
+            // Notify parent component immediately with updated state
+            if (onCompanyInfoChange) {
+              onCompanyInfoChange(companyInfo);
+            }
+          }
         }
-        
-        // Notify parent component immediately
-        if (onCompanyInfoChange) {
-          onCompanyInfoChange({ ...companyInfo, signature: signatureData });
-        }
-      };
-      reader.readAsDataURL(file);
+      } catch (error) {
+        alert('Erreur lors de l\'upload de la signature');
+      } finally {
+        setIsUploadingSignature(false);
+      }
     }
   };
 
   const handleRemoveLogo = async () => {
-    if (!companyInfo.logo || (companyInfo.logo && companyInfo.logo.previewUrl && companyInfo.logo.previewUrl.startsWith('blob:'))) {
-      // If it's a new file (blob) or no logo, just remove from state
-      handleInputChange('logo', null);
-      // Remove from localStorage
-      localStorage.removeItem(`company-logo-${user?.id}`);
+    if (!companyInfo.logo) {
       return;
     }
 
     setIsRemovingLogo(true);
     try {
-      const result = await removeCompanyAsset(user?.id, 'logo');
-      if (result.success) {
-        handleInputChange('logo', null);
-        // Remove from localStorage
-        localStorage.removeItem(`company-logo-${user?.id}`);
+      let success = false;
+      
+      if (companyInfo.logo.path) {
+        // Delete from storage
+        const { error } = await deleteFile('company-assets', companyInfo.logo.path);
+        success = !error;
+        if (error) {
+          console.error('Error deleting logo from storage:', error);
+          // Still continue with local cleanup even if storage deletion fails
+        }
       } else {
-        alert(`Erreur lors de la suppression du logo: ${result.error}`);
+        success = true; // No storage path to delete
       }
+      
+      // Always clear local state and localStorage regardless of storage deletion result
+      handleInputChange('logo', null);
+      
+      // Remove from localStorage
+      if (user?.id) {
+        localStorage.removeItem(`company-logo-${user.id}`);
+      }
+      
+      // Notify parent component
+      if (onCompanyInfoChange) {
+        onCompanyInfoChange({ ...companyInfo, logo: null });
+      }
+      
+      // Show success message
+      if (success) {
+        // Logo was successfully removed
+      } else {
+        // Logo was removed locally but storage cleanup failed
+        console.warn('Logo removed locally but storage cleanup failed');
+      }
+      
     } catch (error) {
       console.error('Error removing logo:', error);
-      alert('Erreur lors de la suppression du logo');
+      // Even if there's an error, try to clear local state
+      handleInputChange('logo', null);
+      if (user?.id) {
+        localStorage.removeItem(`company-logo-${user.id}`);
+      }
+      if (onCompanyInfoChange) {
+        onCompanyInfoChange({ ...companyInfo, logo: null });
+      }
     } finally {
       setIsRemovingLogo(false);
     }
   };
 
   const handleRemoveSignature = async () => {
-    if (!companyInfo.signature || (companyInfo.signature && companyInfo.signature.previewUrl && companyInfo.signature.previewUrl.startsWith('blob:'))) {
-      // If it's a new file (blob) or no signature, just remove from state
-      handleInputChange('signature', null);
-      // Remove from localStorage
-      localStorage.removeItem(`company-signature-${user?.id}`);
+    if (!companyInfo.signature) {
       return;
     }
 
     setIsRemovingSignature(true);
     try {
-      const result = await removeCompanyAsset(user?.id, 'signature');
-      if (result.success) {
-        handleInputChange('signature', null);
-        // Remove from localStorage
-        localStorage.removeItem(`company-signature-${user?.id}`);
+      let success = false;
+      
+      if (companyInfo.signature.path) {
+        // Delete from storage
+        const { error } = await deleteFile('company-assets', companyInfo.signature.path);
+        success = !error;
+        if (error) {
+          console.error('Error deleting signature from storage:', error);
+          // Still continue with local cleanup even if storage deletion fails
+        }
       } else {
-        alert(`Erreur lors de la suppression de la signature: ${result.error}`);
+        success = true; // No storage path to delete
       }
+      
+      // Always clear local state and localStorage regardless of storage deletion result
+      handleInputChange('signature', null);
+      
+      // Remove from localStorage
+      if (user?.id) {
+        localStorage.removeItem(`company-signature-${user.id}`);
+      }
+      
+      // Notify parent component
+      if (onCompanyInfoChange) {
+        onCompanyInfoChange({ ...companyInfo, signature: null });
+      }
+      
+      // Show success message
+      if (success) {
+        // Signature was successfully removed
+      } else {
+        // Signature was removed locally but storage cleanup failed
+        console.warn('Signature removed locally but storage cleanup failed');
+      }
+      
     } catch (error) {
       console.error('Error removing signature:', error);
-      alert('Erreur lors de la suppression de la signature');
+      // Even if there's an error, try to clear local state
+      handleInputChange('signature', null);
+      if (user?.id) {
+        localStorage.removeItem(`company-signature-${user.id}`);
+      }
+      if (onCompanyInfoChange) {
+        onCompanyInfoChange({ ...companyInfo, signature: null });
+      }
     } finally {
       setIsRemovingSignature(false);
     }
@@ -315,33 +477,50 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
 
     setIsSaving(true);
     try {
-      // Save company info to localStorage for draft (NOT to database)
-      const companyInfoToSave = {
-        name: companyInfo.name,
-        vatNumber: companyInfo.vatNumber,
-        address: companyInfo.address,
-        postalCode: companyInfo.postalCode,
-        city: companyInfo.city,
-        country: companyInfo.country,
-        phone: companyInfo.phone,
-        email: companyInfo.email,
-        website: companyInfo.website
-      };
+      // Save company info to database using the service
+      const { saveCompanyInfo } = await import('../../../services/companyInfoService');
+      const result = await saveCompanyInfo(companyInfo, user.id);
       
-      if (user?.id) {
-        localStorage.setItem(`company-info-${user.id}`, JSON.stringify(companyInfoToSave));
+      if (result.success) {
         
+        // Update local state with the saved data from database
+        setCompanyInfo(prev => ({ ...prev, ...result.data }));
+        
+        // Also save to localStorage for draft persistence
+        const companyInfoToSave = {
+          name: companyInfo.name,
+          vatNumber: companyInfo.vatNumber,
+          address: companyInfo.address,
+          postalCode: companyInfo.postalCode,
+          city: companyInfo.city,
+          country: companyInfo.country,
+          phone: companyInfo.phone,
+          email: companyInfo.email,
+          website: companyInfo.website
+        };
+        
+        if (user?.id) {
+          localStorage.setItem(`company-info-${user.id}`, JSON.stringify(companyInfoToSave));
+          
+          // Save logo and signature separately if they exist
+          if (companyInfo.logo) {
+            localStorage.setItem(`company-logo-${user.id}`, JSON.stringify(companyInfo.logo));
+          }
+          if (companyInfo.signature) {
+            localStorage.setItem(`company-signature-${user.id}`, JSON.stringify(companyInfo.signature));
+          }
+        }
+        
+        // Notify parent component of the saved data
+        onSave(companyInfo);
+        onClose();
+      } else {
+        console.error('Failed to save company info to database:', result.error);
+        alert(`Erreur lors de la sauvegarde en base de données: ${result.error}`);
       }
       
-      // Logo and signature are already saved to localStorage when uploaded
-      // No need to save them again here
-      
-      // Notify parent component of the saved data
-      onSave(companyInfo);
-      onClose();
-      
     } catch (error) {
-      console.error('Error saving company info to localStorage:', error);
+      console.error('Error saving company info:', error);
       alert('Erreur lors de la sauvegarde des informations');
     } finally {
       setIsSaving(false);
@@ -361,6 +540,45 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
     };
   }, [isOpen]);
 
+  // Save company info to localStorage when modal closes (for draft persistence only)
+  const handleClose = () => {
+    if (user?.id && companyInfo.name) {
+      try {
+        // Only save to localStorage for draft persistence (not to database)
+        const companyInfoToSave = {
+          name: companyInfo.name,
+          vatNumber: companyInfo.vatNumber,
+          address: companyInfo.address,
+          postalCode: companyInfo.postalCode,
+          city: companyInfo.city,
+          state: companyInfo.state,
+          country: companyInfo.country,
+          phone: companyInfo.phone,
+          email: companyInfo.email,
+          website: companyInfo.website
+        };
+        
+        localStorage.setItem(`company-info-${user.id}`, JSON.stringify(companyInfoToSave));
+        
+        // Save logo and signature separately if they exist
+        if (companyInfo.logo) {
+          localStorage.setItem(`company-logo-${user.id}`, JSON.stringify(companyInfo.logo));
+        }
+        if (companyInfo.signature) {
+          localStorage.setItem(`company-signature-${user.id}`, JSON.stringify(companyInfo.signature));
+        }
+        
+        // Notify parent of changes for draft persistence
+        if (onCompanyInfoChange) {
+          onCompanyInfoChange(companyInfo);
+        }
+      } catch (error) {
+        // Ignore localStorage errors - not critical
+      }
+    }
+    onClose();
+  };
+
   // Prevent scroll event from bubbling to background
   const handleScroll = (e) => {
     e.stopPropagation();
@@ -375,7 +593,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
         <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 bg-gray-50 flex-shrink-0">
           <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Informations de l'entreprise</h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-gray-500 hover:text-gray-700 transition-colors p-1 rounded-full hover:bg-gray-100"
           >
             <AppIcon name="X" size={18} className="sm:w-5 sm:h-5" />
@@ -401,41 +619,49 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
               iconName="Image"
               iconPosition="left"
               fullWidth
+              disabled={isUploadingLogo}
             >
-              Ajouter un logo
+              {isUploadingLogo ? 'Upload en cours...' : 'Ajouter un logo'}
             </Button>
             <p className="text-xs text-muted-foreground mt-2">
               Format recommandé: PNG avec fond transparent, 300x300px max
             </p>
             {companyInfo.logo && (
               <div className="mt-3 relative w-20 h-20 border border-border rounded-lg overflow-hidden">
-                {companyInfo.logo.data ? (
-                  // Show preview from base64 data
+                {companyInfo.logo.url ? (
                   <img
-                    src={companyInfo.logo.data}
+                    src={companyInfo.logo.url}
                     alt="Logo entreprise"
                     className="w-full h-full object-contain"
-                  />
-                ) : companyInfo.logo.publicUrl ? (
-                  // Show from database using publicUrl
-                  <img
-                    src={companyInfo.logo.publicUrl}
-                    alt="Logo entreprise"
-                    className="w-full h-full object-contain"
-                  />
-                ) : typeof companyInfo.logo === 'string' && companyInfo.logo.startsWith('http') ? (
-                  // Show from database if available (fallback)
-                  <Image
-                    src={companyInfo.logo}
-                    alt="Logo entreprise"
-                    className="w-full h-full object-contain"
+                    onLoad={() => {}}
+                    onError={async (e) => {
+                      // Try to get public URL if the current one fails
+                      if (companyInfo.logo.path) {
+                        try {
+                          // Get public URL for logo (bucket is now public)
+                          const logoUrl = getPublicUrl('company-assets', companyInfo.logo.path);
+                          if (logoUrl) {
+                            // Update the logo URL in state
+                            setCompanyInfo(prev => ({
+                              ...prev,
+                              logo: { ...prev.logo, url: logoUrl }
+                            }));
+                          }
+                        } catch (error) {
+                          // If we can't get URL, remove the logo to avoid display errors
+                          setCompanyInfo(prev => ({
+                            ...prev,
+                            logo: null
+                          }));
+                        }
+                      }
+                    }}
                   />
                 ) : (
-                  // Show placeholder
                   <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
                     <div className="text-center text-xs text-gray-500">
                       <Icon name="File" size={16} className="mx-auto mb-1" />
-                      {companyInfo.logo.name}
+                      {companyInfo.logo.name || 'Logo'}
                     </div>
                   </div>
                 )}
@@ -611,41 +837,49 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
               iconName="FileText"
               iconPosition="left"
               fullWidth
+              disabled={isUploadingSignature}
             >
-              Ajouter une signature
+              {isUploadingSignature ? 'Upload en cours...' : 'Ajouter une signature'}
             </Button>
             <p className="text-xs text-muted-foreground mt-2">
               Format recommandé: PNG avec fond transparent, 300x150px max
             </p>
             {companyInfo.signature && (
               <div className="mt-3 relative w-32 h-16 border border-border rounded-lg overflow-hidden">
-                {companyInfo.signature.data ? (
-                  // Show preview from base64 data
+                {companyInfo.signature.url ? (
                   <img
-                    src={companyInfo.signature.data}
+                    src={companyInfo.signature.url}
                     alt="Signature"
                     className="w-full h-full object-contain"
-                  />
-                ) : companyInfo.signature.publicUrl ? (
-                  // Show from database using publicUrl
-                  <img
-                    src={companyInfo.signature.publicUrl}
-                    alt="Signature"
-                    className="w-full h-full object-contain"
-                  />
-                ) : typeof companyInfo.signature === 'string' && companyInfo.signature.startsWith('http') ? (
-                  // Show from database if available (fallback)
-                  <Image
-                    src={companyInfo.signature}
-                    alt="Signature"
-                    className="w-full h-full object-contain"
+                    onLoad={() => {}}
+                    onError={async (e) => {
+                      // Try to get public URL if the current one fails
+                      if (companyInfo.signature.path) {
+                        try {
+                          // Get public URL for signature (bucket is now public)
+                          const signatureUrl = getPublicUrl('company-assets', companyInfo.signature.path);
+                          if (signatureUrl) {
+                            // Update the signature URL in state
+                            setCompanyInfo(prev => ({
+                              ...prev,
+                              signature: { ...prev.signature, url: signatureUrl }
+                            }));
+                          }
+                        } catch (error) {
+                          // If we can't get URL, remove the signature to avoid display errors
+                          setCompanyInfo(prev => ({
+                            ...prev,
+                            signature: null
+                          }));
+                        }
+                      }
+                    }}
                   />
                 ) : (
-                  // Show placeholder
                   <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
                     <div className="text-center text-xs text-gray-500">
                       <Icon name="File" size={16} className="mx-auto mb-1" />
-                      {companyInfo.signature.name}
+                      {companyInfo.signature.name || 'Signature'}
                     </div>
                   </div>
                 )}

@@ -4,11 +4,8 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import { Checkbox } from '../../../components/ui/Checkbox';
 
-const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuoteAction, onQuoteSelect }) => {
+const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuoteAction, onQuoteSelect, viewMode = 'table', setViewMode = () => {}, searchTerm = '', setSearchTerm = () => {} }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
-  const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState('table');
-  const [copiedMap, setCopiedMap] = useState({});
 
   // Auto-switch to card view on smaller screens
   useEffect(() => {
@@ -24,11 +21,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
   }, []);
 
   const sortedAndFilteredQuotes = useMemo(() => {
-    let filtered = quotes.filter(quote => 
-      quote.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      quote.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      quote.status.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    let filtered = quotes; // Use quotes directly since parent already filters them
 
     if (sortConfig.key) {
       filtered.sort((a, b) => {
@@ -50,7 +43,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
     }
 
     return filtered;
-  }, [quotes, searchTerm, sortConfig]);
+  }, [quotes, sortConfig]);
 
   const handleSort = (key) => {
     setSortConfig(prev => ({
@@ -226,21 +219,6 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                   >
                     <Icon name="Edit" size={16} />
                   </Button>
-                  {!quote.isDraftPlaceholder && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={async () => {
-                        await onQuoteAction('share', quote);
-                        setCopiedMap(prev => ({ ...prev, [quote.id]: true }));
-                        setTimeout(() => setCopiedMap(prev => ({ ...prev, [quote.id]: false })), 1500);
-                      }}
-                      title="Partager via lien public"
-                      className="h-8 w-8 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
-                    >
-                      <Icon name={copiedMap[quote.id] ? 'CheckCircle' : 'Share'} size={16} />
-                    </Button>
-                  )}
                   {(!quote.isDraftPlaceholder && quote.status === 'sent') && (
                     <Button
                       variant="ghost"
@@ -330,37 +308,22 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
               variant="ghost"
               size="icon"
               onClick={() => onQuoteAction('edit', quote)}
-              title="Modifier"
-              className="h-7 w-7"
+              title="Modifier le devis"
+              className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
             >
               <Icon name="Edit" size={14} />
             </Button>
-              {!quote.isDraftPlaceholder && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={async () => {
-                    await onQuoteAction('share', quote);
-                    setCopiedMap(prev => ({ ...prev, [quote.id]: true }));
-                    setTimeout(() => setCopiedMap(prev => ({ ...prev, [quote.id]: false })), 1500);
-                  }}
-                  title="Partager via lien public"
-                  className="h-7 w-7 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
-                >
-                  <Icon name={copiedMap[quote.id] ? 'CheckCircle' : 'Share'} size={14} />
-                </Button>
-              )}
-              {(!quote.isDraftPlaceholder && quote.status === 'sent') && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onQuoteAction('convert', quote)}
-                  title="Convertir en facture"
-                  className="h-7 w-7"
-                >
-                  <Icon name="Receipt" size={14} />
-                </Button>
-              )}
+            {(!quote.isDraftPlaceholder && quote.status === 'sent') && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onQuoteAction('convert', quote)}
+                title="Convertir en facture"
+                className="h-7 w-7"
+              >
+                <Icon name="Receipt" size={14} />
+              </Button>
+            )}
             {!quote.isDraftPlaceholder && (
               <Button
                 variant="ghost"

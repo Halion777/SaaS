@@ -47,7 +47,6 @@ const QuotesManagement = () => {
   const [filters, setFilters] = useState({
     status: '',
     client: '',
-    search: '',
     dateRange: { start: '', end: '' },
     amountRange: { min: '', max: '' }
   });
@@ -56,6 +55,8 @@ const QuotesManagement = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+  const [viewMode, setViewMode] = useState('table');
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Apply filters to quotes
   useEffect(() => {
@@ -69,8 +70,8 @@ const QuotesManagement = () => {
       filtered = filtered.filter(q => q.client?.id?.toString() === filters.client);
     }
     
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(q => 
         q.number.toLowerCase().includes(searchLower) ||
         q.clientName.toLowerCase().includes(searchLower) ||
@@ -79,7 +80,7 @@ const QuotesManagement = () => {
     }
     
     setFilteredQuotes(filtered);
-  }, [quotes, filters]);
+  }, [quotes, filters, searchTerm]);
 
   // Fetch quotes data from backend
   useEffect(() => {
@@ -474,14 +475,14 @@ const QuotesManagement = () => {
     setFilters(newFilters);
   };
 
-  const handleClearFilters = () => {
+  const clearFilters = () => {
     setFilters({
       status: '',
       client: '',
-      search: '',
       dateRange: { start: '', end: '' },
       amountRange: { min: '', max: '' }
     });
+    setSearchTerm('');
   };
 
   // Removed bulk optimize (AI)
@@ -495,21 +496,6 @@ const QuotesManagement = () => {
       case 'edit':
         navigate(`/quote-creation?edit=${quote.id}`);
         break;
-      case 'share': {
-        const { generatePublicShareLink, getShareLinkInfo } = await import('../../services/shareService');
-        const res = await getShareLinkInfo(quote.id);
-        if (res?.success && res.data?.share_token) {
-          const url = `${window.location.origin}/quote-share/${res.data.share_token}`;
-          try { await navigator.clipboard.writeText(url); } catch (_) {}
-        } else {
-          const created = await generatePublicShareLink(quote.id, user?.id);
-          if (created?.success) {
-            const url = created.data;
-            try { await navigator.clipboard.writeText(url); } catch (_) {}
-          }
-        }
-        break;
-      }
       case 'duplicate':
         navigate(`/quote-creation?duplicate=${quote.id}`);
         break;
@@ -1005,7 +991,7 @@ const QuotesManagement = () => {
           <FilterBar
             filters={filters}
             onFiltersChange={handleFiltersChange}
-            onClearFilters={handleClearFilters}
+            onClearFilters={clearFilters}
           quotes={quotes}
           />
 
@@ -1051,7 +1037,7 @@ const QuotesManagement = () => {
                   </Button>
                 )}
                 {quotes.length > 0 && (
-                  <Button onClick={handleClearFilters} variant="outline" className="gap-2">
+                  <Button onClick={clearFilters} variant="outline" className="gap-2">
                     <Icon name="RotateCcw" size={16} />
                     Effacer les filtres
                   </Button>
@@ -1065,6 +1051,10 @@ const QuotesManagement = () => {
                 onSelectAll={handleSelectAll}
                 onQuoteAction={handleQuoteAction}
                 onQuoteSelect={handleQuoteSelect}
+                viewMode={viewMode}
+                setViewMode={setViewMode}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
               />
             )}
             </div>

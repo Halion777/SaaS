@@ -8,7 +8,6 @@ import FinancialConfig from './FinancialConfig';
 import ElectronicSignatureModal from './ElectronicSignatureModal';
 import { loadCompanyInfo, getDefaultCompanyInfo } from '../../../services/companyInfoService';
 import { useAuth } from '../../../context/AuthContext';
-import { generateQuotePDF } from '../../../services/pdfService';
 import { generatePublicShareLink, getShareLinkInfo, deactivateShareLink } from '../../../services/shareService';
 
 const QuotePreview = ({ 
@@ -33,7 +32,7 @@ const QuotePreview = ({
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [previewMode, setPreviewMode] = useState('desktop'); // desktop or mobile
   const [signatureData, setSignatureData] = useState(null);
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  // PDF generation handled by QuoteSendModal
   const [isGeneratingShare, setIsGeneratingShare] = useState(false);
   const [shareLink, setShareLink] = useState(null);
   const [shareLinkInfo, setShareLinkInfo] = useState(null);
@@ -243,6 +242,41 @@ const QuotePreview = ({
 
   const handleCompanyInfoSave = (info) => {
     setCompanyInfo(info);
+    
+    // Also save to localStorage for persistence
+    if (user?.id) {
+      try {
+        const companyInfoToSave = {
+          name: info.name,
+          vatNumber: info.vatNumber,
+          address: info.address,
+          postalCode: info.postalCode,
+          city: info.city,
+          state: info.state,
+          country: info.country,
+          phone: info.phone,
+          email: info.email,
+          website: info.website
+        };
+        
+        localStorage.setItem(`company-info-${user.id}`, JSON.stringify(companyInfoToSave));
+        
+        // Save logo and signature separately if they exist
+        if (info.logo) {
+          localStorage.setItem(`company-logo-${user.id}`, JSON.stringify(info.logo));
+        }
+        if (info.signature) {
+          localStorage.setItem(`company-signature-${user.id}`, JSON.stringify(info.signature));
+        }
+      } catch (error) {
+        console.error('Error saving company info to localStorage:', error);
+      }
+    }
+    
+    // Notify parent component of changes
+    if (onCompanyInfoChange) {
+      onCompanyInfoChange(info);
+    }
   };
 
   // Function to refresh company info from database
@@ -347,31 +381,7 @@ const QuotePreview = ({
     }
   };
 
-  // Handle PDF generation
-  const handleGeneratePDF = async () => {
-    try {
-      setIsGeneratingPDF(true);
-      
-      const quoteData = {
-        companyInfo,
-        selectedClient,
-        tasks,
-        files,
-        projectInfo,
-        financialConfig,
-        signatureData
-      };
-      
-      // Capture the live preview container for pixel-perfect PDF
-      const captureEl = document.querySelector('#quote-preview-capture');
-      await generateQuotePDF(quoteData, quoteNumber, captureEl);
-      
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-    } finally {
-      setIsGeneratingPDF(false);
-    }
-  };
+  // PDF generation moved to QuoteSendModal
 
   // Preload existing share link if any
   useEffect(() => {
@@ -489,11 +499,11 @@ const QuotePreview = ({
   // Build a concise, readable task label: take first sentence or N words
   const buildConciseTaskLabel = (description, index, maxWords = 18) => {
     const text = (description || '').replace(/\s+/g, ' ').trim();
-    if (!text) return `${taskWord} ${index + 1}`;
+    if (!text) return '';
     const sentence = text.split(/(?<=[.!?])\s+/)[0] || text;
     const words = sentence.split(' ').slice(0, maxWords).join(' ');
     const suffix = sentence.split(' ').length > maxWords ? '…' : '';
-    return `${taskWord} ${index + 1}: ${words}${suffix}`;
+    return `${words}${suffix}`;
   };
 
   return (
@@ -630,10 +640,10 @@ const QuotePreview = ({
                         alt={`Logo ${companyInfo.name}`}
                         className="w-full h-full object-contain"
                       />
-                    ) : companyInfo.logo.publicUrl ? (
-                      // Show from database using publicUrl
+                    ) : companyInfo.logo.url ? (
+                      // Show from database using signed URL
                       <img 
-                        src={companyInfo.logo.publicUrl} 
+                        src={companyInfo.logo.url} 
                         alt={`Logo ${companyInfo.name}`}
                         className="w-full h-full object-contain"
                       />
@@ -877,10 +887,10 @@ const QuotePreview = ({
                           alt="Signature de l'entreprise" 
                           className="max-h-12 max-w-full mx-auto"
                         />
-                      ) : companyInfo.signature.publicUrl ? (
-                        // Show from database using publicUrl
+                      ) : companyInfo.signature.url ? (
+                        // Show from database using signed URL
                         <img 
-                          src={companyInfo.signature.publicUrl} 
+                          src={companyInfo.signature.url} 
                           alt="Signature de l'entreprise" 
                           className="max-h-12 max-w-full mx-auto"
                         />
@@ -949,27 +959,7 @@ const QuotePreview = ({
         </Button>
         
         <div className="flex space-x-2">
-          <Button
-            variant="outline"
-            iconName="Download"
-            iconPosition="left"
-            size="sm"
-            className="text-xs sm:text-sm"
-            disabled={isSaving || isGeneratingPDF}
-            onClick={handleGeneratePDF}
-          >
-            {isGeneratingPDF ? (
-              <>
-                <span className="hidden sm:inline">Génération...</span>
-                <span className="sm:hidden">...</span>
-              </>
-            ) : (
-              <>
-                <span className="hidden sm:inline">Télécharger PDF</span>
-                <span className="sm:hidden">PDF</span>
-              </>
-            )}
-          </Button>
+          {null}
           
           {/* Share actions moved to quotes management */}
           
@@ -1004,8 +994,7 @@ const QuotePreview = ({
           onClose={() => setShowCompanyModal(false)}
           onSave={async (info) => {
             handleCompanyInfoSave(info);
-            // Refresh company info from database to ensure we have the latest data
-            await refreshCompanyInfo();
+            // Don't refresh from database - keep local changes
           }}
           onCompanyInfoChange={onCompanyInfoChange}
           initialData={companyInfo}

@@ -28,15 +28,13 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
       return { success: false, error: 'Company information is required' };
     }
 
-    // Debug: Log what's being received
-    console.log('saveCompanyInfo called with:', { companyInfo, userId });
-
     // Fetch existing profile up front (needed for cleanup decisions)
+    // IMPORTANT: We maintain only ONE row per user in company_profiles table
     const { data: existingProfile, error: fetchError } = await supabase
       .from('company_profiles')
       .select('*')
       .eq('user_id', userId)
-      .eq('is_default', true)
+      .limit(1)
       .single();
 
     if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows returned
@@ -44,48 +42,73 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
     }
 
     // Handle logo upload if it's a new file
-    let logoPath = companyInfo.logo;
+    let logoPath = null;
     let logoFilename = null;
     let logoSize = null;
     let logoMimeType = null;
 
-    if (companyInfo.logo && (companyInfo.logo instanceof File || (typeof companyInfo.logo === 'string' && companyInfo.logo.startsWith('blob:')))) {
-      try {
-        // Check if user already has a logo and delete the old one first
-        if (existingProfile && existingProfile.logo_path) {
-          await deleteFile('company-assets', existingProfile.logo_path);
-        }
+    if (companyInfo.logo) {
+      if (companyInfo.logo instanceof File || (typeof companyInfo.logo === 'string' && companyInfo.logo.startsWith('blob:'))) {
+        // Handle legacy File object or blob URL
+        try {
+          // Check if user already has a logo and delete the old one first
+          if (existingProfile && existingProfile.logo_path) {
+            await deleteFile('company-assets', existingProfile.logo_path);
+          }
 
-        // It's a new file, upload it
-        const logoFile = companyInfo.logo instanceof File ? companyInfo.logo : await fetch(companyInfo.logo).then(r => r.blob());
-        const logoFileName = companyInfo.logo instanceof File ? companyInfo.logo.name : 'logo.png';
+          // It's a new file, upload it
+          const logoFile = companyInfo.logo instanceof File ? companyInfo.logo : await fetch(companyInfo.logo).then(r => r.blob());
+          const logoFileName = companyInfo.logo instanceof File ? companyInfo.logo.name : 'logo.png';
+          
+          const { data: logoUploadData, error: logoError, filePath: logoFilePath } = await uploadFile(
+            logoFile, 
+            'company-assets', 
+            `${userId}/logos`
+          );
+
+          if (logoError) {
+            return { success: false, error: `Logo upload failed: ${logoError.message}` };
+          }
+
+          logoPath = logoFilePath;
+          logoFilename = logoFileName;
+          logoSize = logoFile.size;
+          logoMimeType = logoFile.type;
+        } catch (uploadError) {
+          console.error('Logo upload error:', uploadError);
+          return { success: false, error: `Logo upload failed: ${uploadError.message}` };
+        }
+      } else if (typeof companyInfo.logo === 'object' && companyInfo.logo.path) {
+        // Handle storage object with path, filename, size, type
+        logoPath = companyInfo.logo.path;
+        logoFilename = companyInfo.logo.name || companyInfo.logo.filename || null;
+        logoSize = companyInfo.logo.size || null;
+        logoMimeType = companyInfo.logo.type || companyInfo.logo.mimeType || null;
         
-        const { data: logoUploadData, error: logoError, filePath: logoFilePath } = await uploadFile(
-          logoFile, 
-          'company-assets', 
-          `${userId}/logos` // Keep one active logo; old is deleted above
-        );
-
-        if (logoError) {
-          return { success: false, error: `Logo upload failed: ${logoError.message}` };
-        }
-
-        logoPath = logoFilePath;
-        logoFilename = logoFileName;
-        logoSize = logoFile.size;
-        logoMimeType = logoFile.type;
-      } catch (uploadError) {
-        console.error('Logo upload error:', uploadError);
-        return { success: false, error: `Logo upload failed: ${uploadError.message}` };
+      } else if (typeof companyInfo.logo === 'string' && companyInfo.logo.startsWith('http')) {
+        // Handle direct URL (keep existing)
+        logoPath = existingProfile?.logo_path || null;
+        logoFilename = existingProfile?.logo_filename || null;
+        logoSize = existingProfile?.logo_size || null;
+        logoMimeType = existingProfile?.logo_mime_type || null;
       }
-    } else if (companyInfo.logo && typeof companyInfo.logo === 'object' && companyInfo.logo.path) {
-      // Keep existing provided path
-      logoPath = companyInfo.logo.path;
-      logoFilename = companyInfo.logo.filename || null;
-      logoSize = companyInfo.logo.size || null;
-      logoMimeType = companyInfo.logo.mimeType || null;
-    } else if (!companyInfo.logo && existingProfile?.logo_path) {
-      // No change; keep DB value
+    } else if (companyInfo.logo === null) {
+      // Logo was explicitly removed - clear database fields
+      logoPath = null;
+      logoFilename = null;
+      logoSize = null;
+      logoMimeType = null;
+      
+      // Delete old logo file from storage if it exists
+      if (existingProfile?.logo_path) {
+        try {
+          await deleteFile('company-assets', existingProfile.logo_path);
+        } catch (deleteError) {
+          console.warn('Warning: Could not delete old logo file:', deleteError);
+        }
+      }
+    } else if (existingProfile?.logo_path) {
+      // No change; keep existing DB value
       logoPath = existingProfile.logo_path;
       logoFilename = existingProfile.logo_filename;
       logoSize = existingProfile.logo_size;
@@ -93,48 +116,73 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
     }
 
     // Handle signature upload if it's a new file
-    let signaturePath = companyInfo.signature;
+    let signaturePath = null;
     let signatureFilename = null;
     let signatureSize = null;
     let signatureMimeType = null;
 
-    if (companyInfo.signature && (companyInfo.signature instanceof File || (typeof companyInfo.signature === 'string' && companyInfo.signature.startsWith('blob:')))) {
-      try {
-        // Check if user already has a signature and delete the old one first
-        if (existingProfile && existingProfile.signature_path) {
-          await deleteFile('company-assets', existingProfile.signature_path);
-        }
+    if (companyInfo.signature) {
+      if (companyInfo.signature instanceof File || (typeof companyInfo.signature === 'string' && companyInfo.signature.startsWith('blob:'))) {
+        // Handle legacy File object or blob URL
+        try {
+          // Check if user already has a signature and delete the old one first
+          if (existingProfile && existingProfile.signature_path) {
+            await deleteFile('company-assets', existingProfile.signature_path);
+          }
 
-        // It's a new file, upload it
-        const signatureFile = companyInfo.signature instanceof File ? companyInfo.signature : await fetch(companyInfo.signature).then(r => r.blob());
-        const signatureFileName = companyInfo.signature instanceof File ? companyInfo.signature.name : 'signature.png';
+          // It's a new file, upload it
+          const signatureFile = companyInfo.signature instanceof File ? companyInfo.signature : await fetch(companyInfo.signature).then(r => r.blob());
+          const signatureFileName = companyInfo.signature instanceof File ? companyInfo.signature.name : 'signature.png';
+          
+          const { data: signatureUploadData, error: signatureError, filePath: signatureFilePath } = await uploadFile(
+            signatureFile, 
+            'company-assets', 
+            `${userId}/signatures`
+          );
+
+          if (signatureError) {
+            return { success: false, error: `Signature upload failed: ${signatureError.message}` };
+          }
+
+          signaturePath = signatureFilePath;
+          signatureFilename = signatureFileName;
+          signatureSize = signatureFile.size;
+          signatureMimeType = signatureFile.type;
+        } catch (uploadError) {
+          console.error('Signature upload error:', uploadError);
+          return { success: false, error: `Signature upload failed: ${uploadError.message}` };
+        }
+      } else if (typeof companyInfo.signature === 'object' && companyInfo.signature.path) {
+        // Handle storage object with path, filename, size, type
+        signaturePath = companyInfo.signature.path;
+        signatureFilename = companyInfo.signature.name || companyInfo.signature.filename || null;
+        signatureSize = companyInfo.signature.size || null;
+        signatureMimeType = companyInfo.signature.type || companyInfo.signature.mimeType || null;
         
-        const { data: signatureUploadData, error: signatureError, filePath: signatureFilePath } = await uploadFile(
-          signatureFile, 
-          'company-assets', 
-          `${userId}/signatures` // Keep one active signature; old is deleted above
-        );
-
-        if (signatureError) {
-          return { success: false, error: `Signature upload failed: ${signatureError.message}` };
-        }
-
-        signaturePath = signatureFilePath;
-        signatureFilename = signatureFileName;
-        signatureSize = signatureFile.size;
-        signatureMimeType = signatureFile.type;
-      } catch (uploadError) {
-        console.error('Signature upload error:', uploadError);
-        return { success: false, error: `Signature upload failed: ${uploadError.message}` };
+      } else if (typeof companyInfo.signature === 'string' && companyInfo.signature.startsWith('http')) {
+        // Handle direct URL (keep existing)
+        signaturePath = existingProfile?.signature_path || null;
+        signatureFilename = existingProfile?.signature_filename || null;
+        signatureSize = existingProfile?.signature_size || null;
+        signatureMimeType = existingProfile?.signature_mime_type || null;
       }
-    } else if (companyInfo.signature && typeof companyInfo.signature === 'object' && companyInfo.signature.path) {
-      // Keep existing provided path
-      signaturePath = companyInfo.signature.path;
-      signatureFilename = companyInfo.signature.filename || null;
-      signatureSize = companyInfo.signature.size || null;
-      signatureMimeType = companyInfo.signature.mimeType || null;
-    } else if (!companyInfo.signature && existingProfile?.signature_path) {
-      // No change; keep DB value
+    } else if (companyInfo.signature === null) {
+      // Signature was explicitly removed - clear database fields
+      signaturePath = null;
+      signatureFilename = null;
+      signatureSize = null;
+      signatureMimeType = null;
+      
+      // Delete old signature file from storage if it exists
+      if (existingProfile?.signature_path) {
+        try {
+          await deleteFile('company-assets', existingProfile.signature_path);
+        } catch (deleteError) {
+          console.warn('Warning: Could not delete old signature file:', deleteError);
+        }
+      }
+    } else if (existingProfile?.signature_path) {
+      // No change; keep existing DB value
       signaturePath = existingProfile.signature_path;
       signatureFilename = existingProfile.signature_filename;
       signatureSize = existingProfile.signature_size;
@@ -163,16 +211,13 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
       signature_filename: signatureFilename,
       signature_size: signatureSize,
       signature_mime_type: signatureMimeType,
-      is_default: true,
+      is_default: true, // Always true - we maintain only one row per user
       updated_at: new Date().toISOString()
     };
 
-    // Debug: Log the data being saved
-    console.log('Saving company data to database:', companyData);
-
     let result;
     if (existingProfile) {
-      // Update existing profile
+      // Update existing profile - maintaining ONE row per user
       result = await supabase
         .from('company_profiles')
         .update(companyData)
@@ -180,7 +225,7 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
         .select()
         .single();
     } else {
-      // Create new profile
+      // Create new profile - only happens for first-time users
       companyData.created_at = new Date().toISOString();
       result = await supabase
         .from('company_profiles')
@@ -202,14 +247,14 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
         filename: logoFilename,
         size: logoSize,
         mimeType: logoMimeType,
-        publicUrl: (await getSignedUrl('company-assets', logoPath)).data || null
+        publicUrl: getPublicUrl('company-assets', logoPath)
       } : null,
       signature: signaturePath ? { 
         path: signaturePath,
         filename: signatureFilename,
         size: signatureSize,
         mimeType: signatureMimeType,
-        publicUrl: (await getSignedUrl('company-assets', signaturePath)).data || null
+        publicUrl: getPublicUrl('company-assets', signaturePath)
       } : null
     };
 
@@ -221,28 +266,107 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
 };
 
 /**
- * Load company information from database
- * @param {string} userId - User ID for user-specific storage
- * @returns {Promise<Object|null>} Company information or null if not found
+ * Create a default company profile for a new user
+ * @param {string} userId - User ID
+ * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
  */
+export const createDefaultCompanyProfile = async (userId) => {
+  try {
+    if (!userId) {
+      return { success: false, error: 'User ID is required' };
+    }
+
+    const defaultProfile = {
+      user_id: userId,
+      profile_id: null,
+      company_name: 'VOTRE ENTREPRISE',
+      logo_path: null,
+      logo_filename: null,
+      logo_size: null,
+      logo_mime_type: null,
+      signature_path: null,
+      signature_filename: null,
+      signature_size: null,
+      signature_mime_type: null,
+      address: '123 Rue de l\'Exemple',
+      city: 'Bruxelles',
+      state: 'Bruxelles-Capitale',
+      country: 'Belgique',
+      postal_code: '1000',
+      phone: '+32 123 45 67 89',
+      email: 'contact@entreprise.be',
+      website: 'www.entreprise.be',
+      vat_number: 'BE0123456789',
+      is_default: true
+    };
+
+    const { data, error } = await supabase
+      .from('company_profiles')
+      .insert(defaultProfile)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating default company profile:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error creating default company profile:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 export const loadCompanyInfo = async (userId) => {
   try {
     if (!userId) {
       return null;
     }
 
-    const { data, error } = await supabase
+    // First try to get the default profile
+    let { data, error } = await supabase
       .from('company_profiles')
       .select('*')
       .eq('user_id', userId)
       .eq('is_default', true)
       .single();
 
-    if (error) {
-      if (error.code === 'PGRST116') { // No rows returned
+    // If no default profile found, try to get any profile for this user
+    if (error && error.code === 'PGRST116') {
+      console.log('No default company profile found, trying to get any profile for user:', userId);
+      
+      const { data: anyProfile, error: anyProfileError } = await supabase
+        .from('company_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .limit(1)
+        .single();
+      
+      if (anyProfileError && anyProfileError.code === 'PGRST116') {
+        // No company profile exists for this user at all - create a default one
+        console.log('No company profile found for user, creating default profile:', userId);
+        
+        const { success, data: defaultProfile, error: createError } = await createDefaultCompanyProfile(userId);
+        if (success && defaultProfile) {
+          data = defaultProfile;
+        } else {
+          console.error('Failed to create default company profile:', createError);
+          return null;
+        }
+      } else if (anyProfileError) {
+        console.error('Error loading any company profile:', anyProfileError);
         return null;
+      } else {
+        data = anyProfile;
       }
-      console.error('Error loading company info:', error);
+    } else if (error) {
+      console.error('Error loading default company profile:', error);
+      return null;
+    }
+
+    // If we still don't have data, return null
+    if (!data) {
       return null;
     }
 
@@ -252,7 +376,7 @@ export const loadCompanyInfo = async (userId) => {
       filename: data.logo_filename,
       size: data.logo_size,
       mimeType: data.logo_mime_type,
-      publicUrl: (await getSignedUrl('company-assets', data.logo_path)).data || null
+      publicUrl: getPublicUrl('company-assets', data.logo_path)
     } : null;
 
     const signatureData = data.signature_path ? {
@@ -260,7 +384,7 @@ export const loadCompanyInfo = async (userId) => {
       filename: data.signature_filename,
       size: data.signature_size,
       mimeType: data.signature_mime_type,
-      publicUrl: (await getSignedUrl('company-assets', data.signature_path)).data || null
+      publicUrl: getPublicUrl('company-assets', data.signature_path)
     } : null;
 
     return {
@@ -304,7 +428,7 @@ export const removeCompanyAsset = async (userId, type) => {
       .from('company_profiles')
       .select('*')
       .eq('user_id', userId)
-      .eq('is_default', true)
+      .limit(1)
       .single();
 
     if (fetchError) {
@@ -319,25 +443,19 @@ export const removeCompanyAsset = async (userId, type) => {
     if (assetPath) {
       // Delete the file from storage
       await deleteFile('company-assets', assetPath);
-      
-      // Also clean up any other files in the user's asset folder for this type
-      // This ensures only one asset file exists per user per type
-      const assetFolder = type === 'logo' ? `${userId}/logo` : `${userId}/signature`;
-      try {
-        // Note: This would require a listFiles function in storageService
-        // For now, we just delete the specific file path
-      } catch (cleanupError) {
-        console.warn(`Warning: Could not clean up additional ${type} files:`, cleanupError);
-      }
     }
-
-    // Update database to remove asset references
-    const updateData = {
-      [`${type}_path`]: null,
-      [`${type}_filename`]: null,
-      [`${type}_size`]: null,
-      [`${type}_mime_type`]: null,
-      updated_at: new Date().toISOString()
+    
+    // Clear the asset fields in the database
+    const updateData = type === 'logo' ? {
+      logo_path: null,
+      logo_filename: null,
+      logo_size: null,
+      logo_mime_type: null
+    } : {
+      signature_path: null,
+      signature_filename: null,
+      signature_size: null,
+      signature_mime_type: null
     };
 
     const { error: updateError } = await supabase
@@ -346,13 +464,13 @@ export const removeCompanyAsset = async (userId, type) => {
       .eq('id', profile.id);
 
     if (updateError) {
-      return { success: false, error: `Update failed: ${updateError.message}` };
+      return { success: false, error: `Failed to update database: ${updateError.message}` };
     }
 
     return { success: true };
   } catch (error) {
-    console.error(`Error removing company ${type}:`, error);
-    return { success: false, error: error.message };
+    console.error('Error removing company asset:', error);
+    return { success: false, error: error.message || 'Unknown error occurred' };
   }
 };
 
