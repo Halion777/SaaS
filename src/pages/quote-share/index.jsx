@@ -113,7 +113,7 @@ const PublicQuoteShareViewer = () => {
         setQuoteStatus('rejected');
         setShowRejectModal(false);
         // Show success message
-        alert('Devis rejeté avec succès.');
+        alert('Devis rejeté.');
       } else {
         alert(`Erreur: ${result.error}`);
       }
@@ -127,12 +127,34 @@ const PublicQuoteShareViewer = () => {
   const getFinancialConfig = () => {
     if (!quote?.quote_financial_configs?.[0]) {
       return {
-        vatConfig: { rate: 20, display: true },
+        vatConfig: { rate: 0, display: false },
         advanceConfig: { enabled: false, amount: 0 },
         discountConfig: { enabled: false, rate: 0 }
       };
     }
-    return quote.quote_financial_configs[0];
+    
+    const config = quote.quote_financial_configs[0];
+    
+    // Ensure we have proper structure for each config section
+    return {
+      vatConfig: {
+        rate: config.vat_config?.rate || 0,
+        display: config.vat_config?.display || false,
+        is_inclusive: config.vat_config?.is_inclusive || false
+      },
+      advanceConfig: {
+        enabled: config.advance_config?.enabled || false,
+        amount: config.advance_config?.amount || 0,
+        percentage: config.advance_config?.percentage || 0,
+        due_date: config.advance_config?.due_date || null
+      },
+      discountConfig: {
+        enabled: config.discount_config?.rate > 0 || false,
+        rate: config.discount_config?.rate || 0,
+        amount: config.discount_config?.amount || 0,
+        type: config.discount_config?.type || 'percentage'
+      }
+    };
   };
 
   const financialConfig = getFinancialConfig();
@@ -170,147 +192,332 @@ const PublicQuoteShareViewer = () => {
     );
   }
 
-  // Calculate totals
-  const totalPrice = quote.quote_tasks?.reduce((sum, task) => {
-    const taskMaterialsTotal = task.materials?.reduce(
-      (matSum, mat) => matSum + ((parseFloat(mat.price) || 0) * (parseFloat(mat.quantity) || 0)),
-      0
-    ) || 0;
-    return sum + (parseFloat(task.price) || 0) + taskMaterialsTotal;
-  }, 0) || 0;
+  // Get materials price display setting from localStorage (like QuotePreview)
+  const includeMaterialsPrices = (localStorage.getItem('include-materials-prices') ?? 'true') === 'true';
+  
+  // Group materials by task_id and add them to tasks (like QuotePreview does)
+  const tasksWithMaterials = quote.quote_tasks?.map(task => {
+    const taskMaterials = quote.quote_materials?.filter(material => material.quote_task_id === task.id) || [];
+    return {
+      ...task,
+      materials: taskMaterials
+    };
+  }) || [];
 
-  const vatAmount = financialConfig.vatConfig?.display ? (totalPrice * (financialConfig.vatConfig.rate || 20) / 100) : 0;
+  // Calculate totals using the same logic as QuotePreview
+  const totalPrice = tasksWithMaterials.reduce((sum, task) => {
+    // Task price (labor)
+    const taskPrice = parseFloat(task.total_price) || ((parseFloat(task.quantity) || 1) * (parseFloat(task.unit_price) || 0));
+    
+    // Materials total (ALWAYS included in calculation, regardless of display setting)
+    const taskMaterialsTotal = task.materials.reduce(
+      (matSum, mat) => matSum + ((parseFloat(mat.unit_price) || 0) * (parseFloat(mat.quantity) || 0)),
+      0
+    );
+    
+    return sum + taskPrice + taskMaterialsTotal;
+  }, 0);
+
+  const vatAmount = financialConfig.vatConfig?.display ? (totalPrice * financialConfig.vatConfig.rate / 100) : 0;
   const totalWithVAT = totalPrice + vatAmount;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      {/* Clean Header with Quote Info Left, Buttons Right */}
+      <div className="bg-white shadow-lg border-b border-gray-200">
+        <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              {logoUrl && (
-                <img src={logoUrl} alt="Logo" className="w-12 h-12 object-contain" />
-              )}
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {quote?.company_profile?.company_name || 'Votre Entreprise'}
-                </h1>
-                <p className="text-gray-600">{quote?.company_profile?.address}</p>
+            {/* Left Side - Quote Info */}
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-3">
+                <span className={`px-3 py-1.5 rounded-full text-sm font-semibold ${
+                  quoteStatus === 'sent' ? 'bg-blue-100 text-blue-700' :
+                  quoteStatus === 'viewed' ? 'bg-orange-100 text-orange-700' :
+                  quoteStatus === 'accepted' ? 'bg-green-100 text-green-700' :
+                  quoteStatus === 'rejected' ? 'bg-red-100 text-red-700' : 
+                  'bg-gray-100 text-gray-700'
+                }`}>
+                  {quoteStatus === 'sent' ? 'Envoyé' : 
+                   quoteStatus === 'viewed' ? 'Consulté' :
+                   quoteStatus === 'accepted' ? 'Accepté' :
+                   quoteStatus === 'rejected' ? 'Rejeté' : 'Expiré'}
+                </span>
+                
+                <span className="text-sm font-medium text-gray-700">{quote?.quote_number || quote?.id}</span>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-sm text-gray-500">DEVIS</div>
-              <div className="text-2xl font-bold text-blue-600">{quote?.quote_number || quote?.id}</div>
-              <div className="text-sm text-gray-500">
-                {quote?.created_at && `Créé le ${new Date(quote.created_at).toLocaleDateString('fr-FR')}`}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Quote Status Header */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-          <div className="text-center mb-6">
-            <p className="text-gray-600 mb-4">
-              Ce devis a été envoyé par {quote?.company_profile?.company_name || 'Biarritz Artisanat'}. 
-              Vous pouvez accepter le devis si vous en êtes satisfait, ou le rejeter si vous souhaitez apporter des modifications.
-            </p>
-            
+            {/* Right Side - Action Buttons */}
             {(quoteStatus === 'sent' || quoteStatus === 'viewed') && (
-              <div className="flex justify-center space-x-4">
+              <div className="flex space-x-3">
                 <Button
                   onClick={() => setShowRejectModal(true)}
                   variant="outline"
-                  className="px-6 py-3 border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="px-6 py-2.5 border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 transition-colors"
                 >
+                  <Icon name="XCircle" size={18} className="mr-2" />
                   Rejeter
                 </Button>
                 <Button
                   onClick={handleAcceptQuote}
                   disabled={actionLoading}
-                  className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white"
+                  className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl transition-all"
                 >
+                  <Icon name="CheckCircle" size={18} className="mr-2" />
                   {actionLoading ? 'Traitement...' : 'Accepter'}
                 </Button>
               </div>
             )}
           </div>
-
-          <div className="flex items-center justify-center space-x-8">
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-2">
-                <img 
-                  src="https://via.placeholder.com/64x64/3B82F6/FFFFFF?text=👷" 
-                  alt="Artisan" 
-                  className="w-full h-full object-contain"
-                />
-              </div>
-            </div>
-            
-            <div className="text-center">
-              <h2 className="text-4xl font-bold text-gray-800 mb-2">DEVIS</h2>
-              <span className={`px-4 py-2 rounded-full text-sm font-medium ${
-                quoteStatus === 'sent' ? 'bg-blue-100 text-blue-700' :
-                quoteStatus === 'viewed' ? 'bg-orange-100 text-orange-700' :
-                quoteStatus === 'accepted' ? 'bg-green-100 text-green-700' :
-                quoteStatus === 'rejected' ? 'bg-red-100 text-red-700' : 
-                'bg-gray-100 text-gray-700'
-              }`}>
-                {quoteStatus === 'sent' ? 'Envoyé' : 
-                 quoteStatus === 'viewed' ? 'Consulté' :
-                 quoteStatus === 'accepted' ? 'Accepté' :
-                 quoteStatus === 'rejected' ? 'Rejeté' : 'Expiré'}
-              </span>
-            </div>
-
-            <div className="text-left text-sm text-gray-600 space-y-1">
-              <div><strong>Date du devis:</strong> {quote?.created_at ? new Date(quote.created_at).toLocaleDateString('fr-FR') : 'N/A'}</div>
-              <div><strong>Date d'expiration:</strong> {quote?.valid_until ? new Date(quote.valid_until).toLocaleDateString('fr-FR') : 'N/A'}</div>
-              <div><strong>N° du devis:</strong> {quote?.quote_number || quote?.id}</div>
-            </div>
-          </div>
         </div>
+      </div>
 
-        {/* Quote Content */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Sender Information */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">De</h3>
-              <div className="space-y-2 text-gray-600">
-                <p className="font-medium">{quote?.company_profile?.company_name || 'Biarritz Artisanat'}</p>
-                <p>{quote?.company_profile?.address || '42 Rue des Lys'}</p>
-                {quote?.company_profile?.city && quote.company_profile.city !== 'N/A' && (
-                  <p>{quote.company_profile.city}</p>
+      <div className="max-w-6xl mx-auto px-6 py-8">
+                  {/* Quote Preview Card */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
+          {/* Company and Client Information */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
+            {/* Company Information */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+              <div className="flex items-center space-x-3 mb-4">
+                {logoUrl && (
+                  <div className="w-12 h-12 bg-white rounded-lg p-1 shadow-sm border border-blue-200">
+                    <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                  </div>
                 )}
-                <p>{quote?.company_profile?.postal_code || '75005'}</p>
-                <p>{quote?.company_profile?.country || 'France'}</p>
-                <p>{quote?.company_profile?.phone || ''}</p>
-                <p>{quote?.company_profile?.email || ''}</p>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">
+                    {quote?.company_profile?.company_name || 'Votre Entreprise'}
+                  </h3>
+                  <p className="text-blue-600 font-medium text-sm">Entreprise</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-start space-x-2">
+                  <Icon name="MapPin" size={14} className="text-blue-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">{quote?.company_profile?.address || 'Adresse'}</p>
+                    {quote?.company_profile?.city && quote.company_profile.city !== 'N/A' && (
+                      <p className="text-sm text-gray-600">{quote.company_profile.city}</p>
+                    )}
+                    <p className="text-sm text-gray-600">{quote?.company_profile?.postal_code || 'Code postal'}</p>
+                    <p className="text-sm text-gray-600">{quote?.company_profile?.country || 'Pays'}</p>
+                  </div>
+                </div>
+                {quote?.company_profile?.phone && (
+                  <div className="flex items-center space-x-2">
+                    <Icon name="Phone" size={14} className="text-blue-500 flex-shrink-0" />
+                    <span className="text-sm text-gray-700 font-medium">{quote.company_profile.phone}</span>
+                  </div>
+                )}
+                {quote?.company_profile?.email && (
+                  <div className="flex items-center space-x-2">
+                    <Icon name="Mail" size={14} className="text-blue-500 flex-shrink-0" />
+                    <span className="text-sm text-gray-700 font-medium">{quote.company_profile.email}</span>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Client Information */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Destinataire</h3>
-              <div className="space-y-2 text-gray-600">
-                <p className="font-medium">{quote?.client?.name || 'Client'}</p>
-                <div className="mt-4">
-                  <p className="font-medium text-sm text-gray-500">Adresse de facturation:</p>
-                  <p>{quote?.client?.address || '25 rue d\'Orsel'}</p>
-                  {quote?.client?.city && quote.client.city !== 'N/A' && (
-                    <p>{quote.client.city}</p>
-                  )}
-                  <p>{quote?.client?.postal_code || '75018'}</p>
-                  <p>{quote?.client?.country || 'France'}</p>
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
+              <div className="mb-4">
+                <h3 className="text-lg font-bold text-gray-900 mb-1">Client</h3>
+                <p className="text-green-600 font-medium text-sm">Destinataire</p>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Icon name="User" size={14} className="text-green-500 flex-shrink-0" />
+                  <p className="text-base font-semibold text-gray-800">{quote?.client?.name || 'Client'}</p>
+                </div>
+                <div className="bg-white rounded-lg p-3 border border-green-200">
+                  <p className="font-medium text-xs text-green-700 mb-2 flex items-center">
+                    <Icon name="MapPin" size={12} className="mr-1" />
+                    Adresse de facturation
+                  </p>
+                  <div className="space-y-1 text-gray-700">
+                    <p className="text-sm font-medium">{quote?.client?.address || 'Adresse'}</p>
+                    {quote?.client?.city && quote.client.city !== 'N/A' && (
+                      <p className="text-sm">{quote.client.city}</p>
+                    )}
+                    <p className="text-sm">{quote?.client?.postal_code || 'Code postal'}</p>
+                    <p className="text-sm">{quote?.client?.country || 'Pays'}</p>
+                  </div>
                 </div>
                 {quote?.client?.delivery_address && (
-                  <div className="mt-4">
-                    <p className="font-medium text-sm text-gray-500">Adresse de livraison:</p>
-                    <p>{quote.client.delivery_address}</p>
+                  <div className="bg-white rounded-lg p-3 border border-green-200">
+                    <p className="font-medium text-xs text-green-700 mb-2 flex items-center">
+                      <Icon name="Truck" size={12} className="mr-1" />
+                      Adresse de livraison
+                    </p>
+                    <p className="text-sm text-gray-700">{quote.client.delivery_address}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Quote Details */}
+          <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-4 border border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                  <Icon name="Calendar" size={16} className="text-blue-600" />
+                </div>
+                <p className="text-xs text-gray-500 mb-1">Date du devis</p>
+                <p className="font-semibold text-gray-900 text-sm">
+                  {quote?.created_at ? new Date(quote.created_at).toLocaleDateString('fr-FR') : 'N/A'}
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                  <Icon name="Clock" size={16} className="text-orange-600" />
+                </div>
+                <p className="text-xs text-gray-500 mb-1">Date d'expiration</p>
+                <p className="font-semibold text-gray-900 text-sm">
+                  {quote?.valid_until ? new Date(quote.valid_until).toLocaleDateString('fr-FR') : 'N/A'}
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                  <Icon name="DollarSign" size={16} className="text-green-600" />
+                </div>
+                <p className="text-xs text-gray-500 mb-1">Montant total</p>
+                <p className="text-xl font-bold text-green-600">{currency(totalWithVAT)}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Services Table */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+            <Icon name="Wrench" size={18} className="text-blue-600 mr-2" />
+            Détails des prestations
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b-2 border-gray-200">
+                  <th className="text-left py-3 px-3 font-semibold text-gray-700 bg-gray-50 text-sm">Description</th>
+                  <th className="text-center py-3 px-3 font-semibold text-gray-700 bg-gray-50 text-sm">Quantité</th>
+                  <th className="text-right py-3 px-3 font-semibold text-gray-700 bg-gray-50 text-sm">Prix unitaire</th>
+                  <th className="text-right py-3 px-3 font-semibold text-gray-700 bg-gray-50 text-sm">Montant HT</th>
+                  {financialConfig.vatConfig?.display && (
+                    <th className="text-center py-3 px-3 font-semibold text-gray-700 bg-gray-50 text-sm">TVA</th>
+                  )}
+                  <th className="text-right py-3 px-3 font-semibold text-gray-700 bg-gray-50 text-sm">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tasksWithMaterials.map((task, index) => {
+                  // Task price (labor)
+                  const taskPrice = parseFloat(task.total_price) || ((parseFloat(task.quantity) || 1) * (parseFloat(task.unit_price) || 0));
+                  
+                  // Materials total (ALWAYS included in calculation, regardless of display setting)
+                  const taskMaterialsTotal = task.materials.reduce(
+                    (sum, mat) => sum + ((parseFloat(mat.unit_price) || 0) * (parseFloat(mat.quantity) || 0)),
+                    0
+                  );
+                  
+                  const totalHT = taskPrice + taskMaterialsTotal;
+                  
+                  return (
+                    <React.Fragment key={task.id || index}>
+                      {/* Task Header Row */}
+                      <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors bg-blue-50">
+                        <td className="py-3 px-3 text-gray-800">
+                          <div>
+                            <p className="font-bold text-gray-900 text-sm">{index + 1}. {task.name || task.description}</p>
+                            {task.description && task.description !== task.name && (
+                              <p className="text-xs text-gray-800 mt-1">{task.description}</p>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 text-center text-gray-600 font-medium text-sm">{task.quantity || 1}</td>
+                        <td className="py-3 px-3 text-right text-gray-600 font-medium text-sm">{currency(task.unit_price || 0)}</td>
+                        <td className="py-3 px-3 text-right text-gray-600 font-medium text-sm">
+                          {currency(taskPrice)}
+                        </td>
+                        {financialConfig.vatConfig?.display && (
+                          <td className="py-3 px-3 text-center text-gray-600 text-sm">
+                            {financialConfig.vatConfig.rate}%
+                          </td>
+                        )}
+                        <td className="py-3 px-3 text-right font-bold text-blue-800 text-sm">
+                          {currency(financialConfig.vatConfig?.display ? 
+                            totalHT * (1 + financialConfig.vatConfig.rate / 100) :
+                            totalHT
+                          )}
+                        </td>
+                      </tr>
+                      
+                      {/* Materials Rows */}
+                      {task.materials.map((material, matIndex) => (
+                        <tr key={`${task.id}-${material.id || matIndex}`} className="border-b border-gray-50 bg-gray-25">
+                          <td className="py-2 px-3 pl-6 text-gray-700">
+                            <div className="flex items-center">
+                              <Icon name="Package" size={12} className="text-green-500 mr-1" />
+                              <span className="text-xs">{material.name}</span>
+                            </div>
+                          </td>
+                          <td className="py-2 px-3 text-center text-gray-600 text-xs">{material.quantity} {material.unit || ''}</td>
+                          <td className="py-2 px-3 text-right text-gray-600 text-xs">
+                            {includeMaterialsPrices ? currency(material.unit_price || 0) : ''}
+                          </td>
+                          <td className="py-2 px-3 text-right text-gray-600 text-xs">
+                            {includeMaterialsPrices ? currency((parseFloat(material.quantity) || 0) * (parseFloat(material.unit_price) || 0)) : ''}
+                          </td>
+                          {financialConfig.vatConfig?.display && (
+                            <td className="py-2 px-3 text-center text-gray-600 text-xs">-</td>
+                          )}
+                          <td className="py-2 px-3 text-right text-gray-600 text-xs">
+                            {includeMaterialsPrices ? (() => {
+                              const materialTotal = (parseFloat(material.quantity) || 0) * (parseFloat(material.unit_price) || 0);
+                              return currency(financialConfig.vatConfig?.display ? 
+                                materialTotal * (1 + financialConfig.vatConfig.rate / 100) :
+                                materialTotal
+                              );
+                            })() : ''}
+                          </td>
+                        </tr>
+                      ))}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Materials are now included in task calculations above */}
+
+          {/* Financial Summary */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <div className="flex justify-end">
+              <div className="w-72 space-y-2">
+                <div className="flex justify-between text-gray-600 text-sm">
+                  <span>Sous-total (HT):</span>
+                  <span className="font-medium">{currency(totalPrice)}</span>
+                </div>
+                {financialConfig.vatConfig?.display && (
+                  <div className="flex justify-between text-gray-600 text-sm">
+                    <span>TVA ({financialConfig.vatConfig.rate}%):</span>
+                    <span className="font-medium">{currency(vatAmount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
+                  <span>Total (TTC):</span>
+                  <span className="text-blue-600">{currency(totalWithVAT)}</span>
+                </div>
+                {financialConfig.advanceConfig?.enabled && financialConfig.advanceConfig.amount > 0 && (
+                  <div className="flex justify-between text-gray-600 text-sm">
+                    <span>Acompte à la commande:</span>
+                    <span className="font-medium">{currency(financialConfig.advanceConfig.amount)}</span>
+                  </div>
+                )}
+                {!includeMaterialsPrices && (
+                  <div className="text-xs text-gray-500 text-center pt-1">
+                    * Les prix des matériaux sont inclus dans le total mais masqués
                   </div>
                 )}
               </div>
@@ -318,146 +525,117 @@ const PublicQuoteShareViewer = () => {
           </div>
         </div>
 
-        {/* Tasks Table */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Détails des prestations</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Description</th>
-                  <th className="text-center py-3 px-4 font-medium text-gray-700">Quantité</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-700">Prix unitaire</th>
-                  <th className="text-center py-3 px-4 font-medium text-gray-700">TVA (%)</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-700">Montant HT</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-700">TVA</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-700">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {quote.quote_tasks?.map((task, index) => (
-                  <tr key={task.id || index} className="border-b border-gray-100">
-                    <td className="py-3 px-4 text-gray-800">{task.name || task.description}</td>
-                    <td className="py-3 px-4 text-center text-gray-600">{task.quantity || 1}</td>
-                    <td className="py-3 px-4 text-right text-gray-600">{currency(task.unit_price || task.price)}</td>
-                    <td className="py-3 px-4 text-center text-gray-600">{financialConfig.vatConfig?.rate || 20}%</td>
-                    <td className="py-3 px-4 text-right text-gray-600">{currency((task.quantity || 1) * (task.unit_price || task.price))}</td>
-                    <td className="py-3 px-4 text-right text-gray-600">{currency(((task.quantity || 1) * (task.unit_price || task.price)) * (financialConfig.vatConfig?.rate || 20) / 100)}</td>
-                    <td className="py-3 px-4 text-right font-medium text-gray-800">{currency(((task.quantity || 1) * (task.unit_price || task.price)) * (1 + (financialConfig.vatConfig?.rate || 20) / 100))}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Additional Information */}
+        {quote.notes && (
+          <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
+            <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center">
+              <Icon name="FileText" size={18} className="text-purple-600 mr-2" />
+              Notes et conditions
+            </h3>
+            <div className="text-gray-600 whitespace-pre-wrap bg-gray-50 p-3 rounded-lg text-sm">{quote.notes}</div>
           </div>
+        )}
 
-          {/* Materials Table if exists */}
-          {quote.quote_materials && quote.quote_materials.length > 0 && (
-            <div className="mt-8">
-              <h4 className="text-md font-semibold text-gray-800 mb-4">Matériaux</h4>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Matériau</th>
-                      <th className="text-center py-3 px-4 font-medium text-gray-700">Quantité</th>
-                      <th className="text-right py-3 px-4 font-medium text-gray-700">Prix unitaire</th>
-                      <th className="text-right py-3 px-4 font-medium text-gray-700">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {quote.quote_materials.map((material, index) => (
-                      <tr key={material.id || index} className="border-b border-gray-100">
-                        <td className="py-3 px-4 text-gray-800">{material.name}</td>
-                        <td className="py-3 px-4 text-center text-gray-600">{material.quantity}</td>
-                        <td className="py-3 px-4 text-right text-gray-600">{currency(material.price)}</td>
-                        <td className="py-3 px-4 text-right font-medium text-gray-800">{currency(material.quantity * material.price)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+        {/* Signatures Section */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+            <Icon name="PenTool" size={18} className="text-indigo-600 mr-2" />
+            Signatures
+          </h3>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Company Signature */}
+            <div className="space-y-3">
+              <h4 className="text-base font-semibold text-gray-800">Signature de l'entreprise</h4>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 min-h-24 flex items-center justify-center">
+                {signatureUrl ? (
+                  <img src={signatureUrl} alt="Signature entreprise" className="max-w-full max-h-20 object-contain" />
+                ) : (
+                  <div className="text-center text-gray-400">
+                    <Icon name="PenTool" size={24} className="mx-auto mb-1" />
+                    <p className="text-xs">Signature non disponible</p>
+                  </div>
+                )}
               </div>
+              <p className="text-xs text-gray-500 text-center">
+                {quote?.company_profile?.company_name || 'Votre Entreprise'}
+              </p>
             </div>
-          )}
 
-          {/* Summary */}
-          <div className="mt-6 flex justify-end">
-            <div className="text-right space-y-2">
-              <div className="text-gray-600">
-                <span className="mr-4">Sous-total (HT):</span>
-                <span className="font-medium">{currency(totalPrice)}</span>
+            {/* Client Signature */}
+            <div className="space-y-3">
+              <h4 className="text-base font-semibold text-gray-800">Signature du client</h4>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 min-h-24 flex items-center justify-center">
+                {clientSignature ? (
+                  <img 
+                    src={clientSignature.signature_data ? `data:image/png;base64,${clientSignature.signature_data}` : clientSignature.signature_file_path} 
+                    alt="Signature client" 
+                    className="max-w-full max-h-20 object-contain" 
+                  />
+                ) : quoteStatus === 'accepted' ? (
+                  <div className="text-center text-green-600">
+                    <Icon name="CheckCircle" size={24} className="mx-auto mb-1" />
+                    <p className="text-xs font-medium">Devis accepté</p>
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-400">
+                    <Icon name="User" size={24} className="mx-auto mb-1" />
+                    <p className="text-xs">En attente de signature</p>
+                  </div>
+                )}
               </div>
-              {financialConfig.vatConfig?.display && (
-                <div className="text-gray-600">
-                  <span className="mr-4">TVA:</span>
-                  <span className="font-medium">{currency(vatAmount)}</span>
+              <p className="text-xs text-gray-500 text-center">
+                {quote?.client?.name || 'Client'}
+              </p>
+              {clientSignature?.customerComment && (
+                <div className="mt-2 p-2 bg-blue-50 rounded-lg">
+                  <p className="text-xs text-blue-800">
+                    <span className="font-medium">Commentaire:</span> {clientSignature.customerComment}
+                  </p>
                 </div>
               )}
-              {financialConfig.discountConfig?.enabled && (
-                <div className="text-gray-600">
-                  <span className="mr-4">Remise ({financialConfig.discountConfig.rate}%):</span>
-                  <span className="font-medium">-{currency(totalPrice * financialConfig.discountConfig.rate / 100)}</span>
-                </div>
-              )}
-              {financialConfig.advanceConfig?.enabled && (
-                <div className="text-gray-600">
-                  <span className="mr-4">Acompte:</span>
-                  <span className="font-medium">{currency(financialConfig.advanceConfig.amount)}</span>
-                </div>
-              )}
-              <div className="text-lg font-bold text-gray-800">
-                <span className="mr-4">Total (TTC):</span>
-                <span>{currency(totalWithVAT)}</span>
-              </div>
             </div>
           </div>
         </div>
 
-        {/* Additional Information */}
-        {quote.notes && (
-          <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Notes et conditions</h3>
-            <div className="text-gray-600 whitespace-pre-wrap">{quote.notes}</div>
-          </div>
-        )}
-
         {/* Status Display */}
         {quoteStatus === 'accepted' && (
-          <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <Icon name="CheckCircle" size={32} className="text-green-600" />
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl shadow-xl p-8 text-center border border-green-200">
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <Icon name="CheckCircle" size={32} className="text-green-600" />
+              </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-800">Devis accepté !</h2>
-                <p className="text-gray-600">Merci pour votre confiance. L'artisan vous contactera bientôt.</p>
+                <h2 className="text-3xl font-bold text-green-800">Devis accepté !</h2>
+                <p className="text-green-700 text-lg">Merci pour votre confiance. L'artisan vous contactera bientôt.</p>
               </div>
             </div>
-            {clientSignature && (
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-2">Signature du client:</p>
-                <img src={clientSignature} alt="Signature" className="max-w-xs mx-auto border border-gray-300 rounded" />
-              </div>
-            )}
           </div>
         )}
 
         {quoteStatus === 'rejected' && (
-          <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <Icon name="XCircle" size={32} className="text-red-600" />
+          <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-2xl shadow-xl p-8 text-center border border-red-200">
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                <Icon name="XCircle" size={32} className="text-red-600" />
+              </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-800">Devis rejeté</h2>
-                <p className="text-gray-600">Votre demande a été enregistrée. L'artisan vous contactera pour discuter des modifications.</p>
+                <h2 className="text-3xl font-bold text-red-800">Devis rejeté</h2>
+                <p className="text-red-700 text-lg">Votre demande a été enregistrée. L'artisan vous contactera pour discuter des modifications.</p>
               </div>
             </div>
           </div>
         )}
 
         {quoteStatus === 'expired' && (
-          <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <Icon name="Clock" size={32} className="text-gray-600" />
+          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl shadow-xl p-8 text-center border border-yellow-200">
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center">
+                <Icon name="Clock" size={32} className="text-yellow-600" />
+              </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-800">Devis expiré</h2>
-                <p className="text-gray-600">Ce devis a dépassé sa date de validité. Veuillez contacter l'artisan pour un nouveau devis.</p>
+                <h2 className="text-3xl font-bold text-yellow-800">Devis expiré</h2>
+                <p className="text-yellow-700 text-lg">Ce devis a dépassé sa date de validité. Veuillez contacter l'artisan pour un nouveau devis.</p>
               </div>
             </div>
           </div>
