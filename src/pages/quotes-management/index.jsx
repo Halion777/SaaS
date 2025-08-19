@@ -94,7 +94,7 @@ const QuotesManagement = () => {
         setError(null);
         
         // Fetch quotes
-        const { data: quotesData, error: quotesError } = await fetchQuotes();
+        const { data: quotesData, error: quotesError } = await fetchQuotes(user.id);
         
         // If none in quotes yet, try showing a draft placeholder
         if (!quotesData || quotesData.length === 0) {

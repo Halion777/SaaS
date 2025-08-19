@@ -399,22 +399,49 @@ class ClientQuoteService {
   }
 
   /**
-   * Track quote view for analytics and follow-up decisions
+   * Smart tracking: Only log meaningful quote interactions, not every page load
    */
   static async trackQuoteView(quoteId, shareToken) {
     try {
-      // Log the quote access for tracking
-      const { error } = await supabase
+      // Check if we've already logged a 'viewed' action for this quote
+      const { data: existingLogs, error: checkError } = await supabase
         .from('quote_access_logs')
-        .insert({
-          quote_id: quoteId,
-          share_token: shareToken,
-          action: 'viewed'
-        });
+        .select('id, action, created_at')
+        .eq('quote_id', quoteId)
+        .eq('share_token', shareToken)
+        .eq('action', 'viewed')
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-      if (error) {
-        console.error('Error tracking quote view:', error);
-        return { success: false, error: error.message };
+      if (checkError) {
+        console.warn('Failed to check existing view logs:', checkError);
+      }
+
+      // Only log 'viewed' action if it's the first time or if significant time has passed
+      let shouldLogView = true;
+      if (existingLogs && existingLogs.length > 0) {
+        const lastView = new Date(existingLogs[0].created_at);
+        const now = new Date();
+        const hoursSinceLastView = (now - lastView) / (1000 * 60 * 60);
+        
+        // Only log again if more than 24 hours have passed (prevents spam from refreshes)
+        shouldLogView = hoursSinceLastView > 24;
+      }
+
+      if (shouldLogView) {
+        // Log the quote access for tracking (first time or after 24h)
+        const { error } = await supabase
+          .from('quote_access_logs')
+          .insert({
+            quote_id: quoteId,
+            share_token: shareToken,
+            action: 'viewed'
+          });
+
+        if (error) {
+          console.error('Error tracking quote view:', error);
+          return { success: false, error: error.message };
+        }
       }
 
       // Always check and update quote status to 'viewed' if it's currently 'sent'
@@ -440,8 +467,6 @@ class ClientQuoteService {
         }
       }
 
-   
-      
       // Ensure quote_shares record exists and update access count
       const recordExists = await this.ensureQuoteSharesRecord(quoteId, shareToken);
       

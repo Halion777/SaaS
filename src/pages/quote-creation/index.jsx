@@ -1140,7 +1140,7 @@ const QuoteCreation = () => {
               
               // Create signature record in database with new path
               const signatureRecord = {
-                quote_id: quoteId,
+            quote_id: quoteId,
                 signer_name: signerName,
                 signer_email: signerEmail,
                 signature_file_path: newPath,
@@ -1169,7 +1169,7 @@ const QuoteCreation = () => {
               await supabase.storage.from('signatures').remove([oldPath]);
 
               clientSignatureId = dbData.id;
-            } catch (error) {
+        } catch (error) {
               console.error('Error processing temporary signature:', error);
               throw error;
             }
@@ -1195,7 +1195,7 @@ const QuoteCreation = () => {
             if (signatureUploadError) {
               console.error('Client signature upload failed:', signatureUploadError);
               alert(`Erreur lors de l'upload de la signature client: ${signatureUploadError}`);
-              return;
+          return;
             }
             
             if (signatureUploadResult.success) {

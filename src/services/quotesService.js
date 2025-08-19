@@ -63,8 +63,13 @@ export async function getQuoteTrackingData(quoteId) {
  * Fetch all quotes for the current user
  * @returns {Promise<{data, error}>} Quotes data or error
  */
-export async function fetchQuotes() {
+export async function fetchQuotes(userId) {
   try {
+    if (!userId) {
+      console.error('No userId provided to fetchQuotes');
+      return { error: 'No userId provided' };
+    }
+    
     const { data, error } = await supabase
       .from('quotes')
       .select(`
@@ -107,6 +112,7 @@ export async function fetchQuotes() {
           created_at
         )
       `)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false });
     
     if (error) return { data, error };
