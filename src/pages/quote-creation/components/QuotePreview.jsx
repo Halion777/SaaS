@@ -7,6 +7,7 @@ import Personalization from './Personalization';
 import FinancialConfig from './FinancialConfig';
 import ElectronicSignatureModal from './ElectronicSignatureModal';
 import { loadCompanyInfo, getDefaultCompanyInfo } from '../../../services/companyInfoService';
+import { getPublicUrl } from '../../../services/storageService';
 import { useAuth } from '../../../context/AuthContext';
 import { generatePublicShareLink, getShareLinkInfo, deactivateShareLink } from '../../../services/shareService';
 
@@ -108,99 +109,61 @@ const QuotePreview = ({
           if (dbCompanyInfo) {
             // Merge DB company info with any locally cached assets (when DB lacks them)
             let merged = { ...dbCompanyInfo };
-            try {
-              const localLogo = localStorage.getItem(`company-logo-${user.id}`);
-              const localSig = localStorage.getItem(`company-signature-${user.id}`);
-              if (!merged.logo && localLogo) {
-                merged = { ...merged, logo: JSON.parse(localLogo) };
-              }
-              if (!merged.signature && localSig) {
-                merged = { ...merged, signature: JSON.parse(localSig) };
-              }
-            } catch (e) {
-              console.warn('Company assets local merge failed:', e);
+            
+            // Ensure logo has public URL if it exists
+            if (merged.logo && merged.logo.path) {
+              merged.logo = {
+                ...merged.logo,
+                url: getPublicUrl('company-assets', merged.logo.path)
+              };
             }
+            
+            // Ensure signature has public URL if it exists
+            if (merged.signature && merged.signature.path) {
+              merged.signature = {
+                ...merged.signature,
+                url: getPublicUrl('company-assets', merged.signature.path)
+              };
+            }
+            
+
 
             setCompanyInfo(merged);
-
-            // Cache basic (non-asset) company info
-            localStorage.setItem(`company-info-${user.id}`, JSON.stringify({
-              name: merged.name,
-              vatNumber: merged.vatNumber,
-              address: merged.address,
-              postalCode: merged.postalCode,
-              city: merged.city,
-              state: merged.state,
-              country: merged.country,
-              phone: merged.phone,
-              email: merged.email,
-              website: merged.website
-            }));
-
-            // Only clear local asset cache if DB already has both assets
-            if (merged.logo && merged.signature) {
-              localStorage.removeItem(`company-logo-${user.id}`);
-              localStorage.removeItem(`company-signature-${user.id}`);
-            }
           } else {
-            // No database record, try localStorage as fallback
-            const localCompanyInfo = localStorage.getItem(`company-info-${user.id}`);
-            if (localCompanyInfo) {
-              const parsed = JSON.parse(localCompanyInfo);
-              setCompanyInfo(prev => ({ ...prev, ...parsed }));
-            }
-            
-            // Load logo from localStorage
-            const localLogoInfo = localStorage.getItem(`company-logo-${user.id}`);
-            if (localLogoInfo) {
-              const logoInfo = JSON.parse(localLogoInfo);
-              setCompanyInfo(prev => ({
-                ...prev,
-                logo: logoInfo
-              }));
-            }
-            
-            // Load signature from localStorage
-            const localSignatureInfo = localStorage.getItem(`company-signature-${user.id}`);
-            if (localSignatureInfo) {
-              const signatureInfo = JSON.parse(localSignatureInfo);
-              setCompanyInfo(prev => ({
-                ...prev,
-                signature: signatureInfo
-              }));
-            }
+            // No database record - set empty state
+            setCompanyInfo({
+              name: 'VOTRE ENTREPRISE',
+              vatNumber: '',
+              address: '123 Rue de l\'Exemple',
+              postalCode: '1000',
+              city: 'Bruxelles',
+              state: 'Bruxelles-Capitale',
+              country: 'Belgique',
+              phone: '+32 123 45 67 89',
+              email: 'contact@entreprise.be',
+              website: 'www.entreprise.be',
+              logo: null,
+              signature: null
+            });
           }
         } catch (error) {
           console.error('Error loading company data:', error);
           
-          // Fallback to localStorage on error
-          try {
-            const localCompanyInfo = localStorage.getItem(`company-info-${user.id}`);
-            if (localCompanyInfo) {
-              const parsed = JSON.parse(localCompanyInfo);
-              setCompanyInfo(prev => ({ ...prev, ...parsed }));
-            }
-            
-            const localLogoInfo = localStorage.getItem(`company-logo-${user.id}`);
-            if (localLogoInfo) {
-              const logoInfo = JSON.parse(localLogoInfo);
-              setCompanyInfo(prev => ({
-                ...prev,
-                logo: logoInfo
-              }));
-            }
-            
-            const localSignatureInfo = localStorage.getItem(`company-signature-${user.id}`);
-            if (localSignatureInfo) {
-              const signatureInfo = JSON.parse(localSignatureInfo);
-              setCompanyInfo(prev => ({
-                ...prev,
-                signature: signatureInfo
-              }));
-            }
-          } catch (localError) {
-            console.error('Error loading from localStorage fallback:', localError);
-          }
+          // Set default state on error (no localStorage fallback)
+          setCompanyInfo({
+            name: 'VOTRE ENTREPRISE',
+            vatNumber: '',
+            address: '123 Rue de l\'Exemple',
+            postalCode: '1000',
+            city: 'Bruxelles',
+            state: 'Bruxelles-Capitale',
+            country: 'Belgique',
+            phone: '+32 123 45 67 89',
+            email: 'contact@entreprise.be',
+            website: 'www.entreprise.be',
+            logo: null,
+            signature: null
+          });
         }
       }
     };
@@ -243,35 +206,7 @@ const QuotePreview = ({
   const handleCompanyInfoSave = (info) => {
     setCompanyInfo(info);
     
-    // Also save to localStorage for persistence
-    if (user?.id) {
-      try {
-        const companyInfoToSave = {
-          name: info.name,
-          vatNumber: info.vatNumber,
-          address: info.address,
-          postalCode: info.postalCode,
-          city: info.city,
-          state: info.state,
-          country: info.country,
-          phone: info.phone,
-          email: info.email,
-          website: info.website
-        };
-        
-        localStorage.setItem(`company-info-${user.id}`, JSON.stringify(companyInfoToSave));
-        
-        // Save logo and signature separately if they exist
-        if (info.logo) {
-          localStorage.setItem(`company-logo-${user.id}`, JSON.stringify(info.logo));
-        }
-        if (info.signature) {
-          localStorage.setItem(`company-signature-${user.id}`, JSON.stringify(info.signature));
-        }
-      } catch (error) {
-        console.error('Error saving company info to localStorage:', error);
-      }
-    }
+
     
     // Notify parent component of changes
     if (onCompanyInfoChange) {
@@ -641,7 +576,7 @@ const QuotePreview = ({
                         className="w-full h-full object-contain"
                       />
                     ) : companyInfo.logo.url ? (
-                      // Show from database using signed URL
+                      // Show from database using public URL
                       <img 
                         src={companyInfo.logo.url} 
                         alt={`Logo ${companyInfo.name}`}
@@ -888,7 +823,7 @@ const QuotePreview = ({
                           className="max-h-12 max-w-full mx-auto"
                         />
                       ) : companyInfo.signature.url ? (
-                        // Show from database using signed URL
+                        // Show from database using public URL
                         <img 
                           src={companyInfo.signature.url} 
                           alt="Signature de l'entreprise" 

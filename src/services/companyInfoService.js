@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import { uploadFile, deleteFile, getPublicUrl, getSignedUrl } from './storageService';
+import { uploadFile, deleteFile, getPublicUrl } from './storageService';
 
 /**
  * Service for managing company information with database storage
@@ -238,23 +238,23 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
       return { success: false, error: `Database operation failed: ${result.error.message}` };
     }
 
-    // Return the saved data with signed URLs for files (private bucket access)
+    // Return the saved data with public URLs for files (public bucket access)
     const savedData = {
       ...companyInfo,
       id: result.data.id,
       logo: logoPath ? { 
         path: logoPath,
-        filename: logoFilename,
+        name: logoFilename,
         size: logoSize,
-        mimeType: logoMimeType,
-        publicUrl: getPublicUrl('company-assets', logoPath)
+        type: logoMimeType,
+        url: getPublicUrl('company-assets', logoPath)
       } : null,
       signature: signaturePath ? { 
         path: signaturePath,
-        filename: signatureFilename,
+        name: signatureFilename,
         size: signatureSize,
-        mimeType: signatureMimeType,
-        publicUrl: getPublicUrl('company-assets', signaturePath)
+        type: signatureMimeType,
+        url: getPublicUrl('company-assets', signaturePath)
       } : null
     };
 
@@ -370,21 +370,21 @@ export const loadCompanyInfo = async (userId) => {
       return null;
     }
 
-    // Convert database format to frontend format with signed URLs for private files
+    // Convert database format to frontend format with public URLs for public files
     const logoData = data.logo_path ? {
       path: data.logo_path,
-      filename: data.logo_filename,
+      name: data.logo_filename,
       size: data.logo_size,
-      mimeType: data.logo_mime_type,
-      publicUrl: getPublicUrl('company-assets', data.logo_path)
+      type: data.logo_mime_type,
+      url: getPublicUrl('company-assets', data.logo_path)
     } : null;
 
     const signatureData = data.signature_path ? {
       path: data.signature_path,
-      filename: data.signature_filename,
+      name: data.signature_filename,
       size: data.signature_size,
-      mimeType: data.signature_mime_type,
-      publicUrl: getPublicUrl('company-assets', data.signature_path)
+      type: data.signature_mime_type,
+      url: getPublicUrl('company-assets', data.signature_path)
     } : null;
 
     return {

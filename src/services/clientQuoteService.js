@@ -55,11 +55,12 @@ class ClientQuoteService {
         throw signatureError;
       }
 
-      // Update the quote status
+      // Update the quote status and set accepted_at timestamp
       const { data, error } = await supabase
         .from('quotes')
         .update({
-          status: 'accepted'
+          status: 'accepted',
+          accepted_at: new Date().toISOString()
         })
         .eq('id', quoteId)
         .select()
@@ -94,11 +95,13 @@ class ClientQuoteService {
    */
   static async rejectQuote(quoteId, shareToken, rejectionReason) {
     try {
-      // Update the quote status
+      // Update the quote status and set rejected_at timestamp and rejection_reason
       const { data, error } = await supabase
         .from('quotes')
         .update({
-          status: 'rejected'
+          status: 'rejected',
+          rejected_at: new Date().toISOString(),
+          rejection_reason: rejectionReason
         })
         .eq('id', quoteId)
         .select()

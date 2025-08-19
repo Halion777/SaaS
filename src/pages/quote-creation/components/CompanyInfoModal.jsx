@@ -29,6 +29,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
   const [isRemovingSignature, setIsRemovingSignature] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isUploadingSignature, setIsUploadingSignature] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
@@ -88,104 +89,92 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
     }
   };
 
-  // Load saved company info and files from localStorage
+  // Load company info from database only
   useEffect(() => {
     const loadCompanyInfo = async () => {
       if (!user?.id) return;
 
       try {
-        // First try to load from localStorage to preserve any unsaved changes
-        const savedCompanyInfo = localStorage.getItem(`company-info-${user.id}`);
-        const savedLogo = localStorage.getItem(`company-logo-${user.id}`);
-        const savedSignature = localStorage.getItem(`company-signature-${user.id}`);
-
-        // Load company info from database
+        // Load company info from database only (no localStorage fallback)
         const { loadCompanyInfo } = await import('../../../services/companyInfoService');
-        const result = await loadCompanyInfo(user.id);
+        const companyData = await loadCompanyInfo(user.id);
 
-        if (result.success && result.data) {
-          // Merge database data with any local changes (preserve uploaded files)
-          let mergedCompanyInfo = {
-            ...result.data,
-            // Preserve logo from localStorage if it exists, otherwise use database
-            logo: savedLogo ? JSON.parse(savedLogo) : result.data.logo,
-            // Preserve signature from localStorage if it exists, otherwise use database  
-            signature: savedSignature ? JSON.parse(savedSignature) : result.data.signature
-          };
+        if (companyData) {
+          // Use database data directly
 
-          // Generate signed URLs for any images that only have paths (from database)
-          if (mergedCompanyInfo.logo?.path && !mergedCompanyInfo.logo?.url) {
+          // Generate public URLs for any images that only have paths (from database)
+          if (companyData.logo?.path && !companyData.logo?.url) {
             try {
               // Get public URL for logo (bucket is now public)
-              const logoUrl = getPublicUrl('company-assets', mergedCompanyInfo.logo.path);
-              mergedCompanyInfo.logo.url = logoUrl;
+              const logoUrl = getPublicUrl('company-assets', companyData.logo.path);
+              companyData.logo.url = logoUrl;
             } catch (error) {
-              // If we can't get signed URL, remove the logo to avoid display errors
-              mergedCompanyInfo.logo = null;
+              // If we can't get public URL, remove the logo to avoid display errors
+              companyData.logo = null;
             }
           }
 
-          if (mergedCompanyInfo.signature?.path && !mergedCompanyInfo.signature?.url) {
+          if (companyData.signature?.path && !companyData.signature?.url) {
             try {
               // Get public URL for signature (bucket is now public)
-              const signatureUrl = getPublicUrl('company-assets', mergedCompanyInfo.signature.path);
-              mergedCompanyInfo.signature.url = signatureUrl;
+              const signatureUrl = getPublicUrl('company-assets', companyData.signature.path);
+              companyData.signature.url = signatureUrl;
             } catch (error) {
-              // If we can't get signed URL, remove the signature to avoid display errors
-              mergedCompanyInfo.signature = null;
+              // If we can't get public URL, remove the signature to avoid display errors
+              companyData.signature = null;
             }
           }
 
-          setCompanyInfo(mergedCompanyInfo);
+          setCompanyInfo(companyData);
         } else {
-          // If no database data, try to use localStorage
-          if (savedCompanyInfo) {
-            const parsedInfo = JSON.parse(savedCompanyInfo);
-            const mergedInfo = {
-              ...parsedInfo,
-              logo: savedLogo ? JSON.parse(savedLogo) : null,
-              signature: savedSignature ? JSON.parse(savedSignature) : null
-            };
-            setCompanyInfo(mergedInfo);
-          }
+          // No database data - set empty state
+          setCompanyInfo({
+            name: '',
+            vatNumber: '',
+            address: '',
+            postalCode: '',
+            city: '',
+            state: '',
+            country: '',
+            phone: '',
+            email: '',
+            website: '',
+            logo: null,
+            signature: null
+          });
         }
       } catch (error) {
-        // Fallback to localStorage if database fails
-        try {
-          const savedCompanyInfo = localStorage.getItem(`company-info-${user.id}`);
-          const savedLogo = localStorage.getItem(`company-logo-${user.id}`);
-          const savedSignature = localStorage.getItem(`company-signature-${user.id}`);
-          
-          if (savedCompanyInfo) {
-            const parsedInfo = JSON.parse(savedCompanyInfo);
-            const mergedInfo = {
-              ...parsedInfo,
-              logo: savedLogo ? JSON.parse(savedLogo) : null,
-              signature: savedSignature ? JSON.parse(savedSignature) : null
-            };
-            setCompanyInfo(mergedInfo);
-          }
-        } catch (localError) {
-          // Ignore localStorage errors
-        }
+        console.error('Error loading company info from database:', error);
+        // Set empty state on error
+        setCompanyInfo({
+          name: '',
+          vatNumber: '',
+          address: '',
+          postalCode: '',
+          city: '',
+          state: '',
+          country: '',
+          phone: '',
+          email: '',
+          website: '',
+          logo: null,
+          signature: null
+        });
+      } finally {
+        // Always set loading to false when done
+        setIsLoading(false);
       }
     };
 
-    loadCompanyInfo();
-  }, [user?.id]); // Only run when user.id changes (modal opens)
+    // Run every time the modal opens (when isOpen changes)
+    if (isOpen) {
+      loadCompanyInfo();
+    }
+  }, [user?.id, isOpen]); // Run when user.id OR modal opens/closes
 
   const handleInputChange = (field, value) => {
     const updatedInfo = { ...companyInfo, [field]: value };
     setCompanyInfo(updatedInfo);
-    
-   
-    
-    // Save to localStorage for draft
-    if (user?.id) {
-      const storageKey = `company-info-${user.id}`;
-      localStorage.setItem(storageKey, JSON.stringify(updatedInfo));
-      
-    }
     
     // Notify parent component immediately
     if (onCompanyInfoChange) {
@@ -270,11 +259,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
               }
             }));
             
-            // Save to localStorage for draft (only storage info, not base64)
-            if (user?.id) {
-              const storageKey = `company-logo-${user.id}`;
-              localStorage.setItem(storageKey, JSON.stringify({ path: filePath, name: file.name, size: file.size, type: file.type }));
-            }
+
             
             // Notify parent component immediately with updated state
             if (onCompanyInfoChange) {
@@ -333,11 +318,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
               }
             }));
             
-            // Save to localStorage for draft (only storage info, not base64)
-            if (user?.id) {
-              const storageKey = `company-signature-${user.id}`;
-              localStorage.setItem(storageKey, JSON.stringify({ path: filePath, name: file.name, size: file.size, type: file.type }));
-            }
+
             
             // Notify parent component immediately with updated state
             if (onCompanyInfoChange) {
@@ -486,31 +467,6 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
         // Update local state with the saved data from database
         setCompanyInfo(prev => ({ ...prev, ...result.data }));
         
-        // Also save to localStorage for draft persistence
-        const companyInfoToSave = {
-          name: companyInfo.name,
-          vatNumber: companyInfo.vatNumber,
-          address: companyInfo.address,
-          postalCode: companyInfo.postalCode,
-          city: companyInfo.city,
-          country: companyInfo.country,
-          phone: companyInfo.phone,
-          email: companyInfo.email,
-          website: companyInfo.website
-        };
-        
-        if (user?.id) {
-          localStorage.setItem(`company-info-${user.id}`, JSON.stringify(companyInfoToSave));
-          
-          // Save logo and signature separately if they exist
-          if (companyInfo.logo) {
-            localStorage.setItem(`company-logo-${user.id}`, JSON.stringify(companyInfo.logo));
-          }
-          if (companyInfo.signature) {
-            localStorage.setItem(`company-signature-${user.id}`, JSON.stringify(companyInfo.signature));
-          }
-        }
-        
         // Notify parent component of the saved data
         onSave(companyInfo);
         onClose();
@@ -540,41 +496,11 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
     };
   }, [isOpen]);
 
-  // Save company info to localStorage when modal closes (for draft persistence only)
+  // Close modal without saving to localStorage
   const handleClose = () => {
-    if (user?.id && companyInfo.name) {
-      try {
-        // Only save to localStorage for draft persistence (not to database)
-        const companyInfoToSave = {
-          name: companyInfo.name,
-          vatNumber: companyInfo.vatNumber,
-          address: companyInfo.address,
-          postalCode: companyInfo.postalCode,
-          city: companyInfo.city,
-          state: companyInfo.state,
-          country: companyInfo.country,
-          phone: companyInfo.phone,
-          email: companyInfo.email,
-          website: companyInfo.website
-        };
-        
-        localStorage.setItem(`company-info-${user.id}`, JSON.stringify(companyInfoToSave));
-        
-        // Save logo and signature separately if they exist
-        if (companyInfo.logo) {
-          localStorage.setItem(`company-logo-${user.id}`, JSON.stringify(companyInfo.logo));
-        }
-        if (companyInfo.signature) {
-          localStorage.setItem(`company-signature-${user.id}`, JSON.stringify(companyInfo.signature));
-        }
-        
-        // Notify parent of changes for draft persistence
-        if (onCompanyInfoChange) {
-          onCompanyInfoChange(companyInfo);
-        }
-      } catch (error) {
-        // Ignore localStorage errors - not critical
-      }
+    // Notify parent of changes for draft persistence
+    if (onCompanyInfoChange) {
+      onCompanyInfoChange(companyInfo);
     }
     onClose();
   };
@@ -628,7 +554,12 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
             </p>
             {companyInfo.logo && (
               <div className="mt-3 relative w-20 h-20 border border-border rounded-lg overflow-hidden">
-                {companyInfo.logo.url ? (
+                {isLoading ? (
+                  // Show loading spinner while data is loading
+                  <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : companyInfo.logo.url ? (
                   <img
                     src={companyInfo.logo.url}
                     alt="Logo entreprise"
@@ -846,7 +777,12 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
             </p>
             {companyInfo.signature && (
               <div className="mt-3 relative w-32 h-16 border border-border rounded-lg overflow-hidden">
-                {companyInfo.signature.url ? (
+                {isLoading ? (
+                  // Show loading spinner while data is loading
+                  <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : companyInfo.signature.url ? (
                   <img
                     src={companyInfo.signature.url}
                     alt="Signature"

@@ -114,6 +114,11 @@ export const getQuoteByShareToken = async (shareToken) => {
         ),
         quote_financial_configs(
           id, vat_config, advance_config, marketing_banner, payment_terms, discount_config, created_at
+        ),
+        quote_signatures(
+          id, signer_name, signer_email, signature_data, signature_mode, signature_type,
+          signature_file_path, signature_filename, signature_size, signature_mime_type,
+          customer_comment, signed_at, created_at
         )
       `)
       .eq('share_token', shareToken)

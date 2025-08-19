@@ -73,9 +73,10 @@ export const uploadQuoteFile = async (file, quoteId, userId, profileId = null, f
  * @param {string} quoteId - Quote ID
  * @param {string} userId - User ID
  * @param {string} signatureType - Type of signature (client, company)
+ * @param {string} clientComment - Client comment (optional, for client signatures)
  * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
  */
-export const uploadQuoteSignature = async (file, quoteId, userId, signatureType = 'client') => {
+export const uploadQuoteSignature = async (file, quoteId, userId, signatureType = 'client', clientComment = null) => {
   try {
     if (!file || !quoteId || !userId) {
       return { success: false, error: 'File, quote ID, and user ID are required' };
@@ -92,17 +93,44 @@ export const uploadQuoteSignature = async (file, quoteId, userId, signatureType 
       return { success: false, error: `Signature upload failed: ${uploadError.message}` };
     }
 
+    // Fetch client information if this is a client signature
+    let signerName = 'Company';
+    let signerEmail = null;
+    
+    if (signatureType === 'client') {
+      try {
+        const { data: quoteData, error: quoteError } = await supabase
+          .from('quotes')
+          .select(`
+            client:clients(name, email)
+          `)
+          .eq('id', quoteId)
+          .single();
+        
+        if (!quoteError && quoteData?.client) {
+          signerName = quoteData.client.name || 'Client';
+          signerEmail = quoteData.client.email || null;
+        }
+      } catch (error) {
+        console.warn('Could not fetch client info for signature:', error);
+        signerName = 'Client';
+        signerEmail = null;
+      }
+    }
+    
     // Create signature record in database
     const signatureRecord = {
       quote_id: quoteId,
-      signer_name: signatureType === 'client' ? 'Client' : 'Company',
-      signer_email: null,
+      signer_name: signerName,
+      signer_email: signerEmail,
       signature_file_path: filePath,
       signature_filename: file.name,
       signature_size: file.size,
       signature_mime_type: file.type,
       signature_mode: 'upload',
-      signature_type: signatureType
+      signature_type: signatureType,
+      // Set client comment directly if provided
+      customer_comment: signatureType === 'client' ? clientComment : null
     };
 
     const { data: dbData, error: dbError } = await supabase
@@ -318,6 +346,38 @@ export const updateQuoteSignature = async (signatureId, updates) => {
     return { success: true, data };
   } catch (error) {
     console.error('Error updating quote signature:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Update client signature comment after creation
+ * @param {string} signatureId - Signature ID
+ * @param {string} clientComment - Client comment
+ * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
+ */
+export const updateClientSignatureComment = async (signatureId, clientComment) => {
+  try {
+    if (!signatureId) {
+      return { success: false, error: 'Signature ID is required' };
+    }
+
+    const { data, error } = await supabase
+      .from('quote_signatures')
+      .update({
+        customer_comment: clientComment
+      })
+      .eq('id', signatureId)
+      .select()
+      .single();
+
+    if (error) {
+      return { success: false, error: `Comment update failed: ${error.message}` };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error updating client signature comment:', error);
     return { success: false, error: error.message };
   }
 };

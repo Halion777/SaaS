@@ -391,8 +391,11 @@ export async function createQuote(quoteData) {
     // Note: Financial config is stored directly in the quotes table
     // No separate table needed for this data
     
+    // Flag to prevent double email sending
+    let emailSent = false;
+    
     // Send quote notification email if this is from a lead
-    if (quoteData.lead_id) {
+    if (quoteData.lead_id && !emailSent) {
       try {
         // Get lead details
         const { data: leadData } = await supabase
@@ -410,12 +413,43 @@ export async function createQuote(quoteData) {
             .single();
 
           // Send email notification using new template system
-          await EmailService.sendQuoteSentEmail(
+          const emailResult = await EmailService.sendQuoteSentEmail(
             quote,
             { name: leadData.client_name, email: leadData.client_email },
             profileData,
             quoteData.user_id
           );
+          
+          // Mark email as sent to prevent double sending
+          if (emailResult?.success) {
+            emailSent = true;
+          }
+          
+          // Create initial follow-up record for automated tracking if email was sent
+          if (emailResult?.success) {
+            try {
+              await supabase
+                .from('quote_follow_ups')
+                .insert({
+                  quote_id: quote.id,
+                  stage: 0,
+                  status: 'pending',
+                  scheduled_for: null, // No time-based scheduling - based on client behavior
+                  automated: true,
+                  meta: {
+                    created_at: new Date().toISOString(),
+                    email_sent: true,
+                    client_email: leadData.client_email,
+                    quote_number: quote.quote_number,
+                    lead_id: quoteData.lead_id,
+                    last_action: 'email_sent'
+                  }
+                });
+            } catch (followUpError) {
+              console.warn('Failed to create follow-up record:', followUpError);
+              // Don't fail quote creation if follow-up creation fails
+            }
+          }
           
           // Update lead status to indicate quote was sent
           try {
@@ -435,7 +469,7 @@ export async function createQuote(quoteData) {
     }
     
     // NEW: Send email notification for manually created quotes with status 'sent'
-    if (quoteData.status === 'sent' && quoteData.client_id) {
+    if (quoteData.status === 'sent' && quoteData.client_id && !emailSent) {
       try {
         // Get client details
         const { data: client } = await supabase
@@ -448,7 +482,7 @@ export async function createQuote(quoteData) {
           // Get company profile for artisan info
           const { data: companyProfile } = await supabase
             .from('company_profiles')
-            .select('company_name, name')
+            .select('company_name')
             .eq('id', quoteData.company_profile_id)
             .single();
           
@@ -485,6 +519,29 @@ export async function createQuote(quoteData) {
                 });
             } catch (eventError) {
               console.warn('Failed to log email event:', eventError);
+            }
+            
+            // Create initial follow-up record for automated tracking
+            try {
+              await supabase
+                .from('quote_follow_ups')
+                .insert({
+                  quote_id: quote.id,
+                  stage: 0,
+                  status: 'pending',
+                  scheduled_for: null, // No time-based scheduling - based on client behavior
+                  automated: true,
+                  meta: {
+                    created_at: new Date().toISOString(),
+                    email_sent: true,
+                    client_email: client.email,
+                    quote_number: quote.quote_number,
+                    last_action: 'email_sent'
+                  }
+                });
+            } catch (followUpError) {
+              console.warn('Failed to create follow-up record:', followUpError);
+              // Don't fail quote creation if follow-up creation fails
             }
           } else {
             console.error('Failed to send quote notification email:', emailResult.error);
@@ -535,6 +592,41 @@ export async function updateQuote(id, quoteData) {
       .single();
     
     if (quoteError) return { error: quoteError };
+    
+    // Check if status changed to 'sent' and create follow-up record
+    if (quoteData.status === 'sent') {
+      try {
+        // Get client details for follow-up
+        const { data: client } = await supabase
+          .from('quotes')
+          .select('client:clients(email, name)')
+          .eq('id', id)
+          .single();
+        
+        if (client?.client?.email) {
+          // Create initial follow-up record for automated tracking
+          await supabase
+            .from('quote_follow_ups')
+            .insert({
+              quote_id: id,
+              stage: 0,
+              status: 'pending',
+              scheduled_for: null, // No time-based scheduling - based on client behavior
+              automated: true,
+              meta: {
+                created_at: new Date().toISOString(),
+                email_sent: true,
+                client_email: client.client.email,
+                quote_number: quote.quote_number,
+                last_action: 'email_sent'
+              }
+            });
+        }
+      } catch (followUpError) {
+        console.warn('Failed to create follow-up record on status update:', followUpError);
+        // Don't fail quote update if follow-up creation fails
+      }
+    }
     
     // Update tasks if provided
     if (quoteData.tasks !== undefined) {

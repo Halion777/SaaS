@@ -64,6 +64,19 @@ const PublicQuoteShareViewer = () => {
             setSignatureUrl(signatureUrl);
           }
         } catch (_) {}
+
+        // Load existing client signature if available
+        if (q?.quote_signatures && q.quote_signatures.length > 0) {
+          const existingClientSignature = q.quote_signatures.find(sig => sig.signature_type === 'client');
+          if (existingClientSignature) {
+            setClientSignature({
+              signature_data: existingClientSignature.signature_data,
+              signature_file_path: existingClientSignature.signature_file_path,
+              customerComment: existingClientSignature.customer_comment,
+              signedAt: existingClientSignature.signed_at
+            });
+          }
+        }
       } catch (e) {
         setError('Erreur lors du chargement du devis.');
       } finally {
@@ -402,10 +415,6 @@ const PublicQuoteShareViewer = () => {
                   <th className="text-left py-3 px-3 font-semibold text-gray-700 bg-gray-50 text-sm">Description</th>
                   <th className="text-center py-3 px-3 font-semibold text-gray-700 bg-gray-50 text-sm">Quantité</th>
                   <th className="text-right py-3 px-3 font-semibold text-gray-700 bg-gray-50 text-sm">Prix unitaire</th>
-                  <th className="text-right py-3 px-3 font-semibold text-gray-700 bg-gray-50 text-sm">Montant HT</th>
-                  {financialConfig.vatConfig?.display && (
-                    <th className="text-center py-3 px-3 font-semibold text-gray-700 bg-gray-50 text-sm">TVA</th>
-                  )}
                   <th className="text-right py-3 px-3 font-semibold text-gray-700 bg-gray-50 text-sm">Total</th>
                 </tr>
               </thead>
@@ -436,19 +445,8 @@ const PublicQuoteShareViewer = () => {
                         </td>
                         <td className="py-3 px-3 text-center text-gray-600 font-medium text-sm">{task.quantity || 1}</td>
                         <td className="py-3 px-3 text-right text-gray-600 font-medium text-sm">{currency(task.unit_price || 0)}</td>
-                        <td className="py-3 px-3 text-right text-gray-600 font-medium text-sm">
-                          {currency(taskPrice)}
-                        </td>
-                        {financialConfig.vatConfig?.display && (
-                          <td className="py-3 px-3 text-center text-gray-600 text-sm">
-                            {financialConfig.vatConfig.rate}%
-                          </td>
-                        )}
                         <td className="py-3 px-3 text-right font-bold text-blue-800 text-sm">
-                          {currency(financialConfig.vatConfig?.display ? 
-                            totalHT * (1 + financialConfig.vatConfig.rate / 100) :
-                            totalHT
-                          )}
+                          {currency(totalHT)}
                         </td>
                       </tr>
                       
@@ -468,16 +466,10 @@ const PublicQuoteShareViewer = () => {
                           <td className="py-2 px-3 text-right text-gray-600 text-xs">
                             {includeMaterialsPrices ? currency((parseFloat(material.quantity) || 0) * (parseFloat(material.unit_price) || 0)) : ''}
                           </td>
-                          {financialConfig.vatConfig?.display && (
-                            <td className="py-2 px-3 text-center text-gray-600 text-xs">-</td>
-                          )}
                           <td className="py-2 px-3 text-right text-gray-600 text-xs">
                             {includeMaterialsPrices ? (() => {
                               const materialTotal = (parseFloat(material.quantity) || 0) * (parseFloat(material.unit_price) || 0);
-                              return currency(financialConfig.vatConfig?.display ? 
-                                materialTotal * (1 + financialConfig.vatConfig.rate / 100) :
-                                materialTotal
-                              );
+                              return currency(materialTotal);
                             })() : ''}
                           </td>
                         </tr>
@@ -496,7 +488,7 @@ const PublicQuoteShareViewer = () => {
             <div className="flex justify-end">
               <div className="w-72 space-y-2">
                 <div className="flex justify-between text-gray-600 text-sm">
-                  <span>Sous-total (HT):</span>
+                  <span>Sous-total:</span>
                   <span className="font-medium">{currency(totalPrice)}</span>
                 </div>
                 {financialConfig.vatConfig?.display && (
@@ -506,13 +498,19 @@ const PublicQuoteShareViewer = () => {
                   </div>
                 )}
                 <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
-                  <span>Total (TTC):</span>
+                  <span>Total:</span>
                   <span className="text-blue-600">{currency(totalWithVAT)}</span>
                 </div>
                 {financialConfig.advanceConfig?.enabled && financialConfig.advanceConfig.amount > 0 && (
                   <div className="flex justify-between text-gray-600 text-sm">
                     <span>Acompte à la commande:</span>
                     <span className="font-medium">{currency(financialConfig.advanceConfig.amount)}</span>
+                  </div>
+                )}
+                {financialConfig.advanceConfig?.enabled && financialConfig.advanceConfig.amount > 0 && (
+                  <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
+                    <span>Solde à la livraison:</span>
+                    <span className="text-green-600">{currency(totalWithVAT - financialConfig.advanceConfig.amount)}</span>
                   </div>
                 )}
                 {!includeMaterialsPrices && (
@@ -568,7 +566,12 @@ const PublicQuoteShareViewer = () => {
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 min-h-24 flex items-center justify-center">
                 {clientSignature ? (
                   <img 
-                    src={clientSignature.signature_data ? `data:image/png;base64,${clientSignature.signature_data}` : clientSignature.signature_file_path} 
+                    src={clientSignature.signature_data ? 
+                      `data:image/png;base64,${clientSignature.signature_data}` : 
+                      clientSignature.signature_file_path ? 
+                        getPublicUrl('signatures', clientSignature.signature_file_path) : 
+                        null
+                    } 
                     alt="Signature client" 
                     className="max-w-full max-h-20 object-contain" 
                   />

@@ -323,10 +323,10 @@ const QuoteCreation = () => {
         materials: materialsByTaskId[t.id] || []
       }));
       
-      // Get signed URLs for all files
+      // Get public URLs for all files (bucket is now public)
       const transformedFiles = [];
       for (const file of quote.quote_files || []) {
-        const signedUrl = await getSignedUrlForBucket('quote-files', file.file_path);
+        const publicUrl = getPublicUrl('quote-files', file.file_path);
 
         
         transformedFiles.push({
@@ -337,7 +337,7 @@ const QuoteCreation = () => {
           type: file.mime_type,
           uploadedAt: new Date(file.created_at),
           backendId: file.id, // Important for edit mode
-          publicUrl: signedUrl, // Signed URL for private bucket access
+          publicUrl: publicUrl, // Public URL for public bucket access
           // Add data field for compatibility with existing display logic
           data: null, // Will be loaded from storage if needed
           // Mark as already uploaded
@@ -368,7 +368,7 @@ const QuoteCreation = () => {
             type: quote.company_profile.logo_mime_type || 'image/*',
             data: null, // Will be loaded from storage
             path: quote.company_profile.logo_path,
-            publicUrl: await getSignedUrlForBucket('company-assets', quote.company_profile.logo_path)
+            url: getPublicUrl('company-assets', quote.company_profile.logo_path)
           } : null,
           signature: quote.company_profile.signature_path ? {
             name: quote.company_profile.signature_filename || 'company-signature',
@@ -376,7 +376,7 @@ const QuoteCreation = () => {
             type: quote.company_profile.signature_mime_type || 'image/*',
             data: null, // Will be loaded from storage
             path: quote.company_profile.signature_path,
-            publicUrl: await getSignedUrlForBucket('company-assets', quote.company_profile.signature_path)
+            url: getPublicUrl('company-assets', quote.company_profile.signature_path)
           } : null
         };
         
@@ -398,7 +398,7 @@ const QuoteCreation = () => {
       if (quote.quote_signatures && quote.quote_signatures.length > 0) {
         const clientSignature = quote.quote_signatures.find(s => s.signature_type === 'client') || quote.quote_signatures[0];
         const signatureUrl = clientSignature.signature_file_path 
-          ? await getSignedUrlForBucket('signatures', clientSignature.signature_file_path) 
+          ? getPublicUrl('signatures', clientSignature.signature_file_path) 
           : (clientSignature.signature_data ? `data:image/png;base64,${clientSignature.signature_data}` : null);
         const signatureData = {
           signature: signatureUrl,
@@ -573,14 +573,14 @@ const QuoteCreation = () => {
               size: companyProfile.logo_size || 0,
               type: companyProfile.logo_mime_type || 'image/*',
               path: companyProfile.logo_path,
-              publicUrl: getPublicUrl('company-assets', companyProfile.logo_path)
+              url: getPublicUrl('company-assets', companyProfile.logo_path)
             } : null,
             signature: companyProfile.signature_path ? {
               name: companyProfile.signature_filename || 'company-signature',
               size: companyProfile.signature_size || 0,
               type: companyProfile.signature_mime_type || 'image/*',
               path: companyProfile.signature_path,
-              publicUrl: getPublicUrl('company-assets', companyProfile.signature_path)
+              url: getPublicUrl('company-assets', companyProfile.signature_path)
             } : null
           };
           
@@ -630,36 +630,7 @@ const QuoteCreation = () => {
           }
         } catch {}
       
-      // Also load company info from localStorage (as fallback)
-      try {
-        const companyInfoKey = `company-info-${user.id}`;
-        const savedCompanyInfo = localStorage.getItem(companyInfoKey);
-        if (savedCompanyInfo) {
-          const parsedCompanyInfo = JSON.parse(savedCompanyInfo);
-  
-          setCompanyInfo(prev => ({ ...prev, ...parsedCompanyInfo }));
-        }
-        
-        // Load company logo from localStorage
-        const logoKey = `company-logo-${user.id}`;
-        const savedLogo = localStorage.getItem(logoKey);
-        if (savedLogo) {
-          const parsedLogo = JSON.parse(savedLogo);
-  
-          setCompanyInfo(prev => ({ ...prev, logo: parsedLogo }));
-        }
-        
-        // Load company signature from localStorage
-        const signatureKey = `company-signature-${user.id}`;
-        const savedSignature = localStorage.getItem(signatureKey);
-        if (savedSignature) {
-          const parsedSignature = JSON.parse(savedSignature);
-  
-          setCompanyInfo(prev => ({ ...prev, signature: parsedSignature }));
-        }
-      } catch (error) {
-        console.error('Error loading company info from localStorage:', error);
-      }
+
     }
   }, [user?.id, currentProfile?.id]);
 
@@ -1051,81 +1022,195 @@ const QuoteCreation = () => {
         }
       }
       
-      // Now upload quote files to storage (AFTER quote creation)
+      // Handle temporary files: move from temp folder to quote folder and create database records
       const savedFiles = [];
       if (files.length > 0) {
         try {
           for (const file of files) {
-            if (file.data) {
-              // File has base64 data, convert to blob and upload
+            if (file.isTemporary && file.storagePath) {
+              // This is a temporary file, move it from temp folder to quote folder
+              const oldPath = file.storagePath; // temp/userId/timestamp-filename
+              const newPath = `${quoteId}/attachment/${file.name}`; // quoteId/attachment/filename
               
-              // Convert base64 to file
-              const fileResponse = await fetch(file.data);
-              const fileBlob = await fileResponse.blob();
-              
-              // Create a proper File object with the correct name and type
-              const fileToUpload = new File([fileBlob], file.name, { type: file.type });
-              
-              // Upload file to storage (now with real quote ID)
-              const { data: uploadResult, error: uploadError } = await uploadQuoteFile(
-                fileToUpload, 
-                quoteId, // Use real quote ID now
-                user.id,
-                currentProfile?.id, // Pass profile ID for foreign key constraint
-                'attachment'
-              );
-              
-              if (uploadError) {
-                console.error('File upload failed:', uploadError);
-                return;
-              }
-              
-              if (uploadResult.success) {
+              try {
+                // Copy file to new location
+                const { error: copyError } = await supabase
+                  .storage
+                  .from('quote-files')
+                  .copy(oldPath, newPath);
+
+                if (copyError) {
+                  console.error('Error copying file:', copyError);
+                  continue; // Skip this file if copy fails
+                }
+
+                // Create database record with new path
+                const fileRecord = {
+                  quote_id: quoteId,
+                  file_name: file.name,
+                  file_path: newPath, // Use new path
+                  file_size: file.size,
+                  mime_type: file.type,
+                  file_category: 'attachment',
+                  uploaded_by: currentProfile?.id || user.id
+                };
+
+                const { data: dbData, error: insertError } = await supabase
+                  .from('quote_files')
+                  .insert(fileRecord)
+                  .select()
+                  .single();
+
+                if (insertError) {
+                  console.error('Error creating file record:', insertError);
+                  // Delete the copied file if DB insert fails
+                  await supabase.storage.from('quote-files').remove([newPath]);
+                  continue;
+                }
+
+                // Delete original temp file
+                await supabase.storage.from('quote-files').remove([oldPath]);
+
                 savedFiles.push({
                   ...file,
-                  backendId: uploadResult.data.id,
-                  file_path: uploadResult.data.file_path,
-                  publicUrl: uploadResult.data.publicUrl
+                  ...dbData,
+                  backendId: dbData.id,
+                  storagePath: newPath // Update with new path
                 });
+
+              } catch (error) {
+                console.error('Error processing file:', error);
+                continue;
               }
             } else if (file.backendId) {
-              // File already uploaded (for editing existing quotes)
+              // File already has database record, just add to saved files
               savedFiles.push(file);
             } else {
-              console.warn('File has no data or backendId, skipping:', file);
+              console.warn('File has no storage path or backendId, skipping:', file);
             }
           }
         } catch (error) {
-          console.error('Error uploading files:', error);
+          console.error('Error creating file records:', error);
           return;
         }
       }
 
-      // Now update the quote with file references
-      if (savedFiles.length > 0) {
+      // Now save client signature to database and storage
+      let clientSignatureId = null;
+      if (data.signatureData?.signature && user?.id) {
         try {
-          const filesToInsert = savedFiles.map((file, index) => ({
-            quote_id: quoteId,
-            file_name: file.name || file.file_name || '',
-            file_path: file.file_path || file.path || file.file_path || file.url || '',
-            file_size: file.size || file.file_size || 0,
-            mime_type: file.type || file.mime_type || '',
-            file_category: 'attachment'
-          }));
+          // Check if this is a temporary signature that needs to be moved
+          if (data.signatureData.isTemporary && data.signatureData.signatureFilePath) {
+            // This is a temporary signature, move it from client-signatures folder to quote folder
+            const oldPath = data.signatureData.signatureFilePath; // client-signatures/userId/timestamp-filename
+            const newPath = `${quoteId}/client-signatures/${data.signatureData.signatureFileName}`; // quoteId/client-signatures/filename
+            
+            try {
+              // Copy signature to new location
+              const { error: copyError } = await supabase
+                .storage
+                .from('signatures')
+                .copy(oldPath, newPath);
 
-          const { error: filesInsertError } = await supabase
-            .from('quote_files')
-            .insert(filesToInsert);
+              if (copyError) {
+                console.error('Error copying signature:', copyError);
+                throw new Error(`Failed to copy signature: ${copyError.message}`);
+              }
 
-          if (filesInsertError) {
-            console.error('Error saving file references to database:', filesInsertError);
-            return;
+              // Fetch client information for signature record
+              let signerName = 'Client';
+              let signerEmail = null;
+              
+              try {
+                const { data: quoteData, error: quoteError } = await supabase
+                  .from('quotes')
+                  .select(`
+                    client:clients(name, email)
+                  `)
+                  .eq('id', quoteId)
+                  .single();
+                
+                if (!quoteError && quoteData?.client) {
+                  signerName = quoteData.client.name || 'Client';
+                  signerEmail = quoteData.client.email || null;
+                }
+              } catch (error) {
+                console.warn('Could not fetch client info for signature:', error);
+              }
+              
+              // Create signature record in database with new path
+              const signatureRecord = {
+                quote_id: quoteId,
+                signer_name: signerName,
+                signer_email: signerEmail,
+                signature_file_path: newPath,
+                signature_filename: data.signatureData.signatureFileName,
+                signature_size: data.signatureData.signatureFileSize,
+                signature_mime_type: data.signatureData.signatureMimeType,
+                signature_mode: 'upload',
+                signature_type: 'client',
+                customer_comment: data.signatureData.clientComment
+              };
+
+              const { data: dbData, error: insertError } = await supabase
+                .from('quote_signatures')
+                .insert(signatureRecord)
+                .select()
+                .single();
+
+              if (insertError) {
+                console.error('Error creating signature record:', insertError);
+                // Delete the copied signature if DB insert fails
+                await supabase.storage.from('signatures').remove([newPath]);
+                throw new Error(`Failed to create signature record: ${insertError.message}`);
+              }
+
+              // Delete original temp signature
+              await supabase.storage.from('signatures').remove([oldPath]);
+
+              clientSignatureId = dbData.id;
+            } catch (error) {
+              console.error('Error processing temporary signature:', error);
+              throw error;
+            }
+          } else {
+            // This is a base64 signature, convert to file and upload
+            const signatureResponse = await fetch(data.signatureData.signature);
+            const signatureBlob = await signatureResponse.blob();
+            
+            // Create a proper File object
+            const signatureFile = new File([signatureBlob], 'client-signature.png', { 
+              type: 'image/png' 
+            });
+            
+            // Upload client signature to storage (now with real quote ID)
+            const { data: signatureUploadResult, error: signatureUploadError } = await uploadQuoteSignature(
+              signatureFile,
+              quoteId, // Use real quote ID now
+              user.id,
+              'client',
+              data.signatureData.clientComment || null
+            );
+            
+            if (signatureUploadError) {
+              console.error('Client signature upload failed:', signatureUploadError);
+              alert(`Erreur lors de l'upload de la signature client: ${signatureUploadError}`);
+              return;
+            }
+            
+            if (signatureUploadResult.success) {
+              // uploadQuoteSignature already handles database insert
+              clientSignatureId = signatureUploadResult.data.id;
+            }
           }
         } catch (error) {
-          console.error('Error saving file references:', error);
-          return;
+          console.error('Error saving client signature:', error);
+          // Continue with quote creation even if signature save fails
         }
       }
+
+      // Files are already in the database, no need to insert again
+      // The quote_id reference has been updated above
       
       // Removed legacy local backup of quotes list; rely on backend only
 
@@ -1441,9 +1526,58 @@ const QuoteCreation = () => {
       let clientSignatureId = null;
       if (sendData.signatureData?.signature && user?.id) {
         try {
-  
+          // Check if this is a temporary signature that needs to be moved
+          if (sendData.signatureData.isTemporary && sendData.signatureData.signatureFilePath) {
+            // This is a temporary signature, download and re-upload to quote folder
           
-          // Convert base64 to file for upload
+            try {
+              // Download the temporary signature file
+              const { data: signatureBlob, error: downloadError } = await supabase
+                .storage
+                .from('signatures')
+                .download(sendData.signatureData.signatureFilePath);
+
+              if (downloadError) {
+                console.error('Error downloading signature:', downloadError);
+                throw new Error(`Failed to download signature: ${downloadError.message}`);
+              }
+
+              // Create a new File object from the blob
+              const signatureFile = new File([signatureBlob], sendData.signatureData.signatureFileName, { 
+                type: sendData.signatureData.signatureMimeType 
+              });
+
+              // Upload to the final quote location using uploadQuoteSignature
+              const { data: signatureUploadResult, error: signatureUploadError } = await uploadQuoteSignature(
+                signatureFile,
+                quoteId,
+                user.id,
+                'client',
+                sendData.signatureData.clientComment || null
+              );
+
+              if (signatureUploadError) {
+                console.error('Client signature upload failed:', signatureUploadError);
+                throw new Error(`Failed to upload signature: ${signatureUploadError.message}`);
+              }
+
+              if (signatureUploadResult.success) {
+                // uploadQuoteSignature already handles database insert
+                clientSignatureId = signatureUploadResult.data.id;
+                
+                // Delete the original temporary signature
+                try {
+                  await supabase.storage.from('signatures').remove([sendData.signatureData.signatureFilePath]);
+                } catch (deleteError) {
+                  console.warn('Warning: Could not delete temporary signature:', deleteError);
+                }
+              }
+            } catch (error) {
+              console.error('Error processing temporary signature:', error);
+              throw error;
+            }
+          } else {
+            // This is a base64 signature, convert to file and upload
           const signatureResponse = await fetch(sendData.signatureData.signature);
           const signatureBlob = await signatureResponse.blob();
           
@@ -1457,7 +1591,8 @@ const QuoteCreation = () => {
             signatureFile,
             quoteId, // Use real quote ID now
             user.id,
-            'client'
+              'client',
+              sendData.signatureData.clientComment || null
           );
           
           if (signatureUploadError) {
@@ -1469,7 +1604,7 @@ const QuoteCreation = () => {
           if (signatureUploadResult.success) {
             // uploadQuoteSignature already handles database insert
             clientSignatureId = signatureUploadResult.data.id;
-    
+            }
           }
         } catch (error) {
           console.error('Error saving client signature:', error);
@@ -1477,86 +1612,81 @@ const QuoteCreation = () => {
         }
       }
 
-      // Now upload quote files to storage (AFTER quote creation)
+      // Handle temporary files: move from temp folder to quote folder and create database records
       const uploadedFiles = [];
       if (files.length > 0) {
         try {
           for (const file of files) {
-            if (file.data) {
-              // File has base64 data, convert to blob and upload
-      
+            if (file.isTemporary && file.storagePath) {
+              // This is a temporary file, move it from temp folder to quote folder
+              const oldPath = file.storagePath; // temp/userId/timestamp-filename
+              const newPath = `${quoteId}/attachment/${file.name}`; // quoteId/attachment/filename
               
-              // Convert base64 to file
-              const fileResponse = await fetch(file.data);
-              const fileBlob = await fileResponse.blob();
-              
-              // Create a proper File object with the correct name and type
-              const fileToUpload = new File([fileBlob], file.name, { type: file.type });
-              
-              // Upload file to storage (now with real quote ID)
-              const { data: uploadResult, error: uploadError } = await uploadQuoteFile(
-                fileToUpload, 
-                quoteId, // Use real quote ID now
-                user.id,
-                currentProfile?.id, // Pass profile ID for foreign key constraint
-                'attachment'
-              );
-              
-              if (uploadError) {
-                console.error('File upload failed:', uploadError);
-                return;
-              }
-              
-              if (uploadResult.success) {
+              try {
+                // Copy file to new location
+                const { error: copyError } = await supabase
+                  .storage
+                  .from('quote-files')
+                  .copy(oldPath, newPath);
+
+                if (copyError) {
+                  console.error('Error copying file:', copyError);
+                  continue; // Skip this file if copy fails
+                }
+
+                // Create database record with new path
+                const fileRecord = {
+                  quote_id: quoteId,
+                  file_name: file.name,
+                  file_path: newPath, // Use new path
+                  file_size: file.size,
+                  mime_type: file.type,
+                  file_category: 'attachment',
+                  uploaded_by: currentProfile?.id || user.id
+                };
+
+                const { data: dbData, error: insertError } = await supabase
+                  .from('quote_files')
+                  .insert(fileRecord)
+                  .select()
+                  .single();
+
+                if (insertError) {
+                  console.error('Error creating file record:', insertError);
+                  // Delete the copied file if DB insert fails
+                  await supabase.storage.from('quote-files').remove([newPath]);
+                  continue;
+                }
+
+                // Delete original temp file
+                await supabase.storage.from('quote-files').remove([oldPath]);
+
                 uploadedFiles.push({
                   ...file,
-                  backendId: uploadResult.data.id,
-                  file_path: uploadResult.data.file_path,
-                  publicUrl: uploadResult.data.publicUrl
+                  ...dbData,
+                  backendId: dbData.id,
+                  storagePath: newPath // Update with new path
                 });
-        
+
+              } catch (error) {
+                console.error('Error processing file:', error);
+                continue;
               }
             } else if (file.backendId) {
-              // File already uploaded (for editing existing quotes)
+              // File already has database record, just add to uploaded files
               uploadedFiles.push(file);
             } else {
-              console.warn('File has no data or backendId, skipping:', file);
+              console.warn('File has no storage path or backendId, skipping:', file);
             }
           }
         } catch (error) {
-          console.error('Error uploading files:', error);
+          console.error('Error creating file records:', error);
           return;
         }
       }
 
-      // Now update the quote with file references
-      if (uploadedFiles.length > 0) {
-        try {
-          const filesToInsert = uploadedFiles.map((file, index) => ({
-            quote_id: quoteId,
-            file_name: file.name || file.file_name || '',
-            file_path: file.file_path || file.path || file.file_path || file.url || '',
-            file_size: file.size || file.file_size || 0,
-            mime_type: file.type || file.mime_type || '',
-            file_category: 'attachment'
-            // Note: order_index column doesn't exist in schema, removed
-          }));
-
-          const { error: filesInsertError } = await supabase
-            .from('quote_files')
-            .insert(filesToInsert);
-
-          if (filesInsertError) {
-            console.error('Error saving file references to database:', filesInsertError);
-            return;
-          }
-          
-  
-        } catch (error) {
-          console.error('Error saving file references:', error);
-          return;
-        }
-      }
+      // Note: Files are already inserted into quote_files table by uploadQuoteFile service
+      // No need for manual insertion - the service handles database records automatically
 
       // NEW: Send email notification after successfully creating the quote
       if (createdQuote && selectedClient?.email && sendData?.method === 'email') {
@@ -1618,6 +1748,30 @@ const QuoteCreation = () => {
                 });
             } catch (eventError) {
               console.warn('Failed to log email event:', eventError);
+            }
+            
+            // Create initial follow-up record for automated tracking
+            try {
+              await supabase
+                .from('quote_follow_ups')
+                .insert({
+                  quote_id: createdQuote.id,
+                  stage: 0,
+                  status: 'pending',
+                  scheduled_for: null, // No time-based scheduling - based on client behavior
+                  follow_up_type: 'initial',
+                  automated: true,
+                  meta: {
+                    created_at: new Date().toISOString(),
+                    email_sent: true,
+                    client_email: selectedClient.email,
+                    quote_number: createdQuote.quote_number,
+                    last_action: 'email_sent'
+                  }
+                });
+            } catch (followUpError) {
+              console.warn('Failed to create follow-up record:', followUpError);
+              // Don't fail quote sending if follow-up creation fails
             }
           } else {
             console.error('Failed to send quote notification email:', emailResult.error);
@@ -1877,7 +2031,7 @@ const QuoteCreation = () => {
             quoteId={editingQuoteId}
             onPrevious={handlePrevious}
             onSave={handleSave}
-            onSend={handleSend}
+            onSend={processQuoteSend}
             onCompanyInfoChange={handleCompanyInfoChange}
             onFinancialConfigChange={setFinancialConfig}
             isSaving={isSaving}

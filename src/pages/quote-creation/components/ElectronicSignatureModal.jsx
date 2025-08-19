@@ -2,8 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
+import { uploadFile, getPublicUrl } from '../../../services/storageService';
+import { uploadQuoteSignature } from '../../../services/quoteFilesService';
+import { useAuth } from '../../../context/AuthContext';
 
 const ElectronicSignatureModal = ({ isOpen, onClose, onSign, onComplete, quoteData, title, subtitle, clientName }) => {
+  const { user } = useAuth();
   const [clientComment, setClientComment] = useState('');
   const [signatureMode, setSignatureMode] = useState('draw'); // 'draw' or 'upload'
   const [signatureImage, setSignatureImage] = useState(null);
@@ -61,7 +65,7 @@ const ElectronicSignatureModal = ({ isOpen, onClose, onSign, onComplete, quoteDa
     }
   };
 
-  const handleSign = () => {
+  const handleSign = async () => {
     if (!clientComment.trim()) {
       alert('Veuillez ajouter un commentaire client.');
       return;
@@ -74,26 +78,107 @@ const ElectronicSignatureModal = ({ isOpen, onClose, onSign, onComplete, quoteDa
 
     setIsSigning(true);
     
-    // Simulate signature process
-    setTimeout(() => {
-      const signatureData = {
-        clientComment,
-        signature: signatureImage,
-        signatureMode,
-        signedAt: new Date().toISOString(),
-        quoteId: quoteData?.id,
-        clientName: clientName || 'Client'
-      };
+    try {
+      // Convert signature to file for upload
+      let signatureFile;
       
-      // Call either onSign or onComplete, depending on which is provided
-      if (onSign) {
-        onSign(signatureData);
-      } else if (onComplete) {
-        onComplete(signatureData);
+      if (signatureMode === 'draw') {
+        // Convert canvas to blob
+        const canvas = signaturePadRef.current.getCanvas();
+        signatureFile = await new Promise(resolve => {
+          canvas.toBlob(resolve, 'image/png', 0.9);
+        });
+        signatureFile.name = 'client-signature.png';
+      } else {
+        // Convert base64 to blob
+        const response = await fetch(signatureImage);
+        signatureFile = await response.blob();
+        signatureFile.name = 'client-signature.png';
       }
+
+              // If we have a quoteId, use the service to upload and create database record
+        if (quoteData?.id) {
+          const result = await uploadQuoteSignature(
+            signatureFile,
+            quoteData.id,
+            user?.id,
+            'client',
+            clientComment.trim() || null
+          );
+
+          if (!result.success) {
+            throw new Error(result.error);
+          }
+
+        const signatureData = {
+          clientComment,
+          signature: result.data.publicUrl, // Use public URL from service
+          signatureMode,
+          signedAt: new Date().toISOString(),
+          quoteId: quoteData.id,
+          clientName: clientName || 'Client',
+          // Add database record information
+          signatureId: result.data.id,
+          signatureFilePath: result.data.signature_file_path,
+          signatureFileName: result.data.signature_filename,
+          signatureFileSize: result.data.signature_size,
+          signatureMimeType: result.data.signature_mime_type
+        };
+
+        // Call either onSign or onComplete, depending on which is provided
+        if (onSign) {
+          onSign(signatureData);
+        } else if (onComplete) {
+          onComplete(signatureData);
+        }
+      } else {
+        // For new quotes without quoteId yet, just upload to storage temporarily
+        const timestamp = Date.now();
+        const fileName = `client-signatures/${user?.id}/${timestamp}-${signatureFile.name}`;
+        
+        const { data: uploadData, error: uploadError, filePath } = await uploadFile(
+          signatureFile,
+          'signatures',
+          fileName
+        );
+
+        if (uploadError) {
+          throw new Error(`Failed to upload signature: ${uploadError.message}`);
+        }
+
+        // Get public URL for the uploaded signature
+        const publicUrl = getPublicUrl('signatures', filePath);
+
+        const signatureData = {
+          clientComment,
+          signature: publicUrl, // Use public URL instead of base64
+          signatureMode,
+          signedAt: new Date().toISOString(),
+          quoteId: null, // Will be set when quote is created
+          clientName: clientName || 'Client',
+          // Add storage information for later database insertion
+          signatureFilePath: filePath,
+          signatureFileName: signatureFile.name,
+          signatureFileSize: signatureFile.size,
+          signatureMimeType: signatureFile.type,
+          isTemporary: true // Mark as temporary until quote is created
+        };
+
+        // Call either onSign or onComplete, depending on which is provided
+        if (onSign) {
+          onSign(signatureData);
+        } else if (onComplete) {
+          onComplete(signatureData);
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error signing quote:', error);
+      alert(`Erreur lors de la signature: ${error.message}`);
+    } finally {
       setIsSigning(false);
       onClose();
-    }, 1000);
+    }
   };
 
   // Prevent background scrolling when modal is open

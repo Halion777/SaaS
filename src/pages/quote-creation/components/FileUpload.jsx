@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
 import Image from '../../../components/AppImage';
-import { uploadQuoteFile } from '../../../services/quoteFilesService';
+import { uploadQuoteFile, deleteQuoteFile } from '../../../services/quoteFilesService';
+import { deleteFile, uploadFile, getPublicUrl } from '../../../services/storageService';
 import { useAuth } from '../../../context/AuthContext';
 
 const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, isSaving = false }) => {
@@ -20,14 +21,17 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, isSavin
         const savedFiles = localStorage.getItem(storageKey);
         if (savedFiles) {
           const parsedFiles = JSON.parse(savedFiles);
-  
-          onFilesChange(parsedFiles);
+          
+          // Only load if we don't already have files
+          if (parsedFiles.length > 0) {
+            onFilesChange(parsedFiles);
+          }
         }
       } catch (error) {
         console.error('Error loading files from localStorage:', error);
       }
     }
-  }, [user?.id, quoteId, files.length, onFilesChange]);
+  }, [user?.id, quoteId]); // Removed files.length to prevent infinite loop
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -57,8 +61,6 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, isSavin
   };
 
   const handleFiles = async (fileList) => {
-    const newFiles = [];
-    
     for (const file of fileList) {
       // Validate file size (10MB limit)
       if (file.size > 10 * 1024 * 1024) {
@@ -74,107 +76,183 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, isSavin
       }
 
       const tempFile = {
-      id: Date.now() + Math.random(),
-      name: file.name,
-      size: file.size,
-      type: file.type,
+        id: Date.now() + Math.random(),
+        name: file.name,
+        size: file.size,
+        type: file.type,
         uploadedAt: new Date(),
         isUploading: true
       };
 
-      // Convert file to base64 immediately (same as client signature)
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        tempFile.data = e.target.result; // This is the base64 string
-        
-        newFiles.push(tempFile);
-        setUploadingFiles(prev => new Set(prev).add(tempFile.id));
-        
-        // Add to files list immediately for UI feedback
-        onFilesChange([...files, tempFile]);
+      // Add to files list immediately for UI feedback
+      onFilesChange(prevFiles => [...prevFiles, tempFile]);
+      setUploadingFiles(prev => new Set(prev).add(tempFile.id));
 
-        // Save to localStorage for draft
-        if (user?.id) {
-          try {
-            const storageKey = `quote-files-${user.id}`;
-            const existingFiles = JSON.parse(localStorage.getItem(storageKey) || '[]');
-            existingFiles.push(tempFile);
-            localStorage.setItem(storageKey, JSON.stringify(existingFiles));
-            
-          } catch (error) {
-            console.error('Error saving files to localStorage:', error);
-          }
-        }
-      };
-      reader.readAsDataURL(file);
-
-      // Upload to backend if we have a quote ID (for editing existing quotes)
-      if (quoteId && user?.id) {
-        try {
-          const result = await uploadQuoteFile(file, quoteId, user.id, 'attachment');
-          if (result.success) {
-            // Update the file with backend data
-            const updatedFiles = files.map(f => 
-              f.id === tempFile.id 
-                ? { ...f, ...result.data, isUploading: false, backendId: result.data.id }
-                : f
-            );
-            onFilesChange(updatedFiles);
-            
-            // Also update localStorage
-            if (user?.id) {
-              try {
-                const storageKey = `quote-files-${user.id}`;
-                const existingFiles = JSON.parse(localStorage.getItem(storageKey) || '[]');
-                const updatedLocalFiles = existingFiles.map(f => 
-                  f.id === tempFile.id 
-                    ? { ...f, ...result.data, isUploading: false, backendId: result.data.id }
-                    : f
-                );
-                localStorage.setItem(storageKey, JSON.stringify(updatedLocalFiles));
+      try {
+        // Upload to Supabase storage immediately
+        let uploadResult;
         
-              } catch (error) {
-                console.error('Error updating file in localStorage:', error);
-              }
-            }
-          } else {
-            console.error('File upload failed:', result.error);
+        if (quoteId) {
+          // For existing quotes, upload with quote ID and create database record
+          uploadResult = await uploadQuoteFile(file, quoteId, user.id, user.id, 'attachment');
+        } else {
+          // For new quotes, upload to storage first (without database record)
+          const { data: uploadData, error: uploadError, filePath } = await uploadFile(
+            file,
+            'quote-files',
+            `temp/${user.id}/${Date.now()}-${file.name}`
+          );
+
+          if (uploadError) {
+            console.error('File upload failed:', uploadError);
             // Remove the failed file
-            const filteredFiles = files.filter(f => f.id !== tempFile.id);
-            onFilesChange(filteredFiles);
-            alert(`Erreur lors de l'upload de ${file.name}: ${result.error}`);
+            onFilesChange(prevFiles => prevFiles.filter(f => f.id !== tempFile.id));
+            alert(`Erreur lors de l'upload de ${file.name}: ${uploadError.message}`);
+            return;
           }
-        } catch (error) {
-          console.error('Error uploading file:', error);
-          // Remove the failed file
-          const filteredFiles = files.filter(f => f.id !== tempFile.id);
-          onFilesChange(filteredFiles);
-          alert(`Erreur lors de l'upload de ${file.name}`);
-        } finally {
-          setUploadingFiles(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(tempFile.id);
-            return newSet;
-          });
+
+          // Create temporary file object with storage info
+          const tempFileData = {
+            ...tempFile,
+            isUploading: false,
+            storagePath: filePath,
+            publicUrl: getPublicUrl('quote-files', filePath),
+            isTemporary: true
+          };
+
+          // Update files list
+          onFilesChange(prevFiles => 
+            prevFiles.map(f => f.id === tempFile.id ? tempFileData : f)
+          );
+
+          // Save to localStorage
+          if (user?.id) {
+            try {
+              const storageKey = `quote-files-${user.id}`;
+              const existingFiles = JSON.parse(localStorage.getItem(storageKey) || '[]');
+              
+              // Remove old version if exists
+              const filteredFiles = existingFiles.filter(f => f.id !== tempFile.id);
+              
+              // Add new version with storage info
+              const fileForStorage = {
+                id: tempFileData.id,
+                name: tempFileData.name,
+                size: tempFileData.size,
+                type: tempFileData.type,
+                uploadedAt: tempFileData.uploadedAt,
+                storagePath: tempFileData.storagePath,
+                publicUrl: tempFileData.publicUrl,
+                isTemporary: true
+              };
+              
+              filteredFiles.push(fileForStorage);
+              localStorage.setItem(storageKey, JSON.stringify(filteredFiles));
+            } catch (error) {
+              console.error('Error saving file info to localStorage:', error);
+            }
+          }
+          continue; // Skip to next file
         }
-      } else {
-        // For new quotes, prepare file for upload when quote is created
-        tempFile.isUploading = false;
-        tempFile.readyForUpload = true; // Mark as ready for upload
-        tempFile.uploadPath = `attachments/${tempFile.name}`; // Define upload path
+
+        if (uploadResult.success) {
+          // Update the file with backend data
+          const updatedFile = {
+            ...tempFile,
+            ...uploadResult.data,
+            isUploading: false,
+            backendId: uploadResult.data.id,
+            storagePath: uploadResult.data.file_path,
+            publicUrl: uploadResult.data.publicUrl
+          };
+
+          // Update files list using functional update to avoid stale closure
+          onFilesChange(prevFiles => 
+            prevFiles.map(f => f.id === tempFile.id ? updatedFile : f)
+          );
+
+          // Save only file link to localStorage (not base64 data)
+          if (user?.id) {
+            try {
+              const storageKey = `quote-files-${user.id}`;
+              const existingFiles = JSON.parse(localStorage.getItem(storageKey) || '[]');
+              
+              // Remove old version if exists
+              const filteredFiles = existingFiles.filter(f => f.id !== tempFile.id);
+              
+              // Add new version with only essential data (no base64)
+              const fileForStorage = {
+                id: updatedFile.id,
+                name: updatedFile.name,
+                size: updatedFile.size,
+                type: updatedFile.type,
+                uploadedAt: updatedFile.uploadedAt,
+                backendId: updatedFile.backendId,
+                storagePath: updatedFile.storagePath,
+                publicUrl: updatedFile.publicUrl,
+                file_category: updatedFile.file_category
+              };
+              
+              filteredFiles.push(fileForStorage);
+              localStorage.setItem(storageKey, JSON.stringify(filteredFiles));
+            } catch (error) {
+              console.error('Error saving file link to localStorage:', error);
+            }
+          }
+        } else {
+          console.error('File upload failed:', uploadResult.error);
+          // Remove the failed file using functional update
+          onFilesChange(prevFiles => prevFiles.filter(f => f.id !== tempFile.id));
+          alert(`Erreur lors de l'upload de ${file.name}: ${uploadResult.error}`);
+        }
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        // Remove the failed file using functional update
+        onFilesChange(prevFiles => prevFiles.filter(f => f.id !== tempFile.id));
+        alert(`Erreur lors de l'upload de ${file.name}`);
+      } finally {
+        setUploadingFiles(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(tempFile.id);
+          return newSet;
+        });
       }
     }
   };
 
-  const removeFile = (fileId) => {
+  const removeFile = async (fileId) => {
     const fileToRemove = files.find(f => f.id === fileId);
-    if (fileToRemove?.backendId) {
-      // TODO: Implement backend deletion for existing quotes
+    
+    try {
+      // Delete from storage based on file type
+      if (fileToRemove?.storagePath) {
+        // File is in storage (either temp or real quote)
+        const { error: storageError } = await deleteFile('quote-files', fileToRemove.storagePath);
+        if (storageError) {
+          console.error('Error deleting file from storage:', storageError);
+          // Continue with deletion even if storage deletion fails
+        }
+      }
       
+      // If file has database record, delete it too
+      if (fileToRemove?.backendId && quoteId) {
+        try {
+          const { success, error } = await deleteQuoteFile(fileToRemove.backendId, quoteId);
+          if (!success) {
+            console.error('Error deleting file from database:', error);
+            // Continue with deletion even if database deletion fails
+          }
+        } catch (error) {
+          console.error('Error deleting file from database:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      // Continue with deletion even if storage deletion fails
     }
     
-    const updatedFiles = files.filter(f => f.id !== fileId);
-    onFilesChange(updatedFiles);
+    // Remove from UI using functional update
+    onFilesChange(prevFiles => prevFiles.filter(f => f.id !== fileId));
     
     // Also remove from localStorage
     if (user?.id) {
