@@ -227,8 +227,8 @@ const QuotesManagement = () => {
             return {
               ...quote,
               followUpStatus,
-              followUpStatusLabel: getFollowUpStatusLabel(followUpStatus),
-              followUpStatusColor: getFollowUpStatusColor(followUpStatus),
+              followUpStatusLabel: getFollowUpStatusLabel(followUpStatus, quote.status),
+              followUpStatusColor: getFollowUpStatusColor(followUpStatus, quote.status),
               followUpCount: quoteFollowUps.length,
               followUpMeta: picked ? {
                 stage: picked.stage,
@@ -378,8 +378,8 @@ const QuotesManagement = () => {
         return {
           ...quote,
           followUpStatus,
-          followUpStatusLabel: getFollowUpStatusLabel(followUpStatus),
-          followUpStatusColor: getFollowUpStatusColor(followUpStatus),
+          followUpStatusLabel: getFollowUpStatusLabel(followUpStatus, quote.status),
+          followUpStatusColor: getFollowUpStatusColor(followUpStatus, quote.status),
           followUpCount: quoteFollowUps.length,
           followUpMeta: meta
         };
@@ -403,8 +403,8 @@ const QuotesManagement = () => {
         return {
           ...quote,
           followUpStatus,
-          followUpStatusLabel: getFollowUpStatusLabel(followUpStatus),
-          followUpStatusColor: getFollowUpStatusColor(followUpStatus),
+          followUpStatusLabel: getFollowUpStatusLabel(followUpStatus, quote.status),
+          followUpStatusColor: getFollowUpStatusColor(followUpStatus, quote.status),
           followUpCount: quoteFollowUps.length,
           followUpMeta: meta
         };
@@ -724,7 +724,12 @@ const QuotesManagement = () => {
     return 'none';
   };
 
-  const getFollowUpStatusLabel = (status) => {
+  const getFollowUpStatusLabel = (status, quoteStatus) => {
+    // Disable follow-ups for accepted/rejected quotes - no need for relances
+    if (quoteStatus === 'accepted' || quoteStatus === 'rejected') {
+      return 'Arrêtée';
+    }
+    
     const labels = {
       none: 'Aucune',
       pending: 'En attente',
@@ -736,7 +741,12 @@ const QuotesManagement = () => {
     return labels[status] || 'Aucune';
   };
 
-  const getFollowUpStatusColor = (status) => {
+  const getFollowUpStatusColor = (status, quoteStatus) => {
+    // Disable follow-ups for accepted/rejected quotes - show as disabled
+    if (quoteStatus === 'accepted' || quoteStatus === 'rejected') {
+      return 'bg-gray-100 text-gray-500';
+    }
+    
     const colors = {
       none: 'bg-gray-100 text-gray-700',
       pending: 'bg-orange-100 text-orange-700',

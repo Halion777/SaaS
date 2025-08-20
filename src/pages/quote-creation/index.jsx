@@ -1926,27 +1926,8 @@ const QuoteCreation = () => {
               console.warn('Failed to log email event:', eventError);
             }
             
-            // Create initial follow-up record for automated tracking
-            try {
-              await supabase
-                .from('quote_follow_ups')
-                .insert({
-                  quote_id: createdQuote.id,
-                  user_id: user.id, // Required field
-                  client_id: selectedClient?.id || null, // Optional field
-                  stage: 0,
-                  status: 'pending',
-                  scheduled_at: new Date().toISOString(), // Required field (use current time)
-                  next_attempt_at: null, // Optional field
-                  attempts: 0, // Required field (default is 0)
-                  max_attempts: 3, // Required field (default is 3)
-                  channel: 'email', // Required field (default is 'email')
-                  automated: true // Required field
-                });
-            } catch (followUpError) {
-              console.warn('Failed to create follow-up record:', followUpError);
-              // Don't fail quote sending if follow-up creation fails
-            }
+            // Follow-up records are now created automatically by database triggers
+            // No need to manually create them here
           } else {
             console.error('Failed to send quote notification email:', emailResult.error);
           }

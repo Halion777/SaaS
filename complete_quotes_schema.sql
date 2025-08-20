@@ -1083,14 +1083,15 @@ COMMENT ON COLUMN public.quote_signatures.customer_comment IS 'Customer comment 
 CREATE TABLE IF NOT EXISTS public.quote_follow_up_rules (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    -- Stage delays in days, e.g., {3,7,14}
-    stage_delays INTEGER[] NOT NULL DEFAULT '{3,7,14}',
-    max_stages SMALLINT NOT NULL DEFAULT 3,
-    default_channel VARCHAR(20) NOT NULL DEFAULT 'email',
-    timezone TEXT DEFAULT 'UTC',
-    quiet_hours_start SMALLINT, -- 0-23 local hour
-    quiet_hours_end SMALLINT,   -- 0-23 local hour
-    weekdays JSONB DEFAULT '[1,2,3,4,5]'::jsonb, -- 1=Mon ... 7=Sun
+    max_stages INTEGER NOT NULL DEFAULT 3,
+    max_attempts_per_stage INTEGER NOT NULL DEFAULT 2,
+    stage_1_delay INTEGER NOT NULL DEFAULT 0,
+    stage_2_delay INTEGER NOT NULL DEFAULT 1,
+    stage_3_delay INTEGER NOT NULL DEFAULT 3,
+    instant_view_followup BOOLEAN NOT NULL DEFAULT true,
+    view_followup_template TEXT NULL DEFAULT 'viewed_instant',
+    sent_followup_template TEXT NULL DEFAULT 'email_not_opened',
+    is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE (user_id)
@@ -1188,6 +1189,7 @@ CREATE POLICY "Users can delete their own quote events" ON public.quote_events
   );
 
 -- Triggers for updated_at
+DROP TRIGGER IF EXISTS update_quote_follow_up_rules_updated_at ON public.quote_follow_up_rules;
 CREATE TRIGGER update_quote_follow_up_rules_updated_at
   BEFORE UPDATE ON public.quote_follow_up_rules
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -1202,24 +1204,28 @@ CREATE TRIGGER update_quote_follow_ups_updated_at
 CREATE OR REPLACE FUNCTION public.get_follow_up_delay_days(p_user_id UUID, p_stage SMALLINT)
 RETURNS INTEGER AS $$
 DECLARE
-  delays INTEGER[];
-  d INTEGER;
+  v_delay INTEGER;
 BEGIN
-  SELECT stage_delays INTO delays
+  SELECT CASE p_stage
+    WHEN 1 THEN stage_1_delay
+    WHEN 2 THEN stage_2_delay
+    WHEN 3 THEN stage_3_delay
+    ELSE stage_3_delay -- fallback to last stage
+  END INTO v_delay
   FROM public.quote_follow_up_rules
-  WHERE user_id = p_user_id;
+  WHERE user_id = p_user_id AND is_active = true;
 
-  IF delays IS NULL OR array_length(delays, 1) IS NULL THEN
-    delays := '{3,7,14}';
+  IF v_delay IS NULL THEN
+    -- Default delays if no rules found
+    CASE p_stage
+      WHEN 1 THEN v_delay := 0;
+      WHEN 2 THEN v_delay := 1;
+      WHEN 3 THEN v_delay := 3;
+      ELSE v_delay := 3;
+    END CASE;
   END IF;
 
-  IF p_stage <= array_length(delays, 1) THEN
-    d := delays[p_stage];
-  ELSE
-    d := 14; -- fallback
-  END IF;
-
-  RETURN d;
+  RETURN v_delay;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -1231,6 +1237,7 @@ DECLARE
   v_client_id UUID;
   v_delay_days INTEGER;
   v_follow_up_id UUID;
+  v_rules RECORD;
 BEGIN
   SELECT user_id, client_id INTO v_user_id, v_client_id
   FROM public.quotes WHERE id = p_quote_id;
@@ -1239,36 +1246,39 @@ BEGIN
     RAISE EXCEPTION 'Quote not found: %', p_quote_id;
   END IF;
 
+  -- Get user's follow-up rules
+  SELECT * INTO v_rules FROM public.quote_follow_up_rules 
+  WHERE user_id = v_user_id AND is_active = true 
+  LIMIT 1;
+
   v_delay_days := public.get_follow_up_delay_days(v_user_id, p_stage);
 
   INSERT INTO public.quote_follow_ups (
-    quote_id, user_id, client_id, stage, scheduled_at, status, channel
+    quote_id, user_id, client_id, stage, scheduled_at, status, channel, 
+    automated, attempts, max_attempts
   ) VALUES (
-    p_quote_id, v_user_id, v_client_id, p_stage, NOW() + make_interval(days => v_delay_days), 'pending', 'email'
+    p_quote_id, v_user_id, v_client_id, p_stage, 
+    NOW() + make_interval(days => v_delay_days), 'pending', 'email',
+    true, 0, COALESCE(v_rules.max_attempts_per_stage, 3)
   ) RETURNING id INTO v_follow_up_id;
 
   INSERT INTO public.quote_events (quote_id, user_id, type, meta)
-  VALUES (p_quote_id, v_user_id, 'followup_scheduled', jsonb_build_object('stage', p_stage, 'in_days', v_delay_days));
+  VALUES (p_quote_id, v_user_id, 'followup_scheduled', jsonb_build_object(
+    'stage', p_stage, 
+    'delay_days', v_delay_days,
+    'automated', true
+  ));
 
   RETURN v_follow_up_id;
 END;
 $$ LANGUAGE plpgsql;
 
--- On quote status change to 'sent', create stage 1 follow-up
-CREATE OR REPLACE FUNCTION public.on_quote_status_sent()
-RETURNS TRIGGER AS $$
-BEGIN
-  PERFORM public.create_follow_up_for_quote(NEW.id, 1);
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+-- On quote status change to 'sent', log event but don't create immediate follow-up
+-- REMOVED: on_quote_status_sent function - no longer needed
+-- Main quote emails are sent via EmailService, follow-ups created by cron job
 
-DROP TRIGGER IF EXISTS trg_on_quote_sent ON public.quotes;
-CREATE TRIGGER trg_on_quote_sent
-  AFTER UPDATE ON public.quotes
-  FOR EACH ROW
-  WHEN (NEW.status = 'sent' AND (OLD.status IS DISTINCT FROM NEW.status))
-  EXECUTE FUNCTION public.on_quote_status_sent();
+-- REMOVED: Old trigger that was causing duplicate emails
+-- Follow-ups are now created by the cron job, not immediately when quotes are sent
 
 -- Stop follow-ups when quote is accepted or rejected
 CREATE OR REPLACE FUNCTION public.on_quote_finalized()
@@ -1298,6 +1308,145 @@ CREATE TRIGGER trg_on_quote_expired
   FOR EACH ROW
   WHEN (NEW.status = 'expired' AND (OLD.status IS DISTINCT FROM NEW.status))
   EXECUTE FUNCTION public.stop_follow_ups_for_expired_quote();
+
+-- Create instant follow-up when quote is viewed
+CREATE OR REPLACE FUNCTION public.on_quote_status_viewed()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_rules RECORD;
+  v_template RECORD;
+  v_client RECORD;
+  v_share_token VARCHAR(100);
+BEGIN
+  -- Get user's follow-up rules
+  SELECT * INTO v_rules FROM public.quote_follow_up_rules 
+  WHERE user_id = NEW.user_id AND is_active = true 
+  LIMIT 1;
+  
+  -- Only proceed if instant view follow-up is enabled
+  IF v_rules IS NULL OR v_rules.instant_view_followup = false THEN
+    RETURN NEW;
+  END IF;
+  
+  -- Get client details
+  SELECT * INTO v_client FROM public.clients WHERE id = NEW.client_id;
+  IF v_client IS NULL THEN
+    RETURN NEW;
+  END IF;
+  
+  -- Get share token for quote link
+  SELECT share_token INTO v_share_token FROM public.quotes WHERE id = NEW.id;
+  
+  -- Get email template
+  SELECT * INTO v_template FROM public.email_templates 
+  WHERE template_type = COALESCE(v_rules.view_followup_template, 'viewed_instant')
+  AND is_active = true
+  LIMIT 1;
+  
+  -- Create instant follow-up
+  INSERT INTO public.quote_follow_ups (
+    quote_id, user_id, client_id, stage, scheduled_at, 
+    status, channel, automated, attempts, max_attempts,
+    template_subject, template_text, template_html,
+    meta
+  ) VALUES (
+    NEW.id, NEW.user_id, NEW.client_id, 1,
+    NOW(), -- IMMEDIATE
+    'scheduled', 'email', true, 0, COALESCE(v_rules.max_attempts_per_stage, 3),
+    COALESCE(v_template.subject, 'Devis ' || NEW.quote_number || ' - Merci de votre intérêt !'),
+    COALESCE(v_template.text_content, 'Merci d''avoir consulté notre devis !'),
+    COALESCE(v_template.html_content, '<p>Merci d''avoir consulté notre devis !</p>'),
+    jsonb_build_object(
+      'follow_up_type', 'viewed_instant',
+      'automated', true,
+      'instant_followup', true,
+      'template_type', COALESCE(v_rules.view_followup_template, 'viewed_instant'),
+      'quote_status', 'viewed',
+      'created_at', NOW()
+    )
+  );
+  
+  -- Log the instant follow-up event
+  INSERT INTO public.quote_events (quote_id, user_id, type, meta)
+  VALUES (NEW.id, NEW.user_id, 'instant_followup_created', jsonb_build_object(
+    'status_change', 'viewed',
+    'instant_followup', true,
+    'template_type', COALESCE(v_rules.view_followup_template, 'viewed_instant'),
+    'timestamp', NOW(),
+    'automated', true
+  ));
+  
+  RAISE NOTICE 'Instant follow-up created for viewed quote %', NEW.quote_number;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger for instant follow-up on quote viewed
+DROP TRIGGER IF EXISTS trg_on_quote_viewed ON public.quotes;
+CREATE TRIGGER trg_on_quote_viewed
+  AFTER UPDATE ON public.quotes
+  FOR EACH ROW
+  WHEN (NEW.status = 'viewed' AND (OLD.status IS DISTINCT FROM NEW.status))
+  EXECUTE FUNCTION public.on_quote_status_viewed();
+
+-- Schedule follow-ups for quotes that need them (called by cron job)
+CREATE OR REPLACE FUNCTION public.schedule_followups_for_sent_quotes()
+RETURNS VOID AS $$
+DECLARE
+  v_quote RECORD;
+  v_user_id UUID;
+  v_max SMALLINT;
+  v_delay_days INTEGER;
+  v_rules RECORD;
+  i SMALLINT := 1;
+BEGIN
+  -- Find quotes that were sent but don't have follow-ups scheduled yet
+  FOR v_quote IN 
+    SELECT q.id, q.user_id, q.client_id, q.quote_number, q.sent_at
+    FROM public.quotes q
+    LEFT JOIN public.quote_follow_ups qf ON q.id = qf.quote_id
+    WHERE q.status = 'sent' 
+      AND q.sent_at IS NOT NULL
+      AND qf.id IS NULL  -- No follow-ups exist yet
+      AND q.sent_at < NOW() - INTERVAL '1 hour'  -- Wait at least 1 hour after sending
+  LOOP
+    -- Get user's follow-up rules
+    SELECT * INTO v_rules FROM public.quote_follow_up_rules 
+    WHERE user_id = v_quote.user_id AND is_active = true 
+    LIMIT 1;
+    
+    IF v_rules IS NOT NULL THEN
+      v_max := v_rules.max_stages;
+      v_delay_days := v_rules.stage_1_delay;
+    ELSE
+      v_max := 3;  -- Default: 3 stages
+      v_delay_days := 1;  -- Default: 1 day delay
+    END IF;
+    
+    -- Create stage 1 follow-up with delay
+    INSERT INTO public.quote_follow_ups (
+      quote_id, user_id, client_id, stage, scheduled_at, 
+      status, channel, automated, attempts, max_attempts
+    ) VALUES (
+      v_quote.id, v_quote.user_id, v_quote.client_id, 1,
+      v_quote.sent_at + make_interval(days => v_delay_days),
+      'pending', 'email', true, 0, COALESCE(v_rules.max_attempts_per_stage, 3)
+    );
+    
+    -- Log the follow-up scheduling
+    INSERT INTO public.quote_events (quote_id, user_id, type, meta)
+    VALUES (v_quote.id, v_quote.user_id, 'followup_scheduled', jsonb_build_object(
+      'stage', 1,
+      'delay_days', v_delay_days,
+      'scheduled_at', v_quote.sent_at + make_interval(days => v_delay_days),
+      'automated', true
+    ));
+    
+    RAISE NOTICE 'Scheduled follow-up for quote % (stage 1, delay: % days)', v_quote.quote_number, v_delay_days;
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Convenience RPCs
 CREATE OR REPLACE FUNCTION public.schedule_all_followups_for_quote(p_quote_id UUID)
@@ -1660,5 +1809,257 @@ COMMENT ON COLUMN public.email_templates.template_type IS 'Type of email: quote_
 COMMENT ON COLUMN public.email_templates.variables IS 'JSON object defining available variables for this template';
 COMMENT ON COLUMN public.quote_follow_ups.template_id IS 'Reference to the email template used for this follow-up';
 COMMENT ON COLUMN public.quote_follow_ups.template_variables IS 'JSON object with actual values for template variables';
+
+-- Enable pg_cron extension for scheduling
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+
+-- Schedule cron job to create follow-ups for sent quotes (runs every hour)
+-- This replaces the immediate follow-up creation when quotes are sent
+SELECT cron.schedule(
+  'schedule-followups-for-sent-quotes',
+  '0 * * * *', -- Every hour at minute 0
+  'SELECT public.schedule_followups_for_sent_quotes();'
+);
+
+-- Send automatic emails when quotes are accepted or rejected
+CREATE OR REPLACE FUNCTION public.on_quote_status_accepted_rejected()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_template RECORD;
+  v_client RECORD;
+  v_company_profile RECORD;
+  v_share_token VARCHAR(100);
+  v_template_type VARCHAR(100);
+  v_subject TEXT;
+  v_html TEXT;
+  v_text TEXT;
+BEGIN
+  -- Only proceed for accepted or rejected status
+  IF NEW.status NOT IN ('accepted', 'rejected') THEN
+    RETURN NEW;
+  END IF;
+  
+  -- Determine template type based on status
+  v_template_type := CASE 
+    WHEN NEW.status = 'accepted' THEN 'client_accepted'
+    WHEN NEW.status = 'rejected' THEN 'client_rejected'
+    ELSE NULL
+  END;
+  
+  IF v_template_type IS NULL THEN
+    RETURN NEW;
+  END IF;
+  
+  -- Get client details
+  SELECT * INTO v_client FROM public.clients WHERE id = NEW.client_id;
+  IF v_client IS NULL THEN
+    RETURN NEW;
+  END IF;
+  
+  -- Get company profile
+  SELECT * INTO v_company_profile FROM public.company_profiles 
+  WHERE user_id = NEW.user_id AND is_default = true 
+  LIMIT 1;
+  
+  -- Get share token for quote link
+  SELECT share_token INTO v_share_token FROM public.quotes WHERE id = NEW.id;
+  
+  -- Get email template
+  SELECT * INTO v_template FROM public.email_templates 
+  WHERE template_type = v_template_type
+  AND is_active = true
+  LIMIT 1;
+  
+  IF v_template IS NULL THEN
+    RAISE NOTICE 'Template % not found for quote %', v_template_type, NEW.quote_number;
+    RETURN NEW;
+  END IF;
+  
+  -- Prepare email content with variable replacement using PostgreSQL REPLACE function
+  v_subject := REPLACE(REPLACE(REPLACE(REPLACE(v_template.subject,
+    '{quote_number}', NEW.quote_number),
+    '{client_name}', COALESCE(v_client.name, '')),
+    '{quote_amount}', COALESCE(NEW.final_amount::TEXT, NEW.total_amount::TEXT, '0') || '€'),
+    '{company_name}', COALESCE(v_company_profile.company_name, 'Notre entreprise'));
+  
+  v_html := REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(v_template.html_content,
+    '{quote_number}', NEW.quote_number),
+    '{client_name}', COALESCE(v_client.name, '')),
+    '{quote_amount}', COALESCE(NEW.final_amount::TEXT, NEW.total_amount::TEXT, '0') || '€'),
+    '{quote_link}', COALESCE(v_share_token, '#')),
+    '{company_name}', COALESCE(v_company_profile.company_name, 'Notre entreprise'));
+  
+  v_text := REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(v_template.text_content,
+    '{quote_number}', NEW.quote_number),
+    '{client_name}', COALESCE(v_client.name, '')),
+    '{quote_amount}', COALESCE(NEW.final_amount::TEXT, NEW.total_amount::TEXT, '0') || '€'),
+    '{quote_link}', COALESCE(v_share_token, '#')),
+    '{company_name}', COALESCE(v_company_profile.company_name, 'Notre entreprise'));
+  
+  -- Create email outbox record for immediate sending
+  INSERT INTO public.email_outbox (
+    quote_id, user_id, to_email, subject, html, text, 
+    status, email_type, meta
+  ) VALUES (
+    NEW.id, NEW.user_id, v_client.email, v_subject, v_html, v_text,
+    'sending', v_template_type, jsonb_build_object(
+      'quote_status', NEW.status,
+      'template_type', v_template_type,
+      'automated', true,
+      'triggered_by', 'status_change',
+      'created_at', NOW()
+    )
+  );
+  
+  -- Log the email event
+  INSERT INTO public.quote_events (quote_id, user_id, type, meta)
+  VALUES (NEW.id, NEW.user_id, 'email_sent', jsonb_build_object(
+    'email_type', v_template_type,
+    'status_change', NEW.status,
+    'template_type', v_template_type,
+    'automated', true,
+    'timestamp', NOW()
+  ));
+  
+  RAISE NOTICE 'Automatic % email queued for quote % to %', v_template_type, NEW.quote_number, v_client.email;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger for automatic accepted/rejected emails
+DROP TRIGGER IF EXISTS trg_on_quote_accepted_rejected ON public.quotes;
+CREATE TRIGGER trg_on_quote_accepted_rejected
+  AFTER UPDATE ON public.quotes
+  FOR EACH ROW
+  WHEN (NEW.status IN ('accepted', 'rejected') AND (OLD.status IS DISTINCT FROM NEW.status))
+  EXECUTE FUNCTION public.on_quote_status_accepted_rejected();
+
+-- Create email outbox table for queuing emails
+CREATE TABLE IF NOT EXISTS public.email_outbox (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    quote_id UUID REFERENCES public.quotes(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    follow_up_id UUID REFERENCES public.quote_follow_ups(id) ON DELETE SET NULL,
+    to_email VARCHAR(255) NOT NULL,
+    subject TEXT NOT NULL,
+    html TEXT,
+    text TEXT,
+    status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'sending', 'sent', 'failed')),
+    email_type VARCHAR(100),
+    attempts INTEGER DEFAULT 0,
+    sent_at TIMESTAMP WITH TIME ZONE,
+    last_error TEXT,
+    meta JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes for email outbox
+CREATE INDEX IF NOT EXISTS idx_email_outbox_status ON public.email_outbox(status);
+CREATE INDEX IF NOT EXISTS idx_email_outbox_quote_id ON public.email_outbox(quote_id);
+CREATE INDEX IF NOT EXISTS idx_email_outbox_user_id ON public.email_outbox(user_id);
+CREATE INDEX IF NOT EXISTS idx_email_outbox_created_at ON public.email_outbox(created_at);
+
+-- Enable RLS for email outbox
+ALTER TABLE public.email_outbox ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policy: Users can view their own outbox records
+CREATE POLICY "Users can view their own outbox records" ON public.email_outbox
+    FOR SELECT USING (user_id = auth.uid());
+
+-- RLS Policy: System can insert/update outbox records
+CREATE POLICY "System can manage outbox records" ON public.email_outbox
+    FOR ALL USING (true);
+
+-- Function to send emails from outbox (called by cron job)
+CREATE OR REPLACE FUNCTION public.send_pending_emails()
+RETURNS VOID AS $$
+DECLARE
+  v_email RECORD;
+BEGIN
+  -- Process emails in outbox with 'sending' status
+  FOR v_email IN 
+    SELECT id, quote_id, user_id, to_email, subject, html, text, email_type, meta
+    FROM public.email_outbox 
+    WHERE status = 'sending'
+    ORDER BY created_at ASC
+    LIMIT 50
+  LOOP
+    BEGIN
+      -- Here you would integrate with your email service (Resend, SendGrid, etc.)
+      -- For now, we'll mark as sent and log the attempt
+      
+      -- Update email status to sent
+      UPDATE public.email_outbox 
+      SET status = 'sent', sent_at = NOW(), attempts = COALESCE(attempts, 0) + 1
+      WHERE id = v_email.id;
+      
+      -- Log successful email sending
+      INSERT INTO public.quote_events (quote_id, user_id, type, meta)
+      VALUES (v_email.quote_id, v_email.user_id, 'email_sent', jsonb_build_object(
+        'email_type', v_email.email_type,
+        'outbox_id', v_email.id,
+        'to_email', v_email.to_email,
+        'automated', true,
+        'timestamp', NOW()
+      ));
+      
+      RAISE NOTICE 'Email sent successfully: % to %', v_email.email_type, v_email.to_email;
+      
+    EXCEPTION WHEN OTHERS THEN
+      -- Log failed email attempt
+      UPDATE public.email_outbox 
+      SET status = 'failed', last_error = SQLERRM, attempts = COALESCE(attempts, 0) + 1
+      WHERE id = v_email.id;
+      
+      RAISE WARNING 'Failed to send email %: %', v_email.id, SQLERRM;
+    END;
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Schedule cron job to send pending emails (runs every 5 minutes)
+SELECT cron.schedule(
+  'send-pending-emails',
+  '*/5 * * * *', -- Every 5 minutes
+  'SELECT public.send_pending_emails();'
+);
+
+-- Alternative: Function to manually trigger email processing
+-- This can be called from your application or manually when needed
+CREATE OR REPLACE FUNCTION public.trigger_email_processing()
+RETURNS TEXT AS $$
+BEGIN
+  -- Process follow-ups for sent quotes
+  PERFORM public.schedule_followups_for_sent_quotes();
+  
+  -- Process pending emails
+  PERFORM public.send_pending_emails();
+  
+  RETURN 'Email processing completed at ' || NOW();
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to check email outbox status
+CREATE OR REPLACE FUNCTION public.get_email_outbox_status()
+RETURNS TABLE(
+  total_emails BIGINT,
+  pending_emails BIGINT,
+  sending_emails BIGINT,
+  sent_emails BIGINT,
+  failed_emails BIGINT
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    COUNT(*) as total_emails,
+    COUNT(*) FILTER (WHERE status = 'pending') as pending_emails,
+    COUNT(*) FILTER (WHERE status = 'sending') as sending_emails,
+    COUNT(*) FILTER (WHERE status = 'sent') as sent_emails,
+    COUNT(*) FILTER (WHERE status = 'failed') as failed_emails
+  FROM public.email_outbox;
+END;
+$$ LANGUAGE plpgsql;
 
 

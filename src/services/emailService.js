@@ -310,12 +310,18 @@ export class EmailService {
         custom_message: emailMessage
       };
       
-      // Send email to client
+      // Send email to client - always use custom quote email for better control
       let clientEmailResult;
       if (customEmailData) {
+        // Use provided custom email data
         clientEmailResult = await this.sendCustomQuoteEmail(variables, client.email, userId, customEmailData);
       } else {
-        clientEmailResult = await this.sendTemplatedEmail('quote_sent', variables, client.email, userId);
+        // Use default custom email format instead of templated email
+        const defaultEmailData = {
+          subject: emailSubject,
+          message: emailMessage
+        };
+        clientEmailResult = await this.sendCustomQuoteEmail(variables, client.email, userId, defaultEmailData);
       }
       
       // If sendCopy is enabled, also send a copy to the current user
