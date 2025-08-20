@@ -916,29 +916,9 @@ const QuoteCreation = () => {
             localStorage.setItem(draftRowIdKey, saved.id);
           }
           
-          // Also save client signature to quote_signatures table if it exists
+          // Client signature will be saved when the quote is actually created
           if (completeDraftData.clientSignature && selectedClient?.id) {
-            try {
-              const { data: signatureRecord, error: signatureError } = await supabase
-                .from('quote_signatures')
-                .insert({
-                  quote_id: saved?.id || existingRowId,
-                  signer_name: completeDraftData.clientSignature.signerName || selectedClient.name,
-                  signer_email: completeDraftData.clientSignature.signerEmail || selectedClient.email,
-                  signature_data: completeDraftData.clientSignature.signature,
-                  signature_mode: completeDraftData.clientSignature.signatureMode || 'draw',
-                  signature_type: 'client',
-                  customer_comment: completeDraftData.clientSignature.clientComment || null
-                })
-                .select()
-                .single();
-              
-              if (signatureError) {
-                console.warn('Failed to save client signature to database:', signatureError);
-              }
-            } catch (signatureSaveError) {
-              console.warn('Error saving client signature to database:', signatureSaveError);
-            }
+            console.log('Client signature will be saved when quote is created');
           }
           
           if (draftErr) {
@@ -1049,46 +1029,46 @@ const QuoteCreation = () => {
       // For new quotes, files will be uploaded when the quote is actually created
       const uploadedFiles = files;
 
-      const quoteData = {
-        userId: user?.id,
-        profileId: currentProfile?.id,  
-        clientId: selectedClient?.value,
-        quote_number: finalQuoteNumber,
-        status: 'draft',
-        title: projectInfo.description || 'Nouveau devis',
-        description: projectInfo.description || '',
-        project_categories: projectInfo.categories || [],
-        custom_category: projectInfo.customCategory || '',
-        start_date: new Date().toISOString().split('T')[0],
-        total_amount: totalAmount,
-        tax_amount: data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0,
-        discount_amount: 0,
-        final_amount: totalAmount + (data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0),
-        valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        terms_conditions: data.financialConfig?.defaultConditions?.text || '',
-        
-        tasks: tasks.map((task, index) => ({
-          name: task.description || task.name || '',
-          description: task.description || task.name || '',
-          quantity: task.quantity || 1,
-          unit: task.unit || 'piece',
-          unit_price: task.price || task.unit_price || 0,
-          total_price: (task.price || task.unit_price || 0) * (task.quantity || 1),
-          duration: task.duration || 0,
-          duration_unit: task.durationUnit || 'minutes',
-          pricing_type: task.pricingType || 'flat',
-          hourly_rate: task.hourlyRate || 0,
-          order_index: index,
-          materials: task.materials || []
-        })),
-        files: uploadedFiles.map((file, index) => ({
-          file_name: file.name || file.file_name || '',
-          file_path: file.file_path || file.path || file.file_path || file.url || '',
-          file_size: file.size || file.file_size || 0,
-          mime_type: file.type || file.mime_type || '',
-          order_index: index
-        }))
-      };
+             const quoteData = {
+         user_id: user?.id,
+         profile_id: currentProfile?.id,  
+         client_id: selectedClient?.value,
+         quote_number: finalQuoteNumber,
+         status: 'draft',
+         title: projectInfo.description || 'Nouveau devis',
+         description: projectInfo.description || '',
+         project_categories: projectInfo.categories || [],
+         custom_category: projectInfo.customCategory || '',
+         start_date: new Date().toISOString().split('T')[0],
+         total_amount: totalAmount,
+         tax_amount: data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0,
+         discount_amount: 0,
+         final_amount: totalAmount + (data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0),
+         valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+         terms_conditions: data.financialConfig?.defaultConditions?.text || '',
+         
+         tasks: tasks.map((task, index) => ({
+           name: task.description || task.name || '',
+           description: task.description || task.name || '',
+           quantity: task.quantity || 1,
+           unit: task.unit || 'piece',
+           unit_price: task.price || task.unit_price || 0,
+           total_price: (task.price || task.unit_price || 0) * (task.quantity || 1),
+           duration: task.duration || 0,
+           duration_unit: task.durationUnit || 'minutes',
+           pricing_type: task.pricingType || 'flat',
+           hourly_rate: task.hourlyRate || 0,
+           order_index: index,
+           materials: task.materials || []
+         })),
+         files: uploadedFiles.map((file, index) => ({
+           file_name: file.name || file.file_name || '',
+           file_path: file.file_path || file.path || file.file_path || file.url || '',
+           file_size: file.size || file.file_size || 0,
+           mime_type: file.type || file.mime_type || '',
+           order_index: index
+         }))
+       };
 
       // Debug logging
       
