@@ -374,7 +374,6 @@ export class EmailService {
   static async sendCustomQuoteEmail(variables, clientEmail, userId = null, customEmailData = null) {
     try {
       const emailData = {
-        emailType: 'custom_quote_sent',
         to: clientEmail,
         subject: customEmailData?.subject || variables.custom_subject,
         message: customEmailData?.message || variables.custom_message,
@@ -519,6 +518,60 @@ export class EmailService {
       
     } catch (error) {
       console.error('Error sending welcome email:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Send email when draft quote is marked as sent (from quotes management)
+   */
+  static async sendDraftQuoteMarkedAsSentEmail(quote, client, companyProfile, userId = null) {
+    try {
+      // If no company profile provided, try to get it from the current user
+      if (!companyProfile && userId) {
+        companyProfile = await this.getCurrentUserCompanyProfile(userId);
+      }
+      
+      // Ensure we have a share token for the quote link
+      let shareToken = quote.share_token;
+      if (!shareToken) {
+        console.warn('No share token found for quote, generating one...');
+        // Try to get or generate share token
+        try {
+          const { generatePublicShareLink } = await import('./shareService');
+          const shareResult = await generatePublicShareLink(quote.id, userId);
+          if (shareResult?.success) {
+            shareToken = shareResult.data?.share_token || shareResult.token;
+          }
+        } catch (shareError) {
+          console.error('Failed to generate share token for draft quote email:', shareError);
+        }
+      }
+      
+      // Use default email content for draft quotes marked as sent
+      const emailSubject = `Devis ${quote.quote_number} - ${companyProfile?.company_name || 'Notre entreprise'}`;
+      const emailMessage = `Bonjour,\n\nVeuillez trouver ci-joint notre devis pour votre projet.\n\nCordialement,\n${companyProfile?.company_name || 'Votre équipe'}`;
+      
+      const variables = {
+        client_name: client.name || 'Madame, Monsieur',
+        quote_number: quote.quote_number,
+        quote_title: quote.title || quote.description || 'Votre projet',
+        quote_amount: `${quote.final_amount || quote.total_amount || 0}€`,
+        quote_link: shareToken ? `${BASE_URL}/quote-share/${shareToken}` : '#',
+        valid_until: quote.valid_until ? new Date(quote.valid_until).toLocaleDateString('fr-FR') : '30 jours',
+        company_name: companyProfile?.company_name || 'Notre entreprise',
+        custom_subject: emailSubject,
+        custom_message: emailMessage
+      };
+      
+      // Send email to client using custom quote email
+      return await this.sendCustomQuoteEmail(variables, client.email, userId, {
+        subject: emailSubject,
+        message: emailMessage
+      });
+      
+    } catch (error) {
+      console.error('Error sending draft quote marked as sent email:', error);
       return { success: false, error: error.message };
     }
   }

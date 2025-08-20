@@ -659,6 +659,48 @@ const QuotesManagement = () => {
         )
       );
 
+      // Send email notification to client
+      try {
+        // Get client information
+        const client = quote.client || {
+          name: quote.client_name || 'Client',
+          email: quote.client_email
+        };
+
+        // Check if we have valid client email
+        if (!client.email) {
+          console.warn('Cannot send email: No client email found for quote', quote.id);
+          return;
+        }
+
+        // Get company profile information
+        let companyProfile = null;
+        if (quote.company_profile) {
+          companyProfile = {
+            company_name: quote.company_profile.company_name,
+            // Add other company fields as needed
+          };
+        }
+
+        // Send email using the new method
+        const { EmailService } = await import('../../services/emailService');
+        const emailResult = await EmailService.sendDraftQuoteMarkedAsSentEmail(
+          updatedQuote || quote,
+          client,
+          companyProfile,
+          user?.id
+        );
+
+        if (emailResult.success) {
+          console.log('Email sent successfully when marking quote as sent');
+        } else {
+          console.warn('Failed to send email when marking quote as sent:', emailResult.error);
+        }
+      } catch (emailError) {
+        console.warn('Error sending email when marking quote as sent:', emailError);
+        // Don't fail the quote status update if email fails
+      }
+
       // Refresh follow-ups to show the newly created ones
       await refreshFollowUps();
 
@@ -736,7 +778,17 @@ const QuotesManagement = () => {
 
   const isQuoteExpired = (expiresAt) => {
     if (!expiresAt) return false;
-    return new Date(expiresAt) < new Date();
+    
+    // Get current date and valid until date, comparing only the date part (not time)
+    const currentDate = new Date();
+    const validUntilDate = new Date(expiresAt);
+    
+    // Reset time to start of day for both dates to compare only dates
+    const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+    const validUntilDateOnly = new Date(validUntilDate.getFullYear(), validUntilDate.getMonth(), validUntilDate.getDate());
+    
+    // Quote is expired only if valid_until date has passed (not equal)
+    return validUntilDateOnly < currentDateOnly;
   };
 
   const getQuotePriority = (quote) => {

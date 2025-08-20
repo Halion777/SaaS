@@ -669,6 +669,36 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Function to stop follow-ups for expired quotes
+CREATE OR REPLACE FUNCTION public.stop_follow_ups_for_expired_quote()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Stop all pending and scheduled follow-ups for the expired quote
+  UPDATE public.quote_follow_ups 
+  SET 
+    status = 'stopped',
+    updated_at = NOW()
+  WHERE 
+    quote_id = NEW.id 
+    AND status IN ('pending', 'scheduled');
+
+  -- Log the follow-up stopping event
+  INSERT INTO public.quote_events (quote_id, user_id, type, meta)
+  VALUES (
+    NEW.id, 
+    NEW.user_id, 
+    'follow_ups_stopped',
+    jsonb_build_object(
+      'reason', 'quote_expired',
+      'expired_at', NOW(),
+      'valid_until', NEW.valid_until
+    )
+  );
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Function to auto-expire quotes when valid_until date passes
 CREATE OR REPLACE FUNCTION public.auto_expire_quotes()
 RETURNS void
@@ -682,9 +712,22 @@ BEGIN
     status = 'expired',
     updated_at = NOW()
   WHERE 
-    status IN ('sent', 'draft') 
+    status IN ('sent', 'draft', 'viewed') 
     AND valid_until IS NOT NULL 
     AND valid_until < NOW();
+
+  -- Stop follow-ups for newly expired quotes
+  UPDATE public.quote_follow_ups 
+  SET 
+    status = 'stopped',
+    updated_at = NOW()
+  WHERE 
+    quote_id IN (
+      SELECT id FROM public.quotes 
+      WHERE status = 'expired' 
+      AND updated_at >= NOW() - INTERVAL '1 minute'
+    )
+    AND status IN ('pending', 'scheduled');
 
   -- Log events for expired quotes
   INSERT INTO public.quote_events (quote_id, type, meta, user_id)
@@ -700,6 +743,27 @@ BEGIN
   WHERE 
     status = 'expired' 
     AND updated_at >= NOW() - INTERVAL '1 minute';
+END;
+$$;
+
+-- Function to manually update expired quotes (for existing data)
+CREATE OR REPLACE FUNCTION public.update_expired_quotes_manual()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  -- Update quotes that have passed their valid_until date but status hasn't been updated
+  UPDATE public.quotes 
+  SET 
+    status = 'expired',
+    updated_at = NOW()
+  WHERE 
+    status IN ('sent', 'draft', 'viewed') 
+    AND valid_until IS NOT NULL 
+    AND valid_until < NOW();
+    
+  RAISE NOTICE 'Updated % quotes to expired status', FOUND;
 END;
 $$;
 
@@ -1226,6 +1290,14 @@ CREATE TRIGGER trg_on_quote_finalized
   FOR EACH ROW
   WHEN (NEW.status IN ('accepted','rejected') AND (OLD.status IS DISTINCT FROM NEW.status))
   EXECUTE FUNCTION public.on_quote_finalized();
+
+-- Stop follow-ups when quote expires
+DROP TRIGGER IF EXISTS trg_on_quote_expired ON public.quotes;
+CREATE TRIGGER trg_on_quote_expired
+  AFTER UPDATE ON public.quotes
+  FOR EACH ROW
+  WHEN (NEW.status = 'expired' AND (OLD.status IS DISTINCT FROM NEW.status))
+  EXECUTE FUNCTION public.stop_follow_ups_for_expired_quote();
 
 -- Convenience RPCs
 CREATE OR REPLACE FUNCTION public.schedule_all_followups_for_quote(p_quote_id UUID)

@@ -53,7 +53,28 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
   };
 
   const getStatusBadge = (quote) => {
-    const { status, trackingData } = quote;
+    const { status, trackingData, validUntil } = quote;
+    
+    // Check if quote is expired based on valid_until date (client-side calculation)
+    let currentStatus = status;
+    if (validUntil) {
+      // Get current date and valid until date, comparing only the date part (not time)
+      const currentDate = new Date();
+      const validUntilDate = new Date(validUntil);
+      
+      // Reset time to start of day for both dates to compare only dates
+      const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+      const validUntilDateOnly = new Date(validUntilDate.getFullYear(), validUntilDate.getMonth(), validUntilDate.getDate());
+      
+      // Quote is expired only if valid_until date has passed (not equal)
+      if (validUntilDateOnly < currentDateOnly) {
+        // Only mark as expired if quote is still in a state where expiration matters
+        if (['sent', 'viewed', 'draft'].includes(status)) {
+          currentStatus = 'expired';
+        }
+        // Don't override 'accepted', 'rejected' statuses with 'expired'
+      }
+    }
     
     // Enhanced status with tracking information
     const statusConfig = {
@@ -65,7 +86,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
       expired: { label: 'Expiré', className: 'bg-yellow-100 text-yellow-800' }
     };
 
-    const config = statusConfig[status] || { label: status, className: 'bg-gray-100 text-gray-800' };
+    const config = statusConfig[currentStatus] || { label: currentStatus, className: 'bg-gray-100 text-gray-800' };
     
     return (
       <div className="flex flex-col gap-1">
@@ -109,16 +130,37 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
     );
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status, validUntil) => {
+    // Check if quote is expired based on valid_until date (client-side calculation)
+    let currentStatus = status;
+    if (validUntil) {
+      // Get current date and valid until date, comparing only the date part (not time)
+      const currentDate = new Date();
+      const validUntilDate = new Date(validUntil);
+      
+      // Reset time to start of day for both dates to compare only dates
+      const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+      const validUntilDateOnly = new Date(validUntilDate.getFullYear(), validUntilDate.getMonth(), validUntilDate.getDate());
+      
+      // Quote is expired only if valid_until date has passed (not equal)
+      if (validUntilDateOnly < currentDateOnly) {
+        // Only mark as expired if quote is still in a state where expiration matters
+        if (['sent', 'viewed', 'draft'].includes(status)) {
+          currentStatus = 'expired';
+        }
+        // Don't override 'accepted', 'rejected' statuses with 'expired'
+      }
+    }
+    
     const colors = {
       draft: 'bg-muted text-muted-foreground',
       sent: 'bg-blue-100 text-blue-700',
       viewed: 'bg-orange-100 text-orange-700',
       accepted: 'bg-green-100 text-success',
       rejected: 'bg-red-100 text-destructive',
-      expired: 'bg-gray-100 text-gray-700'
+      expired: 'bg-yellow-100 text-yellow-700'
     };
-    return colors[status] || colors.draft;
+    return colors[currentStatus] || colors.draft;
   };
 
 

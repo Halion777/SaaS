@@ -50,35 +50,70 @@ class ClientQuoteService {
         console.log(`Quote ${quoteId}: Using existing signature record: ${signatureRecordId}`);
       } else {
         // No existing signature, create new one
-        signaturePath = await this.saveClientSignature(quoteId, signatureData);
-        
-        if (!signaturePath) {
-          throw new Error('Failed to save signature');
-        }
+        try {
+          // Generate unique filename
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          const filename = `client-signature-${quoteId}-${timestamp}.png`;
+          
+          // Upload base64 signature directly to storage
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('signatures')
+            .upload(`client-signatures/${filename}`, signatureData.signature, {
+              contentType: 'image/png',
+              cacheControl: '3600'
+            });
 
-        // Insert CLIENT signature into quote_signatures table
-        const { data: newSignatureRecord, error: signatureError } = await supabase
-          .from('quote_signatures')
-          .insert({
+          if (uploadError) {
+            console.error('Error uploading signature:', uploadError);
+            throw new Error(`Failed to upload signature: ${uploadError.message}`);
+          }
+
+          const filePath = `client-signatures/${filename}`;
+          
+          // Get public URL for the uploaded signature
+          const { data: publicUrlData } = supabase.storage
+            .from('signatures')
+            .getPublicUrl(filePath);
+          
+          const publicUrl = publicUrlData.publicUrl;
+          
+          // Insert into quote_signatures table with public URL
+          const signatureRecord = {
             quote_id: quoteId,
-            signer_email: clientEmail || signatureData.clientEmail || 'client@example.com',
             signer_name: clientName || signatureData.clientName || 'Client',
-            signature_type: 'client',
-            signature_data: signatureData.signature,
-            signature_file_path: signaturePath,
+            signer_email: clientEmail || signatureData.clientEmail || null,
+            signature_data: publicUrl, // Store the public URL
+            signature_file_path: filePath,
+            signature_filename: filename,
+            signature_size: signatureData.signature.length, // Base64 string length
+            signature_mime_type: 'image/png',
             signature_mode: signatureData.signatureMode || 'draw',
+            signature_type: 'client',
             customer_comment: signatureData.clientComment,
             signed_at: signatureData.signedAt || new Date().toISOString()
-          })
-          .select('id')
-          .single();
+          };
 
-        if (signatureError) {
-          console.error('Error saving signature to database:', signatureError);
-          throw signatureError;
+          const { data: newSignatureRecord, error: signatureError } = await supabase
+            .from('quote_signatures')
+            .insert(signatureRecord)
+            .select('id')
+            .single();
+
+          if (signatureError) {
+            // If database insert fails, delete the uploaded file
+            await supabase.storage.from('signatures').remove([filePath]);
+            console.error('Error saving signature to database:', signatureError);
+            throw new Error(`Failed to save signature to database: ${signatureError.message}`);
+          }
+          
+          signaturePath = filePath;
+          signatureRecordId = newSignatureRecord.id;
+          console.log(`Quote ${quoteId}: Created new signature record: ${signatureRecordId}`);
+          
+        } catch (signatureError) {
+          console.error('Error saving signature:', signatureError);
+          throw new Error(`Failed to save signature: ${signatureError.message}`);
         }
-        signatureRecordId = newSignatureRecord.id;
-        console.log(`Quote ${quoteId}: Created new signature record: ${signatureRecordId}`);
       }
 
       // Update the quote status and set accepted_at timestamp
@@ -195,39 +230,7 @@ class ClientQuoteService {
     }
   }
 
-  /**
-   * Save client signature to storage (for unauthenticated clients)
-   */
-  static async saveClientSignature(quoteId, signatureData) {
-    try {
-      // Convert base64 signature to blob
-      const base64Data = signatureData.signature.split(',')[1];
-      const blob = await fetch(`data:image/png;base64,${base64Data}`).then(res => res.blob());
-      
-      // Generate unique filename
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const filename = `client-signature-${quoteId}-${timestamp}.png`;
-      
-      // Upload to storage - this will work with the RLS policies for client signatures
-      const { data, error } = await supabase.storage
-        .from('signatures')
-        .upload(`client-signatures/${filename}`, blob, {
-          contentType: 'image/png',
-          cacheControl: '3600'
-        });
 
-      if (error) {
-        console.error('Error uploading signature:', error);
-        throw error;
-      }
-
-      return `client-signatures/${filename}`;
-      
-    } catch (error) {
-      console.error('Error saving signature:', error);
-      return null;
-    }
-  }
 
   /**
    * Log workflow events for tracking (for unauthenticated clients)
@@ -411,11 +414,11 @@ class ClientQuoteService {
       // Check if we've already logged a 'viewed' action for this quote
       const { data: existingLogs, error: checkError } = await supabase
         .from('quote_access_logs')
-        .select('id, action, created_at')
+        .select('id, action, accessed_at')
         .eq('quote_id', quoteId)
         .eq('share_token', shareToken)
         .eq('action', 'viewed')
-        .order('created_at', { ascending: false })
+        .order('accessed_at', { ascending: false })
         .limit(1);
 
       if (checkError) {
@@ -425,7 +428,7 @@ class ClientQuoteService {
       // Only log 'viewed' action if it's the first time or if significant time has passed
       let shouldLogView = true;
       if (existingLogs && existingLogs.length > 0) {
-        const lastView = new Date(existingLogs[0].created_at);
+        const lastView = new Date(existingLogs[0].accessed_at);
         const now = new Date();
         const hoursSinceLastView = (now - lastView) / (1000 * 60 * 60);
         

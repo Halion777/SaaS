@@ -87,6 +87,17 @@ serve(async (req) => {
         });
         break;
         
+      case 'custom_quote_sent':
+        // Handle custom quote emails with user-defined subject and message
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [emailData.to],
+          subject: emailData.subject,
+          html: generateCustomQuoteEmail(emailData.message, emailData.variables),
+          text: emailData.message
+        });
+        break;
+        
       default:
         throw new Error(`Unknown email type: ${emailType}`);
     }
@@ -178,6 +189,48 @@ function generateLeadAssignmentEmail(leadData: any, artisanData: any) {
         
         <p>Bonne chance !<br>
         L'équipe de votre plateforme</p>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+function generateCustomQuoteEmail(message: string, variables: any) {
+  return `
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Devis ${variables?.quote_number || ''}</title>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .button { display: inline-block; background: #059669; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+        .quote-info { background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h2>Bonjour ${variables?.client_name || 'Madame, Monsieur'},</h2>
+        
+        <div class="quote-info">
+          <p><strong>Devis :</strong> ${variables?.quote_number || 'N/A'}</p>
+          <p><strong>Projet :</strong> ${variables?.quote_title || 'Votre projet'}</p>
+          <p><strong>Montant :</strong> ${variables?.quote_amount || '0€'}</p>
+          <p><strong>Valable jusqu'au :</strong> ${variables?.valid_until || '30 jours'}</p>
+        </div>
+        
+        <div style="white-space: pre-line;">${message}</div>
+        
+        ${variables?.quote_link && variables.quote_link !== '#' ? `
+        <div style="text-align: center;">
+          <a href="${variables.quote_link}" class="button">Voir le devis</a>
+        </div>
+        ` : ''}
+        
+        <p>Cordialement,<br>
+        ${variables?.company_name || 'Notre équipe'}</p>
       </div>
     </body>
     </html>

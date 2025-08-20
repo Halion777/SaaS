@@ -165,13 +165,29 @@ const FollowUpManagement = () => {
           const quote = transformedQuotes.find(q => q.id === followUp.quote_id);
           if (!quote) return null;
           
-          // 🔒 CRITICAL: Only show follow-ups for quotes that need relance
-          // Hide quotes that are accepted, rejected, or expired
-          if (quote.status === 'accepted' || quote.status === 'rejected' || quote.status === 'expired') {
-            return null; // Don't show these in follow-up list
-          }
+                  // 🔒 CRITICAL: Only show follow-ups for quotes that need relance
+        // Hide quotes that are accepted, rejected, or expired
+        if (quote.status === 'accepted' || quote.status === 'rejected' || quote.status === 'expired') {
+          return null; // Don't show these in follow-up list
+        }
+        
+        // Additional check: if quote has valid_until date and it's expired, don't show
+        if (quote.validUntil) {
+          // Get current date and valid until date, comparing only the date part (not time)
+          const currentDate = new Date();
+          const validUntilDate = new Date(quote.validUntil);
           
-                     const nextFollowUp = followUp.scheduled_at || followUp.created_at;
+          // Reset time to start of day for both dates to compare only dates
+          const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+          const validUntilDateOnly = new Date(validUntilDate.getFullYear(), validUntilDate.getMonth(), validUntilDate.getDate());
+          
+          // Quote is expired only if valid_until date has passed (not equal)
+          if (validUntilDateOnly < currentDateOnly) {
+            return null; // Don't show expired quotes even if status hasn't been updated yet
+          }
+        }
+        
+        const nextFollowUp = followUp.scheduled_at || followUp.created_at;
           
           // Determine follow-up type based on quote status and client behavior
           let followUpType = 'general';
@@ -297,6 +313,22 @@ const FollowUpManagement = () => {
         // Hide quotes that are accepted, rejected, or expired
         if (quote.status === 'accepted' || quote.status === 'rejected' || quote.status === 'expired') {
           return null; // Don't show these in follow-up list
+        }
+        
+        // Additional check: if quote has valid_until date and it's expired, don't show
+        if (quote.validUntil) {
+          // Get current date and valid until date, comparing only the date part (not time)
+          const currentDate = new Date();
+          const validUntilDate = new Date(quote.validUntil);
+          
+          // Reset time to start of day for both dates to compare only dates
+          const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+          const validUntilDateOnly = new Date(validUntilDate.getFullYear(), validUntilDate.getMonth(), validUntilDate.getDate());
+          
+          // Quote is expired only if valid_until date has passed (not equal)
+          if (validUntilDateOnly < currentDateOnly) {
+            return null; // Don't show expired quotes even if status hasn't been updated yet
+          }
         }
         
         const nextFollowUp = followUp.scheduled_at || followUp.created_at;

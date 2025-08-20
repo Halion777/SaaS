@@ -129,29 +129,29 @@ const QuoteCreation = () => {
     const duplicateId = searchParams.get('duplicate');
     const leadId = searchParams.get('lead_id');
 
-         const resumeDraftById = async (draftIdWithPrefix) => {
-       try {
-         const draftId = draftIdWithPrefix.replace(/^draft-/, '');
-         const { data, error } = await supabase
-           .from('quote_drafts')
-           .select('*')
-           .eq('id', draftId)
-           .single();
-         if (error || !data) {
-           console.error('Error loading draft by id:', error);
-           return;
-         }
-         const d = data.draft_data || {};
-         setIsEditing(false);
-         setEditingQuoteId(null);
-         setSelectedClient(d.selectedClient || null);
-         setProjectInfo(d.projectInfo || { categories: [], customCategory: '', deadline: '', description: '' });
-         setTasks(d.tasks || []);
-         setFiles(d.files || []);
-         setCompanyInfo(d.companyInfo || null);
-         setFinancialConfig(d.financialConfig || null);
-         setCurrentStep(d.currentStep || 1);
-         setLastSaved(d.lastSaved || new Date().toISOString());
+    const resumeDraftById = async (draftIdWithPrefix) => {
+      try {
+        const draftId = draftIdWithPrefix.replace(/^draft-/, '');
+        const { data, error } = await supabase
+          .from('quote_drafts')
+          .select('*')
+          .eq('id', draftId)
+          .single();
+        if (error || !data) {
+          console.error('Error loading draft by id:', error);
+          return;
+        }
+        const d = data.draft_data || {};
+        setIsEditing(false);
+        setEditingQuoteId(null);
+        setSelectedClient(d.selectedClient || null);
+        setProjectInfo(d.projectInfo || { categories: [], customCategory: '', deadline: '', description: '' });
+        setTasks(d.tasks || []);
+        setFiles(d.files || []);
+        setCompanyInfo(d.companyInfo || null);
+        setFinancialConfig(d.financialConfig || null);
+        setCurrentStep(d.currentStep || 1);
+        setLastSaved(d.lastSaved || new Date().toISOString());
          
          // Restore client signature from draft
          if (d.clientSignature && d.selectedClient?.id) {
@@ -174,19 +174,19 @@ const QuoteCreation = () => {
            const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
            const draftRowIdKey = getDraftRowIdKeyByQuoteNumber(quoteNumber);
            
-           // Persist as current draft for continuity
+        // Persist as current draft for continuity
            try { localStorage.setItem(draftKey, JSON.stringify(d)); } catch {}
-           // Bind this editing session to the backend draft row id so autosave updates the same row
+        // Bind this editing session to the backend draft row id so autosave updates the same row
            try { localStorage.setItem(draftRowIdKey, data.id); } catch {}
          } else {
            // Fallback to user-based keys
            try { localStorage.setItem(`quote-draft-${user.id}-${currentProfile?.id || 'default'}`, JSON.stringify(d)); } catch {}
            try { localStorage.setItem(`quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`, data.id); } catch {}
          }
-       } catch (err) {
-         console.error('Exception resuming draft:', err);
-       }
-     };
+      } catch (err) {
+        console.error('Exception resuming draft:', err);
+      }
+    };
     
     if (editId) {
       if (editId.startsWith('draft-')) {
@@ -202,19 +202,19 @@ const QuoteCreation = () => {
       setIsEditing(false);
       setEditingQuoteId(duplicateId);
       loadExistingQuote(duplicateId, true);
-              // New session: clear any previous draft row binding to avoid overriding previous draft
+      // New session: clear any previous draft row binding to avoid overriding previous draft
         try { localStorage.removeItem(`quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`); } catch {}
     } else if (leadId) {
       // Handle lead-based quote creation
       setIsEditing(false);
       setEditingQuoteId(null);
       loadLeadData(leadId);
-              // Clear any previous draft row binding for new quote from lead
+      // Clear any previous draft row binding for new quote from lead
         try { localStorage.removeItem(`quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`); } catch {}
     } else {
       setIsEditing(false);
       setEditingQuoteId(null);
-              // Brand-new quote session: clear any previous draft row binding to force insert of a new draft row
+      // Brand-new quote session: clear any previous draft row binding to force insert of a new draft row
         try { localStorage.removeItem(`quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`); } catch {}
     }
   }, [searchParams]);
@@ -522,7 +522,7 @@ const QuoteCreation = () => {
           projectInfo.categories.length > 0 || projectInfo.description || projectInfo.deadline) {
         setIsAutoSaving(true);
         const savedTime = new Date().toISOString();
-                const quoteData = {
+        const quoteData = {
           selectedClient: normalizeSelectedClient(selectedClient),
           projectInfo,
           tasks,
@@ -690,16 +690,16 @@ const QuoteCreation = () => {
     loadCompanyInfo();
   }, [user?.id, currentProfile?.id]);
 
-     // Do not auto-load draft into the form on page open; only clean expired local draft
-   useEffect(() => {
-     if (user?.id) {
-       try {
+  // Do not auto-load draft into the form on page open; only clean expired local draft
+  useEffect(() => {
+    if (user?.id) {
+        try {
          // Check for quote number-based draft first
          const quoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
          if (quoteNumber) {
            const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
            const local = JSON.parse(localStorage.getItem(draftKey) || 'null');
-           if (local?.lastSaved && isDraftExpired(local.lastSaved)) {
+          if (local?.lastSaved && isDraftExpired(local.lastSaved)) {
              localStorage.removeItem(draftKey);
            }
                    } else {
@@ -710,8 +710,8 @@ const QuoteCreation = () => {
               localStorage.removeItem(fallbackKey);
             }
           }
-       } catch {}
-     }
+        } catch {}
+    }
    }, [user?.id, currentProfile?.id, projectInfo.quoteNumber]);
 
   // Helper function to clear form data
@@ -998,20 +998,20 @@ const QuoteCreation = () => {
       let finalQuoteNumber = localStorage.getItem('pre_generated_quote_number');
       
       if (!finalQuoteNumber) {
-        // Generate quote number using the service
-        const { data: quoteNumber, error: numberError } = await generateQuoteNumber(user?.id);
-        
-        if (numberError) {
-          console.warn('Error generating quote number, using fallback:', numberError);
-        }
-        
+      // Generate quote number using the service
+      const { data: quoteNumber, error: numberError } = await generateQuoteNumber(user?.id);
+      
+      if (numberError) {
+        console.warn('Error generating quote number, using fallback:', numberError);
+      }
+      
         finalQuoteNumber = quoteNumber;
-        
-        // If backend didn't provide a number, generate a fallback with timestamp for uniqueness
-        if (!finalQuoteNumber) {
-          const timestamp = Date.now();
-          const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-          finalQuoteNumber = `${new Date().getFullYear()}-${timestamp}-${randomSuffix}`;
+      
+      // If backend didn't provide a number, generate a fallback with timestamp for uniqueness
+      if (!finalQuoteNumber) {
+        const timestamp = Date.now();
+        const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        finalQuoteNumber = `${new Date().getFullYear()}-${timestamp}-${randomSuffix}`;
         }
       } else {
         // Clear the pre-generated number since we're using it
@@ -1029,46 +1029,46 @@ const QuoteCreation = () => {
       // For new quotes, files will be uploaded when the quote is actually created
       const uploadedFiles = files;
 
-             const quoteData = {
-         user_id: user?.id,
-         profile_id: currentProfile?.id,  
-         client_id: selectedClient?.value,
+      const quoteData = {
+        user_id: user?.id,
+        profile_id: currentProfile?.id,
+        client_id: selectedClient?.value,
          quote_number: finalQuoteNumber,
-         status: 'draft',
-         title: projectInfo.description || 'Nouveau devis',
-         description: projectInfo.description || '',
-         project_categories: projectInfo.categories || [],
-         custom_category: projectInfo.customCategory || '',
-         start_date: new Date().toISOString().split('T')[0],
-         total_amount: totalAmount,
-         tax_amount: data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0,
-         discount_amount: 0,
-         final_amount: totalAmount + (data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0),
-         valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-         terms_conditions: data.financialConfig?.defaultConditions?.text || '',
+        status: 'draft',
+        title: projectInfo.description || 'Nouveau devis',
+        description: projectInfo.description || '',
+        project_categories: projectInfo.categories || [],
+        custom_category: projectInfo.customCategory || '',
+        start_date: new Date().toISOString().split('T')[0],
+        total_amount: totalAmount,
+        tax_amount: data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0,
+        discount_amount: 0,
+        final_amount: totalAmount + (data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0),
+        valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        terms_conditions: data.financialConfig?.defaultConditions?.text || '',
          
-         tasks: tasks.map((task, index) => ({
-           name: task.description || task.name || '',
-           description: task.description || task.name || '',
-           quantity: task.quantity || 1,
-           unit: task.unit || 'piece',
-           unit_price: task.price || task.unit_price || 0,
-           total_price: (task.price || task.unit_price || 0) * (task.quantity || 1),
-           duration: task.duration || 0,
-           duration_unit: task.durationUnit || 'minutes',
-           pricing_type: task.pricingType || 'flat',
-           hourly_rate: task.hourlyRate || 0,
-           order_index: index,
-           materials: task.materials || []
-         })),
-         files: uploadedFiles.map((file, index) => ({
-           file_name: file.name || file.file_name || '',
-           file_path: file.file_path || file.path || file.file_path || file.url || '',
-           file_size: file.size || file.file_size || 0,
-           mime_type: file.type || file.mime_type || '',
-           order_index: index
-         }))
-       };
+        tasks: tasks.map((task, index) => ({
+          name: task.description || task.name || '',
+          description: task.description || task.name || '',
+          quantity: task.quantity || 1,
+          unit: task.unit || 'piece',
+          unit_price: task.price || task.unit_price || 0,
+          total_price: (task.price || task.unit_price || 0) * (task.quantity || 1),
+          duration: task.duration || 0,
+          duration_unit: task.durationUnit || 'minutes',
+          pricing_type: task.pricingType || 'flat',
+          hourly_rate: task.hourlyRate || 0,
+          order_index: index,
+          materials: task.materials || []
+        })),
+        files: uploadedFiles.map((file, index) => ({
+          file_name: file.name || file.file_name || '',
+          file_path: file.file_path || file.path || file.file_path || file.url || '',
+          file_size: file.size || file.file_size || 0,
+          mime_type: file.type || file.mime_type || '',
+          order_index: index
+        }))
+      };
 
       // Debug logging
       
@@ -1265,13 +1265,13 @@ const QuoteCreation = () => {
         }
       }
 
-             // Now save client signature to database and storage
-       let clientSignatureId = null;
+      // Now save client signature to database and storage
+      let clientSignatureId = null;
        if (data.clientSignature?.signature && user?.id) {
-         try {
-           // Check if this is a temporary signature that needs to be moved
+        try {
+          // Check if this is a temporary signature that needs to be moved
            if (data.clientSignature.isTemporary && data.clientSignature.signatureFilePath) {
-             // This is a temporary signature, move it from client-signatures folder to quote folder
+            // This is a temporary signature, move it from client-signatures folder to quote folder
              const oldPath = data.clientSignature.signatureFilePath; // client-signatures/userId/timestamp-filename
              const newPath = `${quoteId}/client-signatures/${data.clientSignature.signatureFileName}`; // quoteId/client-signatures/filename
             
@@ -1308,19 +1308,19 @@ const QuoteCreation = () => {
                 console.warn('Could not fetch client info for signature:', error);
               }
               
-                             // Create signature record in database with new path
-               const signatureRecord = {
-             quote_id: quoteId,
-                 signer_name: signerName,
-                 signer_email: signerEmail,
-                 signature_file_path: newPath,
+              // Create signature record in database with new path
+              const signatureRecord = {
+            quote_id: quoteId,
+                signer_name: signerName,
+                signer_email: signerEmail,
+                signature_file_path: newPath,
                  signature_filename: data.clientSignature.signatureFileName,
                  signature_size: data.clientSignature.signatureFileSize,
                  signature_mime_type: data.clientSignature.signatureMimeType,
-                 signature_mode: 'upload',
-                 signature_type: 'client',
+                signature_mode: 'upload',
+                signature_type: 'client',
                  customer_comment: data.clientSignature.clientComment
-               };
+              };
 
               const { data: dbData, error: insertError } = await supabase
                 .from('quote_signatures')
@@ -1343,24 +1343,24 @@ const QuoteCreation = () => {
               console.error('Error processing temporary signature:', error);
               throw error;
             }
-                     } else {
-             // This is a base64 signature, convert to file and upload
+          } else {
+            // This is a base64 signature, convert to file and upload
              const signatureResponse = await fetch(data.clientSignature.signature);
-             const signatureBlob = await signatureResponse.blob();
-             
-             // Create a proper File object
-             const signatureFile = new File([signatureBlob], 'client-signature.png', { 
-               type: 'image/png' 
-             });
-             
-             // Upload client signature to storage (now with real quote ID)
-             const { data: signatureUploadResult, error: signatureUploadError } = await uploadQuoteSignature(
-               signatureFile,
-               quoteId, // Use real quote ID now
-               user.id,
-               'client',
+            const signatureBlob = await signatureResponse.blob();
+            
+            // Create a proper File object
+            const signatureFile = new File([signatureBlob], 'client-signature.png', { 
+              type: 'image/png' 
+            });
+            
+            // Upload client signature to storage (now with real quote ID)
+            const { data: signatureUploadResult, error: signatureUploadError } = await uploadQuoteSignature(
+              signatureFile,
+              quoteId, // Use real quote ID now
+              user.id,
+              'client',
                data.clientSignature.clientComment || null
-             );
+            );
             
             if (signatureUploadError) {
               console.error('Client signature upload failed:', signatureUploadError);
@@ -1481,20 +1481,20 @@ const QuoteCreation = () => {
       let finalQuoteNumber = localStorage.getItem('pre_generated_quote_number');
       
       if (!finalQuoteNumber) {
-        // Generate quote number using the service
-        const { data: quoteNumber, error: numberError } = await generateQuoteNumber(user.id);
-        
-        if (numberError) {
-          console.warn('Error generating quote number, using fallback:', numberError);
-        }
-        
+      // Generate quote number using the service
+      const { data: quoteNumber, error: numberError } = await generateQuoteNumber(user.id);
+      
+      if (numberError) {
+        console.warn('Error generating quote number, using fallback:', numberError);
+      }
+      
         finalQuoteNumber = quoteNumber;
-        
-        // If backend didn't provide a number, generate a fallback with timestamp for uniqueness
-        if (!finalQuoteNumber) {
-          const timestamp = Date.now();
-          const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-          finalQuoteNumber = `${new Date().getFullYear()}-${timestamp}-${randomSuffix}`;
+      
+      // If backend didn't provide a number, generate a fallback with timestamp for uniqueness
+      if (!finalQuoteNumber) {
+        const timestamp = Date.now();
+        const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        finalQuoteNumber = `${new Date().getFullYear()}-${timestamp}-${randomSuffix}`;
         }
       } else {
         // Clear the pre-generated number since we're using it
@@ -1502,7 +1502,7 @@ const QuoteCreation = () => {
         console.log('Using pre-generated quote number for sent quote:', finalQuoteNumber);
       }
       
-     
+      
       // Store the quote number in projectInfo for display
       setProjectInfo(prev => ({
         ...prev,
@@ -1516,7 +1516,7 @@ const QuoteCreation = () => {
         return sum + (task.price || 0) + taskMaterialsTotal;
       }, 0);
 
-   
+
       // First, create the quote in the database to get a real ID
       
       const quoteData = {
@@ -1552,12 +1552,12 @@ const QuoteCreation = () => {
         files: [] // We'll add files after upload
       };
 
-      
+
       // Call backend service to create quote FIRST
       const { data: createdQuote, error: createError } = await createQuote(quoteData);
       
      
-      
+
       const quoteId = createdQuote.id;
       
       // If this quote was created from a lead, create a lead quote record
@@ -1695,19 +1695,19 @@ const QuoteCreation = () => {
         }
       }
 
-             // Now save client signature to database and storage
-       let clientSignatureId = null;
+      // Now save client signature to database and storage
+      let clientSignatureId = null;
        if (sendData.clientSignature?.signature && user?.id) {
-         try {
-           // Check if this is a temporary signature that needs to be moved
+        try {
+          // Check if this is a temporary signature that needs to be moved
            if (sendData.clientSignature.isTemporary && sendData.clientSignature.signatureFilePath) {
-             // This is a temporary signature, download and re-upload to quote folder
-           
-             try {
-               // Download the temporary signature file
-               const { data: signatureBlob, error: downloadError } = await supabase
-                 .storage
-                 .from('signatures')
+            // This is a temporary signature, download and re-upload to quote folder
+          
+            try {
+              // Download the temporary signature file
+              const { data: signatureBlob, error: downloadError } = await supabase
+                .storage
+                .from('signatures')
                  .download(sendData.clientSignature.signatureFilePath);
 
               if (downloadError) {
@@ -1715,19 +1715,19 @@ const QuoteCreation = () => {
                 throw new Error(`Failed to download signature: ${downloadError.message}`);
               }
 
-                             // Create a new File object from the blob
+              // Create a new File object from the blob
                const signatureFile = new File([signatureBlob], sendData.clientSignature.signatureFileName, { 
                  type: sendData.clientSignature.signatureMimeType 
-               });
-               
-               // Upload to the final quote location using uploadQuoteSignature
-               const { data: signatureUploadResult, error: signatureUploadError } = await uploadQuoteSignature(
-                 signatureFile,
-                 quoteId,
-                 user.id,
-                 'client',
+              });
+
+              // Upload to the final quote location using uploadQuoteSignature
+              const { data: signatureUploadResult, error: signatureUploadError } = await uploadQuoteSignature(
+                signatureFile,
+                quoteId,
+                user.id,
+                'client',
                  sendData.clientSignature.clientComment || null
-               );
+              );
 
               if (signatureUploadError) {
                 console.error('Client signature upload failed:', signatureUploadError);
@@ -1738,35 +1738,35 @@ const QuoteCreation = () => {
                 // uploadQuoteSignature already handles database insert
                 clientSignatureId = signatureUploadResult.data.id;
                 
-                                 // Delete the original temporary signature
-                 try {
+                // Delete the original temporary signature
+                try {
                    await supabase.storage.from('signatures').remove([sendData.clientSignature.signatureFilePath]);
-                 } catch (deleteError) {
-                   console.warn('Warning: Could not delete temporary signature:', deleteError);
-                 }
+                } catch (deleteError) {
+                  console.warn('Warning: Could not delete temporary signature:', deleteError);
+                }
               }
             } catch (error) {
               console.error('Error processing temporary signature:', error);
               throw error;
             }
-                     } else {
-             // This is a base64 signature, convert to file and upload
+          } else {
+            // This is a base64 signature, convert to file and upload
            const signatureResponse = await fetch(sendData.clientSignature.signature);
-           const signatureBlob = await signatureResponse.blob();
-           
-           // Create a proper File object
-           const signatureFile = new File([signatureBlob], 'client-signature.png', { 
-             type: 'image/png' 
-           });
-           
-           // Upload client signature to storage (now with real quote ID)
-           const { data: signatureUploadResult, error: signatureUploadError } = await uploadQuoteSignature(
-             signatureFile,
-             quoteId, // Use real quote ID now
-             user.id,
-               'client',
+          const signatureBlob = await signatureResponse.blob();
+          
+          // Create a proper File object
+          const signatureFile = new File([signatureBlob], 'client-signature.png', { 
+            type: 'image/png' 
+          });
+          
+          // Upload client signature to storage (now with real quote ID)
+          const { data: signatureUploadResult, error: signatureUploadError } = await uploadQuoteSignature(
+            signatureFile,
+            quoteId, // Use real quote ID now
+            user.id,
+              'client',
                sendData.clientSignature.clientComment || null
-           );
+          );
           
           if (signatureUploadError) {
             console.error('Client signature upload failed:', signatureUploadError);
@@ -2024,28 +2024,28 @@ const QuoteCreation = () => {
     }
 
     if (canProceed) {
-             // Auto-save before changing step
-       const savedTime = new Date().toISOString();
-             const quoteData = {
-          selectedClient: normalizeSelectedClient(selectedClient),
-         projectInfo,
-         tasks,
-         files,
-         currentStep: newStep,
-         companyInfo,
-         financialConfig,
+      // Auto-save before changing step
+      const savedTime = new Date().toISOString();
+      const quoteData = {
+        selectedClient: normalizeSelectedClient(selectedClient),
+        projectInfo,
+        tasks,
+        files,
+        currentStep: newStep,
+        companyInfo,
+        financialConfig,
          // Include client signature when changing steps
          clientSignature: selectedClient?.id || selectedClient?.value ? 
            localStorage.getItem(`client-signature-${user.id}-${selectedClient.id || selectedClient.value}`) ? 
              JSON.parse(localStorage.getItem(`client-signature-${user.id}-${selectedClient.id || selectedClient.value}`)) : null : null,
-         lastSaved: savedTime
-       };
+        lastSaved: savedTime
+      };
        
        // Use quote number for draft key if available
        const quoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
        const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
        localStorage.setItem(draftKey, JSON.stringify(quoteData));
-       setLastSaved(savedTime);
+      setLastSaved(savedTime);
       
       setCurrentStep(newStep);
     } else {
@@ -2185,13 +2185,13 @@ const QuoteCreation = () => {
         localStorage.removeItem(draftKey);
         try {
           const rowId = localStorage.getItem(draftRowIdKey);
-          if (rowId) {
-            deleteQuoteDraftById(rowId);
+        if (rowId) {
+          deleteQuoteDraftById(rowId);
           } else if (quoteNumber) {
             // If no row ID but we have quote number, delete by quote number
             deleteQuoteDraftByQuoteNumber(user.id, currentProfile?.id || null, quoteNumber);
-          }
-        } catch (_) {}
+        }
+      } catch (_) {}
         localStorage.removeItem(draftRowIdKey);
       } else {
         // Fallback to user-based keys
@@ -2213,8 +2213,8 @@ const QuoteCreation = () => {
       localStorage.removeItem(`company-logo-${user.id}`);
       localStorage.removeItem(`company-signature-${user.id}`);
       
-             // Clear client signature
-       localStorage.removeItem(`client-signature-${user.id}`);
+      // Clear client signature
+      localStorage.removeItem(`client-signature-${user.id}`);
       
       // Clear client-specific signatures
       const signatureKeysToRemove = [];
@@ -2246,18 +2246,18 @@ const QuoteCreation = () => {
 
   const renderCurrentStep = () => {
     switch (currentStep) {
-             case 1:
-         return (
-           <ClientSelection
-             selectedClient={selectedClient}
-             projectInfo={projectInfo}
-             onClientSelect={handleClientSelect}
-             onProjectInfoChange={handleProjectInfoChange}
-             onNext={handleNext}
-             leadId={leadId}
+      case 1:
+        return (
+          <ClientSelection
+            selectedClient={selectedClient}
+            projectInfo={projectInfo}
+            onClientSelect={handleClientSelect}
+            onProjectInfoChange={handleProjectInfoChange}
+            onNext={handleNext}
+            leadId={leadId}
              userId={user?.id}
-           />
-         );
+          />
+        );
       case 2:
         return (
           <TaskDefinition
@@ -2293,8 +2293,8 @@ const QuoteCreation = () => {
             }));
             localStorage.removeItem('pre_generated_quote_number');
           } else {
-            // Generate quote number if it doesn't exist
-            setTimeout(() => generateQuoteNumberForPreview(), 100);
+          // Generate quote number if it doesn't exist
+          setTimeout(() => generateQuoteNumberForPreview(), 100);
           }
         }
         
