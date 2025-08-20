@@ -28,31 +28,57 @@ class ClientQuoteService {
         clientName = quote.client?.name;
       }
 
-      // First, save the signature to storage
-      const signaturePath = await this.saveClientSignature(quoteId, signatureData);
-      
-      if (!signaturePath) {
-        throw new Error('Failed to save signature');
+      // Check if signature already exists
+      const { data: existingSignature, error: checkError } = await supabase
+        .from('quote_signatures')
+        .select('id, signature_file_path')
+        .eq('quote_id', quoteId)
+        .eq('signature_type', 'client')
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking existing signature:', checkError);
+        throw checkError;
       }
 
-      // Insert CLIENT signature into quote_signatures table
-      const { data: signatureRecord, error: signatureError } = await supabase
-        .from('quote_signatures')
-        .insert({
-          quote_id: quoteId,
-          signer_email: clientEmail || signatureData.clientEmail || 'client@example.com',
-          signer_name: clientName || signatureData.clientName || 'Client',
-          signature_type: 'client',
-          signature_data: signatureData.signature,
-          signature_file_path: signaturePath,
-          signature_mode: signatureData.signatureMode || 'draw',
-          customer_comment: signatureData.clientComment,
-          signed_at: signatureData.signedAt || new Date().toISOString()
-        });
+      let signaturePath, signatureRecordId;
 
-      if (signatureError) {
-        console.error('Error saving signature to database:', signatureError);
-        throw signatureError;
+      if (existingSignature) {
+        // Signature already exists, use the existing one
+        signaturePath = existingSignature.signature_file_path;
+        signatureRecordId = existingSignature.id;
+        console.log(`Quote ${quoteId}: Using existing signature record: ${signatureRecordId}`);
+      } else {
+        // No existing signature, create new one
+        signaturePath = await this.saveClientSignature(quoteId, signatureData);
+        
+        if (!signaturePath) {
+          throw new Error('Failed to save signature');
+        }
+
+        // Insert CLIENT signature into quote_signatures table
+        const { data: newSignatureRecord, error: signatureError } = await supabase
+          .from('quote_signatures')
+          .insert({
+            quote_id: quoteId,
+            signer_email: clientEmail || signatureData.clientEmail || 'client@example.com',
+            signer_name: clientName || signatureData.clientName || 'Client',
+            signature_type: 'client',
+            signature_data: signatureData.signature,
+            signature_file_path: signaturePath,
+            signature_mode: signatureData.signatureMode || 'draw',
+            customer_comment: signatureData.clientComment,
+            signed_at: signatureData.signedAt || new Date().toISOString()
+          })
+          .select('id')
+          .single();
+
+        if (signatureError) {
+          console.error('Error saving signature to database:', signatureError);
+          throw signatureError;
+        }
+        signatureRecordId = newSignatureRecord.id;
+        console.log(`Quote ${quoteId}: Created new signature record: ${signatureRecordId}`);
       }
 
       // Update the quote status and set accepted_at timestamp
@@ -71,14 +97,7 @@ class ClientQuoteService {
         throw error;
       }
 
-      // Note: We don't log to workflow history for client actions due to constraint restrictions
-      // Client actions are tracked in quote_access_logs instead
-      console.log(`Quote ${quoteId} workflow: Client accepted quote with signature: ${signatureRecord.id}`);
-
-      // Note: We don't log to quote_events for client actions due to constraint restrictions
-      // Client actions are tracked in quote_access_logs instead
-      console.log(`Quote ${quoteId} accepted by client with signature: ${signatureRecord.id}`);
-
+      
       // Log to access logs for tracking
       await this.logAccessLog(quoteId, shareToken, 'accepted');
 
@@ -112,14 +131,7 @@ class ClientQuoteService {
         throw error;
       }
 
-      // Note: We don't log to workflow history for client actions due to constraint restrictions
-      // Client actions are tracked in quote_access_logs instead
-      console.log(`Quote ${quoteId} workflow: Client rejected quote with reason: ${rejectionReason}`);
-
-      // Note: We don't log to quote_events for client actions due to constraint restrictions
-      // Client actions are tracked in quote_access_logs instead
-      console.log(`Quote ${quoteId} rejected by client with reason: ${rejectionReason}`);
-
+  
       // Log to access logs for tracking
       await this.logAccessLog(quoteId, shareToken, 'rejected');
 
@@ -171,14 +183,7 @@ class ClientQuoteService {
         throw error;
       }
 
-      // Note: We don't log to workflow history for client actions due to constraint restrictions
-      // Client actions are tracked in quote_access_logs instead
-      console.log(`Quote ${quoteId} workflow: Client requested modifications with comment: ${pendingData.clientComment}`);
-
-      // Note: We don't log to quote_events for client actions due to constraint restrictions
-      // Client actions are tracked in quote_access_logs instead
-      console.log(`Quote ${quoteId} set to pending by client with comment: ${pendingData.clientComment}`);
-
+      
       // Log to access logs for tracking
       await this.logAccessLog(quoteId, shareToken, 'pending');
 

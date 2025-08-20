@@ -12,7 +12,7 @@ import FileUpload from './components/FileUpload';
 import QuotePreview from './components/QuotePreview';
 import QuoteSendModal from './components/QuoteSendModal';
 // AIScoring removed
-import { generateQuoteNumber, createQuote, fetchQuoteById, updateQuote, saveQuoteDraft, loadQuoteDraft, deleteQuoteDraft, deleteQuoteDraftById } from '../../services/quotesService';
+import { generateQuoteNumber, createQuote, fetchQuoteById, updateQuote, saveQuoteDraft, deleteQuoteDraftById, deleteQuoteDraftByQuoteNumber } from '../../services/quotesService';
 import { uploadQuoteFile, uploadQuoteSignature } from '../../services/quoteFilesService';
 import { saveCompanyInfo } from '../../services/companyInfoService';
 import { LeadManagementService } from '../../services/leadManagementService';
@@ -91,15 +91,20 @@ const QuoteCreation = () => {
     return Date.now() - saved > DRAFT_TTL_MS;
   };
 
-  // Helper function to generate draft key with user and profile IDs
-  const getDraftKey = () => {
-    return `quote-draft-${user?.id}-${currentProfile?.id || 'default'}`;
+  
+  
+  // Helper function to generate draft key with quote number for unique identification
+  const getDraftKeyByQuoteNumber = (quoteNumber) => {
+    if (!quoteNumber) return `quote-draft-${user?.id}-${currentProfile?.id || 'default'}`;
+    return `quote-draft-${user?.id}-${currentProfile?.id || 'default'}-${quoteNumber}`;
   };
-  const getDraftRowIdKey = () => {
-    return `quote-draft-rowid-${user?.id}-${currentProfile?.id || 'default'}`;
+  
+  const getDraftRowIdKeyByQuoteNumber = (quoteNumber) => {
+    if (!quoteNumber) return `quote-draft-rowid-${user?.id}-${currentProfile?.id || 'default'}`;
+    return `quote-draft-rowid-${user?.id}-${currentProfile?.id || 'default'}-${quoteNumber}`;
   };
 
-  // Deprecated: drafts list/session id removed for a cleaner flow
+
 
   // Normalize selected client to a minimal, non-duplicated structure for drafts
   const normalizeSelectedClient = (sel) => {
@@ -124,37 +129,64 @@ const QuoteCreation = () => {
     const duplicateId = searchParams.get('duplicate');
     const leadId = searchParams.get('lead_id');
 
-    const resumeDraftById = async (draftIdWithPrefix) => {
-      try {
-        const draftId = draftIdWithPrefix.replace(/^draft-/, '');
-        const { data, error } = await supabase
-          .from('quote_drafts')
-          .select('*')
-          .eq('id', draftId)
-          .single();
-        if (error || !data) {
-          console.error('Error loading draft by id:', error);
-          return;
-        }
-        const d = data.draft_data || {};
-        setIsEditing(false);
-        setEditingQuoteId(null);
-        setSelectedClient(d.selectedClient || null);
-        setProjectInfo(d.projectInfo || { categories: [], customCategory: '', deadline: '', description: '' });
-        setTasks(d.tasks || []);
-        setFiles(d.files || []);
-        setCompanyInfo(d.companyInfo || null);
-        setFinancialConfig(d.financialConfig || null);
-        setCurrentStep(d.currentStep || 1);
-        setLastSaved(d.lastSaved || new Date().toISOString());
-        // Persist as current draft for continuity
-        try { localStorage.setItem(getDraftKey(), JSON.stringify(d)); } catch {}
-        // Bind this editing session to the backend draft row id so autosave updates the same row
-        try { localStorage.setItem(getDraftRowIdKey(), data.id); } catch {}
-      } catch (err) {
-        console.error('Exception resuming draft:', err);
-      }
-    };
+         const resumeDraftById = async (draftIdWithPrefix) => {
+       try {
+         const draftId = draftIdWithPrefix.replace(/^draft-/, '');
+         const { data, error } = await supabase
+           .from('quote_drafts')
+           .select('*')
+           .eq('id', draftId)
+           .single();
+         if (error || !data) {
+           console.error('Error loading draft by id:', error);
+           return;
+         }
+         const d = data.draft_data || {};
+         setIsEditing(false);
+         setEditingQuoteId(null);
+         setSelectedClient(d.selectedClient || null);
+         setProjectInfo(d.projectInfo || { categories: [], customCategory: '', deadline: '', description: '' });
+         setTasks(d.tasks || []);
+         setFiles(d.files || []);
+         setCompanyInfo(d.companyInfo || null);
+         setFinancialConfig(d.financialConfig || null);
+         setCurrentStep(d.currentStep || 1);
+         setLastSaved(d.lastSaved || new Date().toISOString());
+         
+         // Restore client signature from draft
+         if (d.clientSignature && d.selectedClient?.id) {
+           try {
+             localStorage.setItem(`client-signature-${user.id}-${d.selectedClient.id}`, JSON.stringify(d.clientSignature));
+           } catch (e) {
+             console.warn('Failed to restore client signature:', e);
+           }
+         } else if (d.clientSignature && d.selectedClient?.value) {
+           try {
+             localStorage.setItem(`client-signature-${user.id}-${d.selectedClient.value}`, JSON.stringify(d.clientSignature));
+           } catch (e) {
+             console.warn('Failed to restore client signature:', e);
+           }
+         }
+         
+         // Use quote number for draft key if available
+         const quoteNumber = d.projectInfo?.quoteNumber;
+         if (quoteNumber) {
+           const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
+           const draftRowIdKey = getDraftRowIdKeyByQuoteNumber(quoteNumber);
+           
+           // Persist as current draft for continuity
+           try { localStorage.setItem(draftKey, JSON.stringify(d)); } catch {}
+           // Bind this editing session to the backend draft row id so autosave updates the same row
+           try { localStorage.setItem(draftRowIdKey, data.id); } catch {}
+         } else {
+           // Fallback to user-based keys
+           try { localStorage.setItem(`quote-draft-${user.id}-${currentProfile?.id || 'default'}`, JSON.stringify(d)); } catch {}
+           try { localStorage.setItem(`quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`, data.id); } catch {}
+         }
+       } catch (err) {
+         console.error('Exception resuming draft:', err);
+       }
+     };
     
     if (editId) {
       if (editId.startsWith('draft-')) {
@@ -164,26 +196,26 @@ const QuoteCreation = () => {
       setEditingQuoteId(editId);
         loadExistingQuote(editId, false);
         // Ensure a fresh backend draft row will be created if user starts autosaving while editing
-        try { localStorage.removeItem(getDraftRowIdKey()); } catch {}
+        try { localStorage.removeItem(`quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`); } catch {}
       }
     } else if (duplicateId) {
       setIsEditing(false);
       setEditingQuoteId(duplicateId);
       loadExistingQuote(duplicateId, true);
-      // New session: clear any previous draft row binding to avoid overriding previous draft
-      try { localStorage.removeItem(getDraftRowIdKey()); } catch {}
+              // New session: clear any previous draft row binding to avoid overriding previous draft
+        try { localStorage.removeItem(`quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`); } catch {}
     } else if (leadId) {
       // Handle lead-based quote creation
       setIsEditing(false);
       setEditingQuoteId(null);
       loadLeadData(leadId);
-      // Clear any previous draft row binding for new quote from lead
-      try { localStorage.removeItem(getDraftRowIdKey()); } catch {}
+              // Clear any previous draft row binding for new quote from lead
+        try { localStorage.removeItem(`quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`); } catch {}
     } else {
       setIsEditing(false);
       setEditingQuoteId(null);
-      // Brand-new quote session: clear any previous draft row binding to force insert of a new draft row
-      try { localStorage.removeItem(getDraftRowIdKey()); } catch {}
+              // Brand-new quote session: clear any previous draft row binding to force insert of a new draft row
+        try { localStorage.removeItem(`quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`); } catch {}
     }
   }, [searchParams]);
 
@@ -400,13 +432,19 @@ const QuoteCreation = () => {
         const signatureUrl = clientSignature.signature_file_path 
           ? getPublicUrl('signatures', clientSignature.signature_file_path) 
           : (clientSignature.signature_data ? `data:image/png;base64,${clientSignature.signature_data}` : null);
-        const signatureData = {
+        const clientSignatureData = {
           signature: signatureUrl,
           clientComment: clientSignature.signer_email || '',
           signedAt: clientSignature.signed_at || new Date().toISOString()
         };
         if (user?.id && signatureUrl) {
-          localStorage.setItem(`client-signature-${user.id}`, JSON.stringify(signatureData));
+          // Save with both user ID and client ID for better organization
+          const clientId = quote.client?.id;
+          if (clientId) {
+            localStorage.setItem(`client-signature-${user.id}-${clientId}`, JSON.stringify(clientSignatureData));
+          }
+          // Also save to general user signature for backward compatibility
+          localStorage.setItem(`client-signature-${user.id}`, JSON.stringify(clientSignatureData));
         }
       }
       
@@ -484,7 +522,7 @@ const QuoteCreation = () => {
           projectInfo.categories.length > 0 || projectInfo.description || projectInfo.deadline) {
         setIsAutoSaving(true);
         const savedTime = new Date().toISOString();
-        const quoteData = {
+                const quoteData = {
           selectedClient: normalizeSelectedClient(selectedClient),
           projectInfo,
           tasks,
@@ -492,12 +530,34 @@ const QuoteCreation = () => {
           currentStep,
           companyInfo,
           financialConfig,
+          
+          // Get client signature from localStorage or from current signature state
+          clientSignature: (() => {
+            // First try to get from localStorage
+            if (selectedClient?.id || selectedClient?.value) {
+              const clientId = selectedClient.id || selectedClient.value;
+              const key = `client-signature-${user.id}-${clientId}`;
+              const storedSignature = localStorage.getItem(key);
+              if (storedSignature) {
+                try {
+                  return JSON.parse(storedSignature);
+                } catch (e) {
+                  console.warn('Failed to parse stored signature:', e);
+                }
+              }
+            } else {
+              console.warn('Auto-save: no client ID available', { selectedClient });
+            }
+            return null;
+          })(),
           lastSaved: savedTime
         };
         
         // Save to localStorage (current in-progress draft only)
         try {
-          localStorage.setItem(getDraftKey(), JSON.stringify(quoteData));
+          const quoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
+          const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
+          localStorage.setItem(draftKey, JSON.stringify(quoteData));
           setLastSaved(savedTime);
         } catch (localStorageError) {
           console.error('Error saving to localStorage:', localStorageError);
@@ -506,16 +566,26 @@ const QuoteCreation = () => {
         // Also save to backend draft table for cross-device and quotes-management visibility
         try {
           if (user?.id) {
-            const existingRowId = localStorage.getItem(getDraftRowIdKey());
+            // Use quote number for unique draft identification if available
+            const quoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
+            const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
+            const draftRowIdKey = getDraftRowIdKeyByQuoteNumber(quoteNumber);
+            
+            const existingRowId = localStorage.getItem(draftRowIdKey);
             const { data: saved, error: draftErr } = await saveQuoteDraft({
               id: existingRowId || undefined,
               user_id: user.id,
               profile_id: currentProfile?.id || null,
-              draft_data: quoteData
+              draft_data: quoteData,
+              // Add quote number to draft data for better identification
+              quote_number: quoteNumber || null
             });
             if (!draftErr && saved?.id && !existingRowId) {
-              localStorage.setItem(getDraftRowIdKey(), saved.id);
+              localStorage.setItem(draftRowIdKey, saved.id);
             }
+            
+            // Client signature is only saved to localStorage during auto-save
+            // It will be saved to quote_signatures table when explicitly saving or sending the quote
           }
         } catch (e) {
           console.warn('Draft autosave (backend) failed:', e?.message || e);
@@ -620,19 +690,29 @@ const QuoteCreation = () => {
     loadCompanyInfo();
   }, [user?.id, currentProfile?.id]);
 
-  // Do not auto-load draft into the form on page open; only clean expired local draft
-  useEffect(() => {
-    if (user?.id) {
-        try {
-          const local = JSON.parse(localStorage.getItem(getDraftKey()) || 'null');
-          if (local?.lastSaved && isDraftExpired(local.lastSaved)) {
-            localStorage.removeItem(getDraftKey());
+     // Do not auto-load draft into the form on page open; only clean expired local draft
+   useEffect(() => {
+     if (user?.id) {
+       try {
+         // Check for quote number-based draft first
+         const quoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
+         if (quoteNumber) {
+           const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
+           const local = JSON.parse(localStorage.getItem(draftKey) || 'null');
+           if (local?.lastSaved && isDraftExpired(local.lastSaved)) {
+             localStorage.removeItem(draftKey);
+           }
+                   } else {
+            // Fallback to user-based draft
+            const fallbackKey = `quote-draft-${user.id}-${currentProfile?.id || 'default'}`;
+            const local = JSON.parse(localStorage.getItem(fallbackKey) || 'null');
+            if (local?.lastSaved && isDraftExpired(local.lastSaved)) {
+              localStorage.removeItem(fallbackKey);
+            }
           }
-        } catch {}
-      
-
-    }
-  }, [user?.id, currentProfile?.id]);
+       } catch {}
+     }
+   }, [user?.id, currentProfile?.id, projectInfo.quoteNumber]);
 
   // Helper function to clear form data
   const clearFormData = () => {
@@ -711,9 +791,17 @@ const QuoteCreation = () => {
         currentStep: currentStep + 1,
         companyInfo,
         financialConfig,
+        // Include client signature when moving between steps
+        clientSignature: selectedClient?.id || selectedClient?.value ? 
+          localStorage.getItem(`client-signature-${user.id}-${selectedClient.id || selectedClient.value}`) ? 
+            JSON.parse(localStorage.getItem(`client-signature-${user.id}-${selectedClient.id || selectedClient.value}`)) : null : null,
         lastSaved: savedTime
       };
-      localStorage.setItem(getDraftKey(), JSON.stringify(quoteData));
+      
+      // Use quote number for draft key if available
+      const quoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
+      const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
+      localStorage.setItem(draftKey, JSON.stringify(quoteData));
       setLastSaved(savedTime);
       
       // If moving to step 4 (preview), generate quote number
@@ -737,9 +825,28 @@ const QuoteCreation = () => {
         currentStep: currentStep - 1,
         companyInfo,
         financialConfig,
+        // Include client signature when moving between steps
+        // Get client signature from localStorage
+        clientSignature: (() => {
+          if (selectedClient?.id || selectedClient?.value) {
+            const storedSignature = localStorage.getItem(`client-signature-${user.id}-${selectedClient.id || selectedClient.value}`);
+            if (storedSignature) {
+              try {
+                return JSON.parse(storedSignature);
+              } catch (e) {
+                console.warn('Failed to parse stored signature:', e);
+              }
+            }
+          }
+          return null;
+        })(),
         lastSaved: savedTime
       };
-      localStorage.setItem(getDraftKey(), JSON.stringify(quoteData));
+      
+      // Use quote number for draft key if available
+      const quoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
+      const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
+      localStorage.setItem(draftKey, JSON.stringify(quoteData));
       setLastSaved(savedTime);
       
       setCurrentStep(currentStep - 1);
@@ -770,6 +877,79 @@ const QuoteCreation = () => {
   const handleSave = async (data) => {
     try {
       setIsSaving(true);
+      
+      // Manual save to backend draft table with complete data
+      if (user?.id) {
+        // Force a complete auto-save with all signature data before proceeding
+        const savedTime = new Date().toISOString();
+        const completeDraftData = {
+          selectedClient: normalizeSelectedClient(selectedClient),
+          projectInfo,
+          tasks,
+          files,
+          currentStep,
+          companyInfo,
+          financialConfig,
+          // Use signature data from the QuotePreview component if available
+          clientSignature: data?.signatureData || (selectedClient?.id || selectedClient?.value ? 
+            localStorage.getItem(`client-signature-${user.id}-${selectedClient.id || selectedClient.value}`) ? 
+              JSON.parse(localStorage.getItem(`client-signature-${user.id}-${selectedClient.id || selectedClient.value}`)) : null : null),
+          lastSaved: savedTime
+        };
+        
+        try {
+          // Use quote number for unique draft identification if available
+          const quoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
+          const draftRowIdKey = getDraftRowIdKeyByQuoteNumber(quoteNumber);
+          
+          const existingRowId = localStorage.getItem(draftRowIdKey);
+          const { data: saved, error: draftErr } = await saveQuoteDraft({
+            id: existingRowId || undefined,
+            user_id: user.id,
+            profile_id: currentProfile?.id || null,
+            draft_data: completeDraftData,
+            // Add quote number to draft data for better identification
+            quote_number: quoteNumber || null
+          });
+          
+          if (!draftErr && saved?.id && !existingRowId) {
+            localStorage.setItem(draftRowIdKey, saved.id);
+          }
+          
+          // Also save client signature to quote_signatures table if it exists
+          if (completeDraftData.clientSignature && selectedClient?.id) {
+            try {
+              const { data: signatureRecord, error: signatureError } = await supabase
+                .from('quote_signatures')
+                .insert({
+                  quote_id: saved?.id || existingRowId,
+                  signer_name: completeDraftData.clientSignature.signerName || selectedClient.name,
+                  signer_email: completeDraftData.clientSignature.signerEmail || selectedClient.email,
+                  signature_data: completeDraftData.clientSignature.signature,
+                  signature_mode: completeDraftData.clientSignature.signatureMode || 'draw',
+                  signature_type: 'client',
+                  customer_comment: completeDraftData.clientSignature.clientComment || null
+                })
+                .select()
+                .single();
+              
+              if (signatureError) {
+                console.warn('Failed to save client signature to database:', signatureError);
+              }
+            } catch (signatureSaveError) {
+              console.warn('Error saving client signature to database:', signatureSaveError);
+            }
+          }
+          
+          if (draftErr) {
+            console.warn('Manual draft save failed:', draftErr);
+          } else {
+            console.log('Manual draft save successful');
+          }
+        } catch (e) {
+          console.warn('Manual draft save error:', e?.message || e);
+        }
+      }
       
       // Check if we're editing an existing quote
       if (isEditing && editingQuoteId) {
@@ -834,20 +1014,29 @@ const QuoteCreation = () => {
       }
 
       // Create new quote (existing logic)
-      // Generate quote number using the service
-      const { data: quoteNumber, error: numberError } = await generateQuoteNumber(user?.id);
+      // Check for pre-generated quote number first
+      let finalQuoteNumber = localStorage.getItem('pre_generated_quote_number');
       
-      if (numberError) {
-        console.warn('Error generating quote number, using fallback:', numberError);
-      }
-      
-      let finalQuoteNumber = quoteNumber;
-      
-      // If backend didn't provide a number, generate a fallback with timestamp for uniqueness
       if (!finalQuoteNumber) {
-        const timestamp = Date.now();
-        const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-        finalQuoteNumber = `${new Date().getFullYear()}-${timestamp}-${randomSuffix}`;
+        // Generate quote number using the service
+        const { data: quoteNumber, error: numberError } = await generateQuoteNumber(user?.id);
+        
+        if (numberError) {
+          console.warn('Error generating quote number, using fallback:', numberError);
+        }
+        
+        finalQuoteNumber = quoteNumber;
+        
+        // If backend didn't provide a number, generate a fallback with timestamp for uniqueness
+        if (!finalQuoteNumber) {
+          const timestamp = Date.now();
+          const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+          finalQuoteNumber = `${new Date().getFullYear()}-${timestamp}-${randomSuffix}`;
+        }
+      } else {
+        // Clear the pre-generated number since we're using it
+        localStorage.removeItem('pre_generated_quote_number');
+        console.log('Using pre-generated quote number for new quote:', finalQuoteNumber);
       }
       
       // Calculate totals more accurately
@@ -861,10 +1050,10 @@ const QuoteCreation = () => {
       const uploadedFiles = files;
 
       const quoteData = {
-        user_id: user?.id,
-        profile_id: currentProfile?.id,
+        userId: user?.id,
+        profileId: currentProfile?.id,  
+        clientId: selectedClient?.value,
         quote_number: finalQuoteNumber,
-        client_id: selectedClient?.value,
         status: 'draft',
         title: projectInfo.description || 'Nouveau devis',
         description: projectInfo.description || '',
@@ -877,6 +1066,7 @@ const QuoteCreation = () => {
         final_amount: totalAmount + (data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0),
         valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         terms_conditions: data.financialConfig?.defaultConditions?.text || '',
+        
         tasks: tasks.map((task, index) => ({
           name: task.description || task.name || '',
           description: task.description || task.name || '',
@@ -1095,15 +1285,15 @@ const QuoteCreation = () => {
         }
       }
 
-      // Now save client signature to database and storage
-      let clientSignatureId = null;
-      if (data.signatureData?.signature && user?.id) {
-        try {
-          // Check if this is a temporary signature that needs to be moved
-          if (data.signatureData.isTemporary && data.signatureData.signatureFilePath) {
-            // This is a temporary signature, move it from client-signatures folder to quote folder
-            const oldPath = data.signatureData.signatureFilePath; // client-signatures/userId/timestamp-filename
-            const newPath = `${quoteId}/client-signatures/${data.signatureData.signatureFileName}`; // quoteId/client-signatures/filename
+             // Now save client signature to database and storage
+       let clientSignatureId = null;
+       if (data.clientSignature?.signature && user?.id) {
+         try {
+           // Check if this is a temporary signature that needs to be moved
+           if (data.clientSignature.isTemporary && data.clientSignature.signatureFilePath) {
+             // This is a temporary signature, move it from client-signatures folder to quote folder
+             const oldPath = data.clientSignature.signatureFilePath; // client-signatures/userId/timestamp-filename
+             const newPath = `${quoteId}/client-signatures/${data.clientSignature.signatureFileName}`; // quoteId/client-signatures/filename
             
             try {
               // Copy signature to new location
@@ -1138,19 +1328,19 @@ const QuoteCreation = () => {
                 console.warn('Could not fetch client info for signature:', error);
               }
               
-              // Create signature record in database with new path
-              const signatureRecord = {
-            quote_id: quoteId,
-                signer_name: signerName,
-                signer_email: signerEmail,
-                signature_file_path: newPath,
-                signature_filename: data.signatureData.signatureFileName,
-                signature_size: data.signatureData.signatureFileSize,
-                signature_mime_type: data.signatureData.signatureMimeType,
-                signature_mode: 'upload',
-                signature_type: 'client',
-                customer_comment: data.signatureData.clientComment
-              };
+                             // Create signature record in database with new path
+               const signatureRecord = {
+             quote_id: quoteId,
+                 signer_name: signerName,
+                 signer_email: signerEmail,
+                 signature_file_path: newPath,
+                 signature_filename: data.clientSignature.signatureFileName,
+                 signature_size: data.clientSignature.signatureFileSize,
+                 signature_mime_type: data.clientSignature.signatureMimeType,
+                 signature_mode: 'upload',
+                 signature_type: 'client',
+                 customer_comment: data.clientSignature.clientComment
+               };
 
               const { data: dbData, error: insertError } = await supabase
                 .from('quote_signatures')
@@ -1173,24 +1363,24 @@ const QuoteCreation = () => {
               console.error('Error processing temporary signature:', error);
               throw error;
             }
-          } else {
-            // This is a base64 signature, convert to file and upload
-            const signatureResponse = await fetch(data.signatureData.signature);
-            const signatureBlob = await signatureResponse.blob();
-            
-            // Create a proper File object
-            const signatureFile = new File([signatureBlob], 'client-signature.png', { 
-              type: 'image/png' 
-            });
-            
-            // Upload client signature to storage (now with real quote ID)
-            const { data: signatureUploadResult, error: signatureUploadError } = await uploadQuoteSignature(
-              signatureFile,
-              quoteId, // Use real quote ID now
-              user.id,
-              'client',
-              data.signatureData.clientComment || null
-            );
+                     } else {
+             // This is a base64 signature, convert to file and upload
+             const signatureResponse = await fetch(data.clientSignature.signature);
+             const signatureBlob = await signatureResponse.blob();
+             
+             // Create a proper File object
+             const signatureFile = new File([signatureBlob], 'client-signature.png', { 
+               type: 'image/png' 
+             });
+             
+             // Upload client signature to storage (now with real quote ID)
+             const { data: signatureUploadResult, error: signatureUploadError } = await uploadQuoteSignature(
+               signatureFile,
+               quoteId, // Use real quote ID now
+               user.id,
+               'client',
+               data.clientSignature.clientComment || null
+             );
             
             if (signatureUploadError) {
               console.error('Client signature upload failed:', signatureUploadError);
@@ -1229,12 +1419,7 @@ const QuoteCreation = () => {
     }
   };
 
-  // Enhanced handleSend with better data structure and backend integration
-  const handleSend = async (data) => {
-    // Store the data for later use and show the send modal
-    setShowQuoteSendModal(true);
-  };
-
+  
   // Actual quote sending logic
   const processQuoteSend = async (sendData) => {
     try {
@@ -1312,22 +1497,32 @@ const QuoteCreation = () => {
       }
 
       // Create new quote (existing logic)
-      // Generate quote number using the service
-      const { data: quoteNumber, error: numberError } = await generateQuoteNumber(user.id);
+      // Check for pre-generated quote number first
+      let finalQuoteNumber = localStorage.getItem('pre_generated_quote_number');
       
-      if (numberError) {
-        console.warn('Error generating quote number, using fallback:', numberError);
-      }
-      
-      let finalQuoteNumber = quoteNumber;
-      
-      // If backend didn't provide a number, generate a fallback with timestamp for uniqueness
       if (!finalQuoteNumber) {
-        const timestamp = Date.now();
-        const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-        finalQuoteNumber = `${new Date().getFullYear()}-${timestamp}-${randomSuffix}`;
+        // Generate quote number using the service
+        const { data: quoteNumber, error: numberError } = await generateQuoteNumber(user.id);
+        
+        if (numberError) {
+          console.warn('Error generating quote number, using fallback:', numberError);
+        }
+        
+        finalQuoteNumber = quoteNumber;
+        
+        // If backend didn't provide a number, generate a fallback with timestamp for uniqueness
+        if (!finalQuoteNumber) {
+          const timestamp = Date.now();
+          const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+          finalQuoteNumber = `${new Date().getFullYear()}-${timestamp}-${randomSuffix}`;
+        }
+      } else {
+        // Clear the pre-generated number since we're using it
+        localStorage.removeItem('pre_generated_quote_number');
+        console.log('Using pre-generated quote number for sent quote:', finalQuoteNumber);
       }
       
+     
       // Store the quote number in projectInfo for display
       setProjectInfo(prev => ({
         ...prev,
@@ -1341,19 +1536,19 @@ const QuoteCreation = () => {
         return sum + (task.price || 0) + taskMaterialsTotal;
       }, 0);
 
+   
       // First, create the quote in the database to get a real ID
       
       const quoteData = {
         user_id: user?.id,
         profile_id: currentProfile?.id,
+        client_id: selectedClient?.value || selectedClient?.id,
         quote_number: finalQuoteNumber,
-        client_id: selectedClient?.id || selectedClient?.value,
         status: 'sent',
-        title: projectInfo.description || 'Nouveau devis',
+        title: projectInfo.description || '',
         description: projectInfo.description || '',
         project_categories: projectInfo.categories || [],
         custom_category: projectInfo.customCategory || '',
-        deadline: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : null,
         total_amount: totalAmount,
         tax_amount: sendData.financialConfig?.vatConfig?.display ? (totalAmount * (sendData.financialConfig.vatConfig.rate || 20) / 100) : 0,
         discount_amount: 0,
@@ -1377,14 +1572,12 @@ const QuoteCreation = () => {
         files: [] // We'll add files after upload
       };
 
+      
       // Call backend service to create quote FIRST
       const { data: createdQuote, error: createError } = await createQuote(quoteData);
       
-      if (createError) {
-        console.error('Error creating quote in backend:', createError);
-        return;
-      }
-
+     
+      
       const quoteId = createdQuote.id;
       
       // If this quote was created from a lead, create a lead quote record
@@ -1522,39 +1715,39 @@ const QuoteCreation = () => {
         }
       }
 
-      // Now save client signature to database and storage
-      let clientSignatureId = null;
-      if (sendData.signatureData?.signature && user?.id) {
-        try {
-          // Check if this is a temporary signature that needs to be moved
-          if (sendData.signatureData.isTemporary && sendData.signatureData.signatureFilePath) {
-            // This is a temporary signature, download and re-upload to quote folder
-          
-            try {
-              // Download the temporary signature file
-              const { data: signatureBlob, error: downloadError } = await supabase
-                .storage
-                .from('signatures')
-                .download(sendData.signatureData.signatureFilePath);
+             // Now save client signature to database and storage
+       let clientSignatureId = null;
+       if (sendData.clientSignature?.signature && user?.id) {
+         try {
+           // Check if this is a temporary signature that needs to be moved
+           if (sendData.clientSignature.isTemporary && sendData.clientSignature.signatureFilePath) {
+             // This is a temporary signature, download and re-upload to quote folder
+           
+             try {
+               // Download the temporary signature file
+               const { data: signatureBlob, error: downloadError } = await supabase
+                 .storage
+                 .from('signatures')
+                 .download(sendData.clientSignature.signatureFilePath);
 
               if (downloadError) {
                 console.error('Error downloading signature:', downloadError);
                 throw new Error(`Failed to download signature: ${downloadError.message}`);
               }
 
-              // Create a new File object from the blob
-              const signatureFile = new File([signatureBlob], sendData.signatureData.signatureFileName, { 
-                type: sendData.signatureData.signatureMimeType 
-              });
-
-              // Upload to the final quote location using uploadQuoteSignature
-              const { data: signatureUploadResult, error: signatureUploadError } = await uploadQuoteSignature(
-                signatureFile,
-                quoteId,
-                user.id,
-                'client',
-                sendData.signatureData.clientComment || null
-              );
+                             // Create a new File object from the blob
+               const signatureFile = new File([signatureBlob], sendData.clientSignature.signatureFileName, { 
+                 type: sendData.clientSignature.signatureMimeType 
+               });
+               
+               // Upload to the final quote location using uploadQuoteSignature
+               const { data: signatureUploadResult, error: signatureUploadError } = await uploadQuoteSignature(
+                 signatureFile,
+                 quoteId,
+                 user.id,
+                 'client',
+                 sendData.clientSignature.clientComment || null
+               );
 
               if (signatureUploadError) {
                 console.error('Client signature upload failed:', signatureUploadError);
@@ -1565,35 +1758,35 @@ const QuoteCreation = () => {
                 // uploadQuoteSignature already handles database insert
                 clientSignatureId = signatureUploadResult.data.id;
                 
-                // Delete the original temporary signature
-                try {
-                  await supabase.storage.from('signatures').remove([sendData.signatureData.signatureFilePath]);
-                } catch (deleteError) {
-                  console.warn('Warning: Could not delete temporary signature:', deleteError);
-                }
+                                 // Delete the original temporary signature
+                 try {
+                   await supabase.storage.from('signatures').remove([sendData.clientSignature.signatureFilePath]);
+                 } catch (deleteError) {
+                   console.warn('Warning: Could not delete temporary signature:', deleteError);
+                 }
               }
             } catch (error) {
               console.error('Error processing temporary signature:', error);
               throw error;
             }
-          } else {
-            // This is a base64 signature, convert to file and upload
-          const signatureResponse = await fetch(sendData.signatureData.signature);
-          const signatureBlob = await signatureResponse.blob();
-          
-          // Create a proper File object
-          const signatureFile = new File([signatureBlob], 'client-signature.png', { 
-            type: 'image/png' 
-          });
-          
-          // Upload client signature to storage (now with real quote ID)
-          const { data: signatureUploadResult, error: signatureUploadError } = await uploadQuoteSignature(
-            signatureFile,
-            quoteId, // Use real quote ID now
-            user.id,
-              'client',
-              sendData.signatureData.clientComment || null
-          );
+                     } else {
+             // This is a base64 signature, convert to file and upload
+           const signatureResponse = await fetch(sendData.clientSignature.signature);
+           const signatureBlob = await signatureResponse.blob();
+           
+           // Create a proper File object
+           const signatureFile = new File([signatureBlob], 'client-signature.png', { 
+             type: 'image/png' 
+           });
+           
+           // Upload client signature to storage (now with real quote ID)
+           const { data: signatureUploadResult, error: signatureUploadError } = await uploadQuoteSignature(
+             signatureFile,
+             quoteId, // Use real quote ID now
+             user.id,
+               'client',
+               sendData.clientSignature.clientComment || null
+           );
           
           if (signatureUploadError) {
             console.error('Client signature upload failed:', signatureUploadError);
@@ -1719,7 +1912,8 @@ const QuoteCreation = () => {
             createdQuote,
             selectedClient,
             companyInfo,
-            user.id
+            user.id,
+            sendData.emailData // Pass the custom email data from the modal
           );
           
           if (emailResult.success) {
@@ -1737,13 +1931,15 @@ const QuoteCreation = () => {
                 .from('quote_events')
                 .insert({
                   quote_id: createdQuote.id,
-                  user_id: null, // System event
+                  user_id: user?.id || null, // System event
                   type: 'email_sent',
                   share_token: shareToken, // Use dedicated column
                   meta: {
                     email_type: 'quote_notification',
                     recipient: selectedClient.email,
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    custom_subject: sendData.emailData?.subject || null,
+                    custom_message: sendData.emailData?.message || null
                   }
                 });
             } catch (eventError) {
@@ -1756,18 +1952,16 @@ const QuoteCreation = () => {
                 .from('quote_follow_ups')
                 .insert({
                   quote_id: createdQuote.id,
+                  user_id: user.id, // Required field
+                  client_id: selectedClient?.id || null, // Optional field
                   stage: 0,
                   status: 'pending',
-                  scheduled_for: null, // No time-based scheduling - based on client behavior
-                  follow_up_type: 'initial',
-                  automated: true,
-                  meta: {
-                    created_at: new Date().toISOString(),
-                    email_sent: true,
-                    client_email: selectedClient.email,
-                    quote_number: createdQuote.quote_number,
-                    last_action: 'email_sent'
-                  }
+                  scheduled_at: new Date().toISOString(), // Required field (use current time)
+                  next_attempt_at: null, // Optional field
+                  attempts: 0, // Required field (default is 0)
+                  max_attempts: 3, // Required field (default is 3)
+                  channel: 'email', // Required field (default is 'email')
+                  automated: true // Required field
                 });
             } catch (followUpError) {
               console.warn('Failed to create follow-up record:', followUpError);
@@ -1789,6 +1983,17 @@ const QuoteCreation = () => {
       
       // Clear form data for clean state
       clearFormData();
+      
+      // Clear the current client's signature specifically after successful quote creation
+      if (user?.id && selectedClient?.id) {
+        const clientSignatureKey = `client-signature-${user.id}-${selectedClient.id}`;
+        localStorage.removeItem(clientSignatureKey);
+        console.log(`Cleared client signature for client ${selectedClient.id} after successful quote creation`);
+      } else if (user?.id && selectedClient?.value) {
+        const clientSignatureKey = `client-signature-${user.id}-${selectedClient.value}`;
+        localStorage.removeItem(clientSignatureKey);
+        console.log(`Cleared client signature for client ${selectedClient.value} after successful quote creation`);
+      }
 
       // Redirect
       navigate('/quotes-management');
@@ -1839,20 +2044,28 @@ const QuoteCreation = () => {
     }
 
     if (canProceed) {
-      // Auto-save before changing step
-      const savedTime = new Date().toISOString();
-      const quoteData = {
-        selectedClient: normalizeSelectedClient(selectedClient),
-        projectInfo,
-        tasks,
-        files,
-        currentStep: newStep,
-        companyInfo,
-        financialConfig,
-        lastSaved: savedTime
-      };
-      localStorage.setItem(getDraftKey(), JSON.stringify(quoteData));
-      setLastSaved(savedTime);
+             // Auto-save before changing step
+       const savedTime = new Date().toISOString();
+             const quoteData = {
+          selectedClient: normalizeSelectedClient(selectedClient),
+         projectInfo,
+         tasks,
+         files,
+         currentStep: newStep,
+         companyInfo,
+         financialConfig,
+         // Include client signature when changing steps
+         clientSignature: selectedClient?.id || selectedClient?.value ? 
+           localStorage.getItem(`client-signature-${user.id}-${selectedClient.id || selectedClient.value}`) ? 
+             JSON.parse(localStorage.getItem(`client-signature-${user.id}-${selectedClient.id || selectedClient.value}`)) : null : null,
+         lastSaved: savedTime
+       };
+       
+       // Use quote number for draft key if available
+       const quoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
+       const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
+       localStorage.setItem(draftKey, JSON.stringify(quoteData));
+       setLastSaved(savedTime);
       
       setCurrentStep(newStep);
     } else {
@@ -1882,7 +2095,48 @@ const QuoteCreation = () => {
   // Generate quote number for preview
   const generateQuoteNumberForPreview = async () => {
     try {
+      // First check if we already have a pre-generated number from client selection
+      const preGeneratedNumber = localStorage.getItem('pre_generated_quote_number');
+      
+      if (preGeneratedNumber) {
+        console.log('Using pre-generated quote number:', preGeneratedNumber);
+        
+        // Use the pre-generated number instead of generating a new one
+        setProjectInfo(prev => ({
+          ...prev,
+          quoteNumber: preGeneratedNumber
+        }));
+        
+        // Clear it from localStorage since we're using it now
+        localStorage.removeItem('pre_generated_quote_number');
+        
+        // Auto-save with the pre-generated quote number
+        const savedTime = new Date().toISOString();
+        const quoteData = {
+          selectedClient,
+          projectInfo: { ...projectInfo, quoteNumber: preGeneratedNumber },
+          tasks,
+          files,
+          currentStep: 4,
+          companyInfo,
+          financialConfig,
+          clientSignature: selectedClient?.id || selectedClient?.value ? 
+            localStorage.getItem(`client-signature-${user.id}-${selectedClient.id || selectedClient.value}`) ? 
+              JSON.parse(localStorage.getItem(`client-signature-${user.id}-${selectedClient.id || selectedClient.value}`)) : null : null,
+          lastSaved: savedTime
+        };
+        const currentQuoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
+        const draftKey = getDraftKeyByQuoteNumber(currentQuoteNumber);
+        localStorage.setItem(draftKey, JSON.stringify(quoteData));
+        setLastSaved(savedTime);
+        
+        return; // Don't generate a new number
+      }
+      
+      // Only generate new number if none exists
       if (!user?.id) return;
+      
+      console.log('No pre-generated number found, generating new quote number');
       
       // First try to get a unique quote number from the backend service
       const { data: quoteNumber, error: numberError } = await generateQuoteNumber(user.id);
@@ -1916,11 +2170,15 @@ const QuoteCreation = () => {
         currentStep: 4,
         companyInfo,
         financialConfig,
+        clientSignature: selectedClient?.id || selectedClient?.value ? 
+          localStorage.getItem(`client-signature-${user.id}-${selectedClient.id || selectedClient.value}`) ? 
+            JSON.parse(localStorage.getItem(`client-signature-${user.id}-${selectedClient.id || selectedClient.value}`)) : null : null,
         lastSaved: savedTime
       };
-      localStorage.setItem(getDraftKey(), JSON.stringify(quoteData));
+      const currentQuoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
+      const draftKey = getDraftKeyByQuoteNumber(currentQuoteNumber);
+      localStorage.setItem(draftKey, JSON.stringify(quoteData));
       setLastSaved(savedTime);
-      
       
     } catch (error) {
       console.error('Error generating quote number for preview:', error);
@@ -1938,25 +2196,55 @@ const QuoteCreation = () => {
   // Comprehensive localStorage clearing function
   const clearAllQuoteData = () => {
     if (user?.id) {
-      // Clear draft data
-      localStorage.removeItem(getDraftKey());
-      // Delete only the current session's backend draft row, not all drafts
-      try {
-        const rowId = localStorage.getItem(getDraftRowIdKey());
-        if (rowId) {
-          deleteQuoteDraftById(rowId);
-        }
-      } catch (_) {}
-      localStorage.removeItem(getDraftRowIdKey());
+      // Clear draft data by quote number if available
+      const quoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
+      if (quoteNumber) {
+        const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
+        const draftRowIdKey = getDraftRowIdKeyByQuoteNumber(quoteNumber);
+        
+        localStorage.removeItem(draftKey);
+        try {
+          const rowId = localStorage.getItem(draftRowIdKey);
+          if (rowId) {
+            deleteQuoteDraftById(rowId);
+          } else if (quoteNumber) {
+            // If no row ID but we have quote number, delete by quote number
+            deleteQuoteDraftByQuoteNumber(user.id, currentProfile?.id || null, quoteNumber);
+          }
+        } catch (_) {}
+        localStorage.removeItem(draftRowIdKey);
+      } else {
+        // Fallback to user-based keys
+        const fallbackKey = `quote-draft-${user.id}-${currentProfile?.id || 'default'}`;
+        const fallbackRowIdKey = `quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`;
+        
+        localStorage.removeItem(fallbackKey);
+        try {
+          const rowId = localStorage.getItem(fallbackRowIdKey);
+          if (rowId) {
+            deleteQuoteDraftById(rowId);
+          }
+        } catch (_) {}
+        localStorage.removeItem(fallbackRowIdKey);
+      }
       
       // Clear company info
       localStorage.removeItem(`company-info-${user.id}`);
       localStorage.removeItem(`company-logo-${user.id}`);
       localStorage.removeItem(`company-signature-${user.id}`);
       
-      // Clear client signature
-      localStorage.removeItem(`client-signature-${user.id}`);
-      localStorage.removeItem('quote-signature-data'); // Clear client signature data
+             // Clear client signature
+       localStorage.removeItem(`client-signature-${user.id}`);
+      
+      // Clear client-specific signatures
+      const signatureKeysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(`client-signature-${user.id}-`)) {
+          signatureKeysToRemove.push(key);
+        }
+      }
+      signatureKeysToRemove.forEach(key => localStorage.removeItem(key));
       
       // Clear quote files
       localStorage.removeItem(`quote-files-${user.id}`);
@@ -1978,17 +2266,18 @@ const QuoteCreation = () => {
 
   const renderCurrentStep = () => {
     switch (currentStep) {
-      case 1:
-        return (
-          <ClientSelection
-            selectedClient={selectedClient}
-            projectInfo={projectInfo}
-            onClientSelect={handleClientSelect}
-            onProjectInfoChange={handleProjectInfoChange}
-            onNext={handleNext}
-            leadId={leadId}
-          />
-        );
+             case 1:
+         return (
+           <ClientSelection
+             selectedClient={selectedClient}
+             projectInfo={projectInfo}
+             onClientSelect={handleClientSelect}
+             onProjectInfoChange={handleProjectInfoChange}
+             onNext={handleNext}
+             leadId={leadId}
+             userId={user?.id}
+           />
+         );
       case 2:
         return (
           <TaskDefinition
@@ -2015,8 +2304,18 @@ const QuoteCreation = () => {
       case 4:
         // Ensure quote number exists for preview
         if (!projectInfo.quoteNumber && user?.id) {
-          // Generate quote number if it doesn't exist
-          setTimeout(() => generateQuoteNumberForPreview(), 100);
+          // Check for pre-generated quote number first
+          const preGeneratedNumber = localStorage.getItem('pre_generated_quote_number');
+          if (preGeneratedNumber) {
+            setProjectInfo(prev => ({
+              ...prev,
+              quoteNumber: preGeneratedNumber
+            }));
+            localStorage.removeItem('pre_generated_quote_number');
+          } else {
+            // Generate quote number if it doesn't exist
+            setTimeout(() => generateQuoteNumberForPreview(), 100);
+          }
         }
         
         return (
@@ -2209,20 +2508,19 @@ const QuoteCreation = () => {
         </div>
       </div>
 
-      {/* Quote Send Modal */}
-      <QuoteSendModal
-        isOpen={showQuoteSendModal}
-        onClose={() => setShowQuoteSendModal(false)}
-        onSend={processQuoteSend}
-        selectedClient={selectedClient}
-        projectInfo={projectInfo}
-        companyInfo={companyInfo}
-        quoteNumber={projectInfo.quoteNumber}
-        tasks={tasks}
-        files={files}
-        financialConfig={financialConfig}
-        signatureData={null}
-      />
+             {/* Quote Send Modal */}
+       <QuoteSendModal
+         isOpen={showQuoteSendModal}
+         onClose={() => setShowQuoteSendModal(false)}
+         onSend={processQuoteSend}
+         selectedClient={selectedClient}
+         projectInfo={projectInfo}
+         companyInfo={companyInfo}
+         quoteNumber={projectInfo.quoteNumber}
+         tasks={tasks}
+         files={files}
+         financialConfig={financialConfig}
+       />
 
     </div>
   );

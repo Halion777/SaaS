@@ -152,7 +152,9 @@ const FollowUpManagement = () => {
           amount: parseFloat(quote.final_amount || quote.total_amount || 0),
           status: quote.status,
           createdAt: quote.created_at,
-          client: quote.client
+          client: quote.client,
+          share_token: quote.share_token, // Add share token for email links
+          quote_number: quote.quote_number // Add quote number for email templates
         }));
         
         setQuotes(transformedQuotes);
@@ -188,12 +190,13 @@ const FollowUpManagement = () => {
            
                        return {
                id: followUp.id,
-                            name: quote.clientName,
-             title: quote.title || 'Sans titre',
-             project: `${quote.number} - ${quote.description}`,
-             nextFollowUp: nextFollowUp,
-             validUntil: quote.validUntil || null,
-             potentialRevenue: quote.amount,
+               name: quote.clientName,
+               number: quote.number, // Add devis number
+               title: quote.title || 'Sans titre',
+               project: `${quote.number} - ${quote.description}`,
+               nextFollowUp: nextFollowUp,
+               validUntil: quote.validUntil || null,
+               potentialRevenue: quote.amount,
                          priority: (() => {
                // Calculate priority based on client behavior and attempts
                if (followUp.attempts >= 3) return 'high'; // Exceeded automatic limit
@@ -240,105 +243,122 @@ const FollowUpManagement = () => {
     }
   }, []);
 
-  // Refresh data
+  // Refresh data - use the same logic as loadData to avoid duplication
   const refreshData = async () => {
     if (!user || !currentProfile) return;
 
     try {
       setLoading(true);
       setError(null);
-
-        // Fetch quotes
-        const { data: quotesData, error: quotesError } = await fetchQuotes(user.id);
-        if (quotesError) {
-          console.error('Error fetching quotes:', quotesError);
-          setError('Erreur lors du chargement des devis');
-          return;
-        }
-        
-        // Fetch follow-ups
-        const { data: followUpsData, error: followUpsError } = await listScheduledFollowUps({ 
-          status: 'all', 
-          limit: 1000 
-        });
-        
-        if (followUpsError) {
-          console.error('Error fetching follow-ups:', followUpsError);
-          setError('Erreur lors du chargement des relances');
-          return;
-        }
-        
-        // Transform quotes data
-        const transformedQuotes = (quotesData || []).map(quote => ({
-          id: quote.id,
-          title: quote.title || 'Sans titre',
-          validUntil: quote.valid_until,
-          number: quote.quote_number,
-          clientName: quote.client?.name || 'Client inconnu',
-          amount: parseFloat(quote.final_amount || quote.total_amount || 0),
-          status: quote.status,
-          createdAt: quote.created_at,
-          description: quote.description || 'Aucune description',
-          client: quote.client
-        }));
-        
-        setQuotes(transformedQuotes);
-        
-                 // Transform follow-ups data
-         const transformedFollowUps = (followUpsData || []).map(followUp => {
-           const quote = transformedQuotes.find(q => q.id === followUp.quote_id);
-           if (!quote) return null;
-           
-                       const nextFollowUp = followUp.scheduled_at || followUp.scheduled_at;
-           
-           // Get tracking data from follow-up metadata
-           const trackingData = followUp.meta || {};
-           const followUpType = trackingData.follow_up_type || 'general';
-           const isAutomated = trackingData.automated || false;
-           
-           // Determine if client has responded based on tracking
-           const hasResponse = quote.status === 'accepted' || quote.status === 'rejected';
-           
-           return {
-             id: followUp.id,
-             name: quote.clientName,
-             title: quote.title || 'Sans titre',
-             project: `${quote.number} - ${quote.description}`,
-             nextFollowUp: nextFollowUp,
-             validUntil: quote.valid_until || null,
-             potentialRevenue: quote.amount,
-             priority: (() => {
-               // Calculate priority based on client behavior and attempts
-               if (followUp.attempts >= 3) return 'high'; // Exceeded automatic limit
-               if (quote.status === 'viewed' && followUp.attempts >= 2) return 'high'; // Viewed but no action after 2 attempts
-               if (quote.status === 'sent' && followUp.attempts >= 2) return 'medium'; // Not opened after 2 attempts
-               if (followUp.attempts >= 1) return 'medium'; // At least 1 attempt
-               return 'low'; // New follow-up
-             })(),
-             status: followUp.status,
-             type: 'quote',
-             hasResponse: hasResponse,
-             isPaid: quote.status === 'accepted',
-             quoteId: followUp.quote_id,
-             stage: followUp.stage,
-             scheduledAt: followUp.scheduled_at,
-             attempts: followUp.attempts || 0,
-             // New tracking data
-             followUpType: followUpType,
-             isAutomated: isAutomated,
-             templateSubject: followUp.template_subject,
-             trackingData: trackingData
-           };
-         }).filter(Boolean);
-        
-        setFollowUps(transformedFollowUps);
-        setError(null);
-      } catch (err) {
-        console.error('Error refreshing data:', err);
-        setError('Erreur lors de l\'actualisation des données');
-      } finally {
-        setLoading(false);
+      
+      // Fetch quotes
+      const { data: quotesData, error: quotesError } = await fetchQuotes(user.id);
+      if (quotesError) {
+        console.error('Error fetching quotes:', quotesError);
+        setError('Erreur lors du chargement des devis');
+        return;
       }
+      
+      // Fetch follow-ups
+      const { data: followUpsData, error: followUpsError } = await listScheduledFollowUps({ 
+        status: 'all', 
+        limit: 1000 
+      });
+      
+      if (followUpsError) {
+        console.error('Error fetching follow-ups:', followUpsError);
+        setError('Erreur lors du chargement des relances');
+        return;
+      }
+
+      // Transform quotes data
+      const transformedQuotes = (quotesData || []).map(quote => ({
+        id: quote.id,
+        title: quote.title || 'Sans titre',
+        validUntil: quote.valid_until,
+        number: quote.quote_number,
+        clientName: quote.client?.name || 'Client inconnu',
+        amount: parseFloat(quote.final_amount || quote.total_amount || 0),
+        status: quote.status,
+        createdAt: quote.created_at,
+        client: quote.client,
+        share_token: quote.share_token, // Add share token for email links
+        quote_number: quote.quote_number // Add quote number for email templates
+      }));
+      
+      setQuotes(transformedQuotes);
+      
+      // Transform follow-ups data to match the expected format
+      const transformedFollowUps = (followUpsData || []).map(followUp => {
+        const quote = transformedQuotes.find(q => q.id === followUp.quote_id);
+        if (!quote) return null;
+        
+        // 🔒 CRITICAL: Only show follow-ups for quotes that need relance
+        // Hide quotes that are accepted, rejected, or expired
+        if (quote.status === 'accepted' || quote.status === 'rejected' || quote.status === 'expired') {
+          return null; // Don't show these in follow-up list
+        }
+        
+        const nextFollowUp = followUp.scheduled_at || followUp.created_at;
+        
+        // Determine follow-up type based on quote status and client behavior
+        let followUpType = 'general';
+        let followUpReason = '';
+        
+        if (quote.status === 'sent') {
+          followUpType = 'email_not_opened';
+          followUpReason = '';
+        } else if (quote.status === 'viewed') {
+          followUpType = 'viewed_no_action';
+          followUpReason = '';
+        }
+        
+        // Get automation status from follow-up record
+        const isAutomated = followUp.automated || false;
+        
+        return {
+          id: followUp.id,
+          name: quote.clientName,
+          number: quote.number, // Add devis number
+          title: quote.title || 'Sans titre',
+          project: `${quote.number} - ${quote.description}`,
+          nextFollowUp: nextFollowUp,
+          validUntil: quote.validUntil || null,
+          potentialRevenue: quote.amount,
+          priority: (() => {
+            // Calculate priority based on client behavior and attempts
+            if (followUp.attempts >= 3) return 'high'; // Exceeded automatic limit
+            if (quote.status === 'viewed' && followUp.attempts >= 2) return 'high'; // Viewed but no action after 2 attempts
+            if (quote.status === 'sent' && followUp.attempts >= 2) return 'medium'; // Not opened after 2 attempts
+            if (followUp.attempts >= 1) return 'medium'; // At least 1 attempt
+            return 'low'; // New follow-up
+          })(),
+          status: followUp.status,
+          type: 'quote',
+          hasResponse: false, // Always false since we filtered out accepted/rejected
+          isPaid: false, // Always false since we filtered out accepted
+          quoteId: followUp.quote_id,
+          stage: followUp.stage,
+          scheduledAt: followUp.scheduled_at,
+          attempts: followUp.attempts || 0,
+          // Follow-up type based on quote status
+          followUpType: followUpType,
+          followUpReason: followUpReason,
+          isAutomated: isAutomated,
+          templateSubject: followUp.template_subject,
+          // Quote status for reference (not displayed, just for logic)
+          quoteStatus: quote.status
+        };
+      }).filter(Boolean); // Remove null entries
+      
+      setFollowUps(transformedFollowUps);
+      setError(null);
+    } catch (err) {
+      console.error('Error refreshing data:', err);
+      setError('Erreur lors de l\'actualisation des données');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle refresh button click
@@ -411,14 +431,7 @@ const FollowUpManagement = () => {
     return colors[priority] || colors.low;
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      pending: 'text-orange-700 bg-orange-100',
-      scheduled: 'text-blue-700 bg-blue-100',
-      completed: 'text-green-700 bg-green-100'
-    };
-    return colors[status] || colors.pending;
-  };
+  
 
   const getPriorityLabel = (priority) => {
     const labels = {
@@ -429,22 +442,8 @@ const FollowUpManagement = () => {
     return labels[priority] || 'Faible';
   };
 
-  const getStatusLabel = (status) => {
-    const labels = {
-      pending: 'En attente',
-      scheduled: 'Programmée',
-      completed: 'Terminée'
-    };
-    return labels[status] || 'En attente';
-  };
-
-  const getTypeLabel = (type) => {
-    const labels = {
-      quote: 'Devis',
-      invoice: 'Facture'
-    };
-    return labels[type] || 'Devis';
-  };
+ 
+  
 
   const getFollowUpTypeLabel = (followUpType) => {
     const labels = {
@@ -464,6 +463,28 @@ const FollowUpManagement = () => {
       'manual': 'text-purple-700 bg-purple-100'
     };
     return colors[followUpType] || 'text-blue-700 bg-blue-100';
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      'pending': 'text-blue-700 bg-blue-100',
+      'scheduled': 'text-purple-700 bg-purple-100',
+      'sent': 'text-green-700 bg-green-100',
+      'failed': 'text-red-700 bg-red-100',
+      'stopped': 'text-gray-700 bg-gray-100'
+    };
+    return colors[status] || 'text-gray-700 bg-gray-100';
+  };
+
+  const getStatusLabel = (status) => {
+    const labels = {
+      'pending': 'En attente',
+      'scheduled': 'Programmée',
+      'sent': 'Terminée',
+      'failed': 'Échouée',
+      'stopped': 'Arrêtée'
+    };
+    return labels[status] || 'Inconnu';
   };
 
 
@@ -520,8 +541,7 @@ const FollowUpManagement = () => {
       }
 
       // ✅ Email sent successfully - now log the action
-      // ❌ NO stage advancement - keep current stage
-      // ❌ NO new follow-up records - maintain existing automated workflow
+     
       // Log the manual follow-up event (NO stage advancement, NO new records)
       await logQuoteEvent({
         quote_id: followUp.quoteId,
@@ -556,15 +576,9 @@ const FollowUpManagement = () => {
       
     
       
-      // Show success feedback to user (no stage mention)
-      alert('Relance envoyée avec succès !');
+      // Success feedback handled silently (no alert)
       
-      // ✅ SUCCESS SUMMARY:
-      // - Immediate email sent to client
-      // - Action logged for tracking
-      // - Current stage maintained
-      // - No new follow-up records created
-      // - Automated workflow unchanged
+      
       
     } catch (error) {
       console.error('Error sending manual follow-up:', error);
@@ -583,35 +597,45 @@ const FollowUpManagement = () => {
         <table className="w-full">
           <thead className="bg-muted/50">
             <tr>
-                                                           <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Client</th>
-               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Title</th>
-               
-                              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Date relance</th>
-               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Valid until</th>
-               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Montant</th>
-               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Priorité</th>
-                             <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Type Relance</th>
-               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Actions</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Client</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Devis</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Title</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Date relance</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Valid until</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Montant</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Priorité</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Type Relance</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {filteredFollowUps.map((followUp) => (
               <tr key={followUp.id} className="hover:bg-muted/30 transition-colors">
-                                 <td className="px-4 py-3">
-                   <div className="flex items-center space-x-2">
-                     <Icon 
-                       name="User" 
-                       size={14} 
-                       className="sm:w-4 sm:h-4 text-blue-500"
-                     />
-                     <span className="text-xs sm:text-sm font-medium text-foreground">{followUp.name}</span>
-                   </div>
-                 </td>
-                 <td className="px-4 py-3">
-                   <span className="text-xs sm:text-sm text-muted-foreground max-w-[200px] truncate block">
-                     {followUp.title || 'Sans titre'}
-                   </span>
-                 </td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center space-x-2">
+                    <Icon 
+                      name="User" 
+                      size={14} 
+                      className="sm:w-4 sm:h-4 text-blue-500"
+                    />
+                    <span className="text-xs sm:text-sm font-medium text-foreground">{followUp.name}</span>
+                  </div>
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center space-x-2">
+                    <Icon 
+                      name="FileText" 
+                      size={14} 
+                      className="sm:w-4 sm:h-4 text-blue-500"
+                    />
+                    <span className="text-xs sm:text-sm font-medium text-foreground">{followUp.number || 'N/A'}</span>
+                  </div>
+                </td>
+                <td className="px-4 py-3">
+                  <span className="text-xs sm:text-sm text-muted-foreground max-w-[200px] truncate block">
+                    {followUp.title || 'Sans titre'}
+                  </span>
+                </td>
                  
                                   <td className="px-4 py-3">
                    <span className="text-xs sm:text-sm text-muted-foreground">
@@ -688,6 +712,9 @@ const FollowUpManagement = () => {
                 <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getFollowUpTypeColor(followUp.followUpType)}`}>
                   {getFollowUpTypeLabel(followUp.followUpType)}
                 </span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getStatusColor(followUp.status)}`}>
+                  {getStatusLabel(followUp.status)}
+                </span>
                                  
               </div>
             </div>
@@ -697,6 +724,10 @@ const FollowUpManagement = () => {
                <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground">
                  <Icon name="FileText" size={12} className="sm:w-3.5 sm:h-3.5" />
                  <span>{followUp.title}</span>
+               </div>
+               <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground">
+                 <Icon name="Hash" size={12} className="sm:w-3.5 sm:h-3.5" />
+                 <span>Devis: {followUp.number || 'N/A'}</span>
                </div>
                <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground">
                  <Icon name="Calendar" size={12} className="sm:w-3.5 sm:h-3.5" />

@@ -6,6 +6,7 @@ import CompanyInfoModal from './CompanyInfoModal';
 import Personalization from './Personalization';
 import FinancialConfig from './FinancialConfig';
 import ElectronicSignatureModal from './ElectronicSignatureModal';
+import QuoteSendModal from './QuoteSendModal';
 import { loadCompanyInfo, getDefaultCompanyInfo } from '../../../services/companyInfoService';
 import { getPublicUrl } from '../../../services/storageService';
 import { useAuth } from '../../../context/AuthContext';
@@ -31,6 +32,7 @@ const QuotePreview = ({
   const [activeTab, setActiveTab] = useState('personalization');
   const [showCompanyModal, setShowCompanyModal] = useState(false);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const [showQuoteSendModal, setShowQuoteSendModal] = useState(false);
   const [previewMode, setPreviewMode] = useState('desktop'); // desktop or mobile
   const [signatureData, setSignatureData] = useState(null);
   // PDF generation handled by QuoteSendModal
@@ -132,7 +134,7 @@ const QuotePreview = ({
           } else {
             // No database record - set empty state
             setCompanyInfo({
-              name: 'VOTRE ENTREPRISE',
+              name: 'Votre Entreprise',
               vatNumber: '',
               address: '123 Rue de l\'Exemple',
               postalCode: '1000',
@@ -151,7 +153,7 @@ const QuotePreview = ({
           
           // Set default state on error (no localStorage fallback)
           setCompanyInfo({
-            name: 'VOTRE ENTREPRISE',
+            name: 'Votre Entreprise',
             vatNumber: '',
             address: '123 Rue de l\'Exemple',
             postalCode: '1000',
@@ -175,22 +177,39 @@ const QuotePreview = ({
       setFinancialConfig(parentFinancialConfig);
     }
     
-    // Load saved signature data if available
-    const savedSignatureData = localStorage.getItem('quote-signature-data');
-    if (savedSignatureData) {
-      try {
-        const parsedSignatureData = JSON.parse(savedSignatureData);
-        setSignatureData(parsedSignatureData);
-      } catch (error) {
-        console.error('Error loading saved signature data:', error);
+    // Load saved client signature data if available
+    const clientId = selectedClient?.id || selectedClient?.value;
+    if (user?.id && clientId) {
+      const savedClientSignatureData = localStorage.getItem(`client-signature-${user.id}-${clientId}`);
+      if (savedClientSignatureData) {
+        try {
+          const parsedSignatureData = JSON.parse(savedClientSignatureData);
+          setSignatureData(parsedSignatureData);
+        } catch (error) {
+          console.error('Error loading saved client signature data:', error);
+        }
       }
     } else if (user?.id) {
       // Fallback: when editing, we persist client signature under a user-scoped key
       try {
-        const fallback = localStorage.getItem(`client-signature-${user.id}`);
+        // First try to get client-specific signature
+        const clientId = selectedClient?.id || selectedClient?.value;
+        let fallback = null;
+        
+        if (clientId) {
+          fallback = getClientSignature(user.id, clientId);
+        }
+        
+        // If no client-specific signature, fall back to general user signature
+        if (!fallback) {
+          const generalSignature = localStorage.getItem(`client-signature-${user.id}`);
+          if (generalSignature) {
+            fallback = JSON.parse(generalSignature);
+          }
+        }
+        
         if (fallback) {
-          const parsed = JSON.parse(fallback);
-          setSignatureData(parsed);
+          setSignatureData(fallback);
         }
       } catch (_) {}
     }
@@ -211,6 +230,23 @@ const QuotePreview = ({
     // Notify parent component of changes
     if (onCompanyInfoChange) {
       onCompanyInfoChange(info);
+    }
+  };
+
+  // Function to get client-specific signature from localStorage
+  const getClientSignature = (userId, clientId) => {
+    try {
+      if (userId && clientId) {
+        const signatureKey = `client-signature-${userId}-${clientId}`;
+        const signatureData = localStorage.getItem(signatureKey);
+        if (signatureData) {
+          return JSON.parse(signatureData);
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting client signature:', error);
+      return null;
     }
   };
 
@@ -310,7 +346,27 @@ const QuotePreview = ({
     
     // Save signature data to localStorage for persistence
     try {
-      localStorage.setItem('quote-signature-data', JSON.stringify(signatureData));
+      // Save with both user ID and client ID for better organization
+      const clientId = selectedClient?.id || selectedClient?.value;
+      console.log('handleSignature called with:', {
+        signatureData,
+        selectedClient,
+        clientId,
+        userId: user?.id
+      });
+      
+      if (user?.id && clientId) {
+        const key = `client-signature-${user.id}-${clientId}`;
+        localStorage.setItem(key, JSON.stringify(signatureData));
+        console.log('Signature saved to localStorage with key:', key);
+      } else {
+        console.warn('Cannot save signature: missing user ID or client ID', {
+          userId: user?.id,
+          clientId,
+          selectedClient
+        });
+      }
+      // Client-specific signature data is already saved above
     } catch (error) {
       console.error('Error saving signature data to localStorage:', error);
     }
@@ -665,7 +721,7 @@ const QuotePreview = ({
                 </div>
               </div>
               <div className={`${previewMode === 'mobile' ? 'text-left' : 'text-right'}`}>
-                <h3 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>VOTRE ENTREPRISE</h3>
+                <h3 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>{companyInfo.name || 'Votre Entreprise'}</h3>
                 <div className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
                   <p>{companyInfo.address}</p>
                   <p>{companyInfo.postalCode} {companyInfo.city}</p>
@@ -909,7 +965,7 @@ const QuotePreview = ({
             {isSaving ? 'Sauvegarde...' : 'Brouillon'}
           </Button>
           <Button
-            onClick={() => onSend({ customization, financialConfig, companyInfo, signatureData })}
+            onClick={() => setShowQuoteSendModal(true)}
             iconName="Send"
             iconPosition="left"
             size="sm"
@@ -945,6 +1001,24 @@ const QuotePreview = ({
             setShowSignatureModal(false);
           }}
           onClose={() => setShowSignatureModal(false)}
+        />
+      )}
+      
+      {/* Quote Send Modal */}
+      {showQuoteSendModal && (
+        <QuoteSendModal
+          isOpen={showQuoteSendModal}
+          onClose={() => setShowQuoteSendModal(false)}
+          onSend={onSend}
+          selectedClient={selectedClient}
+          projectInfo={projectInfo}
+          companyInfo={companyInfo}
+          quoteNumber={quoteNumber}
+          tasks={tasks}
+          files={files}
+          financialConfig={financialConfig}
+          signatureData={signatureData}
+          customization={customization}
         />
       )}
     </div>

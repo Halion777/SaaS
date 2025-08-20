@@ -47,7 +47,7 @@ const PublicQuoteShareViewer = () => {
         if (q.valid_until && new Date(q.valid_until) < new Date()) {
           // Only mark as expired if quote is still in a state where expiration matters
           if (['sent', 'viewed'].includes(q.status)) {
-            currentStatus = 'expired';
+          currentStatus = 'expired';
           }
           // Don't override 'accepted', 'rejected', 'pending' statuses with 'expired'
         }
@@ -75,6 +75,8 @@ const PublicQuoteShareViewer = () => {
               customerComment: existingClientSignature.customer_comment,
               signedAt: existingClientSignature.signed_at
             });
+            // Close signature modal if it was open and there's already a signature
+            setShowSignatureModal(false);
           }
         }
       } catch (e) {
@@ -87,6 +89,28 @@ const PublicQuoteShareViewer = () => {
   }, [token]);
 
   const handleAcceptQuote = async () => {
+    // If already signed, accept directly
+    if (clientSignature) {
+      try {
+        setActionLoading(true);
+        const result = await ClientQuoteService.acceptQuote(quote.id, token, clientSignature, quote);
+        
+        if (result.success) {
+          setQuoteStatus('accepted');
+          // Show success message
+          alert('Devis accepté avec succès !');
+        } else {
+          alert(`Erreur: ${result.error}`);
+        }
+      } catch (error) {
+        alert('Erreur lors de l\'acceptation du devis.');
+      } finally {
+        setActionLoading(false);
+      }
+      return;
+    }
+    
+    // If not signed yet, show signature modal
     setShowSignatureModal(true);
   };
 
@@ -274,16 +298,33 @@ const PublicQuoteShareViewer = () => {
                 <Button
                   onClick={handleAcceptQuote}
                   disabled={actionLoading}
-                  className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl transition-all"
+                  className={`px-6 py-2.5 shadow-lg hover:shadow-xl transition-all ${
+                    clientSignature 
+                      ? 'bg-green-700 hover:bg-green-800 text-white' 
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
                 >
                   <Icon name="CheckCircle" size={18} className="mr-2" />
-                  {actionLoading ? 'Traitement...' : 'Accepter'}
+                  {actionLoading ? 'Traitement...' : clientSignature ? 'Confirmer l\'acceptation' : 'Accepter'}
                 </Button>
               </div>
             )}
+
+            {/* Show signature info if already signed */}
+            {clientSignature && (
+              <div className="flex items-center space-x-3 bg-green-50 border border-green-200 rounded-lg px-4 py-3">
+                <Icon name="CheckCircle" size={20} className="text-green-600" />
+                <div>
+                  <p className="text-green-800 font-medium">Devis déjà signé</p>
+                  <p className="text-green-600 text-sm">
+                    Signé le {clientSignature.signedAt ? new Date(clientSignature.signedAt).toLocaleDateString('fr-FR') : 'récemment'}
+                  </p>
+          </div>
+              </div>
+            )}
+            </div>
           </div>
         </div>
-      </div>
 
       <div className="max-w-6xl mx-auto px-6 py-8">
                   {/* Quote Preview Card */}
@@ -308,9 +349,9 @@ const PublicQuoteShareViewer = () => {
               <div className="space-y-2">
                 <div className="flex items-start space-x-2">
                   <Icon name="MapPin" size={14} className="text-blue-500 mt-0.5 flex-shrink-0" />
-                  <div>
+            <div>
                     <p className="text-sm font-medium text-gray-800">{quote?.company_profile?.address || 'Adresse'}</p>
-                    {quote?.company_profile?.city && quote.company_profile.city !== 'N/A' && (
+                {quote?.company_profile?.city && quote.company_profile.city !== 'N/A' && (
                       <p className="text-sm text-gray-600">{quote.company_profile.city}</p>
                     )}
                     <p className="text-sm text-gray-600">{quote?.company_profile?.postal_code || 'Code postal'}</p>
@@ -350,9 +391,9 @@ const PublicQuoteShareViewer = () => {
                   </p>
                   <div className="space-y-1 text-gray-700">
                     <p className="text-sm font-medium">{quote?.client?.address || 'Adresse'}</p>
-                    {quote?.client?.city && quote.client.city !== 'N/A' && (
+                  {quote?.client?.city && quote.client.city !== 'N/A' && (
                       <p className="text-sm">{quote.client.city}</p>
-                    )}
+                  )}
                     <p className="text-sm">{quote?.client?.postal_code || 'Code postal'}</p>
                     <p className="text-sm">{quote?.client?.country || 'Pays'}</p>
                   </div>
@@ -472,8 +513,8 @@ const PublicQuoteShareViewer = () => {
                               return currency(materialTotal);
                             })() : ''}
                           </td>
-                        </tr>
-                      ))}
+                  </tr>
+                ))}
                     </React.Fragment>
                   );
                 })}
@@ -489,14 +530,14 @@ const PublicQuoteShareViewer = () => {
               <div className="w-72 space-y-2">
                 <div className="flex justify-between text-gray-600 text-sm">
                   <span>Sous-total:</span>
-                  <span className="font-medium">{currency(totalPrice)}</span>
-                </div>
-                {financialConfig.vatConfig?.display && (
+                <span className="font-medium">{currency(totalPrice)}</span>
+              </div>
+              {financialConfig.vatConfig?.display && (
                   <div className="flex justify-between text-gray-600 text-sm">
                     <span>TVA ({financialConfig.vatConfig.rate}%):</span>
-                    <span className="font-medium">{currency(vatAmount)}</span>
-                  </div>
-                )}
+                  <span className="font-medium">{currency(vatAmount)}</span>
+                </div>
+              )}
                 <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
                   <span>Total:</span>
                   <span className="text-blue-600">{currency(totalWithVAT)}</span>
@@ -504,9 +545,9 @@ const PublicQuoteShareViewer = () => {
                 {financialConfig.advanceConfig?.enabled && financialConfig.advanceConfig.amount > 0 && (
                   <div className="flex justify-between text-gray-600 text-sm">
                     <span>Acompte à la commande:</span>
-                    <span className="font-medium">{currency(financialConfig.advanceConfig.amount)}</span>
-                  </div>
-                )}
+                  <span className="font-medium">{currency(financialConfig.advanceConfig.amount)}</span>
+                </div>
+              )}
                 {financialConfig.advanceConfig?.enabled && financialConfig.advanceConfig.amount > 0 && (
                   <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
                     <span>Solde à la livraison:</span>
@@ -606,7 +647,7 @@ const PublicQuoteShareViewer = () => {
           <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl shadow-xl p-8 text-center border border-green-200">
             <div className="flex items-center justify-center gap-4 mb-6">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                <Icon name="CheckCircle" size={32} className="text-green-600" />
+              <Icon name="CheckCircle" size={32} className="text-green-600" />
               </div>
               <div>
                 <h2 className="text-3xl font-bold text-green-800">Devis accepté !</h2>
@@ -620,7 +661,7 @@ const PublicQuoteShareViewer = () => {
           <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-2xl shadow-xl p-8 text-center border border-red-200">
             <div className="flex items-center justify-center gap-4 mb-6">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-                <Icon name="XCircle" size={32} className="text-red-600" />
+              <Icon name="XCircle" size={32} className="text-red-600" />
               </div>
               <div>
                 <h2 className="text-3xl font-bold text-red-800">Devis rejeté</h2>

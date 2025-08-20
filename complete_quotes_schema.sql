@@ -56,8 +56,11 @@ CREATE TABLE IF NOT EXISTS public.quotes (
     is_public BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    start_date DATE,
     accepted_at TIMESTAMP WITH TIME ZONE,
-    rejected_at TIMESTAMP WITH TIME ZONE
+    rejected_at TIMESTAMP WITH TIME ZONE,
+    sent_at TIMESTAMP WITH TIME ZONE,
+    reject_reason TEXT
 );
 
 -- Quote tasks table for storing individual tasks within a quote

@@ -65,6 +65,7 @@ serve(async (req) => {
         // Skip duplicates for the same quote in this run
         continue;
       }
+      
       // Get destination email
       const { data: quote, error: qErr } = await admin
         .from('quotes')
@@ -84,6 +85,7 @@ serve(async (req) => {
         continue
       }
 
+      // Use template content from follow-up record
       const subject = fu.template_subject || `Relance devis ${quote.quote_number}`
       const text = fu.template_text || `Bonjour ${client.name || ''},\n\nAvez-vous eu le temps de consulter notre devis ${quote.quote_number} ?\n\nCordialement.`
       const html = fu.template_html || `<p>Bonjour ${client.name || ''},</p><p>Avez-vous eu le temps de consulter notre devis <strong>${quote.quote_number}</strong> ?</p><p>Cordialement.</p>`
@@ -102,7 +104,7 @@ serve(async (req) => {
 
         // Mark outbox and follow-up as sent
         await admin.from('email_outbox').update({ status: 'sent', provider_message_id: resp.id, sent_at: new Date().toISOString() }).eq('id', outbox.id)
-        await admin.from('quote_follow_ups').update({ status: 'sent', attempts: (1) }).eq('id', fu.id)
+        await admin.from('quote_follow_ups').update({ status: 'sent', attempts: (fu.attempts || 0) + 1 }).eq('id', fu.id)
         processedQuotes.add(String(fu.quote_id))
         
         // Enhanced event logging with intelligent follow-up metadata
@@ -112,7 +114,8 @@ serve(async (req) => {
           follow_up_type: fu.meta?.follow_up_type || 'general',
           automated: fu.meta?.automated || false,
           template_subject: fu.template_subject,
-          client_email: client.email
+          client_email: client.email,
+          instant_followup: fu.meta?.instant_followup || false
         }
         
         await admin.from('quote_events').insert({ 
@@ -130,9 +133,12 @@ serve(async (req) => {
           meta: {
             follow_up_type: fu.meta?.follow_up_type || 'general',
             stage: fu.stage,
-            automated: fu.meta?.automated || false
+            automated: fu.meta?.automated || false,
+            instant_followup: fu.meta?.instant_followup || false
           }
         })
+        
+        console.log(`Follow-up sent for quote ${quote.quote_number} to ${client.email}, type: ${fu.meta?.follow_up_type || 'general'}, instant: ${fu.meta?.instant_followup || false}`)
       } catch (err: any) {
         const errorMessage = err?.message || 'send failed'
         
@@ -167,6 +173,8 @@ serve(async (req) => {
             follow_up_type: fu.meta?.follow_up_type || 'general'
           }
         })
+        
+        console.error(`Failed to send follow-up for quote ${quote.quote_number}: ${errorMessage}`)
       }
     }
 

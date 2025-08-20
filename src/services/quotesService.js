@@ -64,6 +64,7 @@ export async function getQuoteTrackingData(quoteId) {
  * @returns {Promise<{data, error}>} Quotes data or error
  */
 export async function fetchQuotes(userId) {
+  console.log('Fetching quotes for user:', userId);
   try {
     if (!userId) {
       console.error('No userId provided to fetchQuotes');
@@ -253,6 +254,8 @@ export async function fetchQuoteById(id) {
  */
 export async function createQuote(quoteData) {
   try {
+    
+    
     // Validate required fields
     if (!quoteData.user_id) {
       return { error: { message: 'user_id is required' } };
@@ -264,22 +267,23 @@ export async function createQuote(quoteData) {
       return { error: { message: 'quote_number is required' } };
     }
     
+    
     // Generate unique share token for the quote
     const shareToken = `qt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
     // First, create the quote
+    
     const quoteInsertData = {
-      user_id: quoteData.user_id,
-      profile_id: quoteData.profile_id || null,
-      client_id: quoteData.client_id,
+      user_id: quoteData.user_id,           
+      profile_id: quoteData.profile_id || null,  
+      client_id: quoteData.client_id,  
       // DB limits: quote_number VARCHAR(50), title TEXT (ok), custom_category VARCHAR(255)
       quote_number: truncateString(quoteData.quote_number, 50),
       title: quoteData.title || 'Nouveau devis',
       description: quoteData.description || '',
-      status: quoteData.status || 'draft',
+      status: quoteData.status,
       project_categories: quoteData.project_categories || [],
       custom_category: truncateString(quoteData.custom_category || '', 255),
-      start_date: quoteData.start_date || null,
+      start_date: quoteData.start_date || new Date().toISOString().split('T')[0],
       total_amount: quoteData.total_amount || 0,
       tax_amount: quoteData.tax_amount || 0,
       discount_amount: quoteData.discount_amount || 0,
@@ -290,7 +294,7 @@ export async function createQuote(quoteData) {
       share_token: shareToken,
       is_public: quoteData.status === 'sent'
     };
-    
+   
     const { data: quote, error: quoteError } = await supabase
       .from('quotes')
       .insert(quoteInsertData)
@@ -431,31 +435,25 @@ export async function createQuote(quoteData) {
             emailSent = true;
           }
           
-          // Create initial follow-up record for automated tracking if email was sent
-          if (emailResult?.success) {
-            try {
-              await supabase
-                .from('quote_follow_ups')
-                .insert({
-                  quote_id: quote.id,
-                  stage: 0,
-                  status: 'pending',
-                  scheduled_for: null, // No time-based scheduling - based on client behavior
-                  automated: true,
-                  meta: {
-                    created_at: new Date().toISOString(),
-                    email_sent: true,
-                    client_email: leadData.client_email,
-                    quote_number: quote.quote_number,
-                    lead_id: quoteData.lead_id,
-                    last_action: 'email_sent'
-                  }
-                });
-            } catch (followUpError) {
-              console.warn('Failed to create follow-up record:', followUpError);
-              // Don't fail quote creation if follow-up creation fails
-            }
-          }
+                     // Create initial follow-up record for automated tracking if email was sent
+           if (emailResult?.success) {
+             try {
+               await supabase
+                 .from('quote_follow_ups')
+                 .insert({
+                   quote_id: quote.id,
+                   user_id: quoteData.user_id,
+                   client_id: quoteData.client_id,
+                   stage: 0,
+                   status: 'pending',
+                   scheduled_at: new Date().toISOString(), // Required field
+                   automated: true
+                 });
+             } catch (followUpError) {
+               console.warn('Failed to create follow-up record:', followUpError);
+               // Don't fail quote creation if follow-up creation fails
+             }
+           }
           
           // Update lead status to indicate quote was sent
           try {
@@ -520,35 +518,31 @@ export async function createQuote(quoteData) {
                   meta: {
                     email_type: 'quote_notification',
                     recipient: client.email,
-                    timestamp: new Date().toISOString()
-                  }
+                    
+                  },
+                  timestamp: new Date().toISOString()
                 });
             } catch (eventError) {
               console.warn('Failed to log email event:', eventError);
             }
             
-            // Create initial follow-up record for automated tracking
-            try {
-              await supabase
-                .from('quote_follow_ups')
-                .insert({
-                  quote_id: quote.id,
-                  stage: 0,
-                  status: 'pending',
-                  scheduled_for: null, // No time-based scheduling - based on client behavior
-                  automated: true,
-                  meta: {
-                    created_at: new Date().toISOString(),
-                    email_sent: true,
-                    client_email: client.email,
-                    quote_number: quote.quote_number,
-                    last_action: 'email_sent'
-                  }
-                });
-            } catch (followUpError) {
-              console.warn('Failed to create follow-up record:', followUpError);
-              // Don't fail quote creation if follow-up creation fails
-            }
+                         // Create initial follow-up record for automated tracking
+             try {
+               await supabase
+                 .from('quote_follow_ups')
+                 .insert({
+                   quote_id: quote.id,
+                   user_id: quoteData.user_id,
+                   client_id: quoteData.client_id,
+                   stage: 0,
+                   status: 'pending',
+                   scheduled_at: new Date().toISOString(), // Required field
+                   automated: true
+                 });
+             } catch (followUpError) {
+               console.warn('Failed to create follow-up record:', followUpError);
+               // Don't fail quote creation if follow-up creation fails
+             }
           } else {
             console.error('Failed to send quote notification email:', emailResult.error);
           }
@@ -577,6 +571,7 @@ export async function createQuote(quoteData) {
 export async function updateQuote(id, quoteData) {
   try {
     // Update the quote
+    console.log('Updating quote:', id, quoteData);
     const { data: quote, error: quoteError } = await supabase
       .from('quotes')
       .update({
@@ -609,25 +604,20 @@ export async function updateQuote(id, quoteData) {
           .eq('id', id)
           .single();
         
-        if (client?.client?.email) {
-          // Create initial follow-up record for automated tracking
-          await supabase
-            .from('quote_follow_ups')
-            .insert({
-              quote_id: id,
-              stage: 0,
-              status: 'pending',
-              scheduled_for: null, // No time-based scheduling - based on client behavior
-              automated: true,
-              meta: {
-                created_at: new Date().toISOString(),
-                email_sent: true,
-                client_email: client.client.email,
-                quote_number: quote.quote_number,
-                last_action: 'email_sent'
-              }
-            });
-        }
+                 if (client?.client?.email) {
+           // Create initial follow-up record for automated tracking
+           await supabase
+             .from('quote_follow_ups')
+             .insert({
+               quote_id: id,
+               user_id: quoteData.user_id,
+               client_id: quoteData.client_id,
+               stage: 0,
+               status: 'pending',
+               scheduled_at: new Date().toISOString(), // Required field
+               automated: true
+             });
+         }
       } catch (followUpError) {
         console.warn('Failed to create follow-up record on status update:', followUpError);
         // Don't fail quote update if follow-up creation fails
@@ -755,7 +745,9 @@ export async function updateQuote(id, quoteData) {
  * @returns {Promise<{data, error}>} Updated quote or error
  */
 export async function updateQuoteStatus(id, status) {
+  
   try {
+    
     const { data, error } = await supabase
       .from('quotes')
       .update({ status })
@@ -786,7 +778,6 @@ export async function deleteQuote(id) {
     await supabase.from('quote_workflow_history').delete().eq('quote_id', id);
     await supabase.from('quote_shares').delete().eq('quote_id', id);
     await supabase.from('quote_access_logs').delete().eq('quote_id', id);
-    await supabase.from('quote_tags').delete().eq('quote_id', id);
     
     // Delete the quote
     const { error } = await supabase
@@ -840,12 +831,13 @@ export async function getQuoteStatistics() {
  */
 export async function saveQuoteDraft(draftData) {
   try {
-    // If a draft row id is provided, update that row; otherwise insert a new draft
+    // If a draft row id is provided, update that row
     if (draftData.id) {
       const { data, error } = await supabase
         .from('quote_drafts')
         .update({
           draft_data: draftData.draft_data,
+          quote_number: draftData.quote_number, // Use dedicated column
           last_saved: new Date().toISOString()
         })
         .eq('id', draftData.id)
@@ -853,11 +845,41 @@ export async function saveQuoteDraft(draftData) {
         .single();
       return { data, error };
     }
+    
+    // Check if we have a quote number for UPSERT logic
+    if (draftData.quote_number) {
+      // Try to find existing draft with same quote number and user
+      const { data: existingDraft, error: findError } = await supabase
+        .from('quote_drafts')
+        .select('id')
+        .eq('user_id', draftData.user_id)
+        .eq('profile_id', draftData.profile_id || null)
+        .eq('quote_number', draftData.quote_number) // Direct column query - much faster!
+        .maybeSingle(); // Use maybeSingle() to avoid PGRST116 error
+      
+      if (existingDraft && !findError) {
+        // Update existing draft
+        const { data, error } = await supabase
+          .from('quote_drafts')
+          .update({
+            draft_data: draftData.draft_data,
+            quote_number: draftData.quote_number, // Use dedicated column
+            last_saved: new Date().toISOString()
+          })
+          .eq('id', existingDraft.id)
+          .select()
+          .single();
+        return { data, error };
+      }
+    }
+    
+    // Insert new draft
     const { data, error } = await supabase
       .from('quote_drafts')
       .insert({
         user_id: draftData.user_id,
         profile_id: draftData.profile_id,
+        quote_number: draftData.quote_number, // Use dedicated column
         draft_data: draftData.draft_data,
         last_saved: new Date().toISOString()
       })
@@ -890,11 +912,45 @@ export async function loadQuoteDraft(userId, profileId) {
     } else {
       query = query.is('profile_id', null);
     }
-    const { data, error } = await query.single();
+    const { data, error } = await query;
     
-    return { data, error };
+    // Return the first result if multiple exist, or null if none
+    return { data: data?.[0] || null, error };
   } catch (error) {
     console.error('Error loading quote draft:', error);
+    return { error };
+  }
+ }
+
+/**
+ * Load quote draft by quote number for the current user and profile
+ * @param {string} userId - User ID
+ * @param {string} profileId - Profile ID
+ * @param {string} quoteNumber - Quote number to search for
+ * @returns {Promise<{data, error}>} Draft data or error
+ */
+export async function loadQuoteDraftByQuoteNumber(userId, profileId, quoteNumber) {
+  try {
+    if (!quoteNumber) {
+      return { error: 'No quote number provided' };
+    }
+    
+    let query = supabase
+      .from('quote_drafts')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('quote_number', quoteNumber); // Direct column query - much faster!
+    
+    if (profileId) {
+      query = query.eq('profile_id', profileId);
+    } else {
+      query = query.is('profile_id', null);
+    }
+    
+    const { data, error } = await query.single();
+    return { data, error };
+  } catch (error) {
+    console.error('Error loading quote draft by quote number:', error);
     return { error };
   }
 }
@@ -938,6 +994,39 @@ export async function deleteQuoteDraftById(draftId) {
     return { success: !error, error };
   } catch (error) {
     console.error('Error deleting quote draft by id:', error);
+    return { error };
+  }
+}
+
+/**
+ * Delete quote draft by quote number for the current user and profile
+ * @param {string} userId - User ID
+ * @param {string} profileId - Profile ID
+ * @param {string} quoteNumber - Quote number to delete
+ * @returns {Promise<{success, error}>} Success or error
+ */
+export async function deleteQuoteDraftByQuoteNumber(userId, profileId, quoteNumber) {
+  try {
+    if (!quoteNumber) {
+      return { error: 'No quote number provided' };
+    }
+    
+    let query = supabase
+      .from('quote_drafts')
+      .delete()
+      .eq('user_id', userId)
+      .eq('quote_number', quoteNumber); // Direct column query - much faster!
+    
+    if (profileId) {
+      query = query.eq('profile_id', profileId);
+    } else {
+      query = query.is('profile_id', null);
+    }
+    
+    const { error } = await query;
+    return { success: !error, error };
+  } catch (error) {
+    console.error('Error deleting quote draft by quote number:', error);
     return { error };
   }
 }

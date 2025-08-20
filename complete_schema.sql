@@ -69,34 +69,34 @@ CREATE TABLE public.clients (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Quotes table for storing quote information
-CREATE TABLE public.quotes (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
-  profile_id UUID REFERENCES public.user_profiles(id) ON DELETE SET NULL,
-  quote_number TEXT UNIQUE NOT NULL,
-  client_id UUID REFERENCES public.clients(id) ON DELETE CASCADE,
-  status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'sent', 'accepted', 'rejected', 'expired')),
-  project_categories TEXT[] DEFAULT '{}',
-  custom_category TEXT,
-  project_description TEXT,
-  deadline DATE,
-  total_amount DECIMAL(10,2) DEFAULT 0,
-  tax_rate DECIMAL(5,2) DEFAULT 20.00,
-  tax_amount DECIMAL(10,2) DEFAULT 0,
-  total_with_tax DECIMAL(10,2) DEFAULT 0,
-  currency TEXT DEFAULT 'EUR',
-  validity_days INTEGER DEFAULT 30,
-  notes TEXT,
-  terms_conditions TEXT,
-  sent_at TIMESTAMP WITH TIME ZONE,
-  accepted_at TIMESTAMP WITH TIME ZONE,
-  rejected_at TIMESTAMP WITH TIME ZONE,
-  expires_at TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS public.quotes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    profile_id UUID REFERENCES public.user_profiles(id) ON DELETE SET NULL,
+    company_profile_id UUID REFERENCES public.company_profiles(id) ON DELETE SET NULL,
+    client_id UUID REFERENCES public.clients(id) ON DELETE SET NULL,
+    quote_number VARCHAR(50) UNIQUE NOT NULL,
+    title TEXT,
+    description TEXT,
+    status VARCHAR(50) DEFAULT 'draft', -- draft, sent, accepted, rejected, expired
+    project_categories TEXT[] DEFAULT '{}', -- Array of project categories (plomberie, electricite, etc.)
+    custom_category TEXT, -- Custom category when "autre" is selected
+    total_amount DECIMAL(15,2) DEFAULT 0,
+    tax_amount DECIMAL(15,2) DEFAULT 0,
+    discount_amount DECIMAL(15,2) DEFAULT 0,
+    final_amount DECIMAL(15,2) DEFAULT 0,
+    valid_until DATE,
+    terms_conditions TEXT, -- Terms and conditions for the quote
+    share_token VARCHAR(100) UNIQUE,
+    is_public BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    start_date DATE,
+    accepted_at TIMESTAMP WITH TIME ZONE,
+    rejected_at TIMESTAMP WITH TIME ZONE,
+    sent_at TIMESTAMP WITH TIME ZONE,
+    reject_reason TEXT
 );
-
 -- Quote tasks table for storing individual tasks within a quote
 CREATE TABLE public.quote_tasks (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,

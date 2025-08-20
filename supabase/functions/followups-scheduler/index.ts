@@ -21,87 +21,56 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // For each user, ensure a default rule exists
-    // Create missing rules for users who have quotes but no rules
-    const { data: usersWithQuotes, error: uqErr } = await admin
-      .from('quotes')
-      .select('user_id')
-      .neq('status', 'accepted')
-      .neq('status', 'rejected')
-      .neq('status', 'expired')
-      .limit(1000)
-    if (uqErr) throw uqErr
-
-    const uniqueUserIds = Array.from(new Set((usersWithQuotes || []).map((q: any) => q.user_id)))
-    for (const userId of uniqueUserIds) {
-      const { data: existing, error: ruleErr } = await admin
-        .from('quote_follow_up_rules')
-        .select('id')
-        .eq('user_id', userId)
-        .maybeSingle()
-      if (ruleErr) throw ruleErr
-      if (!existing) {
-        await admin.from('quote_follow_up_rules').insert({ user_id: userId })
-      }
+    // Get global follow-up rules (no user_id dependency)
+    let { data: globalRules, error: rulesErr } = await admin
+      .from('quote_follow_up_rules')
+      .select('*')
+      .eq('is_active', true)
+      .single()
+    
+    if (rulesErr || !globalRules) {
+      console.warn('No global follow-up rules found, using defaults');
+      // Use default values if no rules exist
+      globalRules = {
+        max_stages: 3,
+        stage_1_delay: 0,  // INSTANT
+        stage_2_delay: 1,  // 1 day
+        stage_3_delay: 3,  // 3 days
+        max_attempts_per_stage: 2,
+        instant_view_followup: true,
+        view_followup_template: 'viewed_instant',
+        sent_followup_template: 'followup_not_viewed'
+      };
     }
 
-    // Process quotes in stage 0 (initial stage) to determine next follow-up based on behavior
-    const { data: stage0Quotes, error: qErr } = await admin
-      .from('quote_follow_ups')
+    // Process quotes that need follow-up based on behavior
+    const { data: quotesNeedingFollowUp, error: qErr } = await admin
+      .from('quotes')
       .select(`
-        id,
-        quote_id,
-        stage,
+        id, 
+        user_id, 
+        client_id,
+        quote_number,
+        title,
         status,
-        meta
+        created_at,
+        sent_at,
+        valid_until
       `)
-      .eq('stage', 0)
-      .eq('status', 'pending')
+      .in('status', ['sent', 'viewed'])
+      .neq('status', 'accepted')
+      .neq('status', 'rejected')
       .limit(1000)
+    
     if (qErr) throw qErr
 
-    for (const followUp of stage0Quotes || []) {
-      // Get quote details
-      const { data: quote, error: quoteErr } = await admin
-        .from('quotes')
-        .select(`
-          id, 
-          user_id, 
-          client_id,
-          quote_number,
-          title,
-          status,
-          created_at,
-          sent_at,
-          valid_until
-        `)
-        .eq('id', followUp.quote_id)
-        .single()
-      
-      if (quoteErr || !quote) {
-        console.warn('Could not get quote details for follow-up', followUp.id);
-        continue;
-      }
-      
-      // Check if quote needs follow-up based on tracking data and behavior rules
-      const needsFollowUp = await checkIfQuoteNeedsFollowUp(admin, quote)
+    for (const quote of quotesNeedingFollowUp || []) {
+      // Check if quote needs follow-up based on behavior rules
+      const needsFollowUp = await checkIfQuoteNeedsFollowUp(admin, quote, globalRules)
       
       if (needsFollowUp) {
-        // Create intelligent follow-up based on tracking status and behavior
-        await createIntelligentFollowUp(admin, quote)
-        
-        // Mark stage 0 follow-up as completed
-        await admin
-          .from('quote_follow_ups')
-          .update({ 
-            status: 'completed',
-            meta: { 
-              ...followUp.meta,
-              completed_at: new Date().toISOString(),
-              next_stage_created: true
-            }
-          })
-          .eq('id', followUp.id)
+        // Create intelligent follow-up based on quote status and behavior
+        await createIntelligentFollowUp(admin, quote, globalRules)
       }
     }
 
@@ -114,7 +83,7 @@ serve(async (req) => {
 /**
  * Check if a quote needs follow-up based on quote status and behavior rules
  */
-async function checkIfQuoteNeedsFollowUp(admin: any, quote: any): Promise<boolean> {
+async function checkIfQuoteNeedsFollowUp(admin: any, quote: any, rules: any): Promise<boolean> {
   try {
     // Check if quote is expired based on valid_until date
     if (quote.valid_until && new Date(quote.valid_until) < new Date()) {
@@ -131,17 +100,16 @@ async function checkIfQuoteNeedsFollowUp(admin: any, quote: any): Promise<boolea
       return false; // Only follow up on sent/viewed quotes
     }
     
-    // For 'sent' status - client hasn't opened the email
-    if (quote.status === 'sent') {
-      return true; // Need follow-up - client hasn't opened
+    // For 'viewed' status - instant follow-up if enabled
+    if (quote.status === 'viewed' && rules.instant_view_followup) {
+      return true; // Send immediate follow-up when viewed
     }
     
-    // For 'viewed' status - client viewed but no action taken
-    if (quote.status === 'viewed') {
-      // Check if enough time has passed since sent_at
+    // For 'sent' status - check delay for unopened emails
+    if (quote.status === 'sent') {
       if (quote.sent_at) {
         const daysSinceSent = Math.floor((Date.now() - new Date(quote.sent_at).getTime()) / (1000 * 60 * 60 * 24));
-        return daysSinceSent >= 3; // Follow-up after 3 days of no action
+        return daysSinceSent >= rules.stage_2_delay; // Follow-up after configured delay
       }
       return true; // If no sent_at, allow follow-up
     }
@@ -157,7 +125,7 @@ async function checkIfQuoteNeedsFollowUp(admin: any, quote: any): Promise<boolea
 /**
  * Create intelligent follow-up based on quote status and behavior
  */
-async function createIntelligentFollowUp(admin: any, quote: any) {
+async function createIntelligentFollowUp(admin: any, quote: any, rules: any) {
   try {
     // Get client details
     const { data: client, error: clientError } = await admin
@@ -171,30 +139,85 @@ async function createIntelligentFollowUp(admin: any, quote: any) {
       return;
     }
     
+    // Check if follow-up already exists for this quote
+    const { data: existingFollowUp, error: checkError } = await admin
+      .from('quote_follow_ups')
+      .select('id')
+      .eq('quote_id', quote.id)
+      .eq('status', 'scheduled')
+      .maybeSingle();
+    
+    if (checkError) {
+      console.warn('Error checking existing follow-up:', checkError);
+      return;
+    }
+    
+    if (existingFollowUp) {
+      console.log(`Follow-up already scheduled for quote ${quote.quote_number}`);
+      return;
+    }
+    
     // Determine follow-up type and stage based on quote status
     let followUpType = 'general';
     let stage = 1;
-    let subject = `Devis ${quote.quote_number} - Relance`;
-    let text = `Bonjour ${client.name || 'Madame, Monsieur'},\n\nNous vous rappelons notre devis ${quote.quote_number} pour votre projet "${quote.title}".\n\nN'hésitez pas à nous contacter si vous avez des questions.\n\nCordialement,\nVotre équipe`;
-    let html = `<p>Bonjour ${client.name || 'Madame, Monsieur'},</p><p>Nous vous rappelons notre <strong>devis ${quote.quote_number}</strong> pour votre projet <strong>"${quote.title}"</strong>.</p><p>N'hésitez pas à nous contacter si vous avez des questions.</p><p>Cordialement,<br><strong>Votre équipe</strong></p>`;
+    let templateType = rules.view_followup_template || 'viewed_instant';
+    let scheduledAt = new Date().toISOString(); // Default to immediate
     
     if (quote.status === 'viewed') {
-      // Client viewed but no action taken
-      followUpType = 'viewed_no_action';
-      stage = 2; // Stage 2: Client viewed but no action
-      subject = `Devis ${quote.quote_number} - Des questions sur notre proposition ?`;
-      text = `Bonjour ${client.name || 'Madame, Monsieur'},\n\nNous avons remarqué que vous avez consulté notre devis ${quote.quote_number} pour votre projet "${quote.title}".\n\nAvez-vous des questions sur notre proposition ? Souhaitez-vous que nous clarifions certains points ?\n\nNous sommes là pour vous accompagner dans votre décision.\n\nCordialement,\nVotre équipe`;
-      html = `<p>Bonjour ${client.name || 'Madame, Monsieur'},</p><p>Nous avons remarqué que vous avez consulté notre <strong>devis ${quote.quote_number}</strong> pour votre projet <strong>"${quote.title}"</strong>.</p><p>Avez-vous des questions sur notre proposition ? Souhaitez-vous que nous clarifions certains points ?</p><p>Nous sommes là pour vous accompagner dans votre décision.</p><p>Cordialement,<br><strong>Votre équipe</strong></p>`;
+      // Client viewed - instant follow-up
+      followUpType = 'viewed_instant';
+      stage = 1; // Stage 1: Client just viewed
+      templateType = rules.view_followup_template || 'viewed_instant';
+      scheduledAt = new Date().toISOString(); // Send IMMEDIATELY
     } else if (quote.status === 'sent') {
       // Client hasn't opened/viewed the quote
       followUpType = 'email_not_opened';
-      stage = 1; // Stage 1: Email not opened
-      subject = `Devis ${quote.quote_number} - Avez-vous reçu notre proposition ?`;
-      text = `Bonjour ${client.name || 'Madame, Monsieur'},\n\nNous avons envoyé notre devis ${quote.quote_number} pour votre projet "${quote.title}" il y a quelques jours.\n\nAvez-vous bien reçu notre proposition ? Si vous rencontrez des difficultés pour l'ouvrir, n'hésitez pas à nous le faire savoir.\n\nNous restons à votre disposition pour toute question.\n\nCordialement,\nVotre équipe`;
-      html = `<p>Bonjour ${client.name || 'Madame, Monsieur'},</p><p>Nous avons envoyé notre <strong>devis ${quote.quote_number}</strong> pour votre projet <strong>"${quote.title}"</strong> il y a quelques jours.</p><p>Avez-vous bien reçu notre proposition ? Si vous rencontrez des difficultés pour l'ouvrir, n'hésitez pas à nous le faire savoir.</p><p>Nous restons à votre disposition pour toute question.</p><p>Cordialement,<br><strong>Votre équipe</strong></p>`;
+      stage = 2; // Stage 2: Email not opened
+      templateType = rules.sent_followup_template || 'followup_not_viewed';
+      
+      // Calculate scheduled time based on delay
+      if (quote.sent_at) {
+        const scheduledDate = new Date(quote.sent_at);
+        scheduledDate.setDate(scheduledDate.getDate() + rules.stage_2_delay);
+        scheduledAt = scheduledDate.toISOString();
+      }
     }
     
-    // Create the follow-up record with proper template columns
+    // Get template from email_templates
+    const { data: template, error: templateError } = await admin
+      .from('email_templates')
+      .select('subject, html_content, text_content')
+      .eq('template_type', templateType)
+      .eq('is_active', true)
+      .maybeSingle();
+    
+    let subject, html, text;
+    
+    if (templateError || !template) {
+      // Fallback to hardcoded templates if database template not found
+      console.warn(`Template ${templateType} not found, using fallback`);
+      subject = `Devis ${quote.quote_number} - Relance`;
+      text = `Bonjour ${client.name || 'Madame, Monsieur'},\n\nNous vous rappelons notre devis ${quote.quote_number} pour votre projet "${quote.title}".\n\nN'hésitez pas à nous contacter si vous avez des questions.\n\nCordialement,\nVotre équipe`;
+      html = `<p>Bonjour ${client.name || 'Madame, Monsieur'},</p><p>Nous vous rappelons notre <strong>devis ${quote.quote_number}</strong> pour votre projet <strong>"${quote.title}"</strong>.</p><p>N'hésitez pas à nous contacter si vous avez des questions.</p><p>Cordialement,<br><strong>Votre équipe</strong></p>`;
+    } else {
+      // Use database template with variable replacement
+      subject = template.subject
+        .replace('{quote_number}', quote.quote_number)
+        .replace('{client_name}', client.name || 'Madame, Monsieur')
+        .replace('{quote_title}', quote.title || 'votre projet');
+      
+      text = template.text_content
+        .replace('{quote_number}', quote.quote_number)
+        .replace('{client_name}', client.name || 'Madame, Monsieur')
+        .replace('{quote_title}', quote.title || 'votre projet');
+      
+      html = template.html_content
+        .replace('{quote_number}', quote.quote_number)
+        .replace('{client_name}', client.name || 'Madame, Monsieur')
+        .replace('{quote_title}', quote.title || 'votre projet');
+    }
+    
+    // Create the follow-up record
     const { error: followUpError } = await admin
       .from('quote_follow_ups')
       .insert({
@@ -203,26 +226,28 @@ async function createIntelligentFollowUp(admin: any, quote: any) {
         client_id: quote.client_id,
         stage: stage,
         status: 'scheduled',
-        scheduled_at: new Date().toISOString(), // Send immediately
+        scheduled_at: scheduledAt,
         template_subject: subject,
         template_text: text,
         template_html: html,
         attempts: 0,
-        max_attempts: 3,
+        max_attempts: rules.max_attempts_per_stage || 3,
         channel: 'email',
         meta: {
           follow_up_type: followUpType,
           automated: true,
           created_at: new Date().toISOString(),
           behavior_based: true,
-          quote_status: quote.status
+          quote_status: quote.status,
+          instant_followup: quote.status === 'viewed',
+          template_type: templateType
         }
       });
     
     if (followUpError) {
       console.error('Error creating intelligent follow-up:', followUpError);
     } else {
-      console.log(`Created intelligent follow-up for quote ${quote.quote_number}, stage: ${stage}, type: ${followUpType}`);
+      console.log(`Created intelligent follow-up for quote ${quote.quote_number}, stage: ${stage}, type: ${followUpType}, scheduled: ${scheduledAt}`);
     }
   } catch (error) {
     console.error('Error creating intelligent follow-up:', error);

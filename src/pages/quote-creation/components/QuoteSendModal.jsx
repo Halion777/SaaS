@@ -15,7 +15,8 @@ const QuoteSendModal = ({
   tasks,
   files,
   financialConfig,
-  signatureData
+  signatureData,
+  customization
 }) => {
   const { user } = useAuth();
   const [step, setStep] = useState(1); // 1: options, 2: email form
@@ -57,7 +58,8 @@ const QuoteSendModal = ({
           files,
           projectInfo,
           financialConfig,
-          signatureData
+          signatureData,
+          customization
         };
         
         // Capture the live preview container for pixel-perfect PDF (same as main button)
@@ -82,7 +84,9 @@ const QuoteSendModal = ({
       emailData: {
         ...emailData,
         quoteNumber,
-        clientName: selectedClient?.name || selectedClient?.label || 'Client'
+        clientName: selectedClient?.name || selectedClient?.label || 'Client',
+        // Include user's email if sendCopy is enabled
+        userEmail: emailData.sendCopy ? user?.email : null
       },
       // Pass all the required quote data
       companyInfo,
@@ -91,7 +95,8 @@ const QuoteSendModal = ({
       selectedClient,
       projectInfo,
       tasks,
-      files
+      files,
+      customization
     });
     onClose();
   };

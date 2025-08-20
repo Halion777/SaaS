@@ -9,8 +9,9 @@ import { generateProjectDescriptionWithGemini, isGoogleAIServiceAvailable } from
 import { generateTaskSuggestionsWithGemini } from '../../../services/googleAIService';
 import { enhanceTranscriptionWithAI } from '../../../services/googleAIService';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
+import { generateQuoteNumber } from '../../../services/quotesService';
 
-const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjectInfoChange, onNext, leadId }) => {
+const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjectInfoChange, onNext, leadId, userId }) => {
   const { t } = useTranslation();
   const [showNewClientForm, setShowNewClientForm] = useState(!!leadId); // Auto-show form if leadId exists
   const [clientType, setClientType] = useState(leadId ? 'particulier' : 'particulier');
@@ -94,6 +95,10 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
   // AI functionality state
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [aiError, setAiError] = useState(null);
+  
+  // Quote number generation state
+  const [preGeneratedQuoteNumber, setPreGeneratedQuoteNumber] = useState('');
+  const [isGeneratingQuoteNumber, setIsGeneratingQuoteNumber] = useState(false);
   
   // Speech recognition hook
   const {
@@ -241,6 +246,56 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       if (timer) clearInterval(timer);
     };
   }, [isRecording]);
+
+  // Generate quote number on component mount
+  useEffect(() => {
+    const generateQuoteNumberForClientSelection = async () => {
+      try {
+        setIsGeneratingQuoteNumber(true);
+        
+        // Use the userId prop passed from parent component
+        if (!userId) {
+          console.warn('No userId provided to ClientSelection component');
+          return;
+        }
+        
+        // Use the same function as quote creation page
+        const { data: quoteNumber, error: numberError } = await generateQuoteNumber(userId);
+        
+        if (numberError) {
+          console.warn('Error generating quote number for client selection, using fallback:', numberError);
+        }
+        
+        let finalQuoteNumber = quoteNumber;
+        
+        // If backend didn't provide a number, generate a fallback with timestamp for uniqueness
+        if (!finalQuoteNumber) {
+          const timestamp = Date.now();
+          const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+          finalQuoteNumber = `${new Date().getFullYear()}-${timestamp}-${randomSuffix}`;
+        }
+        
+        if (finalQuoteNumber) {
+          setPreGeneratedQuoteNumber(finalQuoteNumber);
+          // Store in localStorage for later use in quote creation
+          localStorage.setItem('pre_generated_quote_number', finalQuoteNumber);
+          console.log('Quote number pre-generated for client selection:', finalQuoteNumber);
+        }
+      } catch (error) {
+        console.error('Error generating quote number for client selection:', error);
+        // Use fallback quote number with timestamp and random suffix for uniqueness
+        const timestamp = Date.now();
+        const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        const fallbackNumber = `${new Date().getFullYear()}-${timestamp}-${randomSuffix}`;
+        setPreGeneratedQuoteNumber(fallbackNumber);
+        localStorage.setItem('pre_generated_quote_number', fallbackNumber);
+      } finally {
+        setIsGeneratingQuoteNumber(false);
+      }
+    };
+
+    generateQuoteNumberForClientSelection();
+  }, []); // Run once on component mount
 
   const typeOptions = [
     { value: 'particulier', label: 'Particulier' },
