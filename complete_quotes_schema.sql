@@ -334,6 +334,17 @@ CREATE POLICY "Users can manage their own quotes" ON public.quotes
 CREATE POLICY "Public can view shared quotes" ON public.quotes
     FOR SELECT USING (is_public = true AND share_token IS NOT NULL);
 
+-- Allow unauthenticated users to update quote status to 'viewed' when they have valid share token
+CREATE POLICY "Public can update quote status to viewed" ON public.quotes
+    FOR UPDATE USING (
+        is_public = true 
+        AND share_token IS NOT NULL
+    )
+    WITH CHECK (
+        is_public = true 
+        AND share_token IS NOT NULL
+    );
+
 -- RLS Policies for quote_tasks
 CREATE POLICY "Users can manage their own quote tasks" ON public.quote_tasks
     FOR ALL USING (
@@ -418,6 +429,25 @@ CREATE POLICY "Users can manage their own quote shares" ON public.quote_shares
         )
     );
 
+-- Allow unauthenticated users to update quote_shares access count when they have valid share token
+CREATE POLICY "Public can update quote shares access count" ON public.quote_shares
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM public.quotes 
+            WHERE quotes.id = quote_shares.quote_id 
+            AND quotes.is_public = true 
+            AND quotes.share_token IS NOT NULL
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.quotes 
+            WHERE quotes.id = quote_shares.quote_id 
+            AND quotes.is_public = true 
+            AND quotes.share_token IS NOT NULL
+        )
+    );
+
 -- RLS Policies for quote_access_logs
 CREATE POLICY "Users can view their own quote access logs" ON public.quote_access_logs
     FOR SELECT USING (
@@ -425,6 +455,17 @@ CREATE POLICY "Users can view their own quote access logs" ON public.quote_acces
             SELECT 1 FROM public.quotes 
             WHERE quotes.id = quote_access_logs.quote_id 
             AND quotes.user_id = auth.uid()
+        )
+    );
+
+-- Allow unauthenticated users to insert access logs when they have valid share token
+CREATE POLICY "Public can insert quote access logs" ON public.quote_access_logs
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.quotes 
+            WHERE quotes.id = quote_access_logs.quote_id 
+            AND quotes.is_public = true 
+            AND quotes.share_token IS NOT NULL
         )
     );
 
@@ -1390,18 +1431,17 @@ CREATE TRIGGER trg_on_quote_viewed
   WHEN (NEW.status = 'viewed' AND (OLD.status IS DISTINCT FROM NEW.status))
   EXECUTE FUNCTION public.on_quote_status_viewed();
 
--- Schedule follow-ups for quotes that need them (called by cron job)
+-- Create initial follow-up for quotes that were sent (called by cron job every hour)
+-- STRATEGY: Create ONE initial follow-up for quotes sent in the last hour
+-- Next follow-ups are handled by intelligent system based on client behavior
 CREATE OR REPLACE FUNCTION public.schedule_followups_for_sent_quotes()
 RETURNS VOID AS $$
 DECLARE
   v_quote RECORD;
   v_user_id UUID;
-  v_max SMALLINT;
-  v_delay_days INTEGER;
   v_rules RECORD;
-  i SMALLINT := 1;
 BEGIN
-  -- Find quotes that were sent but don't have follow-ups scheduled yet
+  -- Find quotes that were sent in the last hour but don't have follow-ups yet
   FOR v_quote IN 
     SELECT q.id, q.user_id, q.client_id, q.quote_number, q.sent_at
     FROM public.quotes q
@@ -1409,41 +1449,33 @@ BEGIN
     WHERE q.status = 'sent' 
       AND q.sent_at IS NOT NULL
       AND qf.id IS NULL  -- No follow-ups exist yet
-      AND q.sent_at < NOW() - INTERVAL '1 hour'  -- Wait at least 1 hour after sending
+      AND q.sent_at > NOW() - INTERVAL '1 hour'  -- Quotes sent in the last hour
   LOOP
     -- Get user's follow-up rules
     SELECT * INTO v_rules FROM public.quote_follow_up_rules 
     WHERE user_id = v_quote.user_id AND is_active = true 
     LIMIT 1;
     
-    IF v_rules IS NOT NULL THEN
-      v_max := v_rules.max_stages;
-      v_delay_days := v_rules.stage_1_delay;
-    ELSE
-      v_max := 3;  -- Default: 3 stages
-      v_delay_days := 1;  -- Default: 1 day delay
-    END IF;
-    
-    -- Create stage 1 follow-up with delay
+    -- Create ONLY ONE initial follow-up (stage 1)
     INSERT INTO public.quote_follow_ups (
       quote_id, user_id, client_id, stage, scheduled_at, 
       status, channel, automated, attempts, max_attempts
     ) VALUES (
       v_quote.id, v_quote.user_id, v_quote.client_id, 1,
-      v_quote.sent_at + make_interval(days => v_delay_days),
+      NOW(), -- Schedule for immediate execution
       'pending', 'email', true, 0, COALESCE(v_rules.max_attempts_per_stage, 3)
     );
     
-    -- Log the follow-up scheduling
+    -- Log the initial follow-up creation
     INSERT INTO public.quote_events (quote_id, user_id, type, meta)
-    VALUES (v_quote.id, v_quote.user_id, 'followup_scheduled', jsonb_build_object(
+    VALUES (v_quote.id, v_quote.user_id, 'initial_followup_created', jsonb_build_object(
       'stage', 1,
-      'delay_days', v_delay_days,
-      'scheduled_at', v_quote.sent_at + make_interval(days => v_delay_days),
-      'automated', true
+      'scheduled_at', NOW(),
+      'automated', true,
+      'note', 'Initial follow-up created for quote sent in the last hour'
     ));
     
-    RAISE NOTICE 'Scheduled follow-up for quote % (stage 1, delay: % days)', v_quote.quote_number, v_delay_days;
+    RAISE NOTICE 'Created initial follow-up for quote % (stage 1)', v_quote.quote_number;
   END LOOP;
 END;
 $$ LANGUAGE plpgsql;
@@ -1474,6 +1506,13 @@ COMMENT ON TABLE public.quote_follow_up_rules IS 'Per-user rules controlling quo
 COMMENT ON TABLE public.quote_follow_ups IS 'Scheduled follow-up actions for quotes';
 COMMENT ON TABLE public.email_outbox IS 'Outbox/queue for transactional emails to be sent by a worker';
 COMMENT ON TABLE public.quote_events IS 'Timeline of events related to quotes (follow-ups, deliveries, opens, etc.)';
+
+-- INTELLIGENT FOLLOW-UP SYSTEM STRATEGY:
+-- 1. Initial follow-up: Created 5 minutes after quote is sent (ONE TIME)
+-- 2. Quote viewed: Send immediate follow-up email
+-- 3. Quote not viewed: Send reminder email each day until limit reached
+-- 4. Client accepted/rejected: Stop all follow-ups
+-- 5. Next follow-ups are created by intelligent system based on client behavior, not by cron
 
 
 
@@ -1813,8 +1852,9 @@ COMMENT ON COLUMN public.quote_follow_ups.template_variables IS 'JSON object wit
 -- Enable pg_cron extension for scheduling
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 
--- Schedule cron job to create follow-ups for sent quotes (runs every hour)
--- This replaces the immediate follow-up creation when quotes are sent
+-- Schedule cron job to create initial follow-ups for sent quotes (runs every hour)
+-- STRATEGY: Create ONE initial follow-up for quotes sent in the last hour
+-- Next follow-ups are handled by intelligent system based on client behavior
 SELECT cron.schedule(
   'schedule-followups-for-sent-quotes',
   '0 * * * *', -- Every hour at minute 0

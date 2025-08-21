@@ -97,6 +97,28 @@ serve(async (req) => {
           text: emailData.message
         });
         break;
+
+      case 'quote_followup':
+        // Handle follow-up emails for quotes
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [emailData.to],
+          subject: emailData.subject,
+          html: generateFollowUpEmail(emailData.html, emailData.variables),
+          text: emailData.text
+        });
+        break;
+
+      case 'quote_status_update':
+        // Handle quote status update emails (accepted/rejected)
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [emailData.to],
+          subject: emailData.subject,
+          html: generateQuoteStatusEmail(emailData.html, emailData.variables),
+          text: emailData.text
+        });
+        break;
         
       default:
         throw new Error(`Unknown email type: ${emailType}`);
@@ -235,5 +257,29 @@ function generateCustomQuoteEmail(message: string, variables: any) {
     </body>
     </html>
   `;
+}
+
+function generateFollowUpEmail(html: string, variables: any) {
+  // Replace variables in HTML content
+  let processedHtml = html;
+  if (variables) {
+    Object.keys(variables).forEach(key => {
+      const regex = new RegExp(`{${key}}`, 'g');
+      processedHtml = processedHtml.replace(regex, variables[key] || '');
+    });
+  }
+  return processedHtml;
+}
+
+function generateQuoteStatusEmail(html: string, variables: any) {
+  // Replace variables in HTML content for status emails
+  let processedHtml = html;
+  if (variables) {
+    Object.keys(variables).forEach(key => {
+      const regex = new RegExp(`{${key}}`, 'g');
+      processedHtml = processedHtml.replace(regex, variables[key] || '');
+    });
+  }
+  return processedHtml;
 }
 

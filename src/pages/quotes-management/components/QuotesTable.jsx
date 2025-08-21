@@ -53,28 +53,10 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
   };
 
   const getStatusBadge = (quote) => {
-    const { status, trackingData, validUntil } = quote;
+    const { status, trackingData } = quote;
     
-    // Check if quote is expired based on valid_until date (client-side calculation)
-    let currentStatus = status;
-    if (validUntil) {
-      // Get current date and valid until date, comparing only the date part (not time)
-      const currentDate = new Date();
-      const validUntilDate = new Date(validUntil);
-      
-      // Reset time to start of day for both dates to compare only dates
-      const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-      const validUntilDateOnly = new Date(validUntilDate.getFullYear(), validUntilDate.getMonth(), validUntilDate.getDate());
-      
-      // Quote is expired only if valid_until date has passed (not equal)
-      if (validUntilDateOnly < currentDateOnly) {
-        // Only mark as expired if quote is still in a state where expiration matters
-        if (['sent', 'viewed', 'draft'].includes(status)) {
-          currentStatus = 'expired';
-        }
-        // Don't override 'accepted', 'rejected' statuses with 'expired'
-      }
-    }
+    // Expiration is now handled by edge functions - use status directly from backend
+    const currentStatus = status;
     
     // Enhanced status with tracking information
     const statusConfig = {
@@ -130,27 +112,9 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
     );
   };
 
-  const getStatusColor = (status, validUntil) => {
-    // Check if quote is expired based on valid_until date (client-side calculation)
-    let currentStatus = status;
-    if (validUntil) {
-      // Get current date and valid until date, comparing only the date part (not time)
-      const currentDate = new Date();
-      const validUntilDate = new Date(validUntil);
-      
-      // Reset time to start of day for both dates to compare only dates
-      const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-      const validUntilDateOnly = new Date(validUntilDate.getFullYear(), validUntilDate.getMonth(), validUntilDate.getDate());
-      
-      // Quote is expired only if valid_until date has passed (not equal)
-      if (validUntilDateOnly < currentDateOnly) {
-        // Only mark as expired if quote is still in a state where expiration matters
-        if (['sent', 'viewed', 'draft'].includes(status)) {
-          currentStatus = 'expired';
-        }
-        // Don't override 'accepted', 'rejected' statuses with 'expired'
-      }
-    }
+  const getStatusColor = (status) => {
+    // Expiration is now handled by edge functions - use status directly from backend
+    const currentStatus = status;
     
     const colors = {
       draft: 'bg-muted text-muted-foreground',
@@ -392,6 +356,28 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
             )}
             {/* Follow-up management icon removed per request */}
             {/* Send reminder icon removed in card view */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onQuoteAction('sync_status', quote)}
+              title="Synchroniser le statut"
+              className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            >
+              <Icon name="RefreshCw" size={14} />
+            </Button>
+            
+            {/* Test Expiration Button - Only show for development */}
+            {process.env.NODE_ENV === 'development' && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onQuoteAction('test_expiration', quote)}
+                title="Tester l'expiration"
+                className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <Icon name="Clock" size={14} />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"

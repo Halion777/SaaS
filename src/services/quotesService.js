@@ -435,25 +435,8 @@ export async function createQuote(quoteData) {
             emailSent = true;
           }
           
-                     // Create initial follow-up record for automated tracking if email was sent
-           if (emailResult?.success) {
-             try {
-               await supabase
-                 .from('quote_follow_ups')
-                 .insert({
-                   quote_id: quote.id,
-                   user_id: quoteData.user_id,
-                   client_id: quoteData.client_id,
-                   stage: 0,
-                   status: 'pending',
-                   scheduled_at: new Date().toISOString(), // Required field
-                   automated: true
-                 });
-             } catch (followUpError) {
-               console.warn('Failed to create follow-up record:', followUpError);
-               // Don't fail quote creation if follow-up creation fails
-             }
-           }
+                     // Follow-ups are now created by edge functions, not database triggers
+          // The followups-scheduler edge function will handle this automatically
           
           // Update lead status to indicate quote was sent
           try {
@@ -472,86 +455,12 @@ export async function createQuote(quoteData) {
       }
     }
     
-    // NEW: Send email notification for manually created quotes with status 'sent'
-    if (quoteData.status === 'sent' && quoteData.client_id && !emailSent) {
-      try {
-        // Get client details
-        const { data: client } = await supabase
-          .from('clients')
-          .select('*')
-          .eq('id', quoteData.client_id)
-          .single();
-        
-        if (client?.email) {
-          // Get company profile for artisan info
-          const { data: companyProfile } = await supabase
-            .from('company_profiles')
-            .select('company_name')
-            .eq('id', quoteData.company_profile_id)
-            .single();
-          
-          // Send quote notification email using new template system
-          const emailResult = await EmailService.sendQuoteSentEmail(
-            quote,
-            client,
-            companyProfile,
-            quoteData.user_id
-          );
-          
-          if (emailResult.success) {
-            console.log('Quote notification email sent successfully');
-            
-            // Update sent_at timestamp when email is sent
-            await supabase
-              .from('quotes')
-              .update({ sent_at: new Date().toISOString() })
-              .eq('id', quote.id);
-            
-            // Log email sent event to quote_events table
-            try {
-              await supabase
-                .from('quote_events')
-                .insert({
-                  quote_id: quote.id,
-                  user_id: null, // System event
-                  type: 'email_sent',
-                  meta: {
-                    email_type: 'quote_notification',
-                    recipient: client.email,
-                    
-                  },
-                  timestamp: new Date().toISOString()
-                });
-            } catch (eventError) {
-              console.warn('Failed to log email event:', eventError);
-            }
-            
-                         // Create initial follow-up record for automated tracking
-             try {
-               await supabase
-                 .from('quote_follow_ups')
-                 .insert({
-                   quote_id: quote.id,
-                   user_id: quoteData.user_id,
-                   client_id: quoteData.client_id,
-                   stage: 0,
-                   status: 'pending',
-                   scheduled_at: new Date().toISOString(), // Required field
-                   automated: true
-                 });
-             } catch (followUpError) {
-               console.warn('Failed to create follow-up record:', followUpError);
-               // Don't fail quote creation if follow-up creation fails
-             }
-          } else {
-            console.error('Failed to send quote notification email:', emailResult.error);
-          }
-        }
-      } catch (emailError) {
-        console.error('Failed to send quote notification email:', emailError);
-        // Don't fail quote creation if email fails
-      }
-    }
+    // REMOVED: Duplicate email sending for manually created quotes
+    // Email is now handled by the quote creation page directly
+    // This prevents duplicate emails and duplicate event logging
+    
+    // Trigger edge function to create follow-ups
+    await triggerFollowUpCreation(quote.id, quote.status);
     
     // Return the created quote with all relations
     return await fetchQuoteById(quote.id);
@@ -594,35 +503,13 @@ export async function updateQuote(id, quoteData) {
     
     if (quoteError) return { error: quoteError };
     
-    // Check if status changed to 'sent' and create follow-up record
+    // Trigger edge function to create follow-ups if status changed to 'sent'
     if (quoteData.status === 'sent') {
-      try {
-        // Get client details for follow-up
-        const { data: client } = await supabase
-          .from('quotes')
-          .select('client:clients(email, name)')
-          .eq('id', id)
-          .single();
-        
-                 if (client?.client?.email) {
-           // Create initial follow-up record for automated tracking
-           await supabase
-             .from('quote_follow_ups')
-             .insert({
-               quote_id: id,
-               user_id: quoteData.user_id,
-               client_id: quoteData.client_id,
-               stage: 0,
-               status: 'pending',
-               scheduled_at: new Date().toISOString(), // Required field
-               automated: true
-             });
-         }
-      } catch (followUpError) {
-        console.warn('Failed to create follow-up record on status update:', followUpError);
-        // Don't fail quote update if follow-up creation fails
-      }
+      await triggerFollowUpCreation(id, quoteData.status);
     }
+    
+    // Follow-ups are now created by edge functions, not database triggers
+    // The followups-scheduler edge function will handle this automatically
     
     // Update tasks if provided
     if (quoteData.tasks !== undefined) {
@@ -747,13 +634,32 @@ export async function updateQuote(id, quoteData) {
 export async function updateQuoteStatus(id, status) {
   
   try {
-    
+    // First, update the status
     const { data, error } = await supabase
       .from('quotes')
       .update({ status })
       .eq('id', id)
       .select()
       .single();
+    
+    if (error) {
+      return { data, error };
+    }
+    
+    // If status was successfully updated to 'sent', also update sent_at
+    if (status === 'sent' && data) {
+      try {
+        await supabase
+          .from('quotes')
+          .update({ sent_at: new Date().toISOString() })
+          .eq('id', id);
+        
+        console.log('Updated sent_at timestamp for quote:', id);
+      } catch (sentAtError) {
+        console.warn('Failed to update sent_at timestamp:', sentAtError);
+        // Don't fail the main operation if sent_at update fails
+      }
+    }
     
     return { data, error };
   } catch (error) {
@@ -1072,5 +978,37 @@ export async function listQuoteDrafts(userId, profileId = null) {
   } catch (error) {
     console.error('Error listing quote drafts:', error);
     return { error };
+  }
+}
+
+/**
+ * Trigger edge function to create follow-ups for a quote
+ */
+async function triggerFollowUpCreation(quoteId, quoteStatus) {
+  try {
+    if (quoteStatus === 'sent') {
+      // Call followups-scheduler to create initial follow-up
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/followups-scheduler`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({
+          action: 'create_followup_for_quote',
+          quote_id: quoteId,
+          status: quoteStatus
+        })
+      });
+      
+      if (response.ok) {
+        console.log(`Triggered follow-up creation for quote ${quoteId}`);
+      } else {
+        console.warn(`Failed to trigger follow-up creation for quote ${quoteId}`);
+      }
+    }
+  } catch (error) {
+    console.warn('Error triggering follow-up creation:', error);
+    // Don't fail quote creation if follow-up trigger fails
   }
 }

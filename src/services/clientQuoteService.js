@@ -452,28 +452,8 @@ class ClientQuoteService {
         }
       }
 
-      // Always check and update quote status to 'viewed' if it's currently 'sent'
-      const { data: currentQuote, error: statusCheckError } = await supabase
-        .from('quotes')
-        .select('status')
-        .eq('id', quoteId)
-        .single();
-
-      if (statusCheckError) {
-        console.warn('Failed to check current quote status:', statusCheckError);
-      } else if (currentQuote && currentQuote.status === 'sent') {
-        // Update status to 'viewed' if it's currently 'sent'
-        const { error: statusUpdateError } = await supabase
-          .from('quotes')
-          .update({ status: 'viewed' })
-          .eq('id', quoteId);
-
-        if (statusUpdateError) {
-          console.warn('Failed to update quote status to viewed:', statusUpdateError);
-        } else {
-          console.log(`Quote ${quoteId} status updated from 'sent' to 'viewed'`);
-        }
-      }
+      // Quote status updates are now handled by edge functions
+      // The followups-scheduler will detect viewed quotes and create follow-ups
 
       // Ensure quote_shares record exists and update access count
       const recordExists = await this.ensureQuoteSharesRecord(quoteId, shareToken);
@@ -726,8 +706,7 @@ class ClientQuoteService {
     const quoteCreated = new Date(quote.created_at);
     const daysSinceCreation = Math.floor((now - quoteCreated) / (1000 * 60 * 60 * 24));
 
-    // Check if quote is expired (only for quotes that haven't been acted upon)
-    const isExpired = quote.valid_until && new Date(quote.valid_until) < now && ['sent', 'viewed'].includes(quote.status);
+    // Expiration is now handled by edge functions - no need to calculate here
 
     // Find first view action
     const firstView = accessLogs.find(log => log.action === 'viewed');
@@ -750,7 +729,8 @@ class ClientQuoteService {
     let nextRelanceDate = null;
     let relanceReason = '';
 
-    if (isExpired) {
+    // Expiration is now handled by edge functions - check status directly
+    if (quote.status === 'expired') {
       relanceStatus = 'expired';
       relanceAllowed = false;
       relanceReason = 'Quote has expired';
@@ -798,7 +778,6 @@ class ClientQuoteService {
       nextRelanceDate,
       relanceReason,
       daysSinceCreation,
-      isExpired,
       hasBeenViewed,
       clientAccepted,
       clientRejected,

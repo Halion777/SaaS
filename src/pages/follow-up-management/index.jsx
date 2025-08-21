@@ -9,7 +9,9 @@ import { useMultiUser } from '../../context/MultiUserContext';
 import { 
   listScheduledFollowUps, 
   stopFollowUpsForQuote,
-  logQuoteEvent
+  logQuoteEvent,
+  triggerFollowUpScheduling,
+  triggerFollowUpDispatching
 } from '../../services/followUpService';
 import { fetchQuotes } from '../../services/quotesService';
 import EmailService from '../../services/emailService';
@@ -171,21 +173,8 @@ const FollowUpManagement = () => {
           return null; // Don't show these in follow-up list
         }
         
-        // Additional check: if quote has valid_until date and it's expired, don't show
-        if (quote.validUntil) {
-          // Get current date and valid until date, comparing only the date part (not time)
-          const currentDate = new Date();
-          const validUntilDate = new Date(quote.validUntil);
-          
-          // Reset time to start of day for both dates to compare only dates
-          const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-          const validUntilDateOnly = new Date(validUntilDate.getFullYear(), validUntilDate.getMonth(), validUntilDate.getDate());
-          
-          // Quote is expired only if valid_until date has passed (not equal)
-          if (validUntilDateOnly < currentDateOnly) {
-            return null; // Don't show expired quotes even if status hasn't been updated yet
-          }
-        }
+        // Expiration is now handled by edge functions - backend status is authoritative
+        // No need to check valid_until date on frontend
         
         const nextFollowUp = followUp.scheduled_at || followUp.created_at;
           
@@ -259,6 +248,24 @@ const FollowUpManagement = () => {
     }
   }, []);
 
+  // Auto-refresh follow-up data every 30 seconds to keep status current
+  useEffect(() => {
+    if (!user || !currentProfile) return;
+    
+    const interval = setInterval(async () => {
+      try {
+        // Only refresh if not currently loading
+        if (!loading) {
+          await refreshData();
+        }
+      } catch (error) {
+        console.warn('Auto-refresh failed:', error);
+      }
+    }, 30000); // 30 seconds
+    
+    return () => clearInterval(interval);
+  }, [user, currentProfile, loading]);
+
   // Refresh data - use the same logic as loadData to avoid duplication
   const refreshData = async () => {
     if (!user || !currentProfile) return;
@@ -315,21 +322,8 @@ const FollowUpManagement = () => {
           return null; // Don't show these in follow-up list
         }
         
-        // Additional check: if quote has valid_until date and it's expired, don't show
-        if (quote.validUntil) {
-          // Get current date and valid until date, comparing only the date part (not time)
-          const currentDate = new Date();
-          const validUntilDate = new Date(quote.validUntil);
-          
-          // Reset time to start of day for both dates to compare only dates
-          const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-          const validUntilDateOnly = new Date(validUntilDate.getFullYear(), validUntilDate.getMonth(), validUntilDate.getDate());
-          
-          // Quote is expired only if valid_until date has passed (not equal)
-          if (validUntilDateOnly < currentDateOnly) {
-            return null; // Don't show expired quotes even if status hasn't been updated yet
-          }
-        }
+        // Expiration is now handled by edge functions - backend status is authoritative
+        // No need to check valid_until date on frontend
         
         const nextFollowUp = followUp.scheduled_at || followUp.created_at;
         
@@ -396,6 +390,46 @@ const FollowUpManagement = () => {
   // Handle refresh button click
   const handleRefresh = async () => {
     await refreshData();
+  };
+
+  // Handle manual trigger of follow-up scheduler
+  const handleTriggerScheduler = async () => {
+    try {
+      setLoading(true);
+      const result = await triggerFollowUpScheduling();
+      if (result.success) {
+        console.log('Scheduler triggered successfully');
+        // Refresh data to show new follow-ups
+        await refreshData();
+      } else {
+        setError('Failed to trigger scheduler');
+      }
+    } catch (error) {
+      console.error('Error triggering scheduler:', error);
+      setError('Failed to trigger scheduler');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle manual trigger of follow-up dispatcher
+  const handleTriggerDispatcher = async () => {
+    try {
+      setLoading(true);
+      const result = await triggerFollowUpDispatching();
+      if (result.success) {
+        console.log('Dispatcher triggered successfully');
+        // Refresh data to show updated statuses
+        await refreshData();
+      } else {
+        setError('Failed to trigger dispatcher');
+      }
+    } catch (error) {
+      console.error('Error triggering dispatcher:', error);
+      setError('Failed to trigger dispatcher');
+    } finally {
+      setLoading(false);
+    }
   };
 
 
@@ -830,6 +864,28 @@ const FollowUpManagement = () => {
               </div>
               
               <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                <Button
+                  variant="outline"
+                  onClick={handleTriggerScheduler}
+                  iconName="Clock"
+                  iconPosition="left"
+                  className="hidden md:flex text-xs sm:text-sm"
+                  disabled={loading}
+                  title="Trigger follow-up creation"
+                >
+                  Créer relances
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleTriggerDispatcher}
+                  iconName="Send"
+                  iconPosition="left"
+                  className="hidden md:flex text-xs sm:text-sm"
+                  disabled={loading}
+                  title="Trigger email sending"
+                >
+                  Envoyer emails
+                </Button>
                 <Button
                   variant="outline"
                   onClick={handleRefresh}

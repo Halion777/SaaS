@@ -42,27 +42,8 @@ const PublicQuoteShareViewer = () => {
           console.error('Error tracking quote view:', trackingError);
         }
 
-        // Check quote status and handle expired quotes (only for quotes that haven't been acted upon)
-        let currentStatus = q.status;
-        if (q.valid_until) {
-          // Get current date and valid until date, comparing only the date part (not time)
-          const currentDate = new Date();
-          const validUntilDate = new Date(q.valid_until);
-          
-          // Reset time to start of day for both dates to compare only dates
-          const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-          const validUntilDateOnly = new Date(validUntilDate.getFullYear(), validUntilDate.getMonth(), validUntilDate.getDate());
-          
-          // Quote is expired only if valid_until date has passed (not equal)
-          if (validUntilDateOnly < currentDateOnly) {
-            // Only mark as expired if quote is still in a state where expiration matters
-            if (['sent', 'viewed'].includes(q.status)) {
-              currentStatus = 'expired';
-            }
-            // Don't override 'accepted', 'rejected', 'pending' statuses with 'expired'
-          }
-        }
-        setQuoteStatus(currentStatus);
+        // Expiration is now handled by edge functions - use status directly from backend
+        setQuoteStatus(q.status);
 
         // Load company assets
         try {

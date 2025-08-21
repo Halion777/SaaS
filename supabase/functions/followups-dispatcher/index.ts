@@ -44,156 +44,289 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Find due follow-ups
+    // ========================================
+    // 1. FIND DUE FOLLOW-UPS
+    // ========================================
     const nowIso = new Date().toISOString()
     const { data: dueFollowUps, error: dueErr } = await admin
       .from('quote_follow_ups')
       .select(`
         id, quote_id, user_id, client_id, stage, 
         template_subject, template_html, template_text,
-        meta, created_at
+        meta, created_at, attempts, max_attempts, status
       `)
       .in('status', ['pending', 'scheduled'])
       .lte('scheduled_at', nowIso)
+      .order('meta->priority', { ascending: false }) // High priority first
       .limit(100)
     if (dueErr) throw dueErr
 
-    // Process at most one follow-up per quote at a time
+    // ========================================
+    // 2. PROCESS FOLLOW-UPS BY PRIORITY
+    // ========================================
     const processedQuotes = new Set<string>();
+    const results = {
+      high_priority: 0,
+      medium_priority: 0,
+      low_priority: 0,
+      failed: 0,
+      total: dueFollowUps?.length || 0
+    };
+
     for (const fu of dueFollowUps || []) {
       if (processedQuotes.has(String(fu.quote_id))) {
         // Skip duplicates for the same quote in this run
         continue;
       }
       
-      // Get destination email
-      const { data: quote, error: qErr } = await admin
-        .from('quotes')
-        .select('id, user_id, client_id, quote_number, title, valid_until')
-        .eq('id', fu.quote_id)
-        .single()
-      if (qErr || !quote) { continue }
-
-      const { data: client, error: cErr } = await admin
-        .from('clients')
-        .select('email, name')
-        .eq('id', quote.client_id)
-        .single()
-      if (cErr || !client?.email) {
-        // Mark failed
-        await admin.from('quote_follow_ups').update({ status: 'failed', last_error: 'Missing client email' }).eq('id', fu.id)
-        continue
-      }
-
-      // Use template content from follow-up record
-      const subject = fu.template_subject || `Relance devis ${quote.quote_number}`
-      const text = fu.template_text || `Bonjour ${client.name || ''},\n\nAvez-vous eu le temps de consulter notre devis ${quote.quote_number} ?\n\nCordialement.`
-      const html = fu.template_html || `<p>Bonjour ${client.name || ''},</p><p>Avez-vous eu le temps de consulter notre devis <strong>${quote.quote_number}</strong> ?</p><p>Cordialement.</p>`
-
       try {
-        // Enqueue outbox record
-        const { data: outbox, error: obErr } = await admin
-          .from('email_outbox')
-          .insert({ follow_up_id: fu.id, user_id: fu.user_id, to_email: client.email, subject, html, text, status: 'sending' })
-          .select()
-          .single()
-        if (obErr) throw obErr
-
-        // Send via provider
-        const resp = await sendEmail({ to: client.email, subject, html, text })
-
-        // Mark outbox and follow-up as sent
-        await admin.from('email_outbox').update({ status: 'sent', provider_message_id: resp.id, sent_at: new Date().toISOString() }).eq('id', outbox.id)
-        await admin.from('quote_follow_ups').update({ status: 'sent', attempts: (fu.attempts || 0) + 1 }).eq('id', fu.id)
-        processedQuotes.add(String(fu.quote_id))
-        
-        // Enhanced event logging with intelligent follow-up metadata
-        const eventMeta = {
-          stage: fu.stage,
-          follow_up_id: fu.id,
-          follow_up_type: fu.meta?.follow_up_type || 'general',
-          automated: fu.meta?.automated || false,
-          template_subject: fu.template_subject,
-          client_email: client.email,
-          instant_followup: fu.meta?.instant_followup || false
+        const result = await processFollowUp(admin, fu);
+        if (result.success) {
+          const priority = fu.meta?.priority || 'medium';
+          switch (priority) {
+            case 'high': results.high_priority++; break;
+            case 'medium': results.medium_priority++; break;
+            case 'low': results.low_priority++; break;
+          }
+          processedQuotes.add(String(fu.quote_id));
+        } else {
+          results.failed++;
         }
-        
-        await admin.from('quote_events').insert({ 
-          quote_id: fu.quote_id, 
-          user_id: fu.user_id, 
-          type: 'followup_sent', 
-          meta: eventMeta 
-        })
-        
-        // Log to access logs for tracking
-        await admin.from('quote_access_logs').insert({
-          quote_id: fu.quote_id,
-          action: 'followup_sent',
-          accessed_at: new Date().toISOString(),
-          meta: {
-            follow_up_type: fu.meta?.follow_up_type || 'general',
-            stage: fu.stage,
-            automated: fu.meta?.automated || false,
-            instant_followup: fu.meta?.instant_followup || false
-          }
-        })
-        
-        console.log(`Follow-up sent for quote ${quote.quote_number} to ${client.email}, type: ${fu.meta?.follow_up_type || 'general'}, instant: ${fu.meta?.instant_followup || false}`)
-      } catch (err: any) {
-        const errorMessage = err?.message || 'send failed'
-        
-        // Log failed outbox
-        await admin.from('email_outbox').insert({ 
-          follow_up_id: fu.id, 
-          user_id: fu.user_id, 
-          to_email: client.email, 
-          subject, 
-          html, 
-          text, 
-          status: 'failed', 
-          error: errorMessage 
-        })
-        
-        // Update follow-up status
-        await admin.from('quote_follow_ups').update({ 
-          status: 'failed', 
-          last_error: errorMessage,
-          last_attempt: new Date().toISOString()
-        }).eq('id', fu.id)
-        
-        // Log failure event
-        await admin.from('quote_events').insert({
-          quote_id: fu.quote_id,
-          user_id: fu.user_id,
-          type: 'followup_failed',
-          meta: {
-            stage: fu.stage,
-            follow_up_id: fu.id,
-            error: errorMessage,
-            follow_up_type: fu.meta?.follow_up_type || 'general'
-          }
-        })
-        
-        console.error(`Failed to send follow-up for quote ${quote.quote_number}: ${errorMessage}`)
+      } catch (error) {
+        console.error(`Error processing follow-up ${fu.id}:`, error);
+        results.failed++;
       }
     }
 
-    // Count follow-ups by type for better reporting
-    const followUpTypes = dueFollowUps?.reduce((acc, fu) => {
-      const type = fu.meta?.follow_up_type || 'general'
-      acc[type] = (acc[type] || 0) + 1
-      return acc
-    }, {} as Record<string, number>) || {}
-    
+    // ========================================
+    // 3. RETURN RESULTS
+    // ========================================
     return new Response(JSON.stringify({ 
       ok: true, 
-      processed: dueFollowUps?.length || 0,
-      followUpTypes,
+      processed: processedQuotes.size,
+      results,
       timestamp: nowIso
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }})
   } catch (e: any) {
     return new Response(JSON.stringify({ error: e?.message || 'Unknown error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }})
   }
 })
+
+/**
+ * Process a single follow-up
+ */
+async function processFollowUp(admin: any, followUp: any) {
+  try {
+    // ========================================
+    // 1. GET QUOTE AND CLIENT DETAILS
+    // ========================================
+    const { data: quote, error: qErr } = await admin
+      .from('quotes')
+      .select('id, user_id, client_id, quote_number, title, valid_until, status')
+      .eq('id', followUp.quote_id)
+      .single()
+    if (qErr || !quote) { 
+      console.error('Quote not found for follow-up:', followUp.id);
+      return { success: false, error: 'Quote not found' };
+    }
+
+    // Check if quote is still valid for follow-up
+    if (quote.status === 'accepted' || quote.status === 'rejected') {
+      console.log(`Quote ${quote.quote_number} is ${quote.status}, stopping follow-ups`);
+      await stopFollowUpsForQuote(admin, quote.id);
+      return { success: false, error: 'Quote finalized' };
+    }
+
+    // Check if quote is expired
+    if (quote.valid_until && new Date(quote.valid_until) < new Date()) {
+      console.log(`Quote ${quote.quote_number} is expired, stopping follow-ups`);
+      await stopFollowUpsForQuote(admin, quote.id);
+      return { success: false, error: 'Quote expired' };
+    }
+
+    const { data: client, error: cErr } = await admin
+      .from('clients')
+      .select('email, name')
+      .eq('id', quote.client_id)
+      .single()
+    if (cErr || !client?.email) {
+      // Mark failed
+      await admin.from('quote_follow_ups').update({ 
+        status: 'failed', 
+        last_error: 'Missing client email' 
+      }).eq('id', followUp.id)
+      return { success: false, error: 'Missing client email' };
+    }
+
+    // ========================================
+    // 2. PREPARE EMAIL CONTENT
+    // ========================================
+    const subject = followUp.template_subject || `Relance devis ${quote.quote_number}`;
+    const text = followUp.template_text || `Bonjour ${client.name || ''},\n\nAvez-vous eu le temps de consulter notre devis ${quote.quote_number} ?\n\nCordialement.`;
+    const html = followUp.template_html || `<p>Bonjour ${client.name || ''},</p><p>Avez-vous eu le temps de consulter notre devis <strong>${quote.quote_number}</strong> ?</p><p>Cordialement.</p>`;
+
+    // ========================================
+    // 3. SEND EMAIL
+    // ========================================
+    try {
+      // Enqueue outbox record
+      const { data: outbox, error: obErr } = await admin
+        .from('email_outbox')
+        .insert({ 
+          follow_up_id: followUp.id, 
+          user_id: followUp.user_id, 
+          to_email: client.email, 
+          subject, 
+          html, 
+          text, 
+          status: 'sending',
+          email_type: followUp.meta?.follow_up_type || 'general_followup'
+        })
+        .select()
+        .single()
+      if (obErr) throw obErr
+
+      // Send via provider
+      const resp = await sendEmail({ to: client.email, subject, html, text })
+
+      // ========================================
+      // 4. UPDATE FOLLOW-UP STATUS
+      // ========================================
+      await admin.from('email_outbox').update({ 
+        status: 'sent', 
+        provider_message_id: resp.id, 
+        sent_at: new Date().toISOString() 
+      }).eq('id', outbox.id)
+
+      // Update follow-up status and increment attempts
+      const newAttempts = (followUp.attempts || 0) + 1;
+      const { error: updateError } = await admin
+        .from('quote_follow_ups')
+        .update({ 
+          status: 'sent', 
+          attempts: newAttempts,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', followUp.id)
+
+      if (updateError) {
+        console.error('Error updating follow-up status:', updateError);
+      }
+
+      // ========================================
+      // 5. LOG EVENTS
+      // ========================================
+      const eventMeta = {
+        stage: followUp.stage,
+        follow_up_id: followUp.id,
+        follow_up_type: followUp.meta?.follow_up_type || 'general',
+        automated: followUp.meta?.automated || false,
+        template_subject: followUp.template_subject,
+        client_email: client.email,
+        instant_followup: followUp.meta?.instant_followup || false,
+        attempts: newAttempts,
+        priority: followUp.meta?.priority || 'medium'
+      }
+      
+      await admin.from('quote_events').insert({ 
+        quote_id: followUp.quote_id, 
+        user_id: followUp.user_id, 
+        type: 'followup_sent', 
+        meta: eventMeta 
+      })
+      
+      // Log to access logs for tracking
+      await admin.from('quote_access_logs').insert({
+        quote_id: followUp.quote_id,
+        action: 'followup_sent',
+        accessed_at: new Date().toISOString(),
+        meta: {
+          follow_up_type: followUp.meta?.follow_up_type || 'general',
+          stage: followUp.stage,
+          automated: followUp.meta?.automated || false,
+          instant_followup: followUp.meta?.instant_followup || false,
+          attempts: newAttempts,
+          priority: followUp.meta?.priority || 'medium'
+        }
+      })
+      
+      console.log(`Follow-up sent for quote ${quote.quote_number} to ${client.email}, type: ${followUp.meta?.follow_up_type || 'general'}, stage: ${followUp.stage}, attempts: ${newAttempts}, priority: ${followUp.meta?.priority || 'medium'}`)
+      
+      return { success: true, data: { quote_number: quote.quote_number, client_email: client.email } };
+      
+    } catch (err: any) {
+      const errorMessage = err?.message || 'send failed'
+      
+      // ========================================
+      // 6. HANDLE FAILURES
+      // ========================================
+      // Log failed outbox
+      await admin.from('email_outbox').insert({ 
+        follow_up_id: followUp.id, 
+        user_id: followUp.user_id, 
+        to_email: client.email, 
+        subject, 
+        html, 
+        text, 
+        status: 'failed', 
+        error: errorMessage 
+      })
+      
+      // Update follow-up status
+      const newAttempts = (followUp.attempts || 0) + 1;
+      await admin.from('quote_follow_ups').update({ 
+        status: 'failed', 
+        last_error: errorMessage,
+        last_attempt: new Date().toISOString(),
+        attempts: newAttempts
+      }).eq('id', followUp.id)
+      
+      // Log failure event
+      await admin.from('quote_events').insert({
+        quote_id: followUp.quote_id,
+        user_id: followUp.user_id,
+        type: 'followup_failed',
+        meta: {
+          stage: followUp.stage,
+          follow_up_id: followUp.id,
+          error: errorMessage,
+          follow_up_type: followUp.meta?.follow_up_type || 'general',
+          attempts: newAttempts
+        }
+      })
+      
+      console.error(`Failed to send follow-up for quote ${quote.quote_number}: ${errorMessage}`)
+      return { success: false, error: errorMessage };
+    }
+    
+  } catch (error) {
+    console.error('Error processing follow-up:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Stop all follow-ups for a quote
+ */
+async function stopFollowUpsForQuote(admin: any, quoteId: string) {
+  try {
+    const { error } = await admin
+      .from('quote_follow_ups')
+      .update({ 
+        status: 'stopped', 
+        updated_at: new Date().toISOString() 
+      })
+      .eq('quote_id', quoteId)
+      .in('status', ['pending', 'scheduled']);
+    
+    if (error) {
+      console.error('Error stopping follow-ups for quote:', error);
+    } else {
+      console.log(`Stopped all follow-ups for quote ${quoteId}`);
+    }
+  } catch (error) {
+    console.error('Error stopping follow-ups:', error);
+  }
+}
 
 

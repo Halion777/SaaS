@@ -562,6 +562,12 @@ const QuotesManagement = () => {
       case 'sendFollowUpNow':
         await handleSendFollowUpNow(quote);
         break;
+      case 'sync_status':
+        await syncQuoteStatusWithBackend(quote.id);
+        break;
+      case 'test_expiration':
+        await testQuoteExpiration(quote.id);
+        break;
       case 'status':
         // Handle status updates if needed
         console.log(`Status update for quote ${quote.id}`);
@@ -786,19 +792,12 @@ const QuotesManagement = () => {
     return statusMap[status] || status;
   };
 
+  // Expiration logic is now handled by edge functions
+  // No need to calculate on frontend
   const isQuoteExpired = (expiresAt) => {
-    if (!expiresAt) return false;
-    
-    // Get current date and valid until date, comparing only the date part (not time)
-    const currentDate = new Date();
-    const validUntilDate = new Date(expiresAt);
-    
-    // Reset time to start of day for both dates to compare only dates
-    const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-    const validUntilDateOnly = new Date(validUntilDate.getFullYear(), validUntilDate.getMonth(), validUntilDate.getDate());
-    
-    // Quote is expired only if valid_until date has passed (not equal)
-    return validUntilDateOnly < currentDateOnly;
+    // This function is kept for backward compatibility but should not be used
+    // Expiration is now handled by the followups-scheduler edge function
+    return false;
   };
 
   const getQuotePriority = (quote) => {
@@ -948,6 +947,79 @@ const QuotesManagement = () => {
 
   const handleQuoteSelect = (quote) => {
     // No-op (AI removed)
+  };
+
+  // Sync quote status with backend to ensure accuracy
+  const syncQuoteStatusWithBackend = async (quoteId) => {
+    try {
+      // Call edge function to sync status
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/followups-scheduler`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({
+          action: 'sync_quote_status',
+          quote_id: quoteId
+        })
+      });
+      
+      if (response.ok) {
+        // Refresh the specific quote data
+        const { data: updatedQuote, error } = await fetchQuoteById(quoteId);
+        if (!error && updatedQuote) {
+          // Update the quote in local state
+          setQuotes(prevQuotes => 
+            prevQuotes.map(q => 
+              q.id === quoteId 
+                ? {
+                    ...q,
+                    status: updatedQuote.status,
+                    statusLabel: getStatusLabel(updatedQuote.status),
+                    isExpired: isQuoteExpired(updatedQuote.valid_until || updatedQuote.expires_at)
+                  }
+                : q
+            )
+          );
+        }
+      }
+    } catch (error) {
+      console.warn('Error syncing quote status:', error);
+    }
+  };
+
+  // Test expiration for a specific quote
+  const testQuoteExpiration = async (quoteId) => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_SUPABASE_URL}/functions/v1/followups-scheduler`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({
+          action: 'test_expiration',
+          quote_id: quoteId
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.ok) {
+        console.log('Expiration test result:', result);
+        // Refresh data to show updated status
+        await loadQuotes(); // Use loadQuotes to refetch all data
+        // Show success message
+        alert(`Expiration test completed!\nPrevious: ${result.previous_status}\nCurrent: ${result.current_status}`);
+      } else {
+        console.error('Expiration test failed:', result.error);
+        alert(`Expiration test failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error testing expiration:', error);
+      alert('Error testing expiration: ' + error.message);
+    }
   };
 
   return (

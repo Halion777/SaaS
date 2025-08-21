@@ -41,8 +41,9 @@ export async function listScheduledFollowUps({ status = 'pending', limit = 100 }
 }
 
 export async function scheduleFollowUpsForQuote(quoteId) {
-  const { error } = await supabase.rpc('schedule_all_followups_for_quote', { p_quote_id: quoteId });
-  if (error) throw error;
+  // This function is no longer needed as edge functions handle follow-up creation
+  // The followups-scheduler edge function will create follow-ups automatically
+  console.log('Follow-ups are now handled by edge functions automatically');
   return { success: true };
 }
 
@@ -464,6 +465,62 @@ function getRelanceHtml(quote, relanceConfig) {
 
 <p>Cordialement,<br>
 <strong>Votre équipe</strong></p>`;
+  }
+}
+
+/**
+ * Manually trigger follow-up dispatching via edge function
+ * This ensures immediate email sending when needed
+ */
+export async function triggerFollowUpDispatching() {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/followups-dispatcher`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+      }
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      console.log('Follow-up dispatching triggered:', result);
+      return { success: true, data: result };
+    } else {
+      const errorText = await response.text();
+      throw new Error(`Edge function error: ${response.status} ${errorText}`);
+    }
+  } catch (error) {
+    console.error('Error triggering follow-up dispatching:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Manually trigger follow-up scheduling via edge function
+ * This ensures immediate follow-up creation and processing when needed
+ */
+export async function triggerFollowUpScheduling() {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/followups-scheduler`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+      }
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      console.log('Follow-up scheduling triggered:', result);
+      return { success: true, data: result };
+    } else {
+      const errorText = await response.text();
+      throw new Error(`Edge function error: ${response.status} ${errorText}`);
+    }
+  } catch (error) {
+    console.error('Error triggering follow-up scheduling:', error);
+    return { success: false, error: error.message };
   }
 }
 
