@@ -716,7 +716,7 @@ Relire le devis : {quote_link}
   <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
     <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Bonjour {client_name},</h2>
     <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">Nous sommes ravis de vous accueillir sur notre plateforme !</p>
-    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">Votre demande de projet a été reçue avec succès. Nos artisans qualifiés vont l'examiner et vous proposer des devis dans les plus brefs délais.</p>
+    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">Votre demande de projet a été reçue avec succès. Nos artisans qualifiés vont l''examiner et vous proposer des devis dans les plus brefs délais.</p>
   </div>
   
   <div style="text-align: center; color: #666; font-size: 14px;">
@@ -727,7 +727,7 @@ Relire le devis : {quote_link}
 Bonjour {client_name},
 
 Nous sommes ravis de vous accueillir sur notre plateforme !
-Votre demande de projet a été reçue avec succès. Nos artisans qualifiés vont l'examiner et vous proposer des devis dans les plus brefs délais.
+Votre demande de projet a été reçue avec succès. Nos artisans qualifiés vont l''examiner et vous proposer des devis dans les plus brefs délais.
 
 Merci de votre confiance !
 
@@ -891,6 +891,10 @@ create table public.quote_follow_ups (
   created_at timestamp with time zone null default now(),
   updated_at timestamp with time zone null default now(),
   automated boolean not null default true,
+  template_subject text null,
+  template_text text null,
+  template_html text null,
+  meta jsonb null default '{}'::jsonb,
   constraint quote_follow_ups_pkey primary key (id),
   constraint quote_follow_ups_client_id_fkey foreign KEY (client_id) references clients (id) on delete set null,
   constraint quote_follow_ups_quote_id_fkey foreign KEY (quote_id) references quotes (id) on delete CASCADE,

@@ -347,6 +347,7 @@ async function createOrUpdateAutomatedFollowUp(quote, relanceConfig) {
           template_subject: getRelanceSubject(quote, relanceConfig),
           template_text: getRelanceText(quote, relanceConfig),
           template_html: getRelanceHtml(quote, relanceConfig),
+          automated: true,
           meta: {
             ...relanceConfig,
             created_at: new Date().toISOString()

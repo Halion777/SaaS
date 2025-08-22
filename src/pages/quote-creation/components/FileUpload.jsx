@@ -6,7 +6,7 @@ import { uploadQuoteFile, deleteQuoteFile } from '../../../services/quoteFilesSe
 import { deleteFile, uploadFile, getPublicUrl } from '../../../services/storageService';
 import { useAuth } from '../../../context/AuthContext';
 
-const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, isSaving = false }) => {
+const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, quoteNumber, isSaving = false }) => {
 
   const { user } = useAuth();
   const [dragActive, setDragActive] = useState(false);
@@ -17,7 +17,8 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, isSavin
   useEffect(() => {
     if (user?.id && !quoteId && files.length === 0) {
       try {
-        const storageKey = `quote-files-${user.id}`;
+        // Use quote number for unique file storage if available
+        const storageKey = quoteNumber ? `quote-files-${user.id}-${quoteNumber}` : `quote-files-${user.id}`;
         const savedFiles = localStorage.getItem(storageKey);
         if (savedFiles) {
           const parsedFiles = JSON.parse(savedFiles);
@@ -31,7 +32,7 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, isSavin
         console.error('Error loading files from localStorage:', error);
       }
     }
-  }, [user?.id, quoteId]); // Removed files.length to prevent infinite loop
+  }, [user?.id, quoteId, quoteNumber]); // Added quoteNumber dependency
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -128,7 +129,8 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, isSavin
           // Save to localStorage
           if (user?.id) {
             try {
-              const storageKey = `quote-files-${user.id}`;
+              // Use quote number for unique file storage if available
+              const storageKey = quoteNumber ? `quote-files-${user.id}-${quoteNumber}` : `quote-files-${user.id}`;
               const existingFiles = JSON.parse(localStorage.getItem(storageKey) || '[]');
               
               // Remove old version if exists
@@ -174,7 +176,8 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, isSavin
           // Save only file link to localStorage (not base64 data)
           if (user?.id) {
             try {
-              const storageKey = `quote-files-${user.id}`;
+              // Use quote number for unique file storage if available
+              const storageKey = quoteNumber ? `quote-files-${user.id}-${quoteNumber}` : `quote-files-${user.id}`;
               const existingFiles = JSON.parse(localStorage.getItem(storageKey) || '[]');
               
               // Remove old version if exists
@@ -257,7 +260,8 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, isSavin
     // Also remove from localStorage
     if (user?.id) {
       try {
-        const storageKey = `quote-files-${user.id}`;
+        // Use quote number for unique file storage if available
+        const storageKey = quoteNumber ? `quote-files-${user.id}-${quoteNumber}` : `quote-files-${user.id}`;
         const existingFiles = JSON.parse(localStorage.getItem(storageKey) || '[]');
         const filteredFiles = existingFiles.filter(f => f.id !== fileId);
         localStorage.setItem(storageKey, JSON.stringify(filteredFiles));

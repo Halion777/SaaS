@@ -935,6 +935,103 @@ const QuotePreview = ({
             </div>
           </div>
         </div>
+
+        {/* Files Section */}
+        {files && files.length > 0 && (
+          <div className={`px-4 sm:px-8 lg:px-10 py-4 sm:py-8 lg:py-10`}>
+            <h4 className={`font-semibold text-black mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>
+              Fichiers joints ({files.length})
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {files.map((file, index) => (
+                <div key={file.id || index} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-blue-300 transition-colors">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      {(file.type || file.mime_type) && (file.type || file.mime_type).startsWith('image/') ? (
+                        <AppIcon name="Image" size={20} className="text-blue-600" />
+                      ) : (file.type || file.mime_type) === 'application/pdf' ? (
+                        <AppIcon name="FileText" size={20} className="text-red-600" />
+                      ) : (
+                        <AppIcon name="File" size={20} className="text-blue-600" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium text-gray-900 truncate ${previewMode === 'mobile' ? 'text-xs' : 'text-sm'}`}>
+                        {file.name || file.file_name}
+                      </p>
+                      <p className={`text-xs text-gray-500 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs'}`}>
+                        {file.size || file.file_size ? `${((file.size || file.file_size) / 1024 / 1024).toFixed(1)} MB` : ''}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Image Preview for Image Files */}
+                  {(file.type || file.mime_type) && (file.type || file.mime_type).startsWith('image/') && (
+                    <div className="mb-3">
+                      {file.data ? (
+                        // Show image from base64 data (for newly uploaded files)
+                        <img
+                          src={file.data}
+                          alt={file.name || file.file_name}
+                          className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                          onError={(e) => {
+                            console.error('Error loading image from base64 data:', file.name);
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                      ) : file.publicUrl ? (
+                        // Show image from public URL (for existing files)
+                        <img
+                          src={file.publicUrl}
+                          alt={file.name || file.file_name}
+                          className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                          onError={(e) => {
+                            console.error('Error loading image from public URL:', file.publicUrl);
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                      ) : file.path || file.file_path ? (
+                        // Try to get public URL for the file path
+                        <img
+                          src={getPublicUrl('quote-files', file.path || file.file_path)}
+                          alt={file.name || file.file_name}
+                          className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                          onError={(e) => {
+                            console.error('Error loading image from file path:', file.path || file.file_path);
+                            e.target.style.display = 'none';
+                          }}
+                          onLoad={() => {
+                            console.log('Image loaded successfully from file path:', file.path || file.file_path);
+                          }}
+                        />
+                      ) : null}
+                    </div>
+                  )}
+                  
+                  {/* File Download Link */}
+                  <div className="flex justify-center">
+                    <a
+                      href={file.data || file.publicUrl || (file.path || file.file_path ? getPublicUrl('quote-files', file.path || file.file_path) : '#')}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`inline-flex items-center text-xs text-blue-600 hover:text-blue-800 transition-colors ${previewMode === 'mobile' ? 'text-xs' : 'text-xs'}`}
+                      onClick={(e) => {
+                        // If no valid URL, prevent download
+                        if (!file.data && !file.publicUrl && !(file.path || file.file_path)) {
+                          e.preventDefault();
+                          console.warn('No valid file source for download:', file);
+                        }
+                      }}
+                    >
+                      <AppIcon name="Download" size={12} className="mr-1" />
+                      Télécharger
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Bottom Navigation */}

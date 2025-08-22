@@ -266,9 +266,10 @@ const QuoteCreation = () => {
         description: leadData.project_description || ''
       });
       
-      // Clear tasks and files for new quote
+      // Clear tasks for new quote, but preserve any existing files
       setTasks([]);
-      setFiles([]);
+      // Don't clear files - they might be uploaded before selecting lead
+      // setFiles([]);
       
       // Don't automatically move to step 2 when leadId is present
       // User must click "Ajouter le client" first
@@ -2207,8 +2208,11 @@ const QuoteCreation = () => {
       }
       signatureKeysToRemove.forEach(key => localStorage.removeItem(key));
       
-      // Clear quote files
+      // Clear quote files - both generic and quote-specific
       localStorage.removeItem(`quote-files-${user.id}`);
+      if (quoteNumber) {
+        localStorage.removeItem(`quote-files-${user.id}-${quoteNumber}`);
+      }
       
       // Clear any other quote-related data
       const keysToRemove = [];
@@ -2219,6 +2223,18 @@ const QuoteCreation = () => {
         }
       }
       keysToRemove.forEach(key => localStorage.removeItem(key));
+      
+      // Clear any quote-specific file storage keys
+      if (quoteNumber) {
+        const fileKeysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith(`quote-files-${user.id}-${quoteNumber}`)) {
+            fileKeysToRemove.push(key);
+          }
+        }
+        fileKeysToRemove.forEach(key => localStorage.removeItem(key));
+      }
     }
   };
 
@@ -2259,6 +2275,7 @@ const QuoteCreation = () => {
             onNext={handleNext}
             onPrevious={handlePrevious}
             quoteId={editingQuoteId}
+            quoteNumber={projectInfo.quoteNumber}
             isSaving={isSaving}
           />
         );

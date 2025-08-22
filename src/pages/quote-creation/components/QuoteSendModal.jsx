@@ -180,7 +180,7 @@ const QuoteSendModal = ({
                      </div>
                      <div>
                        <div className="font-medium text-foreground">
-                         Envoyer par e-mail via Dext
+                         Envoyer par e-mail via Haliqo
                        </div>
                        <div className="text-sm text-muted-foreground">
                          Cliquez sur "Continuer" pour voir l'e-mail avant de l'envoyer

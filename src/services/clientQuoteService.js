@@ -132,6 +132,41 @@ class ClientQuoteService {
         throw error;
       }
 
+      // Send acceptance email via Edge Function
+      try {
+        await this.sendQuoteStatusEmail(quoteId, 'accepted', {
+          client_email: clientEmail,
+          client_name: clientName
+        });
+      } catch (emailError) {
+        console.warn('Failed to send acceptance email:', emailError);
+        // Don't fail the acceptance if email fails
+      }
+
+      // Stop follow-ups for accepted quote via Edge Function
+      try {
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/followups-scheduler`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          },
+          body: JSON.stringify({
+            action: 'cleanup_finalized_quote',
+            quote_id: quoteId
+          })
+        });
+
+        const result = await response.json();
+        if (result.ok) {
+          console.log('Follow-ups stopped for accepted quote:', result);
+        } else {
+          console.warn('Failed to stop follow-ups for accepted quote:', result.error);
+        }
+      } catch (followUpError) {
+        console.warn('Error stopping follow-ups for accepted quote:', followUpError);
+        // Don't fail the acceptance if follow-up cleanup fails
+      }
       
       // Log to access logs for tracking
       await this.logAccessLog(quoteId, shareToken, 'accepted');
@@ -149,6 +184,20 @@ class ClientQuoteService {
    */
   static async rejectQuote(quoteId, shareToken, rejectionReason) {
     try {
+      // Get client data for email
+      const { data: quote, error: quoteError } = await supabase
+        .from('quotes')
+        .select(`
+          id,
+          client:clients(id, name, email)
+        `)
+        .eq('id', quoteId)
+        .single();
+      
+      if (quoteError) throw quoteError;
+      const clientEmail = quote.client?.email;
+      const clientName = quote.client?.name;
+
       // Update the quote status and set rejected_at timestamp and rejection_reason
       const { data, error } = await supabase
         .from('quotes')
@@ -166,6 +215,42 @@ class ClientQuoteService {
         throw error;
       }
 
+      // Send rejection email via Edge Function
+      try {
+        await this.sendQuoteStatusEmail(quoteId, 'rejected', {
+          client_email: clientEmail,
+          client_name: clientName,
+          rejection_reason: rejectionReason
+        });
+      } catch (emailError) {
+        console.warn('Failed to send rejection email:', emailError);
+        // Don't fail the rejection if email fails
+      }
+
+      // Stop follow-ups for rejected quote via Edge Function
+      try {
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/followups-scheduler`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          },
+          body: JSON.stringify({
+            action: 'cleanup_finalized_quote',
+            quote_id: quoteId
+          })
+        });
+
+        const result = await response.json();
+        if (result.ok) {
+          console.log('Follow-ups stopped for rejected quote:', result);
+        } else {
+          console.warn('Failed to stop follow-ups for rejected quote:', result.error);
+        }
+      } catch (followUpError) {
+        console.warn('Error stopping follow-ups for rejected quote:', followUpError);
+        // Don't fail the rejection if follow-up cleanup fails
+      }
   
       // Log to access logs for tracking
       await this.logAccessLog(quoteId, shareToken, 'rejected');
@@ -175,6 +260,113 @@ class ClientQuoteService {
     } catch (error) {
       console.error('Error rejecting quote:', error);
       return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Send quote status email (accepted/rejected) via Edge Function
+   */
+  static async sendQuoteStatusEmail(quoteId, status, clientData) {
+    try {
+      // Get quote details
+      const { data: quote, error: quoteError } = await supabase
+        .from('quotes')
+        .select(`
+          id,
+          quote_number,
+          title,
+          total_amount,
+          final_amount,
+          share_token,
+          user_id,
+          company_profiles!quotes_company_profile_id_fkey(company_name)
+        `)
+        .eq('id', quoteId)
+        .single();
+
+      if (quoteError) throw quoteError;
+
+      // Get email template
+      const templateType = status === 'accepted' ? 'client_accepted' : 'client_rejected';
+      const { data: template, error: templateError } = await supabase
+        .from('email_templates')
+        .select('subject, html_content, text_content')
+        .eq('template_type', templateType)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      let subject, html, text;
+
+      if (templateError || !template) {
+        // Fallback templates
+        if (status === 'accepted') {
+          subject = `Devis ${quote.quote_number} accepté - Merci !`;
+          text = `Bonjour ${clientData.client_name || 'Madame, Monsieur'},\n\nMerci d'avoir accepté notre devis !\nMontant accepté : ${quote.final_amount || quote.total_amount}€\n\nNotre équipe vous contacte bientôt pour la suite !\n\nCordialement,\n${quote.company_profiles?.company_name || 'Notre équipe'}`;
+          html = `<p>Bonjour ${clientData.client_name || 'Madame, Monsieur'},</p><p>Merci d'avoir accepté notre devis !</p><p><strong>Montant accepté : ${quote.final_amount || quote.total_amount}€</strong></p><p>Notre équipe vous contacte bientôt pour la suite !</p><p>Cordialement,<br><strong>${quote.company_profiles?.company_name || 'Notre équipe'}</strong></p>`;
+        } else {
+          subject = `Devis ${quote.quote_number} - Merci pour votre retour`;
+          text = `Bonjour ${clientData.client_name || 'Madame, Monsieur'},\n\nMerci pour votre retour sur notre devis.\nNous restons à votre disposition pour de futurs projets.\n\nCordialement,\n${quote.company_profiles?.company_name || 'Notre équipe'}`;
+          html = `<p>Bonjour ${clientData.client_name || 'Madame, Monsieur'},</p><p>Merci pour votre retour sur notre devis.</p><p>Nous restons à votre disposition pour de futurs projets.</p><p>Cordialement,<br><strong>${quote.company_profiles?.company_name || 'Notre équipe'}</strong></p>`;
+        }
+      } else {
+        // Use database template with variable replacement
+        const variables = {
+          client_name: clientData.client_name || 'Madame, Monsieur',
+          quote_number: quote.quote_number,
+          quote_amount: `${quote.final_amount || quote.total_amount}€`,
+          quote_link: quote.share_token ? `${window.location.origin}/quote/${quote.share_token}` : '#',
+          company_name: quote.company_profiles?.company_name || 'Notre équipe'
+        };
+
+        subject = template.subject;
+        text = template.text_content;
+        html = template.html_content;
+
+        // Replace variables
+        Object.keys(variables).forEach(key => {
+          const regex = new RegExp(`{${key}}`, 'g');
+          subject = subject.replace(regex, variables[key]);
+          text = text.replace(regex, variables[key]);
+          html = html.replace(regex, variables[key]);
+        });
+      }
+
+      // Send email via Edge Function
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-emails`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({
+          emailType: 'quote_status_update',
+          emailData: {
+            to: clientData.client_email,
+            subject: subject,
+            html: html,
+            text: text,
+            variables: {
+              client_name: clientData.client_name || 'Madame, Monsieur',
+              quote_number: quote.quote_number,
+              quote_amount: `${quote.final_amount || quote.total_amount}€`,
+              quote_link: quote.share_token ? `${window.location.origin}/quote/${quote.share_token}` : '#',
+              company_name: quote.company_profiles?.company_name || 'Notre équipe'
+            }
+          }
+        })
+      });
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to send email');
+      }
+
+      console.log(`Quote ${status} email sent successfully to ${clientData.client_email}`);
+      return result;
+
+    } catch (error) {
+      console.error(`Error sending quote ${status} email:`, error);
+      throw error;
     }
   }
 

@@ -207,6 +207,9 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
             <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground">
               Relances
             </th>
+            <th className="p-3 md:p-4 text-center text-xs sm:text-sm font-medium text-muted-foreground">
+              Fichiers
+            </th>
             <th className="p-3 md:p-4 text-right text-xs sm:text-sm font-medium text-muted-foreground">
               Actions
             </th>
@@ -236,10 +239,38 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
               <td className="p-3 md:p-4 text-foreground">{quote.validUntil ? formatDate(quote.validUntil) : '-'}</td>
               <td className="p-3 md:p-4">
                 <div className="flex flex-col gap-1">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-center ${quote.followUpStatusColor || 'bg-gray-100 text-gray-700'}`}>
+                  <span 
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-center cursor-help ${quote.followUpStatusColor || 'bg-gray-100 text-gray-700'}`}
+                    title={(() => {
+                      if (quote.followUpMeta) {
+                        const { stage, attempts, maxAttempts, dueAt } = quote.followUpMeta;
+                        let tooltip = `Étape ${stage}, Tentatives: ${attempts}/${maxAttempts}`;
+                        if (dueAt) {
+                          const dueDate = new Date(dueAt);
+                          const now = new Date();
+                          if (dueDate > now) {
+                            const diffHours = Math.ceil((dueDate - now) / (1000 * 60 * 60));
+                            tooltip += `, Prochaine relance dans ${diffHours}h`;
+                          } else {
+                            tooltip += ', En attente de traitement';
+                          }
+                        }
+                        return tooltip;
+                      }
+                      return quote.followUpStatusLabel || 'Aucune relance programmée';
+                    })()}
+                  >
                     {quote.followUpStatusLabel || 'Aucune'}
                   </span>
                   {/* Per request: hide step number and time details in reminder column */}
+                </div>
+              </td>
+              <td className="p-3 md:p-4 text-center">
+                <div className="flex items-center justify-center">
+                  <Icon name="Paperclip" size={16} className={quote.files && quote.files.length > 0 ? "text-blue-600" : "text-gray-400"} />
+                  <span className={`ml-1 text-xs font-medium ${quote.files && quote.files.length > 0 ? "text-blue-600" : "text-gray-400"}`}>
+                    {quote.files && quote.files.length > 0 ? quote.files.length : 0}
+                  </span>
                 </div>
               </td>
               <td className="p-3 md:p-4" onClick={(e) => e.stopPropagation()}>
@@ -318,11 +349,19 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
             <div className="text-xs text-muted-foreground">Valide jusqu'au {quote.validUntil ? formatDate(quote.validUntil) : '-'}</div>
           </div>
           
-          <div className="text-xs text-muted-foreground mb-3">
+                    <div className="text-xs text-muted-foreground mb-3">
             Créé le {formatDate(quote.createdAt)}
           </div>
           
-            <div className="flex items-center justify-end space-x-1" onClick={(e) => e.stopPropagation()}>
+          {/* Files indicator */}
+          <div className="flex items-center mb-3 text-xs">
+            <Icon name="Paperclip" size={14} className={`mr-1 ${quote.files && quote.files.length > 0 ? "text-blue-600" : "text-gray-400"}`} />
+            <span className={quote.files && quote.files.length > 0 ? "text-blue-600" : "text-gray-400"}>
+              {quote.files && quote.files.length > 0 ? `${quote.files.length} fichier(s) joint(s)` : "0 fichier joint"}
+            </span>
+          </div>
+          
+          <div className="flex items-center justify-end space-x-1" onClick={(e) => e.stopPropagation()}>
             {quote.status === 'draft' && !quote.isDraftPlaceholder && (
               <Button
                 variant="ghost"

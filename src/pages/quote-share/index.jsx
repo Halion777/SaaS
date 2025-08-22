@@ -567,6 +567,63 @@ const PublicQuoteShareViewer = () => {
           </div>
         )}
 
+        {/* Files Section */}
+        {quote.quote_files && quote.quote_files.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+              <Icon name="Paperclip" size={18} className="text-blue-600 mr-2" />
+              Fichiers joints ({quote.quote_files.length})
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {quote.quote_files.map((file, index) => (
+                <div key={file.id || index} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-blue-300 transition-colors">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Icon name="File" size={20} className="text-blue-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {file.file_name}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {file.file_size ? `${(file.file_size / 1024 / 1024).toFixed(1)} MB` : ''}
+                      </p>
+                    </div>
+                  </div>
+                  {file.mime_type && file.mime_type.startsWith('image/') && (
+                    <div className="mt-3">
+                      <img 
+                        src={getPublicUrl('quote-files', file.file_path)} 
+                        alt={file.file_name}
+                        className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                        onError={(e) => {
+                          console.error('Error loading image:', file.file_path);
+                          e.target.style.display = 'none';
+                        }}
+                        onLoad={() => {
+                          console.log('Image loaded successfully:', file.file_path);
+                        }}
+                      />
+                    </div>
+                  )}
+                  {/* File download link */}
+                  <div className="mt-3">
+                    <a 
+                      href={getPublicUrl('quote-files', file.file_path)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                    >
+                      <Icon name="Download" size={12} className="mr-1" />
+                      Télécharger
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Signatures Section */}
         <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
           <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">

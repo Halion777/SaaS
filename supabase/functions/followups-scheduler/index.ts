@@ -47,25 +47,17 @@ serve(async (req) => {
         });
       }
       
-      // Get global rules
-      let { data: globalRules, error: rulesErr } = await admin
-        .from('quote_follow_up_rules')
-        .select('*')
-        .eq('is_active', true)
-        .single()
-      
-      if (rulesErr || !globalRules) {
-        globalRules = {
-          max_stages: 3,
-          stage_1_delay: 0,
-          stage_2_delay: 1,
-          stage_3_delay: 3,
-          max_attempts_per_stage: 2,
-          instant_view_followup: true,
-          view_followup_template: 'viewed_instant',
-          sent_followup_template: 'followup_not_viewed'
-        };
-      }
+      // Use hardcoded default rules (no database table needed)
+      const globalRules = {
+        max_stages: 3,
+        stage_1_delay: 1,  // 1 day (24 hours) for unviewed quotes
+        stage_2_delay: 3,  // 3 days for second follow-up
+        stage_3_delay: 5,  // 5 days for third follow-up
+        max_attempts_per_stage: 2,
+        instant_view_followup: true,
+        view_followup_template: 'followup_viewed_no_action',
+        sent_followup_template: 'followup_not_viewed'
+      };
       
       // Create initial follow-up immediately
       await createInitialFollowUpForSentQuote(admin, quote, globalRules);
@@ -254,30 +246,20 @@ serve(async (req) => {
         
         console.log(`Successfully updated quote ${quote.quote_number} status from 'sent' to 'viewed'`);
         
-        // Get global rules for follow-up creation
-        let { data: globalRules, error: rulesErr } = await admin
-          .from('quote_follow_up_rules')
-          .select('*')
-          .eq('is_active', true)
-          .single()
+        // Use hardcoded default rules for follow-up creation
+        const globalRules = {
+          max_stages: 3,
+          stage_1_delay: 1,  // 1 day (24 hours) for unviewed quotes
+          stage_2_delay: 3,  // 3 days for second follow-up
+          stage_3_delay: 5,  // 5 days for third follow-up
+          max_attempts_per_stage: 2,
+          instant_view_followup: true,
+          view_followup_template: 'followup_viewed_no_action',
+          sent_followup_template: 'followup_not_viewed'
+        };
         
-        if (rulesErr || !globalRules) {
-          globalRules = {
-            max_stages: 3,
-            stage_1_delay: 0.0208,  // 30 minutes delay
-            stage_2_delay: 1,  // 1 day
-            stage_3_delay: 3,  // 3 days
-            max_attempts_per_stage: 2,
-            instant_view_followup: true,
-            view_followup_template: 'viewed_instant',
-            sent_followup_template: 'followup_not_viewed'
-          };
-        }
-        
-        // Create instant follow-up for viewed quote if enabled
-        if (globalRules.instant_view_followup) {
-          await createInstantViewFollowUp(admin, quote, globalRules);
-        }
+        // Create delayed follow-up for viewed quote (1 hour delay)
+        await createDelayedViewFollowUp(admin, quote);
         
         // Log the status change event
         await admin
@@ -302,7 +284,8 @@ serve(async (req) => {
           quote_id: quote.id,
           previous_status: 'sent',
           current_status: 'viewed',
-          instant_followup_created: globalRules.instant_view_followup
+          delayed_followup_created: globalRules.instant_view_followup,
+          followup_delay: '1 hour'
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
       } else {
         // Quote is not in 'sent' status
@@ -382,26 +365,17 @@ serve(async (req) => {
     // ========================================
     // 2. PROCESS QUOTES THAT NEED FOLLOW-UP
     // ========================================
-    let { data: globalRules, error: rulesErr } = await admin
-      .from('quote_follow_up_rules')
-      .select('*')
-      .eq('is_active', true)
-      .single()
-    
-    if (rulesErr || !globalRules) {
-      console.warn('No global follow-up rules found, using defaults');
-      // Use default values if no rules exist
-      globalRules = {
-        max_stages: 3,
-        stage_1_delay: 0.0208,  // 30 minutes delay (0.0208 days = 30 min)
-        stage_2_delay: 1,  // 1 day
-        stage_3_delay: 3,  // 3 days
-        max_attempts_per_stage: 2,
-        instant_view_followup: true,
-        view_followup_template: 'viewed_instant',
-        sent_followup_template: 'followup_not_viewed'
-      };
-    }
+    // Use hardcoded default rules (no database table needed)
+    const globalRules = {
+      max_stages: 3,
+      stage_1_delay: 1,  // 1 day (24 hours) for unviewed quotes
+      stage_2_delay: 3,  // 3 days for second follow-up
+      stage_3_delay: 5,  // 5 days for third follow-up
+      max_attempts_per_stage: 2,
+      instant_view_followup: true,
+      view_followup_template: 'followup_viewed_no_action',
+      sent_followup_template: 'followup_not_viewed'
+    };
 
     const { data: quotesNeedingFollowUp, error: qErr } = await admin
       .from('quotes')
@@ -493,16 +467,17 @@ async function checkIfQuoteNeedsFollowUp(admin: any, quote: any, rules: any): Pr
       return false; // Only follow up on sent/viewed quotes
     }
     
-    // For 'viewed' status - instant follow-up if enabled
-    if (quote.status === 'viewed' && rules.instant_view_followup) {
-      return true; // Send immediate follow-up when viewed
+    // For 'viewed' status - delayed follow-up if enabled (1 hour delay)
+    if (quote.status === 'viewed') {
+      // Always schedule follow-up for viewed quotes (1 hour delay)
+      return true; // Schedule follow-up for viewed quotes
     }
     
-    // For 'sent' status - check delay for unopened emails
+    // For 'sent' status - check delay for unopened emails (24 hours)
     if (quote.status === 'sent') {
       if (quote.sent_at) {
         const daysSinceSent = Math.floor((Date.now() - new Date(quote.sent_at).getTime()) / (1000 * 60 * 60 * 24));
-        return daysSinceSent >= rules.stage_2_delay; // Follow-up after configured delay
+        return daysSinceSent >= 1; // Follow-up after 24 hours (1 day) - hardcoded
       }
       return true; // If no sent_at, allow follow-up
     }
@@ -553,27 +528,32 @@ async function createIntelligentFollowUp(admin: any, quote: any, rules: any) {
     // Determine follow-up type and stage based on quote status
     let followUpType = 'general';
     let stage = 1;
-    let templateType = rules.view_followup_template || 'viewed_instant';
+    let templateType = 'followup_viewed_no_action'; // Default template
     let scheduledAt = new Date().toISOString(); // Default to immediate
     let priority = 'medium';
     
     if (quote.status === 'viewed') {
-      // Client viewed - instant follow-up
-      followUpType = 'viewed_instant';
+      // Client viewed - follow-up after 1 hour
+      followUpType = 'viewed_no_action';
       stage = 1; // Stage 1: Client just viewed
-      templateType = rules.view_followup_template || 'viewed_instant';
-      scheduledAt = new Date().toISOString(); // Send IMMEDIATELY
-      priority = 'medium'; // Medium priority
+      templateType = 'followup_viewed_no_action';
+      
+      // Calculate scheduled time: 1 hour after viewed
+      const scheduledDate = new Date();
+      scheduledDate.setHours(scheduledDate.getHours() + 1); // 1 hour delay
+      scheduledAt = scheduledDate.toISOString();
+      
+      priority = 'high'; // High priority for viewed quotes
     } else if (quote.status === 'sent') {
       // Client hasn't opened/viewed the quote
       followUpType = 'email_not_opened';
       stage = 1; // Stage 1: Email not opened
-      templateType = rules.sent_followup_template || 'followup_not_viewed';
+      templateType = 'followup_not_viewed';
       
-      // Calculate scheduled time based on delay
+      // Calculate scheduled time based on stage 1 delay (24 hours)
       if (quote.sent_at) {
         const scheduledDate = new Date(quote.sent_at);
-        scheduledDate.setDate(scheduledDate.getDate() + rules.stage_1_delay);
+        scheduledDate.setDate(scheduledDate.getDate() + 1); // 1 day delay (hardcoded)
         scheduledAt = scheduledDate.toISOString();
       }
       priority = 'high'; // High priority for unopened emails
@@ -592,9 +572,15 @@ async function createIntelligentFollowUp(admin: any, quote: any, rules: any) {
     if (templateError || !template) {
       // Fallback to hardcoded templates if database template not found
       console.warn(`Template ${templateType} not found, using fallback`);
-      subject = `Devis ${quote.quote_number} - Relance`;
-      text = `Bonjour ${client.name || 'Madame, Monsieur'},\n\nNous vous rappelons notre devis ${quote.quote_number} pour votre projet "${quote.title}".\n\nN'hésitez pas à nous contacter si vous avez des questions.\n\nCordialement,\nVotre équipe`;
-      html = `<p>Bonjour ${client.name || 'Madame, Monsieur'},</p><p>Nous vous rappelons notre <strong>devis ${quote.quote_number}</strong> pour votre projet <strong>"${quote.title}"</strong>.</p><p>N'hésitez pas à nous contacter si vous avez des questions.</p><p>Cordialement,<br><strong>Votre équipe</strong></p>`;
+      if (quote.status === 'viewed') {
+        subject = `Devis ${quote.quote_number} - Avez-vous des questions ?`;
+        text = `Bonjour ${client.name || 'Madame, Monsieur'},\n\nNous espérons que notre devis ${quote.quote_number} pour votre projet "${quote.title}" vous a intéressé.\n\nAvez-vous des questions ou souhaitez-vous discuter de ce projet ?\n\nCordialement,\nVotre équipe`;
+        html = `<p>Bonjour ${client.name || 'Madame, Monsieur'},</p><p>Nous espérons que notre <strong>devis ${quote.quote_number}</strong> pour votre projet <strong>"${quote.title}"</strong> vous a intéressé.</p><p>Avez-vous des questions ou souhaitez-vous discuter de ce projet ?</p><p>Cordialement,<br><strong>Votre équipe</strong></p>`;
+      } else {
+        subject = `Devis ${quote.quote_number} - Avez-vous reçu notre proposition ?`;
+        text = `Bonjour ${client.name || 'Madame, Monsieur'},\n\nNous avons envoyé notre devis ${quote.quote_number} pour votre projet "${quote.title}".\n\nAvez-vous bien reçu notre proposition ?\n\nCordialement,\nVotre équipe`;
+        html = `<p>Bonjour ${client.name || 'Madame, Monsieur'},</p><p>Nous avons envoyé notre <strong>devis ${quote.quote_number}</strong> pour votre projet <strong>"${quote.title}"</strong>.</p><p>Avez-vous bien reçu notre proposition ?</p><p>Cordialement,<br><strong>Votre équipe</strong></p>`;
+      }
     } else {
       // Use database template with variable replacement
       subject = template.subject
@@ -627,24 +613,26 @@ async function createIntelligentFollowUp(admin: any, quote: any, rules: any) {
         template_text: text,
         template_html: html,
         attempts: 0,
-        max_attempts: rules.max_attempts_per_stage || 3,
+        max_attempts: 3, // Hardcoded max attempts
         channel: 'email',
+        automated: true,
         meta: {
           follow_up_type: followUpType,
           automated: true,
           created_at: new Date().toISOString(),
           behavior_based: true,
           quote_status: quote.status,
-          instant_followup: quote.status === 'viewed',
+          instant_followup: false, // No more instant follow-ups
           template_type: templateType,
-          priority: priority
+          priority: priority,
+          stage_delay: quote.status === 'viewed' ? 1 : 1 // 1 hour for viewed, 1 day for sent (hardcoded)
         }
       });
     
     if (followUpError) {
       console.error('Error creating intelligent follow-up:', followUpError);
     } else {
-      console.log(`Created intelligent follow-up for quote ${quote.quote_number}, stage: ${stage}, type: ${followUpType}, scheduled: ${scheduledAt}, priority: ${priority}`);
+      console.log(`Created intelligent follow-up for quote ${quote.quote_number}, stage: ${stage}, type: ${followUpType}, scheduled: ${scheduledAt}, priority: ${priority}, delay: ${quote.status === 'viewed' ? '1 hour' : '1 day'}`);
     }
   } catch (error) {
     console.error('Error creating intelligent follow-up:', error);
@@ -688,10 +676,8 @@ async function processQuoteStatusUpdates(admin: any, rules: any) {
       
       console.log(`Updated quote ${quote.quote_number} status from 'sent' to 'viewed'`);
       
-      // Create instant follow-up for viewed quote
-      if (rules.instant_view_followup) {
-        await createInstantViewFollowUp(admin, quote, rules);
-      }
+      // Create delayed follow-up for viewed quote (1 hour delay)
+      await createDelayedViewFollowUp(admin, quote);
     }
   } catch (error) {
     console.error('Error processing quote status updates:', error);
@@ -699,9 +685,9 @@ async function processQuoteStatusUpdates(admin: any, rules: any) {
 }
 
 /**
- * Create instant follow-up when quote is viewed
+ * Create delayed follow-up for viewed quote (1 hour delay)
  */
-async function createInstantViewFollowUp(admin: any, quote: any, rules: any) {
+async function createDelayedViewFollowUp(admin: any, quote: any) {
   try {
     // Get client details
     const { data: client, error: clientError } = await admin
@@ -715,23 +701,41 @@ async function createInstantViewFollowUp(admin: any, quote: any, rules: any) {
       return;
     }
     
-    // Get template for instant view follow-up
+    // Check if instant follow-up already exists for this quote
+    const { data: existingFollowUp, error: checkError } = await admin
+      .from('quote_follow_ups')
+      .select('id')
+      .eq('quote_id', quote.id)
+      .eq('meta->>follow_up_type', 'viewed_instant')
+      .limit(1);
+    
+    if (checkError) {
+      console.warn('Error checking existing instant follow-up:', checkError);
+      return;
+    }
+    
+    if (existingFollowUp && existingFollowUp.length > 0) {
+      console.log(`Instant follow-up already exists for viewed quote ${quote.quote_number}`);
+      return;
+    }
+    
+    // Get template for viewed no action follow-up
     const { data: template, error: templateError } = await admin
       .from('email_templates')
       .select('subject, html_content, text_content')
-      .eq('template_type', 'viewed_instant')
+      .eq('template_type', 'followup_viewed_no_action')
       .eq('is_active', true)
       .maybeSingle();
     
     let subject, html, text;
     
     if (templateError || !template) {
-      // Fallback template
-      subject = `Devis ${quote.quote_number} - Merci de votre intérêt !`;
-      text = `Bonjour ${client.name || 'Madame, Monsieur'},\n\nMerci d'avoir consulté notre devis ${quote.quote_number} pour votre projet "${quote.title}".\n\nNous espérons que notre proposition répond à vos attentes. Avez-vous des questions ?\n\nCordialement,\nVotre équipe`;
-      html = `<p>Bonjour ${client.name || 'Madame, Monsieur'},</p><p>Merci d'avoir consulté notre <strong>devis ${quote.quote_number}</strong> pour votre projet <strong>"${quote.title}"</strong>.</p><p>Nous espérons que notre proposition répond à vos attentes. Avez-vous des questions ?</p><p>Cordialement,<br><strong>Votre équipe</strong></p>`;
+      // Fallback template for viewed no action follow-up
+      subject = `Devis ${quote.quote_number} - Avez-vous des questions ?`;
+      text = `Bonjour ${client.name || 'Madame, Monsieur'},\n\nNous espérons que notre devis ${quote.quote_number} pour votre projet "${quote.title}" vous a intéressé.\n\nAvez-vous des questions ou souhaitez-vous discuter de ce projet ?\n\nCordialement,\nVotre équipe`;
+      html = `<p>Bonjour ${client.name || 'Madame, Monsieur'},</p><p>Nous espérons que notre <strong>devis ${quote.quote_number}</strong> pour votre projet <strong>"${quote.title}"</strong> vous a intéressé.</p><p>Avez-vous des questions ou souhaitez-vous discuter de ce projet ?</p><p>Cordialement,<br><strong>Votre équipe</strong></p>`;
     } else {
-      // Use database template
+      // Use database template with variable replacement
       subject = template.subject
         .replace('{quote_number}', quote.quote_number)
         .replace('{client_name}', client.name || 'Madame, Monsieur')
@@ -748,7 +752,10 @@ async function createInstantViewFollowUp(admin: any, quote: any, rules: any) {
         .replace('{quote_title}', quote.title || 'votre projet');
     }
     
-    // Create instant follow-up
+    // Create delayed follow-up for viewed quote (1 hour delay)
+    const scheduledDate = new Date();
+    scheduledDate.setHours(scheduledDate.getHours() + 1); // 1 hour delay
+    
     const { error: followUpError } = await admin
       .from('quote_follow_ups')
       .insert({
@@ -757,27 +764,31 @@ async function createInstantViewFollowUp(admin: any, quote: any, rules: any) {
         client_id: quote.client_id,
         stage: 1,
         status: 'scheduled',
-        scheduled_at: new Date().toISOString(), // IMMEDIATE
+        scheduled_at: scheduledDate.toISOString(), // Send after 1 hour
         template_subject: subject,
         template_text: text,
         template_html: html,
         attempts: 0,
-        max_attempts: rules.max_attempts_per_stage || 3,
+        max_attempts: 3, // Hardcoded max attempts
         channel: 'email',
+        automated: true,
         meta: {
-          follow_up_type: 'viewed_instant',
+          follow_up_type: 'viewed_no_action',
           automated: true,
           created_at: new Date().toISOString(),
-          instant_followup: true,
-          template_type: 'viewed_instant',
-          priority: 'medium'
+          behavior_based: true,
+          quote_status: 'viewed',
+          instant_followup: false, // No longer instant
+          template_type: 'followup_viewed_no_action',
+          priority: 'high',
+          stage_delay: 1 // 1 hour delay
         }
       });
     
     if (followUpError) {
       console.error('Error creating instant view follow-up:', followUpError);
     } else {
-      console.log(`Created instant view follow-up for quote ${quote.quote_number}`);
+      console.log(`Created viewed no action follow-up for quote ${quote.quote_number}, scheduled for ${scheduledDate.toISOString()} (1 hour delay)`);
     }
   } catch (error) {
     console.error('Error creating instant view follow-up:', error);
@@ -833,7 +844,7 @@ async function progressFollowUpStages(admin: any, rules: any) {
       .from('quote_follow_ups')
       .select(`
         id, quote_id, stage, attempts, max_attempts, status, scheduled_at,
-        quotes!inner(quote_number, status, sent_at, user_id, client_id)
+        quotes!inner(quote_number, status, sent_at, user_id, client_id, valid_until)
       `)
       .eq('status', 'scheduled')
       .lte('scheduled_at', new Date().toISOString())
@@ -847,22 +858,83 @@ async function progressFollowUpStages(admin: any, rules: any) {
     for (const followUp of followUps || []) {
       const quote = followUp.quotes;
       
+      // Check if quote is still valid for follow-up
+      if (quote.status === 'accepted' || quote.status === 'rejected' || quote.status === 'expired') {
+        console.log(`Quote ${quote.quote_number} is ${quote.status}, stopping follow-up ${followUp.id}`);
+        await admin
+          .from('quote_follow_ups')
+          .update({
+            status: 'stopped',
+            updated_at: new Date().toISOString(),
+            meta: admin.sql`COALESCE(meta, '{}'::jsonb) || ${JSON.stringify({
+              stopped_reason: 'quote_finalized',
+              stopped_at: new Date().toISOString(),
+              final_status: quote.status
+            })}`
+          })
+          .eq('id', followUp.id);
+        continue;
+      }
+      
+      // Check if quote is expired based on valid_until
+      if (quote.valid_until && new Date(quote.valid_until) < new Date()) {
+        console.log(`Quote ${quote.quote_number} is expired, stopping follow-up ${followUp.id}`);
+        await admin
+          .from('quote_follow_ups')
+          .update({
+            status: 'stopped',
+            updated_at: new Date().toISOString(),
+            meta: admin.sql`COALESCE(meta, '{}'::jsonb) || ${JSON.stringify({
+              stopped_reason: 'quote_expired',
+              stopped_at: new Date().toISOString(),
+              valid_until: quote.valid_until
+            })}`
+          })
+          .eq('id', followUp.id);
+        continue;
+      }
+      
       // Check if we should progress to next stage
       if (followUp.attempts >= followUp.max_attempts) {
         // Max attempts reached, move to next stage
         const nextStage = followUp.stage + 1;
         
-        if (nextStage <= rules.max_stages) {
-          // Calculate delay for next stage
+        if (nextStage <= 3) { // Hardcoded max stages
+          // Calculate delay for next stage based on business rules
           let delayDays = 0;
           switch (nextStage) {
-            case 2: delayDays = rules.stage_2_delay || 1; break;
-            case 3: delayDays = rules.stage_3_delay || 3; break;
-            default: delayDays = 5; break;
+            case 2: 
+              delayDays = 3; // 3 days for second follow-up (hardcoded)
+              break;
+            case 3: 
+              delayDays = 5; // 5 days for third follow-up (hardcoded)
+              break;
+            default: 
+              delayDays = 5; // fallback
+              break;
           }
           
+          // Check if the next scheduled date would be after quote expiration
           const nextScheduledAt = new Date();
           nextScheduledAt.setDate(nextScheduledAt.getDate() + delayDays);
+          
+          if (quote.valid_until && nextScheduledAt > new Date(quote.valid_until)) {
+            console.log(`Next follow-up for quote ${quote.quote_number} would be after expiration (${quote.valid_until}), stopping follow-up`);
+            await admin
+              .from('quote_follow_ups')
+              .update({
+                status: 'stopped',
+                updated_at: new Date().toISOString(),
+                meta: admin.sql`COALESCE(meta, '{}'::jsonb) || ${JSON.stringify({
+                  stopped_reason: 'would_expire_before_next_stage',
+                  stopped_at: new Date().toISOString(),
+                  valid_until: quote.valid_until,
+                  next_scheduled: nextScheduledAt.toISOString()
+                })}`
+              })
+              .eq('id', followUp.id);
+            continue;
+          }
           
           // Update follow-up to next stage
           const { error: updateError } = await admin
@@ -871,14 +943,21 @@ async function progressFollowUpStages(admin: any, rules: any) {
               stage: nextStage,
               attempts: 0,
               scheduled_at: nextScheduledAt.toISOString(),
-              updated_at: new Date().toISOString()
+              updated_at: new Date().toISOString(),
+              meta: admin.sql`COALESCE(meta, '{}'::jsonb) || ${JSON.stringify({
+                stage_progressed: true,
+                previous_stage: followUp.stage,
+                new_stage: nextStage,
+                delay_days: delayDays,
+                progressed_at: new Date().toISOString()
+              })}`
             })
             .eq('id', followUp.id);
           
           if (updateError) {
             console.error(`Error progressing follow-up ${followUp.id} to stage ${nextStage}:`, updateError);
           } else {
-            console.log(`Progressed follow-up for quote ${quote.quote_number} to stage ${nextStage}, scheduled for ${nextScheduledAt.toISOString()}`);
+            console.log(`Progressed follow-up for quote ${quote.quote_number} to stage ${nextStage}, scheduled for ${nextScheduledAt.toISOString()} (${delayDays} days delay)`);
           }
         } else {
           // Max stages reached, mark as completed
@@ -886,7 +965,12 @@ async function progressFollowUpStages(admin: any, rules: any) {
             .from('quote_follow_ups')
             .update({
               status: 'completed',
-              updated_at: new Date().toISOString()
+              updated_at: new Date().toISOString(),
+              meta: admin.sql`COALESCE(meta, '{}'::jsonb) || ${JSON.stringify({
+                completed_reason: 'max_stages_reached',
+                completed_at: new Date().toISOString(),
+                final_stage: followUp.stage
+              })}`
             })
             .eq('id', followUp.id);
           
@@ -1000,10 +1084,10 @@ async function createInitialFollowUpForSentQuote(admin: any, quote: any, rules: 
         .replace('{quote_title}', quote.title || 'votre projet');
     }
     
-    // Calculate scheduled time based on stage 1 delay
+    // Calculate scheduled time based on stage 1 delay (24 hours)
     const scheduledAt = new Date();
     if (quote.sent_at) {
-      scheduledAt.setDate(scheduledAt.getDate() + (rules.stage_1_delay || 0));
+      scheduledAt.setDate(scheduledAt.getDate() + 1); // 1 day delay for unviewed quotes (hardcoded)
     }
     
     // Create initial follow-up
@@ -1015,13 +1099,14 @@ async function createInitialFollowUpForSentQuote(admin: any, quote: any, rules: 
         client_id: quote.client_id,
         stage: 1,
         status: 'scheduled',
-        scheduled_at: scheduledAt.toISOString(),
+        scheduled_at: scheduledAt,
         template_subject: subject,
         template_text: text,
         template_html: html,
         attempts: 0,
-        max_attempts: rules.max_attempts_per_stage || 3,
+        max_attempts: 3, // Hardcoded max attempts
         channel: 'email',
+        automated: true,
         meta: {
           follow_up_type: 'initial_sent',
           automated: true,

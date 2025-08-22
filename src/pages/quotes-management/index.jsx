@@ -212,18 +212,39 @@ const QuotesManagement = () => {
         if (followUps && Object.keys(followUps).length > 0) {
           const merged = sortedQuotes.map(quote => {
             const quoteFollowUps = followUps[quote.id] || [];
-            // Reuse selection logic from updateQuotesWithFollowUpStatus
-            const candidates = quoteFollowUps
-              .filter(f => f.status === 'pending' || f.status === 'scheduled')
-              .map(f => ({ ...f, dueAt: f.next_attempt_at || f.scheduled_at }))
-              .filter(f => !!f.dueAt)
-              .sort((a, b) => new Date(a.dueAt) - new Date(b.dueAt));
-            let picked = candidates[0];
-            if (!picked) picked = quoteFollowUps.find(f => f.status === 'failed')
-              || quoteFollowUps.find(f => f.status === 'stopped')
-              || quoteFollowUps.find(f => f.status === 'sent')
-              || quoteFollowUps[0];
+            
+            // Use the same selection logic as updateQuotesWithFollowUpStatus
+            const selectFollowUp = (arr) => {
+              if (!arr || arr.length === 0) return null;
+              
+              // Priority order for display:
+              // 1. pending (highest priority - immediate action needed)
+              // 2. scheduled (next priority - future action)
+              // 3. failed (needs attention)
+              // 4. stopped (completed/stopped)
+              // 5. sent (completed successfully)
+              
+              const pending = arr.find(f => f.status === 'pending');
+              if (pending) return pending;
+              
+              const scheduled = arr.find(f => f.status === 'scheduled');
+              if (scheduled) return scheduled;
+              
+              const failed = arr.find(f => f.status === 'failed');
+              if (failed) return failed;
+              
+              const stopped = arr.find(f => f.status === 'stopped');
+              if (stopped) return stopped;
+              
+              const sent = arr.find(f => f.status === 'sent');
+              if (sent) return sent;
+              
+              return arr[0];
+            };
+            
+            const picked = selectFollowUp(quoteFollowUps);
             const followUpStatus = picked?.status || 'none';
+            
             return {
               ...quote,
               followUpStatus,
@@ -242,7 +263,7 @@ const QuotesManagement = () => {
           });
           setQuotes(merged);
         } else {
-        setQuotes(sortedQuotes);
+          setQuotes(sortedQuotes);
         }
         
         // Calculate stats (actual data)
@@ -341,23 +362,35 @@ const QuotesManagement = () => {
   const updateQuotesWithFollowUpStatus = (followUpsData) => {
     const selectFollowUp = (arr) => {
       if (!arr || arr.length === 0) return null;
-      // pending/scheduled: choose earliest due
-      const candidates = arr
-        .filter(f => f.status === 'pending' || f.status === 'scheduled')
-        .map(f => ({
-          ...f,
-          dueAt: f.next_attempt_at || f.scheduled_at
-        }))
-        .filter(f => !!f.dueAt)
-        .sort((a, b) => new Date(a.dueAt) - new Date(b.dueAt));
-      if (candidates.length > 0) return candidates[0];
-      // failed preferred over stopped, then sent, else any
+      
+      // Priority order for display:
+      // 1. pending (highest priority - immediate action needed)
+      // 2. scheduled (next priority - future action)
+      // 3. failed (needs attention)
+      // 4. stopped (completed/stopped)
+      // 5. sent (completed successfully)
+      
+      // First, look for pending follow-ups (immediate action needed)
+      const pending = arr.find(f => f.status === 'pending');
+      if (pending) return pending;
+      
+      // Then look for scheduled follow-ups (future action)
+      const scheduled = arr.find(f => f.status === 'scheduled');
+      if (scheduled) return scheduled;
+      
+      // Then look for failed follow-ups (needs attention)
       const failed = arr.find(f => f.status === 'failed');
       if (failed) return failed;
+      
+      // Then look for stopped follow-ups
       const stopped = arr.find(f => f.status === 'stopped');
       if (stopped) return stopped;
+      
+      // Finally, look for sent follow-ups
       const sent = arr.find(f => f.status === 'sent');
       if (sent) return sent;
+      
+      // Fallback to first available
       return arr[0];
     };
 
@@ -668,46 +701,77 @@ const QuotesManagement = () => {
         )
       );
 
-      // Send email notification to client
-      try {
-        // Get client information
-        const client = quote.client || {
-          name: quote.client_name || 'Client',
-          email: quote.client_email
-        };
+      // Check if email was already sent for this quote to prevent duplicates
+      const { data: existingEvents } = await supabase
+        .from('quote_events')
+        .select('id, type, meta')
+        .eq('quote_id', quote.id)
+        .eq('type', 'email_sent')
+        .limit(1);
 
-        // Check if we have valid client email
-        if (!client.email) {
-          console.warn('Cannot send email: No client email found for quote', quote.id);
-          return;
-        }
-
-        // Get company profile information
-        let companyProfile = null;
-        if (quote.company_profile) {
-          companyProfile = {
-            company_name: quote.company_profile.company_name,
-            // Add other company fields as needed
+      // Only send email if no email event exists (prevents duplicate emails)
+      if (!existingEvents || existingEvents.length === 0) {
+        try {
+          // Get client information
+          const client = quote.client || {
+            name: quote.client_name || 'Client',
+            email: quote.client_email
           };
-        }
 
-        // Send email using the new method
-        const { EmailService } = await import('../../services/emailService');
-        const emailResult = await EmailService.sendDraftQuoteMarkedAsSentEmail(
-          updatedQuote || quote,
-          client,
-          companyProfile,
-          user?.id
-        );
+          // Check if we have valid client email
+          if (!client.email) {
+            console.warn('Cannot send email: No client email found for quote', quote.id);
+            return;
+          }
 
-        if (emailResult.success) {
-          console.log('Email sent successfully when marking quote as sent');
-        } else {
-          console.warn('Failed to send email when marking quote as sent:', emailResult.error);
+          // Get company profile information
+          let companyProfile = null;
+          if (quote.company_profile) {
+            companyProfile = {
+              company_name: quote.company_profile.company_name,
+              // Add other company fields as needed
+            };
+          }
+
+          // Send email using the new method
+          const { EmailService } = await import('../../services/emailService');
+          const emailResult = await EmailService.sendDraftQuoteMarkedAsSentEmail(
+            updatedQuote || quote,
+            client,
+            companyProfile,
+            user?.id
+          );
+
+          if (emailResult.success) {
+            console.log('Email sent successfully when marking quote as sent');
+            
+            // Log the email event to prevent future duplicates
+            try {
+              await supabase
+                .from('quote_events')
+                .insert({
+                  quote_id: quote.id,
+                  user_id: user?.id || null,
+                  type: 'email_sent',
+                  meta: {
+                    email_type: 'draft_marked_as_sent',
+                    recipient: client.email,
+                    timestamp: new Date().toISOString(),
+                    source: 'quotes_management'
+                  }
+                });
+            } catch (eventError) {
+              console.warn('Failed to log email event:', eventError);
+            }
+          } else {
+            console.warn('Failed to send email when marking quote as sent:', emailResult.error);
+          }
+        } catch (emailError) {
+          console.warn('Error sending email when marking quote as sent:', emailError);
+          // Don't fail the quote status update if email fails
         }
-      } catch (emailError) {
-        console.warn('Error sending email when marking quote as sent:', emailError);
-        // Don't fail the quote status update if email fails
+      } else {
+        console.log('Email already sent for this quote, skipping duplicate email');
       }
 
       // Refresh follow-ups to show the newly created ones
@@ -739,6 +803,11 @@ const QuotesManagement = () => {
       return 'Arrêtée';
     }
     
+    // Handle expired quotes
+    if (quoteStatus === 'expired') {
+      return 'Expirée';
+    }
+    
     const labels = {
       none: 'Aucune',
       pending: 'En attente',
@@ -754,6 +823,11 @@ const QuotesManagement = () => {
     // Disable follow-ups for accepted/rejected quotes - show as disabled
     if (quoteStatus === 'accepted' || quoteStatus === 'rejected') {
       return 'bg-gray-100 text-gray-500';
+    }
+    
+    // Handle expired quotes
+    if (quoteStatus === 'expired') {
+      return 'bg-red-50 text-red-600';
     }
     
     const colors = {
@@ -949,7 +1023,7 @@ const QuotesManagement = () => {
   };
 
   const handleQuoteSelect = (quote) => {
-    // No-op (AI removed)
+    // No-op (removed quote detail panel)
   };
 
   // Sync quote status with backend to ensure accuracy
@@ -1264,8 +1338,7 @@ const QuotesManagement = () => {
             </Button>
           </div>
 
-          {/* Mobile AI Panel removed */}
-
+                    {/* Mobile AI Panel removed */}
 
         </div>
       </main>

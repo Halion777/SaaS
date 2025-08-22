@@ -82,6 +82,7 @@ serve(async (req) => {
       try {
         const result = await processFollowUp(admin, fu);
         if (result.success) {
+          // Use meta column for priority if available, otherwise default to medium
           const priority = fu.meta?.priority || 'medium';
           switch (priority) {
             case 'high': results.high_priority++; break;
@@ -219,13 +220,13 @@ async function processFollowUp(admin: any, followUp: any) {
       const eventMeta = {
         stage: followUp.stage,
         follow_up_id: followUp.id,
-        follow_up_type: followUp.meta?.follow_up_type || 'general',
-        automated: followUp.meta?.automated || false,
+        follow_up_type: followUp.meta?.follow_up_type || 'general', // Use meta for type
+        automated: followUp.meta?.automated || false, // Use meta for automation
         template_subject: followUp.template_subject,
         client_email: client.email,
-        instant_followup: followUp.meta?.instant_followup || false,
+        instant_followup: followUp.meta?.instant_followup || false, // Use meta for instant followup (now false for viewed quotes - 1 hour delay)
         attempts: newAttempts,
-        priority: followUp.meta?.priority || 'medium'
+        priority: followUp.meta?.priority || 'medium' // Use meta for priority
       }
       
       await admin.from('quote_events').insert({ 
@@ -241,16 +242,16 @@ async function processFollowUp(admin: any, followUp: any) {
         action: 'followup_sent',
         accessed_at: new Date().toISOString(),
         meta: {
-          follow_up_type: followUp.meta?.follow_up_type || 'general',
+          follow_up_type: followUp.meta?.follow_up_type || 'general', // Use meta for type
           stage: followUp.stage,
-          automated: followUp.meta?.automated || false,
-          instant_followup: followUp.meta?.instant_followup || false,
+          automated: followUp.meta?.automated || false, // Use meta for automation
+          instant_followup: followUp.meta?.instant_followup || false, // Use meta for instant followup (now false for viewed quotes - 1 hour delay)
           attempts: newAttempts,
-          priority: followUp.meta?.priority || 'medium'
+          priority: followUp.meta?.priority || 'medium' // Use meta for priority
         }
       })
       
-      console.log(`Follow-up sent for quote ${quote.quote_number} to ${client.email}, type: ${followUp.meta?.follow_up_type || 'general'}, stage: ${followUp.stage}, attempts: ${newAttempts}, priority: ${followUp.meta?.priority || 'medium'}`)
+      console.log(`Follow-up sent for quote ${quote.quote_number} to ${client.email}, type: ${followUp.meta?.follow_up_type || 'general'}, stage: ${followUp.stage}, attempts: ${newAttempts}, priority: ${followUp.meta?.priority || 'medium'}, instant: ${followUp.meta?.instant_followup || false}`)
       
       return { success: true, data: { quote_number: quote.quote_number, client_email: client.email } };
       
@@ -290,7 +291,7 @@ async function processFollowUp(admin: any, followUp: any) {
           stage: followUp.stage,
           follow_up_id: followUp.id,
           error: errorMessage,
-          follow_up_type: followUp.meta?.follow_up_type || 'general',
+          follow_up_type: followUp.meta?.follow_up_type || 'general', // Use meta for type
           attempts: newAttempts
         }
       })
