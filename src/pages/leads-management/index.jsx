@@ -267,81 +267,152 @@ const LeadsManagementPage = () => {
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {leads.map((lead) => (
-            <div key={lead.lead_id} className="border border-border rounded-lg p-4 hover:shadow-md transition-shadow">
-              <div className="flex justify-between items-start mb-4">
+            <div key={lead.lead_id} className="relative bg-gradient-to-br from-card to-card/80 border border-border rounded-xl p-6 hover:shadow-xl transition-all duration-300 hover:border-primary/30 hover:scale-[1.02] overflow-hidden">
+              {/* Subtle background pattern */}
+              <div className="absolute inset-0 opacity-5">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full -translate-y-16 translate-x-16"></div>
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-secondary/20 rounded-full translate-y-12 -translate-x-12"></div>
+              </div>
+              <div className="relative z-10">
+              {/* Header Section */}
+              <div className="flex justify-between items-start mb-5">
                 <div className="flex-1">
-                  <h3 className="font-semibold text-foreground text-lg mb-2">{lead.client_name}</h3>
-                  
-                  {/* Address Information */}
-                  <div className="flex items-start gap-2 mb-3">
-                    <Icon name="MapPin" className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                    <div className="space-y-1">
-                      <p className="text-sm text-foreground font-medium">
-                        {lead.street_number && `${lead.street_number} `}{lead.full_address}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {lead.zip_code}, {lead.country}, {lead.region}
-                      </p>
-                    </div>
-                  </div>
+                  <h3 className="font-bold text-foreground text-xl mb-1">{lead.client_name}</h3>
+                  <p className="text-sm text-muted-foreground">Demande reçue le {new Date(lead.created_at).toLocaleDateString('fr-FR')}</p>
                 </div>
                 
-                {/* Quote Status */}
+                {/* Quote Status Badge */}
                 <div className="text-right ml-4">
-                  <div className="bg-muted/50 rounded-full px-3 py-1">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {lead.quotes_sent_count}/3 devis
-                    </span>
+                  <div className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                    lead.quotes_sent_count >= 3 
+                      ? 'bg-destructive/10 text-destructive border border-destructive/20' 
+                      : 'bg-primary/10 text-primary border border-primary/20'
+                  }`}>
+                    {lead.quotes_sent_count}/3 devis
                   </div>
                   {lead.quotes_sent_count >= 3 && (
-                    <span className="block text-xs text-destructive mt-1">Max atteint</span>
+                    <span className="block text-xs text-destructive mt-2 text-center">Max atteint</span>
                   )}
                 </div>
               </div>
               
+              {/* Key Information Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                {/* Left Column */}
+                <div className="space-y-3">
+                  {/* Price Range */}
+                  {lead.price_range && (
+                    <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <Icon name="Coins" className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground font-medium">Budget estimé</p>
+                        <p className="text-sm font-semibold text-foreground">{lead.price_range}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Completion Date */}
+                  {lead.completion_date && (
+                    <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                      <div className="p-2 bg-blue-500/10 rounded-lg">
+                        <Icon name="Calendar" className="w-5 h-5 text-blue-500" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground font-medium">Date de fin souhaitée</p>
+                        <p className="text-sm font-semibold text-foreground">{new Date(lead.completion_date).toLocaleDateString('fr-FR')}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Right Column */}
+                <div className="space-y-3">
+                  {/* Address Information */}
+                  <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                    <div className="p-2 bg-green-500/10 rounded-lg">
+                      <Icon name="MapPin" className="w-5 h-5 text-green-500" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-muted-foreground font-medium">Localisation</p>
+                      <p className="text-sm font-semibold text-foreground mb-1">
+                        {lead.street_number && `${lead.street_number} `}{lead.full_address}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {[
+                          lead.zip_code,
+                          lead.city,
+                          lead.region,
+                          lead.country
+                        ].filter(value => value && value !== 'N/A' && value !== 'null' && value !== 'undefined' && value.trim() !== '').join(', ')}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Services Required */}
+                  <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                    <div className="p-2 bg-purple-500/10 rounded-lg">
+                      <Icon name="Wrench" className="w-5 h-5 text-purple-500" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-muted-foreground font-medium">Services requis</p>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {lead.project_categories?.map((category) => (
+                          <span key={category} className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded border border-primary/20">
+                            {category}
+                          </span>
+                        ))}
+                        {lead.custom_category && (
+                          <span className="px-2 py-1 bg-secondary/10 text-secondary text-xs font-medium rounded border border-secondary/20">
+                            {lead.custom_category}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
               {/* Project Description */}
-              <div className="mb-3">
+              <div className="mb-5 p-4 bg-muted/20 rounded-lg">
+                <h4 className="text-sm font-semibold text-muted-foreground mb-2">Description du projet</h4>
                 <p className="text-sm text-foreground leading-relaxed">{lead.project_description}</p>
               </div>
               
-              {/* Categories */}
-              <div className="flex flex-wrap gap-2 mb-4">
-                {lead.project_categories?.map((category) => (
-                  <span key={category} className="px-3 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full border border-primary/20">
-                    {category}
-                  </span>
-                ))}
-                {lead.custom_category && (
-                  <span className="px-3 py-1 bg-secondary/10 text-secondary text-xs font-medium rounded-full border border-secondary/20">
-                    {lead.custom_category}
-                  </span>
-                )}
-              </div>
+
               
-              {/* Bottom Section */}
-              <div className="flex justify-between items-center pt-3 border-t border-border/50">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Icon name="Calendar" className="w-3 h-3" />
-                  <span>{new Date(lead.created_at).toLocaleDateString('fr-FR')}</span>
+              {/* Action Section */}
+              <div className="flex justify-between items-center pt-4 border-t border-border/50">
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Icon name="Clock" className="w-4 h-4" />
+                    <span>Créé le {new Date(lead.created_at).toLocaleDateString('fr-FR')}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Icon name="Eye" className="w-4 h-4" />
+                    <span>Lead #{lead.lead_id.slice(-8)}</span>
+                  </div>
                 </div>
                 
                 {lead.can_send_quote ? (
                   <Button
                     onClick={() => handleQuoteLead(lead.lead_id)}
                     variant="default"
-                    size="sm"
-                    className="px-4"
+                    size="default"
+                    className="px-6 py-2 font-semibold"
                   >
                     <Icon name="FileText" className="w-4 h-4 mr-2" />
-                    Devis
+                    Créer un devis
                   </Button>
                 ) : (
-                  <span className="text-xs text-muted-foreground px-3 py-1 bg-muted/50 rounded-full">
-                    {lead.quote_status === 'max_reached' ? 'Max atteint' : 'Déjà appliqué'}
+                  <span className="text-sm text-muted-foreground px-4 py-2 bg-muted/50 rounded-lg border">
+                    {lead.quote_status === 'max_reached' ? 'Maximum de devis atteint' : 'Déjà traité'}
                   </span>
                 )}
+              </div>
               </div>
             </div>
           ))}
