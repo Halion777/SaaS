@@ -9,15 +9,15 @@ import { uploadFile, deleteFile, getPublicUrl } from './storageService';
  * Upload a file to quote-files bucket
  * @param {File} file - File to upload
  * @param {string} quoteId - Quote ID
- * @param {string} userId - User ID
- * @param {string} profileId - User Profile ID for foreign key constraint
+ * @param {string} userId - User ID (for validation)
+ * @param {string} profileId - User Profile ID (required for uploaded_by field)
  * @param {string} fileCategory - Category of file (attachment, logo, signature, etc.)
  * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
  */
-export const uploadQuoteFile = async (file, quoteId, userId, profileId = null, fileCategory = 'attachment') => {
+export const uploadQuoteFile = async (file, quoteId, userId, profileId, fileCategory = 'attachment') => {
   try {
-    if (!file || !quoteId || !userId) {
-      return { success: false, error: 'File, quote ID, and user ID are required' };
+    if (!file || !quoteId || !userId || !profileId) {
+      return { success: false, error: 'File, quote ID, user ID, and profile ID are required' };
     }
 
     // Upload file to quote-files bucket
@@ -39,7 +39,7 @@ export const uploadQuoteFile = async (file, quoteId, userId, profileId = null, f
       file_size: file.size,
       mime_type: file.type, // Correct column name: mime_type not file_type
       file_category: fileCategory,
-      uploaded_by: profileId // Use profile ID for foreign key constraint
+      uploaded_by: profileId // Use profile ID for foreign key constraint to user_profiles table
     };
 
     const { data: dbData, error: dbError } = await supabase

@@ -219,6 +219,34 @@ const QuoteCreation = () => {
     }
   }, [searchParams]);
 
+  // Clean up quote files from localStorage when page loads
+  useEffect(() => {
+    const cleanupQuoteFiles = () => {
+      try {
+        // Get all localStorage keys
+        const keys = Object.keys(localStorage);
+        
+        // Find and remove quote file keys
+        const quoteFileKeys = keys.filter(key => 
+          key.includes('quote-files-') 
+        );
+        
+        // Remove each quote file key
+        quoteFileKeys.forEach(key => {
+          localStorage.removeItem(key);
+        });
+        
+    
+        console.log(`Cleaned up ${quoteFileKeys.length} file-related localStorage keys`);
+      } catch (error) {
+        console.warn('Error cleaning up quote files from localStorage:', error);
+      }
+    };
+    
+    // Run cleanup when component mounts
+    cleanupQuoteFiles();
+  }, []); // Empty dependency array means this runs once when component mounts
+
   // No automatic clearing on back/unload: drafts must persist until explicit save/send
 
   // Load lead data for quote creation
@@ -2277,6 +2305,7 @@ const QuoteCreation = () => {
             quoteId={editingQuoteId}
             quoteNumber={projectInfo.quoteNumber}
             isSaving={isSaving}
+            currentProfile={currentProfile}
           />
         );
       case 4:

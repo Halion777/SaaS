@@ -6,7 +6,7 @@ import { uploadQuoteFile, deleteQuoteFile } from '../../../services/quoteFilesSe
 import { deleteFile, uploadFile, getPublicUrl } from '../../../services/storageService';
 import { useAuth } from '../../../context/AuthContext';
 
-const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, quoteNumber, isSaving = false }) => {
+const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, quoteNumber, isSaving = false, currentProfile }) => {
 
   const { user } = useAuth();
   const [dragActive, setDragActive] = useState(false);
@@ -95,7 +95,7 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, quoteNu
         
         if (quoteId) {
           // For existing quotes, upload with quote ID and create database record
-          uploadResult = await uploadQuoteFile(file, quoteId, user.id, user.id, 'attachment');
+          uploadResult = await uploadQuoteFile(file, quoteId, user.id, currentProfile?.id, 'attachment');
         } else {
           // For new quotes, upload to storage first (without database record)
           const { data: uploadData, error: uploadError, filePath } = await uploadFile(
