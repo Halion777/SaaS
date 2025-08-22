@@ -84,6 +84,36 @@ const QuotesManagement = () => {
     setFilteredQuotes(filtered);
   }, [quotes, filters, searchTerm]);
 
+  // Helper function to calculate draft amount with robust fallbacks
+  const calculateDraftAmount = (draftData) => {
+    if (!draftData) return 0;
+    
+    let total = 0;
+    
+    // Handle tasks - they have a direct 'price' field for flat rate pricing
+    const tasks = draftData.tasks || draftData.quote_tasks || draftData.quoteTasks || [];
+    total += tasks.reduce((sum, task) => {
+      // For flat rate tasks, use the price directly
+      const taskPrice = parseFloat(task.price || 0);
+      return sum + taskPrice;
+    }, 0);
+    
+    // Handle materials - they have price and quantity fields
+    const materials = draftData.materials || draftData.quote_materials || draftData.quoteMaterials || [];
+    total += materials.reduce((sum, material) => {
+      const quantity = parseFloat(material.quantity || material.qty || 1);
+      const price = parseFloat(material.price || material.unit_price || material.unitPrice || 0);
+      return sum + (quantity * price);
+    }, 0);
+    
+    // If no tasks/materials or total is 0, try direct amount fields
+    if (total === 0) {
+      total = parseFloat(draftData.total_amount || draftData.totalAmount || draftData.total || draftData.amount || 0);
+    }
+    
+    return total;
+  };
+
   // Fetch quotes data from backend
   useEffect(() => {
     const loadQuotes = async () => {
@@ -109,8 +139,8 @@ const QuotesManagement = () => {
                 id: `draft-${draft.id}`,
                 number: '(brouillon non envoyé)',
                 clientName: d.selectedClient?.client?.name || d.selectedClient?.label || d.selectedClient?.name || 'Client inconnu',
-                amount: (d.tasks || []).reduce((sum, task) => sum + ((task.quantity || 0) * (task.unit_price || 0)), 0) + (d.materials || []).reduce((sum, material) => sum + ((material.quantity || 0) * (material.unit_price || 0)), 0),
-                amountFormatted: formatCurrency((d.tasks || []).reduce((sum, task) => sum + ((task.quantity || 0) * (task.unit_price || 0)), 0) + (d.materials || []).reduce((sum, material) => sum + ((material.quantity || 0) * (material.unit_price || 0)), 0)),
+                amount: calculateDraftAmount(d),
+                amountFormatted: formatCurrency(calculateDraftAmount(d)),
                 status: 'draft',
                 statusLabel: getStatusLabel('draft'),
                 isDraftPlaceholder: true,
@@ -148,8 +178,8 @@ const QuotesManagement = () => {
               id: `draft-${draft.id}`,
               number: draft.quote_number || '(brouillon non envoyé)',
               clientName: d.selectedClient?.client?.name || d.selectedClient?.label || d.selectedClient?.name || 'Client inconnu',
-              amount: (d.tasks || []).reduce((sum, task) => sum + ((task.quantity || 0) * (task.unit_price || 0)), 0) + (d.materials || []).reduce((sum, material) => sum + ((material.quantity || 0) * (material.unit_price || 0)), 0),
-              amountFormatted: formatCurrency((d.tasks || []).reduce((sum, task) => sum + ((task.quantity || 0) * (task.unit_price || 0)), 0) + (d.materials || []).reduce((sum, material) => sum + ((material.quantity || 0) * (material.unit_price || 0)), 0)),
+              amount: calculateDraftAmount(d),
+              amountFormatted: formatCurrency(calculateDraftAmount(d)),
               status: 'draft',
               statusLabel: getStatusLabel('draft'),
               isDraftPlaceholder: true,
