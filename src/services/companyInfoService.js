@@ -9,7 +9,9 @@ import { uploadFile, deleteFile, getPublicUrl } from './storageService';
  * - One user = One logo file
  * - One user = One signature file
  * 
- * When updating assets, old files are automatically deleted to maintain this policy.
+ * SECURITY NOTE: We NO LONGER automatically delete old files to prevent
+ * unexpected asset loss. Old files are kept as backups and can be
+ * manually cleaned up if needed.
  */
 
 /**
@@ -48,36 +50,32 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
     let logoMimeType = null;
 
     if (companyInfo.logo) {
-      if (companyInfo.logo instanceof File || (typeof companyInfo.logo === 'string' && companyInfo.logo.startsWith('blob:'))) {
-        // Handle legacy File object or blob URL
-        try {
-          // Check if user already has a logo and delete the old one first
-          if (existingProfile && existingProfile.logo_path) {
-            await deleteFile('company-assets', existingProfile.logo_path);
-          }
-
-          // It's a new file, upload it
-          const logoFile = companyInfo.logo instanceof File ? companyInfo.logo : await fetch(companyInfo.logo).then(r => r.blob());
-          const logoFileName = companyInfo.logo instanceof File ? companyInfo.logo.name : 'logo.png';
-          
-          const { data: logoUploadData, error: logoError, filePath: logoFilePath } = await uploadFile(
-            logoFile, 
-            'company-assets', 
-            `${userId}/logos`
-          );
-
-          if (logoError) {
-            return { success: false, error: `Logo upload failed: ${logoError.message}` };
-          }
-
-          logoPath = logoFilePath;
-          logoFilename = logoFileName;
-          logoSize = logoFile.size;
-          logoMimeType = logoFile.type;
-        } catch (uploadError) {
-          console.error('Logo upload error:', uploadError);
-          return { success: false, error: `Logo upload failed: ${uploadError.message}` };
+      if (companyInfo.logo instanceof File || 
+          (typeof companyInfo.logo === 'object' && companyInfo.logo.data)) {
+        // New file upload - upload to storage
+        const { data, error, filePath } = await uploadFile(
+          companyInfo.logo instanceof File ? companyInfo.logo : companyInfo.logo.data,
+          'company-assets',
+          `${userId}/logos`
+        );
+        
+        if (error) {
+          return { success: false, error: `Logo upload failed: ${error.message}` };
         }
+        
+        logoPath = filePath;
+        logoFilename = companyInfo.logo.name || companyInfo.logo.filename || 'company-logo';
+        logoSize = companyInfo.logo.size || companyInfo.logo.data?.size || null;
+        logoMimeType = companyInfo.logo.type || companyInfo.logo.mimeType || companyInfo.logo.data?.type || null;
+        
+        // DON'T delete old logo - keep it for backup
+        // if (existingProfile?.logo_path) {
+        //   try {
+        //     await deleteFile('company-assets', existingProfile.logo_path);
+        //   } catch (deleteError) {
+        //     console.warn('Warning: Could not delete old logo file:', deleteError);
+        //   }
+        // }
       } else if (typeof companyInfo.logo === 'object' && companyInfo.logo.path) {
         // Handle storage object with path, filename, size, type
         logoPath = companyInfo.logo.path;
@@ -93,20 +91,20 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
         logoMimeType = existingProfile?.logo_mime_type || null;
       }
     } else if (companyInfo.logo === null) {
-      // Logo was explicitly removed - clear database fields
+      // Logo was explicitly removed - clear database fields but DON'T delete from storage
       logoPath = null;
       logoFilename = null;
       logoSize = null;
       logoMimeType = null;
       
-      // Delete old logo file from storage if it exists
-      if (existingProfile?.logo_path) {
-        try {
-          await deleteFile('company-assets', existingProfile.logo_path);
-        } catch (deleteError) {
-          console.warn('Warning: Could not delete old logo file:', deleteError);
-        }
-      }
+      // DON'T delete old logo file from storage - keep it for backup
+      // if (existingProfile?.logo_path) {
+      //   try {
+      //     await deleteFile('company-assets', existingProfile.logo_path);
+      //   } catch (deleteError) {
+      //     console.warn('Warning: Could not delete old logo file:', deleteError);
+      //   }
+      // }
     } else if (existingProfile?.logo_path) {
       // No change; keep existing DB value
       logoPath = existingProfile.logo_path;
@@ -122,36 +120,32 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
     let signatureMimeType = null;
 
     if (companyInfo.signature) {
-      if (companyInfo.signature instanceof File || (typeof companyInfo.signature === 'string' && companyInfo.signature.startsWith('blob:'))) {
-        // Handle legacy File object or blob URL
-        try {
-          // Check if user already has a signature and delete the old one first
-          if (existingProfile && existingProfile.signature_path) {
-            await deleteFile('company-assets', existingProfile.signature_path);
-          }
-
-          // It's a new file, upload it
-          const signatureFile = companyInfo.signature instanceof File ? companyInfo.signature : await fetch(companyInfo.signature).then(r => r.blob());
-          const signatureFileName = companyInfo.signature instanceof File ? companyInfo.signature.name : 'signature.png';
-          
-          const { data: signatureUploadData, error: signatureError, filePath: signatureFilePath } = await uploadFile(
-            signatureFile, 
-            'company-assets', 
-            `${userId}/signatures`
-          );
-
-          if (signatureError) {
-            return { success: false, error: `Signature upload failed: ${signatureError.message}` };
-          }
-
-          signaturePath = signatureFilePath;
-          signatureFilename = signatureFileName;
-          signatureSize = signatureFile.size;
-          signatureMimeType = signatureFile.type;
-        } catch (uploadError) {
-          console.error('Signature upload error:', uploadError);
-          return { success: false, error: `Signature upload failed: ${uploadError.message}` };
+      if (companyInfo.signature instanceof File || 
+          (typeof companyInfo.signature === 'object' && companyInfo.signature.data)) {
+        // New file upload - upload to storage
+        const { data, error, filePath } = await uploadFile(
+          companyInfo.signature instanceof File ? companyInfo.signature : companyInfo.signature.data,
+          'company-assets',
+          `${userId}/signatures`
+        );
+        
+        if (error) {
+          return { success: false, error: `Signature upload failed: ${error.message}` };
         }
+        
+        signaturePath = filePath;
+        signatureFilename = companyInfo.signature.name || companyInfo.signature.filename || 'company-signature';
+        signatureSize = companyInfo.signature.size || companyInfo.signature.data?.size || null;
+        signatureMimeType = companyInfo.signature.type || companyInfo.signature.mimeType || companyInfo.signature.data?.type || null;
+        
+        // DON'T delete old signature - keep it for backup
+        // if (existingProfile?.signature_path) {
+        //   try {
+        //     await deleteFile('company-assets', existingProfile.signature_path);
+        //   } catch (deleteError) {
+        //     console.warn('Warning: Could not delete old signature file:', deleteError);
+        //   }
+        // }  
       } else if (typeof companyInfo.signature === 'object' && companyInfo.signature.path) {
         // Handle storage object with path, filename, size, type
         signaturePath = companyInfo.signature.path;
@@ -167,20 +161,20 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
         signatureMimeType = existingProfile?.signature_mime_type || null;
       }
     } else if (companyInfo.signature === null) {
-      // Signature was explicitly removed - clear database fields
+      // Signature was explicitly removed - clear database fields but DON'T delete from storage
       signaturePath = null;
       signatureFilename = null;
       signatureSize = null;
       signatureMimeType = null;
       
-      // Delete old signature file from storage if it exists
-      if (existingProfile?.signature_path) {
-        try {
-          await deleteFile('company-assets', existingProfile.signature_path);
-        } catch (deleteError) {
-          console.warn('Warning: Could not delete old signature file:', deleteError);
-        }
-      }
+      // DON'T delete old signature file from storage - keep it for backup
+      // if (existingProfile?.signature_path) {
+      //   try {
+      //     await deleteFile('company-assets', existingProfile.signature_path);
+      //   } catch (deleteError) {
+      //     console.warn('Warning: Could not delete old signature file:', deleteError);
+      //   }
+      // }
     } else if (existingProfile?.signature_path) {
       // No change; keep existing DB value
       signaturePath = existingProfile.signature_path;
