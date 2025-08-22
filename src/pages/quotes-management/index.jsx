@@ -118,9 +118,9 @@ const QuotesManagement = () => {
                 createdAtFormatted: formatDate(draft.last_saved),
                 description: d.projectInfo?.description || 'Brouillon en cours',
                               client: d.selectedClient?.client || d.selectedClient || null,
-              tasks: d.tasks || [],
+                tasks: d.tasks || [],
               materials: d.materials || [],
-              files: d.files || [],
+                files: d.files || [],
                 deadline: d.projectInfo?.deadline || null,
                 deadlineFormatted: d.projectInfo?.deadline ? formatDate(d.projectInfo.deadline) : '',
                 validUntil: d.projectInfo?.deadline || null,
@@ -262,7 +262,7 @@ const QuotesManagement = () => {
           });
           setQuotes(merged);
         } else {
-          setQuotes(sortedQuotes);
+        setQuotes(sortedQuotes);
         }
         
         // Calculate stats (actual data)
@@ -1337,7 +1337,7 @@ const QuotesManagement = () => {
             </Button>
           </div>
 
-                    {/* Mobile AI Panel removed */}
+          {/* Mobile AI Panel removed */}
 
         </div>
       </main>

@@ -49,6 +49,10 @@ const LeadsManagementPage = () => {
     otherWorkCategory: ''
   });
 
+  // State for image modal
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+
   // Handle sidebar offset for responsive layout
   React.useEffect(() => {
     const handleSidebarToggle = (e) => {
@@ -382,7 +386,38 @@ const LeadsManagementPage = () => {
                 <p className="text-sm text-foreground leading-relaxed">{lead.project_description}</p>
               </div>
               
-
+              {/* Project Images */}
+              {lead.project_images && lead.project_images.length > 0 && (
+                <div className="mb-5">
+                  <h4 className="text-sm font-semibold text-muted-foreground mb-3">Photos du projet</h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {lead.project_images.map((image, index) => (
+                      <div key={index} className="relative group">
+                        <div className="aspect-video rounded-lg overflow-hidden bg-muted border border-border">
+                          <img 
+                            src={image.url || image.path} 
+                            alt={`Project ${index + 1}`}
+                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-200 cursor-pointer"
+                            onClick={() => {
+                              setSelectedImage(image);
+                              setShowImageModal(true);
+                            }}
+                            onError={(e) => {
+                              e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0zMCAzMEg3MFY3MEgzMFYzMFoiIGZpbGw9IiNEN0Q5RDEiLz4KPHBhdGggZD0iTTM1IDM1SDY1VjY1SDM1VjM1WiIgZmlsbD0iI0M3Q0Q5Ii8+CjxwYXRoIGQ9Ik00MCA0MEg2MFY2MEg0MFY0MFoiIGZpbGw9IiNBM0I0QjYiLz4KPC9zdmc+';
+                            }}
+                          />
+                        </div>
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 rounded-lg flex items-center justify-center">
+                          <Icon 
+                            name="Eye" 
+                            className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" 
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               
               {/* Action Section */}
               <div className="flex justify-between items-center pt-4 border-t border-border/50">
@@ -829,6 +864,34 @@ const LeadsManagementPage = () => {
           {activeTab === 'settings' && renderSettingsTab()}
         </main>
       </div>
+      
+      {/* Image Modal */}
+      {showImageModal && selectedImage && (
+        <div 
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowImageModal(false)}
+        >
+          <div 
+            className="relative max-w-4xl max-h-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowImageModal(false)}
+              className="absolute top-4 right-4 z-10 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
+            >
+              <Icon name="X" className="w-6 h-6" />
+            </button>
+            <img 
+              src={selectedImage.url || selectedImage.path} 
+              alt="Project image"
+              className="max-w-full max-h-full object-contain rounded-lg"
+              onError={(e) => {
+                e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjNjY2NjY2Ii8+Cjx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlPC90ZXh0Pgo8L3N2Zz4K';
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

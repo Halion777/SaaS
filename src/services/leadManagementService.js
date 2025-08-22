@@ -63,7 +63,7 @@ export class LeadManagementService {
         await EmailService.sendWelcomeEmail({
           name: leadData.fullName,
           email: leadData.email
-        }, null, userId);
+        }, null, null); // No userId needed for non-authenticated clients
       } catch (emailError) {
         console.error('Failed to send welcome email:', emailError);
         // Don't fail the lead creation if email fails
@@ -198,7 +198,16 @@ export class LeadManagementService {
       
       if (error) throw error;
       
-      return { success: true, data: data || [], error: null };
+      // Add public URLs for project images (now they're already URLs)
+      const leadsWithImageUrls = (data || []).map(lead => ({
+        ...lead,
+        project_images: lead.project_images?.map(imageUrl => ({
+          path: imageUrl, // Keep path for backward compatibility
+          url: imageUrl   // URL is now the same as the stored value
+        })) || []
+      }));
+      
+      return { success: true, data: leadsWithImageUrls, error: null };
     } catch (error) {
       console.error('Error fetching leads for artisan:', error);
       return { success: false, data: [], error };
@@ -317,7 +326,7 @@ export class LeadManagementService {
    */
   static async uploadProjectFiles(files, leadId = null) {
     try {
-      const uploadedPaths = [];
+      const uploadedFiles = [];
       const bucketName = 'lead-files';
       
       for (const file of files) {
@@ -335,10 +344,19 @@ export class LeadManagementService {
           continue;
         }
         
-        uploadedPaths.push(filePath);
+        // Generate public URL for the uploaded file
+        const publicUrl = this.getFilePublicUrl(filePath);
+        
+        uploadedFiles.push({
+          path: filePath,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          url: publicUrl
+        });
       }
       
-      return { success: true, data: uploadedPaths, error: null };
+      return { success: true, data: uploadedFiles, error: null };
     } catch (error) {
       console.error('Error uploading project files:', error);
       return { success: false, data: [], error };

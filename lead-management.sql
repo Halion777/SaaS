@@ -356,6 +356,7 @@ RETURNS TABLE (
     zip_code VARCHAR(20),
     street_number VARCHAR(50),
     full_address TEXT,
+    project_images TEXT[],
     quotes_sent_count BIGINT,
     can_send_quote BOOLEAN,
     match_priority INTEGER,
@@ -377,6 +378,7 @@ BEGIN
         lr.zip_code,
         lr.street_number,
         lr.full_address,
+        COALESCE(lr.project_images, ARRAY[]::TEXT[]) as project_images,
         COALESCE(quote_counts.quotes_sent, 0) as quotes_sent_count,
         (COALESCE(quote_counts.quotes_sent, 0) < 3 AND NOT EXISTS (
             SELECT 1 FROM public.lead_quotes lq2 
@@ -844,3 +846,4 @@ COMMENT ON FUNCTION public.auto_assign_lead_to_artisans() IS 'Automatically assi
 COMMENT ON FUNCTION public.get_leads_for_artisan IS 'Returns leads that match an artisan''s country, region, and work category preferences';
 COMMENT ON FUNCTION public.create_quote_from_lead IS 'Creates a complete quote from lead data including client creation';
 COMMENT ON FUNCTION public.get_lead_details_for_quote_creation IS 'Returns all lead details needed to pre-fill quote creation form';
+COMMENT ON COLUMN public.lead_requests.project_images IS 'Array of public URLs for project images stored in Supabase Storage';

@@ -273,9 +273,9 @@ export async function createQuote(quoteData) {
     // First, create the quote
     
     const quoteInsertData = {
-      user_id: quoteData.user_id,           
-      profile_id: quoteData.profile_id || null,  
-      client_id: quoteData.client_id,  
+      user_id: quoteData.user_id,
+      profile_id: quoteData.profile_id || null,
+      client_id: quoteData.client_id,
       // DB limits: quote_number VARCHAR(50), title TEXT (ok), custom_category VARCHAR(255)
       quote_number: truncateString(quoteData.quote_number, 50),
       title: quoteData.title || 'Nouveau devis',
@@ -294,7 +294,7 @@ export async function createQuote(quoteData) {
       share_token: shareToken,
       is_public: quoteData.status === 'sent'
     };
-   
+    
     const { data: quote, error: quoteError } = await supabase
       .from('quotes')
       .insert(quoteInsertData)

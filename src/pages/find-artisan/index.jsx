@@ -155,13 +155,13 @@ const FindArtisanPage = () => {
         }));
         
         // Upload files to Supabase Storage in background
-        const { success, data: uploadedPaths, error } = await LeadManagementService.uploadProjectFiles(files);
+        const { success, data: uploadedFiles, error } = await LeadManagementService.uploadProjectFiles(files);
         
         if (success) {
-          // Store the uploaded file paths for submission
+          // Store the uploaded file URLs for submission (instead of paths)
           setFormData(prev => ({
             ...prev,
-            uploadedFilePaths: [...prev.uploadedFilePaths, ...uploadedPaths]
+            uploadedFilePaths: [...prev.uploadedFilePaths, ...uploadedFiles.map(f => f.url)]
           }));
         } else {
           console.error('File upload failed:', error);
@@ -184,12 +184,16 @@ const FindArtisanPage = () => {
 
   const removeImage = async (index) => {
     try {
-      // Get the file path to delete from storage
-      const filePathToDelete = formData.uploadedFilePaths[index];
+      // Get the file URL to delete from storage
+      const fileUrlToDelete = formData.uploadedFilePaths[index];
       
-      if (filePathToDelete) {
+      if (fileUrlToDelete) {
+        // Extract file path from URL for deletion
+        const urlParts = fileUrlToDelete.split('/');
+        const filePath = urlParts.slice(-2).join('/'); // Get last two parts: temp-upload/filename
+        
         // Delete file from Supabase Storage
-        const { success, error } = await LeadManagementService.deleteProjectFiles([filePathToDelete]);
+        const { success, error } = await LeadManagementService.deleteProjectFiles([filePath]);
         
         if (!success) {
           console.error('Failed to delete file from storage:', error);
@@ -239,11 +243,11 @@ const FindArtisanPage = () => {
     setSubmitSuccess(false); // Reset success state
     
     try {
-      // Prepare data for submission (use uploaded file paths instead of File objects)
+      // Prepare data for submission (use uploaded file URLs instead of File objects)
       // Only include files that are still in the uploadedFilePaths array
       const submissionData = {
         ...formData,
-        projectImages: formData.uploadedFilePaths // Use uploaded paths for submission
+        projectImages: formData.uploadedFilePaths // Use uploaded URLs for submission
       };
       
       // Create the lead request using our service

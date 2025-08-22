@@ -248,15 +248,15 @@ serve(async (req) => {
         
         // Use hardcoded default rules for follow-up creation
         const globalRules = {
-          max_stages: 3,
+        max_stages: 3,
           stage_1_delay: 1,  // 1 day (24 hours) for unviewed quotes
           stage_2_delay: 3,  // 3 days for second follow-up
           stage_3_delay: 5,  // 5 days for third follow-up
-          max_attempts_per_stage: 2,
-          instant_view_followup: true,
+        max_attempts_per_stage: 2,
+        instant_view_followup: true,
           view_followup_template: 'followup_viewed_no_action',
-          sent_followup_template: 'followup_not_viewed'
-        };
+        sent_followup_template: 'followup_not_viewed'
+      };
         
         // Create delayed follow-up for viewed quote (1 hour delay)
         await createDelayedViewFollowUp(admin, quote);
