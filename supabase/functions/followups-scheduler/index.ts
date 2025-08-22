@@ -139,6 +139,183 @@ serve(async (req) => {
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
     }
 
+    if (action === 'cleanup_finalized_quote' && quote_id) {
+      // Frontend request to cleanup follow-ups when quote is accepted/rejected
+      console.log(`Frontend requested follow-up cleanup for finalized quote ${quote_id}`);
+      
+      // Get the quote details
+      const { data: quote, error: quoteError } = await admin
+        .from('quotes')
+        .select(`
+          id, status, quote_number, user_id, client_id
+        `)
+        .eq('id', quote_id)
+        .in('status', ['accepted', 'rejected', 'expired'])
+        .single();
+      
+      if (quoteError || !quote) {
+        console.error('Quote not found or not finalized:', quoteError);
+        return new Response(JSON.stringify({ error: 'Quote not found or not finalized' }), { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      // IMMEDIATELY STOP ALL PENDING FOLLOW-UPS FOR THIS QUOTE
+      const { error: cleanupError } = await admin
+        .from('quote_follow_ups')
+        .update({ 
+          status: 'stopped', 
+          updated_at: new Date().toISOString(),
+          meta: admin.sql`COALESCE(meta, '{}'::jsonb) || ${JSON.stringify({
+            stopped_reason: 'quote_finalized',
+            stopped_at: new Date().toISOString(),
+            final_status: quote.status,
+            cleanup_triggered_by: 'frontend_request'
+          })}`
+        })
+        .eq('quote_id', quote_id)
+        .in('status', ['pending', 'scheduled']);
+      
+      if (cleanupError) {
+        console.error(`Error cleaning up follow-ups for quote ${quote.quote_number}:`, cleanupError);
+        return new Response(JSON.stringify({ error: 'Failed to cleanup follow-ups' }), { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      // Log the cleanup event
+      await admin
+        .from('quote_events')
+        .insert({
+          quote_id: quote.id,
+          user_id: quote.user_id,
+          type: 'followups_stopped',
+          meta: {
+            reason: 'quote_finalized',
+            final_status: quote.status,
+            automated: false,
+            triggered_by: 'frontend_request',
+            timestamp: new Date().toISOString()
+          }
+        });
+      
+      console.log(`Successfully stopped all follow-ups for ${quote.status} quote ${quote.quote_number}`);
+      
+      return new Response(JSON.stringify({ 
+        ok: true, 
+        message: `Follow-ups cleaned up for ${quote.status} quote`,
+        quote_id: quote.id,
+        status: quote.status,
+        cleanup_completed: true
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
+    }
+
+    if (action === 'mark_quote_viewed' && quote_id) {
+      // Frontend request to mark quote as viewed
+      console.log(`Frontend requested to mark quote ${quote_id} as viewed`);
+      
+      // Get the quote details
+      const { data: quote, error: quoteError } = await admin
+        .from('quotes')
+        .select(`
+          id, status, quote_number, user_id, client_id
+        `)
+        .eq('id', quote_id)
+        .single();
+      
+      if (quoteError || !quote) {
+        console.error('Quote not found:', quoteError);
+        return new Response(JSON.stringify({ error: 'Quote not found' }), { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      // Only update if status is 'sent' (not already viewed/accepted/rejected)
+      if (quote.status === 'sent') {
+        // Update quote status to 'viewed'
+        const { error: updateError } = await admin
+          .from('quotes')
+          .update({ 
+            status: 'viewed', 
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', quote_id);
+        
+        if (updateError) {
+          console.error(`Error updating quote ${quote.quote_number} status to viewed:`, updateError);
+          return new Response(JSON.stringify({ error: 'Failed to update quote status' }), { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
+        console.log(`Successfully updated quote ${quote.quote_number} status from 'sent' to 'viewed'`);
+        
+        // Get global rules for follow-up creation
+        let { data: globalRules, error: rulesErr } = await admin
+          .from('quote_follow_up_rules')
+          .select('*')
+          .eq('is_active', true)
+          .single()
+        
+        if (rulesErr || !globalRules) {
+          globalRules = {
+            max_stages: 3,
+            stage_1_delay: 0.0208,  // 30 minutes delay
+            stage_2_delay: 1,  // 1 day
+            stage_3_delay: 3,  // 3 days
+            max_attempts_per_stage: 2,
+            instant_view_followup: true,
+            view_followup_template: 'viewed_instant',
+            sent_followup_template: 'followup_not_viewed'
+          };
+        }
+        
+        // Create instant follow-up for viewed quote if enabled
+        if (globalRules.instant_view_followup) {
+          await createInstantViewFollowUp(admin, quote, globalRules);
+        }
+        
+        // Log the status change event
+        await admin
+          .from('quote_events')
+          .insert({
+            quote_id: quote.id,
+            user_id: quote.user_id,
+            type: 'quote_status_changed',
+            meta: {
+              previous_status: 'sent',
+              new_status: 'viewed',
+              reason: 'client_viewed',
+              automated: false,
+              triggered_by: 'frontend_request',
+              timestamp: new Date().toISOString()
+            }
+          });
+        
+        return new Response(JSON.stringify({ 
+          ok: true, 
+          message: `Quote marked as viewed`,
+          quote_id: quote.id,
+          previous_status: 'sent',
+          current_status: 'viewed',
+          instant_followup_created: globalRules.instant_view_followup
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
+      } else {
+        // Quote is not in 'sent' status
+        return new Response(JSON.stringify({ 
+          ok: true, 
+          message: `Quote status unchanged`,
+          quote_id: quote.id,
+          current_status: quote.status,
+          reason: 'Quote not in sent status'
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
+      }
+    }
+
     if (action === 'test_expiration' && quote_id) {
       // Test action to manually trigger expiration for a specific quote
       console.log(`Testing expiration for quote ${quote_id}`);
@@ -216,7 +393,7 @@ serve(async (req) => {
       // Use default values if no rules exist
       globalRules = {
         max_stages: 3,
-        stage_1_delay: 0,  // INSTANT
+        stage_1_delay: 0.0208,  // 30 minutes delay (0.0208 days = 30 min)
         stage_2_delay: 1,  // 1 day
         stage_3_delay: 3,  // 3 days
         max_attempts_per_stage: 2,

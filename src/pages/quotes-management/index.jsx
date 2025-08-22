@@ -568,6 +568,9 @@ const QuotesManagement = () => {
       case 'test_expiration':
         await testQuoteExpiration(quote.id);
         break;
+      case 'cleanup_finalized':
+        await cleanupFinalizedQuote(quote.id);
+        break;
       case 'status':
         // Handle status updates if needed
         console.log(`Status update for quote ${quote.id}`);
@@ -1019,6 +1022,39 @@ const QuotesManagement = () => {
     } catch (error) {
       console.error('Error testing expiration:', error);
       alert('Error testing expiration: ' + error.message);
+    }
+  };
+
+  // Cleanup follow-ups for finalized quotes (accepted/rejected)
+  const cleanupFinalizedQuote = async (quoteId) => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_SUPABASE_URL}/functions/v1/followups-scheduler`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({
+          action: 'cleanup_finalized_quote',
+          quote_id: quoteId
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.ok) {
+        console.log('Follow-ups cleanup result:', result);
+        // Refresh data to show updated status
+        await loadQuotes(); // Use loadQuotes to refetch all data
+        // Show success message
+        alert(`Follow-ups cleaned up successfully!\nQuote status: ${result.status}\nCleanup completed: ${result.cleanup_completed}`);
+      } else {
+        console.error('Follow-ups cleanup failed:', result.error);
+        alert(`Follow-ups cleanup failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error cleaning up follow-ups:', error);
+      alert('Error cleaning up follow-ups: ' + error.message);
     }
   };
 

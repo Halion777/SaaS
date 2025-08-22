@@ -452,8 +452,30 @@ class ClientQuoteService {
         }
       }
 
-      // Quote status updates are now handled by edge functions
-      // The followups-scheduler will detect viewed quotes and create follow-ups
+      // Update quote status to 'viewed' via Edge Function
+      try {
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/followups-scheduler`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          },
+          body: JSON.stringify({
+            action: 'mark_quote_viewed',
+            quote_id: quoteId
+          })
+        });
+
+        const result = await response.json();
+        if (result.ok) {
+          console.log('Quote status updated to viewed:', result);
+        } else {
+          console.warn('Failed to update quote status to viewed:', result.error);
+        }
+      } catch (statusError) {
+        console.warn('Error updating quote status to viewed:', statusError);
+        // Don't fail the main tracking operation if status update fails
+      }
 
       // Ensure quote_shares record exists and update access count
       const recordExists = await this.ensureQuoteSharesRecord(quoteId, shareToken);
