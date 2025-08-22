@@ -47,7 +47,7 @@ class ClientQuoteService {
         // Signature already exists, use the existing one
         signaturePath = existingSignature.signature_file_path;
         signatureRecordId = existingSignature.id;
-        console.log(`Quote ${quoteId}: Using existing signature record: ${signatureRecordId}`);
+       
       } else {
         // No existing signature, create new one
         try {
@@ -108,7 +108,7 @@ class ClientQuoteService {
           
           signaturePath = filePath;
           signatureRecordId = newSignatureRecord.id;
-          console.log(`Quote ${quoteId}: Created new signature record: ${signatureRecordId}`);
+         
           
         } catch (signatureError) {
           console.error('Error saving signature:', signatureError);
@@ -158,11 +158,7 @@ class ClientQuoteService {
         });
 
         const result = await response.json();
-        if (result.ok) {
-          console.log('Follow-ups stopped for accepted quote:', result);
-        } else {
-          console.warn('Failed to stop follow-ups for accepted quote:', result.error);
-        }
+        
       } catch (followUpError) {
         console.warn('Error stopping follow-ups for accepted quote:', followUpError);
         // Don't fail the acceptance if follow-up cleanup fails
@@ -361,7 +357,6 @@ class ClientQuoteService {
         throw new Error(result.error || 'Failed to send email');
       }
 
-      console.log(`Quote ${status} email sent successfully to ${clientData.client_email}`);
       return result;
 
     } catch (error) {
@@ -449,12 +444,11 @@ class ClientQuoteService {
       if (error) {
         console.error('Error logging workflow event:', error);
         // Fallback: try to log to console for debugging
-        console.log('Workflow event (fallback):', { quoteId, action, details });
+       
       }
     } catch (error) {
       console.error('Error logging workflow event:', error);
-      // Fallback: try to log to console for debugging
-      console.log('Workflow event (fallback):', { quoteId, action, details });
+    
     }
   }
 
@@ -484,13 +478,11 @@ class ClientQuoteService {
 
       if (error) {
         console.error('Error logging quote event:', error);
-        // Fallback: try to log to console for debugging
-        console.log('Quote event (fallback):', { quoteId, eventType, meta });
+       
       }
     } catch (error) {
       console.error('Error logging quote event:', error);
-      // Fallback: try to log to console for debugging
-      console.log('Quote event (fallback):', { quoteId, eventType, meta });
+     
     }
   }
 
@@ -512,12 +504,12 @@ class ClientQuoteService {
       if (error) {
         console.error('Error logging access log:', error);
         // Fallback: try to log to console for debugging
-        console.log('Access log (fallback):', { quoteId, shareToken, action });
+       
       }
     } catch (error) {
       console.error('Error logging access log:', error);
       // Fallback: try to log to console for debugging
-      console.log('Access log (fallback):', { quoteId, shareToken, action });
+     
     }
   }
 
@@ -537,7 +529,7 @@ class ClientQuoteService {
 
       if (checkError && checkError.code === 'PGRST116') {
         // Record doesn't exist, create it
-        console.log('Creating missing quote_shares record for tracking');
+       
         const { error: createError } = await supabase
           .from('quote_shares')
           .insert({
@@ -590,7 +582,7 @@ class ClientQuoteService {
         }
       }
 
-      console.log(`Synced ${syncedCount} missing quote_shares records`);
+     
       return { success: true, syncedCount };
     } catch (error) {
       console.error('Error syncing missing quote_shares records:', error);
@@ -659,11 +651,7 @@ class ClientQuoteService {
         });
 
         const result = await response.json();
-        if (result.ok) {
-          console.log('Quote status updated to viewed:', result);
-        } else {
-          console.warn('Failed to update quote status to viewed:', result.error);
-        }
+       
       } catch (statusError) {
         console.warn('Error updating quote status to viewed:', statusError);
         // Don't fail the main tracking operation if status update fails
@@ -828,7 +816,7 @@ class ClientQuoteService {
           console.warn('Failed to sync quote status:', statusUpdateError);
           return { success: false, error: statusUpdateError.message };
         } else {
-          console.log(`Quote ${quoteId} status synced to 'viewed'`);
+         
           return { success: true, data: { status: 'viewed' } };
         }
       }

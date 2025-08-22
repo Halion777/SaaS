@@ -279,7 +279,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
           setPreGeneratedQuoteNumber(finalQuoteNumber);
           // Store in localStorage for later use in quote creation
           localStorage.setItem('pre_generated_quote_number', finalQuoteNumber);
-          console.log('Quote number pre-generated for client selection:', finalQuoteNumber);
+
         }
       } catch (error) {
         console.error('Error generating quote number for client selection:', error);

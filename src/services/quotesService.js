@@ -64,7 +64,6 @@ export async function getQuoteTrackingData(quoteId) {
  * @returns {Promise<{data, error}>} Quotes data or error
  */
 export async function fetchQuotes(userId) {
-  console.log('Fetching quotes for user:', userId);
   try {
     if (!userId) {
       console.error('No userId provided to fetchQuotes');
@@ -480,7 +479,7 @@ export async function createQuote(quoteData) {
 export async function updateQuote(id, quoteData) {
   try {
     // Update the quote
-    console.log('Updating quote:', id, quoteData);
+    
     const { data: quote, error: quoteError } = await supabase
       .from('quotes')
       .update({
@@ -654,7 +653,6 @@ export async function updateQuoteStatus(id, status) {
           .update({ sent_at: new Date().toISOString() })
           .eq('id', id);
         
-        console.log('Updated sent_at timestamp for quote:', id);
       } catch (sentAtError) {
         console.warn('Failed to update sent_at timestamp:', sentAtError);
         // Don't fail the main operation if sent_at update fails
@@ -1001,11 +999,7 @@ async function triggerFollowUpCreation(quoteId, quoteStatus) {
         })
       });
       
-      if (response.ok) {
-        console.log(`Triggered follow-up creation for quote ${quoteId}`);
-      } else {
-        console.warn(`Failed to trigger follow-up creation for quote ${quoteId}`);
-      }
+     
     }
   } catch (error) {
     console.warn('Error triggering follow-up creation:', error);

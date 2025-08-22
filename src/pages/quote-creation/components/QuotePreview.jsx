@@ -348,17 +348,12 @@ const QuotePreview = ({
     try {
       // Save with both user ID and client ID for better organization
       const clientId = selectedClient?.id || selectedClient?.value;
-      console.log('handleSignature called with:', {
-        signatureData,
-        selectedClient,
-        clientId,
-        userId: user?.id
-      });
+      
       
       if (user?.id && clientId) {
         const key = `client-signature-${user.id}-${clientId}`;
         localStorage.setItem(key, JSON.stringify(signatureData));
-        console.log('Signature saved to localStorage with key:', key);
+       
       } else {
         console.warn('Cannot save signature: missing user ID or client ID', {
           userId: user?.id,
@@ -1000,9 +995,7 @@ const QuotePreview = ({
                             console.error('Error loading image from file path:', file.path || file.file_path);
                             e.target.style.display = 'none';
                           }}
-                          onLoad={() => {
-                            console.log('Image loaded successfully from file path:', file.path || file.file_path);
-                          }}
+                          
                         />
                       ) : null}
                     </div>
