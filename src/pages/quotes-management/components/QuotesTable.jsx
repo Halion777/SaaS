@@ -240,25 +240,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
               <td className="p-3 md:p-4">
                 <div className="flex flex-col gap-1">
                   <span 
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-center cursor-help ${quote.followUpStatusColor || 'bg-gray-100 text-gray-700'}`}
-                    title={(() => {
-                      if (quote.followUpMeta) {
-                        const { stage, attempts, maxAttempts, dueAt } = quote.followUpMeta;
-                        let tooltip = `Étape ${stage}, Tentatives: ${attempts}/${maxAttempts}`;
-                        if (dueAt) {
-                          const dueDate = new Date(dueAt);
-                          const now = new Date();
-                          if (dueDate > now) {
-                            const diffHours = Math.ceil((dueDate - now) / (1000 * 60 * 60));
-                            tooltip += `, Prochaine relance dans ${diffHours}h`;
-                          } else {
-                            tooltip += ', En attente de traitement';
-                          }
-                        }
-                        return tooltip;
-                      }
-                      return quote.followUpStatusLabel || 'Aucune relance programmée';
-                    })()}
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-center ${quote.followUpStatusColor || 'bg-gray-100 text-gray-700'}`}
                   >
                     {quote.followUpStatusLabel || 'Aucune'}
                   </span>
@@ -395,28 +377,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
             )}
             {/* Follow-up management icon removed per request */}
             {/* Send reminder icon removed in card view */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onQuoteAction('sync_status', quote)}
-              title="Synchroniser le statut"
-              className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-            >
-              <Icon name="RefreshCw" size={14} />
-            </Button>
-            
-            {/* Test Expiration Button - Only show for development */}
-            {process.env.NODE_ENV === 'development' && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onQuoteAction('test_expiration', quote)}
-                title="Tester l'expiration"
-                className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
-              >
-                <Icon name="Clock" size={14} />
-              </Button>
-            )}
+            {/* Sync status and test expiration icons removed per request */}
             <Button
               variant="ghost"
               size="icon"
