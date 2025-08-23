@@ -790,13 +790,20 @@ export async function updateQuoteStatus(id, status) {
       return { data, error };
     }
     
-    // If status was successfully updated to 'sent', also update sent_at
+    // If status was successfully updated to 'sent', also update sent_at, is_public flag, and trigger follow-up creation
     if (status === 'sent' && data) {
       try {
+        // Update sent_at timestamp and is_public flag
         await supabase
           .from('quotes')
-          .update({ sent_at: new Date().toISOString() })
+          .update({ 
+            sent_at: new Date().toISOString(),
+            is_public: true  // Set is_public to true so the quote can be accessed via share token
+          })
           .eq('id', id);
+        
+        // Trigger follow-up creation for quotes marked as sent
+        await triggerFollowUpCreation(id, status);
         
       } catch (sentAtError) {
         console.warn('Failed to update sent_at timestamp:', sentAtError);

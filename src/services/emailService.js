@@ -547,7 +547,35 @@ export class EmailService {
           const { generatePublicShareLink } = await import('./shareService');
           const shareResult = await generatePublicShareLink(quote.id, userId);
           if (shareResult?.success) {
-            shareToken = shareResult.data?.share_token || shareResult.token;
+            shareToken = shareResult.token;
+            
+            // Update the quote object with the new share token for the email
+            quote.share_token = shareToken;
+            
+            // Wait a moment to ensure the database update completes
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Double-check that the share token was saved correctly
+            const { data: updatedQuote } = await import('./supabaseClient').then(
+              ({ supabase }) => supabase
+                .from('quotes')
+                .select('share_token, is_public')
+                .eq('id', quote.id)
+                .single()
+            );
+            
+            if (!updatedQuote?.share_token || !updatedQuote?.is_public) {
+              console.warn('Share token or is_public flag not set correctly, attempting to fix...');
+              await import('./supabaseClient').then(
+                ({ supabase }) => supabase
+                  .from('quotes')
+                  .update({ 
+                    share_token: shareToken,
+                    is_public: true 
+                  })
+                  .eq('id', quote.id)
+              );
+            }
           }
         } catch (shareError) {
           console.error('Failed to generate share token for draft quote email:', shareError);

@@ -871,6 +871,13 @@ const QuotesManagement = () => {
             
             // Log the email event to prevent future duplicates
             try {
+              // Get the updated quote with the share token
+              const { data: updatedQuoteWithToken } = await supabase
+                .from('quotes')
+                .select('share_token')
+                .eq('id', quote.id)
+                .single();
+                
               await supabase
                 .from('quote_events')
                 .insert({
@@ -882,7 +889,8 @@ const QuotesManagement = () => {
                     recipient: client.email,
                     timestamp: new Date().toISOString(),
                     source: 'quotes_management'
-                  }
+                  },
+                  share_token: updatedQuoteWithToken?.share_token || null
                 });
             } catch (eventError) {
               console.warn('Failed to log email event:', eventError);
