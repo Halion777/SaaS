@@ -965,11 +965,38 @@ const QuoteCreation = () => {
 
         const savedTime = new Date().toISOString();
 
-        const quoteData = {
+        // Calculate total amount and final amount with VAT for correct price display in quotes management
+        const totalAmount = tasks.reduce((sum, task) => {
+          const taskMaterialsTotal = task.materials.reduce((matSum, mat) =>
+            matSum + (mat.price * parseFloat(mat.quantity || 1)), 0);
+          return sum + (task.price || 0) + taskMaterialsTotal;
+        }, 0);
 
+        const taxAmount = financialConfig?.vatConfig?.display 
+          ? (totalAmount * (financialConfig.vatConfig.rate || 20) / 100) 
+          : 0;
+
+        // Calculate the final amount including VAT
+        const finalAmount = totalAmount + taxAmount;
+        
+        // Calculate deposit amount if enabled
+        const depositAmount = financialConfig?.advanceConfig?.enabled 
+          ? parseFloat(financialConfig.advanceConfig.amount || 0)
+          : 0;
+
+        // Include calculated amounts in projectInfo for quotes management display
+        const enhancedProjectInfo = {
+          ...projectInfo,
+          totalAmount,
+          taxAmount,
+          finalAmount,
+          depositAmount
+        };
+
+        const quoteData = {
           selectedClient: normalizeSelectedClient(selectedClient),
 
-          projectInfo,
+          projectInfo: enhancedProjectInfo,
 
           tasks,
 
@@ -980,7 +1007,6 @@ const QuoteCreation = () => {
           companyInfo,
 
           financialConfig,
-
 
           // Get client signature from localStorage or from current signature state
           clientSignature: (() => {
@@ -1001,8 +1027,13 @@ const QuoteCreation = () => {
             }
             return null;
           })(),
-          lastSaved: savedTime
-
+          lastSaved: savedTime,
+          
+          // Add calculated amounts at the top level for quotes management display
+          totalAmount,
+          taxAmount,
+          finalAmount,
+          depositAmount
         };
 
 
@@ -1668,6 +1699,11 @@ const QuoteCreation = () => {
 
 
 
+        // Calculate deposit amount if enabled
+        const depositAmount = data.financialConfig?.advanceConfig?.enabled 
+          ? parseFloat(data.financialConfig.advanceConfig.amount || 0)
+          : 0;
+
         const quoteData = {
 
           title: projectInfo.description || 'Nouveau devis',
@@ -1687,6 +1723,15 @@ const QuoteCreation = () => {
           discount_amount: 0,
 
           final_amount: totalAmount + (data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0),
+          
+          // Add deposit amount to the quote data
+          advance_payment_amount: depositAmount,
+          
+          // Add VAT config
+          vat_config: data.financialConfig?.vatConfig || null,
+          
+          // Add marketing banner config
+          marketing_banner: data.financialConfig?.marketingBannerConfig || null,
 
           valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
 

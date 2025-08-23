@@ -249,10 +249,46 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
               </td>
               <td className="p-3 md:p-4 text-center">
                 <div className="flex items-center justify-center">
-                  <Icon name="Paperclip" size={16} className={quote.files && quote.files.length > 0 ? "text-blue-600" : "text-gray-400"} />
-                  <span className={`ml-1 text-xs font-medium ${quote.files && quote.files.length > 0 ? "text-blue-600" : "text-gray-400"}`}>
-                    {quote.files && quote.files.length > 0 ? quote.files.length : 0}
-                  </span>
+                  {/* Filter out duplicate files or files without valid paths */}
+                  {(() => {
+                    let fileCount = 0;
+                    
+                    if (quote.isDraftPlaceholder) {
+                      // For draft placeholders, handle files differently
+                      const draftFiles = quote.files || [];
+                      // Get unique files by path or name to avoid counting duplicates
+                      const uniqueFilePaths = new Set();
+                      draftFiles.forEach(file => {
+                        if (file) {
+                          const identifier = file.path || file.file_path || file.name || file.file_name;
+                          if (identifier && !uniqueFilePaths.has(identifier)) {
+                            uniqueFilePaths.add(identifier);
+                          }
+                        }
+                      });
+                      fileCount = uniqueFilePaths.size;
+                    } else {
+                      // For regular quotes
+                      const validFiles = quote.files && quote.files.filter(file => file && file.file_path);
+                      // Get unique files by path to avoid counting duplicates
+                      const uniqueFilePaths = new Set();
+                      const uniqueFiles = validFiles && validFiles.filter(file => {
+                        const isDuplicate = uniqueFilePaths.has(file.file_path);
+                        if (!isDuplicate) uniqueFilePaths.add(file.file_path);
+                        return !isDuplicate;
+                      });
+                      fileCount = uniqueFiles ? uniqueFiles.length : 0;
+                    }
+                    
+                    return (
+                      <>
+                        <Icon name="Paperclip" size={16} className={fileCount > 0 ? "text-blue-600" : "text-gray-400"} />
+                        <span className={`ml-1 text-xs font-medium ${fileCount > 0 ? "text-blue-600" : "text-gray-400"}`}>
+                          {fileCount}
+                        </span>
+                      </>
+                    );
+                  })()}
                 </div>
               </td>
               <td className="p-3 md:p-4" onClick={(e) => e.stopPropagation()}>
@@ -337,10 +373,45 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
           
           {/* Files indicator */}
           <div className="flex items-center mb-3 text-xs">
-            <Icon name="Paperclip" size={14} className={`mr-1 ${quote.files && quote.files.length > 0 ? "text-blue-600" : "text-gray-400"}`} />
-            <span className={quote.files && quote.files.length > 0 ? "text-blue-600" : "text-gray-400"}>
-              {quote.files && quote.files.length > 0 ? `${quote.files.length} fichier(s) joint(s)` : "0 fichier joint"}
-            </span>
+            {(() => {
+              let fileCount = 0;
+              
+              if (quote.isDraftPlaceholder) {
+                // For draft placeholders, handle files differently
+                const draftFiles = quote.files || [];
+                // Get unique files by path or name to avoid counting duplicates
+                const uniqueFilePaths = new Set();
+                draftFiles.forEach(file => {
+                  if (file) {
+                    const identifier = file.path || file.file_path || file.name || file.file_name;
+                    if (identifier && !uniqueFilePaths.has(identifier)) {
+                      uniqueFilePaths.add(identifier);
+                    }
+                  }
+                });
+                fileCount = uniqueFilePaths.size;
+              } else {
+                // For regular quotes
+                const validFiles = quote.files && quote.files.filter(file => file && file.file_path);
+                // Get unique files by path to avoid counting duplicates
+                const uniqueFilePaths = new Set();
+                const uniqueFiles = validFiles && validFiles.filter(file => {
+                  const isDuplicate = uniqueFilePaths.has(file.file_path);
+                  if (!isDuplicate) uniqueFilePaths.add(file.file_path);
+                  return !isDuplicate;
+                });
+                fileCount = uniqueFiles ? uniqueFiles.length : 0;
+              }
+              
+              return (
+                <>
+                  <Icon name="Paperclip" size={14} className={`mr-1 ${fileCount > 0 ? "text-blue-600" : "text-gray-400"}`} />
+                  <span className={fileCount > 0 ? "text-blue-600" : "text-gray-400"}>
+                    {fileCount > 0 ? `${fileCount} fichier(s) joint(s)` : "0 fichier joint"}
+                  </span>
+                </>
+              );
+            })()}
           </div>
           
           <div className="flex items-center justify-end space-x-1" onClick={(e) => e.stopPropagation()}>

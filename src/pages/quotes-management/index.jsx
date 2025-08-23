@@ -89,6 +89,57 @@ const QuotesManagement = () => {
   const calculateDraftAmount = (draftData) => {
     if (!draftData) return 0;
     
+    // First, check if we have pre-calculated amounts from the auto-save
+    if (draftData.finalAmount !== undefined) {
+      // Get the final amount with VAT included
+      let amount = parseFloat(draftData.finalAmount);
+      
+      // Subtract deposit if it exists
+      if (draftData.depositAmount !== undefined && draftData.depositAmount > 0) {
+        amount -= parseFloat(draftData.depositAmount);
+      }
+      
+      return amount;
+    }
+    
+    if (draftData.projectInfo?.finalAmount !== undefined) {
+      // Get the final amount with VAT included
+      let amount = parseFloat(draftData.projectInfo.finalAmount);
+      
+      // Subtract deposit if it exists
+      if (draftData.projectInfo?.depositAmount !== undefined && draftData.projectInfo.depositAmount > 0) {
+        amount -= parseFloat(draftData.projectInfo.depositAmount);
+      }
+      
+      return amount;
+    }
+    
+    // If we have totalAmount and taxAmount, calculate final amount
+    if (draftData.totalAmount !== undefined && draftData.taxAmount !== undefined) {
+      // Calculate total with VAT
+      let amount = parseFloat(draftData.totalAmount) + parseFloat(draftData.taxAmount);
+      
+      // Subtract deposit if it exists
+      if (draftData.depositAmount !== undefined && draftData.depositAmount > 0) {
+        amount -= parseFloat(draftData.depositAmount);
+      }
+      
+      return amount;
+    }
+    
+    if (draftData.projectInfo?.totalAmount !== undefined && draftData.projectInfo?.taxAmount !== undefined) {
+      // Calculate total with VAT
+      let amount = parseFloat(draftData.projectInfo.totalAmount) + parseFloat(draftData.projectInfo.taxAmount);
+      
+      // Subtract deposit if it exists
+      if (draftData.projectInfo?.depositAmount !== undefined && draftData.projectInfo.depositAmount > 0) {
+        amount -= parseFloat(draftData.projectInfo.depositAmount);
+      }
+      
+      return amount;
+    }
+    
+    // Fall back to calculating from tasks and materials
     let total = 0;
     
     // Handle tasks - they have a direct 'price' field for flat rate pricing
@@ -110,6 +161,18 @@ const QuotesManagement = () => {
     // If no tasks/materials or total is 0, try direct amount fields
     if (total === 0) {
       total = parseFloat(draftData.total_amount || draftData.totalAmount || draftData.total || draftData.amount || 0);
+    }
+    
+    // Apply VAT if enabled in financialConfig
+    if (draftData.financialConfig?.vatConfig?.display && total > 0) {
+      const vatRate = parseFloat(draftData.financialConfig.vatConfig.rate || 20);
+      total = total * (1 + vatRate / 100);
+    }
+    
+    // Subtract deposit amount if enabled in financialConfig
+    if (draftData.financialConfig?.advanceConfig?.enabled && draftData.financialConfig?.advanceConfig?.amount > 0) {
+      const depositAmount = parseFloat(draftData.financialConfig.advanceConfig.amount);
+      total = total - depositAmount;
     }
     
     return total;
@@ -142,8 +205,8 @@ const QuotesManagement = () => {
                 clientName: d.selectedClient?.client?.name || d.selectedClient?.label || d.selectedClient?.name || 'Client inconnu',
                 amount: calculateDraftAmount(d),
                 amountFormatted: formatCurrency(calculateDraftAmount(d)),
-                status: 'draft',
-                statusLabel: getStatusLabel('draft'),
+                status: 'Auto-Sauvegardé',
+                statusLabel: 'Brouillon Auto-Sauvegardé',
                 isDraftPlaceholder: true,
                 createdAt: draft.last_saved,
                 createdAtFormatted: formatDate(draft.last_saved),
@@ -181,8 +244,8 @@ const QuotesManagement = () => {
               clientName: d.selectedClient?.client?.name || d.selectedClient?.label || d.selectedClient?.name || 'Client inconnu',
               amount: calculateDraftAmount(d),
               amountFormatted: formatCurrency(calculateDraftAmount(d)),
-              status: 'draft',
-              statusLabel: getStatusLabel('draft'),
+              status: 'Auto-Sauvegardé',
+              statusLabel: 'Brouillon Auto-Sauvegardé',
               isDraftPlaceholder: true,
               createdAt: draft.last_saved,
               createdAtFormatted: formatDate(draft.last_saved),
@@ -208,31 +271,61 @@ const QuotesManagement = () => {
         }
         
         // Transform backend data to match frontend structure
-          const transformedQuotes = (quotesData || []).map(quote => ({
-          id: quote.id,
-          number: quote.quote_number,
-          clientName: quote.client?.name || 'Client inconnu',
-          amount: parseFloat(quote.total_with_tax || quote.total_amount ),
-          amountFormatted: formatCurrency(parseFloat(quote.total_with_tax || quote.total_amount)),
-          status: quote.status,
-          statusLabel: getStatusLabel(quote.status),
-          createdAt: quote.created_at,
-          createdAtFormatted: formatDate(quote.created_at),
-          // aiScore removed
-          description: quote.project_description || 'Aucune description',
-          client: quote.client,
-          companyProfile: quote.company_profile,
-          tasks: quote.quote_tasks || [],
-          materials: quote.quote_materials || [],
-          files: quote.quote_files || [],
-          // start_date (DB) or legacy deadline as start; validUntil from valid_until
-          deadline: quote.start_date || quote.deadline,
-          deadlineFormatted: formatDate(quote.start_date || quote.deadline),
-          validUntil: quote.valid_until || quote.expires_at,
-          validUntilFormatted: formatDate(quote.valid_until || quote.expires_at),
-          isExpired: isQuoteExpired(quote.valid_until || quote.expires_at),
-          terms: quote.terms_conditions
-        }));
+          const transformedQuotes = (quotesData || []).map(quote => {
+            // Calculate the final amount including VAT if enabled
+            let finalAmount = parseFloat(quote.final_amount || quote.total_amount || 0);
+            
+            // If VAT is enabled, make sure we include it in the displayed amount
+            if (quote.tax_amount && quote.tax_amount > 0) {
+              finalAmount = parseFloat(quote.final_amount || (parseFloat(quote.total_amount || 0) + parseFloat(quote.tax_amount || 0)));
+            }
+            
+            // Subtract deposit amount if it exists in financial configs
+            let depositAmount = 0;
+            
+            // Check if there are financial configs with advance_config
+            if (quote.quote_financial_configs && quote.quote_financial_configs.length > 0) {
+              const financialConfig = quote.quote_financial_configs[0];
+              if (financialConfig.advance_config && financialConfig.advance_config.enabled) {
+                depositAmount = parseFloat(financialConfig.advance_config.amount || 0);
+              }
+            }
+            
+            // Fallback to advance_payment_amount if it exists
+            if (depositAmount === 0) {
+              depositAmount = parseFloat(quote.advance_payment_amount || 0);
+            }
+            
+            if (depositAmount > 0) {
+              finalAmount = finalAmount - depositAmount;
+            }
+            
+            return {
+              id: quote.id,
+              number: quote.quote_number,
+              clientName: quote.client?.name || 'Client inconnu',
+              amount: finalAmount,
+              amountFormatted: formatCurrency(finalAmount),
+              status: quote.status,
+              statusLabel: getStatusLabel(quote.status),
+              createdAt: quote.created_at,
+              createdAtFormatted: formatDate(quote.created_at),
+              // aiScore removed
+              description: quote.project_description || 'Aucune description',
+              client: quote.client,
+              companyProfile: quote.company_profile,
+              tasks: quote.quote_tasks || [],
+              materials: quote.quote_materials || [],
+              files: quote.quote_files || [],
+              // start_date (DB) or legacy deadline as start; validUntil from valid_until
+              deadline: quote.start_date || quote.deadline,
+              deadlineFormatted: formatDate(quote.start_date || quote.deadline),
+              validUntil: quote.valid_until || quote.expires_at,
+              validUntilFormatted: formatDate(quote.valid_until || quote.expires_at),
+              isExpired: isQuoteExpired(quote.valid_until || quote.expires_at),
+              terms: quote.terms_conditions
+            };
+          });
         
         // Sort quotes by priority
         const merged = [...transformedQuotes, ...additionalDrafts];
@@ -891,6 +984,7 @@ const QuotesManagement = () => {
   const getStatusLabel = (status) => {
     const statusMap = {
       draft: 'Brouillon',
+      'Auto-Sauvegardé': 'Brouillon Auto-Sauvegardé',
       sent: 'Envoyé',
       accepted: 'Accepté',
       rejected: 'Refusé',

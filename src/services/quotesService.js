@@ -110,6 +110,15 @@ export async function fetchQuotes(userId) {
           file_category,
           uploaded_by,
           created_at
+        ),
+        quote_financial_configs(
+          id,
+          vat_config,
+          advance_config,
+          marketing_banner,
+          payment_terms,
+          discount_config,
+          created_at
         )
       `)
       .eq('user_id', userId)
@@ -304,6 +313,28 @@ export async function createQuote(quoteData) {
       console.error('Error creating quote:', quoteError);
       return { error: quoteError };
     }
+    
+    // Create financial config with deposit amount if provided
+    if (quoteData.advance_payment_amount > 0) {
+      try {
+        await supabase
+          .from('quote_financial_configs')
+          .insert({
+            quote_id: quote.id,
+            advance_config: {
+              enabled: true,
+              amount: quoteData.advance_payment_amount
+            },
+            vat_config: quoteData.vat_config || null,
+            marketing_banner: quoteData.marketing_banner || null,
+            payment_terms: quoteData.payment_terms || null,
+            discount_config: quoteData.discount_config || null
+          });
+      } catch (financialConfigError) {
+        console.error('Error saving deposit amount:', financialConfigError);
+        // Continue with quote creation even if financial config save fails
+      }
+    }
 
     // Create quote_shares record for tracking
     if (quoteData.status === 'sent') {
@@ -479,6 +510,45 @@ export async function createQuote(quoteData) {
 export async function updateQuote(id, quoteData) {
   try {
     // Update the quote
+    
+    // Check if we need to create a financial_config record for the deposit amount
+    if (quoteData.advance_payment_amount > 0) {
+      try {
+        // First, check if a financial config already exists for this quote
+        const { data: existingConfig } = await supabase
+          .from('quote_financial_configs')
+          .select('id')
+          .eq('quote_id', id)
+          .single();
+        
+        if (existingConfig) {
+          // Update existing financial config
+          await supabase
+            .from('quote_financial_configs')
+            .update({
+              advance_config: {
+                enabled: true,
+                amount: quoteData.advance_payment_amount
+              }
+            })
+            .eq('id', existingConfig.id);
+        } else {
+          // Create new financial config
+          await supabase
+            .from('quote_financial_configs')
+            .insert({
+              quote_id: id,
+              advance_config: {
+                enabled: true,
+                amount: quoteData.advance_payment_amount
+              }
+            });
+        }
+      } catch (financialConfigError) {
+        console.error('Error saving deposit amount:', financialConfigError);
+        // Continue with quote update even if financial config save fails
+      }
+    }
     
     const { data: quote, error: quoteError } = await supabase
       .from('quotes')
