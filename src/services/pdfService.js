@@ -3,14 +3,17 @@ import html2canvas from 'html2canvas';
 
 /**
  * Generate PDF from quote preview
+ * This approach ensures all data is visible while maintaining the same template
  * @param {Object} quoteData - Quote data including company info, client, tasks, etc.
  * @param {string} quoteNumber - Quote number
+ * @param {HTMLElement} elementToCapture - Element to capture (quote preview container)
  * @returns {Promise<Blob>} PDF blob
  */
 export const generateQuotePDF = async (quoteData, quoteNumber, elementToCapture) => {
   try {
     let target = elementToCapture;
-    // Fallback to generated HTML if no element is provided
+    
+    // If no element provided, create a temporary element with the quote preview
     if (!target) {
       const tempDiv = document.createElement('div');
       tempDiv.style.position = 'absolute';
@@ -24,24 +27,61 @@ export const generateQuotePDF = async (quoteData, quoteNumber, elementToCapture)
       document.body.appendChild(tempDiv);
       target = tempDiv;
     }
-
-    const canvas = await html2canvas(target, {
-      scale: 2,
+    
+    // Clone the target element to avoid modifying the original
+    const clonedTarget = target.cloneNode(true);
+    clonedTarget.style.position = 'absolute';
+    clonedTarget.style.left = '-9999px';
+    clonedTarget.style.top = '0';
+    document.body.appendChild(clonedTarget);
+    
+    // Find all scrollable elements within the cloned target
+    const scrollableElements = clonedTarget.querySelectorAll('.overflow-x-auto, .overflow-y-auto, [style*="overflow"]');
+    
+    // Remove overflow properties to ensure all content is visible
+    scrollableElements.forEach(element => {
+      element.style.overflow = 'visible';
+      element.style.overflowX = 'visible';
+      element.style.overflowY = 'visible';
+      element.style.maxHeight = 'none';
+      element.style.maxWidth = 'none';
+    });
+    
+    // Find all tables and ensure they're fully visible
+    const tables = clonedTarget.querySelectorAll('table');
+    tables.forEach(table => {
+      table.style.width = '100%';
+      table.style.tableLayout = 'auto';
+    });
+    
+    // Create PDF with A4 size
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    
+    // Convert HTML element to canvas
+    const canvas = await html2canvas(clonedTarget, {
+      scale: 2, // Higher scale for better quality
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
-      logging: false
+      logging: false,
+      width: clonedTarget.offsetWidth,
+      height: clonedTarget.scrollHeight, // Use full height including all content
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: clonedTarget.offsetWidth
     });
-
+    
+    // Remove the cloned element
+    document.body.removeChild(clonedTarget);
+    
     // If we created a temp node, remove it now
     if (elementToCapture == null && target && target.parentNode) {
       target.parentNode.removeChild(target);
     }
     
-    // Create PDF
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
+    // Calculate dimensions
     const imgWidth = pageWidth;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
     let heightLeft = imgHeight;
@@ -79,15 +119,21 @@ const generateQuoteHTML = (quoteData, quoteNumber) => {
   const { companyInfo, selectedClient, tasks, projectInfo, financialConfig } = quoteData;
   
   const currentDate = new Date().toLocaleDateString('fr-FR');
-  const totalAmount = tasks.reduce((sum, task) => sum + (task.price || 0), 0);
+  const totalAmount = tasks.reduce((sum, task) => {
+    const taskMaterialsTotal = (task.materials || []).reduce(
+      (matSum, mat) => matSum + ((parseFloat(mat.price || 0)) * (parseFloat(mat.quantity || 0))),
+      0
+    );
+    return sum + (parseFloat(task.price || 0)) + taskMaterialsTotal;
+  }, 0);
   
   return `
     <div style="max-width: 800px; margin: 0 auto; font-family: Arial, sans-serif;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 2px solid #374151; padding-bottom: 20px;">
         <div style="flex: 1;">
-          <h1 style="margin: 0; font-size: 24px; color: #374151; font-weight: bold;">${companyInfo.name || 'VOTRE ENTREPRISE'}</h1>
-          <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">${companyInfo.address || ''}</p>
-          <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">${companyInfo.postalCode || ''} ${companyInfo.city || ''}</p>
+          <h1 style="margin: 0; font-size: 24px; color: #374151; font-weight: bold;">${companyInfo?.name || 'VOTRE ENTREPRISE'}</h1>
+          <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">${companyInfo?.address || ''}</p>
+          <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">${companyInfo?.postalCode || ''} ${companyInfo?.city || ''}</p>
         </div>
         <div style="text-align: right; flex: 1;">
           <h2 style="margin: 0; font-size: 20px; color: #374151; font-weight: bold;">DEVIS</h2>

@@ -62,9 +62,31 @@ const QuoteSendModal = ({
           customization
         };
         
-        // Capture the live preview container for pixel-perfect PDF (same as main button)
+        // Capture the live preview container for pixel-perfect PDF
         const captureEl = document.querySelector('#quote-preview-capture');
-        await generateQuotePDF(quoteData, quoteNumber, captureEl);
+        
+        // Clone the element to avoid modifying the original
+        const clonedEl = captureEl.cloneNode(true);
+        clonedEl.style.position = 'absolute';
+        clonedEl.style.left = '-9999px';
+        clonedEl.style.top = '0';
+        document.body.appendChild(clonedEl);
+        
+        // Find all scrollable elements and make them fully visible
+        const scrollableElements = clonedEl.querySelectorAll('.overflow-x-auto, .overflow-y-auto, [style*="overflow"]');
+        scrollableElements.forEach(element => {
+          element.style.overflow = 'visible';
+          element.style.overflowX = 'visible';
+          element.style.overflowY = 'visible';
+          element.style.maxHeight = 'none';
+          element.style.maxWidth = 'none';
+        });
+        
+        // Generate PDF from the modified clone
+        await generateQuotePDF(quoteData, quoteNumber, clonedEl);
+        
+        // Clean up
+        document.body.removeChild(clonedEl);
         onClose();
       } catch (error) {
         console.error('Error generating PDF:', error);
