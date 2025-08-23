@@ -48,35 +48,100 @@ export async function scheduleFollowUpsForQuote(quoteId) {
 }
 
 export async function createFollowUpForQuote(quoteId, stage, userId = null) {
-  // Prevent duplicates: if there is already a pending/scheduled follow-up, return its id
-  const { data: existing, error: existingErr } = await supabase
-    .from('quote_follow_ups')
-    .select('id, status')
-    .eq('quote_id', quoteId)
-    .in('status', ['pending', 'scheduled'])
-    .limit(1)
-    .maybeSingle();
-  if (!existingErr && existing?.id) {
-    return existing.id;
-  }
+  try {
+    // First, ensure the quote has a share token and is marked as public
+    // Check if the quote already has a share token
+    const { data: quoteData, error: quoteError } = await supabase
+      .from('quotes')
+      .select('share_token, is_public')
+      .eq('id', quoteId)
+      .single();
+      
+    if (quoteError) {
+      console.error('Error checking quote share token:', quoteError);
+      // Try to generate a share token anyway
+      const shareToken = generateShareToken();
+      
+      await supabase
+        .from('quotes')
+        .update({ 
+          share_token: shareToken, 
+          is_public: true 
+        })
+        .eq('id', quoteId);
+    } else {
+      if (!quoteData.share_token) {
+        // Generate a share token if none exists
+        const shareToken = generateShareToken();
+        
+        // Update the quote with the share token and mark it as public
+        const { error: updateError } = await supabase
+          .from('quotes')
+          .update({ 
+            share_token: shareToken, 
+            is_public: true 
+          })
+          .eq('id', quoteId);
+          
+        if (updateError) {
+          console.error('Error updating quote with share token:', updateError);
+        }
+      } else if (!quoteData.is_public) {
+        // If share token exists but is_public is false, set it to true
+        const { error: updateError } = await supabase
+          .from('quotes')
+          .update({ is_public: true })
+          .eq('id', quoteId);
+          
+        if (updateError) {
+          console.error('Error updating quote is_public flag:', updateError);
+        }
+      }
+    }
+  
+    // Prevent duplicates: if there is already a pending/scheduled follow-up, return its id
+    const { data: existing, error: existingErr } = await supabase
+      .from('quote_follow_ups')
+      .select('id, status')
+      .eq('quote_id', quoteId)
+      .in('status', ['pending', 'scheduled'])
+      .limit(1)
+      .maybeSingle();
+    if (!existingErr && existing?.id) {
+      return existing.id;
+    }
 
-  // Create follow-up directly in the database instead of using RPC function
-  const { data, error } = await supabase
-    .from('quote_follow_ups')
-    .insert({
-      quote_id: quoteId,
-      user_id: userId, // Required field
-      stage: stage,
-      status: 'pending',
-      scheduled_at: new Date().toISOString(),
-      attempts: 0,
-      created_at: new Date().toISOString()
-    })
-    .select()
-    .single();
-    
-  if (error) throw error;
-  return data; // follow_up_id
+    // Create follow-up directly in the database instead of using RPC function
+    const { data, error } = await supabase
+      .from('quote_follow_ups')
+      .insert({
+        quote_id: quoteId,
+        user_id: userId, // Required field
+        stage: stage,
+        status: 'pending',
+        scheduled_at: new Date().toISOString(),
+        attempts: 0,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+      
+    if (error) throw error;
+    return data.id; // follow_up_id
+  } catch (error) {
+    console.error('Error creating follow-up for quote:', error);
+    throw error;
+  }
+}
+
+// Helper function to generate a share token
+function generateShareToken() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 32; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
 }
 
 export async function enqueueEmail({ follow_up_id, user_id, to_email, subject, html, text, provider = 'resend' }) {
@@ -130,20 +195,68 @@ export async function stopFollowUpsForQuote(quoteId) {
   return { success: true };
 }
 
-export async function logQuoteEvent({ quote_id, user_id, type, meta = {} }) {
-  const { data, error } = await supabase
-    .from('quote_events')
-    .insert({
-      quote_id,
-      user_id,
-      type,
-      meta,
-      timestamp: new Date().toISOString()
-    })
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+export async function logQuoteEvent({ quote_id, user_id, type, meta = {}, share_token = null }) {
+  try {
+    // Use the provided share_token if available, otherwise get it from the quotes table
+    let shareToken = share_token;
+    
+    if (!shareToken) {
+      // Get the quote's share token from the quotes table
+      const { data: quoteData, error: quoteError } = await supabase
+        .from('quotes')
+        .select('share_token, is_public')
+        .eq('id', quote_id)
+        .single();
+        
+      // If the quote doesn't have a share token, generate one
+      shareToken = quoteData?.share_token;
+      if (quoteError || !shareToken) {
+        // Generate a new share token
+        shareToken = generateShareToken();
+        
+        // Update the quote with the share token and mark it as public
+        await supabase
+          .from('quotes')
+          .update({ 
+            share_token: shareToken, 
+            is_public: true 
+          })
+          .eq('id', quote_id);
+      } else if (!quoteData.is_public) {
+        // If share token exists but is_public is false, set it to true
+        await supabase
+          .from('quotes')
+          .update({ is_public: true })
+          .eq('id', quote_id);
+      }
+    } else {
+      // Even if share token is provided, ensure is_public is set to true
+      await supabase
+        .from('quotes')
+        .update({ is_public: true })
+        .eq('id', quote_id);
+    }
+    
+    // Now insert the event with the share token
+    const { data, error } = await supabase
+      .from('quote_events')
+      .insert({
+        quote_id,
+        user_id,
+        type,
+        meta,
+        timestamp: new Date().toISOString(),
+        share_token: shareToken
+      })
+      .select()
+      .single();
+      
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error logging quote event:', error);
+    throw error;
+  }
 }
 
 /**

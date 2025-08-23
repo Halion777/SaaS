@@ -618,8 +618,7 @@ export async function updateQuote(id, quoteData) {
               );
               
               if (emailResult?.success) {
-                console.log('Update email sent successfully for quote:', id);
-                
+               
                 // Update sent_at timestamp when email is sent
                 await supabase
                   .from('quotes')
@@ -1147,8 +1146,7 @@ async function triggerFollowUpCreation(quoteId, quoteStatus) {
         .order('created_at', { ascending: false });
       
       if (existingFollowUps && existingFollowUps.length > 0) {
-        console.log(`Found ${existingFollowUps.length} existing follow-ups for quote ${quoteId}, replacing with new follow-ups`);
-        
+       
         // First, mark all existing follow-ups as stopped
         for (const followUp of existingFollowUps) {
           await supabase
@@ -1181,7 +1179,7 @@ async function triggerFollowUpCreation(quoteId, quoteStatus) {
         })
       });
       
-      console.log('Created new follow-up for sent quote');
+ 
     }
   } catch (error) {
     console.warn('Error triggering follow-up creation:', error);
@@ -1205,8 +1203,7 @@ export async function handleQuoteViewedFollowUps(quoteId) {
       .order('created_at', { ascending: false });
     
     if (existingFollowUps && existingFollowUps.length > 0) {
-      console.log(`Found ${existingFollowUps.length} existing follow-ups for quote ${quoteId}, replacing with new follow-ups`);
-      
+    
       // First, mark all existing follow-ups as stopped
       for (const followUp of existingFollowUps) {
         await supabase

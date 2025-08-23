@@ -745,15 +745,53 @@ const QuotesManagement = () => {
     }
 
     try {
-      // Create immediate follow-up
-      await createFollowUpForQuote(quote.id, 1);
+      // First, check if the quote has a valid share token
+      const { data: quoteData } = await supabase
+        .from('quotes')
+        .select('share_token, is_public')
+        .eq('id', quote.id)
+        .single();
       
-      // Log the event
+      // If no share token or not public, generate and save one
+      if (!quoteData?.share_token || !quoteData?.is_public) {
+        // Import the share service to generate a proper share token
+        const { generatePublicShareLink } = await import('../../services/shareService');
+        const shareResult = await generatePublicShareLink(quote.id, user.id);
+        
+        if (!shareResult?.success) {
+          console.error('Failed to generate share token for manual follow-up');
+        }
+      } else {
+        // Ensure is_public is set to TRUE even if share_token exists
+        await supabase
+          .from('quotes')
+          .update({ is_public: true })
+          .eq('id', quote.id);
+      }
+      
+      // Create immediate follow-up
+      const followUpId = await createFollowUpForQuote(quote.id, 1, user.id);
+      
+      // Get the quote with the updated share token
+      const { data: updatedQuote } = await supabase
+        .from('quotes')
+        .select('share_token')
+        .eq('id', quote.id)
+        .single();
+      
+      // Log the event with the share token from the quotes table
       await logQuoteEvent({
         quote_id: quote.id,
         user_id: user.id,
         type: 'followup_manual',
-        meta: { stage: 1, manual: true }
+        meta: { 
+          stage: 1, 
+          manual: true,
+          project: `${quote.quote_number} - ${quote.title}`,
+          client_name: quote.client?.name || 'Client',
+          email_sent: true
+        },
+        share_token: updatedQuote?.share_token
       });
 
       // Refresh follow-ups (sync actual data)
@@ -871,27 +909,18 @@ const QuotesManagement = () => {
             
             // Log the email event to prevent future duplicates
             try {
-              // Get the updated quote with the share token
-              const { data: updatedQuoteWithToken } = await supabase
-                .from('quotes')
-                .select('share_token')
-                .eq('id', quote.id)
-                .single();
-                
-              await supabase
-                .from('quote_events')
-                .insert({
-                  quote_id: quote.id,
-                  user_id: user?.id || null,
-                  type: 'email_sent',
-                  meta: {
-                    email_type: 'draft_marked_as_sent',
-                    recipient: client.email,
-                    timestamp: new Date().toISOString(),
-                    source: 'quotes_management'
-                  },
-                  share_token: updatedQuoteWithToken?.share_token || null
-                });
+              // Use the logQuoteEvent function to ensure share token is set correctly
+              await logQuoteEvent({
+                quote_id: quote.id,
+                user_id: user?.id || null,
+                type: 'email_sent',
+                meta: {
+                  email_type: 'draft_marked_as_sent',
+                  recipient: client.email,
+                  timestamp: new Date().toISOString(),
+                  source: 'quotes_management'
+                }
+              });
             } catch (eventError) {
               console.warn('Failed to log email event:', eventError);
             }
@@ -909,7 +938,7 @@ const QuotesManagement = () => {
       // Refresh follow-ups to show the newly created ones
       await refreshFollowUps();
 
-      console.log('Quote marked as sent successfully:', updatedQuote);
+   
     } catch (error) {
       console.error('Error marking quote as sent:', error);
     }

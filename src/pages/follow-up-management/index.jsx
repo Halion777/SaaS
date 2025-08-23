@@ -867,28 +867,6 @@ const FollowUpManagement = () => {
               <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                 <Button
                   variant="outline"
-                  onClick={handleTriggerScheduler}
-                  iconName="Clock"
-                  iconPosition="left"
-                  className="hidden md:flex text-xs sm:text-sm"
-                  disabled={loading}
-                  title="Trigger follow-up creation"
-                >
-                  Créer relances
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleTriggerDispatcher}
-                  iconName="Send"
-                  iconPosition="left"
-                  className="hidden md:flex text-xs sm:text-sm"
-                  disabled={loading}
-                  title="Trigger email sending"
-                >
-                  Envoyer emails
-                </Button>
-                <Button
-                  variant="outline"
                   onClick={handleRefresh}
                   iconName={loading ? "Loader2" : "RefreshCw"}
                   iconPosition="left"
