@@ -3,6 +3,7 @@ import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import MainSidebar from '../../components/ui/MainSidebar';
+import TableLoader from '../../components/ui/TableLoader';
 import { useScrollPosition } from '../../utils/useScrollPosition';
 import { LeadManagementService } from '../../services/leadManagementService';
 import { useAuth } from '../../context/AuthContext';
@@ -244,12 +245,7 @@ const LeadsManagementPage = () => {
       <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4">Demandes de devis reçues</h2>
       
       {loading ? (
-        <div className="flex items-center justify-center py-8 sm:py-12">
-          <div className="text-center">
-            <Icon name="Loader" size={32} className="sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-muted-foreground animate-spin" />
-            <p className="text-xs sm:text-sm text-muted-foreground">Chargement...</p>
-          </div>
-        </div>
+        <TableLoader message="Chargement des leads..." />
       ) : error ? (
         <div className="text-center py-12">
           <Icon name="AlertCircle" className="w-12 h-12 text-destructive mx-auto mb-4" />

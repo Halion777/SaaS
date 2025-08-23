@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import MainSidebar from '../../components/ui/MainSidebar';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
+import TableLoader, { TableSkeletonLoader } from '../../components/ui/TableLoader';
 import QuotesTable from './components/QuotesTable';
 import FilterBar from './components/FilterBar';
 import BulkActionsToolbar from './components/BulkActionsToolbar';
@@ -1296,9 +1297,8 @@ const QuotesManagement = () => {
           <div className="relative">
           <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
             {loading ? (
-              <div className="p-8 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Chargement des devis...</p>
+              <div className="w-full">
+                <TableLoader message="Chargement des devis..." />
               </div>
             ) : error ? (
               <div className="p-8 text-center">
@@ -1348,7 +1348,9 @@ const QuotesManagement = () => {
             </div>
             {tableLoading && (
               <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10">
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
+                </div>
               </div>
             )}
           </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import MainSidebar from '../../components/ui/MainSidebar';
+import TableLoader from '../../components/ui/TableLoader';
 import FilterToolbar from './components/FilterToolbar';
 import { useScrollPosition } from '../../utils/useScrollPosition';
 import { useAuth } from '../../context/AuthContext';
@@ -943,48 +944,50 @@ const FollowUpManagement = () => {
 
           
 
-          {/* View Toggle */}
-          <div className="flex items-center justify-between p-4 border-b border-border">
-            <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium text-muted-foreground">Vue:</span>
-              <div className="flex bg-muted rounded-lg p-1">
-                <button
-                  onClick={() => setViewMode('table')}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${viewMode === 'table'
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <Icon name="Table" size={14} className="mr-1" />
-                  Tableau
-                </button>
-                <button
-                  onClick={() => setViewMode('card')}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${viewMode === 'card'
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <Icon name="Grid" size={14} className="mr-1" />
-                  Cartes
-                </button>
-              </div>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {filteredFollowUps.length} relance(s)
-            </div>
-          </div>
-
           {/* Follow-up Items */}
-          {loading ? (
-            <div className="bg-card border border-border rounded-lg p-8 text-center">
-              <Icon name="Loader" size={48} className="text-muted-foreground mx-auto mb-4 animate-spin" />
-              <h3 className="text-lg font-medium text-foreground mb-2">Chargement des données...</h3>
-              <p className="text-muted-foreground">
-                Veuillez patienter pendant le chargement des données.
-              </p>
-            </div>
-          ) : error ? (
+          <div className="relative">
+            {loading ? (
+              <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+                <div className="w-full">
+                  <TableLoader message="Chargement des relances..." />
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* View Toggle */}
+                <div className="flex items-center justify-between p-4 border-b border-border">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium text-muted-foreground">Vue:</span>
+                    <div className="flex bg-muted rounded-lg p-1">
+                      <button
+                        onClick={() => setViewMode('table')}
+                        className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${viewMode === 'table'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        <Icon name="Table" size={14} className="mr-1" />
+                        Tableau
+                      </button>
+                      <button
+                        onClick={() => setViewMode('card')}
+                        className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${viewMode === 'card'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        <Icon name="Grid" size={14} className="mr-1" />
+                        Cartes
+                      </button>
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {filteredFollowUps.length} relance(s)
+                  </div>
+                </div>
+
+                <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+                  {error ? (
             <div className="bg-card border border-border rounded-lg p-8 text-center">
               <Icon name="AlertCircle" size={48} className="text-red-500 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground mb-2">Erreur de chargement</h3>
@@ -998,40 +1001,44 @@ const FollowUpManagement = () => {
               >
                 Rafraîchir
               </Button>
-            </div>
-          ) : filteredFollowUps.length === 0 ? (
-            <div className="bg-card border border-border rounded-lg p-8 text-center">
-              <Icon name="MessageCircle" size={48} className="text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">Aucune relance trouvée</h3>
-              <p className="text-muted-foreground mb-4">
-                {followUps.length === 0 
-                  ? "Aucune relance n'est actuellement programmée. Les relances apparaîtront automatiquement pour vos devis envoyés."
-                  : "Aucune relance ne correspond aux filtres appliqués. Essayez de modifier vos critères de recherche."
-                }
-              </p>
-              {followUps.length === 0 && (
-                <Button onClick={() => navigate('/quotes-management')} variant="default" className="gap-2">
-                  <Icon name="ArrowRight" size={16} />
-                  Aller aux devis
-                </Button>
-              )}
-              {followUps.length > 0 && (
-                <Button onClick={() => setFilters({ type: 'all', priority: 'all', status: 'all', days: 'all' })} variant="outline" className="gap-2">
-                  <Icon name="RotateCcw" size={16} />
-                  Effacer les filtres
-                </Button>
-              )}
-            </div>
-          ) : (
-            <div className="bg-card border border-border rounded-lg overflow-hidden">
-              {/* Content */}
-              {viewMode === 'table' ? (
-                renderTableView()
-              ) : (
-                renderCardView()
-              )}
-            </div>
-          )}
+                              </div>
+                  ) : filteredFollowUps.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <Icon name="MessageCircle" size={48} className="text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-foreground mb-2">Aucune relance trouvée</h3>
+                      <p className="text-muted-foreground mb-4">
+                        {followUps.length === 0 
+                          ? "Aucune relance n'est actuellement programmée. Les relances apparaîtront automatiquement pour vos devis envoyés."
+                          : "Aucune relance ne correspond aux filtres appliqués. Essayez de modifier vos critères de recherche."
+                        }
+                      </p>
+                      {followUps.length === 0 && (
+                        <Button onClick={() => navigate('/quotes-management')} variant="default" className="gap-2">
+                          <Icon name="ArrowRight" size={16} />
+                          Aller aux devis
+                        </Button>
+                      )}
+                      {followUps.length > 0 && (
+                        <Button onClick={() => setFilters({ type: 'all', priority: 'all', status: 'all', days: 'all' })} variant="outline" className="gap-2">
+                          <Icon name="RotateCcw" size={16} />
+                          Effacer les filtres
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      {/* Content */}
+                      {viewMode === 'table' ? (
+                        renderTableView()
+                      ) : (
+                        renderCardView()
+                      )}
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </main>
     </div>
