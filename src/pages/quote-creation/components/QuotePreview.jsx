@@ -11,6 +11,7 @@ import { loadCompanyInfo, getDefaultCompanyInfo } from '../../../services/compan
 import { getPublicUrl } from '../../../services/storageService';
 import { useAuth } from '../../../context/AuthContext';
 import { generatePublicShareLink, getShareLinkInfo, deactivateShareLink } from '../../../services/shareService';
+import { createProcessingOverlay } from '../../../components/ui/ProcessingOverlay';
 
 const QuotePreview = ({ 
   selectedClient, 
@@ -1046,7 +1047,27 @@ const QuotePreview = ({
           
           <Button
             variant="outline"
-            onClick={() => onSave({ customization, financialConfig, companyInfo, signatureData })}
+            onClick={async () => {
+              if (!isSaving) {
+                // Create and show the processing overlay
+                const overlay = createProcessingOverlay('Sauvegarde en cours...', 'quote-draft-overlay');
+                overlay.show();
+                
+                try {
+                  await onSave({ customization, financialConfig, companyInfo, signatureData });
+                  
+                  // Hide the overlay
+                  overlay.hide();
+                } catch (error) {
+                  console.error('Error saving draft:', error);
+                  // Show error message
+                  alert('Une erreur est survenue lors de la sauvegarde du brouillon. Veuillez réessayer.');
+                  
+                  // Hide the overlay
+                  overlay.hide();
+                }
+              }
+            }}
             iconName="Save"
             iconPosition="left"
             size="sm"

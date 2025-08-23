@@ -3,6 +3,7 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import { useAuth } from '../../../context/AuthContext';
 import { generateQuotePDF } from '../../../services/pdfService';
+import { createProcessingOverlay } from '../../../components/ui/ProcessingOverlay';
 
 const QuoteSendModal = ({ 
   isOpen, 
@@ -22,6 +23,7 @@ const QuoteSendModal = ({
   const [step, setStep] = useState(1); // 1: options, 2: email form
   const [sendMethod, setSendMethod] = useState('email'); // 'email' or 'pdf'
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [emailData, setEmailData] = useState({
     clientEmail: '',
     sendCopy: false,
@@ -51,6 +53,12 @@ const QuoteSendModal = ({
       // If PDF is selected, generate and download PDF using the same logic as the main PDF button
       try {
         setIsGeneratingPDF(true);
+        setIsProcessing(true);
+        
+        // Create and show the processing overlay
+        const overlay = createProcessingOverlay('Génération en cours...', 'quote-pdf-overlay');
+        overlay.show();
+        
         const quoteData = {
           companyInfo,
           selectedClient,
@@ -87,12 +95,18 @@ const QuoteSendModal = ({
         
         // Clean up
         document.body.removeChild(clonedEl);
+        
+        // Hide the overlay
+        overlay.hide();
+        
         onClose();
       } catch (error) {
         console.error('Error generating PDF:', error);
-        // You might want to show an error message to the user here
+        // Show error message
+        alert('Une erreur est survenue lors de la génération du PDF. Veuillez réessayer.');
       } finally {
         setIsGeneratingPDF(false);
+        setIsProcessing(false);
       }
     } else {
       // If email is selected, go to step 2
@@ -100,27 +114,45 @@ const QuoteSendModal = ({
     }
   };
 
-  const handleEmailSend = () => {
-    onSend({ 
-      method: 'email', 
-      emailData: {
-        ...emailData,
-        quoteNumber,
-        clientName: selectedClient?.name || selectedClient?.label || 'Client',
-        // Include user's email if sendCopy is enabled
-        userEmail: emailData.sendCopy ? user?.email : null
-      },
-      // Pass all the required quote data
-      companyInfo,
-      financialConfig,
-      signatureData,
-      selectedClient,
-      projectInfo,
-      tasks,
-      files,
-      customization
-    });
-    onClose();
+  const handleEmailSend = async () => {
+    try {
+      setIsProcessing(true);
+      
+      // Create and show the processing overlay
+      const overlay = createProcessingOverlay('Envoi en cours...', 'quote-email-overlay');
+      overlay.show();
+      
+      await onSend({ 
+        method: 'email', 
+        emailData: {
+          ...emailData,
+          quoteNumber,
+          clientName: selectedClient?.name || selectedClient?.label || 'Client',
+          // Include user's email if sendCopy is enabled
+          userEmail: emailData.sendCopy ? user?.email : null
+        },
+        // Pass all the required quote data
+        companyInfo,
+        financialConfig,
+        signatureData,
+        selectedClient,
+        projectInfo,
+        tasks,
+        files,
+        customization
+      });
+      
+      // Hide the overlay
+      overlay.hide();
+      
+      onClose();
+    } catch (error) {
+      console.error('Error sending email:', error);
+      // Show error message
+      alert('Une erreur est survenue lors de l\'envoi du devis. Veuillez réessayer.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleBack = () => {
@@ -141,14 +173,15 @@ const QuoteSendModal = ({
            <h2 className="text-xl font-bold text-foreground">
              {step === 1 ? 'Partager un devis' : 'Envoyer un devis'}
            </h2>
-           <button
-             onClick={onClose}
-             className="text-muted-foreground hover:text-foreground transition-colors"
-           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+                     <button
+            onClick={onClose}
+            className={`text-muted-foreground transition-colors ${isProcessing || isGeneratingPDF ? 'opacity-50 cursor-not-allowed' : 'hover:text-foreground'}`}
+            disabled={isProcessing || isGeneratingPDF}
+          >
+           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+           </svg>
+         </button>
         </div>
 
         {/* Content */}
@@ -180,19 +213,20 @@ const QuoteSendModal = ({
                 
                 <div className="space-y-3">
                                      {/* Email option */}
-                   <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                     sendMethod === 'email' 
-                       ? 'border-primary bg-primary/10' 
-                       : 'border-border hover:border-primary/50'
-                   }`}>
-                     <input
-                       type="radio"
-                       name="sendMethod"
-                       value="email"
-                       checked={sendMethod === 'email'}
-                       onChange={() => setSendMethod('email')}
-                       className="sr-only"
-                     />
+                                      <label className={`flex items-center p-4 border-2 rounded-lg transition-colors ${
+                    sendMethod === 'email' 
+                      ? 'border-primary bg-primary/10' 
+                      : 'border-border hover:border-primary/50'
+                  } ${isProcessing || isGeneratingPDF ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                                          <input
+                      type="radio"
+                      name="sendMethod"
+                      value="email"
+                      checked={sendMethod === 'email'}
+                      onChange={() => setSendMethod('email')}
+                      disabled={isProcessing || isGeneratingPDF}
+                      className="sr-only"
+                    />
                      <div className={`relative w-5 h-5 mr-3 flex items-center justify-center rounded-full border-2 aspect-square ${
                        sendMethod === 'email' ? 'border-primary' : 'border-border'
                      }`}>
@@ -211,20 +245,20 @@ const QuoteSendModal = ({
                    </label>
 
                                        {/* PDF option */}
-                    <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                      sendMethod === 'pdf' 
-                        ? 'border-primary bg-primary/10' 
-                        : 'border-border hover:border-primary/50'
-                    } ${isGeneratingPDF ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                      <input
-                        type="radio"
-                        name="sendMethod"
-                        value="pdf"
-                        checked={sendMethod === 'pdf'}
-                        onChange={() => setSendMethod('pdf')}
-                        disabled={isGeneratingPDF}
-                        className="sr-only"
-                      />
+                                       <label className={`flex items-center p-4 border-2 rounded-lg transition-colors ${
+                     sendMethod === 'pdf' 
+                       ? 'border-primary bg-primary/10' 
+                       : 'border-border hover:border-primary/50'
+                   } ${isProcessing || isGeneratingPDF ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                                           <input
+                       type="radio"
+                       name="sendMethod"
+                       value="pdf"
+                       checked={sendMethod === 'pdf'}
+                       onChange={() => setSendMethod('pdf')}
+                       disabled={isProcessing || isGeneratingPDF}
+                       className="sr-only"
+                     />
                       <div className={`relative w-5 h-5 mr-3 flex items-center justify-center rounded-full border-2 aspect-square ${
                         sendMethod === 'pdf' ? 'border-primary' : 'border-border'
                       }`}>
@@ -250,13 +284,14 @@ const QuoteSendModal = ({
                    <label className="block text-sm font-medium text-foreground mb-2">
                      Adresse e-mail du client
                    </label>
-                  <Input
-                    type="email"
-                    value={emailData.clientEmail}
-                    onChange={(e) => setEmailData(prev => ({ ...prev, clientEmail: e.target.value }))}
-                    placeholder="email@client.com"
-                    className="w-full"
-                  />
+                                   <Input
+                   type="email"
+                   value={emailData.clientEmail}
+                   onChange={(e) => setEmailData(prev => ({ ...prev, clientEmail: e.target.value }))}
+                   placeholder="email@client.com"
+                   className="w-full"
+                   disabled={isProcessing}
+                 />
                 </div>
 
                                  {/* Send Copy Toggle */}
@@ -266,13 +301,14 @@ const QuoteSendModal = ({
                    </label>
                    <div className="flex items-center">
                      <span className="text-sm text-muted-foreground mr-2">Non</span>
-                    <button
-                      type="button"
-                      onClick={() => setEmailData(prev => ({ ...prev, sendCopy: !prev.sendCopy }))}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        emailData.sendCopy ? 'bg-green-600' : 'bg-gray-200'
-                      }`}
-                    >
+                                       <button
+                     type="button"
+                     onClick={() => setEmailData(prev => ({ ...prev, sendCopy: !prev.sendCopy }))}
+                     disabled={isProcessing}
+                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                       emailData.sendCopy ? 'bg-green-600' : 'bg-gray-200'
+                     } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                   >
                       <span
                         className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                           emailData.sendCopy ? 'translate-x-6' : 'translate-x-1'
@@ -288,13 +324,14 @@ const QuoteSendModal = ({
                    <label className="block text-sm font-medium text-foreground mb-2">
                      Objet de l'e-mail
                    </label>
-                  <Input
-                    type="text"
-                    value={emailData.subject}
-                    onChange={(e) => setEmailData(prev => ({ ...prev, subject: e.target.value }))}
-                    placeholder="Objet de l'e-mail"
-                    className="w-full"
-                  />
+                                   <Input
+                   type="text"
+                   value={emailData.subject}
+                   onChange={(e) => setEmailData(prev => ({ ...prev, subject: e.target.value }))}
+                   placeholder="Objet de l'e-mail"
+                   className="w-full"
+                   disabled={isProcessing}
+                 />
                 </div>
 
                                  {/* Email Message */}
@@ -302,13 +339,14 @@ const QuoteSendModal = ({
                    <label className="block text-sm font-medium text-foreground mb-2">
                      Message
                    </label>
-                                     <textarea
-                     value={emailData.message}
-                     onChange={(e) => setEmailData(prev => ({ ...prev, message: e.target.value }))}
-                     rows={4}
-                     className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                     placeholder="Votre message..."
-                   />
+                                                         <textarea
+                    value={emailData.message}
+                    onChange={(e) => setEmailData(prev => ({ ...prev, message: e.target.value }))}
+                    rows={4}
+                    className={`w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    placeholder="Votre message..."
+                    disabled={isProcessing}
+                  />
                 </div>
 
                                  {/* Quote Info Preview */}
@@ -330,6 +368,7 @@ const QuoteSendModal = ({
              variant="outline"
              onClick={handleBack}
              className="px-4 py-2"
+             disabled={isProcessing || isGeneratingPDF}
            >
              {step === 1 ? 'Annuler' : 'Retour'}
            </Button>
@@ -337,9 +376,12 @@ const QuoteSendModal = ({
            <Button
              onClick={step === 1 ? () => handleOptionSelect(sendMethod) : handleEmailSend}
              className="px-4 py-2"
-             disabled={isGeneratingPDF}
+             disabled={isProcessing || isGeneratingPDF}
            >
-             {step === 1 ? (isGeneratingPDF ? 'Génération...' : 'Confirmer') : 'Envoyer'}
+             {step === 1 
+               ? (isGeneratingPDF ? 'Génération...' : 'Confirmer') 
+               : (isProcessing ? 'Envoi en cours...' : 'Envoyer')
+             }
            </Button>
          </div>
       </div>
