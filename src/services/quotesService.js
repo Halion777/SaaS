@@ -572,9 +572,84 @@ export async function updateQuote(id, quoteData) {
     
     if (quoteError) return { error: quoteError };
     
-    // Trigger edge function to create follow-ups if status changed to 'sent'
-    if (quoteData.status === 'sent') {
-      await triggerFollowUpCreation(id, quoteData.status);
+    // Check if the quote was already in 'sent' status before triggering follow-ups
+    try {
+      // Get the current quote status from the database and client info
+      const { data: currentQuote } = await supabase
+        .from('quotes')
+        .select(`
+          status,
+          client:clients(id, name, email, phone, address, city, postal_code),
+          company_profile:company_profiles(id, company_name, logo_path, address, city, postal_code, phone, email, website, vat_number)
+        `)
+        .eq('id', id)
+        .single();
+      
+      // Only trigger follow-ups if the status is changing from non-sent to sent
+      if (quoteData.status === 'sent' && (!currentQuote || currentQuote.status !== 'sent')) {
+        console.log('Creating follow-ups for quote that was not previously sent');
+        await triggerFollowUpCreation(id, quoteData.status);
+      } else if (quoteData.status === 'sent' && currentQuote && currentQuote.status === 'sent') {
+        console.log('Skipping follow-up creation for quote that was already sent');
+        
+        // For quotes that are already in 'sent' status, send an update email
+        if (currentQuote && currentQuote.client && currentQuote.client.email) {
+          try {
+            // Get the updated quote with all necessary data
+            const { data: updatedQuote } = await supabase
+              .from('quotes')
+              .select(`
+                *,
+                client:clients(id, name, email, phone, address, city, postal_code),
+                company_profile:company_profiles(id, company_name, logo_path, address, city, postal_code, phone, email, website, vat_number)
+              `)
+              .eq('id', id)
+              .single();
+              
+            if (updatedQuote) {
+              // Send email notification about the updated quote
+              // Use the custom email data if provided, otherwise use default
+              const emailResult = await EmailService.sendQuoteSentEmail(
+                updatedQuote,
+                updatedQuote.client,
+                updatedQuote.company_profile,
+                quoteData.user_id,
+                quoteData.emailData // Use the email data passed from the quote creation page
+              );
+              
+              if (emailResult?.success) {
+                console.log('Update email sent successfully for quote:', id);
+                
+                // Update sent_at timestamp when email is sent
+                await supabase
+                  .from('quotes')
+                  .update({ sent_at: new Date().toISOString() })
+                  .eq('id', id);
+                  
+                // Log email sent event to quote_events table
+                await supabase
+                  .from('quote_events')
+                  .insert({
+                    quote_id: id,
+                    event_type: 'email_sent',
+                    event_data: {
+                      email_type: 'quote_update',
+                      recipient: updatedQuote.client.email
+                    }
+                  });
+              } else {
+                console.error('Failed to send update email for quote:', emailResult?.error);
+              }
+            }
+          } catch (emailError) {
+            console.error('Error sending update email for quote:', emailError);
+            // Don't fail the quote update if email fails
+          }
+        }
+      }
+    } catch (statusError) {
+      console.error('Error checking quote status:', statusError);
+      // If there's an error, don't create follow-ups to be safe
     }
     
     // Follow-ups are now created by edge functions, not database triggers
@@ -1051,10 +1126,39 @@ export async function listQuoteDrafts(userId, profileId = null) {
 
 /**
  * Trigger edge function to create follow-ups for a quote
+ * If follow-ups already exist, they will be replaced with new ones
  */
 async function triggerFollowUpCreation(quoteId, quoteStatus) {
   try {
     if (quoteStatus === 'sent') {
+      // Check if there are already follow-ups for this quote
+      const { data: existingFollowUps } = await supabase
+        .from('quote_follow_ups')
+        .select('id, status')
+        .eq('quote_id', quoteId)
+        .in('status', ['pending', 'scheduled'])
+        .order('created_at', { ascending: false });
+      
+      if (existingFollowUps && existingFollowUps.length > 0) {
+        console.log(`Found ${existingFollowUps.length} existing follow-ups for quote ${quoteId}, replacing with new follow-ups`);
+        
+        // First, mark all existing follow-ups as stopped
+        for (const followUp of existingFollowUps) {
+          await supabase
+            .from('quote_follow_ups')
+            .update({
+              status: 'stopped',
+              updated_at: new Date().toISOString(),
+              meta: {
+                stopped_reason: 'replaced_with_new_followup',
+                stopped_at: new Date().toISOString(),
+                reason: 'quote_status_change_to_sent'
+              }
+            })
+            .eq('id', followUp.id);
+        }
+      }
+      
       // Call followups-scheduler to create initial follow-up
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/followups-scheduler`, {
         method: 'POST',
@@ -1065,14 +1169,87 @@ async function triggerFollowUpCreation(quoteId, quoteStatus) {
         body: JSON.stringify({
           action: 'create_followup_for_quote',
           quote_id: quoteId,
-          status: quoteStatus
+          status: quoteStatus,
+          replace_existing: true
         })
       });
       
-     
+      console.log('Created new follow-up for sent quote');
     }
   } catch (error) {
     console.warn('Error triggering follow-up creation:', error);
     // Don't fail quote creation if follow-up trigger fails
   }
 }
+
+/**
+ * Handle follow-ups when a quote status becomes "viewed"
+ * This is called when a client views a quote from an email link
+ * If follow-ups already exist, they will be replaced with new ones
+ */
+export async function handleQuoteViewedFollowUps(quoteId) {
+  try {
+    // Check if there are already follow-ups for this quote
+    const { data: existingFollowUps } = await supabase
+      .from('quote_follow_ups')
+      .select('id, status')
+      .eq('quote_id', quoteId)
+      .in('status', ['pending', 'scheduled'])
+      .order('created_at', { ascending: false });
+    
+    if (existingFollowUps && existingFollowUps.length > 0) {
+      console.log(`Found ${existingFollowUps.length} existing follow-ups for quote ${quoteId}, replacing with new follow-ups`);
+      
+      // First, mark all existing follow-ups as stopped
+      for (const followUp of existingFollowUps) {
+        await supabase
+          .from('quote_follow_ups')
+          .update({
+            status: 'stopped',
+            updated_at: new Date().toISOString(),
+            meta: {
+              stopped_reason: 'replaced_with_new_followup',
+              stopped_at: new Date().toISOString(),
+              reason: 'quote_viewed_status_change'
+            }
+          })
+          .eq('id', followUp.id);
+      }
+      
+      // Call the edge function to create a new follow-up for the viewed quote
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/followups-scheduler`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({
+          action: 'mark_quote_viewed',
+          quote_id: quoteId,
+          replace_existing: true
+        })
+      });
+      
+      return { success: true, message: 'Replaced existing follow-ups with new ones' };
+    }
+    
+    // If no existing follow-ups, let the normal flow create a new one
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/followups-scheduler`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify({
+        action: 'mark_quote_viewed',
+        quote_id: quoteId
+      })
+    });
+    
+    return { success: true, message: 'Created new follow-up for viewed quote' };
+  } catch (error) {
+    console.warn('Error handling follow-ups for viewed quote:', error);
+    return { success: false, error: error.message };
+  }
+}
+

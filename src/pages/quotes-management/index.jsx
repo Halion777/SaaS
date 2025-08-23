@@ -11,6 +11,7 @@ import BulkActionsToolbar from './components/BulkActionsToolbar';
 import { useAuth } from '../../context/AuthContext';
 import { useMultiUser } from '../../context/MultiUserContext';
 import { fetchQuotes, getQuoteStatistics, updateQuoteStatus, deleteQuote, fetchQuoteById, loadQuoteDraft, deleteQuoteDraftById, listQuoteDrafts } from '../../services/quotesService';
+import { supabase } from '../../services/supabaseClient';
 import { 
   listScheduledFollowUps, 
   createFollowUpForQuote, 
