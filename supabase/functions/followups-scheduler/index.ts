@@ -259,7 +259,9 @@ serve(async (req) => {
       };
         
         // Create delayed follow-up for viewed quote (1 hour delay)
+        console.log(`Creating delayed follow-up for viewed quote ${quote.quote_number}`);
         await createDelayedViewFollowUp(admin, quote);
+        console.log(`Delayed follow-up created for quote ${quote.quote_number}`);
         
         // Log the status change event
         await admin
@@ -423,7 +425,12 @@ serve(async (req) => {
     await cleanupAcceptedRejectedQuotes(admin)
 
     // ========================================
-    // 5. PROGRESS FOLLOW-UP STAGES
+    // 5. PROCESS SCHEDULED FOLLOW-UPS FOR DISPATCH
+    // ========================================
+    await processScheduledFollowUps(admin);
+
+    // ========================================
+    // 6. PROGRESS FOLLOW-UP STAGES
     // ========================================
     await progressFollowUpStages(admin, globalRules)
 
@@ -596,37 +603,26 @@ async function createIntelligentFollowUp(admin: any, quote: any, rules: any) {
       .eq('is_active', true)
       .maybeSingle();
     
-    let subject, html, text;
-    
     if (templateError || !template) {
-      // Fallback to hardcoded templates if database template not found
-      console.warn(`Template ${templateType} not found, using fallback`);
-      if (quote.status === 'viewed') {
-        subject = `Devis ${quote.quote_number} - Avez-vous des questions ?`;
-        text = `Bonjour ${client.name || 'Madame, Monsieur'},\n\nNous espérons que notre devis ${quote.quote_number} pour votre projet "${quote.title}" vous a intéressé.\n\nAvez-vous des questions ou souhaitez-vous discuter de ce projet ?\n\nCordialement,\nVotre équipe`;
-        html = `<p>Bonjour ${client.name || 'Madame, Monsieur'},</p><p>Nous espérons que notre <strong>devis ${quote.quote_number}</strong> pour votre projet <strong>"${quote.title}"</strong> vous a intéressé.</p><p>Avez-vous des questions ou souhaitez-vous discuter de ce projet ?</p><p>Cordialement,<br><strong>Votre équipe</strong></p>`;
-      } else {
-        subject = `Devis ${quote.quote_number} - Avez-vous reçu notre proposition ?`;
-        text = `Bonjour ${client.name || 'Madame, Monsieur'},\n\nNous avons envoyé notre devis ${quote.quote_number} pour votre projet "${quote.title}".\n\nAvez-vous bien reçu notre proposition ?\n\nCordialement,\nVotre équipe`;
-        html = `<p>Bonjour ${client.name || 'Madame, Monsieur'},</p><p>Nous avons envoyé notre <strong>devis ${quote.quote_number}</strong> pour votre projet <strong>"${quote.title}"</strong>.</p><p>Avez-vous bien reçu notre proposition ?</p><p>Cordialement,<br><strong>Votre équipe</strong></p>`;
-      }
-    } else {
-      // Use database template with variable replacement
-      subject = template.subject
-        .replace('{quote_number}', quote.quote_number)
-        .replace('{client_name}', client.name || 'Madame, Monsieur')
-        .replace('{quote_title}', quote.title || 'votre projet');
-      
-      text = template.text_content
-        .replace('{quote_number}', quote.quote_number)
-        .replace('{client_name}', client.name || 'Madame, Monsieur')
-        .replace('{quote_title}', quote.title || 'votre projet');
-      
-      html = template.html_content
-        .replace('{quote_number}', quote.quote_number)
-        .replace('{client_name}', client.name || 'Madame, Monsieur')
-        .replace('{quote_title}', quote.title || 'votre projet');
+      console.error(`Template ${templateType} not found or error:`, templateError);
+      return; // Skip this follow-up if template not found
     }
+    
+    // Always use database template with variable replacement
+    const subject = template.subject
+      .replace('{quote_number}', quote.quote_number)
+      .replace('{client_name}', client.name || 'Madame, Monsieur')
+      .replace('{quote_title}', quote.title || 'votre projet');
+    
+    const text = template.text_content
+      .replace('{quote_number}', quote.quote_number)
+      .replace('{client_name}', client.name || 'Madame, Monsieur')
+      .replace('{quote_title}', quote.title || 'votre projet');
+    
+    const html = template.html_content
+      .replace('{quote_number}', quote.quote_number)
+      .replace('{client_name}', client.name || 'Madame, Monsieur')
+      .replace('{quote_title}', quote.title || 'votre projet');
     
     // Create the follow-up record
     const { error: followUpError } = await admin
@@ -756,30 +752,26 @@ async function createDelayedViewFollowUp(admin: any, quote: any) {
       .eq('is_active', true)
       .maybeSingle();
     
-    let subject, html, text;
-    
     if (templateError || !template) {
-      // Fallback template for viewed no action follow-up
-      subject = `Devis ${quote.quote_number} - Avez-vous des questions ?`;
-      text = `Bonjour ${client.name || 'Madame, Monsieur'},\n\nNous espérons que notre devis ${quote.quote_number} pour votre projet "${quote.title}" vous a intéressé.\n\nAvez-vous des questions ou souhaitez-vous discuter de ce projet ?\n\nCordialement,\nVotre équipe`;
-      html = `<p>Bonjour ${client.name || 'Madame, Monsieur'},</p><p>Nous espérons que notre <strong>devis ${quote.quote_number}</strong> pour votre projet <strong>"${quote.title}"</strong> vous a intéressé.</p><p>Avez-vous des questions ou souhaitez-vous discuter de ce projet ?</p><p>Cordialement,<br><strong>Votre équipe</strong></p>`;
-    } else {
-      // Use database template with variable replacement
-      subject = template.subject
-        .replace('{quote_number}', quote.quote_number)
-        .replace('{client_name}', client.name || 'Madame, Monsieur')
-        .replace('{quote_title}', quote.title || 'votre projet');
-      
-      text = template.text_content
-        .replace('{quote_number}', quote.quote_number)
-        .replace('{client_name}', client.name || 'Madame, Monsieur')
-        .replace('{quote_title}', quote.title || 'votre projet');
-      
-      html = template.html_content
-        .replace('{quote_number}', quote.quote_number)
-        .replace('{client_name}', client.name || 'Madame, Monsieur')
-        .replace('{quote_title}', quote.title || 'votre projet');
+      console.error(`Template followup_viewed_no_action not found or error:`, templateError);
+      return; // Skip this follow-up if template not found
     }
+    
+    // Always use database template with variable replacement
+    const subject = template.subject
+      .replace('{quote_number}', quote.quote_number)
+      .replace('{client_name}', client.name || 'Madame, Monsieur')
+      .replace('{quote_title}', quote.title || 'votre projet');
+    
+    const text = template.text_content
+      .replace('{quote_number}', quote.quote_number)
+      .replace('{client_name}', client.name || 'Madame, Monsieur')
+      .replace('{quote_title}', quote.title || 'votre projet');
+    
+    const html = template.html_content
+      .replace('{quote_number}', quote.quote_number)
+      .replace('{client_name}', client.name || 'Madame, Monsieur')
+      .replace('{quote_title}', quote.title || 'votre projet');
     
     // Create delayed follow-up for viewed quote (1 hour delay)
     const scheduledDate = new Date();
@@ -1088,30 +1080,26 @@ async function createInitialFollowUpForSentQuote(admin: any, quote: any, rules: 
       .eq('is_active', true)
       .maybeSingle();
     
-    let subject, html, text;
-    
     if (templateError || !template) {
-      // Fallback template
-      subject = `Devis ${quote.quote_number} - Avez-vous reçu notre proposition ?`;
-      text = `Bonjour ${client.name || 'Madame, Monsieur'},\n\nNous avons envoyé notre devis ${quote.quote_number} pour votre projet "${quote.title}".\n\nAvez-vous bien reçu notre proposition ?\n\nCordialement,\nVotre équipe`;
-      html = `<p>Bonjour ${client.name || 'Madame, Monsieur'},</p><p>Nous avons envoyé notre <strong>devis ${quote.quote_number}</strong> pour votre projet <strong>"${quote.title}"</strong>.</p><p>Avez-vous bien reçu notre proposition ?</p><p>Cordialement,<br><strong>Votre équipe</strong></p>`;
-    } else {
-      // Use database template with variable replacement
-      subject = template.subject
-        .replace('{quote_number}', quote.quote_number)
-        .replace('{client_name}', client.name || 'Madame, Monsieur')
-        .replace('{quote_title}', quote.title || 'votre projet');
-      
-      text = template.text_content
-        .replace('{quote_number}', quote.quote_number)
-        .replace('{client_name}', client.name || 'Madame, Monsieur')
-        .replace('{quote_title}', quote.title || 'votre projet');
-      
-      html = template.html_content
-        .replace('{quote_number}', quote.quote_number)
-        .replace('{client_name}', client.name || 'Madame, Monsieur')
-        .replace('{quote_title}', quote.title || 'votre projet');
+      console.error(`Template followup_not_viewed not found or error:`, templateError);
+      return; // Skip this follow-up if template not found
     }
+    
+    // Always use database template with variable replacement
+    const subject = template.subject
+      .replace('{quote_number}', quote.quote_number)
+      .replace('{client_name}', client.name || 'Madame, Monsieur')
+      .replace('{quote_title}', quote.title || 'votre projet');
+    
+    const text = template.text_content
+      .replace('{quote_number}', quote.quote_number)
+      .replace('{client_name}', client.name || 'Madame, Monsieur')
+      .replace('{quote_title}', quote.title || 'votre projet');
+    
+    const html = template.html_content
+      .replace('{quote_number}', quote.quote_number)
+      .replace('{client_name}', client.name || 'Madame, Monsieur')
+      .replace('{quote_title}', quote.title || 'votre projet');
     
     // Calculate scheduled time based on stage 1 delay (24 hours)
     const scheduledAt = new Date();
@@ -1160,3 +1148,136 @@ async function createInitialFollowUpForSentQuote(admin: any, quote: any, rules: 
 }
 
 // Quote expiration functions have been moved to quotesService.js
+
+/**
+ * Process scheduled follow-ups for email dispatch
+ * This function only marks follow-ups as ready for dispatch, doesn't send emails
+ */
+async function processScheduledFollowUps(admin: any) {
+  try {
+    console.log('Starting to process scheduled follow-ups for dispatch...');
+    
+    // Find all scheduled follow-ups that are ready to be dispatched
+    const { data: scheduledFollowUps, error: fuError } = await admin
+      .from('quote_follow_ups')
+      .select(`
+        id, quote_id, user_id, client_id, stage, attempts, max_attempts, status, scheduled_at,
+        template_subject, template_text, template_html, meta,
+        quotes!inner(quote_number, status, title, valid_until),
+        clients!inner(name, email)
+      `)
+      .eq('status', 'scheduled')
+      .lte('scheduled_at', new Date().toISOString())
+      .limit(100);
+    
+    if (fuError) {
+      console.error('Error finding scheduled follow-ups:', fuError);
+      return;
+    }
+    
+    console.log(`Found ${scheduledFollowUps?.length || 0} scheduled follow-ups ready for dispatch`);
+    
+    for (const followUp of scheduledFollowUps || []) {
+      const quote = followUp.quotes;
+      const client = followUp.clients;
+      
+      // Check if quote is still valid for follow-up
+      if (quote.status === 'accepted' || quote.status === 'rejected' || quote.status === 'expired') {
+        console.log(`Quote ${quote.quote_number} is ${quote.status}, stopping follow-up ${followUp.id}`);
+        await admin
+          .from('quote_follow_ups')
+          .update({
+            status: 'stopped',
+            updated_at: new Date().toISOString(),
+            meta: {
+              stopped_reason: 'quote_finalized',
+              stopped_at: new Date().toISOString(),
+              final_status: quote.status
+            }
+          })
+          .eq('id', followUp.id);
+        continue;
+      }
+      
+      // Check if quote is expired based on valid_until
+      if (quote.valid_until && new Date(quote.valid_until) < new Date()) {
+        console.log(`Quote ${quote.quote_number} is expired, stopping follow-up ${followUp.id}`);
+        await admin
+          .from('quote_follow_ups')
+          .update({
+            status: 'stopped',
+            updated_at: new Date().toISOString(),
+            meta: {
+              stopped_reason: 'quote_expired',
+              stopped_at: new Date().toISOString(),
+              valid_until: quote.valid_until
+            }
+          })
+          .eq('id', followUp.id);
+        continue;
+      }
+      
+      // Check if we've reached max attempts for this stage
+      if (followUp.attempts >= followUp.max_attempts) {
+        console.log(`Follow-up ${followUp.id} for quote ${quote.quote_number} reached max attempts, will progress to next stage`);
+        continue; // Let progressFollowUpStages handle this
+      }
+      
+      try {
+        // Queue email in email_outbox for dispatcher to process
+        const { error: emailError } = await admin
+          .from('email_outbox')
+          .insert({
+            quote_id: quote.id,
+            user_id: followUp.user_id,
+            follow_up_id: followUp.id,
+            to_email: client.email,
+            subject: followUp.template_subject || `Devis ${quote.quote_number} - Suivi`,
+            html: followUp.template_html,
+            text: followUp.template_text,
+            status: 'pending',
+            email_type: 'follow_up',
+            meta: {
+              follow_up_id: followUp.id,
+              stage: followUp.stage,
+              attempt: followUp.attempts + 1,
+              quote_number: quote.quote_number,
+              client_name: client.name
+            }
+          });
+        
+        if (emailError) {
+          console.error(`Error queuing email for follow-up ${followUp.id}:`, emailError);
+          continue;
+        }
+        
+        // Mark follow-up as ready for dispatch (dispatcher will handle sending)
+        const { error: updateError } = await admin
+          .from('quote_follow_ups')
+          .update({
+            status: 'ready_for_dispatch',
+            updated_at: new Date().toISOString(),
+            meta: {
+              ...followUp.meta,
+              queued_at: new Date().toISOString(),
+              queued_for_dispatch: true,
+              attempt_count: followUp.attempts + 1
+            }
+          })
+          .eq('id', followUp.id);
+        
+        if (updateError) {
+          console.error(`Error updating follow-up ${followUp.id} status:`, updateError);
+        } else {
+          console.log(`Queued follow-up for dispatch: quote ${quote.quote_number}, stage ${followUp.stage}, attempt ${followUp.attempts + 1}`);
+        }
+        
+      } catch (emailError) {
+        console.error(`Error processing follow-up ${followUp.id}:`, emailError);
+        continue;
+      }
+    }
+  } catch (error) {
+    console.error('Error processing scheduled follow-ups for dispatch:', error);
+  }
+}

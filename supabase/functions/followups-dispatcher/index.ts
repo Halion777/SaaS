@@ -55,7 +55,7 @@ serve(async (req) => {
         template_subject, template_html, template_text,
         meta, created_at, attempts, max_attempts, status
       `)
-      .in('status', ['pending', 'scheduled'])
+      .in('status', ['pending', 'scheduled', 'ready_for_dispatch'])
       .lte('scheduled_at', nowIso)
       .order('meta->priority', { ascending: false }) // High priority first
       .limit(100)
