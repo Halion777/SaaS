@@ -17,6 +17,7 @@ import {
 import { fetchQuotes } from '../../services/quotesService';
 import EmailService from '../../services/emailService';
 import { supabase } from '../../services/supabaseClient';
+import QuoteTrackingService from '../../services/quoteTrackingService';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -203,13 +204,28 @@ const FollowUpManagement = () => {
                nextFollowUp: nextFollowUp,
                validUntil: quote.validUntil || null,
                potentialRevenue: quote.amount,
-                         priority: (() => {
-               // Calculate priority based on client behavior and attempts
-               if (followUp.attempts >= 3) return 'high'; // Exceeded automatic limit
-               if (quote.status === 'viewed' && followUp.attempts >= 2) return 'high'; // Viewed but no action after 2 attempts
-               if (quote.status === 'sent' && followUp.attempts >= 2) return 'medium'; // Not opened after 2 attempts
-               if (followUp.attempts >= 1) return 'medium'; // At least 1 attempt
-               return 'low'; // New follow-up
+                                                 priority: (() => {
+              // Check if we've sent a follow-up recently (within 1 day)
+              const lastFollowUpDate = followUp.updated_at || followUp.created_at;
+              const oneDayAgo = new Date();
+              oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+              
+              // If follow-up was sent within the last day, set priority to low
+              if (lastFollowUpDate && new Date(lastFollowUpDate) >= oneDayAgo) {
+                return 'low';
+              }
+              
+              // Otherwise, calculate priority based on quote status
+              if (quote.status === 'sent') {
+                // Not viewed quotes get high priority
+                return 'high';
+              } else if (quote.status === 'viewed') {
+                // Viewed quotes get medium priority
+                return 'medium';
+              }
+              
+              // Fallback (should rarely happen)
+              return 'medium';
              })(),
             status: followUp.status,
             type: 'quote',
@@ -352,13 +368,28 @@ const FollowUpManagement = () => {
           nextFollowUp: nextFollowUp,
           validUntil: quote.validUntil || null,
           potentialRevenue: quote.amount,
-          priority: (() => {
-            // Calculate priority based on client behavior and attempts
-            if (followUp.attempts >= 3) return 'high'; // Exceeded automatic limit
-            if (quote.status === 'viewed' && followUp.attempts >= 2) return 'high'; // Viewed but no action after 2 attempts
-            if (quote.status === 'sent' && followUp.attempts >= 2) return 'medium'; // Not opened after 2 attempts
-            if (followUp.attempts >= 1) return 'medium'; // At least 1 attempt
-            return 'low'; // New follow-up
+                                  priority: (() => {
+              // Check if we've sent a follow-up recently (within 1 day)
+              const lastFollowUpDate = followUp.updated_at || followUp.created_at;
+              const oneDayAgo = new Date();
+              oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+              
+              // If follow-up was sent within the last day, set priority to low
+              if (lastFollowUpDate && new Date(lastFollowUpDate) >= oneDayAgo) {
+                return 'low';
+              }
+              
+              // Otherwise, calculate priority based on quote status
+              if (quote.status === 'sent') {
+                // Not viewed quotes get high priority
+                return 'high';
+              } else if (quote.status === 'viewed') {
+                // Viewed quotes get medium priority
+                return 'medium';
+              }
+              
+              // Fallback (should rarely happen)
+              return 'medium';
           })(),
           status: followUp.status,
           type: 'quote',

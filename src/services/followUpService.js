@@ -367,12 +367,16 @@ export async function triggerAutomatedRelanceForQuote(quote) {
 function getRelanceConfig(trackingData) {
   const now = new Date();
   
+  // Check if there was a recent follow-up (within 1 day)
+  const hasRecentFollowUp = trackingData.lastFollowUpDate && 
+    (new Date().getTime() - new Date(trackingData.lastFollowUpDate).getTime() < 24 * 60 * 60 * 1000);
+  
   switch (trackingData.relanceStatus) {
     case 'not_viewed':
       return {
         type: 'email_not_opened',
         reason: 'Client has not opened the quote email',
-        priority: 'high',
+        priority: hasRecentFollowUp ? 'low' : 'high',
         scheduledFor: now, // Send immediately
         template: 'not_viewed'
       };
@@ -381,7 +385,7 @@ function getRelanceConfig(trackingData) {
       return {
         type: 'viewed_no_action',
         reason: 'Client viewed quote but took no action',
-        priority: 'medium',
+        priority: hasRecentFollowUp ? 'low' : 'medium',
         scheduledFor: now, // Send immediately
         template: 'viewed_no_action'
       };

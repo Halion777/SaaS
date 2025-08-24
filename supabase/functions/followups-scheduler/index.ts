@@ -27,7 +27,7 @@ serve(async (req) => {
     
     if (action === 'create_followup_for_quote' && quote_id && status === 'sent') {
       // Frontend request to create follow-up for specific quote
-      console.log(`Frontend requested follow-up creation for quote ${quote_id}`);
+      // Process follow-up creation for quote
       
       // Get the quote details
       const { data: quote, error: quoteError } = await admin
@@ -71,7 +71,7 @@ serve(async (req) => {
 
     if (action === 'sync_quote_status' && quote_id) {
       // Frontend request to sync quote status with backend
-      console.log(`Frontend requested status sync for quote ${quote_id}`);
+      // Process status sync for quote
       
       // Get the quote details
       const { data: quote, error: quoteError } = await admin
@@ -133,7 +133,7 @@ serve(async (req) => {
 
     if (action === 'cleanup_finalized_quote' && quote_id) {
       // Frontend request to cleanup follow-ups when quote is accepted/rejected
-      console.log(`Frontend requested follow-up cleanup for finalized quote ${quote_id}`);
+      // Process follow-up cleanup for finalized quote
       
       // Get the quote details
       const { data: quote, error: quoteError } = await admin
@@ -159,12 +159,12 @@ serve(async (req) => {
         .update({ 
           status: 'stopped', 
           updated_at: new Date().toISOString(),
-          meta: admin.sql`COALESCE(meta, '{}'::jsonb) || ${JSON.stringify({
+          meta: {
             stopped_reason: 'quote_finalized',
             stopped_at: new Date().toISOString(),
             final_status: quote.status,
             cleanup_triggered_by: 'frontend_request'
-          })}`
+          }
         })
         .eq('quote_id', quote_id)
         .in('status', ['pending', 'scheduled']);
@@ -193,7 +193,7 @@ serve(async (req) => {
           }
         });
       
-      console.log(`Successfully stopped all follow-ups for ${quote.status} quote ${quote.quote_number}`);
+      // Stopped all follow-ups for quote
       
       return new Response(JSON.stringify({ 
         ok: true, 
@@ -206,7 +206,7 @@ serve(async (req) => {
 
     if (action === 'mark_quote_viewed' && quote_id) {
       // Frontend request to mark quote as viewed
-      console.log(`Frontend requested to mark quote ${quote_id} as viewed`);
+      // Process marking quote as viewed
       
       // Get the quote details
       const { data: quote, error: quoteError } = await admin
@@ -244,7 +244,7 @@ serve(async (req) => {
           });
         }
         
-        console.log(`Successfully updated quote ${quote.quote_number} status from 'sent' to 'viewed'`);
+        // Updated quote status from 'sent' to 'viewed'
         
         // Use hardcoded default rules for follow-up creation
         const globalRules = {
@@ -299,9 +299,22 @@ serve(async (req) => {
       }
     }
 
+    if (action === 'process_expirations' && body.user_id) {
+      // Frontend request to process expirations during data loading
+      // This functionality has been moved to the quotesService.js file
+      const userId = body.user_id;
+      
+      return new Response(JSON.stringify({ 
+        ok: true, 
+        message: `Expiration processing moved to quotesService.js`,
+        timestamp: new Date().toISOString()
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
+    }
+    
     if (action === 'test_expiration' && quote_id) {
       // Test action to manually trigger expiration for a specific quote
-      console.log(`Testing expiration for quote ${quote_id}`);
+      // This functionality has been moved to the quotesService.js file
+      // Here we just set the quote's valid_until to yesterday
       
       const { data: quote, error: quoteError } = await admin
         .from('quotes')
@@ -337,33 +350,20 @@ serve(async (req) => {
         });
       }
 
-      // Now process expirations
-      await processQuoteExpirations(admin);
-
-      // Get updated quote status
-      const { data: updatedQuote } = await admin
-        .from('quotes')
-        .select('status')
-        .eq('id', quote_id)
-        .single();
+      // Note: The actual expiration processing should now be done by calling 
+      // checkAndUpdateQuoteExpiration() from quotesService.js
 
       return new Response(JSON.stringify({ 
         ok: true, 
-        message: `Expiration test completed`,
+        message: `Quote valid_until set to yesterday. Call quotesService.checkAndUpdateQuoteExpiration() to complete the test`,
         quote_id: quote.id,
         previous_status: quote.status,
-        current_status: updatedQuote?.status || 'unknown',
         valid_until_updated: yesterday.toISOString()
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
     }
 
     // ========================================
-    // 1. PROCESS QUOTE EXPIRATIONS FIRST
-    // ========================================
-    await processQuoteExpirations(admin);
-
-    // ========================================
-    // 2. PROCESS QUOTES THAT NEED FOLLOW-UP
+    // 1. PROCESS QUOTES THAT NEED FOLLOW-UP
     // ========================================
     // Use hardcoded default rules (no database table needed)
     const globalRules = {
@@ -521,9 +521,26 @@ async function createIntelligentFollowUp(admin: any, quote: any, rules: any) {
     }
     
     if (existingFollowUp) {
-      console.log(`Follow-up already exists for quote ${quote.quote_number} at stage ${existingFollowUp.stage}`);
+      // Follow-up already exists for this quote
       return;
     }
+    
+    // Check for recent follow-ups (sent within the last day)
+    const oneDayAgo = new Date();
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+    
+    const { data: recentFollowUps, error: recentError } = await admin
+      .from('quote_follow_ups')
+      .select('id, created_at, status')
+      .eq('quote_id', quote.id)
+      .eq('status', 'sent')
+      .gte('created_at', oneDayAgo.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+      
+    // Variable to track if we've sent a follow-up recently
+    const hasRecentFollowUp = !recentError && recentFollowUps !== null;
     
     // Determine follow-up type and stage based on quote status
     let followUpType = 'general';
@@ -531,6 +548,11 @@ async function createIntelligentFollowUp(admin: any, quote: any, rules: any) {
     let templateType = 'followup_viewed_no_action'; // Default template
     let scheduledAt = new Date().toISOString(); // Default to immediate
     let priority = 'medium';
+    
+    if (hasRecentFollowUp) {
+      // If we've sent a follow-up in the last day, set priority to low
+      priority = 'low';
+    }
     
     if (quote.status === 'viewed') {
       // Client viewed - follow-up after 1 hour
@@ -543,7 +565,10 @@ async function createIntelligentFollowUp(admin: any, quote: any, rules: any) {
       scheduledDate.setHours(scheduledDate.getHours() + 1); // 1 hour delay
       scheduledAt = scheduledDate.toISOString();
       
-      priority = 'high'; // High priority for viewed quotes
+      // Medium priority for viewed quotes, unless we've sent a follow-up recently
+      if (!hasRecentFollowUp) {
+        priority = 'medium';
+      }
     } else if (quote.status === 'sent') {
       // Client hasn't opened/viewed the quote
       followUpType = 'email_not_opened';
@@ -556,7 +581,11 @@ async function createIntelligentFollowUp(admin: any, quote: any, rules: any) {
         scheduledDate.setDate(scheduledDate.getDate() + 1); // 1 day delay (hardcoded)
         scheduledAt = scheduledDate.toISOString();
       }
-      priority = 'high'; // High priority for unopened emails
+      
+      // High priority for unopened emails, unless we've sent a follow-up recently
+      if (!hasRecentFollowUp) {
+        priority = 'high';
+      }
     }
     
     // Get template from email_templates
@@ -632,7 +661,7 @@ async function createIntelligentFollowUp(admin: any, quote: any, rules: any) {
     if (followUpError) {
       console.error('Error creating intelligent follow-up:', followUpError);
     } else {
-      console.log(`Created intelligent follow-up for quote ${quote.quote_number}, stage: ${stage}, type: ${followUpType}, scheduled: ${scheduledAt}, priority: ${priority}, delay: ${quote.status === 'viewed' ? '1 hour' : '1 day'}`);
+      // Created intelligent follow-up for quote
     }
   } catch (error) {
     console.error('Error creating intelligent follow-up:', error);
@@ -674,7 +703,7 @@ async function processQuoteStatusUpdates(admin: any, rules: any) {
         continue;
       }
       
-      console.log(`Updated quote ${quote.quote_number} status from 'sent' to 'viewed'`);
+      // Updated quote status from 'sent' to 'viewed'
       
       // Create delayed follow-up for viewed quote (1 hour delay)
       await createDelayedViewFollowUp(admin, quote);
@@ -715,7 +744,7 @@ async function createDelayedViewFollowUp(admin: any, quote: any) {
     }
     
     if (existingFollowUp && existingFollowUp.length > 0) {
-      console.log(`Instant follow-up already exists for viewed quote ${quote.quote_number}`);
+      // Instant follow-up already exists for viewed quote
       return;
     }
     
@@ -788,7 +817,7 @@ async function createDelayedViewFollowUp(admin: any, quote: any) {
     if (followUpError) {
       console.error('Error creating instant view follow-up:', followUpError);
     } else {
-      console.log(`Created viewed no action follow-up for quote ${quote.quote_number}, scheduled for ${scheduledDate.toISOString()} (1 hour delay)`);
+      // Created viewed no action follow-up for quote
     }
   } catch (error) {
     console.error('Error creating instant view follow-up:', error);
@@ -866,11 +895,11 @@ async function progressFollowUpStages(admin: any, rules: any) {
           .update({
             status: 'stopped',
             updated_at: new Date().toISOString(),
-            meta: admin.sql`COALESCE(meta, '{}'::jsonb) || ${JSON.stringify({
+            meta: {
               stopped_reason: 'quote_finalized',
               stopped_at: new Date().toISOString(),
               final_status: quote.status
-            })}`
+            }
           })
           .eq('id', followUp.id);
         continue;
@@ -884,11 +913,11 @@ async function progressFollowUpStages(admin: any, rules: any) {
           .update({
             status: 'stopped',
             updated_at: new Date().toISOString(),
-            meta: admin.sql`COALESCE(meta, '{}'::jsonb) || ${JSON.stringify({
+            meta: {
               stopped_reason: 'quote_expired',
               stopped_at: new Date().toISOString(),
               valid_until: quote.valid_until
-            })}`
+            }
           })
           .eq('id', followUp.id);
         continue;
@@ -925,12 +954,12 @@ async function progressFollowUpStages(admin: any, rules: any) {
               .update({
                 status: 'stopped',
                 updated_at: new Date().toISOString(),
-                meta: admin.sql`COALESCE(meta, '{}'::jsonb) || ${JSON.stringify({
+                meta: {
                   stopped_reason: 'would_expire_before_next_stage',
                   stopped_at: new Date().toISOString(),
                   valid_until: quote.valid_until,
                   next_scheduled: nextScheduledAt.toISOString()
-                })}`
+                }
               })
               .eq('id', followUp.id);
             continue;
@@ -944,13 +973,13 @@ async function progressFollowUpStages(admin: any, rules: any) {
               attempts: 0,
               scheduled_at: nextScheduledAt.toISOString(),
               updated_at: new Date().toISOString(),
-              meta: admin.sql`COALESCE(meta, '{}'::jsonb) || ${JSON.stringify({
+              meta: {
                 stage_progressed: true,
                 previous_stage: followUp.stage,
                 new_stage: nextStage,
                 delay_days: delayDays,
                 progressed_at: new Date().toISOString()
-              })}`
+              }
             })
             .eq('id', followUp.id);
           
@@ -966,11 +995,11 @@ async function progressFollowUpStages(admin: any, rules: any) {
             .update({
               status: 'completed',
               updated_at: new Date().toISOString(),
-              meta: admin.sql`COALESCE(meta, '{}'::jsonb) || ${JSON.stringify({
+              meta: {
                 completed_reason: 'max_stages_reached',
                 completed_at: new Date().toISOString(),
                 final_stage: followUp.stage
-              })}`
+              }
             })
             .eq('id', followUp.id);
           
@@ -1130,89 +1159,4 @@ async function createInitialFollowUpForSentQuote(admin: any, quote: any, rules: 
   }
 }
 
-/**
- * Process quote expirations (quotes with valid_until date in the past)
- */
-async function processQuoteExpirations(admin: any) {
-  try {
-    console.log('Processing quote expirations...');
-    
-    // Find quotes that have passed their valid_until date
-    const { data: expiredQuotes, error: expError } = await admin
-      .from('quotes')
-      .select('id, quote_number, status, valid_until')
-      .lt('valid_until', new Date().toISOString())
-      .in('status', ['sent', 'viewed', 'draft']);
-
-    if (expError) {
-      console.error('Error finding expired quotes:', expError);
-      return;
-    }
-
-    console.log(`Found ${expiredQuotes?.length || 0} quotes that need expiration status update`);
-
-    for (const quote of expiredQuotes || []) {
-      try {
-        // Update quote status to 'expired' in the database
-        const { error: updateError } = await admin
-          .from('quotes')
-          .update({ 
-            status: 'expired', 
-            updated_at: new Date().toISOString() 
-          })
-          .eq('id', quote.id);
-
-        if (updateError) {
-          console.error(`Error updating quote ${quote.quote_number} status to expired:`, updateError);
-          continue;
-        }
-
-        console.log(`✅ Successfully updated quote ${quote.quote_number} status from '${quote.status}' to 'expired'`);
-
-        // Stop any pending follow-ups for this expired quote
-        const { error: followUpError } = await admin
-          .from('quote_follow_ups')
-          .update({ 
-            status: 'stopped', 
-            updated_at: new Date().toISOString() 
-          })
-          .eq('quote_id', quote.id)
-          .in('status', ['pending', 'scheduled']);
-
-        if (followUpError) {
-          console.error(`Error stopping follow-ups for expired quote ${quote.quote_number}:`, followUpError);
-        } else {
-          console.log(`Stopped follow-ups for expired quote ${quote.quote_number}`);
-        }
-
-        // Log the expiration event
-        const { error: eventError } = await admin
-          .from('quote_events')
-          .insert({
-            quote_id: quote.id,
-            type: 'quote_expired',
-            meta: {
-              expired_at: new Date().toISOString(),
-              valid_until: quote.valid_until,
-              previous_status: quote.status,
-              reason: 'valid_until_date_passed'
-            }
-          });
-
-        if (eventError) {
-          console.error(`Error logging expiration event for quote ${quote.quote_number}:`, eventError);
-        }
-
-      } catch (quoteError) {
-        console.error(`Error processing expiration for quote ${quote.quote_number}:`, quoteError);
-        continue;
-      }
-    }
-
-    console.log('Quote expiration processing completed');
-  } catch (error) {
-    console.error('Error processing quote expirations:', error);
-  }
-}
-
-
+// Quote expiration functions have been moved to quotesService.js

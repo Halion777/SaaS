@@ -10,7 +10,17 @@ import BulkActionsToolbar from './components/BulkActionsToolbar';
 // Analyse IA removed
 import { useAuth } from '../../context/AuthContext';
 import { useMultiUser } from '../../context/MultiUserContext';
-import { fetchQuotes, getQuoteStatistics, updateQuoteStatus, deleteQuote, fetchQuoteById, loadQuoteDraft, deleteQuoteDraftById, listQuoteDrafts } from '../../services/quotesService';
+import { 
+  fetchQuotes, 
+  getQuoteStatistics, 
+  updateQuoteStatus, 
+  deleteQuote, 
+  fetchQuoteById, 
+  loadQuoteDraft, 
+  deleteQuoteDraftById, 
+  listQuoteDrafts,
+  processQuoteExpirations 
+} from '../../services/quotesService';
 import { supabase } from '../../services/supabaseClient';
 import { 
   listScheduledFollowUps, 
@@ -188,7 +198,21 @@ const QuotesManagement = () => {
         setLoading(true);
         setError(null);
         
-        // Fetch quotes
+        // Process quote expirations using the service function
+        try {
+          const { success, data, error } = await processQuoteExpirations(user.id);
+          
+          if (!success || error) {
+            console.warn('Expiration check failed during data loading:', error);
+          } else if (data && data.expired > 0) {
+            console.log(`Processed ${data.processed} quotes, marked ${data.expired} as expired`);
+          }
+        } catch (expError) {
+          console.warn('Error checking expirations during data loading:', expError);
+          // Continue with fetch even if expiration check fails
+        }
+        
+        // Fetch quotes (after expiration check)
         const { data: quotesData, error: quotesError } = await fetchQuotes(user.id);
         
         // If none in quotes yet, try showing a draft placeholder
@@ -1031,12 +1055,32 @@ const QuotesManagement = () => {
     return statusMap[status] || status;
   };
 
-  // Expiration logic is now handled by edge functions
-  // No need to calculate on frontend
+  // Check if a quote is expired based on its valid_until date
   const isQuoteExpired = (expiresAt) => {
-    // This function is kept for backward compatibility but should not be used
-    // Expiration is now handled by the followups-scheduler edge function
-    return false;
+    if (!expiresAt) return false;
+    
+    // Parse the valid_until date - handle both date-only and full ISO formats
+    let validUntilDate;
+    if (typeof expiresAt === 'string') {
+      if (expiresAt.includes('T')) {
+        // Full ISO date
+        validUntilDate = new Date(expiresAt);
+      } else {
+        // Date-only format (YYYY-MM-DD)
+        const [year, month, day] = expiresAt.split('-').map(Number);
+        validUntilDate = new Date(year, month - 1, day); // Month is 0-based in JS
+      }
+    } else if (expiresAt instanceof Date) {
+      validUntilDate = expiresAt;
+    } else {
+      return false;
+    }
+    
+    // Compare with current date (ignoring time for date-only values)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return validUntilDate < today;
   };
 
   const getQuotePriority = (quote) => {

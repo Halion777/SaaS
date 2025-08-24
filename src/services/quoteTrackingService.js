@@ -41,9 +41,27 @@ class QuoteTrackingService {
         console.error('Error getting quote events:', eventsError);
         return { success: false, error: eventsError.message };
       }
+      
+      // Get the most recent follow-up
+      const { data: followUps, error: followUpsError } = await supabase
+        .from('quote_follow_ups')
+        .select('created_at, status')
+        .eq('quote_id', quoteId)
+        .eq('status', 'sent')
+        .order('created_at', { ascending: false })
+        .limit(1);
+        
+      // Track the last follow-up date if available
+      let lastFollowUpDate = null;
+      if (!followUpsError && followUps && followUps.length > 0) {
+        lastFollowUpDate = followUps[0].created_at;
+      }
 
       // Analyze tracking data for relance decisions
       const trackingData = this.analyzeTrackingData(quote, accessLogs, events);
+      
+      // Add the last follow-up date to tracking data
+      trackingData.lastFollowUpDate = lastFollowUpDate;
 
       return {
         success: true,
@@ -213,17 +231,15 @@ class QuoteTrackingService {
    */
   static async logRelanceAction(quoteId, relanceType, relanceMethod, notes = null) {
     try {
+      // Create a combined action string since there's no meta column
+      const actionString = `relance_${relanceType}_${relanceMethod}`;
+      
       const { error } = await supabase
         .from('quote_access_logs')
         .insert({
           quote_id: quoteId,
-          action: 'relance',
-          meta: {
-            relance_type: relanceType,
-            relance_method: relanceMethod,
-            notes: notes,
-            timestamp: new Date().toISOString()
-          },
+          action: actionString,
+          share_token: notes ? notes.substring(0, 100) : null, // Use share_token to store some notes if provided
           accessed_at: new Date().toISOString()
         });
 

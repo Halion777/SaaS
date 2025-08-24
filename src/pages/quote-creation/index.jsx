@@ -1028,7 +1028,7 @@ const QuoteCreation = () => {
             return null;
           })(),
           lastSaved: savedTime,
-          
+
           // Add calculated amounts at the top level for quotes management display
           totalAmount,
           taxAmount,

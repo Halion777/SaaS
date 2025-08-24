@@ -1257,3 +1257,269 @@ export async function handleQuoteViewedFollowUps(quoteId) {
   }
 }
 
+/**
+ * Process quote expirations
+ * Checks if quotes with valid_until dates have expired and updates their status
+ * @param {string} userId - Optional user ID to process expirations for a specific user only
+ * @returns {Promise<{success, data, error}>} Result of the operation
+ */
+export async function processQuoteExpirations(userId = null) {
+  try {
+    // Build the query to get quotes that might be expired
+    let query = supabase
+      .from('quotes')
+      .select('id, quote_number, status, valid_until')
+      .in('status', ['sent', 'viewed', 'draft']);
+    
+    // If userId is provided, filter by user
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    
+    // Get quotes to check for expiration
+    const { data: allQuotes, error: allError } = await query;
+
+    if (allError) {
+      console.error('Error fetching quotes for expiration check:', allError);
+      return { success: false, error: allError };
+    }
+    
+    // Filter quotes manually to ensure correct date comparison
+    const now = new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const expiredQuotes = allQuotes?.filter(quote => {
+      if (!quote.valid_until) return false;
+      
+      // Parse the valid_until date - handle both date-only and full ISO formats
+      let validUntilDate;
+      if (quote.valid_until.includes('T')) {
+        // Full ISO date
+        validUntilDate = new Date(quote.valid_until);
+      } else {
+        // Date-only format (YYYY-MM-DD)
+        const [year, month, day] = quote.valid_until.split('-').map(Number);
+        validUntilDate = new Date(year, month - 1, day); // Month is 0-based in JS
+      }
+      
+      // Compare with current date (ignoring time for date-only values)
+      return validUntilDate < today && ['sent', 'viewed', 'draft'].includes(quote.status);
+    }) || [];
+
+    // Process each expired quote
+    const results = [];
+    for (const quote of expiredQuotes) {
+      try {
+        // Update quote status to 'expired' in the database
+        const { error: updateError } = await supabase
+          .from('quotes')
+          .update({ 
+            status: 'expired', 
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', quote.id);
+
+        if (updateError) {
+          console.error(`Error updating quote ${quote.quote_number} status to expired:`, updateError);
+          results.push({ 
+            quote_id: quote.id, 
+            quote_number: quote.quote_number, 
+            success: false, 
+            error: updateError 
+          });
+          continue;
+        }
+
+        // Stop any pending follow-ups for this expired quote
+        const { error: followUpError } = await supabase
+          .from('quote_follow_ups')
+          .update({ 
+            status: 'stopped', 
+            updated_at: new Date().toISOString(),
+            meta: {
+              stopped_reason: 'quote_expired',
+              stopped_at: new Date().toISOString(),
+              valid_until: quote.valid_until
+            }
+          })
+          .eq('quote_id', quote.id)
+          .in('status', ['pending', 'scheduled']);
+
+        // Log the expiration event - include user_id to satisfy RLS policy
+        const { error: eventError } = await supabase
+          .from('quote_events')
+          .insert({
+            quote_id: quote.id,
+            user_id: userId, // Add user_id to satisfy RLS policy
+            type: 'quote_expired',
+            meta: {
+              expired_at: new Date().toISOString(),
+              valid_until: quote.valid_until,
+              previous_status: quote.status,
+              reason: 'valid_until_date_passed'
+            }
+          });
+
+        results.push({ 
+          quote_id: quote.id, 
+          quote_number: quote.quote_number, 
+          success: true,
+          previous_status: quote.status,
+          new_status: 'expired',
+          follow_ups_stopped: !followUpError,
+          event_logged: !eventError
+        });
+      } catch (quoteError) {
+        console.error(`Error processing expiration for quote ${quote.quote_number}:`, quoteError);
+        results.push({ 
+          quote_id: quote.id, 
+          quote_number: quote.quote_number, 
+          success: false, 
+          error: quoteError.message 
+        });
+      }
+    }
+
+    return { 
+      success: true, 
+      data: { 
+        processed: expiredQuotes.length,
+        expired: results.filter(r => r.success).length,
+        results 
+      } 
+    };
+  } catch (error) {
+    console.error('Error processing quote expirations:', error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * Check if a specific quote is expired and update its status if needed
+ * @param {string} quoteId - The ID of the quote to check
+ * @param {string} userId - User ID for RLS policies
+ * @returns {Promise<{success, data, error}>} Result of the operation
+ */
+export async function checkAndUpdateQuoteExpiration(quoteId, userId) {
+  try {
+    // Get the quote details
+    const { data: quote, error: quoteError } = await supabase
+      .from('quotes')
+      .select('id, status, quote_number, valid_until')
+      .eq('id', quoteId)
+      .single();
+    
+    if (quoteError || !quote) {
+      console.error('Quote not found:', quoteError);
+      return { success: false, error: quoteError || 'Quote not found' };
+    }
+    
+    // If quote doesn't have a valid_until date or is already in a final state, return early
+    if (!quote.valid_until || !['sent', 'viewed', 'draft'].includes(quote.status)) {
+      return { 
+        success: true, 
+        data: { 
+          quote_id: quote.id,
+          quote_number: quote.quote_number,
+          status: quote.status,
+          valid_until: quote.valid_until,
+          is_expired: false,
+          reason: !quote.valid_until ? 'no_expiration_date' : 'already_in_final_state'
+        } 
+      };
+    }
+    
+    // Check if the quote is expired
+    let validUntilDate;
+    if (quote.valid_until.includes('T')) {
+      // Full ISO date
+      validUntilDate = new Date(quote.valid_until);
+    } else {
+      // Date-only format (YYYY-MM-DD)
+      const [year, month, day] = quote.valid_until.split('-').map(Number);
+      validUntilDate = new Date(year, month - 1, day); // Month is 0-based in JS
+    }
+    
+    // Compare with current date (ignoring time for date-only values)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const isExpired = validUntilDate < today;
+    
+    if (!isExpired) {
+      return { 
+        success: true, 
+        data: { 
+          quote_id: quote.id,
+          quote_number: quote.quote_number,
+          status: quote.status,
+          valid_until: quote.valid_until,
+          is_expired: false,
+          reason: 'not_yet_expired'
+        } 
+      };
+    }
+    
+    // Quote is expired, update its status
+    const { error: updateError } = await supabase
+      .from('quotes')
+      .update({ 
+        status: 'expired', 
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', quote.id);
+
+    if (updateError) {
+      console.error(`Error updating quote ${quote.quote_number} status to expired:`, updateError);
+      return { success: false, error: updateError };
+    }
+
+    // Stop any pending follow-ups for this expired quote
+    const { error: followUpError } = await supabase
+      .from('quote_follow_ups')
+      .update({ 
+        status: 'stopped', 
+        updated_at: new Date().toISOString(),
+        meta: {
+          stopped_reason: 'quote_expired',
+          stopped_at: new Date().toISOString(),
+          valid_until: quote.valid_until
+        }
+      })
+      .eq('quote_id', quote.id)
+      .in('status', ['pending', 'scheduled']);
+
+    // Log the expiration event - include user_id to satisfy RLS policy
+    const { error: eventError } = await supabase
+      .from('quote_events')
+      .insert({
+        quote_id: quote.id,
+        user_id: userId, // Add user_id to satisfy RLS policy
+        type: 'quote_expired',
+        meta: {
+          expired_at: new Date().toISOString(),
+          valid_until: quote.valid_until,
+          previous_status: quote.status,
+          reason: 'valid_until_date_passed'
+        }
+      });
+
+    return { 
+      success: true, 
+      data: { 
+        quote_id: quote.id,
+        quote_number: quote.quote_number,
+        previous_status: quote.status,
+        new_status: 'expired',
+        is_expired: true,
+        follow_ups_stopped: !followUpError,
+        event_logged: !eventError
+      } 
+    };
+  } catch (error) {
+    console.error('Error checking quote expiration:', error);
+    return { success: false, error };
+  }
+}
+
