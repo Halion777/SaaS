@@ -105,6 +105,7 @@ const QuoteCreation = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   const [showQuoteSendModal, setShowQuoteSendModal] = useState(false);
+  const [isFileUploading, setIsFileUploading] = useState(false);
 
 
 
@@ -1460,6 +1461,10 @@ const QuoteCreation = () => {
 
 
   const handleNext = () => {
+    // Prevent moving to next step if files are uploading
+    if (isFileUploading) {
+      return;
+    }
 
     if (currentStep < 4) {
 
@@ -1606,6 +1611,10 @@ const QuoteCreation = () => {
 
     setFiles(newFiles);
 
+  };
+
+  const handleFileUploadStatusChange = (isUploading) => {
+    setIsFileUploading(isUploading);
   };
 
 
@@ -4222,6 +4231,7 @@ const QuoteCreation = () => {
             isSaving={isSaving}
 
             currentProfile={currentProfile}
+            onUploadStatusChange={handleFileUploadStatusChange}
           />
 
         );
@@ -4535,6 +4545,14 @@ const QuoteCreation = () => {
                 {currentStep === 3 && (
 
                   <>
+
+                    {/* File Upload Status */}
+                    {isFileUploading && (
+                      <div className="mb-3 p-3 rounded-md bg-blue-50 border border-blue-200 flex items-center space-x-2">
+                        <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-sm text-blue-700 font-medium">Upload de fichiers en cours...</span>
+                      </div>
+                    )}
 
                     <div className="space-y-2">
 

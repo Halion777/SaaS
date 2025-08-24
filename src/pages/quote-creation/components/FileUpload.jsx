@@ -6,7 +6,7 @@ import { uploadQuoteFile, deleteQuoteFile } from '../../../services/quoteFilesSe
 import { deleteFile, uploadFile, getPublicUrl } from '../../../services/storageService';
 import { useAuth } from '../../../context/AuthContext';
 
-const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, quoteNumber, isSaving = false, currentProfile }) => {
+const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, quoteNumber, isSaving = false, currentProfile, onUploadStatusChange }) => {
 
   const { user } = useAuth();
   const [dragActive, setDragActive] = useState(false);
@@ -33,6 +33,13 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, quoteNu
       }
     }
   }, [user?.id, quoteId, quoteNumber]); // Added quoteNumber dependency
+
+  // Notify parent component when upload status changes
+  useEffect(() => {
+    if (onUploadStatusChange) {
+      onUploadStatusChange(uploadingFiles.size > 0);
+    }
+  }, [uploadingFiles.size, onUploadStatusChange]);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -484,9 +491,9 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, quoteNu
           onClick={onNext}
           iconName="ArrowRight"
           iconPosition="right"
-          disabled={isSaving}
+          disabled={isSaving || uploadingFiles.size > 0}
         >
-          Étape suivante
+          {uploadingFiles.size > 0 ? 'Upload en cours...' : 'Étape suivante'}
         </Button>
       </div>
     </div>
