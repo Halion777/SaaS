@@ -226,14 +226,14 @@ const ElectronicSignatureModal = ({ isOpen, onClose, onSign, onComplete, quoteDa
           {/* Client Comment */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              {t('quoteCreation.electronicSignatureModal.clientComment', 'Commentaire client')} ({t('common.required', 'obligatoire')})
+              {t('quoteCreation.electronicSignatureModal.clientCommentRequired', 'Commentaire client (obligatoire)')}
             </label>
             <textarea
               value={clientComment}
               onChange={(e) => setClientComment(e.target.value)}
               rows={4}
               className="w-full p-3 border border-border rounded-lg bg-input text-foreground text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-              placeholder={`Ex: ${clientName ? clientName + ' ' : ''}accepte ce devis et ses conditions...`}
+              placeholder={t('quoteCreation.electronicSignatureModal.commentPlaceholder', `Ex: ${clientName ? clientName + ' ' : ''}accepte ce devis et ses conditions...`)}
             />
           </div>
 

@@ -695,7 +695,7 @@ const QuotePreview = ({
                 <h3 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.clientHeading', 'CLIENT')}</h3>
                 <div className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
                   <p className="font-medium">{getClientDisplayName(selectedClient)}</p>
-                  <p>{selectedClient?.name || 'John Doe'}</p>
+                  <p>{selectedClient?.name}</p>
                   <p>{selectedClient?.email || 'email@client.com'}</p>
                   <p>{selectedClient?.phone || '06 12 34 56 78'}</p>
                   {/* Enhanced address display */}
