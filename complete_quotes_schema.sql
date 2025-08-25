@@ -1712,3 +1712,9 @@ END;
 $$ LANGUAGE plpgsql;
 
 
+
+-- Step 1: Drop the existing global unique constraint on quote_number
+ALTER TABLE public.quotes DROP CONSTRAINT IF EXISTS quotes_quote_number_key;
+
+-- Step 2: Add a new composite unique constraint that allows quote numbers to be unique per user
+ALTER TABLE public.quotes ADD CONSTRAINT quotes_user_quote_number_key UNIQUE (user_id, quote_number);

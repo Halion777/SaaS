@@ -58,7 +58,7 @@ const QuoteSendModal = ({
         setIsProcessing(true);
         
         // Create and show the processing overlay
-        const overlay = createProcessingOverlay('Génération en cours...', 'quote-pdf-overlay');
+        const overlay = createProcessingOverlay(t('ui.processingOverlay.generating'), 'quote-pdf-overlay');
         overlay.show();
         
         const quoteData = {
@@ -121,7 +121,7 @@ const QuoteSendModal = ({
       setIsProcessing(true);
       
       // Create and show the processing overlay
-      const overlay = createProcessingOverlay('Envoi en cours...', 'quote-email-overlay');
+      const overlay = createProcessingOverlay(t('ui.processingOverlay.sending'), 'quote-email-overlay');
       overlay.show();
       
       await onSend({ 

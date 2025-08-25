@@ -27,14 +27,29 @@
       "continue": "Continue",
       "back": "Back",
       "loading": "Loading...",
-      "startTrial": "Start Free Trial",
-      "sendMessage": "Send Message",
-      "contactUs": "Contact Us",
-      "getStarted": "Get Started",
-      "learnMore": "Learn More",
-      "viewDemo": "View Demo",
-      "choosePlan": "Choose Plan",
-      "startFreeTrial": "Free Trial – 14 Days"
+      "startTrial": "Start free trial",
+      "sendMessage": "Send message",
+      "contactUs": "Contact us",
+      "getStarted": "Get started",
+      "learnMore": "Learn more",
+      "viewDemo": "View demo",
+      "choosePlan": "Choose this plan",
+      "startFreeTrial": "Free trial – 14 days"
+    },
+    "processingOverlay": {
+      "defaultMessage": "Processing...",
+      "leaveWarning": "Processing in progress. Are you sure you want to leave this page?",
+      "generating": "Generating...",
+      "sending": "Sending...",
+      "uploading": "Uploading...",
+      "saving": "Saving...",
+      "processing": "Processing...",
+      "loading": "Loading...",
+      "creating": "Creating...",
+      "updating": "Updating...",
+      "deleting": "Deleting...",
+      "exporting": "Exporting...",
+      "importing": "Importing..."
     }
   },
   "home": {

@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * A reusable processing overlay component that prevents navigation during processing
@@ -10,13 +11,18 @@ import React, { useEffect } from 'react';
  * @param {function} props.onClose - Optional callback when the overlay is closed
  * @returns {React.ReactNode}
  */
-const ProcessingOverlay = ({ isVisible, message = "Traitement en cours...", id = "processing-overlay", onClose = null }) => {
+const ProcessingOverlay = ({ isVisible, message = null, id = "processing-overlay", onClose = null }) => {
+  const { t } = useTranslation();
+  
+  // Use provided message or fallback to default translation
+  const displayMessage = message || t('ui.processingOverlay.defaultMessage');
+  
   useEffect(() => {
     // Prevent closing the tab with a warning when overlay is visible
     const beforeUnloadListener = (event) => {
       if (isVisible) {
         event.preventDefault();
-        return event.returnValue = "Traitement en cours. Êtes-vous sûr de vouloir quitter cette page?";
+        return event.returnValue = t('ui.processingOverlay.leaveWarning');
       }
     };
     
@@ -34,7 +40,7 @@ const ProcessingOverlay = ({ isVisible, message = "Traitement en cours...", id =
         onClose();
       }
     };
-  }, [isVisible, onClose]);
+  }, [isVisible, onClose, t]);
   
   if (!isVisible) return null;
   
@@ -46,7 +52,7 @@ const ProcessingOverlay = ({ isVisible, message = "Traitement en cours...", id =
       <div className="bg-white rounded-lg p-6 shadow-xl max-w-xs w-full text-center">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-          <p className="font-medium text-gray-800">{message}</p>
+          <p className="font-medium text-gray-800">{displayMessage}</p>
         </div>
       </div>
     </div>
@@ -60,7 +66,7 @@ const ProcessingOverlay = ({ isVisible, message = "Traitement en cours...", id =
  * @param {string} id - Optional ID for the overlay
  * @returns {Object} - Object with show and hide methods
  */
-export const createProcessingOverlay = (message = "Traitement en cours...", id = "processing-overlay") => {
+export const createProcessingOverlay = (message = null, id = "processing-overlay") => {
   // Check if overlay already exists
   let overlayElement = document.getElementById(id);
   if (overlayElement) {
@@ -92,20 +98,24 @@ export const createProcessingOverlay = (message = "Traitement en cours...", id =
   contentElement.style.maxWidth = '320px';
   contentElement.style.width = '100%';
   
+  // Use provided message or fallback to default
+  const displayMessage = message || 'Processing...';
+  
   // Create spinner and message
   contentElement.innerHTML = `
     <div style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
       <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-      <p style="font-weight: 500; color: #1f2937;">${message}</p>
+      <p style="font-weight: 500; color: #1f2937;">${displayMessage}</p>
     </div>
   `;
   
   overlayElement.appendChild(contentElement);
   
   // Add beforeunload event listener
+  // Note: This function is used imperatively without React context, so we can't use translations here
   const beforeUnloadListener = (event) => {
     event.preventDefault();
-    return event.returnValue = "Traitement en cours. Êtes-vous sûr de vouloir quitter cette page?";
+    return event.returnValue = "Processing in progress. Are you sure you want to leave this page?";
   };
   
   // Return methods to show and hide the overlay

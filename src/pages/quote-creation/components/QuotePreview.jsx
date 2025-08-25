@@ -1055,7 +1055,7 @@ const QuotePreview = ({
             onClick={async () => {
               if (!isSaving) {
                 // Create and show the processing overlay
-                const overlay = createProcessingOverlay(t('quoteCreation.saving', 'Sauvegarde en cours...'), 'quote-draft-overlay');
+                const overlay = createProcessingOverlay(t('ui.processingOverlay.saving'), 'quote-draft-overlay');
                 overlay.show();
                 
                 try {

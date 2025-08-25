@@ -36,6 +36,21 @@
       "viewDemo": "Voir la démo",
       "choosePlan": "Choisir ce plan",
       "startFreeTrial": "Essai gratuit – 14 jours"
+    },
+    "processingOverlay": {
+      "defaultMessage": "Traitement en cours...",
+      "leaveWarning": "Traitement en cours. Êtes-vous sûr de vouloir quitter cette page?",
+      "generating": "Génération en cours...",
+      "sending": "Envoi en cours...",
+      "uploading": "Téléchargement en cours...",
+      "saving": "Sauvegarde en cours...",
+      "processing": "Traitement en cours...",
+      "loading": "Chargement en cours...",
+      "creating": "Création en cours...",
+      "updating": "Mise à jour en cours...",
+      "deleting": "Suppression en cours...",
+      "exporting": "Export en cours...",
+      "importing": "Import en cours..."
     }
   },
   "home": {

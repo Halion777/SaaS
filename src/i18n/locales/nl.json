@@ -33,8 +33,23 @@
       "getStarted": "Aan de slag",
       "learnMore": "Meer informatie",
       "viewDemo": "Demo bekijken",
-      "choosePlan": "Plan kiezen",
+      "choosePlan": "Kies dit plan",
       "startFreeTrial": "Gratis proefperiode – 14 dagen"
+    },
+    "processingOverlay": {
+      "defaultMessage": "Verwerken...",
+      "leaveWarning": "Verwerking in uitvoering. Weet u zeker dat u deze pagina wilt verlaten?",
+      "generating": "Genereren...",
+      "sending": "Versturen...",
+      "uploading": "Uploaden...",
+      "saving": "Opslaan...",
+      "processing": "Verwerken...",
+      "loading": "Laden...",
+      "creating": "Aanmaken...",
+      "updating": "Bijwerken...",
+      "deleting": "Verwijderen...",
+      "exporting": "Exporteren...",
+      "importing": "Importeren..."
     }
   },
   "home": {

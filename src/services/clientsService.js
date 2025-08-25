@@ -105,9 +105,7 @@ export async function createClient(clientData) {
       return { error: { message: 'User not authenticated', details: userError?.message } };
     }
 
-    console.log('Current user ID:', user.id);
-    console.log('Current user email:', user.email);
-
+    
     // Map frontend fields to database fields
     const mappedData = {
       user_id: user.id, // Add the current user's ID
@@ -128,8 +126,7 @@ export async function createClient(clientData) {
       is_active: true
     };
 
-    console.log('Attempting to create client with data:', mappedData);
-    
+  
     const { data, error } = await supabase
       .from('clients')
       .insert(mappedData)
