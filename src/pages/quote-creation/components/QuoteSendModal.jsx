@@ -37,8 +37,8 @@ const QuoteSendModal = ({
   useEffect(() => {
     if (selectedClient && step === 2) {
       const clientEmail = selectedClient.email || selectedClient.client?.email || '';
-      const defaultSubject = `Devis ${projectInfo?.description || 'Nouveau projet'} - ${companyInfo?.name || 'Votre entreprise'}`;
-      const defaultMessage = `Bonjour,\n\nVeuillez trouver ci-joint notre devis pour votre projet.\n\nCordialement,\n${companyInfo?.name || 'Votre équipe'}`;
+      const defaultSubject = `Devis ${projectInfo?.description || 'Nouveau projet'} - ${companyInfo?.name || t('quoteCreation.quoteSendModal.yourCompany')}`;
+      const defaultMessage = `Bonjour,\n\nVeuillez trouver ci-joint notre devis pour votre projet.\n\nCordialement,\n${companyInfo?.name || t('quoteCreation.quoteSendModal.yourTeam')}`;
 
       setEmailData({
         clientEmail,
@@ -47,7 +47,7 @@ const QuoteSendModal = ({
         message: defaultMessage
       });
     }
-  }, [selectedClient, step, projectInfo, companyInfo]);
+  }, [selectedClient, step, projectInfo, companyInfo, t]);
 
   const handleOptionSelect = async (method) => {
     setSendMethod(method);
@@ -173,7 +173,7 @@ const QuoteSendModal = ({
         {/* Header */}
                  <div className="flex items-center justify-between p-6 border-b border-border">
            <h2 className="text-xl font-bold text-foreground">
-             {step === 1 ? 'Partager un devis' : 'Envoyer un devis'}
+             {step === 1 ? t('quoteCreation.quoteSendModal.shareTitle') : t('quoteCreation.quoteSendModal.sendTitle')}
            </h2>
                      <button
             onClick={onClose}
@@ -191,36 +191,36 @@ const QuoteSendModal = ({
           {step === 1 ? (
             // Step 1: Choose sending method
             <div className="space-y-4">
-                             {/* Info box */}
-               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                 <div className="flex items-start">
-                   <div className="flex-shrink-0">
-                     <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                       <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                     </svg>
-                   </div>
-                   <div className="ml-3">
-                     <p className="text-sm text-blue-700">
-                       {t('quoteCreation.quoteSendModal.statusInfo', 'Une fois que vous aurez envoyé ce devis, le statut passera à "En attente".')} 
-                       {selectedClient?.name || selectedClient?.label || t('quoteCreation.quoteSendModal.client', 'Le client')} {t('quoteCreation.quoteSendModal.deadlineInfo', 'aura jusqu\'au')} {projectInfo?.deadline ? new Date(projectInfo.deadline).toLocaleDateString('fr-FR') : t('quoteCreation.quoteSendModal.defaultDeadline', '30 jours')} {t('quoteCreation.quoteSendModal.responseInfo', 'pour répondre à ce devis.')}
-                     </p>
-                   </div>
-                 </div>
-               </div>
+              {/* Info box */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-blue-700">
+                      {t('quoteCreation.quoteSendModal.statusInfo', 'Une fois que vous aurez envoyé ce devis, le statut passera à "En attente".')} 
+                      {selectedClient?.name || selectedClient?.label || t('quoteCreation.quoteSendModal.client', 'Le client')} {t('quoteCreation.quoteSendModal.deadlineInfo', 'aura jusqu\'au')} {projectInfo?.deadline ? new Date(projectInfo.deadline).toLocaleDateString('fr-FR') : t('quoteCreation.quoteSendModal.defaultDeadline', '30 jours')} {t('quoteCreation.quoteSendModal.responseInfo', 'pour répondre à ce devis.')}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-                             <div>
-                 <h3 className="text-lg font-semibold text-foreground mb-4">
-                   Comment souhaitez-vous envoyer ce devis ?
-                 </h3>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground mb-4">
+                  {t('quoteCreation.quoteSendModal.howToSend')}
+                </h3>
                 
                 <div className="space-y-3">
-                                     {/* Email option */}
-                                      <label className={`flex items-center p-4 border-2 rounded-lg transition-colors ${
+                  {/* Email option */}
+                  <label className={`flex items-center p-4 border-2 rounded-lg transition-colors ${
                     sendMethod === 'email' 
                       ? 'border-primary bg-primary/10' 
                       : 'border-border hover:border-primary/50'
                   } ${isProcessing || isGeneratingPDF ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
-                                          <input
+                    <input
                       type="radio"
                       name="sendMethod"
                       value="email"
@@ -229,136 +229,137 @@ const QuoteSendModal = ({
                       disabled={isProcessing || isGeneratingPDF}
                       className="sr-only"
                     />
-                     <div className={`relative w-5 h-5 mr-3 flex items-center justify-center rounded-full border-2 aspect-square ${
-                       sendMethod === 'email' ? 'border-primary' : 'border-border'
-                     }`}>
-                       {sendMethod === 'email' && (
-                         <div className="w-2.5 h-2.5 bg-primary rounded-full aspect-square"></div>
-                       )}
-                     </div>
-                     <div>
-                       <div className="font-medium text-foreground">
-                         Envoyer par e-mail via Haliqo
-                       </div>
-                       <div className="text-sm text-muted-foreground">
-                         Cliquez sur "Continuer" pour voir l'e-mail avant de l'envoyer
-                       </div>
-                     </div>
-                   </label>
+                    <div className={`relative w-5 h-5 mr-3 flex items-center justify-center rounded-full border-2 aspect-square ${
+                      sendMethod === 'email' ? 'border-primary' : 'border-border'
+                    }`}>
+                      {sendMethod === 'email' && (
+                        <div className="w-2.5 h-2.5 bg-primary rounded-full aspect-square"></div>
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-medium text-foreground">
+                        {t('quoteCreation.quoteSendModal.sendByEmail')}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {t('quoteCreation.quoteSendModal.sendByEmailDesc')}
+                      </div>
+                    </div>
+                  </label>
 
-                                       {/* PDF option */}
-                                       <label className={`flex items-center p-4 border-2 rounded-lg transition-colors ${
-                     sendMethod === 'pdf' 
-                       ? 'border-primary bg-primary/10' 
-                       : 'border-border hover:border-primary/50'
-                   } ${isProcessing || isGeneratingPDF ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
-                                           <input
-                       type="radio"
-                       name="sendMethod"
-                       value="pdf"
-                       checked={sendMethod === 'pdf'}
-                       onChange={() => setSendMethod('pdf')}
-                       disabled={isProcessing || isGeneratingPDF}
-                       className="sr-only"
-                     />
-                      <div className={`relative w-5 h-5 mr-3 flex items-center justify-center rounded-full border-2 aspect-square ${
-                        sendMethod === 'pdf' ? 'border-primary' : 'border-border'
-                      }`}>
-                        {sendMethod === 'pdf' && (
-                          <div className="w-2.5 h-2.5 bg-primary rounded-full aspect-square"></div>
-                        )}
+                  {/* PDF option */}
+                  <label className={`flex items-center p-4 border-2 rounded-lg transition-colors ${
+                    sendMethod === 'pdf' 
+                      ? 'border-primary bg-primary/10' 
+                      : 'border-border hover:border-primary/50'
+                  } ${isProcessing || isGeneratingPDF ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                    <input
+                      type="radio"
+                      name="sendMethod"
+                      value="pdf"
+                      checked={sendMethod === 'pdf'}
+                      onChange={() => setSendMethod('pdf')}
+                      disabled={isProcessing || isGeneratingPDF}
+                      className="sr-only"
+                    />
+                    <div className={`relative w-5 h-5 mr-3 flex items-center justify-center rounded-full border-2 aspect-square ${
+                      sendMethod === 'pdf' ? 'border-primary' : 'border-border'
+                    }`}>
+                      {sendMethod === 'pdf' && (
+                        <div className="w-2.5 h-2.5 bg-primary rounded-full aspect-square"></div>
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-medium text-foreground">
+                        {t('quoteCreation.quoteSendModal.downloadPDF')}
                       </div>
-                      <div>
-                        <div className="font-medium text-foreground">
-                          {isGeneratingPDF ? 'Génération PDF...' : 'Télécharger le devis au format PDF'}
-                        </div>
+                      <div className="text-sm text-muted-foreground">
+                        {t('quoteCreation.quoteSendModal.downloadPDFDesc')}
                       </div>
-                    </label>
+                    </div>
+                  </label>
                 </div>
               </div>
             </div>
           ) : (
             // Step 2: Email form
             <div className="space-y-4">
-              <div className="space-y-4">
-                                 {/* Client Email */}
-                 <div>
-                   <label className="block text-sm font-medium text-foreground mb-2">
-                     Adresse e-mail du client
-                   </label>
-                                   <Input
-                   type="email"
-                   value={emailData.clientEmail}
-                   onChange={(e) => setEmailData(prev => ({ ...prev, clientEmail: e.target.value }))}
-                   placeholder="email@client.com"
-                   className="w-full"
-                   disabled={isProcessing}
-                 />
-                </div>
+              {/* Client Email */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  {t('quoteCreation.quoteSendModal.recipientEmail')}
+                </label>
+                <Input
+                  type="email"
+                  value={emailData.clientEmail}
+                  onChange={(e) => setEmailData(prev => ({ ...prev, clientEmail: e.target.value }))}
+                  placeholder={t('quoteCreation.quoteSendModal.recipientEmailPlaceholder')}
+                  className="w-full"
+                  disabled={isProcessing}
+                />
+              </div>
 
-                                 {/* Send Copy Toggle */}
-                 <div className="flex items-center justify-between">
-                   <label className="text-sm font-medium text-foreground">
-                     Envoyez-moi une copie
-                   </label>
-                   <div className="flex items-center">
-                     <span className="text-sm text-muted-foreground mr-2">Non</span>
-                                       <button
-                     type="button"
-                     onClick={() => setEmailData(prev => ({ ...prev, sendCopy: !prev.sendCopy }))}
-                     disabled={isProcessing}
-                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                       emailData.sendCopy ? 'bg-green-600' : 'bg-gray-200'
-                     } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
-                   >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          emailData.sendCopy ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                                         <span className="text-sm text-muted-foreground ml-2">Oui</span>
-                  </div>
-                </div>
-
-                                 {/* Email Subject */}
-                 <div>
-                   <label className="block text-sm font-medium text-foreground mb-2">
-                     Objet de l'e-mail
-                   </label>
-                                   <Input
-                   type="text"
-                   value={emailData.subject}
-                   onChange={(e) => setEmailData(prev => ({ ...prev, subject: e.target.value }))}
-                   placeholder="Objet de l'e-mail"
-                   className="w-full"
-                   disabled={isProcessing}
-                 />
-                </div>
-
-                                 {/* Email Message */}
-                 <div>
-                   <label className="block text-sm font-medium text-foreground mb-2">
-                     Message
-                   </label>
-                                                         <textarea
-                    value={emailData.message}
-                    onChange={(e) => setEmailData(prev => ({ ...prev, message: e.target.value }))}
-                    rows={4}
-                    className={`w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    placeholder="Votre message..."
+              {/* Send Copy Toggle */}
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-foreground">
+                  {t('quoteCreation.quoteSendModal.sendCopy')}
+                </label>
+                <div className="flex items-center">
+                  <span className="text-sm text-muted-foreground mr-2">{t('quoteCreation.quoteSendModal.no')}</span>
+                  <button
+                    type="button"
+                    onClick={() => setEmailData(prev => ({ ...prev, sendCopy: !prev.sendCopy }))}
                     disabled={isProcessing}
-                  />
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      emailData.sendCopy ? 'bg-green-600' : 'bg-gray-200'
+                    } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        emailData.sendCopy ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                  <span className="text-sm text-muted-foreground ml-2">{t('quoteCreation.quoteSendModal.yes')}</span>
                 </div>
+              </div>
 
-                                 {/* Quote Info Preview */}
-                 <div className="bg-muted border border-border rounded-lg p-4">
-                   <div className="text-sm text-muted-foreground space-y-1">
-                     <p>Vous avez reçu un devis</p>
-                     <p>De la part de {companyInfo?.name || 'Votre entreprise'}</p>
-                     <p>Numéro du devis: {quoteNumber}</p>
-                   </div>
-                 </div>
+              {/* Email Subject */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  {t('quoteCreation.quoteSendModal.emailSubject')}
+                </label>
+                <Input
+                  type="text"
+                  value={emailData.subject}
+                  onChange={(e) => setEmailData(prev => ({ ...prev, subject: e.target.value }))}
+                  placeholder={t('quoteCreation.quoteSendModal.emailSubjectPlaceholder')}
+                  className="w-full"
+                  disabled={isProcessing}
+                />
+              </div>
+
+              {/* Email Message */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  {t('quoteCreation.quoteSendModal.emailMessage')}
+                </label>
+                <textarea
+                  value={emailData.message}
+                  onChange={(e) => setEmailData(prev => ({ ...prev, message: e.target.value }))}
+                  rows={4}
+                  className={`w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  placeholder={t('quoteCreation.quoteSendModal.emailMessagePlaceholder')}
+                  disabled={isProcessing}
+                />
+              </div>
+
+              {/* Quote Info Preview */}
+              <div className="bg-muted border border-border rounded-lg p-4">
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p>{t('quoteCreation.quoteSendModal.attachedQuote')}</p>
+                  <p>{t('quoteCreation.quoteSendModal.fromCompany', { companyName: companyInfo?.name || t('quoteCreation.quoteSendModal.yourCompany') })}</p>
+                  <p>{t('quoteCreation.quoteSendModal.quoteNumber', { quoteNumber })}</p>
+                </div>
               </div>
             </div>
           )}

@@ -1826,6 +1826,39 @@
     }
   },
   "leadsManagement": {
+    "filter": {
+      "title": "Filters",
+      "clear": "Wissen",
+      "hideFilters": "Filters verbergen",
+      "showFilters": "Filters tonen",
+      "resultsFound": "{{count}} leads gevonden",
+      "activeFilters": "{{count}} actieve filter(s)",
+      "price": {
+        "label": "Prijsbereik",
+        "all": "Alle prijzen"
+      },
+      "period": {
+        "label": "Periode",
+        "all": "Alle periodes",
+        "last7Days": "Laatste 7 dagen",
+        "last30Days": "Laatste 30 dagen",
+        "last90Days": "Laatste 90 dagen",
+        "custom": "Aangepaste periode"
+      },
+      "startDate": {
+        "label": "Startdatum"
+      },
+      "endDate": {
+        "label": "Einddatum"
+      },
+      "chips": {
+        "price": "Prijs: {value}",
+        "period": "Periode: {value}",
+        "startDate": "Start: {value}",
+        "endDate": "Einde: {value}",
+        "removeFilter": "{filter} filter verwijderen"
+      }
+    },
     "title": "Leadsbeheer",
     "subtitle": "Beheer uw prospects en zet ze om in klanten",
     "tabs": {
@@ -2752,6 +2785,8 @@
       "client": "Klant"
     },
     "quoteSendModal": {
+      "shareTitle": "Offerte delen",
+      "sendTitle": "Offerte verzenden",
       "sendError": "Er is een fout opgetreden bij het verzenden van de offerte. Probeer het opnieuw.",
       "statusInfo": "Zodra u deze offerte verzendt, verandert de status naar \"In behandeling\".",
       "client": "De klant",
@@ -2771,7 +2806,26 @@
       "defaultSubject": "Uw offerte {{quoteNumber}} van {{companyName}}",
       "defaultMessage": "Beste {{clientName}},\n\nHierbij ontvangt u uw offerte {{quoteNumber}}.\n\nU kunt de offerte online bekijken en accepteren via onderstaande link:\n\n{{quoteLink}}\n\nAls u vragen heeft, aarzel dan niet om contact met ons op te nemen.\n\nMet vriendelijke groet,\n{{userName}}\n{{companyName}}",
       "sentSuccess": "Offerte succesvol verzonden!",
-      "sentError": "Fout bij het verzenden van de offerte"
+      "sentError": "Fout bij het verzenden van de offerte",
+      "howToSend": "Hoe wilt u deze offerte verzenden?",
+      "sendByEmail": "Versturen per e-mail via Haliqo",
+      "sendByEmailDesc": "Klik op \"Doorgaan\" om de e-mail te bekijken voordat u deze verzendt",
+      "downloadPDF": "Offerte downloaden in PDF-formaat",
+      "downloadPDFDesc": "Download de offerte in PDF-formaat om handmatig te verzenden",
+      "sendCopy": "Stuur mij een kopie",
+      "yes": "Ja",
+      "no": "Nee",
+      "attachedQuote": "U heeft een offerte ontvangen",
+      "fromCompany": "Van {{companyName}}",
+      "quoteNumber": "Offertenummer: {{quoteNumber}}",
+      "recipientEmail": "E-mail ontvanger",
+      "recipientEmailPlaceholder": "Klant e-mail",
+      "emailSubject": "E-mail onderwerp",
+      "emailSubjectPlaceholder": "E-mail onderwerp",
+      "emailMessage": "Bericht",
+      "emailMessagePlaceholder": "Uw bericht...",
+      "yourCompany": "Uw bedrijf",
+      "yourTeam": "Uw team"
     },
     "errors": {
       "clientRequired": "Selecteer een klant",

@@ -1676,6 +1676,39 @@
     }
   },
   "leadsManagement": {
+    "filter": {
+      "title": "Filtres",
+      "clear": "Effacer",
+      "hideFilters": "Masquer les filtres",
+      "showFilters": "Afficher les filtres",
+      "resultsFound": "{{count}} leads trouvés",
+      "activeFilters": "{{count}} filtre(s) actif(s)",
+      "price": {
+        "label": "Fourchette de prix",
+        "all": "Tous les prix"
+      },
+      "period": {
+        "label": "Période",
+        "all": "Toutes les périodes",
+        "last7Days": "7 derniers jours",
+        "last30Days": "30 derniers jours",
+        "last90Days": "90 derniers jours",
+        "custom": "Période personnalisée"
+      },
+      "startDate": {
+        "label": "Date de début"
+      },
+      "endDate": {
+        "label": "Date de fin"
+      },
+      "chips": {
+        "price": "Prix: {value}",
+        "period": "Période: {value}",
+        "startDate": "Début: {value}",
+        "endDate": "Fin: {value}",
+        "removeFilter": "Supprimer le filtre {filter}"
+      }
+    },
     "title": "Gestion des Leads",
     "subtitle": "Gérez vos prospects et convertissez-les en clients",
     "tabs": {
@@ -2760,6 +2793,8 @@
       "client": "Client"
     },
     "quoteSendModal": {
+      "shareTitle": "Partager un devis",
+      "sendTitle": "Envoyer un devis",
       "sendError": "Une erreur est survenue lors de l'envoi du devis. Veuillez réessayer.",
       "statusInfo": "Une fois que vous aurez envoyé ce devis, le statut passera à \"En attente\".",
       "client": "Le client",
@@ -2779,7 +2814,26 @@
       "defaultSubject": "Votre devis {{quoteNumber}} de {{companyName}}",
       "defaultMessage": "Cher/Chère {{clientName}},\n\nVeuillez trouver ci-joint votre devis {{quoteNumber}}.\n\nVous pouvez consulter et accepter le devis en ligne en utilisant le lien ci-dessous :\n\n{{quoteLink}}\n\nSi vous avez des questions, n'hésitez pas à nous contacter.\n\nCordialement,\n{{userName}}\n{{companyName}}",
       "sentSuccess": "Devis envoyé avec succès !",
-      "sentError": "Erreur lors de l'envoi du devis"
+      "sentError": "Erreur lors de l'envoi du devis",
+      "howToSend": "Comment souhaitez-vous envoyer ce devis ?",
+      "sendByEmail": "Envoyer par e-mail via Haliqo",
+      "sendByEmailDesc": "Cliquez sur \"Continuer\" pour voir l'e-mail avant de l'envoyer",
+      "downloadPDF": "Télécharger le devis au format PDF",
+      "downloadPDFDesc": "Téléchargez le devis au format PDF pour l'envoyer manuellement",
+      "sendCopy": "Envoyez-moi une copie",
+      "yes": "Oui",
+      "no": "Non",
+      "attachedQuote": "Vous avez reçu un devis",
+      "fromCompany": "De la part de {{companyName}}",
+      "quoteNumber": "Numéro du devis: {{quoteNumber}}",
+      "recipientEmail": "Email du destinataire",
+      "recipientEmailPlaceholder": "Email du client",
+      "emailSubject": "Objet de l'e-mail",
+      "emailSubjectPlaceholder": "Objet de l'e-mail",
+      "emailMessage": "Message",
+      "emailMessagePlaceholder": "Votre message...",
+      "yourCompany": "Votre entreprise",
+      "yourTeam": "Votre équipe"
     },
   
     "errors": {

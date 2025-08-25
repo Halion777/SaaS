@@ -1843,6 +1843,39 @@
     }
   },
   "leadsManagement": {
+    "filter": {
+      "title": "Filters",
+      "clear": "Clear",
+      "hideFilters": "Hide filters",
+      "showFilters": "Show filters",
+      "resultsFound": "{{count}} leads found",
+      "activeFilters": "{{count}} active filter(s)",
+      "price": {
+        "label": "Price Range",
+        "all": "All prices"
+      },
+      "period": {
+        "label": "Period",
+        "all": "All periods",
+        "last7Days": "Last 7 days",
+        "last30Days": "Last 30 days",
+        "last90Days": "Last 90 days",
+        "custom": "Custom period"
+      },
+      "startDate": {
+        "label": "Start Date"
+      },
+      "endDate": {
+        "label": "End Date"
+      },
+      "chips": {
+        "price": "Price: {value}",
+        "period": "Period: {value}",
+        "startDate": "Start: {value}",
+        "endDate": "End: {value}",
+        "removeFilter": "Remove {filter} filter"
+      }
+    },
     "title": "Leads Management",
     "subtitle": "Manage your prospects and convert them into clients",
     "tabs": {
@@ -2716,6 +2749,8 @@
     },
     
     "quoteSendModal": {
+      "shareTitle": "Share a Quote",
+      "sendTitle": "Send a Quote",
       "sendError": "An error occurred while sending the quote. Please try again.",
       "statusInfo": "Once you send this quote, the status will change to \"Pending\".",
       "client": "The client",
@@ -2735,7 +2770,26 @@
       "defaultSubject": "Your quote {{quoteNumber}} from {{companyName}}",
       "defaultMessage": "Dear {{clientName}},\n\nPlease find attached your quote {{quoteNumber}}.\n\nYou can view and accept the quote online using the link below:\n\n{{quoteLink}}\n\nIf you have any questions, please don't hesitate to contact us.\n\nBest regards,\n{{userName}}\n{{companyName}}",
       "sentSuccess": "Quote sent successfully!",
-      "sentError": "Error sending quote"
+      "sentError": "Error sending quote",
+      "howToSend": "How do you wish to send this quote?",
+      "sendByEmail": "Send by email via Haliqo",
+      "sendByEmailDesc": "Click \"Continue\" to view the email before sending it",
+      "downloadPDF": "Download the quote in PDF format",
+      "downloadPDFDesc": "Download the quote in PDF format to send manually",
+      "sendCopy": "Send me a copy",
+      "yes": "Yes",
+      "no": "No",
+      "attachedQuote": "You have received a quote",
+      "fromCompany": "From {{companyName}}",
+      "quoteNumber": "Quote number: {{quoteNumber}}",
+      "recipientEmail": "Recipient Email",
+      "recipientEmailPlaceholder": "Client email",
+      "emailSubject": "Email Subject",
+      "emailSubjectPlaceholder": "Email subject",
+      "emailMessage": "Message",
+      "emailMessagePlaceholder": "Your message...",
+      "yourCompany": "Your company",
+      "yourTeam": "Your team"
     },
     "saving": "Saving...",
     "financialConfig": {

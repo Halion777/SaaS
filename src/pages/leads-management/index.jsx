@@ -4,6 +4,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import MainSidebar from '../../components/ui/MainSidebar';
 import TableLoader from '../../components/ui/TableLoader';
+import LeadsFilterToolbar from './components/LeadsFilterToolbar';
 import { useScrollPosition } from '../../utils/useScrollPosition';
 import { LeadManagementService } from '../../services/leadManagementService';
 import { useAuth } from '../../context/AuthContext';
@@ -23,9 +24,16 @@ const LeadsManagementPage = () => {
   
   // State for leads and settings
   const [leads, setLeads] = useState([]);
+  const [filteredLeads, setFilteredLeads] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [filters, setFilters] = useState({
+    priceRange: 'all',
+    period: 'all',
+    startDate: '',
+    endDate: ''
+  });
   const [settings, setSettings] = useState({
     receiveLeads: false,
     countriesServed: {},
@@ -172,6 +180,7 @@ const LeadsManagementPage = () => {
       const { success, data, error } = await LeadManagementService.getLeadsForArtisan(user.id);
       if (success) {
         setLeads(data || []);
+        setFilteredLeads(data || []);
       } else {
         setError(error?.message || error || 'Erreur lors du chargement des leads');
       }
@@ -186,6 +195,75 @@ const LeadsManagementPage = () => {
   const handleSettingChange = (field, value) => {
     setSettings(prev => ({ ...prev, [field]: value }));
   };
+
+  const handleFiltersChange = (newFilters) => {
+    setFilters(newFilters);
+  };
+
+  // Filter leads based on current filters
+  const filterLeads = (leadsData, currentFilters) => {
+    return leadsData.filter(lead => {
+      // Filter by price range
+      if (currentFilters.priceRange !== 'all') {
+        const priceRange = currentFilters.priceRange;
+        if (!lead.price_range) return false;
+        
+        // Extract numeric values from price range string (e.g., "€1,000 - €5,000" -> [1000, 5000])
+        const priceMatch = lead.price_range.match(/€?([0-9,]+)(?:\s*-\s*€?([0-9,]+))?/);
+        if (!priceMatch) return false;
+        
+        const minPrice = parseInt(priceMatch[1].replace(/,/g, ''));
+        const maxPrice = priceMatch[2] ? parseInt(priceMatch[2].replace(/,/g, '')) : minPrice;
+        
+        if (priceRange === '0-1000') {
+          if (minPrice > 1000) return false;
+        } else if (priceRange === '1000-5000') {
+          if (minPrice < 1000 || maxPrice > 5000) return false;
+        } else if (priceRange === '5000-10000') {
+          if (minPrice < 5000 || maxPrice > 10000) return false;
+        } else if (priceRange === '10000-25000') {
+          if (minPrice < 10000 || maxPrice > 25000) return false;
+        } else if (priceRange === '25000+') {
+          if (minPrice < 25000) return false;
+        }
+      }
+
+      // Filter by period
+      if (currentFilters.period !== 'all') {
+        const leadDate = new Date(lead.created_at);
+        const now = new Date();
+        
+        if (currentFilters.period === '7') {
+          const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+          if (leadDate < sevenDaysAgo) return false;
+        } else if (currentFilters.period === '30') {
+          const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+          if (leadDate < thirtyDaysAgo) return false;
+        } else if (currentFilters.period === '90') {
+          const ninetyDaysAgo = new Date(now.getTime() - (90 * 24 * 60 * 60 * 1000));
+          if (leadDate < ninetyDaysAgo) return false;
+        } else if (currentFilters.period === 'custom') {
+          if (currentFilters.startDate) {
+            const startDate = new Date(currentFilters.startDate);
+            if (leadDate < startDate) return false;
+          }
+          if (currentFilters.endDate) {
+            const endDate = new Date(currentFilters.endDate);
+            endDate.setHours(23, 59, 59, 999); // End of day
+            if (leadDate > endDate) return false;
+          }
+        }
+      }
+
+      return true;
+    });
+  };
+
+  // Apply filters whenever filters change
+  useEffect(() => {
+    const filtered = filterLeads(leads, filters);
+    setFilteredLeads(filtered);
+  }, [filters, leads]);
 
   const handleCategoryToggle = (category) => {
     setSettings(prev => ({
@@ -246,6 +324,13 @@ const LeadsManagementPage = () => {
     <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
       <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4">{t('leadsManagement.leadsTab.title')}</h2>
       
+      {/* Filter Toolbar */}
+      <LeadsFilterToolbar
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
+        filteredCount={filteredLeads.length}
+      />
+      
       {loading ? (
         <TableLoader message={t('leadsManagement.leadsTab.loading')} />
       ) : error ? (
@@ -261,7 +346,7 @@ const LeadsManagementPage = () => {
             {t('leadsManagement.leadsTab.retry')}
           </button>
         </div>
-      ) : leads.length === 0 ? (
+      ) : filteredLeads.length === 0 ? (
         <div className="flex items-center justify-center py-8 sm:py-12">
           <div className="text-center">
             <Icon name="Inbox" size={32} className="sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
@@ -270,8 +355,8 @@ const LeadsManagementPage = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          {leads.map((lead) => (
-            <div key={lead.lead_id} className="relative bg-gradient-to-br from-card to-card/80 border border-border rounded-xl p-6 hover:shadow-xl transition-all duration-300 hover:border-primary/30 hover:scale-[1.02] overflow-hidden">
+          {filteredLeads.map((lead) => (
+            <div key={lead.lead_id} className="relative bg-gradient-to-br from-card to-card/80 border border-border rounded-xl p-6 overflow-hidden">
               {/* Subtle background pattern */}
               <div className="absolute inset-0 opacity-5">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full -translate-y-16 translate-x-16"></div>
@@ -395,7 +480,7 @@ const LeadsManagementPage = () => {
                           <img 
                             src={image.url || image.path} 
                             alt={`Project ${index + 1}`}
-                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-200 cursor-pointer"
+                            className="w-full h-full object-cover cursor-pointer"
                             onClick={() => {
                               setSelectedImage(image);
                               setShowImageModal(true);
