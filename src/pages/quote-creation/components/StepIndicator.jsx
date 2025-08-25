@@ -1,12 +1,14 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
+import { useTranslation } from 'react-i18next';
 
 const StepIndicator = ({ currentStep, totalSteps = 4, onStepChange }) => {
+  const { t } = useTranslation();
   const steps = [
-    { id: 1, title: 'Client', icon: 'User' },
-    { id: 2, title: 'Tâches', icon: 'Calculator' },
-    { id: 3, title: 'Fichiers', icon: 'Image' },
-    { id: 4, title: 'Aperçu', icon: 'Eye' }
+    { id: 1, title: t('quoteCreation.steps.client'), icon: 'User' },
+    { id: 2, title: t('quoteCreation.steps.tasks'), icon: 'Calculator' },
+    { id: 3, title: t('quoteCreation.steps.files'), icon: 'Image' },
+    { id: 4, title: t('quoteCreation.steps.preview'), icon: 'Eye' }
   ];
 
   return (

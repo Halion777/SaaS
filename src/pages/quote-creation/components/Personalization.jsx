@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const QuoteTemplates = [
   { 
@@ -34,10 +35,11 @@ const QuoteTemplates = [
 const Personalization = ({ 
   selectedTemplate, 
   onTemplateChange, 
-  primaryColor, 
-  secondaryColor, 
+  primaryColor,
+  secondaryColor,
   onColorChange 
 }) => {
+  const { t } = useTranslation();
   const handleTemplateChange = (templateId) => {
     const template = QuoteTemplates.find(t => t.id === templateId);
     if (template) {
@@ -59,9 +61,9 @@ const Personalization = ({
     <div className="space-y-4 sm:space-y-6">
       {/* Quote Templates Section */}
       <div>
-        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Schémas de couleurs</h3>
+        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">{t('quoteCreation.personalization.colorSchemes', 'Schémas de couleurs')}</h3>
         <p className="text-sm text-muted-foreground mb-3 sm:mb-4">
-          Choisissez un schéma de couleurs pour les éléments de votre devis. Le fond restera blanc.
+          {t('quoteCreation.personalization.colorSchemesDesc', 'Choisissez un schéma de couleurs pour les éléments de votre devis. Le fond restera blanc.')}
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {QuoteTemplates.map((template) => (
@@ -86,12 +88,12 @@ const Personalization = ({
                 />
               </div>
               
-              <div className="text-center">
+                              <div className="text-center">
                 <div className="text-xs sm:text-sm font-medium text-gray-900 mb-1">
-                  {template.name}
+                  {t(`quoteCreation.personalization.templates.${template.id}.name`, template.name)}
                 </div>
                 <div className="text-xs text-gray-500">
-                  {template.description}
+                  {t(`quoteCreation.personalization.templates.${template.id}.description`, template.description)}
                 </div>
                 {selectedTemplate === template.id && (
                   <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
@@ -107,11 +109,11 @@ const Personalization = ({
       {/* Color Customization Section */}
       <div>
         <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <h3 className="text-base sm:text-lg font-semibold">Couleurs personnalisées</h3>
+          <h3 className="text-base sm:text-lg font-semibold">{t('quoteCreation.personalization.customColors', 'Couleurs personnalisées')}</h3>
           <button
             onClick={handleResetColors}
             className="p-1.5 sm:p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-            title="Reset template and colors to default"
+            title={t('quoteCreation.personalization.resetColors', 'Reset template and colors to default')}
           >
             <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -121,7 +123,7 @@ const Personalization = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-              Couleur principale
+              {t('quoteCreation.personalization.primaryColor', 'Couleur principale')}
             </label>
             <div className="flex items-center space-x-2">
               <input 
@@ -139,12 +141,12 @@ const Personalization = ({
               />
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Utilisée pour les titres et éléments principaux
+              {t('quoteCreation.personalization.primaryColorDesc', 'Utilisée pour les titres et éléments principaux')}
             </p>
           </div>
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-              Couleur secondaire
+              {t('quoteCreation.personalization.secondaryColor', 'Couleur secondaire')}
             </label>
             <div className="flex items-center space-x-2">
               <input 
@@ -162,7 +164,7 @@ const Personalization = ({
               />
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Utilisée pour les sous-titres et éléments secondaires
+              {t('quoteCreation.personalization.secondaryColorDesc', 'Utilisée pour les sous-titres et éléments secondaires')}
             </p>
           </div>
         </div>

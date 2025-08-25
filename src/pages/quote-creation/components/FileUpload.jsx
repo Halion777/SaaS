@@ -5,9 +5,10 @@ import Image from '../../../components/AppImage';
 import { uploadQuoteFile, deleteQuoteFile } from '../../../services/quoteFilesService';
 import { deleteFile, uploadFile, getPublicUrl } from '../../../services/storageService';
 import { useAuth } from '../../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, quoteNumber, isSaving = false, currentProfile, onUploadStatusChange }) => {
-
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [dragActive, setDragActive] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState(new Set());
@@ -295,7 +296,7 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, quoteNu
       <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
         <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
           <Icon name="Upload" size={20} className="sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3" />
-          Fichiers et photos
+          {t('quoteCreation.fileUpload.title')}
         </h2>
         
         <div className="space-y-4 sm:space-y-6">
@@ -328,13 +329,13 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, quoteNu
               
               <div>
                 <p className="text-base sm:text-lg font-medium text-foreground">
-                  Glissez vos fichiers ici ou cliquez pour parcourir
+                  {t('quoteCreation.fileUpload.dragAndDrop')}
                 </p>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-2">
-                  Formats acceptés: Images (JPG, PNG, GIF), PDF, Documents Word
+                  {t('quoteCreation.fileUpload.acceptedFormats', 'Formats acceptés: Images (JPG, PNG, GIF), PDF, Documents Word')}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Taille maximale: 10 MB par fichier
+                  {t('quoteCreation.fileUpload.maxSize')}
                 </p>
               </div>
               
@@ -344,7 +345,7 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, quoteNu
                 iconName="FolderOpen"
                 iconPosition="left"
               >
-                Parcourir les fichiers
+                {t('quoteCreation.fileUpload.browseFiles', 'Parcourir les fichiers')}
               </Button>
             </div>
           </div>
@@ -353,7 +354,7 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, quoteNu
           {files.length > 0 && (
             <div>
               <h3 className="font-medium text-foreground mb-4">
-                Fichiers ajoutés ({files.length})
+                {t('quoteCreation.fileUpload.uploadedFiles')} ({files.length})
               </h3>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
@@ -423,13 +424,13 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, quoteNu
                         {file.isUploading && (
                           <div className="flex items-center space-x-1 mt-1">
                             <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                            <span className="text-xs text-blue-600">Upload en cours...</span>
+                            <span className="text-xs text-blue-600">{t('quoteCreation.fileUpload.uploading', 'Upload en cours...')}</span>
                           </div>
                         )}
                         {file.backendId && !file.isUploading && (
                           <div className="flex items-center space-x-1 mt-1">
                             <Icon name="CheckCircle" size={12} className="text-green-500" />
-                            <span className="text-xs text-green-600">Sauvegardé</span>
+                            <span className="text-xs text-green-600">{t('quoteCreation.fileUpload.saved', 'Sauvegardé')}</span>
                           </div>
                         )}
                       </div>
@@ -439,6 +440,7 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, quoteNu
                     <button
                       onClick={() => removeFile(file.id)}
                       disabled={file.isUploading}
+                      title={t('quoteCreation.fileUpload.deleteFile')}
                       className="absolute top-1 sm:top-2 right-1 sm:right-2 w-5 h-5 sm:w-6 sm:h-6 bg-error text-error-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-error/80 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Icon name="X" size={12} className="sm:w-3.5 sm:h-3.5" />
@@ -453,23 +455,23 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, quoteNu
           <div className="bg-muted/50 border border-border rounded-lg p-3 sm:p-4">
             <h4 className="font-medium text-foreground mb-2 flex items-center">
               <Icon name="Info" size={14} className="sm:w-4 sm:h-4 text-primary mr-2" />
-              Types de fichiers recommandés
+              {t('quoteCreation.fileUpload.recommendedFileTypes', 'Types de fichiers recommandés')}
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
               <div>
-                <p className="font-medium text-foreground mb-1">Photos :</p>
+                <p className="font-medium text-foreground mb-1">{t('quoteCreation.fileUpload.photos', 'Photos')} :</p>
                 <ul className="text-muted-foreground space-y-1">
-                  <li>• Photos de l'état actuel</li>
-                  <li>• Plans et schémas</li>
-                  <li>• Références visuelles</li>
+                  <li>• {t('quoteCreation.fileUpload.currentState', 'Photos de l\'état actuel')}</li>
+                  <li>• {t('quoteCreation.fileUpload.plans', 'Plans et schémas')}</li>
+                  <li>• {t('quoteCreation.fileUpload.references', 'Références visuelles')}</li>
                 </ul>
               </div>
               <div>
-                <p className="font-medium text-foreground mb-1">Documents :</p>
+                <p className="font-medium text-foreground mb-1">{t('quoteCreation.fileUpload.documents', 'Documents')} :</p>
                 <ul className="text-muted-foreground space-y-1">
-                  <li>• Cahier des charges</li>
-                  <li>• Spécifications techniques</li>
-                  <li>• Contraintes particulières</li>
+                  <li>• {t('quoteCreation.fileUpload.specifications', 'Cahier des charges')}</li>
+                  <li>• {t('quoteCreation.fileUpload.technicalSpecs', 'Spécifications techniques')}</li>
+                  <li>• {t('quoteCreation.fileUpload.constraints', 'Contraintes particulières')}</li>
                 </ul>
               </div>
             </div>
@@ -485,7 +487,7 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, quoteNu
           iconPosition="left"
           disabled={isSaving}
         >
-          Étape précédente
+          {t('quoteCreation.navigation.previousStep', 'Étape précédente')}
         </Button>
         <Button
           onClick={onNext}
@@ -493,7 +495,7 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, quoteNu
           iconPosition="right"
           disabled={isSaving || uploadingFiles.size > 0}
         >
-          {uploadingFiles.size > 0 ? 'Upload en cours...' : 'Étape suivante'}
+          {uploadingFiles.size > 0 ? t('quoteCreation.fileUpload.uploading', 'Upload en cours...') : t('quoteCreation.navigation.nextStep', 'Étape suivante')}
         </Button>
       </div>
     </div>

@@ -11,6 +11,7 @@ import { loadCompanyInfo, getDefaultCompanyInfo } from '../../../services/compan
 import { getPublicUrl } from '../../../services/storageService';
 import { useAuth } from '../../../context/AuthContext';
 import { generatePublicShareLink, getShareLinkInfo, deactivateShareLink } from '../../../services/shareService';
+import { useTranslation } from 'react-i18next';
 import { createProcessingOverlay } from '../../../components/ui/ProcessingOverlay';
 
 const QuotePreview = ({ 
@@ -30,6 +31,7 @@ const QuotePreview = ({
   isSaving = false
 }) => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('personalization');
   const [showCompanyModal, setShowCompanyModal] = useState(false);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
@@ -444,9 +446,9 @@ const QuotePreview = ({
     }
   };
   const lang = getAppLanguage();
-  const taskWord = lang.startsWith('en') ? 'Task' : lang.startsWith('nl') ? 'Taak' : 'Tâche';
-  const laborWord = lang.startsWith('en') ? 'Labor' : lang.startsWith('nl') ? 'Arbeid' : "Main d'œuvre";
-  const materialWord = lang.startsWith('en') ? 'Material' : lang.startsWith('nl') ? 'Materiaal' : 'Matériau';
+  const taskWord = lang.startsWith('en') ? 'Task' : lang.startsWith('nl') ? 'Taak' : t('quoteCreation.quotePreview.task', 'Tâche');
+  const laborWord = lang.startsWith('en') ? 'Labor' : lang.startsWith('nl') ? 'Arbeid' : t('quoteCreation.quotePreview.labor', "Main d'œuvre");
+  const materialWord = lang.startsWith('en') ? 'Material' : lang.startsWith('nl') ? 'Materiaal' : t('quoteCreation.quotePreview.material', 'Matériau');
 
   // Formatting helpers
   const numberLocale = lang.startsWith('en') ? 'en-GB' : lang.startsWith('nl') ? 'nl-NL' : 'fr-FR';
@@ -473,7 +475,7 @@ const QuotePreview = ({
 
   // Client name helper: prefer raw client name; strip any leading emoji/symbols from label fallback
   const getClientDisplayName = (sel) => {
-    if (!sel) return 'Client';
+    if (!sel) return t('quoteCreation.quotePreview.client', 'Client');
     if (sel.client?.name) return sel.client.name;
     const label = sel.label || '';
     try {
@@ -507,8 +509,8 @@ const QuotePreview = ({
               size="sm"
               className="text-xs sm:text-sm"
             >
-              <span className="hidden sm:inline">Info entreprise</span>
-              <span className="sm:hidden">Entreprise</span>
+              <span className="hidden sm:inline">{t('quoteCreation.quotePreview.companyInfo', 'Info entreprise')}</span>
+              <span className="sm:hidden">{t('quoteCreation.quotePreview.company', 'Entreprise')}</span>
             </Button>
             
             <Button
@@ -519,8 +521,8 @@ const QuotePreview = ({
               size="sm"
               className="text-xs sm:text-sm"
             >
-              <span className="hidden sm:inline">Couleurs</span>
-              <span className="sm:hidden">Couleurs</span>
+              <span className="hidden sm:inline">{t('quoteCreation.quotePreview.colors', 'Couleurs')}</span>
+              <span className="sm:hidden">{t('quoteCreation.quotePreview.colors', 'Couleurs')}</span>
             </Button>
             
             <Button
@@ -531,8 +533,8 @@ const QuotePreview = ({
               size="sm"
               className="text-xs sm:text-sm"
             >
-              <span className="hidden sm:inline">Configuration</span>
-              <span className="sm:hidden">Config</span>
+              <span className="hidden sm:inline">{t('quoteCreation.quotePreview.configuration', 'Configuration')}</span>
+              <span className="sm:hidden">{t('quoteCreation.quotePreview.configShort', 'Config')}</span>
             </Button>
             
             <Button
@@ -543,8 +545,8 @@ const QuotePreview = ({
               size="sm"
               className="text-xs sm:text-sm"
             >
-              <span className="hidden sm:inline">Signature électronique</span>
-              <span className="sm:hidden">Signature</span>
+              <span className="hidden sm:inline">{t('quoteCreation.quotePreview.electronicSignature', 'Signature électronique')}</span>
+              <span className="sm:hidden">{t('quoteCreation.quotePreview.signature', 'Signature')}</span>
             </Button>
           </div>
           
@@ -553,6 +555,7 @@ const QuotePreview = ({
             <button
               onClick={() => setPreviewMode(previewMode === 'desktop' ? 'mobile' : 'desktop')}
               className="p-2 rounded bg-gray-200 text-gray-600 hover:bg-gray-300 transition-colors"
+              title={previewMode === 'mobile' ? t('quoteCreation.quotePreview.switchToDesktop', 'Afficher en mode bureau') : t('quoteCreation.quotePreview.switchToMobile', 'Afficher en mode mobile')}
             >
               <AppIcon name={previewMode === 'mobile' ? "Monitor" : "Smartphone"} size={14} />
             </button>
@@ -564,11 +567,11 @@ const QuotePreview = ({
       <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
         <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
           <AppIcon name="Eye" size={18} className="sm:w-5 sm:h-5 mr-2" />
-          Aperçu du devis
+          {t('quoteCreation.quotePreview.title')}
           {!quoteNumber && (
             <span className="ml-2 inline-flex items-center text-orange-600 text-sm">
               <AppIcon name="Loader" size={14} className="mr-1 animate-spin" />
-              Génération du numéro...
+              {t('quoteCreation.quotePreview.generatingNumber', 'Génération du numéro...')}
             </span>
           )}
         </h3>
@@ -689,9 +692,10 @@ const QuotePreview = ({
               'grid-cols-1 sm:grid-cols-2 px-4 sm:px-8 lg:px-10'
             }`}>
               <div>
-                <h3 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>CLIENT</h3>
+                <h3 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.clientHeading', 'CLIENT')}</h3>
                 <div className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
                   <p className="font-medium">{getClientDisplayName(selectedClient)}</p>
+                  <p>{selectedClient?.name || 'John Doe'}</p>
                   <p>{selectedClient?.email || 'email@client.com'}</p>
                   <p>{selectedClient?.phone || '06 12 34 56 78'}</p>
                   {/* Enhanced address display */}
@@ -702,6 +706,7 @@ const QuotePreview = ({
                         <p>{selectedClient.postalCode} {selectedClient.city}</p>
                       )}
                       {selectedClient?.country && <p>{selectedClient.country}</p>}
+                      
                     </div>
                   )}
                   {/* Fallback if no address but we have client object with address fields */}
@@ -717,7 +722,7 @@ const QuotePreview = ({
                 </div>
               </div>
               <div className={`${previewMode === 'mobile' ? 'text-left' : 'text-right'}`}>
-                <h3 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>{companyInfo.name || 'Votre Entreprise'}</h3>
+                <h3 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.companyHeading', 'Entreprise')}</h3>
                 <div className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
                   <p>{companyInfo.address}</p>
                   <p>{companyInfo.postalCode} {companyInfo.city}</p>
@@ -730,7 +735,7 @@ const QuotePreview = ({
 
             {/* Project Info */}
             <div className={`mb-8 sm:mb-10 ${previewMode === 'mobile' ? 'px-4' : 'px-4 sm:px-8 lg:px-10'}`}>
-              <h3 className={`font-semibold text-gray-800 mb-2 sm:mb-3 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>PROJET</h3>
+                              <h3 className={`font-semibold text-gray-800 mb-2 sm:mb-3 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.project', 'PROJET')}</h3>
               <p className={`text-gray-700 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
                 {projectInfo?.description || 'Description du projet'}
               </p>
@@ -747,17 +752,17 @@ const QuotePreview = ({
             {/* Tasks Table */}
             <div className={`mb-8 sm:mb-10 ${previewMode === 'mobile' ? 'px-4' : 'px-4 sm:px-8 lg:px-10'}`}>
               <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <h3 className={`font-semibold text-gray-800 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>DÉTAIL DES PRESTATIONS</h3>
+                <h3 className={`font-semibold text-gray-800 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.serviceDetails', 'DÉTAIL DES PRESTATIONS')}</h3>
               </div>
               <div className={`${previewMode === 'mobile' ? 'overflow-x-auto' : 'overflow-x-auto'}`}>
                 <table className={`w-full border-collapse ${previewMode === 'mobile' ? 'text-xs min-w-[520px]' : 'text-xs sm:text-sm min-w-[700px]'}`}>
                   <thead>
                     <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
-                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 w-10 text-center' : 'p-3 sm:p-4 w-12 text-center'}`} style={{ color: customization.colors.primary }}>N°</th>
-                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-left' : 'p-3 sm:p-4 text-left'}`} style={{ color: customization.colors.primary }}>DÉSIGNATION</th>
-                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-center w-24' : 'p-3 sm:p-4 text-center w-28 sm:w-32'}`} style={{ color: customization.colors.primary }}>QTÉ</th>
-                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-24' : 'p-3 sm:p-4 text-right w-28 sm:w-32'}`} style={{ color: customization.colors.primary }}>PRIX U.</th>
-                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-24' : 'p-3 sm:p-4 text-right w-28 sm:w-32'}`} style={{ color: customization.colors.primary }}>TOTAL HT</th>
+                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 w-10 text-center' : 'p-3 sm:p-4 w-12 text-center'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.number', 'N°')}</th>
+                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-left' : 'p-3 sm:p-4 text-left'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.designation', 'DÉSIGNATION')}</th>
+                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-center w-24' : 'p-3 sm:p-4 text-center w-28 sm:w-32'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.quantity', 'QTÉ')}</th>
+                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-24' : 'p-3 sm:p-4 text-right w-28 sm:w-32'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.unitPrice', 'PRIX U.')}</th>
+                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-24' : 'p-3 sm:p-4 text-right w-28 sm:w-32'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.totalExclTax', 'TOTAL HT')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -822,28 +827,28 @@ const QuotePreview = ({
                   </tbody>
                   <tfoot>
                     <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
-                      <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">SOUS-TOTAL HT:</td>
+                      <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">{t('quoteCreation.quotePreview.subtotalExclTax', 'SOUS-TOTAL HT:')}</td>
                       <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{formatMoney(totalPrice)}</td>
                     </tr>
                     {financialConfig.vatConfig.display && (
                       <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
-                        <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">TVA ({financialConfig.vatConfig.rate}%):</td>
+                        <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">{t('quoteCreation.quotePreview.vat', 'TVA')} ({financialConfig.vatConfig.rate}%):</td>
                         <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{formatMoney(vatAmount)}</td>
                       </tr>
                     )}
                     <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
-                      <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">TOTAL TTC:</td>
+                      <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">{t('quoteCreation.quotePreview.totalInclTax', 'TOTAL TTC:')}</td>
                       <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{formatMoney(totalWithVAT)}</td>
                     </tr>
                     {financialConfig.advanceConfig.enabled && (
                       <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
-                        <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">ACOMPTE À LA COMMANDE:</td>
+                        <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">{t('quoteCreation.quotePreview.depositOnOrder', 'ACOMPTE À LA COMMANDE:')}</td>
                         <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{formatMoney(advanceAmount)}</td>
                       </tr>
                     )}
                     {financialConfig.advanceConfig.enabled && (
                       <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
-                        <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">SOLDE À LA LIVRAISON:</td>
+                        <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">{t('quoteCreation.quotePreview.balanceOnDelivery', 'SOLDE À LA LIVRAISON:')}</td>
                         <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{formatMoney(balanceAmount)}</td>
                       </tr>
                     )}
@@ -854,7 +859,7 @@ const QuotePreview = ({
 
             {/* General Conditions */}
             <div className={`mb-8 sm:mb-10 ${previewMode === 'mobile' ? 'px-4' : 'px-4 sm:px-8 lg:px-10'}`}>
-              <h3 className={`font-semibold text-black mb-4 sm:mb-6 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>CONDITIONS GÉNÉRALES</h3>
+              <h3 className={`font-semibold text-black mb-4 sm:mb-6 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.generalConditions', 'CONDITIONS GÉNÉRALES')}</h3>
               <div className={`text-black whitespace-pre-wrap ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`}>
                 {normalizeConditionsText(financialConfig.defaultConditions.text)}
               </div>
@@ -863,7 +868,7 @@ const QuotePreview = ({
             {/* Signatures */}
             <div className={`grid gap-8 sm:gap-12 ${previewMode === 'mobile' ? 'grid-cols-1 px-4 pb-4' : 'grid-cols-1 sm:grid-cols-2 px-4 sm:px-8 lg:px-10 pb-4 sm:pb-8 lg:pb-10'}`}>
               <div>
-                <h4 className={`font-semibold text-black mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>Signature de l'entreprise:</h4>
+                <h4 className={`font-semibold text-black mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.companySignature', 'Signature de l\'entreprise:')}</h4>
                 <div className={`border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50 flex items-center justify-center ${previewMode === 'mobile' ? 'p-3 min-h-[60px]' : 'p-4 sm:p-6 min-h-[80px] sm:min-h-[100px]'}`}>
                   {companyInfo.signature ? (
                     <div className="w-full">
@@ -896,21 +901,21 @@ const QuotePreview = ({
                             {companyInfo.signature.name}
                           </p>
                           <p className={`text-xs text-gray-500 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`}>
-                            Signature enregistrée
+                            {t('quoteCreation.quotePreview.savedSignature', 'Signature enregistrée')}
                           </p>
                         </div>
                       )}
                       <p className={`text-xs text-black mt-1 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`}>
-                        Signé le {new Date().toLocaleDateString('fr-FR')}
+                        {t('quoteCreation.quotePreview.signedOn', 'Signé le')} {new Date().toLocaleDateString('fr-FR')}
                       </p>
                     </div>
                   ) : (
-                    <p className={`text-black ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`}>Zone de signature électronique</p>
+                    <p className={`text-black ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`}>{t('quoteCreation.quotePreview.signatureZone', 'Zone de signature électronique')}</p>
                   )}
                 </div>
               </div>
               <div>
-                <h4 className={`font-semibold text-black mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>Bon pour accord client:</h4>
+                <h4 className={`font-semibold text-black mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.clientApproval', 'Bon pour accord client:')}</h4>
                 <div className={`border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50 flex items-center justify-center ${previewMode === 'mobile' ? 'p-3 min-h-[60px]' : 'p-4 sm:p-6 min-h-[80px] sm:min-h-[100px]'}`}>
                   {signatureData?.signature ? (
                     <div className="w-full">
@@ -920,11 +925,11 @@ const QuotePreview = ({
                         className="max-h-12 max-w-full mx-auto"
                       />
                       <p className={`text-xs text-black mt-1 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`}>
-                        Signé le {new Date(signatureData.signedAt).toLocaleDateString('fr-FR')}
+                        {t('quoteCreation.quotePreview.signedOn', 'Signé le')} {new Date(signatureData.signedAt).toLocaleDateString('fr-FR')}
                       </p>
                     </div>
                   ) : (
-                    <p className={`text-black ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`}>Signature du client</p>
+                    <p className={`text-black ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`}>{t('quoteCreation.quotePreview.clientSignature', 'Signature du client')}</p>
                   )}
                 </div>
               </div>
@@ -936,7 +941,7 @@ const QuotePreview = ({
         {files && files.length > 0 && (
           <div className={`px-4 sm:px-8 lg:px-10 py-4 sm:py-8 lg:py-10`}>
             <h4 className={`font-semibold text-black mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>
-              Fichiers joints ({files.length})
+              {t('quoteCreation.quotePreview.attachedFiles', 'Fichiers joints')} ({files.length})
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {files.map((file, index) => (
@@ -1018,7 +1023,7 @@ const QuotePreview = ({
                       }}
                     >
                       <AppIcon name="Download" size={12} className="mr-1" />
-                      Télécharger
+                      {t('quoteCreation.quotePreview.download', 'Télécharger')}
                     </a>
                   </div>
                 </div>
@@ -1037,7 +1042,7 @@ const QuotePreview = ({
           iconPosition="left"
           disabled={isSaving}
         >
-          Précédent
+          {t('quoteCreation.navigation.back')}
         </Button>
         
         <div className="flex space-x-2">
@@ -1050,7 +1055,7 @@ const QuotePreview = ({
             onClick={async () => {
               if (!isSaving) {
                 // Create and show the processing overlay
-                const overlay = createProcessingOverlay('Sauvegarde en cours...', 'quote-draft-overlay');
+                const overlay = createProcessingOverlay(t('quoteCreation.saving', 'Sauvegarde en cours...'), 'quote-draft-overlay');
                 overlay.show();
                 
                 try {
@@ -1073,7 +1078,7 @@ const QuotePreview = ({
             size="sm"
             disabled={isSaving}
           >
-            {isSaving ? 'Sauvegarde...' : 'Brouillon'}
+            {isSaving ? t('quoteCreation.navigation.saving', 'Sauvegarde...') : t('quoteCreation.navigation.saveAsDraft', 'Brouillon')}
           </Button>
           <Button
             onClick={() => setShowQuoteSendModal(true)}
@@ -1082,7 +1087,7 @@ const QuotePreview = ({
             size="sm"
             disabled={isSaving}
           >
-            {isSaving ? 'Envoi...' : 'Envoyer'}
+            {isSaving ? t('quoteCreation.navigation.sending', 'Envoi...') : t('quoteCreation.navigation.send', 'Envoyer')}
           </Button>
         </div>
       </div>

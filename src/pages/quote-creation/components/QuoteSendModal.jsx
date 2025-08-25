@@ -4,6 +4,7 @@ import Input from '../../../components/ui/Input';
 import { useAuth } from '../../../context/AuthContext';
 import { generateQuotePDF } from '../../../services/pdfService';
 import { createProcessingOverlay } from '../../../components/ui/ProcessingOverlay';
+import { useTranslation } from 'react-i18next';
 
 const QuoteSendModal = ({ 
   isOpen, 
@@ -20,6 +21,7 @@ const QuoteSendModal = ({
   customization
 }) => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [step, setStep] = useState(1); // 1: options, 2: email form
   const [sendMethod, setSendMethod] = useState('email'); // 'email' or 'pdf'
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
@@ -149,7 +151,7 @@ const QuoteSendModal = ({
     } catch (error) {
       console.error('Error sending email:', error);
       // Show error message
-      alert('Une erreur est survenue lors de l\'envoi du devis. Veuillez réessayer.');
+      alert(t('quoteCreation.quoteSendModal.sendError', 'Une erreur est survenue lors de l\'envoi du devis. Veuillez réessayer.'));
     } finally {
       setIsProcessing(false);
     }
@@ -199,8 +201,8 @@ const QuoteSendModal = ({
                    </div>
                    <div className="ml-3">
                      <p className="text-sm text-blue-700">
-                       Une fois que vous aurez envoyé ce devis, le statut passera à "En attente". 
-                       {selectedClient?.name || selectedClient?.label || 'Le client'} aura jusqu'au {projectInfo?.deadline ? new Date(projectInfo.deadline).toLocaleDateString('fr-FR') : '30 jours'} pour répondre à ce devis.
+                       {t('quoteCreation.quoteSendModal.statusInfo', 'Une fois que vous aurez envoyé ce devis, le statut passera à "En attente".')} 
+                       {selectedClient?.name || selectedClient?.label || t('quoteCreation.quoteSendModal.client', 'Le client')} {t('quoteCreation.quoteSendModal.deadlineInfo', 'aura jusqu\'au')} {projectInfo?.deadline ? new Date(projectInfo.deadline).toLocaleDateString('fr-FR') : t('quoteCreation.quoteSendModal.defaultDeadline', '30 jours')} {t('quoteCreation.quoteSendModal.responseInfo', 'pour répondre à ce devis.')}
                      </p>
                    </div>
                  </div>
@@ -370,7 +372,7 @@ const QuoteSendModal = ({
              className="px-4 py-2"
              disabled={isProcessing || isGeneratingPDF}
            >
-             {step === 1 ? 'Annuler' : 'Retour'}
+             {step === 1 ? t('quoteCreation.quoteSendModal.cancel', 'Annuler') : t('quoteCreation.quoteSendModal.back', 'Retour')}
            </Button>
            
            <Button
@@ -379,8 +381,8 @@ const QuoteSendModal = ({
              disabled={isProcessing || isGeneratingPDF}
            >
              {step === 1 
-               ? (isGeneratingPDF ? 'Génération...' : 'Confirmer') 
-               : (isProcessing ? 'Envoi en cours...' : 'Envoyer')
+               ? (isGeneratingPDF ? t('quoteCreation.quoteSendModal.generating', 'Génération...') : t('quoteCreation.quoteSendModal.confirm', 'Confirmer')) 
+               : (isProcessing ? t('quoteCreation.quoteSendModal.sending', 'Envoi en cours...') : t('quoteCreation.quoteSendModal.send', 'Envoyer'))
              }
            </Button>
          </div>

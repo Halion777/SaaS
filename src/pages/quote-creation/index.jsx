@@ -1,16 +1,11 @@
 import React, { useState, useEffect } from 'react';
-
 import { useNavigate, useSearchParams } from 'react-router-dom';
-
 import { useAuth } from '../../context/AuthContext';
-
 import { useMultiUser } from '../../context/MultiUserContext';
-
 import MainSidebar from '../../components/ui/MainSidebar';
-
 import Button from '../../components/ui/Button';
-
 import Icon from '../../components/AppIcon';
+import { useTranslation } from 'react-i18next';
 
 import StepIndicator from './components/StepIndicator';
 
@@ -47,13 +42,10 @@ import { getPublicUrl } from '../../services/storageService';
 
 
 const QuoteCreation = () => {
-
+  const { t } = useTranslation();
   const { user } = useAuth();
-
   const { currentProfile } = useMultiUser();
-
   const navigate = useNavigate();
-
   const [searchParams] = useSearchParams();
 
 
@@ -4344,7 +4336,7 @@ const QuoteCreation = () => {
 
                   <h1 className="text-xl sm:text-2xl font-bold text-foreground">
 
-                    {isEditing ? 'Modifier le devis' : 'Créer un devis'}
+                    {isEditing ? t('quoteCreation.editTitle') : t('quoteCreation.title')}
 
                   </h1>
 
@@ -4353,10 +4345,8 @@ const QuoteCreation = () => {
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
 
                   {isEditing
-
-                    ? 'Modifiez les informations du devis existant'
-
-                    : 'Remplissez les informations ci-dessous pour générer automatiquement un devis professionnel'
+                    ? t('quoteCreation.editSubtitle', 'Modifiez les informations du devis existant')
+                    : t('quoteCreation.subtitle', 'Remplissez les informations ci-dessous pour générer automatiquement un devis professionnel')
 
                   }
 
@@ -4406,7 +4396,7 @@ const QuoteCreation = () => {
 
                     <Icon name="Save" size={14} className="sm:w-4 sm:h-4 mr-2 animate-pulse" />
 
-                    Sauvegarde automatique...
+                    {t('quoteCreation.autoSave.saving')}
 
                   </div>
 
@@ -4418,7 +4408,7 @@ const QuoteCreation = () => {
 
                     <Icon name="CheckCircle" size={14} className="sm:w-4 sm:h-4 mr-2 text-green-500" />
 
-                    Sauvegardé {new Date(lastSaved).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    {t('quoteCreation.autoSave.saved', { time: new Date(lastSaved).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) })}
 
                   </div>
 
@@ -4468,7 +4458,7 @@ const QuoteCreation = () => {
 
               <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-center">
 
-                <span className="text-3xl sm:text-4xl font-extrabold text-primary">Étape {currentStep}/4</span>
+                <span className="text-3xl sm:text-4xl font-extrabold text-primary">{t('quoteCreation.stepIndicator.step', 'Étape')} {currentStep}/4</span>
 
               </div>
 
@@ -4480,7 +4470,7 @@ const QuoteCreation = () => {
 
                   <Icon name="Sparkles" size={14} className="mr-2 text-primary" />
 
-                  Recommandations
+                  {t('quoteCreation.recommendations.title', 'Recommandations')}
 
                 </h3>
 
@@ -4490,15 +4480,15 @@ const QuoteCreation = () => {
 
                     <div className="space-y-2">
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Sparkles" size={14} className="mt-0.5 mr-2 text-primary" />Sélectionnez au moins une catégorie (obligatoire) pour activer les suggestions de tâches.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Sparkles" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step1.selectCategory', 'Sélectionnez au moins une catégorie (obligatoire) pour activer les suggestions de tâches.')}</div>
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Sparkles" size={14} className="mt-0.5 mr-2 text-primary" />Vous pouvez choisir plusieurs catégories si nécessaire.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Sparkles" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step1.multipleCategories', 'Vous pouvez choisir plusieurs catégories si nécessaire.')}</div>
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Mic" size={14} className="mt-0.5 mr-2 text-primary" />Cliquez sur l'icône micro pour dicter; l'IA nettoie et reformule proprement.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Mic" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step1.useMic', 'Cliquez sur l\'icône micro pour dicter; l\'IA nettoie et reformule proprement.')}</div>
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Wand2" size={14} className="mt-0.5 mr-2 text-primary" />Utilisez « Améliorer » pour une description courte, claire et professionnelle.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Wand2" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step1.useEnhance', 'Utilisez « Améliorer » pour une description courte, claire et professionnelle.')}</div>
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Globe" size={14} className="mt-0.5 mr-2 text-primary" />La langue suit vos préférences de compte.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Globe" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step1.language', 'La langue suit vos préférences de compte.')}</div>
 
                     </div>
 
@@ -4506,7 +4496,7 @@ const QuoteCreation = () => {
 
                       <Icon name="Info" size={14} className="mr-2 mt-0.5" />
 
-                      Astuce: plus votre description est précise, meilleures seront les suggestions de tâches.
+                      {t('quoteCreation.recommendations.step1.tip', 'Astuce: plus votre description est précise, meilleures seront les suggestions de tâches.')}
 
                     </div>
 
@@ -4520,13 +4510,13 @@ const QuoteCreation = () => {
 
                     <div className="space-y-2">
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Mic" size={14} className="mt-0.5 mr-2 text-primary" />Dictez/écrivez; l'IA génère description, durée, prix et matériaux proposés.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Mic" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step2.dictate', 'Dictez/écrivez; l\'IA génère description, durée, prix et matériaux proposés.')}</div>
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Hand" size={14} className="mt-0.5 mr-2 text-primary" />Cliquez sur une suggestion pour préremplir; modifiez librement avant d'ajouter.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Hand" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step2.clickSuggestion', 'Cliquez sur une suggestion pour préremplir; modifiez librement avant d\'ajouter.')}</div>
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Coins" size={14} className="mt-0.5 mr-2 text-primary" />Vérifiez les prix et quantités de matériaux; ajustez selon votre tarif.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Coins" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step2.checkPrices', 'Vérifiez les prix et quantités de matériaux; ajustez selon votre tarif.')}</div>
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Clock" size={14} className="mt-0.5 mr-2 text-primary" />Durée par défaut en heures; renseignez la durée pour un prix cohérent.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Clock" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step2.duration', 'Durée par défaut en heures; renseignez la durée pour un prix cohérent.')}</div>
 
                     </div>
 
@@ -4534,7 +4524,7 @@ const QuoteCreation = () => {
 
                       <Icon name="Info" size={14} className="mr-2 mt-0.5" />
 
-                      Astuce: ajoutez les tâches une par une pour garder un devis clair.
+                      {t('quoteCreation.recommendations.step2.tip', 'Astuce: ajoutez les tâches une par une pour garder un devis clair.')}
 
                     </div>
 
@@ -4550,17 +4540,17 @@ const QuoteCreation = () => {
                     {isFileUploading && (
                       <div className="mb-3 p-3 rounded-md bg-blue-50 border border-blue-200 flex items-center space-x-2">
                         <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-sm text-blue-700 font-medium">Upload de fichiers en cours...</span>
+                        <span className="text-sm text-blue-700 font-medium">{t('quoteCreation.recommendations.step3.uploading', 'Upload de fichiers en cours...')}</span>
                       </div>
                     )}
 
                     <div className="space-y-2">
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Image" size={14} className="mt-0.5 mr-2 text-primary" />Ajoutez des fichiers utiles (photos avant/après, croquis, PDF).</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Image" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step3.addFiles', 'Ajoutez des fichiers utiles (photos avant/après, croquis, PDF).')}</div>
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Upload" size={14} className="mt-0.5 mr-2 text-primary" />Glissez‑déposez ou cliquez pour sélectionner; privilégiez PDF/JPG/PNG légers.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Upload" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step3.dragDrop', 'Glissez‑déposez ou cliquez pour sélectionner; privilégiez PDF/JPG/PNG légers.')}</div>
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Type" size={14} className="mt-0.5 mr-2 text-primary" />Nommez vos fichiers clairement pour le client.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Type" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step3.nameFiles', 'Nommez vos fichiers clairement pour le client.')}</div>
 
                     </div>
 
@@ -4568,7 +4558,7 @@ const QuoteCreation = () => {
 
                       <Icon name="Info" size={14} className="mr-2 mt-0.5" />
 
-                      Astuce: des visuels clairs augmentent le taux d'acceptation.
+                      {t('quoteCreation.recommendations.step3.tip', 'Astuce: des visuels clairs augmentent le taux d\'acceptation.')}
 
                     </div>
 
@@ -4582,13 +4572,13 @@ const QuoteCreation = () => {
 
                     <div className="space-y-2">
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Percent" size={14} className="mt-0.5 mr-2 text-primary" />Configurez la TVA et l'acompte dans « Configuration ».</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Percent" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step4.configVat', 'Configurez la TVA et l\'acompte dans « Configuration ».')}</div>
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Palette" size={14} className="mt-0.5 mr-2 text-primary" />Personnalisez le modèle et les couleurs.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Palette" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step4.customize', 'Personnalisez le modèle et les couleurs.')}</div>
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Download" size={14} className="mt-0.5 mr-2 text-primary" />Téléchargez le devis en PDF.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Download" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step4.download', 'Téléchargez le devis en PDF.')}</div>
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="EyeOff" size={14} className="mt-0.5 mr-2 text-primary" />Masquez les prix des matériaux dans les Préférences du compte si besoin.</div>
+                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="EyeOff" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step4.hidePrices', 'Masquez les prix des matériaux dans les Préférences du compte si besoin.')}</div>
 
                     </div>
 
@@ -4596,7 +4586,7 @@ const QuoteCreation = () => {
 
                       <Icon name="Info" size={14} className="mr-2 mt-0.5" />
 
-                      Astuce: un devis simple et lisible se signe plus vite.
+                      {t('quoteCreation.recommendations.step4.tip', 'Astuce: un devis simple et lisible se signe plus vite.')}
 
                     </div>
 
@@ -4610,11 +4600,11 @@ const QuoteCreation = () => {
 
               <div className="bg-card border border-border rounded-lg p-4">
 
-                <h3 className="text-sm font-semibold text-foreground mb-2">Notes</h3>
+                <h3 className="text-sm font-semibold text-foreground mb-2">{t('quoteCreation.notes.title', 'Notes')}</h3>
 
                 <div className="text-xs sm:text-sm text-muted-foreground">
 
-                  Brouillon auto‑enregistré. Vous pouvez le retrouver dans
+                  {t('quoteCreation.notes.autosaved', 'Brouillon auto‑enregistré. Vous pouvez le retrouver dans')}
 
                   <Button
 
@@ -4630,7 +4620,7 @@ const QuoteCreation = () => {
 
                     <Icon name="ExternalLink" size={14} />
 
-                    Gestion des devis
+                    {t('quoteCreation.notes.quotesManagement', 'Gestion des devis')}
 
                   </Button>
 

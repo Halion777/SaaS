@@ -3,6 +3,7 @@ import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import Select from '../../../components/ui/Select';
 import Icon from '../../../components/AppIcon';
+import { useTranslation } from 'react-i18next';
 import { generateTaskDescriptionWithGemini } from '../../../services/googleAIService';
 import { enhanceTranscriptionWithAI } from '../../../services/googleAIService';
 import { generateTaskSuggestionsWithGemini } from '../../../services/googleAIService';
@@ -110,6 +111,7 @@ function extractLaborPriceInfo(text = '') {
 }
 
 const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCategory, projectDescription, projectCustomCategory }) => {
+  const { t } = useTranslation();
   const [currentTask, setCurrentTask] = useState({
     description: '',
     duration: '',
@@ -767,7 +769,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
     { value: '16', label: '2 jours' },
     { value: '24', label: '3 jours' },
     { value: '40', label: '1 semaine' },
-    { value: 'custom', label: 'Durée personnalisée' }
+    { value: 'custom', label: t('quoteCreation.taskDefinition.customDuration', 'Durée personnalisée') }
   ];
 
   const unitOptions = [
@@ -1385,7 +1387,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
       <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
         <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
           <Icon name="Sparkles" size={20} className="sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3" />
-          Suggestions IA de tâches
+          {t('quoteCreation.taskDefinition.suggestTasksWithAI')}
         </h2>
         
         {!projectCategory || (Array.isArray(projectCategory) && projectCategory.length === 0) ? (
@@ -1398,12 +1400,12 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         ) : isLoadingAISuggestions ? (
           <div className="text-center py-8">
             <Icon name="Loader2" size={32} className="animate-spin text-primary mx-auto mb-2" />
-            <p className="text-muted-foreground">Génération des tâches suggérées…</p>
+            <p className="text-muted-foreground">{t('quoteCreation.taskDefinition.generatingSuggestions', 'Génération des tâches suggérées…')}</p>
           </div>
         ) : aiSuggestions.length > 0 ? (
           <>
             <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4">
-              Suggestions basées sur votre description et catégorie, avec durées, matériaux et prix de main d'œuvre.
+              {t('quoteCreation.taskDefinition.suggestionsDescription', 'Suggestions basées sur votre description et catégorie, avec durées, matériaux et prix de main d\'œuvre.')}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {aiSuggestions.map(task => {
@@ -1466,7 +1468,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
       <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
         <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
           <Icon name="Wrench" size={20} className="sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3" />
-          Définition des tâches avec assistance IA
+          {t('quoteCreation.taskDefinition.title')}
         </h2>
         
         <div className="space-y-4 sm:space-y-6">
@@ -1491,7 +1493,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                     onClick={cancelEditing}
                     iconName="X"
                   >
-                    Annuler
+                    {t('quoteCreation.taskDefinition.cancel', 'Annuler')}
                   </Button>
                 )}
                 <Button
@@ -1590,12 +1592,12 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
               <div className="space-y-2">
                 <div className="relative">
                   <Input
-                    label="Description de la tâche"
+                    label={t('quoteCreation.taskDefinition.taskDescription')}
                     type="text"
-                    placeholder="Décrivez la tâche à réaliser ou utilisez la dictée vocale pour une description IA complète..."
+                    placeholder={t('quoteCreation.taskDefinition.taskDescriptionPlaceholder', 'Décrivez la tâche à réaliser ou utilisez la dictée vocale pour une description IA complète...')}
                     value={currentTask.description}
                     onChange={(e) => handleTaskChange('description', e.target.value)}
-                    description="Utilisez la dictée vocale pour une génération automatique par IA"
+                    description={t('quoteCreation.taskDefinition.useDictation', 'Utilisez la dictée vocale pour une génération automatique par IA')}
                     disabled={isGenerating || isTranscribing}
                     className={isRecording ? "border-red-500 bg-red-50" : ""}
                   />
@@ -1621,28 +1623,28 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div className="sm:col-span-2">
                   <Input
-                    label="Durée estimée"
+                    label={t('quoteCreation.taskDefinition.duration')}
                     type="number"
-                    placeholder="Ex: 120"
+                    placeholder={t('quoteCreation.taskDefinition.durationPlaceholder', 'Ex: 120')}
                     value={currentTask.duration}
                     onChange={(e) => handleTaskChange('duration', e.target.value)}
-                    description={`Durée en ${currentTask.durationUnit === 'minutes' ? 'minutes' : currentTask.durationUnit === 'hours' ? 'heures' : 'jours'}`}
+                    description={`${t('quoteCreation.taskDefinition.durationIn', 'Durée en')} ${currentTask.durationUnit === 'minutes' ? t('quoteCreation.taskDefinition.minutes', 'minutes') : currentTask.durationUnit === 'hours' ? t('quoteCreation.taskDefinition.hours', 'heures') : t('quoteCreation.taskDefinition.days', 'jours')}`}
                   />
                 </div>
                 <Select
-                  label="Unité"
-                  placeholder="Unité"
+                  label={t('quoteCreation.taskDefinition.durationUnit')}
+                  placeholder={t('quoteCreation.taskDefinition.durationUnit')}
                   options={durationUnitOptions}
                   value={currentTask.durationUnit}
                   onChange={(e) => handleTaskChange('durationUnit', e.target.value)}
                 />
                 <Input
-                  label="Prix (€)"
+                  label={t('quoteCreation.taskDefinition.unitPrice')}
                   type="number"
-                  placeholder="0.00"
+                  placeholder={t('quoteCreation.taskDefinition.pricePlaceholder', '0.00')}
                   value={currentTask.price}
                   onChange={(e) => handleTaskChange('price', e.target.value)}
-                  description="Prix hors matériaux"
+                  description={t('quoteCreation.taskDefinition.priceExcludingMaterials', 'Prix hors matériaux')}
                 />
               </div>
               
@@ -1650,7 +1652,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
               <div className="border-t border-border pt-3 sm:pt-4">
                 <h4 className="font-medium text-foreground mb-3 flex items-center">
                   <Icon name="Package" size={14} className="sm:w-4 sm:h-4 text-primary mr-2" />
-                  Matériaux nécessaires
+                  {t('quoteCreation.taskDefinition.materials')}
                   {currentTask.materials.length > 0 && (
                     <span className="ml-2 px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
                       {currentTask.materials.length} matériau{currentTask.materials.length > 1 ? 'x' : ''}
@@ -1660,30 +1662,30 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
                   <Input
-                    label="Nom du matériau"
+                    label={t('quoteCreation.taskDefinition.materialName')}
                     type="text"
-                    placeholder="Ex: Tuyau PVC"
+                    placeholder={t('quoteCreation.taskDefinition.materialNamePlaceholder', 'Ex: Tuyau PVC')}
                     value={newMaterial.name}
                     onChange={(e) => handleMaterialChange('name', e.target.value)}
                   />
                   <Input
-                    label="Quantité"
+                    label={t('quoteCreation.taskDefinition.quantity')}
                     type="number"
-                    placeholder="1"
+                    placeholder={t('quoteCreation.taskDefinition.quantityPlaceholder', '1')}
                     value={newMaterial.quantity}
                     onChange={(e) => handleMaterialChange('quantity', e.target.value)}
                   />
                   <Select
-                    label="Unité"
-                    placeholder="Unité"
+                    label={t('quoteCreation.taskDefinition.unit', 'Unité')}
+                    placeholder={t('quoteCreation.taskDefinition.unit', 'Unité')}
                     options={unitOptions}
                     value={newMaterial.unit}
                     onChange={(e) => handleMaterialChange('unit', e.target.value)}
                   />
                   <Input
-                    label="Prix unitaire (€)"
+                    label={t('quoteCreation.taskDefinition.unitPriceEuro', 'Prix unitaire (€)')}
                     type="number"
-                    placeholder="0.00"
+                    placeholder={t('quoteCreation.taskDefinition.pricePlaceholder', '0.00')}
                     value={newMaterial.price}
                     onChange={(e) => handleMaterialChange('price', e.target.value)}
                   />
@@ -1702,7 +1704,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                         iconPosition="left"
                         className={!newMaterial.name || !newMaterial.quantity || !newMaterial.unit ? "opacity-50 cursor-not-allowed" : ""}
                       >
-                        {editingMaterial ? "Sauvegarder" : "Ajouter le matériau"}
+                        {editingMaterial ? t('quoteCreation.taskDefinition.save', "Sauvegarder") : t('quoteCreation.taskDefinition.addMaterial')}
                       </Button>
                       {editingMaterial && (
                         <Button
@@ -1713,13 +1715,13 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                           iconName="X"
                           iconPosition="left"
                         >
-                          Annuler
+                          {t('quoteCreation.taskDefinition.cancel', 'Annuler')}
                         </Button>
                       )}
                     </div>
                     {(!newMaterial.name || !newMaterial.quantity || !newMaterial.unit) && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        Remplissez le nom, la quantité et l'unité pour ajouter un matériau
+                        {t('quoteCreation.taskDefinition.fillMaterialDetails', 'Remplissez le nom, la quantité et l\'unité pour ajouter un matériau')}
                       </p>
                     )}
                   </div>
@@ -1738,7 +1740,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                             <span className="font-medium">{material.name}</span>
                             {editingMaterial?.id === material.id && (
                               <span className="px-2 py-1 bg-primary text-white text-xs rounded-full">
-                                En cours d'édition
+                                {t('quoteCreation.taskDefinition.editing', 'En cours d\'édition')}
                               </span>
                             )}
                           </div>
@@ -1776,7 +1778,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                   iconPosition="left"
                   className="flex-1 bg-gradient-to-r from-primary to-success hover:from-primary/90 hover:to-success/90"
                 >
-                  {editingPredefinedTask || editingExistingTask ? "Sauvegarder les modifications" : "Ajouter cette tâche"}
+                  {editingPredefinedTask || editingExistingTask ? t('quoteCreation.taskDefinition.saveChanges', "Sauvegarder les modifications") : t('quoteCreation.taskDefinition.addTask')}
                 </Button>
                 {editingExistingTask && (
                   <Button
@@ -1785,7 +1787,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                     iconName="X"
                     iconPosition="left"
                   >
-                    Annuler
+                    {t('quoteCreation.taskDefinition.cancel', 'Annuler')}
                   </Button>
                 )}
               </div>
@@ -1797,7 +1799,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
             <div>
               <h3 className="font-medium text-foreground mb-4 flex items-center">
                 <Icon name="CheckSquare" size={20} color="var(--color-success)" className="mr-2" />
-                Tâches ajoutées ({tasks.length})
+                {t('quoteCreation.taskDefinition.addedTasks', 'Tâches ajoutées')} ({tasks.length})
               </h3>
               <div className="space-y-3">
                 {tasks.map((task) => {
@@ -1813,7 +1815,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                       <div className="flex items-start justify-between">
                         {editingExistingTask?.id === task.id && (
                           <div className="absolute -top-2 -left-2 px-2 py-1 bg-primary text-white text-xs rounded-full">
-                            En cours d'édition
+                            {t('quoteCreation.taskDefinition.editing', 'En cours d\'édition')}
                           </div>
                         )}
                         <div className="flex-1">
@@ -1821,23 +1823,23 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                           <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
                             <span className="flex items-center space-x-1">
                               <Icon name="Clock" size={14} />
-                              <span>Durée: {formatDuration(task.duration, task.durationUnit || 'minutes')}</span>
+                              <span>{t('quoteCreation.taskDefinition.duration', 'Durée')}: {formatDuration(task.duration, task.durationUnit || 'minutes')}</span>
                             </span>
                             <span className="flex items-center space-x-1">
                               <Icon name="User" size={14} />
-                              <span>Main d'œuvre: {task.price}€</span>
+                              <span>{t('quoteCreation.taskDefinition.labor', 'Main d\'œuvre')}: {task.price}€</span>
                             </span>
                             {taskMaterialsTotal > 0 && (
                               <span className="flex items-center space-x-1">
                                 <Icon name="Package" size={14} />
-                                <span>Matériaux: {taskMaterialsTotal.toFixed(2)}€</span>
+                                <span>{t('quoteCreation.taskDefinition.materials', 'Matériaux')}: {taskMaterialsTotal.toFixed(2)}€</span>
                               </span>
                             )}
-                            <span className="font-medium text-foreground">Total: {taskTotal.toFixed(2)}€</span>
+                            <span className="font-medium text-foreground">{t('common.total', 'Total')}: {taskTotal.toFixed(2)}€</span>
                           </div>
                           {task.materials.length > 0 && (
                             <div className="mt-2">
-                              <p className="text-xs text-muted-foreground mb-1">Matériaux:</p>
+                              <p className="text-xs text-muted-foreground mb-1">{t('quoteCreation.taskDefinition.materials', 'Matériaux')}:</p>
                               <div className="flex flex-wrap gap-2">
                                 {task.materials.map((material) => (
                                   <span key={material.id} className="text-xs bg-muted px-2 py-1 rounded">
@@ -1870,7 +1872,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
               
               <div className="mt-4 p-4 bg-primary/10 border border-primary/20 rounded-lg">
                 <div className="flex justify-between items-center">
-                  <span className="font-semibold text-foreground">Total du devis:</span>
+                  <span className="font-semibold text-foreground">{t('quoteCreation.taskDefinition.quoteTotal', 'Total du devis')}:</span>
                   <span className="text-xl font-bold text-primary">{totalPrice.toFixed(2)}€</span>
                 </div>
               </div>
@@ -1886,7 +1888,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
           iconName="ArrowLeft"
           iconPosition="left"
         >
-          Étape précédente
+          {t('quoteCreation.navigation.previousStep', 'Étape précédente')}
         </Button>
         <Button
           onClick={onNext}
@@ -1894,7 +1896,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
           iconName="ArrowRight"
           iconPosition="right"
         >
-          Étape suivante
+          {t('quoteCreation.navigation.nextStep', 'Étape suivante')}
         </Button>
       </div>
     </div>

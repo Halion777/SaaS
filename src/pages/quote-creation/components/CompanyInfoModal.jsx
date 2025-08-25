@@ -6,9 +6,11 @@ import { validateCompanyInfo, removeCompanyAsset } from '../../../services/compa
 import { useAuth } from '../../../context/AuthContext';
 import Icon from '../../../components/AppIcon';
 import { uploadFile, deleteFile, getPublicUrl } from '../../../services/storageService';
+import { useTranslation } from 'react-i18next';
 
 const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initialData = {} }) => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [companyInfo, setCompanyInfo] = useState({
     name: '',
     vatNumber: '',
@@ -517,7 +519,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
       <div className="bg-card border border-border rounded-lg shadow-xl max-w-2xl w-full overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 bg-gray-50 flex-shrink-0">
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Informations de l'entreprise</h2>
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800">{t('quoteCreation.companyInfo.title', "Informations de l'entreprise")}</h2>
           <button
             onClick={handleClose}
             className="text-gray-500 hover:text-gray-700 transition-colors p-1 rounded-full hover:bg-gray-100"
@@ -530,7 +532,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
           {/* Company Logo */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              Logo de l'entreprise
+              {t('quoteCreation.companyInfo.logo', 'Logo de l\'entreprise')}
             </label>
             <input
               type="file"
@@ -547,10 +549,10 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
               fullWidth
               disabled={isUploadingLogo}
             >
-              {isUploadingLogo ? 'Upload en cours...' : 'Ajouter un logo'}
+              {isUploadingLogo ? t('quoteCreation.companyInfo.uploading', 'Upload en cours...') : t('quoteCreation.companyInfo.addLogo', 'Ajouter un logo')}
             </Button>
             <p className="text-xs text-muted-foreground mt-2">
-              Format recommandé: PNG avec fond transparent, 300x300px max
+              {t('quoteCreation.companyInfo.logoFormat', 'Format recommandé: PNG avec fond transparent, 300x300px max')}
             </p>
             {companyInfo.logo && (
               <div className="mt-3 relative w-20 h-20 border border-border rounded-lg overflow-hidden">
@@ -600,7 +602,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
                   onClick={handleRemoveLogo}
                   disabled={isRemovingLogo}
                   className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors disabled:opacity-50"
-                  title="Supprimer le logo"
+                  title={t('quoteCreation.companyInfo.deleteLogo', 'Supprimer le logo')}
                 >
                   ×
                 </button>
@@ -616,13 +618,13 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
           {/* Company Name */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              Nom de l'entreprise *
+              {t('quoteCreation.companyInfo.companyName')} *
             </label>
               <Input
                 type="text"
                 value={companyInfo.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
-                placeholder="Nom de votre entreprise"
+                placeholder={t('quoteCreation.companyInfo.companyNamePlaceholder', "Nom de votre entreprise")}
               required
             />
           </div>
@@ -630,13 +632,13 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
           {/* VAT Number */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              Numéro de TVA
+              {t('quoteCreation.companyInfo.vatNumber')}
             </label>
           <Input
             type="text"
             value={companyInfo.vatNumber}
             onChange={(e) => handleInputChange('vatNumber', e.target.value)}
-            placeholder="BE0123456789"
+            placeholder={t('quoteCreation.companyInfo.vatNumberPlaceholder', "BE0123456789")}
           />
           </div>
 
@@ -698,7 +700,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
           {/* Country */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              Pays *
+              {t('quoteCreation.companyInfo.country', 'Pays')} *
             </label>
           <Input
             type="text"
@@ -712,7 +714,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
           {/* Phone */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              Téléphone *
+              {t('quoteCreation.companyInfo.phone', 'Téléphone')} *
             </label>
           <Input
             type="tel"
@@ -726,7 +728,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
           {/* Email */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              Email *
+              {t('quoteCreation.companyInfo.email', 'Email')} *
             </label>
           <Input
             type="email"
@@ -740,7 +742,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
           {/* Website */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              Site web
+              {t('quoteCreation.companyInfo.website', 'Site web')}
             </label>
           <Input
             type="url"
@@ -753,7 +755,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
           {/* Company Signature */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              Signature électronique
+              {t('quoteCreation.companyInfo.signature', 'Signature électronique')}
             </label>
             <input
               type="file"
@@ -770,10 +772,10 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
               fullWidth
               disabled={isUploadingSignature}
             >
-              {isUploadingSignature ? 'Upload en cours...' : 'Ajouter une signature'}
+              {isUploadingSignature ? t('quoteCreation.companyInfo.uploading', 'Upload en cours...') : t('quoteCreation.companyInfo.addSignature', 'Ajouter une signature')}
             </Button>
             <p className="text-xs text-muted-foreground mt-2">
-              Format recommandé: PNG avec fond transparent, 300x150px max
+              {t('quoteCreation.companyInfo.recommendedFormat', 'Format recommandé: PNG avec fond transparent, 300x150px max')}
             </p>
             {companyInfo.signature && (
               <div className="mt-3 relative w-32 h-16 border border-border rounded-lg overflow-hidden">
@@ -823,7 +825,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
                   onClick={handleRemoveSignature}
                   disabled={isRemovingSignature}
                   className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors disabled:opacity-50"
-                  title="Supprimer la signature"
+                  title={t('quoteCreation.companyInfo.deleteSignature', "Supprimer la signature")}
                 >
                   ×
                 </button>
@@ -846,7 +848,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium"
             disabled={isSaving}
           >
-            {isSaving ? 'Sauvegarde en cours...' : 'Sauvegarder les informations'}
+            {isSaving ? t('quoteCreation.companyInfo.saving', 'Sauvegarde en cours...') : t('quoteCreation.companyInfo.saveInfo', 'Sauvegarder les informations')}
           </Button>
         </div>
       </div>

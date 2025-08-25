@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
+import { useTranslation } from 'react-i18next';
 
 const FinancialConfig = ({ 
   vatConfig, 
@@ -11,6 +12,7 @@ const FinancialConfig = ({
   defaultConditions,
   onDefaultConditionsChange
 }) => {
+  const { t } = useTranslation();
   const getDefaultText = (language) => {
     switch(language) {
       case 'FR':
@@ -58,8 +60,8 @@ const FinancialConfig = ({
               <Icon name="Calculator" size={16} className="text-green-600" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">Affichage de la TVA</h3>
-              <p className="text-xs text-gray-600">Afficher le calcul de TVA sur les devis</p>
+              <h3 className="text-sm font-semibold text-gray-900">{t('quoteCreation.financialConfig.vatDisplay', 'Affichage de la TVA')}</h3>
+              <p className="text-xs text-gray-600">{t('quoteCreation.financialConfig.vatDisplayDesc', 'Afficher le calcul de TVA sur les devis')}</p>
             </div>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
@@ -76,7 +78,7 @@ const FinancialConfig = ({
         {vatConfig.display && (
           <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
             <label className="block text-xs font-medium text-gray-700 mb-2">
-              Taux de TVA: <span className="text-blue-600 font-semibold">{vatConfig.rate}%</span>
+              {t('quoteCreation.financialConfig.vatRate', 'Taux de TVA')}: <span className="text-blue-600 font-semibold">{vatConfig.rate}%</span>
             </label>
             <div className="relative">
               <input 
@@ -105,8 +107,8 @@ const FinancialConfig = ({
               <Icon name="CreditCard" size={16} className="text-blue-600" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">Acompte</h3>
-              <p className="text-xs text-gray-600">Demander un acompte à la commande</p>
+              <h3 className="text-sm font-semibold text-gray-900">{t('quoteCreation.financialConfig.deposit', 'Acompte')}</h3>
+              <p className="text-xs text-gray-600">{t('quoteCreation.financialConfig.depositDesc', 'Demander un acompte à la commande')}</p>
             </div>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
@@ -123,7 +125,7 @@ const FinancialConfig = ({
         {advanceConfig.enabled && (
           <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
             <label className="block text-xs font-medium text-gray-700 mb-2">
-              Montant de l'acompte (€)
+              {t('quoteCreation.financialConfig.depositAmount', "Montant de l'acompte")} (€)
             </label>
             <div className="relative">
               <input 
@@ -150,8 +152,8 @@ const FinancialConfig = ({
               <Icon name="Megaphone" size={16} className="text-purple-600" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">Bannière marketing</h3>
-              <p className="text-xs text-gray-600">Afficher une offre promotionnelle</p>
+              <h3 className="text-sm font-semibold text-gray-900">{t('quoteCreation.financialConfig.marketingBanner', 'Bannière marketing')}</h3>
+              <p className="text-xs text-gray-600">{t('quoteCreation.financialConfig.marketingBannerDesc', 'Afficher une offre promotionnelle')}</p>
             </div>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
@@ -168,14 +170,14 @@ const FinancialConfig = ({
         {marketingBannerConfig.enabled && (
           <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
             <label className="block text-xs font-medium text-gray-700 mb-2">
-              Message promotionnel
+              {t('quoteCreation.financialConfig.promotionalMessage', 'Message promotionnel')}
             </label>
             <input 
               type="text"
               value={marketingBannerConfig.message}
               onChange={(e) => onMarketingBannerConfigChange('message', e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm"
-              placeholder="Ex: -10% si signé avant 48h"
+              placeholder={t('quoteCreation.financialConfig.promotionalMessagePlaceholder', "Ex: -10% si signé avant 48h")}
             />
           </div>
         )}
@@ -188,8 +190,8 @@ const FinancialConfig = ({
             <Icon name="FileText" size={16} className="text-orange-600" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-gray-900">Conditions générales</h3>
-            <p className="text-xs text-gray-600">Modèles prédéfinis par langue</p>
+            <h3 className="text-sm font-semibold text-gray-900">{t('quoteCreation.financialConfig.generalConditions', 'Conditions générales')}</h3>
+            <p className="text-xs text-gray-600">{t('quoteCreation.financialConfig.predefinedTemplates', 'Modèles prédéfinis par langue')}</p>
           </div>
         </div>
         
@@ -214,7 +216,7 @@ const FinancialConfig = ({
             onChange={(e) => onDefaultConditionsChange(defaultConditions.language, e.target.value)}
             rows={6}
             className="w-full p-3 bg-transparent border-0 rounded-lg resize-none focus:outline-none focus:ring-0 text-xs leading-relaxed"
-            placeholder="Entrez vos conditions générales..."
+            placeholder={t('quoteCreation.financialConfig.enterConditions', "Entrez vos conditions générales...")}
           />
         </div>
       </div>

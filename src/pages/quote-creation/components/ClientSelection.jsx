@@ -298,22 +298,22 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
   }, []); // Run once on component mount
 
   const typeOptions = [
-    { value: 'particulier', label: 'Particulier' },
-    { value: 'professionnel', label: 'Professionnel' }
+    { value: 'particulier', label: t('quoteCreation.clientSelection.individual', 'Particulier') },
+    { value: 'professionnel', label: t('quoteCreation.clientSelection.professional', 'Professionnel') }
   ];
 
   const companySizeOptions = [
-    { value: 'TPE', label: 'TPE (1-9 salariés)' },
-    { value: 'PME', label: 'PME (10-249 salariés)' },
-    { value: 'ETI', label: 'ETI (250-4999 salariés)' },
-    { value: 'GE', label: 'Grande Entreprise (5000+ salariés)' }
+    { value: 'TPE', label: t('quoteCreation.clientSelection.companySize.verySmall', 'TPE (1-9 salariés)') },
+    { value: 'PME', label: t('quoteCreation.clientSelection.companySize.small', 'PME (10-249 salariés)') },
+    { value: 'ETI', label: t('quoteCreation.clientSelection.companySize.medium', 'ETI (250-4999 salariés)') },
+    { value: 'GE', label: t('quoteCreation.clientSelection.companySize.large', 'Grande Entreprise (5000+ salariés)') }
   ];
 
   const preferenceOptions = [
-    { value: 'email', label: 'Email' },
-    { value: 'phone', label: 'Téléphone' },
-    { value: 'sms', label: 'SMS' },
-    { value: 'mail', label: 'Courrier' }
+    { value: 'email', label: t('quoteCreation.clientSelection.contactPreference.email', 'Email') },
+    { value: 'phone', label: t('quoteCreation.clientSelection.contactPreference.phone', 'Téléphone') },
+    { value: 'sms', label: t('quoteCreation.clientSelection.contactPreference.sms', 'SMS') },
+    { value: 'mail', label: t('quoteCreation.clientSelection.contactPreference.mail', 'Courrier') }
   ];
 
   const categoryOptions = [
@@ -623,7 +623,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         : projectInfo.categories?.[0] || '';
       
       if (!selectedCategory) {
-        setAiError('Veuillez d\'abord sélectionner une catégorie de projet');
+        setAiError(t('quoteCreation.projectInfo.selectCategoryFirst', 'Veuillez d\'abord sélectionner une catégorie de projet'));
         return;
       }
       
@@ -835,7 +835,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
         <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
           <Icon name="Users" size={20} className="sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3" />
-          Sélection du client
+          {t('quoteCreation.clientSelection.title')}
         </h2>
         
         {!showNewClientForm ? (
@@ -843,8 +843,8 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
             {leadId && !clientAddedFromLead ? (
               <div className="text-center py-4">
                 <Icon name="UserCheck" size={24} className="mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground mb-2">Client pré-rempli depuis la demande</p>
-                <p className="text-xs text-muted-foreground">Cliquez sur "Modifier les informations client" puis "Ajouter le client" pour continuer</p>
+                <p className="text-sm text-muted-foreground mb-2">{t('quoteCreation.clientSelection.clientPrefilledFromRequest', 'Client pré-rempli depuis la demande')}</p>
+                <p className="text-xs text-muted-foreground">{t('quoteCreation.clientSelection.clickToEdit', 'Cliquez sur "Modifier les informations client" puis "Ajouter le client" pour continuer')}</p>
                 <Button
                   variant="outline"
                   onClick={() => setShowNewClientForm(true)}
@@ -860,18 +860,18 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
             {isLoadingClients ? (
               <div className="flex items-center justify-center py-4">
                 <Icon name="Loader2" size={20} className="animate-spin text-muted-foreground mr-2" />
-                <span className="text-sm text-muted-foreground">Chargement des clients...</span>
+                <span className="text-sm text-muted-foreground">{t('quoteCreation.clientSelection.loading', 'Chargement des clients...')}</span>
               </div>
             ) : existingClients.length === 0 ? (
               <div className="text-center py-4">
                 <Icon name="Users" size={24} className="mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground mb-2">Aucun client trouvé</p>
-                <p className="text-xs text-muted-foreground">Commencez par ajouter votre premier client</p>
+                <p className="text-sm text-muted-foreground mb-2">{t('quoteCreation.clientSelection.noClientsFound', 'Aucun client trouvé')}</p>
+                <p className="text-xs text-muted-foreground">{t('quoteCreation.clientSelection.addFirstClient', 'Commencez par ajouter votre premier client')}</p>
               </div>
             ) : (
             <Select
-              label="Choisir un client existant"
-              placeholder="Rechercher un client..."
+              label={t('quoteCreation.clientSelection.selectExisting')}
+              placeholder={t('quoteCreation.clientSelection.searchPlaceholder')}
               searchable
               clearable
               options={existingClients}
@@ -886,13 +886,13 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                   onClientSelect(client);
                 }
               }}
-              description="Tapez pour rechercher parmi vos clients existants"
+              description={t('quoteCreation.clientSelection.searchDescription', 'Tapez pour rechercher parmi vos clients existants')}
             />
             )}
             
             <div className="flex items-center justify-center py-3 sm:py-4">
               <div className="flex-1 border-t border-border"></div>
-              <span className="px-3 sm:px-4 text-xs sm:text-sm text-muted-foreground">ou</span>
+              <span className="px-3 sm:px-4 text-xs sm:text-sm text-muted-foreground">{t('quoteCreation.clientSelection.or')}</span>
               <div className="flex-1 border-t border-border"></div>
             </div>
             
@@ -903,7 +903,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
               iconPosition="left"
               fullWidth
             >
-              Ajouter un nouveau client
+              {t('quoteCreation.clientSelection.createNew')}
             </Button>
               </>
             )}
@@ -954,7 +954,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
             {/* Client Type Selection */}
             <div className="space-y-3">
               <label className="block text-sm font-medium text-foreground">
-                Type de client *
+                {t('quoteCreation.clientSelection.clientType', 'Type de client')} *
               </label>
               <div className="grid grid-cols-2 gap-3">
                 {typeOptions.map((option) => (
@@ -987,9 +987,9 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label="Nom complet"
+                    label={t('quoteCreation.clientSelection.fullName', 'Nom complet')}
                     type="text"
-                    placeholder="Nom et prénom"
+                    placeholder={t('quoteCreation.clientSelection.fullNamePlaceholder', 'Nom et prénom')}
                     value={newClient.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     required
@@ -1031,9 +1031,9 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label="Raison sociale"
+                    label={t('quoteCreation.clientSelection.companyName', 'Raison sociale')}
                     type="text"
-                    placeholder="Nom de l'entreprise"
+                    placeholder={t('quoteCreation.clientSelection.companyNamePlaceholder', "Nom de l'entreprise")}
                     value={newClient.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     required
@@ -1071,25 +1071,25 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                 {/* Location fields - moved here after telephone and address */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label="Ville"
+                    label={t('quoteCreation.clientSelection.city', 'Ville')}
                     type="text"
-                    placeholder="Bruxelles"
+                    placeholder={t('quoteCreation.clientSelection.cityPlaceholder', 'Bruxelles')}
                     value={newClient.city}
                     onChange={(e) => handleInputChange('city', e.target.value)}
                   />
                   
                   <Select
-                    label="Pays"
+                    label={t('quoteCreation.clientSelection.country', 'Pays')}
                     options={countryOptions}
                     value={newClient.country}
                     onChange={(e) => handleInputChange('country', e.target.value)}
-                    placeholder="Sélectionner le pays"
+                    placeholder={t('quoteCreation.clientSelection.selectCountry', 'Sélectionner le pays')}
                   />
                   
                   <Input
-                    label="Code postal"
+                    label={t('quoteCreation.clientSelection.postalCode', 'Code postal')}
                     type="text"
-                    placeholder="1000"
+                    placeholder={t('quoteCreation.clientSelection.postalCodePlaceholder', '1000')}
                     value={newClient.postalCode}
                     onChange={(e) => handleInputChange('postalCode', e.target.value)}
                   />
@@ -1097,29 +1097,29 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
 
                 {/* Professional-specific fields */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-foreground">Informations professionnelles</h3>
+                  <h3 className="text-lg font-semibold text-foreground">{t('quoteCreation.clientSelection.professionalInfo', 'Informations professionnelles')}</h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
-                      label="Personne de contact"
+                      label={t('quoteCreation.clientSelection.contactPerson', 'Personne de contact')}
                       type="text"
-                      placeholder="Nom de la personne de contact"
+                      placeholder={t('quoteCreation.clientSelection.contactPersonPlaceholder', 'Nom de la personne de contact')}
                       value={newClient.contactPerson}
                       onChange={(e) => handleInputChange('contactPerson', e.target.value)}
                     />
                     
                     <Select
-                      label="Taille de l'entreprise"
+                      label={t('quoteCreation.clientSelection.companySizeLabel', "Taille de l'entreprise")}
                       options={companySizeOptions}
                       value={newClient.companySize}
                       onChange={(e) => handleInputChange('companySize', e.target.value)}
-                      placeholder="Sélectionner la taille"
+                      placeholder={t('quoteCreation.clientSelection.selectSize', 'Sélectionner la taille')}
                     />
                     
                     <Input
-                      label="Numéro de TVA"
+                      label={t('quoteCreation.clientSelection.vatNumber', 'Numéro de TVA')}
                       type="text"
-                      placeholder="Numéro de TVA ou d'enregistrement"
+                      placeholder={t('quoteCreation.clientSelection.vatNumberPlaceholder', "Numéro de TVA ou d'enregistrement")}
                       value={newClient.regNumber}
                       onChange={(e) => handleInputChange('regNumber', e.target.value)}
                     />
@@ -1128,7 +1128,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
 
                 {/* PEPPOL Configuration - only for professional clients */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-foreground">Configuration PEPPOL</h3>
+                  <h3 className="text-lg font-semibold text-foreground">{t('quoteCreation.clientSelection.peppolConfig', 'Configuration PEPPOL')}</h3>
                   
                   <div className="flex items-center space-x-2">
                     <input
@@ -1139,15 +1139,15 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                       className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
                     />
                     <label htmlFor="enablePeppol" className="text-sm font-medium text-foreground">
-                      Activer PEPPOL pour ce client
+                      {t('quoteCreation.clientSelection.enablePeppol', 'Activer PEPPOL pour ce client')}
                     </label>
                   </div>
                   
                   {newClient.enablePeppol && (
                     <Input
-                      label="Peppol ID du client"
+                      label={t('quoteCreation.clientSelection.peppolId', 'Peppol ID du client')}
                       type="text"
-                      placeholder="Format: 0000:IDENTIFIANT"
+                      placeholder={t('quoteCreation.clientSelection.peppolIdFormat', 'Format: 0000:IDENTIFIANT')}
                       value={newClient.peppolId}
                       onChange={(e) => handleInputChange('peppolId', e.target.value)}
                     />
@@ -1160,11 +1160,11 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
             <div className="space-y-3">
               <div className="flex items-center justify-between">
               <label className="block text-sm font-medium text-foreground">
-                Préférences de communication
+                {t('quoteCreation.clientSelection.communicationPreferences', 'Préférences de communication')}
               </label>
                 {leadId && (
                   <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                    Pré-remplies depuis la demande
+                    {t('quoteCreation.clientSelection.prefilledFromRequest', 'Pré-remplies depuis la demande')}
                   </span>
                 )}
               </div>
@@ -1235,14 +1235,14 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                   setClientType('particulier');
                 }}
               >
-                Annuler
+                {t('quoteCreation.clientSelection.cancel', 'Annuler')}
               </Button>
               <Button
                 type="submit"
                 disabled={!newClient.name || !newClient.email || isCreatingClient}
                 loading={isCreatingClient}
               >
-                {isCreatingClient ? 'Création...' : 'Ajouter le client'}
+                {isCreatingClient ? t('quoteCreation.clientSelection.creating', 'Création...') : t('quoteCreation.clientSelection.addClient', 'Ajouter le client')}
               </Button>
             </div>
           </form>
@@ -1258,7 +1258,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                 <p className="text-sm sm:text-base font-semibold text-foreground">{selectedClient.label || selectedClient.name}</p>
               {selectedClient.type && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                    {selectedClient.type === 'particulier' ? 'Particulier' : 'Professionnel'}
+                    {selectedClient.type === 'particulier' ? t('quoteCreation.clientSelection.individual', 'Particulier') : t('quoteCreation.clientSelection.professional', 'Professionnel')}
                   </span>
                 )}
               </div>
@@ -1284,7 +1284,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
             </div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-50 text-green-700 border border-green-200 inline-flex items-center gap-1">
-                <Icon name="CheckCircle" size={12} className="text-green-600" /> Sélectionné
+                <Icon name="CheckCircle" size={12} className="text-green-600" /> {t('quoteCreation.clientSelection.selected', 'Sélectionné')}
               </span>
             </div>
           </div>
@@ -1295,14 +1295,14 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
         <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
           <Icon name="FileText" size={20} className="sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3" />
-          Informations projet
+          {t('quoteCreation.projectInfo.title')}
         </h2>
         
         <div className="space-y-3 sm:space-y-4">
           {/* Category Selection */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              Catégorie *
+              {t('quoteCreation.projectInfo.categories')}
             </label>
             <div className="relative">
               <button
@@ -1313,7 +1313,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                 <span className={projectInfo.categories?.length > 0 ? 'text-foreground' : 'text-muted-foreground'}>
                   {projectInfo.categories?.length > 0 
                     ? projectInfo.categories.map(cat => categoryOptions.find(c => c.value === cat)?.label).join(', ')
-                    : 'Sélectionner une ou plusieurs catégories'
+                    : t('quoteCreation.projectInfo.selectCategories')
                   }
                 </span>
                 <div className="text-muted-foreground">
@@ -1384,9 +1384,9 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
           
           {projectInfo.categories?.includes('other') && (
             <Input
-              label="Catégorie personnalisée"
+              label={t('quoteCreation.projectInfo.otherCategory')}
               type="text"
-              placeholder="Ex: Peinture murale spéciale"
+              placeholder={t('quoteCreation.projectInfo.otherCategoryPlaceholder', 'Ex: Peinture murale spéciale')}
               value={projectInfo.customCategory}
               onChange={(e) => handleProjectChange('customCategory', e.target.value)}
               required
@@ -1395,7 +1395,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
 
           <div className="relative">
             <Input
-              label="Valid until"
+              label={t('quoteCreation.projectInfo.deadline')}
               type="date"
               value={projectInfo.deadline}
               min={new Date().toISOString().split('T')[0]}
@@ -1406,10 +1406,10 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
           
                       <div>
               <label className="block text-sm font-medium text-foreground mb-2 flex items-center justify-between">
-                <span>Description du projet</span>
+                <span>{t('quoteCreation.projectInfo.description')}</span>
                 <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                   <Icon name="Info" size={14} />
-                  <span>L'IA analyse la catégorie et votre contexte</span>
+                  <span>{t('quoteCreation.projectInfo.aiAnalysis', "L'IA analyse la catégorie et votre contexte")}</span>
                 </div>
               </label>
             <div className="relative">
@@ -1417,7 +1417,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                 value={projectInfo.description}
                 onChange={(e) => handleProjectChange('description', e.target.value)}
                 rows={4}
-                placeholder="Ex: Pose de parquet dans salon 20m²"
+                placeholder={t('quoteCreation.projectInfo.descriptionPlaceholder')}
                 className="w-full p-2 border border-border rounded-lg bg-input text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring"
                 required
               />
@@ -1428,10 +1428,10 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                   iconName={isRecording ? "Square" : isTranscribing ? "Loader2" : "Mic"}
                   title={
                     isRecording 
-                      ? `Arrêter l'écoute (${recordingTime}s)` 
+                      ? t('quoteCreation.projectInfo.stopListening', `Arrêter l'écoute (${recordingTime}s)`)
                       : isTranscribing 
-                        ? "Amélioration IA en cours..." 
-                        : "Dicter la description"
+                        ? t('quoteCreation.projectInfo.transcribing', "Amélioration IA en cours...")
+                        : t('quoteCreation.projectInfo.speakDescription', "Dicter la description")
                   }
                   onClick={isRecording ? stopRecording : startRecording}
                   disabled={isTranscribing || isGeneratingAI}
@@ -1449,10 +1449,10 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                   iconName={isGeneratingAI ? "Loader2" : "Sparkles"}
                   title={
                     isGeneratingAI 
-                      ? "Génération en cours..." 
+                      ? t('quoteCreation.projectInfo.generating', "Génération en cours...") 
                       : !isGoogleAIServiceAvailable() 
-                        ? "Service Google AI indisponible" 
-                        : "Enrichir avec Google AI"
+                        ? t('quoteCreation.projectInfo.aiUnavailable', "Service Google AI indisponible") 
+                        : t('quoteCreation.projectInfo.enhanceWithAI', "Enrichir avec Google AI")
                   }
                   onClick={handleAIDescriptionGeneration}
                   disabled={isGeneratingAI || !isGoogleAIServiceAvailable()}
@@ -1461,7 +1461,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Décrivez précisément le projet pour un devis adapté
+              {t('quoteCreation.projectInfo.descriptionInstruction', 'Décrivez précisément le projet pour un devis adapté')}
             </p>
             
             {/* Recording Status */}
@@ -1510,7 +1510,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                 <div className="flex items-center space-x-2">
                   <Icon name="CheckCircle" size={14} className="text-green-600" />
                   <span className="text-xs text-green-700">
-                    {transcript ? 'Description dictée et améliorée par l\'IA' : 'Description générée avec succès par Google AI'}
+                    {transcript ? t('quoteCreation.projectInfo.dictatedDescription', 'Description dictée et améliorée par l\'IA') : t('quoteCreation.projectInfo.generatedDescription', 'Description générée avec succès par Google AI')}
                   </span>
                 </div>
               </div>
@@ -1532,15 +1532,15 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
           size="sm"
           className="w-full sm:w-auto"
         >
-          <span className="hidden sm:inline">Étape suivante</span>
-          <span className="sm:hidden">Suivant</span>
+          <span className="hidden sm:inline">{t('quoteCreation.navigation.nextStep', 'Étape suivante')}</span>
+          <span className="sm:hidden">{t('quoteCreation.navigation.next', 'Suivant')}</span>
         </Button>
         
         {/* Help text when button is disabled due to lead_id */}
         {leadId && !clientAddedFromLead && (
           <div className="text-xs text-muted-foreground text-center sm:text-right">
             <Icon name="Info" size={12} className="inline mr-1" />
-            Vous devez d'abord ajouter le client pour continuer
+            {t('quoteCreation.clientSelection.addClientFirst', "Vous devez d'abord ajouter le client pour continuer")}
           </div>
         )}
       </div>
