@@ -20,20 +20,31 @@ const resources = {
 
 // Detect initial language
 const getInitialLanguage = () => {
-  const savedLanguage = localStorage.getItem('language');
-  const navigatorLanguage = navigator.language.split('-')[0];
-  
-  const validLanguages = ['fr', 'en', 'nl'];
-  
-  if (savedLanguage && validLanguages.includes(savedLanguage)) {
-    return savedLanguage;
+  try {
+    const savedLanguage = localStorage.getItem('language');
+    
+    // If no language is set in localStorage, set it to French by default
+    if (!savedLanguage) {
+      localStorage.setItem('language', 'fr');
+      return 'fr';
+    }
+    
+    const navigatorLanguage = navigator.language.split('-')[0];
+    const validLanguages = ['fr', 'en', 'nl'];
+    
+    if (validLanguages.includes(savedLanguage)) {
+      return savedLanguage;
+    }
+    
+    if (validLanguages.includes(navigatorLanguage)) {
+      return navigatorLanguage;
+    }
+    
+    return 'fr'; // Default to French
+  } catch (error) {
+    console.error('Error accessing localStorage:', error);
+    return 'fr'; // Default to French on error
   }
-  
-  if (validLanguages.includes(navigatorLanguage)) {
-    return navigatorLanguage;
-  }
-  
-  return 'fr'; // Default to French
 };
 
 i18n

@@ -21,10 +21,19 @@ const MobileLanguageSelector = () => {
   const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
 
   const handleLanguageChange = (languageCode) => {
-    i18n.changeLanguage(languageCode);
-    localStorage.setItem('language', languageCode);
-    document.documentElement.setAttribute('lang', languageCode);
-    setIsOpen(false);
+    try {
+      i18n.changeLanguage(languageCode);
+      localStorage.setItem('language', languageCode);
+      document.documentElement.setAttribute('lang', languageCode);
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Error changing language:', error);
+      // Default to French on error
+      i18n.changeLanguage('fr');
+      localStorage.setItem('language', 'fr');
+      document.documentElement.setAttribute('lang', 'fr');
+      setIsOpen(false);
+    }
   };
 
   // Close dropdown when clicking outside

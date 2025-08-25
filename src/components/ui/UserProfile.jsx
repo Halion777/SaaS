@@ -397,7 +397,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                   <div>
                     <h5 className="text-sm font-medium text-foreground">{t('profile.settings.preferences.language.title')}</h5>
                     <p className="text-xs text-muted-foreground">
-                      {selectedLanguageDetails.name}
+                      {selectedLanguageDetails.flag} {selectedLanguageDetails.name} ({currentLanguage})
                     </p>
                   </div>
                   <div className="relative">

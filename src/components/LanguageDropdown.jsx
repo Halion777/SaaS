@@ -16,23 +16,42 @@ const LanguageDropdown = () => {
 
   // Load language preference on component mount
   useEffect(() => {
-    // First, check user's stored preference
-    const storedLanguage = user?.user_metadata?.language;
-    
-    // If user has a stored preference, use it
-    if (storedLanguage && languages.some(lang => lang.code === storedLanguage)) {
-      i18n.changeLanguage(storedLanguage);
-      document.documentElement.setAttribute('lang', storedLanguage);
-    } else {
-      // Otherwise, check localStorage
-      const localStorageLanguage = localStorage.getItem('language');
+    try {
+      // First, check user's stored preference
+      const storedLanguage = user?.user_metadata?.language;
       
-      if (localStorageLanguage && languages.some(lang => lang.code === localStorageLanguage)) {
-        i18n.changeLanguage(localStorageLanguage);
-        document.documentElement.setAttribute('lang', localStorageLanguage);
+      // If user has a stored preference, use it
+      if (storedLanguage && languages.some(lang => lang.code === storedLanguage)) {
+        i18n.changeLanguage(storedLanguage);
+        document.documentElement.setAttribute('lang', storedLanguage);
+        localStorage.setItem('language', storedLanguage);
+      } else {
+        // Otherwise, check localStorage
+        let localStorageLanguage = localStorage.getItem('language');
+        
+        // If no language is set in localStorage, set it to French by default
+        if (!localStorageLanguage) {
+          localStorage.setItem('language', 'fr');
+          localStorageLanguage = 'fr';
+        }
+        
+        if (languages.some(lang => lang.code === localStorageLanguage)) {
+          i18n.changeLanguage(localStorageLanguage);
+          document.documentElement.setAttribute('lang', localStorageLanguage);
+        } else {
+          // If invalid language, default to French
+          i18n.changeLanguage('fr');
+          document.documentElement.setAttribute('lang', 'fr');
+          localStorage.setItem('language', 'fr');
+        }
       }
+    } catch (error) {
+      console.error('Error accessing localStorage:', error);
+      // Default to French on error
+      i18n.changeLanguage('fr');
+      document.documentElement.setAttribute('lang', 'fr');
     }
-  }, [user, i18n]);
+  }, [user, i18n, languages]);
 
   const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
 
