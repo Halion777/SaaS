@@ -207,27 +207,38 @@ const FollowUpManagement = () => {
                validUntil: quote.validUntil || null,
                potentialRevenue: quote.amount,
                                                  priority: (() => {
-              // Check if we've sent a follow-up recently (within 1 day)
+              // Get priority from meta if available
+              if (followUp.meta?.priority) {
+
+                return followUp.meta.priority;
+              }
+
+              // Calculate priority if not in meta
               const lastFollowUpDate = followUp.updated_at || followUp.created_at;
               const oneDayAgo = new Date();
               oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+              const hasRecentActivity = lastFollowUpDate && new Date(lastFollowUpDate) >= oneDayAgo;
               
-              // If follow-up was sent within the last day, set priority to low
-              if (lastFollowUpDate && new Date(lastFollowUpDate) >= oneDayAgo) {
-                return 'low';
-              }
+
               
-              // Otherwise, calculate priority based on quote status
-              if (quote.status === 'sent') {
-                // Not viewed quotes get high priority
+              // Higher stages always get high priority
+              if (followUp.stage > 1) {
                 return 'high';
-              } else if (quote.status === 'viewed') {
-                // Viewed quotes get medium priority
-                return 'medium';
               }
               
-              // Fallback (should rarely happen)
-              return 'medium';
+              // Stage 1 priorities based on status and recent activity
+              if (quote.status === 'sent') {
+                const priority = hasRecentActivity ? 'medium' : 'high';
+
+                return priority;
+              } else if (quote.status === 'viewed') {
+                const priority = hasRecentActivity ? 'low' : 'medium';
+
+                return priority;
+              }
+              
+
+              return 'medium'; // default
              })(),
             status: followUp.status,
             type: 'quote',
@@ -243,7 +254,17 @@ const FollowUpManagement = () => {
             isAutomated: isAutomated,
             templateSubject: followUp.template_subject,
             // Quote status for reference (not displayed, just for logic)
-            quoteStatus: quote.status
+            quoteStatus: quote.status,
+            // Calculate days since last activity for filtering
+            daysAgo: (() => {
+              const lastActivityDate = followUp.updated_at || followUp.created_at;
+              if (!lastActivityDate) return 0;
+              const now = new Date();
+              const lastActivity = new Date(lastActivityDate);
+              const diffTime = Math.abs(now - lastActivity);
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              return diffDays;
+            })()
           };
         }).filter(Boolean); // Remove null entries
         
@@ -313,6 +334,8 @@ const FollowUpManagement = () => {
         return;
       }
 
+
+
       // Transform quotes data
       const transformedQuotes = (quotesData || []).map(quote => ({
         id: quote.id,
@@ -361,6 +384,41 @@ const FollowUpManagement = () => {
         // Get automation status from follow-up record
         const isAutomated = followUp.automated || false;
         
+        const calculatedPriority = (() => {
+              // Get priority from meta if available
+              if (followUp.meta?.priority) {
+                return followUp.meta.priority;
+              }
+
+              // Calculate priority if not in meta
+              const lastFollowUpDate = followUp.updated_at || followUp.created_at;
+              const oneDayAgo = new Date();
+              oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+              const hasRecentActivity = lastFollowUpDate && new Date(lastFollowUpDate) >= oneDayAgo;
+              
+
+              
+              // Higher stages always get high priority
+                              if (followUp.stage > 1) {
+                  return 'high';
+                }
+              
+              // Stage 1 priorities based on status and recent activity
+              if (quote.status === 'sent') {
+                const priority = hasRecentActivity ? 'medium' : 'high';
+
+                return priority;
+              } else if (quote.status === 'viewed') {
+                const priority = hasRecentActivity ? 'low' : 'medium';
+
+                return priority;
+              }
+              
+
+              return 'medium'; // default
+          })();
+
+
         return {
           id: followUp.id,
           name: quote.clientName,
@@ -370,29 +428,7 @@ const FollowUpManagement = () => {
           nextFollowUp: nextFollowUp,
           validUntil: quote.validUntil || null,
           potentialRevenue: quote.amount,
-                                  priority: (() => {
-              // Check if we've sent a follow-up recently (within 1 day)
-              const lastFollowUpDate = followUp.updated_at || followUp.created_at;
-              const oneDayAgo = new Date();
-              oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-              
-              // If follow-up was sent within the last day, set priority to low
-              if (lastFollowUpDate && new Date(lastFollowUpDate) >= oneDayAgo) {
-                return 'low';
-              }
-              
-              // Otherwise, calculate priority based on quote status
-              if (quote.status === 'sent') {
-                // Not viewed quotes get high priority
-                return 'high';
-              } else if (quote.status === 'viewed') {
-                // Viewed quotes get medium priority
-                return 'medium';
-              }
-              
-              // Fallback (should rarely happen)
-              return 'medium';
-          })(),
+          priority: calculatedPriority,
           status: followUp.status,
           type: 'quote',
           hasResponse: false, // Always false since we filtered out accepted/rejected
@@ -407,7 +443,17 @@ const FollowUpManagement = () => {
           isAutomated: isAutomated,
           templateSubject: followUp.template_subject,
           // Quote status for reference (not displayed, just for logic)
-          quoteStatus: quote.status
+          quoteStatus: quote.status,
+          // Calculate days since last activity for filtering
+          daysAgo: (() => {
+            const lastActivityDate = followUp.updated_at || followUp.created_at;
+            if (!lastActivityDate) return 0;
+            const now = new Date();
+            const lastActivity = new Date(lastActivityDate);
+            const diffTime = Math.abs(now - lastActivity);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays;
+          })()
         };
       }).filter(Boolean); // Remove null entries
       
@@ -425,47 +471,6 @@ const FollowUpManagement = () => {
   const handleRefresh = async () => {
     await refreshData();
   };
-
-  // Handle manual trigger of follow-up scheduler
-  const handleTriggerScheduler = async () => {
-    try {
-      setLoading(true);
-      const result = await triggerFollowUpScheduling();
-      if (result.success) {
-        console.log('Scheduler triggered successfully');
-        // Refresh data to show new follow-ups
-        await refreshData();
-      } else {
-        setError('Failed to trigger scheduler');
-      }
-    } catch (error) {
-      console.error('Error triggering scheduler:', error);
-      setError('Failed to trigger scheduler');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle manual trigger of follow-up dispatcher
-  const handleTriggerDispatcher = async () => {
-    try {
-      setLoading(true);
-      const result = await triggerFollowUpDispatching();
-      if (result.success) {
-        console.log('Dispatcher triggered successfully');
-        // Refresh data to show updated statuses
-        await refreshData();
-      } else {
-        setError('Failed to trigger dispatcher');
-      }
-    } catch (error) {
-      console.error('Error triggering dispatcher:', error);
-      setError('Failed to trigger dispatcher');
-    } finally {
-      setLoading(false);
-    }
-  };
-
 
 
   // Filter to only show items that need follow-up (no response or not paid)
@@ -498,8 +503,8 @@ const FollowUpManagement = () => {
     // Only show quote follow-ups
     if (followUp.type !== 'quote') return false;
     
-    // Filter by type
-    if (filters.type !== 'all' && followUp.type !== filters.type) return false;
+    // Filter by follow-up type
+    if (filters.type !== 'all' && followUp.followUpType !== filters.type) return false;
     
     // Filter by priority
     if (filters.priority !== 'all' && followUp.priority !== filters.priority) return false;
@@ -516,17 +521,19 @@ const FollowUpManagement = () => {
     return true;
   });
 
+
+
   const quoteFollowUps = followUps.filter(f => f.type === 'quote' && !f.hasResponse);
   const invoiceFollowUps = followUps.filter(f => f.type === 'invoice' && !f.isPaid);
-  const pendingCount = filteredFollowUps.filter(f => f.status === 'pending').length;
+  const totalFollowUpsCount = filteredFollowUps.length;
   const highPriorityCount = filteredFollowUps.filter(f => f.priority === 'high').length;
   const totalRevenue = filteredFollowUps.reduce((sum, f) => sum + f.potentialRevenue, 0);
 
   const getPriorityColor = (priority) => {
     const colors = {
-      high: 'text-red-700 bg-red-100',
-      medium: 'text-amber-700 bg-amber-100',
-      low: 'text-blue-700 bg-blue-100'
+      high: 'text-red-700 bg-red-100 border border-red-200',
+      medium: 'text-amber-700 bg-amber-100 border border-amber-200',
+      low: 'text-emerald-700 bg-emerald-100 border border-emerald-200'
     };
     return colors[priority] || colors.low;
   };
@@ -541,28 +548,41 @@ const FollowUpManagement = () => {
   
 
   const getFollowUpTypeLabel = (followUpType) => {
-    return t(`followUpManagement.followUpType.${followUpType}`) || t('followUpManagement.followUpType.general');
+    return t(`followUpManagement.followUpType.${followUpType}`) || t('followUpManagement.followUpType.email_not_opened');
   };
 
   const getFollowUpTypeColor = (followUpType) => {
     const colors = {
       'email_not_opened': 'text-red-700 bg-red-100',
       'viewed_no_action': 'text-amber-700 bg-amber-100',
-      'general': 'text-blue-700 bg-blue-100',
-      'manual': 'text-purple-700 bg-purple-100'
+
     };
     return colors[followUpType] || 'text-blue-700 bg-blue-100';
   };
 
   const getStatusColor = (status) => {
     const colors = {
-      'pending': 'text-blue-700 bg-blue-100',
+
       'scheduled': 'text-purple-700 bg-purple-100',
-      'sent': 'text-green-700 bg-green-100',
-      'failed': 'text-red-700 bg-red-100',
-      'stopped': 'text-gray-700 bg-gray-100'
+
+      'stopped': 'text-gray-700 bg-gray-100',
+      'all_stages_completed': 'text-emerald-700 bg-emerald-100',
+      'stage_1_completed': 'text-blue-700 bg-blue-100',
+      'stage_2_completed': 'text-indigo-700 bg-indigo-100',
+      'stage_3_completed': 'text-violet-700 bg-violet-100'
     };
     return colors[status] || 'text-gray-700 bg-gray-100';
+  };
+
+  const getStageCompletionLabel = (status, stage) => {
+    if (status === 'all_stages_completed') {
+      return t('followUpManagement.status.allStagesCompleted');
+    }
+    if (status.startsWith('stage_') && status.endsWith('_completed')) {
+      const stageNumber = status.match(/stage_(\d+)_completed/)[1];
+      return t(`followUpManagement.status.stage${stageNumber}Completed`);
+    }
+    return t('followUpManagement.stageCompletion.inProgress', { stage: stage || 1 });
   };
 
   const getStatusLabel = (status) => {
@@ -740,12 +760,9 @@ const FollowUpManagement = () => {
                    </span>
                  </td>
                  <td className="px-4 py-3">
-                   <div className="flex flex-col gap-1">
-                                     <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getFollowUpTypeColor(followUp.followUpType)}`}>
-                  {getFollowUpTypeLabel(followUp.followUpType)}
-                </span>
-                                 
-                   </div>
+                   <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getFollowUpTypeColor(followUp.followUpType)}`}>
+                     {getFollowUpTypeLabel(followUp.followUpType)}
+                   </span>
                  </td>
                  <td className="px-4 py-3">
                   <div className="flex gap-1">
@@ -791,11 +808,11 @@ const FollowUpManagement = () => {
                  <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getPriorityColor(followUp.priority)}`}>
                    {getPriorityLabel(followUp.priority)}
                  </span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getStatusColor(followUp.status)}`}>
+                  {getStageCompletionLabel(followUp.status, followUp.stage)}
+                </span>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getFollowUpTypeColor(followUp.followUpType)}`}>
                   {getFollowUpTypeLabel(followUp.followUpType)}
-                </span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getStatusColor(followUp.status)}`}>
-                  {getStatusLabel(followUp.status)}
                 </span>
                                  
               </div>
@@ -818,6 +835,10 @@ const FollowUpManagement = () => {
                <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground">
                  <Icon name="Clock" size={12} className="sm:w-3.5 sm:h-3.5" />
                  <span>{t('followUpManagement.cardView.validUntil', { date: followUp.validUntil ? new Date(followUp.validUntil).toLocaleDateString() : t('followUpManagement.cardView.notDefined') })}</span>
+               </div>
+               <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground">
+                 <Icon name="GitBranch" size={12} className="sm:w-3.5 sm:h-3.5" />
+                 <span>{t('followUpManagement.cardView.stage', { stage: followUp.stage, status: getStageCompletionLabel(followUp.status, followUp.stage) })}</span>
                </div>
               {followUp.templateSubject && (
                 <div className="flex items-start space-x-2 text-xs sm:text-sm text-muted-foreground">
@@ -900,11 +921,11 @@ const FollowUpManagement = () => {
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <div className="bg-card border border-border rounded-lg p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.kpi.pendingFollowUps')}</h3>
-                <Icon name="Clock" size={16} className="sm:w-5 sm:h-5 text-muted-foreground" />
+                <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.kpi.totalFollowUps')}</h3>
+                <Icon name="MessageCircle" size={16} className="sm:w-5 sm:h-5 text-muted-foreground" />
               </div>
-              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600 mb-1">{pendingCount}</div>
-              <p className="text-xs sm:text-sm text-muted-foreground">{t('followUpManagement.kpi.toDo')}</p>
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600 mb-1">{totalFollowUpsCount}</div>
+              <p className="text-xs sm:text-sm text-muted-foreground">{t('followUpManagement.kpi.total')}</p>
             </div>
 
             <div className="bg-card border border-border rounded-lg p-3 sm:p-4 md:p-6">

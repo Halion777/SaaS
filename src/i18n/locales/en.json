@@ -1714,6 +1714,12 @@
     }
   },
   "followUpManagement": {
+    "stageCompletion": {
+      "allCompleted": "Completed",
+      "stageCompleted": "Stage {{stage}}",
+      "inProgress": "Stage {{stage}}"
+    },
+   
     "title": "Follow-up Management",
     "subtitle": "Track and manage your quote and invoice follow-ups",
     "refresh": "Refresh",
@@ -1726,10 +1732,10 @@
       "showFilters": "Show filters",
       "hideFilters": "Hide filters",
       "type": {
-        "label": "Type",
+        "label": "Follow-up Type",
         "all": "All types",
-        "quote": "Quotes",
-        "invoice": "Invoices"
+        "email_not_opened": "Email not opened",
+        "viewed_no_action": "Viewed without action"
       },
       "priority": {
         "label": "Priority",
@@ -1743,7 +1749,12 @@
         "all": "All statuses",
         "pending": "Pending",
         "scheduled": "Scheduled",
-        "completed": "Completed"
+
+        "stopped": "Stopped",
+        "stage1Completed": "Stage 1",
+        "stage2Completed": "Stage 2",
+        "stage3Completed": "Stage 3",
+        "allStagesCompleted": "Completed"
       },
       "days": {
         "label": "Timeframe",
@@ -1762,8 +1773,8 @@
       }
     },
     "kpi": {
-      "pendingFollowUps": "Pending Follow-ups",
-      "toDo": "To do",
+      "totalFollowUps": "Total Follow-ups",
+      "total": "Total",
       "highPriority": "High Priority",
       "urgent": "Urgent",
       "potentialRevenue": "Potential Revenue",
@@ -1796,14 +1807,16 @@
       "amount": "Amount",
       "priority": "Priority",
       "followUpType": "Follow-up Type",
-      "actions": "Actions"
+      "actions": "Actions",
+      "stage": "Stage"
     },
     "cardView": {
       "quoteNumber": "Quote: {{number}}",
       "followUpDate": "Follow-up Date: {{date}}",
       "validUntil": "Valid until: {{date}}",
       "notScheduled": "Not scheduled",
-      "notDefined": "Not defined"
+      "notDefined": "Not defined",
+      "stage": "Stage {{stage}} - {{status}}"
     },
     "actions": {
       "followUp": "Follow Up",
@@ -2463,7 +2476,7 @@
     },
     "projectInfo": {
       "title": "Project Information",
-      "categories": "Categories",
+      "projectCategoryLabel": "Categories",
       "selectCategories": "Select categories",
       "otherCategory": "Other category",
       "otherCategoryPlaceholder": "Ex: Special wall painting",

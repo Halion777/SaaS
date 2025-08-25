@@ -123,7 +123,7 @@ async function processFollowUp(admin: any, followUp: any) {
     // ========================================
     const { data: quote, error: qErr } = await admin
       .from('quotes')
-      .select('id, user_id, client_id, quote_number, title, valid_until, status')
+      .select('id, user_id, client_id, quote_number, title, valid_until, status, sent_at, share_token')
       .eq('id', followUp.quote_id)
       .single()
     if (qErr || !quote) { 
@@ -160,11 +160,38 @@ async function processFollowUp(admin: any, followUp: any) {
     }
 
     // ========================================
-    // 2. PREPARE EMAIL CONTENT
+    // 2. PREPARE EMAIL CONTENT WITH VARIABLE REPLACEMENT
     // ========================================
-    const subject = followUp.template_subject || `Relance devis ${quote.quote_number}`;
-    const text = followUp.template_text || `Bonjour ${client.name || ''},\n\nAvez-vous eu le temps de consulter notre devis ${quote.quote_number} ?\n\nCordialement.`;
-    const html = followUp.template_html || `<p>Bonjour ${client.name || ''},</p><p>Avez-vous eu le temps de consulter notre devis <strong>${quote.quote_number}</strong> ?</p><p>Cordialement.</p>`;
+    
+    // Calculate additional template variables
+    const daysSinceSent = (() => {
+      if (quote.sent_at) {
+        const sentDate = new Date(quote.sent_at);
+        const now = new Date();
+        const diffTime = Math.abs(now.getTime() - sentDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays;
+      }
+      return 1; // Default to 1 day if no sent_at
+    })();
+    
+    const quoteLink = `${Deno.env.get('SUPABASE_URL') || 'https://your-domain.com'}/quote/${quote.share_token || quote.id}`;
+    const companyName = 'Your Company Name'; // This should come from user settings or company table
+    
+    // Replace template variables in all content
+    const replaceTemplateVariables = (content: string) => {
+      return content
+        .replace(/\{quote_number\}/g, quote.quote_number)
+        .replace(/\{client_name\}/g, client.name || 'Madame, Monsieur')
+        .replace(/\{quote_title\}/g, quote.title || 'votre projet')
+        .replace(/\{days_since_sent\}/g, daysSinceSent.toString())
+        .replace(/\{quote_link\}/g, quoteLink)
+        .replace(/\{company_name\}/g, companyName);
+    };
+    
+    const subject = replaceTemplateVariables(followUp.template_subject || `Relance devis ${quote.quote_number}`);
+    const text = replaceTemplateVariables(followUp.template_text || `Bonjour ${client.name || ''},\n\nAvez-vous eu le temps de consulter notre devis ${quote.quote_number} ?\n\nCordialement.`);
+    const html = replaceTemplateVariables(followUp.template_html || `<p>Bonjour ${client.name || ''},</p><p>Avez-vous eu le temps de consulter notre devis <strong>${quote.quote_number}</strong> ?</p><p>Cordialement.</p>`);
 
     // ========================================
     // 3. SEND EMAIL

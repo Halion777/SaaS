@@ -10,8 +10,8 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
 
   const typeOptions = [
     { value: 'all', label: t('followUpManagement.filter.type.all') },
-    { value: 'quote', label: t('followUpManagement.filter.type.quote') },
-    { value: 'invoice', label: t('followUpManagement.filter.type.invoice') }
+    { value: 'email_not_opened', label: t('followUpManagement.followUpType.email_not_opened') },
+    { value: 'viewed_no_action', label: t('followUpManagement.followUpType.viewed_no_action') }
   ];
 
   const priorityOptions = [
@@ -23,9 +23,12 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
 
   const statusOptions = [
     { value: 'all', label: t('followUpManagement.filter.status.all') },
-    { value: 'pending', label: t('followUpManagement.filter.status.pending') },
     { value: 'scheduled', label: t('followUpManagement.filter.status.scheduled') },
-    { value: 'completed', label: t('followUpManagement.filter.status.completed') }
+    { value: 'stopped', label: t('followUpManagement.filter.status.stopped') },
+    { value: 'stage_1_completed', label: t('followUpManagement.filter.status.stage1Completed') },
+    { value: 'stage_2_completed', label: t('followUpManagement.filter.status.stage2Completed') },
+    { value: 'stage_3_completed', label: t('followUpManagement.filter.status.stage3Completed') },
+    { value: 'all_stages_completed', label: t('followUpManagement.filter.status.allStagesCompleted') }
   ];
 
   const daysOptions = [
@@ -170,11 +173,11 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
             
             {filters.priority !== 'all' && (
               <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
-                <span>Priorité: {priorityOptions.find(opt => opt.value === filters.priority)?.label}</span>
+                <span>{t('followUpManagement.filter.chips.priority', { value: priorityOptions.find(opt => opt.value === filters.priority)?.label })}</span>
                 <button
                   onClick={() => handleFilterChange('priority', 'all')}
                   className="hover:bg-primary/20 rounded-full p-0.5"
-                  aria-label="Supprimer le filtre de priorité"
+                  aria-label={t('followUpManagement.filter.chips.removeFilter', { filter: t('followUpManagement.filter.priority.label') })}
                 >
                   <Icon name="X" size={12} />
                 </button>
@@ -183,11 +186,11 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
             
             {filters.status !== 'all' && (
               <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
-                <span>Statut: {statusOptions.find(opt => opt.value === filters.status)?.label}</span>
+                <span>{t('followUpManagement.filter.chips.status', { value: statusOptions.find(opt => opt.value === filters.status)?.label })}</span>
                 <button
                   onClick={() => handleFilterChange('status', 'all')}
                   className="hover:bg-primary/20 rounded-full p-0.5"
-                  aria-label="Supprimer le filtre de statut"
+                  aria-label={t('followUpManagement.filter.chips.removeFilter', { filter: t('followUpManagement.filter.status.label') })}
                 >
                   <Icon name="X" size={12} />
                 </button>
@@ -196,11 +199,11 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
             
             {filters.days !== 'all' && (
               <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
-                <span>Délai: {daysOptions.find(opt => opt.value === filters.days)?.label}</span>
+                <span>{t('followUpManagement.filter.chips.days', { value: daysOptions.find(opt => opt.value === filters.days)?.label })}</span>
                 <button
                   onClick={() => handleFilterChange('days', 'all')}
                   className="hover:bg-primary/20 rounded-full p-0.5"
-                  aria-label="Supprimer le filtre de délai"
+                  aria-label={t('followUpManagement.filter.chips.removeFilter', { filter: t('followUpManagement.filter.days.label') })}
                 >
                   <Icon name="X" size={12} />
                 </button>
@@ -214,45 +217,45 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
       {isExpanded && (
         <div className="md:hidden p-3 space-y-4 border-t border-border">
           <div className="space-y-3">
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Type</label>
-              <Select
-                placeholder="Tous les types"
-                options={typeOptions}
-                value={filters.type}
-                onChange={(e) => handleFilterChange('type', e.target.value)}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Priorité</label>
-              <Select
-                placeholder="Toutes les priorités"
-                options={priorityOptions}
-                value={filters.priority}
-                onChange={(e) => handleFilterChange('priority', e.target.value)}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Statut</label>
-              <Select
-                placeholder="Tous les statuts"
-                options={statusOptions}
-                value={filters.status}
-                onChange={(e) => handleFilterChange('status', e.target.value)}
-              />
-            </div>
+                         <div>
+               <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('followUpManagement.filter.type.label')}</label>
+               <Select
+                 placeholder={t('followUpManagement.filter.type.all')}
+                 options={typeOptions}
+                 value={filters.type}
+                 onChange={(e) => handleFilterChange('type', e.target.value)}
+               />
+             </div>
+             
+             <div>
+               <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('followUpManagement.filter.priority.label')}</label>
+               <Select
+                 placeholder={t('followUpManagement.filter.priority.all')}
+                 options={priorityOptions}
+                 value={filters.priority}
+                 onChange={(e) => handleFilterChange('priority', e.target.value)}
+               />
+             </div>
+             
+             <div>
+               <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('followUpManagement.filter.status.label')}</label>
+               <Select
+                 placeholder={t('followUpManagement.filter.status.all')}
+                 options={statusOptions}
+                 value={filters.status}
+                 onChange={(e) => handleFilterChange('status', e.target.value)}
+               />
+             </div>
 
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Délai</label>
-              <Select
-                placeholder="Tous les délais"
-                options={daysOptions}
-                value={filters.days}
-                onChange={(e) => handleFilterChange('days', e.target.value)}
-              />
-            </div>
+             <div>
+               <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('followUpManagement.filter.days.label')}</label>
+               <Select
+                 placeholder={t('followUpManagement.filter.days.all')}
+                 options={daysOptions}
+                 value={filters.days}
+                 onChange={(e) => handleFilterChange('days', e.target.value)}
+               />
+             </div>
           </div>
 
           {/* Active Filter Chips - Mobile */}
@@ -260,7 +263,7 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
             <div className="flex flex-wrap gap-2 pt-3 border-t border-border">
               {filters.type !== 'all' && (
                 <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
-                  <span>Type: {typeOptions.find(opt => opt.value === filters.type)?.label}</span>
+                  <span>{t('followUpManagement.filter.chips.type', { value: typeOptions.find(opt => opt.value === filters.type)?.label })}</span>
                   <button
                     onClick={() => handleFilterChange('type', 'all')}
                     className="hover:bg-primary/20 rounded-full p-0.5"
@@ -272,7 +275,7 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
               
               {filters.priority !== 'all' && (
                 <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
-                  <span>Priorité: {priorityOptions.find(opt => opt.value === filters.priority)?.label}</span>
+                  <span>{t('followUpManagement.filter.chips.priority', { value: priorityOptions.find(opt => opt.value === filters.priority)?.label })}</span>
                   <button
                     onClick={() => handleFilterChange('priority', 'all')}
                     className="hover:bg-primary/20 rounded-full p-0.5"
@@ -284,7 +287,7 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
               
               {filters.status !== 'all' && (
                 <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
-                  <span>Statut: {statusOptions.find(opt => opt.value === filters.status)?.label}</span>
+                  <span>{t('followUpManagement.filter.chips.status', { value: statusOptions.find(opt => opt.value === filters.status)?.label })}</span>
                   <button
                     onClick={() => handleFilterChange('status', 'all')}
                     className="hover:bg-primary/20 rounded-full p-0.5"
@@ -296,7 +299,7 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
               
               {filters.days !== 'all' && (
                 <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
-                  <span>Délai: {daysOptions.find(opt => opt.value === filters.days)?.label}</span>
+                  <span>{t('followUpManagement.filter.chips.days', { value: daysOptions.find(opt => opt.value === filters.days)?.label })}</span>
                   <button
                     onClick={() => handleFilterChange('days', 'all')}
                     className="hover:bg-primary/20 rounded-full p-0.5"
@@ -310,20 +313,20 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
         </div>
       )}
 
-      {/* Mobile Active Filters Summary (when collapsed) */}
-      {!isExpanded && activeFiltersCount > 0 && (
-        <div className="md:hidden p-3 border-t border-border">
-          <div className="text-sm text-muted-foreground">
-            <span className="font-medium">{activeFiltersCount} filtre{activeFiltersCount > 1 ? 's' : ''} actif{activeFiltersCount > 1 ? 's' : ''}</span>
-            <span className="text-xs ml-2">
-              {filters.type !== 'all' && `• ${typeOptions.find(opt => opt.value === filters.type)?.label}`}
-              {filters.priority !== 'all' && ` • ${priorityOptions.find(opt => opt.value === filters.priority)?.label}`}
-              {filters.status !== 'all' && ` • ${statusOptions.find(opt => opt.value === filters.status)?.label}`}
-              {filters.days !== 'all' && ` • ${daysOptions.find(opt => opt.value === filters.days)?.label}`}
-            </span>
-          </div>
-        </div>
-      )}
+             {/* Mobile Active Filters Summary (when collapsed) */}
+       {!isExpanded && activeFiltersCount > 0 && (
+         <div className="md:hidden p-3 border-t border-border">
+           <div className="text-sm text-muted-foreground">
+             <span className="font-medium">{t('followUpManagement.filter.activeFilters', { count: activeFiltersCount })}</span>
+             <span className="text-xs ml-2">
+               {filters.type !== 'all' && `• ${typeOptions.find(opt => opt.value === filters.type)?.label}`}
+               {filters.priority !== 'all' && ` • ${priorityOptions.find(opt => opt.value === filters.priority)?.label}`}
+               {filters.status !== 'all' && ` • ${statusOptions.find(opt => opt.value === filters.status)?.label}`}
+               {filters.days !== 'all' && ` • ${daysOptions.find(opt => opt.value === filters.days)?.label}`}
+             </span>
+           </div>
+         </div>
+       )}
     </div>
   );
 };

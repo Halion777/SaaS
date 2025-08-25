@@ -1546,6 +1546,11 @@
     }
   },
   "followUpManagement": {
+    "stageCompletion": {
+      "allCompleted": "Terminé",
+      "stageCompleted": "Étape {{stage}}",
+      "inProgress": "Étape {{stage}}"
+    },
     "title": "Gestion des relances",
     "subtitle": "Suivez et gérez vos relances de devis et factures",
     "refresh": "Actualiser",
@@ -1558,10 +1563,11 @@
       "showFilters": "Afficher les filtres",
       "hideFilters": "Masquer les filtres",
       "type": {
-        "label": "Type",
+        "label": "Type de relance",
         "all": "Tous les types",
-        "quote": "Devis",
-        "invoice": "Factures"
+        "email_not_opened": "Email non ouvert",
+        "viewed_no_action": "Vu sans action"
+      
       },
       "priority": {
         "label": "Priorité",
@@ -1575,7 +1581,12 @@
         "all": "Tous les statuts",
         "pending": "En attente",
         "scheduled": "Programmée",
-        "completed": "Terminée"
+
+        "stopped": "Arrêtée",
+        "stage1Completed": "Étape 1",
+        "stage2Completed": "Étape 2",
+        "stage3Completed": "Étape 3",
+        "allStagesCompleted": "Terminé"
       },
       "days": {
         "label": "Délai",
@@ -1594,8 +1605,8 @@
       }
     },
     "kpi": {
-      "pendingFollowUps": "Relances en attente",
-      "toDo": "À traiter",
+      "totalFollowUps": "Total des relances",
+      "total": "Total",
       "highPriority": "Priorité haute",
       "urgent": "Urgent",
       "potentialRevenue": "CA potentiel",
@@ -1628,15 +1639,18 @@
       "amount": "Montant",
       "priority": "Priorité",
       "followUpType": "Type Relance",
-      "actions": "Actions"
+      "actions": "Actions",
+      "stage": "Étape"
     },
     "cardView": {
       "quoteNumber": "Devis: {{number}}",
       "followUpDate": "Date relance: {{date}}",
       "validUntil": "Valide jusqu'au: {{date}}",
       "notScheduled": "Non programmée",
-      "notDefined": "Non définie"
+      "notDefined": "Non définie",
+      "stage": "Étape {{stage}} - {{status}}"
     },
+    
     "actions": {
       "followUp": "Relancer",
       "sending": "Envoi..."
@@ -2509,7 +2523,7 @@
     },
     "projectInfo": {
       "title": "Informations du projet",
-      "categories": "Catégories",
+      "projectCategoryLabel": "Catégories",
       "selectCategories": "Sélectionner des catégories",
       "otherCategory": "Autre catégorie",
       "otherCategoryPlaceholder": "Ex: Peinture murale spéciale",

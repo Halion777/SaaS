@@ -1697,6 +1697,11 @@
     }
   },
   "followUpManagement": {
+    "stageCompletion": {
+      "allCompleted": "Voltooid",
+      "stageCompleted": "Stadium {{stage}}",
+      "inProgress": "Stadium {{stage}}"
+    },
     "title": "Opvolgingsbeheer",
     "subtitle": "Volg en beheer uw offerte- en factuurherinneringen",
     "refresh": "Vernieuwen",
@@ -1709,10 +1714,11 @@
       "showFilters": "Filters tonen",
       "hideFilters": "Filters verbergen",
       "type": {
-        "label": "Type",
+        "label": "Herinneringstype",
         "all": "Alle types",
-        "quote": "Offertes",
-        "invoice": "Facturen"
+        "email_not_opened": "E-mail niet geopend",
+        "viewed_no_action": "Bekeken zonder actie"
+       
       },
       "priority": {
         "label": "Prioriteit",
@@ -1726,7 +1732,12 @@
         "all": "Alle statussen",
         "pending": "In afwachting",
         "scheduled": "Gepland",
-        "completed": "Voltooid"
+
+        "stopped": "Gestopt",
+        "stage1Completed": "Stadium 1",
+        "stage2Completed": "Stadium 2",
+        "stage3Completed": "Stadium 3",
+        "allStagesCompleted": "Voltooid"
       },
       "days": {
         "label": "Tijdsbestek",
@@ -1745,8 +1756,8 @@
       }
     },
     "kpi": {
-      "pendingFollowUps": "Wachtende herinneringen",
-      "toDo": "Te doen",
+      "totalFollowUps": "Totaal herinneringen",
+      "total": "Totaal",
       "highPriority": "Hoge prioriteit",
       "urgent": "Urgent",
       "potentialRevenue": "Potentiële omzet",
@@ -1779,14 +1790,16 @@
       "amount": "Bedrag",
       "priority": "Prioriteit",
       "followUpType": "Herinneringstype",
-      "actions": "Acties"
+      "actions": "Acties",
+      "stage": "Stadium"
     },
     "cardView": {
       "quoteNumber": "Offerte: {{number}}",
       "followUpDate": "Herinneringsdatum: {{date}}",
       "validUntil": "Geldig tot: {{date}}",
       "notScheduled": "Niet gepland",
-      "notDefined": "Niet gedefinieerd"
+      "notDefined": "Niet gedefinieerd",
+      "stage": "Stadium {{stage}} - {{status}}"
     },
     "actions": {
       "followUp": "Herinneren",
@@ -2503,7 +2516,7 @@
     },
     "projectInfo": {
       "title": "Projectinformatie",
-      "categories": "Categorieën",
+      "projectCategoryLabel": "Categorieën",
       "selectCategories": "Selecteer categorieën",
       "otherCategory": "Andere categorie",
       "otherCategoryPlaceholder": "Bijv: Speciale muurschildering",

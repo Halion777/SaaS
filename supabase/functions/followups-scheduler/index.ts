@@ -10,6 +10,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Helper function to calculate priority based on status and stage
+const calculatePriority = (status: string, currentStage: number, hasRecent: boolean) => {
+  // Higher stages always get high priority regardless of recent activity
+  if (currentStage > 1) return 'high';
+  
+  // For Stage 1, maintain status distinction even with recent activity
+  if (status === 'sent') {
+    return hasRecent ? 'medium' : 'high'; // Sent quotes stay at least medium priority
+  }
+  if (status === 'viewed') {
+    return hasRecent ? 'low' : 'medium'; // Viewed quotes can go to low priority
+  }
+  
+  return 'medium'; // default
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -532,35 +548,50 @@ async function createIntelligentFollowUp(admin: any, quote: any, rules: any) {
       return;
     }
     
-    // Check for recent follow-ups (sent within the last day)
+    // Check for any recent activity (within the last day)
     const oneDayAgo = new Date();
     oneDayAgo.setDate(oneDayAgo.getDate() - 1);
     
-    const { data: recentFollowUps, error: recentError } = await admin
-      .from('quote_follow_ups')
-      .select('id, created_at, status')
+    // First check quote_access_logs for recent views
+    const { data: recentViews, error: viewError } = await admin
+      .from('quote_access_logs')
+      .select('created_at')
       .eq('quote_id', quote.id)
-      .eq('status', 'sent')
+      .eq('action', 'viewed')
       .gte('created_at', oneDayAgo.toISOString())
-      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    
+    // Then check quote_follow_ups for recent updates
+    const { data: recentFollowUps, error: recentFollowUpError } = await admin
+      .from('quote_follow_ups')
+      .select('updated_at, created_at')
+      .eq('quote_id', quote.id)
+      .or(`updated_at.gte.${oneDayAgo.toISOString()},created_at.gte.${oneDayAgo.toISOString()}`)
+      .limit(1)
+      .maybeSingle();
+    
+    // Check quote_events for recent activity
+    const { data: recentEvents, error: eventError } = await admin
+      .from('quote_events')
+      .select('created_at')
+      .eq('quote_id', quote.id)
+      .gte('created_at', oneDayAgo.toISOString())
       .limit(1)
       .maybeSingle();
       
-    // Variable to track if we've sent a follow-up recently
-    const hasRecentFollowUp = !recentError && recentFollowUps !== null;
+    // Variable to track if there's been any recent activity
+    const hasRecentActivity = (!viewError && recentViews !== null) || 
+                            (!recentFollowUpError && recentFollowUps !== null) ||
+                            (!eventError && recentEvents !== null);
     
     // Determine follow-up type and stage based on quote status
     let followUpType = 'general';
     let stage = 1;
     let templateType = 'followup_viewed_no_action'; // Default template
     let scheduledAt = new Date().toISOString(); // Default to immediate
-    let priority = 'medium';
-    
-    if (hasRecentFollowUp) {
-      // If we've sent a follow-up in the last day, set priority to low
-      priority = 'low';
-    }
-    
+    let priority = 'medium'; // Default priority
+
     if (quote.status === 'viewed') {
       // Client viewed - follow-up after 1 hour
       followUpType = 'viewed_no_action';
@@ -572,10 +603,8 @@ async function createIntelligentFollowUp(admin: any, quote: any, rules: any) {
       scheduledDate.setHours(scheduledDate.getHours() + 1); // 1 hour delay
       scheduledAt = scheduledDate.toISOString();
       
-      // Medium priority for viewed quotes, unless we've sent a follow-up recently
-      if (!hasRecentFollowUp) {
-        priority = 'medium';
-      }
+      // Calculate priority based on stage and recent activity
+      priority = calculatePriority('viewed', stage, hasRecentActivity);
     } else if (quote.status === 'sent') {
       // Client hasn't opened/viewed the quote
       followUpType = 'email_not_opened';
@@ -589,10 +618,8 @@ async function createIntelligentFollowUp(admin: any, quote: any, rules: any) {
         scheduledAt = scheduledDate.toISOString();
       }
       
-      // High priority for unopened emails, unless we've sent a follow-up recently
-      if (!hasRecentFollowUp) {
-        priority = 'high';
-      }
+      // Calculate priority based on stage and recent activity
+      priority = calculatePriority('sent', stage, hasRecentActivity);
     }
     
     // Get template from email_templates
@@ -712,6 +739,7 @@ async function processQuoteStatusUpdates(admin: any, rules: any) {
 /**
  * Create delayed follow-up for viewed quote (1 hour delay)
  */
+// In followups-scheduler/index.ts
 async function createDelayedViewFollowUp(admin: any, quote: any) {
   try {
     // Get client details
@@ -726,21 +754,17 @@ async function createDelayedViewFollowUp(admin: any, quote: any) {
       return;
     }
     
-    // Check if instant follow-up already exists for this quote
+    // Find existing follow-up for this quote
     const { data: existingFollowUp, error: checkError } = await admin
       .from('quote_follow_ups')
-      .select('id')
+      .select('*')
       .eq('quote_id', quote.id)
-      .eq('meta->>follow_up_type', 'viewed_instant')
+      .in('status', ['pending', 'scheduled'])
+      .order('created_at', { ascending: false })
       .limit(1);
     
     if (checkError) {
-      console.warn('Error checking existing instant follow-up:', checkError);
-      return;
-    }
-    
-    if (existingFollowUp && existingFollowUp.length > 0) {
-      // Instant follow-up already exists for viewed quote
+      console.warn('Error checking existing follow-up:', checkError);
       return;
     }
     
@@ -754,10 +778,9 @@ async function createDelayedViewFollowUp(admin: any, quote: any) {
     
     if (templateError || !template) {
       console.error(`Template followup_viewed_no_action not found or error:`, templateError);
-      return; // Skip this follow-up if template not found
+      return;
     }
-    
-    // Always use database template with variable replacement
+
     const subject = template.subject
       .replace('{quote_number}', quote.quote_number)
       .replace('{client_name}', client.name || 'Madame, Monsieur')
@@ -772,50 +795,52 @@ async function createDelayedViewFollowUp(admin: any, quote: any) {
       .replace('{quote_number}', quote.quote_number)
       .replace('{client_name}', client.name || 'Madame, Monsieur')
       .replace('{quote_title}', quote.title || 'votre projet');
-    
-    // Create delayed follow-up for viewed quote (1 hour delay)
+
     const scheduledDate = new Date();
     scheduledDate.setHours(scheduledDate.getHours() + 1); // 1 hour delay
-    
-    const { error: followUpError } = await admin
-      .from('quote_follow_ups')
-      .insert({
-        quote_id: quote.id,
-        user_id: quote.user_id,
-        client_id: quote.client_id,
-        stage: 1,
-        status: 'scheduled',
-        scheduled_at: scheduledDate.toISOString(), // Send after 1 hour
-        template_subject: subject,
-        template_text: text,
-        template_html: html,
-        attempts: 0,
-        max_attempts: 3, // Hardcoded max attempts
-        channel: 'email',
-        automated: true,
-        meta: {
-          follow_up_type: 'viewed_no_action',
-          automated: true,
-          created_at: new Date().toISOString(),
-          behavior_based: true,
-          quote_status: 'viewed',
-          instant_followup: false, // No longer instant
-          template_type: 'followup_viewed_no_action',
-          priority: 'high',
-          stage_delay: 1 // 1 hour delay
-        }
-      });
-    
-    if (followUpError) {
-      console.error('Error creating instant view follow-up:', followUpError);
-    } else {
-      // Created viewed no action follow-up for quote
+
+    if (existingFollowUp && existingFollowUp.length > 0) {
+      // Update existing follow-up with new template and schedule
+      const { error: updateError } = await admin
+        .from('quote_follow_ups')
+        .update({
+          status: 'scheduled',
+          scheduled_at: scheduledDate.toISOString(),
+          template_subject: subject,
+          template_text: text,
+          template_html: html,
+          attempts: 0,
+          updated_at: new Date().toISOString(),
+          meta: {
+            ...existingFollowUp[0].meta,
+            follow_up_type: 'viewed_no_action',
+            updated_at: new Date().toISOString(),
+            quote_status: 'viewed',
+            instant_followup: false,
+            template_type: 'followup_viewed_no_action',
+            priority: calculatePriority('viewed', existingFollowUp[0].stage, true), // Use true for hasRecentActivity since this is a view action
+            priority_reason: 'Priority adjusted for viewed quote',
+            stage_delay: 1,
+            previous_status: 'sent',
+            status_change_time: new Date().toISOString()
+          }
+        })
+        .eq('id', existingFollowUp[0].id);
+
+      if (updateError) {
+        console.error('Error updating existing follow-up:', updateError);
+      } else {
+        console.log(`Updated existing follow-up for quote ${quote.quote_number}`);
+      }
+      return;
     }
+
+    // This should never happen since we always create a follow-up when quote is sent
+    console.warn(`No existing follow-up found for quote ${quote.quote_number} - this should not happen`);
   } catch (error) {
-    console.error('Error creating instant view follow-up:', error);
+    console.error('Error in createDelayedViewFollowUp:', error);
   }
 }
-
 /**
  * Clean up follow-ups for accepted/rejected quotes
  */
@@ -957,11 +982,15 @@ async function progressFollowUpStages(admin: any, rules: any) {
             continue;
           }
           
-          // Update follow-up to next stage
+          // Calculate new priority based on next stage
+          const priority = nextStage > 1 ? 'high' : 'medium';
+
+          // Update follow-up to next stage and mark current stage as completed
           const { error: updateError } = await admin
             .from('quote_follow_ups')
             .update({
               stage: nextStage,
+              status: `stage_${followUp.stage}_completed`,
               attempts: 0,
               scheduled_at: nextScheduledAt.toISOString(),
               updated_at: new Date().toISOString(),
@@ -970,7 +999,11 @@ async function progressFollowUpStages(admin: any, rules: any) {
                 previous_stage: followUp.stage,
                 new_stage: nextStage,
                 delay_days: delayDays,
-                progressed_at: new Date().toISOString()
+                progressed_at: new Date().toISOString(),
+                stage_completion: `Completed stage ${followUp.stage} of 3`,
+                completion_type: 'stage_completion',
+                priority: priority,
+                priority_reason: `Priority set to ${priority} due to stage ${nextStage}`
               }
             })
             .eq('id', followUp.id);
@@ -981,16 +1014,18 @@ async function progressFollowUpStages(admin: any, rules: any) {
             console.log(`Progressed follow-up for quote ${quote.quote_number} to stage ${nextStage}, scheduled for ${nextScheduledAt.toISOString()} (${delayDays} days delay)`);
           }
         } else {
-          // Max stages reached, mark as completed
+          // Max stages reached, mark as all stages completed
           const { error: completeError } = await admin
             .from('quote_follow_ups')
             .update({
-              status: 'completed',
+              status: 'all_stages_completed',
               updated_at: new Date().toISOString(),
               meta: {
-                completed_reason: 'max_stages_reached',
+                completed_reason: 'all_stages_completed',
                 completed_at: new Date().toISOString(),
-                final_stage: followUp.stage
+                final_stage: followUp.stage,
+                stage_completion: 'Completed all 3 stages',
+                completion_type: 'full_completion'
               }
             })
             .eq('id', followUp.id);
@@ -1132,7 +1167,8 @@ async function createInitialFollowUpForSentQuote(admin: any, quote: any, rules: 
           quote_status: 'sent',
           instant_followup: false,
           template_type: 'followup_not_viewed',
-          priority: 'high', // High priority for unopened emails
+          priority: 'high',
+          priority_reason: 'Initial follow-up for unopened quote',
           source: 'newly_sent_quote'
         }
       });

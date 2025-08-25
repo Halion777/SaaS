@@ -1302,7 +1302,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
           {/* Category Selection */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              {t('quoteCreation.projectInfo.categories')}
+              {t('quoteCreation.projectInfo.projectCategoryLabel', 'Catégories')}
             </label>
             <div className="relative">
               <button
