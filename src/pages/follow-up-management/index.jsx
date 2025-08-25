@@ -7,6 +7,7 @@ import FilterToolbar from './components/FilterToolbar';
 import { useScrollPosition } from '../../utils/useScrollPosition';
 import { useAuth } from '../../context/AuthContext';
 import { useMultiUser } from '../../context/MultiUserContext';
+import { useTranslation } from 'react-i18next';
 import { 
   listScheduledFollowUps, 
   stopFollowUpsForQuote,
@@ -24,6 +25,7 @@ import { useNavigate } from 'react-router-dom';
 const FollowUpManagement = () => {
   const { user } = useAuth();
   const { currentProfile } = useMultiUser();
+  const { t } = useTranslation();
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
@@ -532,25 +534,14 @@ const FollowUpManagement = () => {
   
 
   const getPriorityLabel = (priority) => {
-    const labels = {
-      high: 'Haute',
-      medium: 'Moyenne',
-      low: 'Faible'
-    };
-    return labels[priority] || 'Faible';
+    return t(`followUpManagement.priority.${priority}`) || t('followUpManagement.priority.low');
   };
 
  
   
 
   const getFollowUpTypeLabel = (followUpType) => {
-    const labels = {
-      'email_not_opened': 'Email non ouvert',
-      'viewed_no_action': 'Vue sans action',
-      'general': 'Général',
-      'manual': 'Manuel'
-    };
-    return labels[followUpType] || 'Général';
+    return t(`followUpManagement.followUpType.${followUpType}`) || t('followUpManagement.followUpType.general');
   };
 
   const getFollowUpTypeColor = (followUpType) => {
@@ -575,14 +566,7 @@ const FollowUpManagement = () => {
   };
 
   const getStatusLabel = (status) => {
-    const labels = {
-      'pending': 'En attente',
-      'scheduled': 'Programmée',
-      'sent': 'Terminée',
-      'failed': 'Échouée',
-      'stopped': 'Arrêtée'
-    };
-    return labels[status] || 'Inconnu';
+    return t(`followUpManagement.status.${status}`) || t('followUpManagement.status.unknown');
   };
 
 
@@ -695,15 +679,15 @@ const FollowUpManagement = () => {
         <table className="w-full">
           <thead className="bg-muted/50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Client</th>
-              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Devis</th>
-              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Title</th>
-              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Date relance</th>
-              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Valid until</th>
-              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Montant</th>
-              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Priorité</th>
-              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Type Relance</th>
-              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">Actions</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.tableHeaders.client')}</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.tableHeaders.quote')}</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.tableHeaders.title')}</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.tableHeaders.followUpDate')}</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.tableHeaders.validUntil')}</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.tableHeaders.amount')}</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.tableHeaders.priority')}</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.tableHeaders.followUpType')}</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.tableHeaders.actions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -737,12 +721,12 @@ const FollowUpManagement = () => {
                  
                                   <td className="px-4 py-3">
                    <span className="text-xs sm:text-sm text-muted-foreground">
-                     {followUp.scheduledAt ? new Date(followUp.scheduledAt).toLocaleDateString('fr-FR') : 'Non programmée'}
+                     {followUp.scheduledAt ? new Date(followUp.scheduledAt).toLocaleDateString() : t('followUpManagement.cardView.notScheduled')}
                    </span>
                  </td>
                  <td className="px-4 py-3">
                    <span className="text-xs sm:text-sm text-muted-foreground">
-                     {followUp.validUntil ? new Date(followUp.validUntil).toLocaleDateString('fr-FR') : 'Non définie'}
+                     {followUp.validUntil ? new Date(followUp.validUntil).toLocaleDateString() : t('followUpManagement.cardView.notDefined')}
                    </span>
                  </td>
                  <td className="px-4 py-3">
@@ -775,7 +759,7 @@ const FollowUpManagement = () => {
                       title="Relancer"
                       disabled={processingFollowUp === followUp.id}
                     >
-                      {processingFollowUp === followUp.id ? 'Envoi...' : 'Relancer'}
+                      {processingFollowUp === followUp.id ? t('followUpManagement.actions.sending') : t('followUpManagement.actions.followUp')}
                     </Button>
                     {/* Quick AI removed */}
                   </div>
@@ -825,15 +809,15 @@ const FollowUpManagement = () => {
                </div>
                <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground">
                  <Icon name="Hash" size={12} className="sm:w-3.5 sm:h-3.5" />
-                 <span>Devis: {followUp.number || 'N/A'}</span>
+                 <span>{t('followUpManagement.cardView.quoteNumber', { number: followUp.number || 'N/A' })}</span>
                </div>
                <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground">
                  <Icon name="Calendar" size={12} className="sm:w-3.5 sm:h-3.5" />
-                 <span>Date relance: {followUp.scheduledAt ? new Date(followUp.scheduledAt).toLocaleDateString('fr-FR') : 'Non programmée'}</span>
+                 <span>{t('followUpManagement.cardView.followUpDate', { date: followUp.scheduledAt ? new Date(followUp.scheduledAt).toLocaleDateString() : t('followUpManagement.cardView.notScheduled') })}</span>
                </div>
                <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground">
                  <Icon name="Clock" size={12} className="sm:w-3.5 sm:h-3.5" />
-                 <span>Valid until: {followUp.validUntil ? new Date(followUp.validUntil).toLocaleDateString('fr-FR') : 'Non définie'}</span>
+                 <span>{t('followUpManagement.cardView.validUntil', { date: followUp.validUntil ? new Date(followUp.validUntil).toLocaleDateString() : t('followUpManagement.cardView.notDefined') })}</span>
                </div>
               {followUp.templateSubject && (
                 <div className="flex items-start space-x-2 text-xs sm:text-sm text-muted-foreground">
@@ -859,7 +843,7 @@ const FollowUpManagement = () => {
                   className="h-8 sm:h-9"
                   disabled={processingFollowUp === followUp.id}
                 >
-                  {processingFollowUp === followUp.id ? 'Envoi...' : 'Relancer'}
+                  {processingFollowUp === followUp.id ? t('followUpManagement.actions.sending') : t('followUpManagement.actions.followUp')}
                 </Button>
                 {/* Quick AI removed */}
               </div>
@@ -888,10 +872,10 @@ const FollowUpManagement = () => {
               <div>
                 <div className="flex items-center">
                   <Icon name="MessageCircle" size={24} className="text-primary mr-3" />
-                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des relances</h1>
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">{t('followUpManagement.title')}</h1>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Suivez et gérez vos relances de devis et factures
+                  {t('followUpManagement.subtitle')}
                 </p>
               </div>
               
@@ -904,7 +888,7 @@ const FollowUpManagement = () => {
                   className="hidden md:flex text-xs sm:text-sm"
                   disabled={loading}
                 >
-                  {loading ? 'Actualisation...' : 'Actualiser'}
+                  {loading ? t('followUpManagement.refreshing') : t('followUpManagement.refresh')}
                 </Button>
               </div>
             </div>
@@ -916,30 +900,30 @@ const FollowUpManagement = () => {
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <div className="bg-card border border-border rounded-lg p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">Relances en attente</h3>
+                <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.kpi.pendingFollowUps')}</h3>
                 <Icon name="Clock" size={16} className="sm:w-5 sm:h-5 text-muted-foreground" />
               </div>
               <div className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600 mb-1">{pendingCount}</div>
-              <p className="text-xs sm:text-sm text-muted-foreground">À traiter</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">{t('followUpManagement.kpi.toDo')}</p>
             </div>
 
             <div className="bg-card border border-border rounded-lg p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">Priorité haute</h3>
+                <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.kpi.highPriority')}</h3>
                 <Icon name="MessageCircle" size={16} className="sm:w-5 sm:h-5 text-muted-foreground" />
               </div>
               <div className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600 mb-1">{highPriorityCount}</div>
-              <p className="text-xs sm:text-sm text-muted-foreground">Urgent</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">{t('followUpManagement.kpi.urgent')}</p>
             </div>
 
             <div className="bg-card border border-border rounded-lg p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">CA potentiel</h3>
+                <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.kpi.potentialRevenue')}</h3>
                 <Icon name="FileText" size={16} className="sm:w-5 sm:h-5 text-muted-foreground" />
               </div>
               <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 mb-1">{totalRevenue.toLocaleString()}€</div>
               <p className="text-xs sm:text-sm text-muted-foreground">
-                Devis
+                {t('followUpManagement.kpi.quotes')}
               </p>
             </div>
           </div>
@@ -958,7 +942,7 @@ const FollowUpManagement = () => {
             {loading ? (
               <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
                 <div className="w-full">
-                  <TableLoader message="Chargement des relances..." />
+                  <TableLoader message={t('followUpManagement.refreshing')} />
                 </div>
               </div>
             ) : (
@@ -966,7 +950,7 @@ const FollowUpManagement = () => {
                 {/* View Toggle */}
                 <div className="flex items-center justify-between p-4 border-b border-border">
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium text-muted-foreground">Vue:</span>
+                    <span className="text-sm font-medium text-muted-foreground">{t('followUpManagement.view.label')}</span>
                     <div className="flex bg-muted rounded-lg p-1">
                       <button
                         onClick={() => setViewMode('table')}
@@ -976,7 +960,7 @@ const FollowUpManagement = () => {
                         }`}
                       >
                         <Icon name="Table" size={14} className="mr-1" />
-                        Tableau
+                        {t('followUpManagement.view.table')}
                       </button>
                       <button
                         onClick={() => setViewMode('card')}
@@ -986,12 +970,12 @@ const FollowUpManagement = () => {
                         }`}
                       >
                         <Icon name="Grid" size={14} className="mr-1" />
-                        Cartes
+                        {t('followUpManagement.view.cards')}
                       </button>
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {filteredFollowUps.length} relance(s)
+                    {t('followUpManagement.view.followUpsCount', { count: filteredFollowUps.length })}
                   </div>
                 </div>
 
@@ -999,38 +983,38 @@ const FollowUpManagement = () => {
                   {error ? (
             <div className="bg-card border border-border rounded-lg p-8 text-center">
               <Icon name="AlertCircle" size={48} className="text-red-500 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">Erreur de chargement</h3>
+              <h3 className="text-lg font-medium text-foreground mb-2">{t('followUpManagement.error.title')}</h3>
               <p className="text-muted-foreground">
-                {error}. Veuillez réessayer ou rafraîchir la page.
+                {error}. {t('followUpManagement.error.message')}
               </p>
               <Button
                 variant="outline"
                 onClick={handleRefresh}
                 className="mt-4"
               >
-                Rafraîchir
+                {t('followUpManagement.error.refresh')}
               </Button>
                               </div>
                   ) : filteredFollowUps.length === 0 ? (
                     <div className="p-8 text-center">
                       <Icon name="MessageCircle" size={48} className="text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-foreground mb-2">Aucune relance trouvée</h3>
+                      <h3 className="text-lg font-medium text-foreground mb-2">{t('followUpManagement.empty.title')}</h3>
                       <p className="text-muted-foreground mb-4">
                         {followUps.length === 0 
-                          ? "Aucune relance n'est actuellement programmée. Les relances apparaîtront automatiquement pour vos devis envoyés."
-                          : "Aucune relance ne correspond aux filtres appliqués. Essayez de modifier vos critères de recherche."
+                          ? t('followUpManagement.empty.noScheduled')
+                          : t('followUpManagement.empty.noMatch')
                         }
                       </p>
                       {followUps.length === 0 && (
                         <Button onClick={() => navigate('/quotes-management')} variant="default" className="gap-2">
                           <Icon name="ArrowRight" size={16} />
-                          Aller aux devis
+                          {t('followUpManagement.empty.goToQuotes')}
                         </Button>
                       )}
                       {followUps.length > 0 && (
                         <Button onClick={() => setFilters({ type: 'all', priority: 'all', status: 'all', days: 'all' })} variant="outline" className="gap-2">
                           <Icon name="RotateCcw" size={16} />
-                          Effacer les filtres
+                          {t('followUpManagement.empty.clearFilters')}
                         </Button>
                       )}
                     </div>

@@ -1,8 +1,10 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { useTranslation } from 'react-i18next';
 
 const BulkActionsToolbar = ({ selectedCount, onBulkAction, onClearSelection }) => {
+  const { t } = useTranslation();
   if (selectedCount === 0) return null;
 
   return (
@@ -12,7 +14,7 @@ const BulkActionsToolbar = ({ selectedCount, onBulkAction, onClearSelection }) =
           <div className="flex items-center space-x-2">
             <Icon name="CheckSquare" size={20} color="var(--color-primary)" />
             <span className="font-medium text-primary">
-              {selectedCount} devis sélectionné{selectedCount > 1 ? 's' : ''}
+              {t('quotesManagement.bulkActions.selected', { count: selectedCount })}
             </span>
           </div>
           
@@ -24,7 +26,7 @@ const BulkActionsToolbar = ({ selectedCount, onBulkAction, onClearSelection }) =
             iconPosition="left"
             className="text-muted-foreground hover:text-foreground"
           >
-            Désélectionner
+            {t('quotesManagement.bulkActions.deselect')}
           </Button>
         </div>
       </div>
@@ -38,7 +40,7 @@ const BulkActionsToolbar = ({ selectedCount, onBulkAction, onClearSelection }) =
           iconName="Download"
           iconPosition="left"
         >
-          Exporter
+          {t('quotesManagement.bulkActions.export')}
         </Button>
         
         <Button
@@ -48,7 +50,7 @@ const BulkActionsToolbar = ({ selectedCount, onBulkAction, onClearSelection }) =
           iconName="Trash2"
           iconPosition="left"
         >
-          Supprimer
+          {t('quotesManagement.bulkActions.delete')}
         </Button>
       </div>
     </div>

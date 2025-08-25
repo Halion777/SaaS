@@ -3,20 +3,22 @@ import Icon from '../../../components/AppIcon';
 import Select from '../../../components/ui/Select';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
+import { useTranslation } from 'react-i18next';
 
 const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) => {
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [amountRange, setAmountRange] = useState({ min: '', max: '' });
   const [isExpanded, setIsExpanded] = useState(false);
+  const { t } = useTranslation();
 
   const statusOptions = [
-    { value: '', label: 'Tous les statuts' },
-    { value: 'draft', label: 'Brouillon' },
-    { value: 'sent', label: 'Envoyé' },
-    { value: 'viewed', label: 'Consulté' },
-    { value: 'accepted', label: 'Accepté' },
-    { value: 'rejected', label: 'Rejeté' },
-    { value: 'expired', label: 'Expiré' },
+    { value: '', label: t('quotesManagement.filter.status.all') },
+    { value: 'draft', label: t('quotesManagement.filter.status.draft') },
+    { value: 'sent', label: t('quotesManagement.filter.status.sent') },
+    { value: 'viewed', label: t('quotesManagement.filter.status.viewed') },
+    { value: 'accepted', label: t('quotesManagement.filter.status.accepted') },
+    { value: 'rejected', label: t('quotesManagement.filter.status.rejected') },
+    { value: 'expired', label: t('quotesManagement.filter.status.expired') },
   ];
 
   // Generate client options from actual quotes data
@@ -24,7 +26,7 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
     const uniqueClients = new Map();
     
     // Add default option
-    uniqueClients.set('', { value: '', label: 'Tous les clients' });
+    uniqueClients.set('', { value: '', label: t('quotesManagement.filter.client.all') });
     
     // Extract unique clients from quotes
     quotes.forEach(quote => {
@@ -70,7 +72,7 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
       <div className="flex items-center justify-between p-3 md:p-4">
         <div className="flex items-center space-x-2">
           <Icon name="Filter" size={18} className="text-muted-foreground" />
-          <h3 className="text-base font-medium text-foreground">Filtres</h3>
+          <h3 className="text-base font-medium text-foreground">{t('quotesManagement.filter.title')}</h3>
           {activeFiltersCount > 0 && (
             <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
               {activeFiltersCount}
@@ -87,7 +89,7 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
             >
               <span className="flex items-center">
                 <Icon name="X" size={14} className="mr-1" />
-                Effacer
+                {t('quotesManagement.filter.clear')}
               </span>
             </Button>
           )}
@@ -96,7 +98,7 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
             size="icon"
             onClick={() => setIsExpanded(!isExpanded)}
             className="md:hidden h-8 w-8"
-            aria-label={isExpanded ? "Masquer les filtres" : "Afficher les filtres"}
+            aria-label={isExpanded ? t('quotesManagement.filter.hideFilters') : t('quotesManagement.filter.showFilters')}
           >
             <Icon name={isExpanded ? "ChevronUp" : "ChevronDown"} size={16} />
           </Button>
@@ -107,34 +109,34 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
       <div className="hidden md:block p-4 space-y-4 border-t border-border">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Select
-            label="Statut"
+            label={t('quotesManagement.filter.status.label')}
             options={statusOptions}
             value={filters.status || ''}
             onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
-            placeholder="Sélectionner un statut"
+            placeholder={t('quotesManagement.filter.status.all')}
           />
 
           <Select
-            label="Client"
+            label={t('quotesManagement.filter.client.label')}
             options={clientOptions}
             value={filters.client || ''}
             onChange={(e) => onFiltersChange({ ...filters, client: e.target.value })}
-            placeholder="Sélectionner un client"
+            placeholder={t('quotesManagement.filter.client.placeholder')}
             searchable
           />
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Période</label>
+            <label className="text-sm font-medium text-foreground">{t('quotesManagement.filter.period.label')}</label>
             <div className="grid grid-cols-2 gap-2">
               <Input
                 type="date"
-                placeholder="Du"
+                placeholder={t('quotesManagement.filter.period.from')}
                 value={dateRange.start}
                 onChange={(e) => handleDateRangeChange('start', e.target.value)}
               />
               <Input
                 type="date"
-                placeholder="Au"
+                placeholder={t('quotesManagement.filter.period.to')}
                 value={dateRange.end}
                 onChange={(e) => handleDateRangeChange('end', e.target.value)}
               />
@@ -142,17 +144,17 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Montant (€)</label>
+            <label className="text-sm font-medium text-foreground">{t('quotesManagement.filter.amount.label')}</label>
             <div className="grid grid-cols-2 gap-2">
               <Input
                 type="number"
-                placeholder="Min"
+                placeholder={t('quotesManagement.filter.amount.min')}
                 value={amountRange.min}
                 onChange={(e) => handleAmountRangeChange('min', e.target.value)}
               />
               <Input
                 type="number"
-                placeholder="Max"
+                placeholder={t('quotesManagement.filter.amount.max')}
                 value={amountRange.max}
                 onChange={(e) => handleAmountRangeChange('max', e.target.value)}
               />
@@ -165,11 +167,11 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
           <div className="flex flex-wrap gap-2 pt-3 border-t border-border">
             {filters.status && (
               <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
-                <span>Statut: {statusOptions.find(opt => opt.value === filters.status)?.label}</span>
+                <span>{t('quotesManagement.filter.chips.status', { value: statusOptions.find(opt => opt.value === filters.status)?.label })}</span>
                 <button
                   onClick={() => onFiltersChange({ ...filters, status: '' })}
                   className="hover:bg-primary/20 rounded-full p-0.5"
-                  aria-label="Supprimer le filtre de statut"
+                  aria-label={t('quotesManagement.filter.chips.removeFilter', { filter: t('quotesManagement.filter.status.label') })}
                 >
                   <Icon name="X" size={12} />
                 </button>
@@ -178,11 +180,11 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
             
             {filters.client && (
               <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
-                <span>Client: {clientOptions.find(opt => opt.value === filters.client)?.label}</span>
+                <span>{t('quotesManagement.filter.chips.client', { value: clientOptions.find(opt => opt.value === filters.client)?.label })}</span>
                 <button
                   onClick={() => onFiltersChange({ ...filters, client: '' })}
                   className="hover:bg-primary/20 rounded-full p-0.5"
-                  aria-label="Supprimer le filtre de client"
+                  aria-label={t('quotesManagement.filter.chips.removeFilter', { filter: t('quotesManagement.filter.client.label') })}
                 >
                   <Icon name="X" size={12} />
                 </button>
@@ -192,7 +194,7 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
             {(dateRange.start || dateRange.end) && (
               <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
                 <span>
-                  Période: {dateRange.start || '...'} - {dateRange.end || '...'}
+                  {t('quotesManagement.filter.chips.period', { start: dateRange.start || '...', end: dateRange.end || '...' })}
                 </span>
                 <button
                   onClick={() => {
@@ -200,7 +202,7 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
                     onFiltersChange({ ...filters, dateRange: { start: '', end: '' } });
                   }}
                   className="hover:bg-primary/20 rounded-full p-0.5"
-                  aria-label="Supprimer le filtre de période"
+                  aria-label={t('quotesManagement.filter.chips.removeFilter', { filter: t('quotesManagement.filter.period.label') })}
                 >
                   <Icon name="X" size={12} />
                 </button>
@@ -210,7 +212,7 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
             {(amountRange.min || amountRange.max) && (
               <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
                 <span>
-                  Montant: {amountRange.min || '0'}€ - {amountRange.max || '∞'}€
+                  {t('quotesManagement.filter.chips.amount', { min: amountRange.min || '0', max: amountRange.max || '∞' })}
                 </span>
                 <button
                   onClick={() => {
@@ -218,7 +220,7 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
                     onFiltersChange({ ...filters, amountRange: { min: '', max: '' } });
                   }}
                   className="hover:bg-primary/20 rounded-full p-0.5"
-                  aria-label="Supprimer le filtre de montant"
+                  aria-label={t('quotesManagement.filter.chips.removeFilter', { filter: t('quotesManagement.filter.amount.label') })}
                 >
                   <Icon name="X" size={12} />
                 </button>
@@ -233,36 +235,36 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
         <div className="md:hidden p-3 space-y-4 border-t border-border">
           <div className="space-y-3">
             <Select
-              label="Statut"
+              label={t('quotesManagement.filter.status.label')}
               options={statusOptions}
               value={filters.status || ''}
               onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
-              placeholder="Tous les statuts"
+              placeholder={t('quotesManagement.filter.status.all')}
             />
 
             <Select
-              label="Client"
+              label={t('quotesManagement.filter.client.label')}
               options={clientOptions}
               value={filters.client || ''}
               onChange={(e) => onFiltersChange({ ...filters, client: e.target.value })}
-              placeholder="Tous les clients"
+              placeholder={t('quotesManagement.filter.client.all')}
               searchable
             />
           </div>
 
           <div className="grid grid-cols-1 gap-3">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Période</label>
+              <label className="text-sm font-medium text-foreground">{t('quotesManagement.filter.period.label')}</label>
               <div className="grid grid-cols-2 gap-2">
                 <Input
                   type="date"
-                  placeholder="Du"
+                  placeholder={t('quotesManagement.filter.period.from')}
                   value={dateRange.start}
                   onChange={(e) => handleDateRangeChange('start', e.target.value)}
                 />
                 <Input
                   type="date"
-                  placeholder="Au"
+                  placeholder={t('quotesManagement.filter.period.to')}
                   value={dateRange.end}
                   onChange={(e) => handleDateRangeChange('end', e.target.value)}
                 />
@@ -270,17 +272,17 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Montant (€)</label>
+              <label className="text-sm font-medium text-foreground">{t('quotesManagement.filter.amount.label')}</label>
               <div className="grid grid-cols-2 gap-2">
                 <Input
                   type="number"
-                  placeholder="Min"
+                  placeholder={t('quotesManagement.filter.amount.min')}
                   value={amountRange.min}
                   onChange={(e) => handleAmountRangeChange('min', e.target.value)}
                 />
                 <Input
                   type="number"
-                  placeholder="Max"
+                  placeholder={t('quotesManagement.filter.amount.max')}
                   value={amountRange.max}
                   onChange={(e) => handleAmountRangeChange('max', e.target.value)}
                 />
@@ -357,12 +359,12 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
       {!isExpanded && activeFiltersCount > 0 && (
         <div className="md:hidden p-3 border-t border-border">
           <div className="text-sm text-muted-foreground">
-            <span className="font-medium">{activeFiltersCount} filtre{activeFiltersCount > 1 ? 's' : ''} actif{activeFiltersCount > 1 ? 's' : ''}</span>
+            <span className="font-medium">{t('quotesManagement.filter.activeFilters', { count: activeFiltersCount })}</span>
             <span className="text-xs ml-2">
               {filters.status && `• ${statusOptions.find(opt => opt.value === filters.status)?.label}`}
               {filters.client && ` • ${clientOptions.find(opt => opt.value === filters.client)?.label}`}
-              {(dateRange.start || dateRange.end) && ' • Période'}
-              {(amountRange.min || amountRange.max) && ' • Montant'}
+              {(dateRange.start || dateRange.end) && ` • ${t('quotesManagement.filter.period.label')}`}
+              {(amountRange.min || amountRange.max) && ` • ${t('quotesManagement.filter.amount.label')}`}
             </span>
           </div>
         </div>

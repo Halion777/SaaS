@@ -7,6 +7,7 @@ import TableLoader, { TableSkeletonLoader } from '../../components/ui/TableLoade
 import QuotesTable from './components/QuotesTable';
 import FilterBar from './components/FilterBar';
 import BulkActionsToolbar from './components/BulkActionsToolbar';
+import { useTranslation } from 'react-i18next';
 // Analyse IA removed
 import { useAuth } from '../../context/AuthContext';
 import { useMultiUser } from '../../context/MultiUserContext';
@@ -34,6 +35,7 @@ const QuotesManagement = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { currentProfile } = useMultiUser();
+  const { t } = useTranslation();
   
   const [quotes, setQuotes] = useState([]);
   const [filteredQuotes, setFilteredQuotes] = useState([]);
@@ -985,23 +987,15 @@ const QuotesManagement = () => {
   const getFollowUpStatusLabel = (status, quoteStatus) => {
     // Disable follow-ups for accepted/rejected quotes - no need for relances
     if (quoteStatus === 'accepted' || quoteStatus === 'rejected') {
-      return 'Arrêtée';
+      return t('quotesManagement.followUpStatus.stopped');
     }
     
     // Handle expired quotes
     if (quoteStatus === 'expired') {
-      return 'Expirée';
+      return t('quotesManagement.followUpStatus.expired');
     }
     
-    const labels = {
-      none: 'Aucune',
-      pending: 'En attente',
-      scheduled: 'Programmée',
-      sent: 'Envoyée',
-      stopped: 'Arrêtée',
-      failed: 'Échouée'
-    };
-    return labels[status] || 'Aucune';
+    return t(`quotesManagement.followUpStatus.${status}`) || t('quotesManagement.followUpStatus.none');
   };
 
   const getFollowUpStatusColor = (status, quoteStatus) => {
@@ -1044,15 +1038,10 @@ const QuotesManagement = () => {
   };
 
   const getStatusLabel = (status) => {
-    const statusMap = {
-      draft: 'Brouillon',
-      'Auto-Sauvegardé': 'Brouillon Auto-Sauvegardé',
-      sent: 'Envoyé',
-      accepted: 'Accepté',
-      rejected: 'Refusé',
-      expired: 'Expiré'
-    };
-    return statusMap[status] || status;
+    if (status === 'Auto-Sauvegardé') {
+      return 'Brouillon Auto-Sauvegardé';
+    }
+    return t(`quotesManagement.filter.status.${status}`) || status;
   };
 
   // Check if a quote is expired based on its valid_until date
@@ -1357,10 +1346,10 @@ const QuotesManagement = () => {
             <div>
               <div className="flex items-center">
                   <Icon name="FileText" size={24} className="text-primary mr-3" />
-                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des devis</h1>
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">{t('quotesManagement.title')}</h1>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                    Gérez et optimisez vos devis avec l'intelligence artificielle
+                    {t('quotesManagement.subtitle')}
                   </p>
             </div>
             
@@ -1373,7 +1362,7 @@ const QuotesManagement = () => {
                 className="hidden md:flex text-xs sm:text-sm"
                 disabled={loading}
               >
-                {loading ? 'Actualisation...' : 'Actualiser'}
+                {loading ? t('quotesManagement.refreshing') : t('quotesManagement.refresh')}
               </Button>
               
               {/* Relances and Analyse IA buttons removed */}
@@ -1385,7 +1374,7 @@ const QuotesManagement = () => {
                 iconPosition="left"
                 className="flex-1 sm:flex-none text-xs sm:text-sm"
               >
-                <span className="hidden sm:inline">Nouveau devis</span>
+                <span className="hidden sm:inline">{t('quotesManagement.newQuote')}</span>
               </Button>
             </div>
           </div>
@@ -1398,7 +1387,7 @@ const QuotesManagement = () => {
             <div className="bg-card border border-border rounded-lg p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Total devis</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{t('quotesManagement.stats.totalQuotes')}</p>
                   <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">
                     {loading ? '...' : stats.total}
                   </p>
@@ -1412,7 +1401,7 @@ const QuotesManagement = () => {
             <div className="bg-card border border-border rounded-lg p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Brouillons</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{t('quotesManagement.stats.drafts')}</p>
                   <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">
                     {loading ? '...' : stats.drafts}
                   </p>
@@ -1426,7 +1415,7 @@ const QuotesManagement = () => {
             <div className="bg-card border border-border rounded-lg p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Envoyés</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{t('quotesManagement.stats.sent')}</p>
                   <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">
                     {loading ? '...' : stats.sent}
                   </p>
@@ -1440,7 +1429,7 @@ const QuotesManagement = () => {
             <div className="bg-card border border-border rounded-lg p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Montant moyen</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{t('quotesManagement.stats.averageAmount')}</p>
                   <p className="text-lg sm:text-xl lg:text-2xl font-bold text-primary">
                     {loading ? '...' : formatCurrency(stats.averageAmount || 0)}
                   </p>
@@ -1474,36 +1463,36 @@ const QuotesManagement = () => {
           <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
             {loading ? (
               <div className="w-full">
-                <TableLoader message="Chargement des devis..." />
+                <TableLoader message={t('quotesManagement.table.loading')} />
               </div>
             ) : error ? (
               <div className="p-8 text-center">
                 <Icon name="AlertCircle" size={24} className="text-destructive mx-auto mb-4" />
-                <p className="text-destructive mb-4">{error}</p>
+                <p className="text-destructive mb-4">{error || t('quotesManagement.table.error')}</p>
                 <Button onClick={() => window.location.reload()} variant="outline">
-                  Réessayer
+                  {t('quotesManagement.table.retry')}
                 </Button>
               </div>
             ) : filteredQuotes.length === 0 ? (
               <div className="p-8 text-center">
                 <Icon name="FileText" size={48} className="text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">Aucun devis trouvé</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-2">{t('quotesManagement.table.noQuotesFound')}</h3>
                 <p className="text-muted-foreground mb-4">
                   {quotes.length === 0 
-                    ? "Bienvenue ! Vous n'avez pas encore créé de devis. Commencez par en créer un nouveau pour gérer vos projets professionnels."
-                    : "Aucun devis ne correspond aux filtres appliqués. Essayez de modifier vos critères de recherche."
+                    ? t('quotesManagement.table.noQuotesMessage')
+                    : t('quotesManagement.table.noMatchingQuotes')
                   }
                 </p>
                 {quotes.length === 0 && (
                   <Button onClick={() => navigate('/quote-creation')} variant="default" className="gap-2">
                     <Icon name="Plus" size={16} />
-                    Créer votre premier devis
+                    {t('quotesManagement.table.createFirstQuote')}
                   </Button>
                 )}
                 {quotes.length > 0 && (
                   <Button onClick={clearFilters} variant="outline" className="gap-2">
                     <Icon name="RotateCcw" size={16} />
-                    Effacer les filtres
+                    {t('quotesManagement.table.clearFilters')}
                   </Button>
                 )}
               </div>
@@ -1541,7 +1530,7 @@ const QuotesManagement = () => {
               className="flex-1 text-xs sm:text-sm"
               disabled={loading}
             >
-              {loading ? 'Actualisation...' : 'Actualiser'}
+              {loading ? t('quotesManagement.refreshing') : t('quotesManagement.refresh')}
             </Button>
           </div>
 

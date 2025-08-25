@@ -1588,6 +1588,284 @@
     "invoice": "factuur",
     "invoice_plural": "facturen"
   },
+  "quotesManagement": {
+    "title": "Offertebeheer",
+    "subtitle": "Beheer en optimaliseer uw offertes met kunstmatige intelligentie",
+    "refresh": "Vernieuwen",
+    "refreshing": "Vernieuwen...",
+    "newQuote": "Nieuwe offerte",
+    "stats": {
+      "totalQuotes": "Totaal offertes",
+      "drafts": "Concepten",
+      "sent": "Verzonden",
+      "averageAmount": "Gemiddeld bedrag"
+    },
+    "filter": {
+      "title": "Filters",
+      "activeFilters": "{{count}} actieve filter(s)",
+      "clear": "Wissen",
+      "showFilters": "Filters tonen",
+      "hideFilters": "Filters verbergen",
+      "status": {
+        "label": "Status",
+        "all": "Alle statussen",
+        "draft": "Concept",
+        "sent": "Verzonden",
+        "viewed": "Bekeken",
+        "accepted": "Geaccepteerd",
+        "rejected": "Afgewezen",
+        "expired": "Verlopen"
+      },
+      "client": {
+        "label": "Klant",
+        "all": "Alle klanten",
+        "placeholder": "Selecteer een klant"
+      },
+      "period": {
+        "label": "Periode",
+        "from": "Van",
+        "to": "Tot"
+      },
+      "amount": {
+        "label": "Bedrag (€)",
+        "min": "Min",
+        "max": "Max"
+      },
+      "chips": {
+        "status": "Status: {{value}}",
+        "client": "Klant: {{value}}",
+        "period": "Periode: {{start}} - {{end}}",
+        "amount": "Bedrag: {{min}}€ - {{max}}€",
+        "removeFilter": "Verwijder {{filter}} filter"
+      }
+    },
+    "table": {
+      "loading": "Offertes laden...",
+      "error": "Fout bij het laden van offertes",
+      "retry": "Opnieuw proberen",
+      "noQuotesFound": "Geen offertes gevonden",
+      "noQuotesMessage": "Welkom! U heeft nog geen offertes aangemaakt. Begin met het maken van een nieuwe offerte om uw professionele projecten te beheren.",
+      "noMatchingQuotes": "Geen offertes komen overeen met de toegepaste filters. Probeer uw zoekcriteria aan te passen.",
+      "createFirstQuote": "Maak uw eerste offerte",
+      "clearFilters": "Filters wissen",
+      "search": "Zoeken op nummer, klant, beschrijving of status...",
+      "view": "Weergave:",
+      "tableView": "Tabel",
+      "cardView": "Kaarten",
+      "quotesCount": "{{count}} offerte(s)",
+      "noSearchResults": "Geen offertes komen overeen met uw zoekopdracht.",
+      "clearSearch": "Zoekopdracht wissen",
+      "refresh": "Vernieuwen",
+      "headers": {
+        "number": "Nummer",
+        "client": "Klant",
+        "amount": "Bedrag",
+        "status": "Status",
+        "createdAt": "Aangemaakt op",
+        "validUntil": "Geldig tot",
+        "followUps": "Opvolgingen",
+        "files": "Bestanden",
+        "actions": "Acties"
+      },
+      "card": {
+        "validUntil": "Geldig tot",
+        "createdAt": "Aangemaakt op",
+        "files": "{{count}} bestand(en) bijgevoegd",
+        "noFiles": "0 bestanden bijgevoegd"
+      },
+      "actions": {
+        "markAsSent": "Markeren als verzonden",
+        "edit": "Bewerken",
+        "convertToInvoice": "Converteren naar factuur",
+        "delete": "Offerte verwijderen"
+      }
+    },
+    "bulkActions": {
+      "selected": "{{count}} offerte(s) geselecteerd",
+      "deselect": "Deselecteren",
+      "export": "Exporteren",
+      "delete": "Verwijderen"
+    },
+    "followUpStatus": {
+      "none": "Geen",
+      "pending": "In behandeling",
+      "scheduled": "Gepland",
+      "sent": "Verzonden",
+      "stopped": "Gestopt",
+      "failed": "Mislukt",
+      "expired": "Verlopen"
+    }
+  },
+  "followUpManagement": {
+    "title": "Opvolgingsbeheer",
+    "subtitle": "Volg en beheer uw offerte- en factuurherinneringen",
+    "refresh": "Vernieuwen",
+    "refreshing": "Vernieuwen...",
+    "filter": {
+      "title": "Filters",
+      "resultsFound": "{{count}} herinnering(en) gevonden",
+      "activeFilters": "{{count}} actieve filter(s)",
+      "clear": "Wissen",
+      "showFilters": "Filters tonen",
+      "hideFilters": "Filters verbergen",
+      "type": {
+        "label": "Type",
+        "all": "Alle types",
+        "quote": "Offertes",
+        "invoice": "Facturen"
+      },
+      "priority": {
+        "label": "Prioriteit",
+        "all": "Alle prioriteiten",
+        "high": "Hoog",
+        "medium": "Gemiddeld",
+        "low": "Laag"
+      },
+      "status": {
+        "label": "Status",
+        "all": "Alle statussen",
+        "pending": "In afwachting",
+        "scheduled": "Gepland",
+        "completed": "Voltooid"
+      },
+      "days": {
+        "label": "Tijdsbestek",
+        "all": "Alle tijdsbestekken",
+        "0-2": "0-2 dagen",
+        "3-5": "3-5 dagen",
+        "6-10": "6-10 dagen",
+        "10+": "10+ dagen"
+      },
+      "chips": {
+        "type": "Type: {{value}}",
+        "priority": "Prioriteit: {{value}}",
+        "status": "Status: {{value}}",
+        "days": "Tijdsbestek: {{value}}",
+        "removeFilter": "{{filter}} filter verwijderen"
+      }
+    },
+    "kpi": {
+      "pendingFollowUps": "Wachtende herinneringen",
+      "toDo": "Te doen",
+      "highPriority": "Hoge prioriteit",
+      "urgent": "Urgent",
+      "potentialRevenue": "Potentiële omzet",
+      "quotes": "Offertes"
+    },
+    "view": {
+      "label": "Weergave:",
+      "table": "Tabel",
+      "cards": "Kaarten",
+      "followUpsCount": "{{count}} herinnering(en)"
+    },
+    "error": {
+      "title": "Laadfout",
+      "message": "Probeer het opnieuw of vernieuw de pagina.",
+      "refresh": "Vernieuwen"
+    },
+    "empty": {
+      "title": "Geen herinneringen gevonden",
+      "noScheduled": "Er zijn momenteel geen herinneringen gepland. Herinneringen verschijnen automatisch voor uw verzonden offertes.",
+      "noMatch": "Geen herinneringen komen overeen met de toegepaste filters. Probeer uw zoekcriteria aan te passen.",
+      "goToQuotes": "Naar offertes",
+      "clearFilters": "Filters wissen"
+    },
+    "tableHeaders": {
+      "client": "Klant",
+      "quote": "Offerte",
+      "title": "Titel",
+      "followUpDate": "Herinneringsdatum",
+      "validUntil": "Geldig tot",
+      "amount": "Bedrag",
+      "priority": "Prioriteit",
+      "followUpType": "Herinneringstype",
+      "actions": "Acties"
+    },
+    "cardView": {
+      "quoteNumber": "Offerte: {{number}}",
+      "followUpDate": "Herinneringsdatum: {{date}}",
+      "validUntil": "Geldig tot: {{date}}",
+      "notScheduled": "Niet gepland",
+      "notDefined": "Niet gedefinieerd"
+    },
+    "actions": {
+      "followUp": "Herinneren",
+      "sending": "Versturen..."
+    },
+    "priority": {
+      "high": "Hoog",
+      "medium": "Gemiddeld",
+      "low": "Laag"
+    },
+    "status": {
+      "pending": "In afwachting",
+      "scheduled": "Gepland",
+      "sent": "Voltooid",
+      "failed": "Mislukt",
+      "stopped": "Gestopt",
+      "unknown": "Onbekend"
+    },
+    "followUpType": {
+      "email_not_opened": "E-mail niet geopend",
+      "viewed_no_action": "Bekeken zonder actie",
+      "general": "Algemeen",
+      "manual": "Handmatig"
+    }
+  },
+  "leadsManagement": {
+    "title": "Leadsbeheer",
+    "subtitle": "Beheer uw prospects en zet ze om in klanten",
+    "tabs": {
+      "leads": "Mijn Leads",
+      "settings": "Instellingen"
+    },
+    "leadsTab": {
+      "title": "Ontvangen offerteaanvragen",
+      "loading": "Leads laden...",
+      "noLeads": "Nog geen offerteaanvragen ontvangen.",
+      "retry": "Opnieuw proberen",
+      "leadCard": {
+        "requestReceived": "Aanvraag ontvangen op",
+        "estimatedBudget": "Geschat budget",
+        "desiredCompletionDate": "Gewenste einddatum",
+        "location": "Locatie",
+        "servicesRequired": "Vereiste diensten",
+        "projectDescription": "Projectbeschrijving",
+        "projectImages": "Projectfoto's",
+        "createdOn": "Aangemaakt op",
+        "leadId": "Lead #",
+        "createQuote": "Offerte maken",
+        "maxQuotesReached": "Maximum aantal offertes bereikt",
+        "alreadyProcessed": "Reeds verwerkt",
+        "quotesCount": "offertes"
+      }
+    },
+    "settingsTab": {
+      "title": "Instellingen voor leadontvangst",
+      "receiveLeads": {
+        "title": "Offerteaanvragen ontvangen",
+        "description": "Schakel deze optie in om offerteaanvragen te ontvangen"
+      },
+      "countriesServed": {
+        "title": "Gedekte landen",
+        "description": "Selecteer de landen waar u aanvragen wilt ontvangen"
+      },
+      "regionsServed": {
+        "title": "Gedekte regio's",
+        "description": "Selecteer de regio's waar u aanvragen wilt ontvangen"
+      },
+      "workCategories": {
+        "title": "Werkcategorieën",
+        "description": "Selecteer de soorten werk waarvoor u aanvragen wilt ontvangen",
+        "other": "Overige",
+        "otherPlaceholder": "Bijv.: Meubelmakerij, IJzerwerk, enz."
+      },
+      "saveButton": {
+        "save": "Instellingen opslaan",
+        "saving": "Opslaan..."
+      }
+    }
+  },
   "multiUserProfile": {
     "premiumFeature": {
       "title": "Meerdere Profielen",

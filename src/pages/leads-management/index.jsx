@@ -8,6 +8,7 @@ import { useScrollPosition } from '../../utils/useScrollPosition';
 import { LeadManagementService } from '../../services/leadManagementService';
 import { useAuth } from '../../context/AuthContext';
 import { getCountryOptions, getRegionOptionsForCountry } from '../../constants/countriesAndRegions';
+import { useTranslation } from 'react-i18next';
 
 const LeadsManagementPage = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
@@ -18,6 +19,7 @@ const LeadsManagementPage = () => {
   const [regionDropdownOpen, setRegionDropdownOpen] = useState({});
   const tabsScrollRef = useScrollPosition('leads-tabs-scroll');
   const { user } = useAuth();
+  const { t } = useTranslation();
   
   // State for leads and settings
   const [leads, setLeads] = useState([]);
@@ -242,10 +244,10 @@ const LeadsManagementPage = () => {
 
   const renderLeadsTab = () => (
     <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
-      <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4">Demandes de devis reçues</h2>
+      <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4">{t('leadsManagement.leadsTab.title')}</h2>
       
       {loading ? (
-        <TableLoader message="Chargement des leads..." />
+        <TableLoader message={t('leadsManagement.leadsTab.loading')} />
       ) : error ? (
         <div className="text-center py-12">
           <Icon name="AlertCircle" className="w-12 h-12 text-destructive mx-auto mb-4" />
@@ -256,14 +258,14 @@ const LeadsManagementPage = () => {
             onClick={loadLeads}
             className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
           >
-            Réessayer
+            {t('leadsManagement.leadsTab.retry')}
           </button>
         </div>
       ) : leads.length === 0 ? (
         <div className="flex items-center justify-center py-8 sm:py-12">
           <div className="text-center">
             <Icon name="Inbox" size={32} className="sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
-            <p className="text-xs sm:text-sm text-muted-foreground">Aucune demande de devis reçue pour le moment.</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">{t('leadsManagement.leadsTab.noLeads')}</p>
           </div>
         </div>
       ) : (
@@ -280,7 +282,7 @@ const LeadsManagementPage = () => {
               <div className="flex justify-between items-start mb-5">
                 <div className="flex-1">
                   <h3 className="font-bold text-foreground text-xl mb-1">{lead.client_name}</h3>
-                  <p className="text-sm text-muted-foreground">Demande reçue le {new Date(lead.created_at).toLocaleDateString('fr-FR')}</p>
+                  <p className="text-sm text-muted-foreground">{t('leadsManagement.leadsTab.leadCard.requestReceived')} {new Date(lead.created_at).toLocaleDateString()}</p>
                 </div>
                 
                 {/* Quote Status Badge */}
@@ -290,7 +292,7 @@ const LeadsManagementPage = () => {
                       ? 'bg-destructive/10 text-destructive border border-destructive/20' 
                       : 'bg-primary/10 text-primary border border-primary/20'
                   }`}>
-                    {lead.quotes_sent_count}/3 devis
+                    {lead.quotes_sent_count}/3 {t('leadsManagement.leadsTab.leadCard.quotesCount')}
                   </div>
                   {lead.quotes_sent_count >= 3 && (
                     <span className="block text-xs text-destructive mt-2 text-center">Max atteint</span>
@@ -309,7 +311,7 @@ const LeadsManagementPage = () => {
                         <Icon name="Coins" className="w-5 h-5 text-primary" />
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground font-medium">Budget estimé</p>
+                        <p className="text-xs text-muted-foreground font-medium">{t('leadsManagement.leadsTab.leadCard.estimatedBudget')}</p>
                         <p className="text-sm font-semibold text-foreground">{lead.price_range}</p>
                       </div>
                     </div>
@@ -322,7 +324,7 @@ const LeadsManagementPage = () => {
                         <Icon name="Calendar" className="w-5 h-5 text-blue-500" />
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground font-medium">Date de fin souhaitée</p>
+                        <p className="text-xs text-muted-foreground font-medium">{t('leadsManagement.leadsTab.leadCard.desiredCompletionDate')}</p>
                         <p className="text-sm font-semibold text-foreground">{new Date(lead.completion_date).toLocaleDateString('fr-FR')}</p>
                       </div>
                     </div>
@@ -337,7 +339,7 @@ const LeadsManagementPage = () => {
                       <Icon name="MapPin" className="w-5 h-5 text-green-500" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs text-muted-foreground font-medium">Localisation</p>
+                      <p className="text-xs text-muted-foreground font-medium">{t('leadsManagement.leadsTab.leadCard.location')}</p>
                       <p className="text-sm font-semibold text-foreground mb-1">
                         {lead.street_number && `${lead.street_number} `}{lead.full_address}
                       </p>
@@ -358,7 +360,7 @@ const LeadsManagementPage = () => {
                       <Icon name="Wrench" className="w-5 h-5 text-purple-500" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs text-muted-foreground font-medium">Services requis</p>
+                      <p className="text-xs text-muted-foreground font-medium">{t('leadsManagement.leadsTab.leadCard.servicesRequired')}</p>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {lead.project_categories?.map((category) => (
                           <span key={category} className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded border border-primary/20">
@@ -378,14 +380,14 @@ const LeadsManagementPage = () => {
               
               {/* Project Description */}
               <div className="mb-5 p-4 bg-muted/20 rounded-lg">
-                <h4 className="text-sm font-semibold text-muted-foreground mb-2">Description du projet</h4>
+                <h4 className="text-sm font-semibold text-muted-foreground mb-2">{t('leadsManagement.leadsTab.leadCard.projectDescription')}</h4>
                 <p className="text-sm text-foreground leading-relaxed">{lead.project_description}</p>
               </div>
               
               {/* Project Images */}
               {lead.project_images && lead.project_images.length > 0 && (
                 <div className="mb-5">
-                  <h4 className="text-sm font-semibold text-muted-foreground mb-3">Photos du projet</h4>
+                  <h4 className="text-sm font-semibold text-muted-foreground mb-3">{t('leadsManagement.leadsTab.leadCard.projectImages')}</h4>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {lead.project_images.map((image, index) => (
                       <div key={index} className="relative group">
@@ -420,11 +422,11 @@ const LeadsManagementPage = () => {
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <Icon name="Clock" className="w-4 h-4" />
-                    <span>Créé le {new Date(lead.created_at).toLocaleDateString('fr-FR')}</span>
+                    <span>{t('leadsManagement.leadsTab.leadCard.createdOn')} {new Date(lead.created_at).toLocaleDateString()}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Icon name="Eye" className="w-4 h-4" />
-                    <span>Lead #{lead.lead_id.slice(-8)}</span>
+                    <span>{t('leadsManagement.leadsTab.leadCard.leadId')}{lead.lead_id.slice(-8)}</span>
                   </div>
                 </div>
                 
@@ -436,11 +438,11 @@ const LeadsManagementPage = () => {
                     className="px-6 py-2 font-semibold"
                   >
                     <Icon name="FileText" className="w-4 h-4 mr-2" />
-                    Créer un devis
+                    {t('leadsManagement.leadsTab.leadCard.createQuote')}
                   </Button>
                 ) : (
                   <span className="text-sm text-muted-foreground px-4 py-2 bg-muted/50 rounded-lg border">
-                    {lead.quote_status === 'max_reached' ? 'Maximum de devis atteint' : 'Déjà traité'}
+                    {lead.quote_status === 'max_reached' ? t('leadsManagement.leadsTab.leadCard.maxQuotesReached') : t('leadsManagement.leadsTab.leadCard.alreadyProcessed')}
                   </span>
                 )}
               </div>
@@ -454,14 +456,14 @@ const LeadsManagementPage = () => {
 
   const renderSettingsTab = () => (
     <div className="space-y-4 sm:space-y-6">
-      <h2 className="text-lg sm:text-xl font-semibold text-foreground">Paramètres de réception des leads</h2>
+      <h2 className="text-lg sm:text-xl font-semibold text-foreground">{t('leadsManagement.settingsTab.title')}</h2>
       
       {/* Receive Quote Requests Toggle */}
       <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm sm:text-base font-medium text-foreground mb-1">Recevoir des demandes de devis</h3>
-            <p className="text-xs sm:text-sm text-muted-foreground">Activez cette option pour recevoir des demandes de devis</p>
+            <h3 className="text-sm sm:text-base font-medium text-foreground mb-1">{t('leadsManagement.settingsTab.receiveLeads.title')}</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground">{t('leadsManagement.settingsTab.receiveLeads.description')}</p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input
@@ -477,8 +479,8 @@ const LeadsManagementPage = () => {
 
       {/* Countries Served */}
       <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
-        <h3 className="text-sm sm:text-base font-medium text-foreground mb-4">Pays couverts</h3>
-        <p className="text-xs sm:text-sm text-muted-foreground mb-4">Sélectionnez les pays où vous souhaitez recevoir des demandes</p>
+        <h3 className="text-sm sm:text-base font-medium text-foreground mb-4">{t('leadsManagement.settingsTab.countriesServed.title')}</h3>
+        <p className="text-xs sm:text-sm text-muted-foreground mb-4">{t('leadsManagement.settingsTab.countriesServed.description')}</p>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {getCountryOptions().map((country) => (
@@ -504,8 +506,8 @@ const LeadsManagementPage = () => {
       {/* Regions Served */}
       {Object.keys(settings.countriesServed).filter(country => settings.countriesServed[country]).length > 0 && (
         <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
-          <h3 className="text-sm sm:text-base font-medium text-foreground mb-4">Régions couvertes</h3>
-          <p className="text-xs sm:text-sm text-muted-foreground mb-4">Sélectionnez les régions où vous souhaitez recevoir des demandes</p>
+          <h3 className="text-sm sm:text-base font-medium text-foreground mb-4">{t('leadsManagement.settingsTab.regionsServed.title')}</h3>
+          <p className="text-xs sm:text-sm text-muted-foreground mb-4">{t('leadsManagement.settingsTab.regionsServed.description')}</p>
           
           {Object.keys(settings.countriesServed).filter(country => settings.countriesServed[country]).map((countryCode) => (
             <div key={countryCode} className="mb-4">
@@ -536,14 +538,14 @@ const LeadsManagementPage = () => {
 
       {/* Work Categories */}
       <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
-        <h3 className="text-sm sm:text-base font-medium text-foreground mb-4">Catégories de travaux</h3>
-        <p className="text-xs sm:text-sm text-muted-foreground mb-4">Sélectionnez les types de travaux pour lesquels vous souhaitez recevoir des demandes</p>
+        <h3 className="text-sm sm:text-base font-medium text-foreground mb-4">{t('leadsManagement.settingsTab.workCategories.title')}</h3>
+        <p className="text-xs sm:text-sm text-muted-foreground mb-4">{t('leadsManagement.settingsTab.workCategories.description')}</p>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Column 1 */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Plomberie</span>
+              <span className="text-sm text-foreground">{t('findArtisan.categories.plumbing')}</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -556,7 +558,7 @@ const LeadsManagementPage = () => {
             </div>
             
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Électricité</span>
+              <span className="text-sm text-foreground">{t('findArtisan.categories.electrical')}</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -569,7 +571,7 @@ const LeadsManagementPage = () => {
             </div>
             
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Peinture</span>
+              <span className="text-sm text-foreground">{t('findArtisan.categories.painting')}</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -582,7 +584,7 @@ const LeadsManagementPage = () => {
             </div>
             
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Menuiserie</span>
+              <span className="text-sm text-foreground">{t('findArtisan.categories.carpentry')}</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -595,7 +597,7 @@ const LeadsManagementPage = () => {
             </div>
             
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Carrelage</span>
+              <span className="text-sm text-foreground">{t('findArtisan.categories.tiling')}</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -608,7 +610,7 @@ const LeadsManagementPage = () => {
             </div>
             
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Toiture</span>
+              <span className="text-sm text-foreground">{t('findArtisan.categories.roofing')}</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -624,7 +626,7 @@ const LeadsManagementPage = () => {
           {/* Column 2 */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Maçonnerie</span>
+              <span className="text-sm text-foreground">{t('findArtisan.categories.masonry')}</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -637,7 +639,7 @@ const LeadsManagementPage = () => {
             </div>
             
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Chauffage</span>
+              <span className="text-sm text-foreground">{t('findArtisan.categories.heating')}</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -650,7 +652,7 @@ const LeadsManagementPage = () => {
             </div>
             
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Rénovation</span>
+              <span className="text-sm text-foreground">{t('findArtisan.categories.renovation')}</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -663,7 +665,7 @@ const LeadsManagementPage = () => {
             </div>
             
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Nettoyage</span>
+              <span className="text-sm text-foreground">{t('findArtisan.categories.cleaning')}</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -676,7 +678,7 @@ const LeadsManagementPage = () => {
             </div>
             
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Énergie solaire</span>
+              <span className="text-sm text-foreground">{t('findArtisan.categories.solar')}</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -689,7 +691,7 @@ const LeadsManagementPage = () => {
             </div>
             
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Jardinage</span>
+              <span className="text-sm text-foreground">{t('findArtisan.categories.gardening')}</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -705,7 +707,7 @@ const LeadsManagementPage = () => {
           {/* Column 3 */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Serrurerie</span>
+              <span className="text-sm text-foreground">{t('findArtisan.categories.locksmith')}</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -718,7 +720,7 @@ const LeadsManagementPage = () => {
             </div>
             
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Vitrerie</span>
+              <span className="text-sm text-foreground">{t('findArtisan.categories.glazing')}</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -731,7 +733,7 @@ const LeadsManagementPage = () => {
             </div>
             
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Isolation</span>
+              <span className="text-sm text-foreground">{t('findArtisan.categories.insulation')}</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -744,7 +746,7 @@ const LeadsManagementPage = () => {
             </div>
             
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Climatisation</span>
+              <span className="text-sm text-foreground">{t('findArtisan.categories.airConditioning')}</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -757,7 +759,7 @@ const LeadsManagementPage = () => {
             </div>
             
             <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">Autres</span>
+              <span className="text-sm text-foreground">{t('leadsManagement.settingsTab.workCategories.other')}</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -775,11 +777,11 @@ const LeadsManagementPage = () => {
         {settings.workCategories.other && (
           <div className="mt-4">
             <Input
-              label="Précisez le type de travaux"
+              label={t('leadsManagement.settingsTab.workCategories.other')}
               type="text"
               value={settings.otherWorkCategory}
               onChange={(e) => handleSettingChange('otherWorkCategory', e.target.value)}
-              placeholder="Ex: Ébénisterie, Ferronnerie, etc."
+              placeholder={t('leadsManagement.settingsTab.workCategories.otherPlaceholder')}
             />
           </div>
         )}
@@ -798,7 +800,7 @@ const LeadsManagementPage = () => {
           ) : (
             <Icon name="Save" size={16} className="mr-2" />
           )}
-          {saving ? 'Sauvegarde en cours...' : 'Sauvegarder les paramètres'}
+          {saving ? t('leadsManagement.settingsTab.saveButton.saving') : t('leadsManagement.settingsTab.saveButton.save')}
         </Button>
       </div>
     </div>
@@ -819,10 +821,10 @@ const LeadsManagementPage = () => {
           <div>
                 <div className="flex items-center">
                   <Icon name="Target" size={24} className="text-primary mr-3" />
-                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des Leads</h1>
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">{t('leadsManagement.title')}</h1>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Gérez vos prospects et convertissez-les en clients
+                  {t('leadsManagement.subtitle')}
                 </p>
           </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
@@ -841,7 +843,7 @@ const LeadsManagementPage = () => {
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Mes Leads
+              {t('leadsManagement.tabs.leads')}
             </button>
             <button
               onClick={() => setActiveTab('settings')}
@@ -851,7 +853,7 @@ const LeadsManagementPage = () => {
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Paramètres
+              {t('leadsManagement.tabs.settings')}
             </button>
           </div>
 

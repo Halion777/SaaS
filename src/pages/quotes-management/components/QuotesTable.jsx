@@ -3,9 +3,11 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import { Checkbox } from '../../../components/ui/Checkbox';
+import { useTranslation } from 'react-i18next';
 
 const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuoteAction, onQuoteSelect, viewMode = 'table', setViewMode = () => {}, searchTerm = '', setSearchTerm = () => {} }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
+  const { t } = useTranslation();
 
   // Auto-switch to card view on smaller screens
   useEffect(() => {
@@ -60,12 +62,12 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
     
     // Enhanced status with tracking information
     const statusConfig = {
-      draft: { label: 'Brouillon', className: 'bg-gray-100 text-gray-800' },
-      sent: { label: 'Envoyé', className: 'bg-blue-100 text-blue-800' },
-      viewed: { label: 'Consulté', className: 'bg-orange-100 text-orange-800' },
-      accepted: { label: 'Accepté', className: 'bg-green-100 text-green-800' },
-      rejected: { label: 'Rejeté', className: 'bg-red-100 text-red-800' },
-      expired: { label: 'Expiré', className: 'bg-yellow-100 text-yellow-800' }
+      draft: { label: t('quotesManagement.filter.status.draft'), className: 'bg-gray-100 text-gray-800' },
+      sent: { label: t('quotesManagement.filter.status.sent'), className: 'bg-blue-100 text-blue-800' },
+      viewed: { label: t('quotesManagement.filter.status.viewed'), className: 'bg-orange-100 text-orange-800' },
+      accepted: { label: t('quotesManagement.filter.status.accepted'), className: 'bg-green-100 text-green-800' },
+      rejected: { label: t('quotesManagement.filter.status.rejected'), className: 'bg-red-100 text-red-800' },
+      expired: { label: t('quotesManagement.filter.status.expired'), className: 'bg-yellow-100 text-yellow-800' }
     };
 
     const config = statusConfig[currentStatus] || { label: currentStatus, className: 'bg-gray-100 text-gray-800' };
@@ -157,7 +159,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
             </th>
             <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('number')}>
               <div className="flex items-center space-x-1">
-                <span>Numéro</span>
+                <span>{t('quotesManagement.table.headers.number')}</span>
                 {sortConfig.key === 'number' && (
                   <Icon name={sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown'} size={14} />
                 )}
@@ -165,7 +167,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
             </th>
             <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('clientName')}>
               <div className="flex items-center space-x-1">
-                <span>Client</span>
+                <span>{t('quotesManagement.table.headers.client')}</span>
                 {sortConfig.key === 'clientName' && (
                   <Icon name={sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown'} size={14} />
                 )}
@@ -173,7 +175,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
             </th>
             <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('amount')}>
               <div className="flex items-center space-x-1">
-                <span>Montant</span>
+                <span>{t('quotesManagement.table.headers.amount')}</span>
                 {sortConfig.key === 'amount' && (
                   <Icon name={sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown'} size={14} />
                 )}
@@ -181,7 +183,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
             </th>
             <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('status')}>
               <div className="flex items-center space-x-1">
-                <span>Statut</span>
+                <span>{t('quotesManagement.table.headers.status')}</span>
                 {sortConfig.key === 'status' && (
                   <Icon name={sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown'} size={14} />
                 )}
@@ -190,7 +192,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
 
             <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('createdAt')}>
               <div className="flex items-center space-x-1">
-                <span>Créé le</span>
+                <span>{t('quotesManagement.table.headers.createdAt')}</span>
                 {sortConfig.key === 'createdAt' && (
                   <Icon name={sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown'} size={14} />
                 )}
@@ -198,20 +200,20 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
             </th>
             <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('validUntil')}>
               <div className="flex items-center space-x-1">
-                <span>Valide jusqu'au</span>
+                <span>{t('quotesManagement.table.headers.validUntil')}</span>
                 {sortConfig.key === 'validUntil' && (
                   <Icon name={sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown'} size={14} />
                 )}
               </div>
             </th>
             <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground">
-              Relances
+              {t('quotesManagement.table.headers.followUps')}
             </th>
             <th className="p-3 md:p-4 text-center text-xs sm:text-sm font-medium text-muted-foreground">
-              Fichiers
+              {t('quotesManagement.table.headers.files')}
             </th>
             <th className="p-3 md:p-4 text-right text-xs sm:text-sm font-medium text-muted-foreground">
-              Actions
+              {t('quotesManagement.table.headers.actions')}
             </th>
           </tr>
         </thead>
@@ -298,7 +300,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                       variant="ghost"
                       size="icon"
                       onClick={() => onQuoteAction('markAsSent', quote)}
-                      title="Marquer comme envoyé"
+                      title={t('quotesManagement.table.actions.markAsSent')}
                       className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
                     >
                       <Icon name="Check" size={16} />
@@ -308,7 +310,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                     variant="ghost"
                     size="icon"
                     onClick={() => onQuoteAction('edit', quote)}
-                    title="Modifier"
+                    title={t('quotesManagement.table.actions.edit')}
                     className="h-8 w-8"
                   >
                     <Icon name="Edit" size={16} />
@@ -318,7 +320,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                       variant="ghost"
                       size="icon"
                       onClick={() => onQuoteAction('convert', quote)}
-                      title="Convertir en facture"
+                      title={t('quotesManagement.table.actions.convertToInvoice')}
                       className="h-8 w-8"
                     >
                       <Icon name="Receipt" size={16} />
@@ -330,7 +332,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                     variant="ghost"
                     size="icon"
                     onClick={() => onQuoteAction('delete', quote)}
-                    title="Supprimer le devis"
+                    title={t('quotesManagement.table.actions.delete')}
                     className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                   >
                     <Icon name="Trash" size={16} />
@@ -364,11 +366,11 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
           
           <div className="flex items-center justify-between mb-3">
             <span className="font-semibold text-foreground">{quote.amountFormatted}</span>
-            <div className="text-xs text-muted-foreground">Valide jusqu'au {quote.validUntil ? formatDate(quote.validUntil) : '-'}</div>
+            <div className="text-xs text-muted-foreground">{t('quotesManagement.table.card.validUntil')} {quote.validUntil ? formatDate(quote.validUntil) : '-'}</div>
           </div>
           
                     <div className="text-xs text-muted-foreground mb-3">
-            Créé le {formatDate(quote.createdAt)}
+            {t('quotesManagement.table.card.createdAt')} {formatDate(quote.createdAt)}
           </div>
           
           {/* Files indicator */}
@@ -407,7 +409,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                 <>
                   <Icon name="Paperclip" size={14} className={`mr-1 ${fileCount > 0 ? "text-blue-600" : "text-gray-400"}`} />
                   <span className={fileCount > 0 ? "text-blue-600" : "text-gray-400"}>
-                    {fileCount > 0 ? `${fileCount} fichier(s) joint(s)` : "0 fichier joint"}
+                    {fileCount > 0 ? t('quotesManagement.table.card.files', { count: fileCount }) : t('quotesManagement.table.card.noFiles')}
                   </span>
                 </>
               );
@@ -420,7 +422,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                 variant="ghost"
                 size="icon"
                 onClick={() => onQuoteAction('markAsSent', quote)}
-                title="Marquer comme envoyé"
+                title={t('quotesManagement.table.actions.markAsSent')}
                 className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50"
               >
                 <Icon name="Check" size={14} />
@@ -430,7 +432,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
               variant="ghost"
               size="icon"
               onClick={() => onQuoteAction('edit', quote)}
-              title="Modifier le devis"
+                              title={t('quotesManagement.table.actions.edit')}
               className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
             >
               <Icon name="Edit" size={14} />
@@ -440,7 +442,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                 variant="ghost"
                 size="icon"
                 onClick={() => onQuoteAction('convert', quote)}
-                title="Convertir en facture"
+                title={t('quotesManagement.table.actions.convertToInvoice')}
                 className="h-7 w-7"
               >
                 <Icon name="Receipt" size={14} />
@@ -472,7 +474,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
           <Icon name="Search" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Rechercher par numéro, client, description ou statut..."
+            placeholder={t('quotesManagement.table.search')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-9 max-w-md"
@@ -483,7 +485,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
       {/* View Toggle */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center space-x-2">
-          <span className="text-sm font-medium text-muted-foreground">Vue:</span>
+          <span className="text-sm font-medium text-muted-foreground">{t('quotesManagement.table.view')}</span>
           <div className="flex bg-muted rounded-lg p-1">
             <button
               onClick={() => setViewMode('table')}
@@ -494,7 +496,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
               }`}
             >
               <Icon name="Table" size={14} className="mr-1" />
-              Tableau
+              {t('quotesManagement.table.tableView')}
             </button>
             <button
               onClick={() => setViewMode('card')}
@@ -505,12 +507,12 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
               }`}
             >
               <Icon name="Grid" size={14} className="mr-1" />
-              Cartes
+              {t('quotesManagement.table.cardView')}
             </button>
           </div>
         </div>
         <div className="text-xs text-muted-foreground">
-          {sortedAndFilteredQuotes.length} devis(s)
+          {t('quotesManagement.table.quotesCount', { count: sortedAndFilteredQuotes.length })}
         </div>
       </div>
 
@@ -520,9 +522,9 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
             <Icon name="FileText" size={32} className="text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">Aucun devis trouvé</h3>
+          <h3 className="text-lg font-medium text-foreground mb-2">{t('quotesManagement.table.noQuotesFound')}</h3>
           <p className="text-muted-foreground text-sm max-w-md mx-auto">
-            {searchTerm ? 'Aucun devis ne correspond à votre recherche.' : 'Vous n\'avez pas encore créé de devis.'}
+            {searchTerm ? t('quotesManagement.table.noSearchResults') : t('quotesManagement.table.noQuotesMessage')}
           </p>
           <Button
             variant="outline"
@@ -531,7 +533,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
             iconName="RotateCcw"
             iconPosition="left"
           >
-            {searchTerm ? 'Effacer la recherche' : 'Actualiser'}
+            {searchTerm ? t('quotesManagement.table.clearSearch') : t('quotesManagement.table.refresh')}
           </Button>
         </div>
       ) : (

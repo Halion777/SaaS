@@ -1437,6 +1437,284 @@
       }
     }
   },
+  "quotesManagement": {
+    "title": "Gestion des devis",
+    "subtitle": "Gérez et optimisez vos devis avec l'intelligence artificielle",
+    "refresh": "Actualiser",
+    "refreshing": "Actualisation...",
+    "newQuote": "Nouveau devis",
+    "stats": {
+      "totalQuotes": "Total devis",
+      "drafts": "Brouillons",
+      "sent": "Envoyés",
+      "averageAmount": "Montant moyen"
+    },
+    "filter": {
+      "title": "Filtres",
+      "activeFilters": "{{count}} filtre(s) actif(s)",
+      "clear": "Effacer",
+      "showFilters": "Afficher les filtres",
+      "hideFilters": "Masquer les filtres",
+      "status": {
+        "label": "Statut",
+        "all": "Tous les statuts",
+        "draft": "Brouillon",
+        "sent": "Envoyé",
+        "viewed": "Consulté",
+        "accepted": "Accepté",
+        "rejected": "Refusé",
+        "expired": "Expiré"
+      },
+      "client": {
+        "label": "Client",
+        "all": "Tous les clients",
+        "placeholder": "Sélectionner un client"
+      },
+      "period": {
+        "label": "Période",
+        "from": "Du",
+        "to": "Au"
+      },
+      "amount": {
+        "label": "Montant (€)",
+        "min": "Min",
+        "max": "Max"
+      },
+      "chips": {
+        "status": "Statut: {{value}}",
+        "client": "Client: {{value}}",
+        "period": "Période: {{start}} - {{end}}",
+        "amount": "Montant: {{min}}€ - {{max}}€",
+        "removeFilter": "Supprimer le filtre {{filter}}"
+      }
+    },
+    "table": {
+      "loading": "Chargement des devis...",
+      "error": "Erreur lors du chargement des devis",
+      "retry": "Réessayer",
+      "noQuotesFound": "Aucun devis trouvé",
+      "noQuotesMessage": "Bienvenue ! Vous n'avez pas encore créé de devis. Commencez par en créer un nouveau pour gérer vos projets professionnels.",
+      "noMatchingQuotes": "Aucun devis ne correspond aux filtres appliqués. Essayez de modifier vos critères de recherche.",
+      "createFirstQuote": "Créer votre premier devis",
+      "clearFilters": "Effacer les filtres",
+      "search": "Rechercher par numéro, client, description ou statut...",
+      "view": "Vue:",
+      "tableView": "Tableau",
+      "cardView": "Cartes",
+      "quotesCount": "{{count}} devis",
+      "noSearchResults": "Aucun devis ne correspond à votre recherche.",
+      "clearSearch": "Effacer la recherche",
+      "refresh": "Actualiser",
+      "headers": {
+        "number": "Numéro",
+        "client": "Client",
+        "amount": "Montant",
+        "status": "Statut",
+        "createdAt": "Créé le",
+        "validUntil": "Valide jusqu'au",
+        "followUps": "Relances",
+        "files": "Fichiers",
+        "actions": "Actions"
+      },
+      "card": {
+        "validUntil": "Valide jusqu'au",
+        "createdAt": "Créé le",
+        "files": "{{count}} fichier(s) joint(s)",
+        "noFiles": "0 fichier joint"
+      },
+      "actions": {
+        "markAsSent": "Marquer comme envoyé",
+        "edit": "Modifier",
+        "convertToInvoice": "Convertir en facture",
+        "delete": "Supprimer le devis"
+      }
+    },
+    "bulkActions": {
+      "selected": "{{count}} devis sélectionné(s)",
+      "deselect": "Désélectionner",
+      "export": "Exporter",
+      "delete": "Supprimer"
+    },
+    "followUpStatus": {
+      "none": "Aucune",
+      "pending": "En attente",
+      "scheduled": "Programmée",
+      "sent": "Envoyée",
+      "stopped": "Arrêtée",
+      "failed": "Échouée",
+      "expired": "Expirée"
+    }
+  },
+  "followUpManagement": {
+    "title": "Gestion des relances",
+    "subtitle": "Suivez et gérez vos relances de devis et factures",
+    "refresh": "Actualiser",
+    "refreshing": "Actualisation...",
+    "filter": {
+      "title": "Filtres",
+      "resultsFound": "{{count}} relance(s) trouvée(s)",
+      "activeFilters": "{{count}} filtre(s) actif(s)",
+      "clear": "Effacer",
+      "showFilters": "Afficher les filtres",
+      "hideFilters": "Masquer les filtres",
+      "type": {
+        "label": "Type",
+        "all": "Tous les types",
+        "quote": "Devis",
+        "invoice": "Factures"
+      },
+      "priority": {
+        "label": "Priorité",
+        "all": "Toutes les priorités",
+        "high": "Haute",
+        "medium": "Moyenne",
+        "low": "Basse"
+      },
+      "status": {
+        "label": "Statut",
+        "all": "Tous les statuts",
+        "pending": "En attente",
+        "scheduled": "Programmée",
+        "completed": "Terminée"
+      },
+      "days": {
+        "label": "Délai",
+        "all": "Tous les délais",
+        "0-2": "0-2 jours",
+        "3-5": "3-5 jours",
+        "6-10": "6-10 jours",
+        "10+": "10+ jours"
+      },
+      "chips": {
+        "type": "Type: {{value}}",
+        "priority": "Priorité: {{value}}",
+        "status": "Statut: {{value}}",
+        "days": "Délai: {{value}}",
+        "removeFilter": "Supprimer le filtre {{filter}}"
+      }
+    },
+    "kpi": {
+      "pendingFollowUps": "Relances en attente",
+      "toDo": "À traiter",
+      "highPriority": "Priorité haute",
+      "urgent": "Urgent",
+      "potentialRevenue": "CA potentiel",
+      "quotes": "Devis"
+    },
+    "view": {
+      "label": "Vue:",
+      "table": "Tableau",
+      "cards": "Cartes",
+      "followUpsCount": "{{count}} relance(s)"
+    },
+    "error": {
+      "title": "Erreur de chargement",
+      "message": "Veuillez réessayer ou rafraîchir la page.",
+      "refresh": "Rafraîchir"
+    },
+    "empty": {
+      "title": "Aucune relance trouvée",
+      "noScheduled": "Aucune relance n'est actuellement programmée. Les relances apparaîtront automatiquement pour vos devis envoyés.",
+      "noMatch": "Aucune relance ne correspond aux filtres appliqués. Essayez de modifier vos critères de recherche.",
+      "goToQuotes": "Aller aux devis",
+      "clearFilters": "Effacer les filtres"
+    },
+    "tableHeaders": {
+      "client": "Client",
+      "quote": "Devis",
+      "title": "Titre",
+      "followUpDate": "Date relance",
+      "validUntil": "Valide jusqu'au",
+      "amount": "Montant",
+      "priority": "Priorité",
+      "followUpType": "Type Relance",
+      "actions": "Actions"
+    },
+    "cardView": {
+      "quoteNumber": "Devis: {{number}}",
+      "followUpDate": "Date relance: {{date}}",
+      "validUntil": "Valide jusqu'au: {{date}}",
+      "notScheduled": "Non programmée",
+      "notDefined": "Non définie"
+    },
+    "actions": {
+      "followUp": "Relancer",
+      "sending": "Envoi..."
+    },
+    "priority": {
+      "high": "Haute",
+      "medium": "Moyenne",
+      "low": "Faible"
+    },
+    "status": {
+      "pending": "En attente",
+      "scheduled": "Programmée",
+      "sent": "Terminée",
+      "failed": "Échouée",
+      "stopped": "Arrêtée",
+      "unknown": "Inconnu"
+    },
+    "followUpType": {
+      "email_not_opened": "Email non ouvert",
+      "viewed_no_action": "Vue sans action",
+      "general": "Général",
+      "manual": "Manuel"
+    }
+  },
+  "leadsManagement": {
+    "title": "Gestion des Leads",
+    "subtitle": "Gérez vos prospects et convertissez-les en clients",
+    "tabs": {
+      "leads": "Mes Leads",
+      "settings": "Paramètres"
+    },
+    "leadsTab": {
+      "title": "Demandes de devis reçues",
+      "loading": "Chargement des leads...",
+      "noLeads": "Aucune demande de devis reçue pour le moment.",
+      "retry": "Réessayer",
+      "leadCard": {
+        "requestReceived": "Demande reçue le",
+        "estimatedBudget": "Budget estimé",
+        "desiredCompletionDate": "Date de fin souhaitée",
+        "location": "Localisation",
+        "servicesRequired": "Services requis",
+        "projectDescription": "Description du projet",
+        "projectImages": "Photos du projet",
+        "createdOn": "Créé le",
+        "leadId": "Lead #",
+        "createQuote": "Créer un devis",
+        "maxQuotesReached": "Maximum de devis atteint",
+        "alreadyProcessed": "Déjà traité",
+        "quotesCount": "devis"
+      }
+    },
+    "settingsTab": {
+      "title": "Paramètres de réception des leads",
+      "receiveLeads": {
+        "title": "Recevoir des demandes de devis",
+        "description": "Activez cette option pour recevoir des demandes de devis"
+      },
+      "countriesServed": {
+        "title": "Pays couverts",
+        "description": "Sélectionnez les pays où vous souhaitez recevoir des demandes"
+      },
+      "regionsServed": {
+        "title": "Régions couvertes",
+        "description": "Sélectionnez les régions où vous souhaitez recevoir des demandes"
+      },
+      "workCategories": {
+        "title": "Catégories de travaux",
+        "description": "Sélectionnez les types de travaux pour lesquels vous souhaitez recevoir des demandes",
+        "other": "Autres",
+        "otherPlaceholder": "Ex: Ébénisterie, Ferronnerie, etc."
+      },
+      "saveButton": {
+        "save": "Sauvegarder les paramètres",
+        "saving": "Sauvegarde en cours..."
+      }
+    }
+  },
   "followUp": {
     "title": "Relances",
     "subtitle": "Suivez et relancez vos devis sans réponse et factures en retard",

@@ -1605,6 +1605,284 @@
       "addButton": "Add"
     }
   },
+  "quotesManagement": {
+    "title": "Quotes Management",
+    "subtitle": "Manage and optimize your quotes with artificial intelligence",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing...",
+    "newQuote": "New Quote",
+    "stats": {
+      "totalQuotes": "Total quotes",
+      "drafts": "Drafts",
+      "sent": "Sent",
+      "averageAmount": "Average amount"
+    },
+    "filter": {
+      "title": "Filters",
+      "activeFilters": "{{count}} active filter(s)",
+      "clear": "Clear",
+      "showFilters": "Show filters",
+      "hideFilters": "Hide filters",
+      "status": {
+        "label": "Status",
+        "all": "All statuses",
+        "draft": "Draft",
+        "sent": "Sent",
+        "viewed": "Viewed",
+        "accepted": "Accepted",
+        "rejected": "Rejected",
+        "expired": "Expired"
+      },
+      "client": {
+        "label": "Client",
+        "all": "All clients",
+        "placeholder": "Select a client"
+      },
+      "period": {
+        "label": "Period",
+        "from": "From",
+        "to": "To"
+      },
+      "amount": {
+        "label": "Amount (€)",
+        "min": "Min",
+        "max": "Max"
+      },
+      "chips": {
+        "status": "Status: {{value}}",
+        "client": "Client: {{value}}",
+        "period": "Period: {{start}} - {{end}}",
+        "amount": "Amount: {{min}}€ - {{max}}€",
+        "removeFilter": "Remove {{filter}} filter"
+      }
+    },
+    "table": {
+      "loading": "Loading quotes...",
+      "error": "Error loading quotes",
+      "retry": "Retry",
+      "noQuotesFound": "No quotes found",
+      "noQuotesMessage": "Welcome! You haven't created any quotes yet. Start by creating a new one to manage your professional projects.",
+      "noMatchingQuotes": "No quotes match the applied filters. Try modifying your search criteria.",
+      "createFirstQuote": "Create your first quote",
+      "clearFilters": "Clear filters",
+      "search": "Search by number, client, description or status...",
+      "view": "View:",
+      "tableView": "Table",
+      "cardView": "Cards",
+      "quotesCount": "{{count}} quote(s)",
+      "noSearchResults": "No quotes match your search.",
+      "clearSearch": "Clear search",
+      "refresh": "Refresh",
+      "headers": {
+        "number": "Number",
+        "client": "Client",
+        "amount": "Amount",
+        "status": "Status",
+        "createdAt": "Created on",
+        "validUntil": "Valid until",
+        "followUps": "Follow-ups",
+        "files": "Files",
+        "actions": "Actions"
+      },
+      "card": {
+        "validUntil": "Valid until",
+        "createdAt": "Created on",
+        "files": "{{count}} file(s) attached",
+        "noFiles": "0 files attached"
+      },
+      "actions": {
+        "markAsSent": "Mark as sent",
+        "edit": "Edit",
+        "convertToInvoice": "Convert to invoice",
+        "delete": "Delete quote"
+      }
+    },
+    "bulkActions": {
+      "selected": "{{count}} quote(s) selected",
+      "deselect": "Deselect",
+      "export": "Export",
+      "delete": "Delete"
+    },
+    "followUpStatus": {
+      "none": "None",
+      "pending": "Pending",
+      "scheduled": "Scheduled",
+      "sent": "Sent",
+      "stopped": "Stopped",
+      "failed": "Failed",
+      "expired": "Expired"
+    }
+  },
+  "followUpManagement": {
+    "title": "Follow-up Management",
+    "subtitle": "Track and manage your quote and invoice follow-ups",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing...",
+    "filter": {
+      "title": "Filters",
+      "resultsFound": "{{count}} follow-up(s) found",
+      "activeFilters": "{{count}} active filter(s)",
+      "clear": "Clear",
+      "showFilters": "Show filters",
+      "hideFilters": "Hide filters",
+      "type": {
+        "label": "Type",
+        "all": "All types",
+        "quote": "Quotes",
+        "invoice": "Invoices"
+      },
+      "priority": {
+        "label": "Priority",
+        "all": "All priorities",
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
+      "status": {
+        "label": "Status",
+        "all": "All statuses",
+        "pending": "Pending",
+        "scheduled": "Scheduled",
+        "completed": "Completed"
+      },
+      "days": {
+        "label": "Timeframe",
+        "all": "All timeframes",
+        "0-2": "0-2 days",
+        "3-5": "3-5 days",
+        "6-10": "6-10 days",
+        "10+": "10+ days"
+      },
+      "chips": {
+        "type": "Type: {{value}}",
+        "priority": "Priority: {{value}}",
+        "status": "Status: {{value}}",
+        "days": "Timeframe: {{value}}",
+        "removeFilter": "Remove {{filter}} filter"
+      }
+    },
+    "kpi": {
+      "pendingFollowUps": "Pending Follow-ups",
+      "toDo": "To do",
+      "highPriority": "High Priority",
+      "urgent": "Urgent",
+      "potentialRevenue": "Potential Revenue",
+      "quotes": "Quotes"
+    },
+    "view": {
+      "label": "View:",
+      "table": "Table",
+      "cards": "Cards",
+      "followUpsCount": "{{count}} follow-up(s)"
+    },
+    "error": {
+      "title": "Loading Error",
+      "message": "Please try again or refresh the page.",
+      "refresh": "Refresh"
+    },
+    "empty": {
+      "title": "No follow-ups found",
+      "noScheduled": "No follow-ups are currently scheduled. Follow-ups will appear automatically for your sent quotes.",
+      "noMatch": "No follow-ups match the applied filters. Try modifying your search criteria.",
+      "goToQuotes": "Go to Quotes",
+      "clearFilters": "Clear Filters"
+    },
+    "tableHeaders": {
+      "client": "Client",
+      "quote": "Quote",
+      "title": "Title",
+      "followUpDate": "Follow-up Date",
+      "validUntil": "Valid until",
+      "amount": "Amount",
+      "priority": "Priority",
+      "followUpType": "Follow-up Type",
+      "actions": "Actions"
+    },
+    "cardView": {
+      "quoteNumber": "Quote: {{number}}",
+      "followUpDate": "Follow-up Date: {{date}}",
+      "validUntil": "Valid until: {{date}}",
+      "notScheduled": "Not scheduled",
+      "notDefined": "Not defined"
+    },
+    "actions": {
+      "followUp": "Follow Up",
+      "sending": "Sending..."
+    },
+    "priority": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "status": {
+      "pending": "Pending",
+      "scheduled": "Scheduled",
+      "sent": "Completed",
+      "failed": "Failed",
+      "stopped": "Stopped",
+      "unknown": "Unknown"
+    },
+    "followUpType": {
+      "email_not_opened": "Email not opened",
+      "viewed_no_action": "Viewed without action",
+      "general": "General",
+      "manual": "Manual"
+    }
+  },
+  "leadsManagement": {
+    "title": "Leads Management",
+    "subtitle": "Manage your prospects and convert them into clients",
+    "tabs": {
+      "leads": "My Leads",
+      "settings": "Settings"
+    },
+    "leadsTab": {
+      "title": "Quote Requests Received",
+      "loading": "Loading leads...",
+      "noLeads": "No quote requests received yet.",
+      "retry": "Retry",
+      "leadCard": {
+        "requestReceived": "Request received on",
+        "estimatedBudget": "Estimated budget",
+        "desiredCompletionDate": "Desired completion date",
+        "location": "Location",
+        "servicesRequired": "Services required",
+        "projectDescription": "Project description",
+        "projectImages": "Project photos",
+        "createdOn": "Created on",
+        "leadId": "Lead #",
+        "createQuote": "Create Quote",
+        "maxQuotesReached": "Maximum quotes reached",
+        "alreadyProcessed": "Already processed",
+        "quotesCount": "quotes"
+      }
+    },
+    "settingsTab": {
+      "title": "Lead Reception Settings",
+      "receiveLeads": {
+        "title": "Receive Quote Requests",
+        "description": "Enable this option to receive quote requests"
+      },
+      "countriesServed": {
+        "title": "Countries Covered",
+        "description": "Select the countries where you want to receive requests"
+      },
+      "regionsServed": {
+        "title": "Regions Covered",
+        "description": "Select the regions where you want to receive requests"
+      },
+      "workCategories": {
+        "title": "Work Categories",
+        "description": "Select the types of work for which you want to receive requests",
+        "other": "Other",
+        "otherPlaceholder": "Ex: Cabinetmaking, Ironwork, etc."
+      },
+      "saveButton": {
+        "save": "Save Settings",
+        "saving": "Saving..."
+      }
+    }
+  },
   "dashboard": {
     "header": {
       "title": "Quick Overview",

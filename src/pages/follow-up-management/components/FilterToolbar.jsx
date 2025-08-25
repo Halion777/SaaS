@@ -2,36 +2,38 @@ import React, { useState } from 'react';
 import Select from '../../../components/ui/Select';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { useTranslation } from 'react-i18next';
 
 const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { t } = useTranslation();
 
   const typeOptions = [
-    { value: 'all', label: 'Tous les types' },
-    { value: 'quote', label: 'Devis' },
-    { value: 'invoice', label: 'Factures' }
+    { value: 'all', label: t('followUpManagement.filter.type.all') },
+    { value: 'quote', label: t('followUpManagement.filter.type.quote') },
+    { value: 'invoice', label: t('followUpManagement.filter.type.invoice') }
   ];
 
   const priorityOptions = [
-    { value: 'all', label: 'Toutes les priorités' },
-    { value: 'high', label: 'Haute' },
-    { value: 'medium', label: 'Moyenne' },
-    { value: 'low', label: 'Basse' }
+    { value: 'all', label: t('followUpManagement.filter.priority.all') },
+    { value: 'high', label: t('followUpManagement.filter.priority.high') },
+    { value: 'medium', label: t('followUpManagement.filter.priority.medium') },
+    { value: 'low', label: t('followUpManagement.filter.priority.low') }
   ];
 
   const statusOptions = [
-    { value: 'all', label: 'Tous les statuts' },
-    { value: 'pending', label: 'En attente' },
-    { value: 'scheduled', label: 'Programmée' },
-    { value: 'completed', label: 'Terminée' }
+    { value: 'all', label: t('followUpManagement.filter.status.all') },
+    { value: 'pending', label: t('followUpManagement.filter.status.pending') },
+    { value: 'scheduled', label: t('followUpManagement.filter.status.scheduled') },
+    { value: 'completed', label: t('followUpManagement.filter.status.completed') }
   ];
 
   const daysOptions = [
-    { value: 'all', label: 'Tous les délais' },
-    { value: '0-2', label: '0-2 jours' },
-    { value: '3-5', label: '3-5 jours' },
-    { value: '6-10', label: '6-10 jours' },
-    { value: '10+', label: '10+ jours' }
+    { value: 'all', label: t('followUpManagement.filter.days.all') },
+    { value: '0-2', label: t('followUpManagement.filter.days.0-2') },
+    { value: '3-5', label: t('followUpManagement.filter.days.3-5') },
+    { value: '6-10', label: t('followUpManagement.filter.days.6-10') },
+    { value: '10+', label: t('followUpManagement.filter.days.10+') }
   ];
 
   const handleFilterChange = (key, value) => {
@@ -66,7 +68,7 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
       <div className="flex items-center justify-between p-3 md:p-4">
         <div className="flex items-center space-x-2">
           <Icon name="Filter" size={18} className="text-muted-foreground" />
-          <h3 className="text-base font-medium text-foreground">Filtres</h3>
+          <h3 className="text-base font-medium text-foreground">{t('followUpManagement.filter.title')}</h3>
           {activeFiltersCount > 0 && (
             <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
               {activeFiltersCount}
@@ -75,7 +77,7 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
         </div>
         <div className="flex items-center space-x-2">
           <span className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
-            {filteredCount} relance(s) trouvée(s)
+            {t('followUpManagement.filter.resultsFound', { count: filteredCount })}
           </span>
           {hasActiveFilters && (
             <Button
@@ -86,7 +88,7 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
             >
               <span className="flex items-center">
                 <Icon name="X" size={14} className="mr-1" />
-                Effacer
+                {t('followUpManagement.filter.clear')}
               </span>
             </Button>
           )}
@@ -95,7 +97,7 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
             size="icon"
             onClick={() => setIsExpanded(!isExpanded)}
             className="md:hidden h-8 w-8"
-            aria-label={isExpanded ? "Masquer les filtres" : "Afficher les filtres"}
+            aria-label={isExpanded ? t('followUpManagement.filter.hideFilters') : t('followUpManagement.filter.showFilters')}
           >
             <Icon name={isExpanded ? "ChevronUp" : "ChevronDown"} size={16} />
           </Button>
@@ -107,9 +109,9 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {/* Type Filter */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Type</label>
+            <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('followUpManagement.filter.type.label')}</label>
             <Select
-              placeholder="Tous les types"
+              placeholder={t('followUpManagement.filter.type.all')}
               options={typeOptions}
               value={filters.type}
               onChange={(e) => handleFilterChange('type', e.target.value)}
@@ -118,9 +120,9 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
           
           {/* Priority Filter */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Priorité</label>
+            <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('followUpManagement.filter.priority.label')}</label>
             <Select
-              placeholder="Toutes les priorités"
+              placeholder={t('followUpManagement.filter.priority.all')}
               options={priorityOptions}
               value={filters.priority}
               onChange={(e) => handleFilterChange('priority', e.target.value)}
@@ -129,9 +131,9 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
           
           {/* Status Filter */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Statut</label>
+            <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('followUpManagement.filter.status.label')}</label>
             <Select
-              placeholder="Tous les statuts"
+              placeholder={t('followUpManagement.filter.status.all')}
               options={statusOptions}
               value={filters.status}
               onChange={(e) => handleFilterChange('status', e.target.value)}
@@ -140,9 +142,9 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
 
           {/* Days Filter */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Délai</label>
+            <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('followUpManagement.filter.days.label')}</label>
             <Select
-              placeholder="Tous les délais"
+              placeholder={t('followUpManagement.filter.days.all')}
               options={daysOptions}
               value={filters.days}
               onChange={(e) => handleFilterChange('days', e.target.value)}
@@ -155,11 +157,11 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
           <div className="flex flex-wrap gap-2 pt-3 border-t border-border">
             {filters.type !== 'all' && (
               <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
-                <span>Type: {typeOptions.find(opt => opt.value === filters.type)?.label}</span>
+                <span>{t('followUpManagement.filter.chips.type', { value: typeOptions.find(opt => opt.value === filters.type)?.label })}</span>
                 <button
                   onClick={() => handleFilterChange('type', 'all')}
                   className="hover:bg-primary/20 rounded-full p-0.5"
-                  aria-label="Supprimer le filtre de type"
+                  aria-label={t('followUpManagement.filter.chips.removeFilter', { filter: t('followUpManagement.filter.type.label') })}
                 >
                   <Icon name="X" size={12} />
                 </button>
