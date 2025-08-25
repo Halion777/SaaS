@@ -317,23 +317,23 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
   ];
 
   const categoryOptions = [
-    { value: 'plumbing', label: 'Plomberie' },
-    { value: 'electrical', label: 'Électricité' },
-    { value: 'carpentry', label: 'Menuiserie' },
-    { value: 'painting', label: 'Peinture' },
-    { value: 'masonry', label: 'Maçonnerie' },
-    { value: 'tiling', label: 'Carrelage' },
-    { value: 'roofing', label: 'Toiture' },
-    { value: 'heating', label: 'Chauffage' },
-    { value: 'renovation', label: 'Rénovation générale' },
-    { value: 'cleaning', label: 'Nettoyage' },
-    { value: 'solar', label: 'Installation solaire' },
-    { value: 'gardening', label: 'Jardinage' },
-    { value: 'locksmith', label: 'Serrurerie' },
-    { value: 'glazing', label: 'Vitrerie' },
-    { value: 'insulation', label: 'Isolation' },
-    { value: 'airConditioning', label: 'Climatisation' },
-    { value: 'other', label: 'Autre' }
+    { value: 'plumbing', label: t('quoteCreation.projectInfo.categories.plumbing', 'Plomberie') },
+    { value: 'electrical', label: t('quoteCreation.projectInfo.categories.electrical', 'Électricité') },
+    { value: 'carpentry', label: t('quoteCreation.projectInfo.categories.carpentry', 'Menuiserie') },
+    { value: 'painting', label: t('quoteCreation.projectInfo.categories.painting', 'Peinture') },
+    { value: 'masonry', label: t('quoteCreation.projectInfo.categories.masonry', 'Maçonnerie') },
+    { value: 'tiling', label: t('quoteCreation.projectInfo.categories.tiling', 'Carrelage') },
+    { value: 'roofing', label: t('quoteCreation.projectInfo.categories.roofing', 'Toiture') },
+    { value: 'heating', label: t('quoteCreation.projectInfo.categories.heating', 'Chauffage') },
+    { value: 'renovation', label: t('quoteCreation.projectInfo.categories.renovation', 'Rénovation générale') },
+    { value: 'cleaning', label: t('quoteCreation.projectInfo.categories.cleaning', 'Nettoyage') },
+    { value: 'solar', label: t('quoteCreation.projectInfo.categories.solar', 'Installation solaire') },
+    { value: 'gardening', label: t('quoteCreation.projectInfo.categories.gardening', 'Jardinage') },
+    { value: 'locksmith', label: t('quoteCreation.projectInfo.categories.locksmith', 'Serrurerie') },
+    { value: 'glazing', label: t('quoteCreation.projectInfo.categories.glazing', 'Vitrerie') },
+    { value: 'insulation', label: t('quoteCreation.projectInfo.categories.insulation', 'Isolation') },
+    { value: 'airConditioning', label: t('quoteCreation.projectInfo.categories.airConditioning', 'Climatisation') },
+    { value: 'other', label: t('quoteCreation.projectInfo.categories.other', 'Autre') }
   ];
 
   // Predefined tasks based on category
