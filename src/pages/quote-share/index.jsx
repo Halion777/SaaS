@@ -260,60 +260,67 @@ const PublicQuoteShareViewer = () => {
       <div className="bg-white shadow-lg border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-            {/* Left Side - Quote Info */}
-            <div className="flex items-center space-x-3">
-              <span className="text-sm font-medium text-gray-700 break-all">{quote?.quote_number || quote?.id}</span>
+            {/* Top Row - Quote Info and Language Dropdown */}
+            <div className="flex items-center justify-between sm:justify-start">
+              {/* Left Side - Quote Info */}
+              <div className="flex items-center space-x-3">
+                <span className="text-sm font-medium text-gray-700 break-all">{quote?.quote_number || quote?.id}</span>
+              </div>
+
+              {/* Right Side - Language Dropdown (Mobile) */}
+              <div className="flex sm:hidden">
+                <LanguageDropdown />
+              </div>
             </div>
 
-            {/* Right Side - Language Dropdown and Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
-              {/* Language Dropdown - Right side on mobile but aligned with quote number */}
-              <div className="flex justify-end sm:justify-start w-full sm:w-auto">
+            {/* Bottom Row - Action Buttons and Language Dropdown (Desktop) */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+              {/* Language Dropdown - Desktop only */}
+              <div className="hidden sm:flex">
                 <LanguageDropdown />
               </div>
 
               {/* Action Buttons */}
-            {(quoteStatus === 'sent' || quoteStatus === 'viewed') && (
+              {(quoteStatus === 'sent' || quoteStatus === 'viewed') && (
                 <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-                <Button
-                  onClick={() => setShowRejectModal(true)}
-                  variant="outline"
+                  <Button
+                    onClick={() => setShowRejectModal(true)}
+                    variant="outline"
                     className="w-full sm:w-auto px-4 sm:px-6 py-2.5 border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 transition-colors"
-                >
-                  <Icon name="XCircle" size={18} className="mr-2" />
+                  >
+                    <Icon name="XCircle" size={18} className="mr-2" />
                     {t('quoteShare.actions.reject')}
-                </Button>
-                <Button
-                  onClick={handleAcceptQuote}
-                  disabled={actionLoading}
+                  </Button>
+                  <Button
+                    onClick={handleAcceptQuote}
+                    disabled={actionLoading}
                     className={`w-full sm:w-auto px-4 sm:px-6 py-2.5 shadow-lg hover:shadow-xl transition-all ${
-                    clientSignature 
-                      ? 'bg-green-700 hover:bg-green-800 text-white' 
-                      : 'bg-green-600 hover:bg-green-700 text-white'
-                  }`}
-                >
-                  <Icon name="CheckCircle" size={18} className="mr-2" />
+                      clientSignature 
+                        ? 'bg-green-700 hover:bg-green-800 text-white' 
+                        : 'bg-green-600 hover:bg-green-700 text-white'
+                    }`}
+                  >
+                    <Icon name="CheckCircle" size={18} className="mr-2" />
                     {actionLoading ? t('quoteShare.actions.processing') : clientSignature ? t('quoteShare.actions.confirmAcceptance') : t('quoteShare.actions.accept')}
-                </Button>
-              </div>
-            )}
+                  </Button>
+                </div>
+              )}
 
             {/* Show signature info if already signed */}
             {clientSignature && (
-                <div className="flex items-center space-x-3 bg-green-50 border border-green-200 rounded-lg px-4 py-3 w-full sm:w-auto">
-                  <Icon name="CheckCircle" size={20} className="text-green-600 flex-shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-green-800 font-medium text-sm">{t('quoteShare.signatures.quoteAccepted')}</p>
-                    <p className="text-xs text-green-600">
-                      {t('quoteShare.signatures.signedOn')} {clientSignature.signedAt ? new Date(clientSignature.signedAt).toLocaleDateString('fr-FR') : t('quoteShare.signatures.recently')}
+              <div className="flex items-center space-x-3 bg-green-50 border border-green-200 rounded-lg px-4 py-3 w-full sm:w-auto">
+                <Icon name="CheckCircle" size={20} className="text-green-600 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-green-800 font-medium text-sm">{t('quoteShare.signatures.quoteAccepted')}</p>
+                  <p className="text-xs text-green-600">
+                    {t('quoteShare.signatures.signedOn')} {clientSignature.signedAt ? new Date(clientSignature.signedAt).toLocaleDateString('fr-FR') : t('quoteShare.signatures.recently')}
                   </p>
-          </div>
+                </div>
               </div>
             )}
-            </div>
-            </div>
           </div>
         </div>
+      </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
                   {/* Quote Preview Card */}
@@ -787,6 +794,7 @@ const PublicQuoteShareViewer = () => {
           clientName={quote?.client?.name || t('quoteShare.client.client')}
         />
       )}
+    </div>
     </div>
   );
 };
