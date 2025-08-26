@@ -69,7 +69,7 @@ serve(async (req) => {
         stage_1_delay: 1,  // 1 day (24 hours) for unviewed quotes
         stage_2_delay: 3,  // 3 days for second follow-up
         stage_3_delay: 5,  // 5 days for third follow-up
-        max_attempts_per_stage: 2,
+        max_attempts_per_stage: 3, // Consistent with database default
         instant_view_followup: true,
         view_followup_template: 'followup_viewed_no_action',
         sent_followup_template: 'followup_not_viewed'
@@ -262,13 +262,13 @@ serve(async (req) => {
         
         // Updated quote status from 'sent' to 'viewed'
         
-        // Use hardcoded default rules for follow-up creation
-        const globalRules = {
+              // Use hardcoded default rules for follow-up creation
+      const globalRules = {
         max_stages: 3,
-          stage_1_delay: 1,  // 1 day (24 hours) for unviewed quotes
+          stage_1_delay: 1,  // 1 day for unviewed quotes (daily scheduler)
           stage_2_delay: 3,  // 3 days for second follow-up
           stage_3_delay: 5,  // 5 days for third follow-up
-        max_attempts_per_stage: 2,
+        max_attempts_per_stage: 3, // Consistent with database default
         instant_view_followup: true,
           view_followup_template: 'followup_viewed_no_action',
         sent_followup_template: 'followup_not_viewed'
@@ -303,7 +303,7 @@ serve(async (req) => {
           previous_status: 'sent',
           current_status: 'viewed',
           delayed_followup_created: globalRules.instant_view_followup,
-          followup_delay: '1 hour'
+          followup_delay: '1 day'
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
       } else {
         // Quote is not in 'sent' status
@@ -389,7 +389,7 @@ serve(async (req) => {
       stage_1_delay: 1,  // 1 day (24 hours) for unviewed quotes
       stage_2_delay: 3,  // 3 days for second follow-up
       stage_3_delay: 5,  // 5 days for third follow-up
-      max_attempts_per_stage: 2,
+      max_attempts_per_stage: 3, // Consistent with database default
       instant_view_followup: true,
       view_followup_template: 'followup_viewed_no_action',
       sent_followup_template: 'followup_not_viewed'
@@ -466,12 +466,12 @@ serve(async (req) => {
  * 4. Follow-up stage progression
  * 5. Cleanup of accepted/rejected quotes
  * 
- * SHOULD BE CALLED VIA CRON JOB every hour to ensure:
+ * SHOULD BE CALLED VIA CRON JOB daily at 9 AM to ensure:
  * - Quotes are automatically expired when valid_until date passes
  * - Follow-ups are created and progressed automatically
  * - Quote statuses are kept in sync with backend
  * 
- * Cron schedule: 0 * * * * (every hour)
+ * Cron schedule: 0 9 * * * (daily at 9 AM)
  */
 async function checkIfQuoteNeedsFollowUp(admin: any, quote: any, rules: any): Promise<boolean> {
   try {
@@ -490,17 +490,17 @@ async function checkIfQuoteNeedsFollowUp(admin: any, quote: any, rules: any): Pr
       return false; // Only follow up on sent/viewed quotes
     }
     
-    // For 'viewed' status - delayed follow-up if enabled (1 hour delay)
+    // For 'viewed' status - delayed follow-up if enabled (1 day delay for daily scheduler)
     if (quote.status === 'viewed') {
-      // Always schedule follow-up for viewed quotes (1 hour delay)
+      // Always schedule follow-up for viewed quotes (1 day delay)
       return true; // Schedule follow-up for viewed quotes
     }
     
-    // For 'sent' status - check delay for unopened emails (24 hours)
+    // For 'sent' status - check delay for unopened emails (1 day for daily scheduler)
     if (quote.status === 'sent') {
       if (quote.sent_at) {
         const daysSinceSent = Math.floor((Date.now() - new Date(quote.sent_at).getTime()) / (1000 * 60 * 60 * 24));
-        return daysSinceSent >= 1; // Follow-up after 24 hours (1 day) - hardcoded
+        return daysSinceSent >= 1; // Follow-up after 1 day - daily scheduler
       }
       return true; // If no sent_at, allow follow-up
     }
@@ -737,7 +737,7 @@ async function processQuoteStatusUpdates(admin: any, rules: any) {
 }
 
 /**
- * Create delayed follow-up for viewed quote (1 hour delay)
+ * Create delayed follow-up for viewed quote (1 day delay for daily scheduler)
  */
 // In followups-scheduler/index.ts
 async function createDelayedViewFollowUp(admin: any, quote: any) {
@@ -797,7 +797,7 @@ async function createDelayedViewFollowUp(admin: any, quote: any) {
       .replace('{quote_title}', quote.title || 'votre projet');
 
     const scheduledDate = new Date();
-    scheduledDate.setHours(scheduledDate.getHours() + 1); // 1 hour delay
+    scheduledDate.setDate(scheduledDate.getDate() + 1); // 1 day delay for daily scheduler
 
     if (existingFollowUp && existingFollowUp.length > 0) {
       // Update existing follow-up with new template and schedule
@@ -820,7 +820,7 @@ async function createDelayedViewFollowUp(admin: any, quote: any) {
             template_type: 'followup_viewed_no_action',
             priority: calculatePriority('viewed', existingFollowUp[0].stage, true), // Use true for hasRecentActivity since this is a view action
             priority_reason: 'Priority adjusted for viewed quote',
-            stage_delay: 1,
+            stage_delay: 1, // 1 day delay for daily scheduler
             previous_status: 'sent',
             status_change_time: new Date().toISOString()
           }
@@ -942,6 +942,7 @@ async function progressFollowUpStages(admin: any, rules: any) {
       
       // Check if we should progress to next stage
       if (followUp.attempts >= followUp.max_attempts) {
+        console.log(`Max attempts reached for follow-up ${followUp.id}: ${followUp.attempts}/${followUp.max_attempts} attempts`);
         // Max attempts reached, move to next stage
         const nextStage = followUp.stage + 1;
         

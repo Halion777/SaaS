@@ -40,7 +40,7 @@ serve(async (req) => {
 
   try {
     const admin = createClient(
-      Deno.env.get('SITE_URL') ?? '',
+      Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
@@ -175,7 +175,10 @@ async function processFollowUp(admin: any, followUp: any) {
       return 1; // Default to 1 day if no sent_at
     })();
     
-    const quoteLink = `${Deno.env.get('SITE_URL') || 'https://www.haliqo.com'}/quote/${quote.share_token || quote.id}`;
+         // Build quote link - use share_token if available, otherwise use quote ID
+     // Use SITE_URL from environment variables for proper domain
+     const siteUrl = Deno.env.get('SITE_URL') || 'https://www.haliqo.com';
+     const quoteLink = `${siteUrl}/quote-share/${quote.share_token || quote.id}`;
     const companyName = 'Haliqo'; // This should come from user settings or company table
     
     // Replace template variables in all content
@@ -228,6 +231,8 @@ async function processFollowUp(admin: any, followUp: any) {
 
       // Update follow-up status and increment attempts
       const newAttempts = (followUp.attempts || 0) + 1;
+      console.log(`Incrementing attempts for follow-up ${followUp.id}: ${followUp.attempts || 0} → ${newAttempts}/${followUp.max_attempts || 3}`);
+      
       const { error: updateError } = await admin
         .from('quote_follow_ups')
         .update({ 
@@ -260,26 +265,13 @@ async function processFollowUp(admin: any, followUp: any) {
         quote_id: followUp.quote_id, 
         user_id: followUp.user_id, 
         type: 'followup_sent', 
-        meta: eventMeta 
+        meta: eventMeta ,
+        timestamp: new Date().toISOString()
       })
       
-      // Log to access logs for tracking
-      await admin.from('quote_access_logs').insert({
-        quote_id: followUp.quote_id,
-        action: 'followup_sent',
-        accessed_at: new Date().toISOString(),
-        meta: {
-          follow_up_type: followUp.meta?.follow_up_type || 'general', // Use meta for type
-          stage: followUp.stage,
-          automated: followUp.meta?.automated || false, // Use meta for automation
-          instant_followup: followUp.meta?.instant_followup || false, // Use meta for instant followup (now false for viewed quotes - 1 hour delay)
-          attempts: newAttempts,
-          priority: followUp.meta?.priority || 'medium' // Use meta for priority
-        }
-      })
+      // Note: Event already logged above, no need for duplicate insert
       
-      console.log(`Follow-up sent for quote ${quote.quote_number} to ${client.email}, type: ${followUp.meta?.follow_up_type || 'general'}, stage: ${followUp.stage}, attempts: ${newAttempts}, priority: ${followUp.meta?.priority || 'medium'}, instant: ${followUp.meta?.instant_followup || false}`)
-      
+     
       return { success: true, data: { quote_number: quote.quote_number, client_email: client.email } };
       
     } catch (err: any) {
@@ -302,6 +294,8 @@ async function processFollowUp(admin: any, followUp: any) {
       
       // Update follow-up status
       const newAttempts = (followUp.attempts || 0) + 1;
+      console.log(`Incrementing failed attempts for follow-up ${followUp.id}: ${followUp.attempts || 0} → ${newAttempts}/${followUp.max_attempts || 3}`);
+      
       await admin.from('quote_follow_ups').update({ 
         status: 'failed', 
         last_error: errorMessage,
@@ -320,7 +314,8 @@ async function processFollowUp(admin: any, followUp: any) {
           error: errorMessage,
           follow_up_type: followUp.meta?.follow_up_type || 'general', // Use meta for type
           attempts: newAttempts
-        }
+        },
+        timestamp: new Date().toISOString()
       })
       
       console.error(`Failed to send follow-up for quote ${quote.quote_number}: ${errorMessage}`)

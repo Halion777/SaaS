@@ -231,16 +231,23 @@ class QuoteTrackingService {
    */
   static async logRelanceAction(quoteId, relanceType, relanceMethod, notes = null) {
     try {
-      // Create a combined action string since there's no meta column
-      const actionString = `relance_${relanceType}_${relanceMethod}`;
+      // Get current user ID from auth
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id;
       
       const { error } = await supabase
-        .from('quote_access_logs')
+        .from('quote_events')
         .insert({
           quote_id: quoteId,
-          action: actionString,
-          share_token: notes ? notes.substring(0, 100) : null, // Use share_token to store some notes if provided
-          accessed_at: new Date().toISOString()
+          user_id: userId,
+          type: 'manual_followup_sent',
+          meta: {
+            relanceType,
+            relanceMethod,
+            notes,
+            timestamp: new Date().toISOString()
+          },
+         
         });
 
       if (error) {
