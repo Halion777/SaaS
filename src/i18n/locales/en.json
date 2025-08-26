@@ -2434,13 +2434,8 @@
     "navigation": {
       "back": "Back",
       "next": "Next",
-      "nextStep": "Next Step",
-      "previousStep": "Previous Step",
-      "save": "Save",
-      "saveAndSend": "Save and Send",
+      "previous": "Previous",
       "saveAsDraft": "Save as Draft",
-      "cancel": "Cancel",
-      "finish": "Finish",
       "saving": "Saving...",
       "send": "Send",
       "sending": "Sending..."
@@ -2764,47 +2759,27 @@
     },
     
     "quoteSendModal": {
-      "shareTitle": "Share a Quote",
-      "sendTitle": "Send a Quote",
-      "sendError": "An error occurred while sending the quote. Please try again.",
-      "statusInfo": "Once you send this quote, the status will change to \"Pending\".",
-      "client": "The client",
-      "deadlineInfo": "will have until",
-      "defaultDeadline": "30 days",
-      "responseInfo": "to respond to this quote.",
-      "cancel": "Cancel",
-      "back": "Back",
-      "generating": "Generating...",
-      "confirm": "Confirm",
-      "sending": "Sending...",
-      "send": "Send",
       "title": "Send Quote",
-      "recipient": "Recipient Email",
-      "subject": "Email Subject",
-      "message": "Email Message",
-      "defaultSubject": "Your quote {{quoteNumber}} from {{companyName}}",
-      "defaultMessage": "Dear {{clientName}},\n\nPlease find attached your quote {{quoteNumber}}.\n\nYou can view and accept the quote online using the link below:\n\n{{quoteLink}}\n\nIf you have any questions, please don't hesitate to contact us.\n\nBest regards,\n{{userName}}\n{{companyName}}",
-      "sentSuccess": "Quote sent successfully!",
-      "sentError": "Error sending quote",
-      "howToSend": "How do you wish to send this quote?",
-      "sendByEmail": "Send by email via Haliqo",
-      "sendByEmailDesc": "Click \"Continue\" to view the email before sending it",
-      "downloadPDF": "Download the quote in PDF format",
-      "downloadPDFDesc": "Download the quote in PDF format to send manually",
-      "sendCopy": "Send me a copy",
-      "yes": "Yes",
-      "no": "No",
-      "attachedQuote": "You have received a quote",
-      "fromCompany": "From {{companyName}}",
-      "quoteNumber": "Quote number: {{quoteNumber}}",
-      "recipientEmail": "Recipient Email",
-      "recipientEmailPlaceholder": "Client email",
-      "emailSubject": "Email Subject",
-      "emailSubjectPlaceholder": "Email subject",
-      "emailMessage": "Message",
-      "emailMessagePlaceholder": "Your message...",
-      "yourCompany": "Your company",
-      "yourTeam": "Your team"
+      "subtitle": "Verify information before sending",
+      "clientInfo": "Client Information",
+      "clientName": "Client Name",
+      "clientEmail": "Client Email",
+      "clientPhone": "Client Phone",
+      "projectInfo": "Project Information",
+      "projectTitle": "Project Title",
+      "projectDescription": "Project Description",
+      "quoteDetails": "Quote Details",
+      "quoteNumber": "Quote Number",
+      "quoteDate": "Quote Date",
+      "quoteExpiry": "Expiry Date",
+      "quoteAmount": "Total Amount",
+      "sendButton": "Send Quote",
+      "sending": "Sending...",
+      "cancelButton": "Cancel",
+      "successMessage": "Quote sent successfully!",
+      "errorMessage": "Error sending quote",
+      "generatingPDF": "Generating PDF...",
+      "sendingEmail": "Sending email..."
     },
     "saving": "Saving...",
     "financialConfig": {
@@ -2888,6 +2863,121 @@
         "hidePrices": "Hide material prices in Account Preferences if needed.",
         "tip": "Tip: a simple and readable quote gets signed faster."
       }
+    }
+  },
+  "quoteShare": {
+    "loading": "Loading quote...",
+    "error": {
+      "invalidLink": "Invalid link.",
+      "loadingError": "Error loading quote.",
+      "notFound": "Quote not found."
+    },
+    "status": {
+      "sent": "Sent",
+      "viewed": "Viewed",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "expired": "Expired"
+    },
+    "actions": {
+      "reject": "Reject",
+      "accept": "Accept",
+      "confirmAcceptance": "Confirm Acceptance",
+      "processing": "Processing...",
+      "cancel": "Cancel"
+    },
+    "company": {
+      "company": "Company",
+      "title": "Company",
+      "address": "Address",
+      "postalCode": "Postal Code",
+      "country": "Country",
+      "phone": "Phone",
+      "email": "Email"
+    },
+    "client": {
+      "client": "Client",
+      "title": "Client",
+      "recipient": "Recipient",
+      "billingAddress": "Billing Address",
+      "deliveryAddress": "Delivery Address"
+    },
+    "quoteDetails": {
+      "quoteDate": "Quote Date",
+      "expiryDate": "Expiry Date",
+      "totalAmount": "Total Amount"
+    },
+    "services": {
+      "title": "Service Details",
+      "description": "Description",
+      "quantity": "Quantity",
+      "unitPrice": "Unit Price",
+      "total": "Total"
+    },
+    "financial": {
+      "subtotal": "Subtotal",
+      "vat": "VAT",
+      "total": "Total",
+      "advancePayment": "Advance Payment",
+      "balanceOnDelivery": "Balance on Delivery",
+      "materialsNote": "* Material prices are included in the total but hidden"
+    },
+    "additionalInfo": {
+      "title": "Notes and Conditions",
+      "notes": "Notes and Conditions"
+    },
+    "files": {
+      "title": "Attached Files",
+      "download": "Download"
+    },
+    "signatures": {
+      "title": "Signatures",
+      "companySignature": "Company Signature",
+      "clientSignature": "Client Signature",
+      "signatureNotAvailable": "Signature not available",
+      "waitingForSignature": "Waiting for signature",
+      "quoteAccepted": "Quote already signed",
+      "signedOn": "Signed on",
+      "recently": "recently",
+      "comment": "Comment"
+    },
+    "statusMessages": {
+      "accepted": {
+        "title": "Quote Accepted!",
+        "message": "Thank you for your trust. The artisan will contact you soon."
+      },
+      "rejected": {
+        "title": "Quote Rejected",
+        "message": "Your request has been recorded. The artisan will contact you to discuss modifications."
+      },
+      "expired": {
+        "title": "Quote Expired",
+        "message": "This quote has exceeded its validity date. Please contact the artisan for a new quote."
+      }
+    },
+    "rejectModal": {
+      "title": "Reject Quote",
+      "rejectionReason": "Rejection Reason",
+      "placeholder": "Describe the reason for rejection...",
+      "reject": "Reject",
+      "cancel": "Cancel"
+    },
+    "signatureModal": {
+      "title": "Electronic Signature",
+      "subtitle": "Please sign to accept this quote"
+    },
+    "alerts": {
+      "acceptedSuccess": "Quote accepted successfully!",
+      "rejectedSuccess": "Quote rejected.",
+      "acceptanceError": "Error accepting quote.",
+      "rejectionError": "Error rejecting quote.",
+      "rejectionReasonRequired": "Please provide a rejection reason.",
+      "error": "Error"
+    },
+    "footer": {
+      "companyName": "Your Company",
+      "allRightsReserved": "All rights reserved.",
+      "rightsReserved": "All rights reserved."
     }
   }
 } 

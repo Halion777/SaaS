@@ -40,7 +40,7 @@ serve(async (req) => {
 
   try {
     const admin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SITE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
@@ -175,8 +175,8 @@ async function processFollowUp(admin: any, followUp: any) {
       return 1; // Default to 1 day if no sent_at
     })();
     
-    const quoteLink = `${Deno.env.get('SUPABASE_URL') || 'https://your-domain.com'}/quote/${quote.share_token || quote.id}`;
-    const companyName = 'Your Company Name'; // This should come from user settings or company table
+    const quoteLink = `${Deno.env.get('SITE_URL') || 'https://www.haliqo.com'}/quote/${quote.share_token || quote.id}`;
+    const companyName = 'Haliqo'; // This should come from user settings or company table
     
     // Replace template variables in all content
     const replaceTemplateVariables = (content: string) => {

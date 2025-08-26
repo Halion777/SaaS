@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getQuoteByShareToken } from '../../services/shareService';
 import { getPublicUrl } from '../../services/storageService';
 import ClientQuoteService from '../../services/clientQuoteService';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
 import ElectronicSignatureModal from '../quote-creation/components/ElectronicSignatureModal';
+import LanguageDropdown from '../../components/LanguageDropdown';
+import Footer from '../../components/Footer';
 
 const currency = (n) => new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(n || 0)) + '€';
 
 const PublicQuoteShareViewer = () => {
+  const { t } = useTranslation();
   const { token } = useParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -29,7 +33,7 @@ const PublicQuoteShareViewer = () => {
         setLoading(true);
         const res = await getQuoteByShareToken(token);
         if (!res?.success) {
-          setError(res?.error || 'Lien invalide.');
+          setError(res?.error || t('quoteShare.error.invalidLink'));
           return;
         }
         const q = res.data;
@@ -72,7 +76,7 @@ const PublicQuoteShareViewer = () => {
           }
         }
       } catch (e) {
-        setError('Erreur lors du chargement du devis.');
+        setError(t('quoteShare.error.loadingError'));
       } finally {
         setLoading(false);
       }
@@ -90,12 +94,12 @@ const PublicQuoteShareViewer = () => {
         if (result.success) {
           setQuoteStatus('accepted');
           // Show success message
-          alert('Devis accepté avec succès !');
+          alert(t('quoteShare.alerts.acceptedSuccess'));
         } else {
-          alert(`Erreur: ${result.error}`);
+          alert(`${t('quoteShare.alerts.error')}: ${result.error}`);
         }
       } catch (error) {
-        alert('Erreur lors de l\'acceptation du devis.');
+        alert(t('quoteShare.alerts.acceptanceError'));
       } finally {
         setActionLoading(false);
       }
@@ -117,12 +121,12 @@ const PublicQuoteShareViewer = () => {
         setQuoteStatus('accepted');
         setShowSignatureModal(false);
         // Show success message
-        alert('Devis accepté avec succès !');
+        alert(t('quoteShare.alerts.acceptedSuccess'));
       } else {
         alert(`Erreur: ${result.error}`);
       }
     } catch (error) {
-      alert('Erreur lors de l\'acceptation du devis.');
+      alert(t('quoteShare.alerts.acceptanceError'));
     } finally {
       setActionLoading(false);
     }
@@ -130,7 +134,7 @@ const PublicQuoteShareViewer = () => {
 
   const handleRejectQuote = async () => {
     if (!rejectionReason.trim()) {
-      alert('Veuillez indiquer un motif de rejet.');
+      alert(t('quoteShare.alerts.rejectionReasonRequired'));
       return;
     }
 
@@ -142,12 +146,12 @@ const PublicQuoteShareViewer = () => {
         setQuoteStatus('rejected');
         setShowRejectModal(false);
         // Show success message
-        alert('Devis rejeté.');
+        alert(t('quoteShare.alerts.rejectedSuccess'));
       } else {
         alert(`Erreur: ${result.error}`);
       }
     } catch (error) {
-      alert('Erreur lors du rejet du devis.');
+      alert(t('quoteShare.alerts.rejectionError'));
     } finally {
       setActionLoading(false);
     }
@@ -193,7 +197,7 @@ const PublicQuoteShareViewer = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
         <div className="text-center">
           <Icon name="Loader" size={48} className="animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Chargement du devis...</p>
+          <p className="text-gray-600">{t('quoteShare.loading')}</p>
         </div>
       </div>
     );
@@ -215,7 +219,7 @@ const PublicQuoteShareViewer = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
         <div className="text-center">
           <Icon name="FileX" size={48} className="text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-600">Devis non trouvé.</p>
+          <p className="text-gray-600">{t('quoteShare.error.notFound')}</p>
         </div>
       </div>
     );
@@ -256,22 +260,10 @@ const PublicQuoteShareViewer = () => {
       <div className="bg-white shadow-lg border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            {/* Left Side - Quote Info */}
+            {/* Left Side - Language Dropdown and Quote Info */}
             <div className="flex items-center space-x-6">
+              <LanguageDropdown />
               <div className="flex items-center space-x-3">
-                <span className={`px-3 py-1.5 rounded-full text-sm font-semibold ${
-                  quoteStatus === 'sent' ? 'bg-blue-100 text-blue-700' :
-                  quoteStatus === 'viewed' ? 'bg-orange-100 text-orange-700' :
-                  quoteStatus === 'accepted' ? 'bg-green-100 text-green-700' :
-                  quoteStatus === 'rejected' ? 'bg-red-100 text-red-700' : 
-                  'bg-gray-100 text-gray-700'
-                }`}>
-                  {quoteStatus === 'sent' ? 'Envoyé' : 
-                   quoteStatus === 'viewed' ? 'Consulté' :
-                   quoteStatus === 'accepted' ? 'Accepté' :
-                   quoteStatus === 'rejected' ? 'Rejeté' : 'Expiré'}
-                </span>
-                
                 <span className="text-sm font-medium text-gray-700">{quote?.quote_number || quote?.id}</span>
               </div>
             </div>
@@ -285,7 +277,7 @@ const PublicQuoteShareViewer = () => {
                   className="px-6 py-2.5 border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 transition-colors"
                 >
                   <Icon name="XCircle" size={18} className="mr-2" />
-                  Rejeter
+                  {t('quoteShare.actions.reject')}
                 </Button>
                 <Button
                   onClick={handleAcceptQuote}
@@ -297,7 +289,7 @@ const PublicQuoteShareViewer = () => {
                   }`}
                 >
                   <Icon name="CheckCircle" size={18} className="mr-2" />
-                  {actionLoading ? 'Traitement...' : clientSignature ? 'Confirmer l\'acceptation' : 'Accepter'}
+                  {actionLoading ? t('quoteShare.actions.processing') : clientSignature ? t('quoteShare.actions.confirmAcceptance') : t('quoteShare.actions.accept')}
                 </Button>
               </div>
             )}
@@ -307,16 +299,16 @@ const PublicQuoteShareViewer = () => {
               <div className="flex items-center space-x-3 bg-green-50 border border-green-200 rounded-lg px-4 py-3">
                 <Icon name="CheckCircle" size={20} className="text-green-600" />
                 <div>
-                  <p className="text-green-800 font-medium">Devis déjà signé</p>
+                  <p className="text-green-800 font-medium">{t('quoteShare.signatures.quoteAccepted')}</p>
                   <p className="text-green-600 text-sm">
-                    Signé le {clientSignature.signedAt ? new Date(clientSignature.signedAt).toLocaleDateString('fr-FR') : 'récemment'}
+                    {t('quoteShare.signatures.signedOn')} {clientSignature.signedAt ? new Date(clientSignature.signedAt).toLocaleDateString('fr-FR') : t('quoteShare.signatures.recently')}
                   </p>
-          </div>
+                </div>
               </div>
             )}
-            </div>
           </div>
         </div>
+      </div>
 
       <div className="max-w-6xl mx-auto px-6 py-8">
                   {/* Quote Preview Card */}
@@ -333,21 +325,21 @@ const PublicQuoteShareViewer = () => {
                 )}
                 <div>
                   <h3 className="text-lg font-bold text-gray-900 mb-1">
-                    {quote?.company_profile?.company_name || 'Votre Entreprise'}
+                    {quote?.company_profile?.company_name || t('quoteShare.footer.companyName')}
                   </h3>
-                  <p className="text-blue-600 font-medium text-sm">Entreprise</p>
+                  <p className="text-blue-600 font-medium text-sm">{t('quoteShare.company.company')}</p>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex items-start space-x-2">
                   <Icon name="MapPin" size={14} className="text-blue-500 mt-0.5 flex-shrink-0" />
             <div>
-                    <p className="text-sm font-medium text-gray-800">{quote?.company_profile?.address || 'Adresse'}</p>
+                    <p className="text-sm font-medium text-gray-800">{quote?.company_profile?.address || t('quoteShare.company.address')}</p>
                 {quote?.company_profile?.city && quote.company_profile.city !== 'N/A' && (
                       <p className="text-sm text-gray-600">{quote.company_profile.city}</p>
                     )}
-                    <p className="text-sm text-gray-600">{quote?.company_profile?.postal_code || 'Code postal'}</p>
-                    <p className="text-sm text-gray-600">{quote?.company_profile?.country || 'Pays'}</p>
+                    <p className="text-sm text-gray-600">{quote?.company_profile?.postal_code || t('quoteShare.company.postalCode')}</p>
+                    <p className="text-sm text-gray-600">{quote?.company_profile?.country || t('quoteShare.company.country')}</p>
                   </div>
                 </div>
                 {quote?.company_profile?.phone && (
@@ -368,35 +360,35 @@ const PublicQuoteShareViewer = () => {
             {/* Client Information */}
             <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
               <div className="mb-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-1">Client</h3>
-                <p className="text-green-600 font-medium text-sm">Destinataire</p>
+                <h3 className="text-lg font-bold text-gray-900 mb-1">{t('quoteShare.client.client')}</h3>
+                <p className="text-green-600 font-medium text-sm">{t('quoteShare.client.recipient')}</p>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <Icon name="User" size={14} className="text-green-500 flex-shrink-0" />
-                  <p className="text-base font-semibold text-gray-800">{quote?.client?.name || 'Client'}</p>
+                  <p className="text-base font-semibold text-gray-800">{quote?.client?.name || t('quoteShare.client.client')}</p>
                 </div>
                 <div className="bg-white rounded-lg p-3 border border-green-200">
                   <p className="font-medium text-xs text-green-700 mb-2 flex items-center">
                     <Icon name="MapPin" size={12} className="mr-1" />
-                    Adresse de facturation
+                    {t('quoteShare.client.billingAddress')}
                   </p>
                   <div className="space-y-1 text-gray-700">
-                    <p className="text-sm font-medium">{quote?.client?.address || 'Adresse'}</p>
+                    <p className="text-sm font-medium">{quote?.client?.address || t('quoteShare.company.address')}</p>
                   {quote?.client?.city && quote.client.city !== 'N/A' && (
                       <p className="text-sm">{quote.client.city}</p>
                   )}
-                    <p className="text-sm">{quote?.client?.postal_code || 'Code postal'}</p>
-                    <p className="text-sm">{quote?.client?.country || 'Pays'}</p>
+                    <p className="text-sm">{quote?.client?.postal_code || t('quoteShare.company.postalCode')}</p>
+                    <p className="text-sm">{quote?.client?.country || t('quoteShare.company.country')}</p>
                   </div>
                 </div>
                 {quote?.client?.delivery_address && (
                   <div className="bg-white rounded-lg p-3 border border-green-200">
-                    <p className="font-medium text-xs text-green-700 mb-2 flex items-center">
-                      <Icon name="Truck" size={12} className="mr-1" />
-                      Adresse de livraison
-                    </p>
-                    <p className="text-sm text-gray-700">{quote.client.delivery_address}</p>
+                                      <p className="font-medium text-xs text-green-700 mb-2 flex items-center">
+                    <Icon name="Truck" size={12} className="mr-1" />
+                    {t('quoteShare.client.deliveryAddress')}
+                  </p>
+                  <p className="text-sm text-gray-700">{quote.client.delivery_address}</p>
                   </div>
                 )}
               </div>
@@ -410,7 +402,7 @@ const PublicQuoteShareViewer = () => {
                 <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
                   <Icon name="Calendar" size={16} className="text-blue-600" />
                 </div>
-                <p className="text-xs text-gray-500 mb-1">Date du devis</p>
+                <p className="text-xs text-gray-500 mb-1">{t('quoteShare.quoteDetails.quoteDate')}</p>
                 <p className="font-semibold text-gray-900 text-sm">
                   {quote?.created_at ? new Date(quote.created_at).toLocaleDateString('fr-FR') : 'N/A'}
                 </p>
@@ -419,7 +411,7 @@ const PublicQuoteShareViewer = () => {
                 <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-2">
                   <Icon name="Clock" size={16} className="text-orange-600" />
                 </div>
-                <p className="text-xs text-gray-500 mb-1">Date d'expiration</p>
+                <p className="text-xs text-gray-500 mb-1">{t('quoteShare.quoteDetails.expiryDate')}</p>
                 <p className="font-semibold text-gray-900 text-sm">
                   {quote?.valid_until ? new Date(quote.valid_until).toLocaleDateString('fr-FR') : 'N/A'}
                 </p>
@@ -428,7 +420,7 @@ const PublicQuoteShareViewer = () => {
                 <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-2">
                   <Icon name="DollarSign" size={16} className="text-green-600" />
                 </div>
-                <p className="text-xs text-gray-500 mb-1">Montant total</p>
+                <p className="text-xs text-gray-500 mb-1">{t('quoteShare.quoteDetails.totalAmount')}</p>
                 <p className="text-xl font-bold text-green-600">{currency(totalWithVAT)}</p>
               </div>
             </div>
@@ -439,16 +431,16 @@ const PublicQuoteShareViewer = () => {
         <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
           <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
             <Icon name="Wrench" size={18} className="text-blue-600 mr-2" />
-            Détails des prestations
+            {t('quoteShare.services.title')}
           </h3>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b-2 border-gray-200">
-                  <th className="text-left py-3 px-3 font-semibold text-gray-700 bg-gray-50 text-sm">Description</th>
-                  <th className="text-center py-3 px-3 font-semibold text-gray-700 bg-gray-50 text-sm">Quantité</th>
-                  <th className="text-right py-3 px-3 font-semibold text-gray-700 bg-gray-50 text-sm">Prix unitaire</th>
-                  <th className="text-right py-3 px-3 font-semibold text-gray-700 bg-gray-50 text-sm">Total</th>
+                  <th className="text-left py-3 px-3 font-semibold text-gray-700 bg-gray-50 text-sm">{t('quoteShare.services.description')}</th>
+                  <th className="text-center py-3 px-3 font-semibold text-gray-700 bg-gray-50 text-sm">{t('quoteShare.services.quantity')}</th>
+                  <th className="text-right py-3 px-3 font-semibold text-gray-700 bg-gray-50 text-sm">{t('quoteShare.services.unitPrice')}</th>
+                  <th className="text-right py-3 px-3 font-semibold text-gray-700 bg-gray-50 text-sm">{t('quoteShare.services.total')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -521,7 +513,7 @@ const PublicQuoteShareViewer = () => {
             <div className="flex justify-end">
               <div className="w-72 space-y-2">
                 <div className="flex justify-between text-gray-600 text-sm">
-                  <span>Sous-total:</span>
+                  <span>{t('quoteShare.financial.subtotal')}:</span>
                 <span className="font-medium">{currency(totalPrice)}</span>
               </div>
               {financialConfig.vatConfig?.display && (
@@ -531,24 +523,24 @@ const PublicQuoteShareViewer = () => {
                 </div>
               )}
                 <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
-                  <span>Total:</span>
+                  <span>{t('quoteShare.financial.total')}:</span>
                   <span className="text-blue-600">{currency(totalWithVAT)}</span>
                 </div>
                 {financialConfig.advanceConfig?.enabled && financialConfig.advanceConfig.amount > 0 && (
                   <div className="flex justify-between text-gray-600 text-sm">
-                    <span>Acompte à la commande:</span>
+                    <span>{t('quoteShare.financial.advancePayment')}:</span>
                   <span className="font-medium">{currency(financialConfig.advanceConfig.amount)}</span>
                 </div>
               )}
                 {financialConfig.advanceConfig?.enabled && financialConfig.advanceConfig.amount > 0 && (
                   <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
-                    <span>Solde à la livraison:</span>
+                    <span>{t('quoteShare.financial.balanceOnDelivery')}:</span>
                     <span className="text-green-600">{currency(totalWithVAT - financialConfig.advanceConfig.amount)}</span>
-                  </div>
+                </div>
                 )}
                 {!includeMaterialsPrices && (
                   <div className="text-xs text-gray-500 text-center pt-1">
-                    * Les prix des matériaux sont inclus dans le total mais masqués
+                    * {t('quoteShare.financial.materialsNote')}
                   </div>
                 )}
               </div>
@@ -561,7 +553,7 @@ const PublicQuoteShareViewer = () => {
           <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
             <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center">
               <Icon name="FileText" size={18} className="text-purple-600 mr-2" />
-              Notes et conditions
+              {t('quoteShare.additionalInfo.title')}
             </h3>
             <div className="text-gray-600 whitespace-pre-wrap bg-gray-50 p-3 rounded-lg text-sm">{quote.notes}</div>
           </div>
@@ -572,7 +564,7 @@ const PublicQuoteShareViewer = () => {
           <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
             <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
               <Icon name="Paperclip" size={18} className="text-blue-600 mr-2" />
-              Fichiers joints ({quote.quote_files.length})
+              {t('quoteShare.files.title')} ({quote.quote_files.length})
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {quote.quote_files.map((file, index) => (
@@ -615,7 +607,7 @@ const PublicQuoteShareViewer = () => {
                       className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 transition-colors"
                     >
                       <Icon name="Download" size={12} className="mr-1" />
-                      Télécharger
+                      {t('quoteShare.files.download')}
                     </a>
                   </div>
                 </div>
@@ -628,31 +620,31 @@ const PublicQuoteShareViewer = () => {
         <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
           <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
             <Icon name="PenTool" size={18} className="text-indigo-600 mr-2" />
-            Signatures
+            {t('quoteShare.signatures.title')}
           </h3>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Company Signature */}
             <div className="space-y-3">
-              <h4 className="text-base font-semibold text-gray-800">Signature de l'entreprise</h4>
+              <h4 className="text-base font-semibold text-gray-800">{t('quoteShare.signatures.companySignature')}</h4>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 min-h-24 flex items-center justify-center">
                 {signatureUrl ? (
                   <img src={signatureUrl} alt="Signature entreprise" className="max-w-full max-h-20 object-contain" />
                 ) : (
                   <div className="text-center text-gray-400">
                     <Icon name="PenTool" size={24} className="mx-auto mb-1" />
-                    <p className="text-xs">Signature non disponible</p>
+                    <p className="text-xs">{t('quoteShare.signatures.signatureNotAvailable')}</p>
                   </div>
                 )}
               </div>
               <p className="text-xs text-gray-500 text-center">
-                {quote?.company_profile?.company_name || 'Votre Entreprise'}
+                {quote?.company_profile?.company_name || t('quoteShare.footer.companyName')}
               </p>
             </div>
 
             {/* Client Signature */}
             <div className="space-y-3">
-              <h4 className="text-base font-semibold text-gray-800">Signature du client</h4>
+              <h4 className="text-base font-semibold text-gray-800">{t('quoteShare.signatures.clientSignature')}</h4>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 min-h-24 flex items-center justify-center">
                 {clientSignature ? (
                   <img 
@@ -673,17 +665,17 @@ const PublicQuoteShareViewer = () => {
                 ) : (
                   <div className="text-center text-gray-400">
                     <Icon name="User" size={24} className="mx-auto mb-1" />
-                    <p className="text-xs">En attente de signature</p>
+                    <p className="text-xs">{t('quoteShare.signatures.waitingForSignature')}</p>
                   </div>
                 )}
               </div>
-              <p className="text-xs text-gray-500 text-center">
-                {quote?.client?.name || 'Client'}
-              </p>
+                              <p className="text-xs text-gray-500 text-center">
+                  {quote?.client?.name || t('quoteShare.client.client')}
+                </p>
               {clientSignature?.customerComment && (
                 <div className="mt-2 p-2 bg-blue-50 rounded-lg">
                   <p className="text-xs text-blue-800">
-                    <span className="font-medium">Commentaire:</span> {clientSignature.customerComment}
+                    <span className="font-medium">{t('quoteShare.signatures.comment')}:</span> {clientSignature.customerComment}
                   </p>
                 </div>
               )}
@@ -699,8 +691,8 @@ const PublicQuoteShareViewer = () => {
               <Icon name="CheckCircle" size={32} className="text-green-600" />
               </div>
               <div>
-                <h2 className="text-3xl font-bold text-green-800">Devis accepté !</h2>
-                <p className="text-green-700 text-lg">Merci pour votre confiance. L'artisan vous contactera bientôt.</p>
+                <h2 className="text-3xl font-bold text-green-800">{t('quoteShare.statusMessages.accepted.title')}</h2>
+                <p className="text-green-700 text-lg">{t('quoteShare.statusMessages.accepted.message')}</p>
               </div>
             </div>
           </div>
@@ -713,8 +705,8 @@ const PublicQuoteShareViewer = () => {
               <Icon name="XCircle" size={32} className="text-red-600" />
               </div>
               <div>
-                <h2 className="text-3xl font-bold text-red-800">Devis rejeté</h2>
-                <p className="text-red-700 text-lg">Votre demande a été enregistrée. L'artisan vous contactera pour discuter des modifications.</p>
+                <h2 className="text-3xl font-bold text-red-800">{t('quoteShare.statusMessages.rejected.title')}</h2>
+                <p className="text-red-700 text-lg">{t('quoteShare.statusMessages.rejected.message')}</p>
               </div>
             </div>
           </div>
@@ -727,41 +719,36 @@ const PublicQuoteShareViewer = () => {
                 <Icon name="Clock" size={32} className="text-yellow-600" />
               </div>
               <div>
-                <h2 className="text-3xl font-bold text-yellow-800">Devis expiré</h2>
-                <p className="text-yellow-700 text-lg">Ce devis a dépassé sa date de validité. Veuillez contacter l'artisan pour un nouveau devis.</p>
+                <h2 className="text-3xl font-bold text-yellow-800">{t('quoteShare.statusMessages.expired.title')}</h2>
+                <p className="text-yellow-700 text-lg">{t('quoteShare.statusMessages.expired.message')}</p>
               </div>
             </div>
           </div>
         )}
 
         {/* Footer */}
-        <div className="text-center py-8">
-          <p className="text-gray-500 text-sm">
-            © {new Date().getFullYear()} {quote?.company_profile?.company_name || 'Votre Entreprise'}. 
-            Tous droits réservés.
-          </p>
-        </div>
+        
       </div>
-
+      <Footer />
       {/* Reject Modal */}
       {showRejectModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
             <div className="flex items-center gap-3 mb-6">
               <Icon name="XCircle" size={24} className="text-red-600" />
-              <h3 className="text-xl font-semibold text-gray-800">Rejeter le devis</h3>
+              <h3 className="text-xl font-semibold text-gray-800">{t('quoteShare.rejectModal.title')}</h3>
             </div>
             
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Motif du rejet
+                {t('quoteShare.rejectModal.rejectionReason')}
               </label>
               <textarea
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
                 rows={4}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                placeholder="Décrivez la raison du rejet..."
+                placeholder={t('quoteShare.rejectModal.placeholder')}
               />
             </div>
 
@@ -770,14 +757,14 @@ const PublicQuoteShareViewer = () => {
                 onClick={() => setShowRejectModal(false)}
                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
               >
-                Annuler
+                {t('quoteShare.rejectModal.cancel')}
               </button>
               <button
                 onClick={handleRejectQuote}
                 disabled={actionLoading}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
               >
-                {actionLoading ? 'Traitement...' : 'Rejeter'}
+                {actionLoading ? t('quoteShare.actions.processing') : t('quoteShare.rejectModal.reject')}
               </button>
             </div>
           </div>
@@ -790,9 +777,9 @@ const PublicQuoteShareViewer = () => {
           isOpen={showSignatureModal}
           onClose={() => setShowSignatureModal(false)}
           onComplete={handleSignatureComplete}
-          title="Signature électronique"
-          subtitle="Veuillez signer pour accepter ce devis"
-          clientName={quote?.client?.name || 'Client'}
+          title={t('quoteShare.signatureModal.title')}
+          subtitle={t('quoteShare.signatureModal.subtitle')}
+          clientName={quote?.client?.name || t('quoteShare.client.client')}
         />
       )}
     </div>

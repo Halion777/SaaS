@@ -2467,16 +2467,11 @@
     "navigation": {
       "back": "Terug",
       "next": "Volgende",
-      "nextStep": "Volgende stap",
-      "previousStep": "Vorige stap",
-      "saveAsDraft": "Concept",
+      "previous": "Vorige",
+      "saveAsDraft": "Opslaan als concept",
       "saving": "Opslaan...",
       "send": "Versturen",
-      "sending": "Versturen...",
-      "save": "Opslaan",
-      "saveAndSend": "Opslaan en verzenden",
-      "cancel": "Annuleren",
-      "finish": "Voltooien"
+      "sending": "Versturen..."
     },
     "steps": {
       "client": "Klant",
@@ -2800,47 +2795,27 @@
       "client": "Klant"
     },
     "quoteSendModal": {
-      "shareTitle": "Offerte delen",
-      "sendTitle": "Offerte verzenden",
-      "sendError": "Er is een fout opgetreden bij het verzenden van de offerte. Probeer het opnieuw.",
-      "statusInfo": "Zodra u deze offerte verzendt, verandert de status naar \"In behandeling\".",
-      "client": "De klant",
-      "deadlineInfo": "heeft tot",
-      "defaultDeadline": "30 dagen",
-      "responseInfo": "om op deze offerte te reageren.",
-      "cancel": "Annuleren",
-      "back": "Terug",
-      "generating": "Genereren...",
-      "confirm": "Bevestigen",
+      "title": "Offerte versturen",
+      "subtitle": "Controleer de informatie voordat u verstuurt",
+      "clientInfo": "Klantinformatie",
+      "clientName": "Klantnaam",
+      "clientEmail": "Klant e-mail",
+      "clientPhone": "Klant telefoon",
+      "projectInfo": "Projectinformatie",
+      "projectTitle": "Projecttitel",
+      "projectDescription": "Projectbeschrijving",
+      "quoteDetails": "Offerte details",
+      "quoteNumber": "Offertenummer",
+      "quoteDate": "Offertedatum",
+      "quoteExpiry": "Vervaldatum",
+      "quoteAmount": "Totaalbedrag",
+      "sendButton": "Offerte versturen",
       "sending": "Versturen...",
-      "send": "Versturen",
-      "title": "Offerte verzenden",
-      "recipient": "E-mail ontvanger",
-      "subject": "E-mail onderwerp",
-      "message": "E-mail bericht",
-      "defaultSubject": "Uw offerte {{quoteNumber}} van {{companyName}}",
-      "defaultMessage": "Beste {{clientName}},\n\nHierbij ontvangt u uw offerte {{quoteNumber}}.\n\nU kunt de offerte online bekijken en accepteren via onderstaande link:\n\n{{quoteLink}}\n\nAls u vragen heeft, aarzel dan niet om contact met ons op te nemen.\n\nMet vriendelijke groet,\n{{userName}}\n{{companyName}}",
-      "sentSuccess": "Offerte succesvol verzonden!",
-      "sentError": "Fout bij het verzenden van de offerte",
-      "howToSend": "Hoe wilt u deze offerte verzenden?",
-      "sendByEmail": "Versturen per e-mail via Haliqo",
-      "sendByEmailDesc": "Klik op \"Doorgaan\" om de e-mail te bekijken voordat u deze verzendt",
-      "downloadPDF": "Offerte downloaden in PDF-formaat",
-      "downloadPDFDesc": "Download de offerte in PDF-formaat om handmatig te verzenden",
-      "sendCopy": "Stuur mij een kopie",
-      "yes": "Ja",
-      "no": "Nee",
-      "attachedQuote": "U heeft een offerte ontvangen",
-      "fromCompany": "Van {{companyName}}",
-      "quoteNumber": "Offertenummer: {{quoteNumber}}",
-      "recipientEmail": "E-mail ontvanger",
-      "recipientEmailPlaceholder": "Klant e-mail",
-      "emailSubject": "E-mail onderwerp",
-      "emailSubjectPlaceholder": "E-mail onderwerp",
-      "emailMessage": "Bericht",
-      "emailMessagePlaceholder": "Uw bericht...",
-      "yourCompany": "Uw bedrijf",
-      "yourTeam": "Uw team"
+      "cancelButton": "Annuleren",
+      "successMessage": "Offerte succesvol verstuurd!",
+      "errorMessage": "Fout bij het versturen van de offerte",
+      "generatingPDF": "PDF genereren...",
+      "sendingEmail": "E-mail versturen..."
     },
     "errors": {
       "clientRequired": "Selecteer een klant",
@@ -2924,6 +2899,121 @@
         "hidePrices": "Verberg materiaalprijzen in Accountvoorkeuren indien nodig.",
         "tip": "Tip: een eenvoudige en leesbare offerte wordt sneller ondertekend."
       }
+    }
+  },
+  "quoteShare": {
+    "loading": "Offerte laden...",
+    "error": {
+      "invalidLink": "Ongeldige link.",
+      "loadingError": "Fout bij het laden van de offerte.",
+      "notFound": "Offerte niet gevonden."
+    },
+    "status": {
+      "sent": "Verstuurd",
+      "viewed": "Bekeken",
+      "accepted": "Geaccepteerd",
+      "rejected": "Afgewezen",
+      "expired": "Verlopen"
+    },
+    "actions": {
+      "reject": "Afwijzen",
+      "accept": "Accepteren",
+      "confirmAcceptance": "Acceptatie bevestigen",
+      "processing": "Verwerken...",
+      "cancel": "Annuleren"
+    },
+    "company": {
+      "company": "Bedrijf",
+      "title": "Bedrijf",
+      "address": "Adres",
+      "postalCode": "Postcode",
+      "country": "Land",
+      "phone": "Telefoon",
+      "email": "E-mail"
+    },
+    "client": {
+      "client": "Klant",
+      "title": "Klant",
+      "recipient": "Ontvanger",
+      "billingAddress": "Factuuradres",
+      "deliveryAddress": "Leveringsadres"
+    },
+    "quoteDetails": {
+      "quoteDate": "Offertedatum",
+      "expiryDate": "Vervaldatum",
+      "totalAmount": "Totaalbedrag"
+    },
+    "services": {
+      "title": "Service details",
+      "description": "Beschrijving",
+      "quantity": "Hoeveelheid",
+      "unitPrice": "Eenheidsprijs",
+      "total": "Totaal"
+    },
+    "financial": {
+      "subtotal": "Subtotaal",
+      "vat": "BTW",
+      "total": "Totaal",
+      "advancePayment": "Voorschot bij bestelling",
+      "balanceOnDelivery": "Saldo bij levering",
+      "materialsNote": "* Materiaalkosten zijn inbegrepen in het totaal maar verborgen"
+    },
+    "additionalInfo": {
+      "title": "Opmerkingen en voorwaarden",
+      "notes": "Opmerkingen en voorwaarden"
+    },
+    "files": {
+      "title": "Bijgevoegde bestanden",
+      "download": "Downloaden"
+    },
+    "signatures": {
+      "title": "Handtekeningen",
+      "companySignature": "Bedrijfshandtekening",
+      "clientSignature": "Klanthandtekening",
+      "signatureNotAvailable": "Handtekening niet beschikbaar",
+      "waitingForSignature": "Wachten op handtekening",
+      "quoteAccepted": "Offerte al ondertekend",
+      "signedOn": "Ondertekend op",
+      "recently": "recent",
+      "comment": "Opmerking"
+    },
+    "statusMessages": {
+      "accepted": {
+        "title": "Offerte geaccepteerd!",
+        "message": "Bedankt voor uw vertrouwen. De ambachtsman zal u binnenkort contacteren."
+      },
+      "rejected": {
+        "title": "Offerte afgewezen",
+        "message": "Uw verzoek is geregistreerd. De ambachtsman zal u contacteren om wijzigingen te bespreken."
+      },
+      "expired": {
+        "title": "Offerte verlopen",
+        "message": "Deze offerte heeft de geldigheidsdatum overschreden. Neem contact op met de ambachtsman voor een nieuwe offerte."
+      }
+    },
+    "rejectModal": {
+      "title": "Offerte afwijzen",
+      "rejectionReason": "Afwijzingsreden",
+      "placeholder": "Beschrijf de reden voor afwijzing...",
+      "reject": "Afwijzen",
+      "cancel": "Annuleren"
+    },
+    "signatureModal": {
+      "title": "Elektronische handtekening",
+      "subtitle": "Onderteken om deze offerte te accepteren"
+    },
+    "alerts": {
+      "acceptedSuccess": "Offerte succesvol geaccepteerd!",
+      "rejectedSuccess": "Offerte afgewezen.",
+      "acceptanceError": "Fout bij het accepteren van de offerte.",
+      "rejectionError": "Fout bij het afwijzen van de offerte.",
+      "rejectionReasonRequired": "Geef een afwijzingsreden op.",
+      "error": "Fout"
+    },
+    "footer": {
+      "companyName": "Uw Bedrijf",
+      "allRightsReserved": "Alle rechten voorbehouden.",
+      "rightsReserved": "Alle rechten voorbehouden."
     }
   }
 }

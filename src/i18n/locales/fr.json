@@ -2472,18 +2472,13 @@
       "saved": "Dernière sauvegarde à {{time}}"
     },
     "navigation": {
-      "back": "Précédent",
+      "back": "Retour",
       "next": "Suivant",
-      "nextStep": "Étape suivante",
-      "previousStep": "Étape précédente",
+      "previous": "Précédent",
       "saveAsDraft": "Brouillon",
       "saving": "Sauvegarde...",
       "send": "Envoyer",
-      "sending": "Envoi...",
-      "save": "Enregistrer",
-      "saveAndSend": "Enregistrer et envoyer",
-      "cancel": "Annuler",
-      "finish": "Terminer"
+      "sending": "Envoi..."
     },
     "steps": {
       "client": "Client",
@@ -2808,47 +2803,27 @@
       "client": "Client"
     },
     "quoteSendModal": {
-      "shareTitle": "Partager un devis",
-      "sendTitle": "Envoyer un devis",
-      "sendError": "Une erreur est survenue lors de l'envoi du devis. Veuillez réessayer.",
-      "statusInfo": "Une fois que vous aurez envoyé ce devis, le statut passera à \"En attente\".",
-      "client": "Le client",
-      "deadlineInfo": "aura jusqu'au",
-      "defaultDeadline": "30 jours",
-      "responseInfo": "pour répondre à ce devis.",
-      "cancel": "Annuler",
-      "back": "Retour",
-      "generating": "Génération...",
-      "confirm": "Confirmer",
-      "sending": "Envoi en cours...",
-      "send": "Envoyer",
       "title": "Envoyer le devis",
-      "recipient": "Email du destinataire",
-      "subject": "Objet de l'email",
-      "message": "Message de l'email",
-      "defaultSubject": "Votre devis {{quoteNumber}} de {{companyName}}",
-      "defaultMessage": "Cher/Chère {{clientName}},\n\nVeuillez trouver ci-joint votre devis {{quoteNumber}}.\n\nVous pouvez consulter et accepter le devis en ligne en utilisant le lien ci-dessous :\n\n{{quoteLink}}\n\nSi vous avez des questions, n'hésitez pas à nous contacter.\n\nCordialement,\n{{userName}}\n{{companyName}}",
-      "sentSuccess": "Devis envoyé avec succès !",
-      "sentError": "Erreur lors de l'envoi du devis",
-      "howToSend": "Comment souhaitez-vous envoyer ce devis ?",
-      "sendByEmail": "Envoyer par e-mail via Haliqo",
-      "sendByEmailDesc": "Cliquez sur \"Continuer\" pour voir l'e-mail avant de l'envoyer",
-      "downloadPDF": "Télécharger le devis au format PDF",
-      "downloadPDFDesc": "Téléchargez le devis au format PDF pour l'envoyer manuellement",
-      "sendCopy": "Envoyez-moi une copie",
-      "yes": "Oui",
-      "no": "Non",
-      "attachedQuote": "Vous avez reçu un devis",
-      "fromCompany": "De la part de {{companyName}}",
-      "quoteNumber": "Numéro du devis: {{quoteNumber}}",
-      "recipientEmail": "Email du destinataire",
-      "recipientEmailPlaceholder": "Email du client",
-      "emailSubject": "Objet de l'e-mail",
-      "emailSubjectPlaceholder": "Objet de l'e-mail",
-      "emailMessage": "Message",
-      "emailMessagePlaceholder": "Votre message...",
-      "yourCompany": "Votre entreprise",
-      "yourTeam": "Votre équipe"
+      "subtitle": "Vérifiez les informations avant l'envoi",
+      "clientInfo": "Informations client",
+      "clientName": "Nom du client",
+      "clientEmail": "Email du client",
+      "clientPhone": "Téléphone du client",
+      "projectInfo": "Informations du projet",
+      "projectTitle": "Titre du projet",
+      "projectDescription": "Description du projet",
+      "quoteDetails": "Détails du devis",
+      "quoteNumber": "Numéro de devis",
+      "quoteDate": "Date du devis",
+      "quoteExpiry": "Date d'expiration",
+      "quoteAmount": "Montant total",
+      "sendButton": "Envoyer le devis",
+      "sending": "Envoi en cours...",
+      "cancelButton": "Annuler",
+      "successMessage": "Devis envoyé avec succès !",
+      "errorMessage": "Erreur lors de l'envoi du devis",
+      "generatingPDF": "Génération du PDF en cours...",
+      "sendingEmail": "Envoi de l'email en cours..."
     },
   
     "errors": {
@@ -2933,6 +2908,121 @@
         "hidePrices": "Masquez les prix des matériaux dans les Préférences du compte si besoin.",
         "tip": "Astuce: un devis simple et lisible se signe plus vite."
       }
+    }
+  },
+  "quoteShare": {
+    "loading": "Chargement du devis...",
+    "error": {
+      "invalidLink": "Lien invalide.",
+      "loadingError": "Erreur lors du chargement du devis.",
+      "notFound": "Devis non trouvé."
+    },
+    "status": {
+      "sent": "Envoyé",
+      "viewed": "Consulté",
+      "accepted": "Accepté",
+      "rejected": "Rejeté",
+      "expired": "Expiré"
+    },
+    "actions": {
+      "reject": "Rejeter",
+      "accept": "Accepter",
+      "confirmAcceptance": "Confirmer l'acceptation",
+      "processing": "Traitement...",
+      "cancel": "Annuler"
+    },
+    "company": {
+      "company": "Entreprise",
+      "title": "Entreprise",
+      "address": "Adresse",
+      "postalCode": "Code postal",
+      "country": "Pays",
+      "phone": "Téléphone",
+      "email": "Email"
+    },
+    "client": {
+      "client": "Client",
+      "title": "Client",
+      "recipient": "Destinataire",
+      "billingAddress": "Adresse de facturation",
+      "deliveryAddress": "Adresse de livraison"
+    },
+    "quoteDetails": {
+      "quoteDate": "Date du devis",
+      "expiryDate": "Date d'expiration",
+      "totalAmount": "Montant total"
+    },
+    "services": {
+      "title": "Détails des prestations",
+      "description": "Description",
+      "quantity": "Quantité",
+      "unitPrice": "Prix unitaire",
+      "total": "Total"
+    },
+    "financial": {
+      "subtotal": "Sous-total",
+      "vat": "TVA",
+      "total": "Total",
+      "advancePayment": "Acompte à la commande",
+      "balanceOnDelivery": "Solde à la livraison",
+      "materialsNote": "* Les prix des matériaux sont inclus dans le total mais masqués"
+    },
+    "additionalInfo": {
+      "title": "Notes et conditions",
+      "notes": "Notes et conditions"
+    },
+    "files": {
+      "title": "Fichiers joints",
+      "download": "Télécharger"
+    },
+    "signatures": {
+      "title": "Signatures",
+      "companySignature": "Signature de l'entreprise",
+      "clientSignature": "Signature du client",
+      "signatureNotAvailable": "Signature non disponible",
+      "waitingForSignature": "En attente de signature",
+      "quoteAccepted": "Devis déjà signé",
+      "signedOn": "Signé le",
+      "recently": "récemment",
+      "comment": "Commentaire"
+    },
+    "statusMessages": {
+      "accepted": {
+        "title": "Devis accepté !",
+        "message": "Merci pour votre confiance. L'artisan vous contactera bientôt."
+      },
+      "rejected": {
+        "title": "Devis rejeté",
+        "message": "Votre demande a été enregistrée. L'artisan vous contactera pour discuter des modifications."
+      },
+      "expired": {
+        "title": "Devis expiré",
+        "message": "Ce devis a dépassé sa date de validité. Veuillez contacter l'artisan pour un nouveau devis."
+      }
+    },
+    "rejectModal": {
+      "title": "Rejeter le devis",
+      "rejectionReason": "Motif du rejet",
+      "placeholder": "Décrivez la raison du rejet...",
+      "reject": "Rejeter",
+      "cancel": "Annuler"
+    },
+    "signatureModal": {
+      "title": "Signature électronique",
+      "subtitle": "Veuillez signer pour accepter ce devis"
+    },
+    "alerts": {
+      "acceptedSuccess": "Devis accepté avec succès !",
+      "rejectedSuccess": "Devis rejeté.",
+      "acceptanceError": "Erreur lors de l'acceptation du devis.",
+      "rejectionError": "Erreur lors du rejet du devis.",
+      "rejectionReasonRequired": "Veuillez indiquer un motif de rejet.",
+      "error": "Erreur"
+    },
+    "footer": {
+      "companyName": "Votre Entreprise",
+      "allRightsReserved": "Tous droits réservés.",
+      "rightsReserved": "Tous droits réservés."
     }
   }
 }
