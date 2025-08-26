@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import Icon from './AppIcon';
@@ -8,11 +8,12 @@ const LanguageDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { user, updateUserProfile } = useAuth();
 
-  const languages = [
+  // Use useMemo to prevent languages array recreation on every render
+  const languages = useMemo(() => [
     { code: 'fr', name: 'Français', flag: '🇫🇷' },
     { code: 'en', name: 'English', flag: '🇬🇧' },
     { code: 'nl', name: 'Nederlands', flag: '🇳🇱' }
-  ];
+  ], []);
 
   // Load language preference on component mount
   useEffect(() => {
@@ -51,9 +52,13 @@ const LanguageDropdown = () => {
       i18n.changeLanguage('fr');
       document.documentElement.setAttribute('lang', 'fr');
     }
-  }, [user, i18n, languages]);
+  }, [user, languages]); // Remove i18n from dependencies
 
-  const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
+  // Use useMemo to prevent recalculation on every render
+  const currentLanguage = useMemo(() => 
+    languages.find(lang => lang.code === i18n.language) || languages[0],
+    [languages, i18n.language]
+  );
 
   const handleLanguageChange = async (languageCode) => {
     // Change language in i18n

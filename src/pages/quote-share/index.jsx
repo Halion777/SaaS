@@ -256,59 +256,94 @@ const PublicQuoteShareViewer = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      {/* Clean Header with Quote Info Left, Buttons Right */}
+      {/* Enhanced Header with Better Desktop Layout */}
       <div className="bg-white shadow-lg border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-            {/* Top Row - Quote Info and Language Dropdown */}
-            <div className="flex items-center justify-between sm:justify-start">
-              {/* Left Side - Quote Info */}
-              <div className="flex items-center space-x-3">
-                <span className="text-sm font-medium text-gray-700 break-all">{quote?.quote_number || quote?.id}</span>
+        <div className="w-full px-4 sm:px-6 lg:px-12 xl:px-16 py-4 sm:py-6 lg:py-8">
+          {/* Mobile Layout - Stacked */}
+          <div className="block sm:hidden">
+            <div className="flex items-center justify-between mb-4">
+              {/* Quote Number */}
+              <div className="flex items-center">
+                <span className="text-lg font-bold text-gray-900">{quote?.quote_number || quote?.id}</span>
               </div>
+              {/* Language Dropdown */}
+              <LanguageDropdown />
+            </div>
+            
+            {/* Action Buttons - Mobile */}
+            {(quoteStatus === 'sent' || quoteStatus === 'viewed') && (
+              <div className="flex flex-col space-y-3">
+                <Button
+                  onClick={() => setShowRejectModal(true)}
+                  variant="outline"
+                  className="w-full px-6 py-3 border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 transition-colors"
+                >
+                  <Icon name="XCircle" size={18} className="mr-2" />
+                  {t('quoteShare.actions.reject')}
+                </Button>
+                <Button
+                  onClick={handleAcceptQuote}
+                  disabled={actionLoading}
+                  className={`w-full px-6 py-3 shadow-lg hover:shadow-xl transition-all ${
+                    clientSignature 
+                      ? 'bg-green-700 hover:bg-green-800 text-white' 
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
+                >
+                  <Icon name="CheckCircle" size={18} className="mr-2" />
+                  {actionLoading ? t('quoteShare.actions.processing') : clientSignature ? t('quoteShare.actions.confirmAcceptance') : t('quoteShare.actions.accept')}
+                </Button>
+              </div>
+            )}
+          </div>
 
-              {/* Right Side - Language Dropdown (Mobile) */}
-              <div className="flex sm:hidden">
-                <LanguageDropdown />
+          {/* Desktop Layout - Horizontal with Better Spacing */}
+          <div className="hidden sm:flex items-center justify-between">
+            {/* Left Side - Quote Info */}
+            <div className="flex items-center space-x-8">
+              <div className="flex items-center space-x-4">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <span className="text-2xl font-bold text-gray-900">{quote?.quote_number || quote?.id}</span>
               </div>
+             
             </div>
 
-            {/* Bottom Row - Action Buttons and Language Dropdown (Desktop) */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
-              {/* Language Dropdown - Desktop only */}
-              <div className="hidden sm:flex">
-                <LanguageDropdown />
+            {/* Center - Language Dropdown */}
+            <div className="flex items-center">
+              <LanguageDropdown />
+            </div>
+
+            {/* Right Side - Action Buttons */}
+            {(quoteStatus === 'sent' || quoteStatus === 'viewed') && (
+              <div className="flex items-center space-x-4">
+                <Button
+                  onClick={() => setShowRejectModal(true)}
+                  variant="outline"
+                  className="px-8 py-3 border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 transition-colors text-base font-medium"
+                >
+                  <Icon name="XCircle" size={20} className="mr-2" />
+                  {t('quoteShare.actions.reject')}
+                </Button>
+                <Button
+                  onClick={handleAcceptQuote}
+                  disabled={actionLoading}
+                  className={`px-8 py-3 shadow-lg hover:shadow-xl transition-all text-base font-medium ${
+                    clientSignature 
+                      ? 'bg-green-700 hover:bg-green-800 text-white' 
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
+                >
+                  <Icon name="CheckCircle" size={20} className="mr-2" />
+                  {actionLoading ? t('quoteShare.actions.processing') : clientSignature ? t('quoteShare.actions.confirmAcceptance') : t('quoteShare.actions.accept')}
+                </Button>
               </div>
+            )}
+          </div>
 
-              {/* Action Buttons */}
-              {(quoteStatus === 'sent' || quoteStatus === 'viewed') && (
-                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-                  <Button
-                    onClick={() => setShowRejectModal(true)}
-                    variant="outline"
-                    className="w-full sm:w-auto px-4 sm:px-6 py-2.5 border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 transition-colors"
-                  >
-                    <Icon name="XCircle" size={18} className="mr-2" />
-                    {t('quoteShare.actions.reject')}
-                  </Button>
-                  <Button
-                    onClick={handleAcceptQuote}
-                    disabled={actionLoading}
-                    className={`w-full sm:w-auto px-4 sm:px-6 py-2.5 shadow-lg hover:shadow-xl transition-all ${
-                      clientSignature 
-                        ? 'bg-green-700 hover:bg-green-800 text-white' 
-                        : 'bg-green-600 hover:bg-green-700 text-white'
-                    }`}
-                  >
-                    <Icon name="CheckCircle" size={18} className="mr-2" />
-                    {actionLoading ? t('quoteShare.actions.processing') : clientSignature ? t('quoteShare.actions.confirmAcceptance') : t('quoteShare.actions.accept')}
-                  </Button>
-                </div>
-              )}
-
-            {/* Show signature info if already signed */}
-            {clientSignature && (
-              <div className="flex items-center space-x-3 bg-green-50 border border-green-200 rounded-lg px-4 py-3 w-full sm:w-auto">
+          {/* Signature Status - Both Mobile and Desktop */}
+          {clientSignature && (
+            <div className="mt-4 sm:mt-6">
+              <div className="flex items-center space-x-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3 w-full sm:w-auto">
                 <Icon name="CheckCircle" size={20} className="text-green-600 flex-shrink-0" />
                 <div className="min-w-0 flex-1">
                   <p className="text-green-800 font-medium text-sm">{t('quoteShare.signatures.quoteAccepted')}</p>
@@ -317,18 +352,18 @@ const PublicQuoteShareViewer = () => {
                   </p>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <div className="w-full px-4 sm:px-6 lg:px-12 xl:px-16 py-6 sm:py-8 lg:py-12">
                   {/* Quote Preview Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 mb-6 border border-gray-100">
+        <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 lg:p-8 mb-6 border border-gray-100">
           {/* Company and Client Information */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-6">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 mb-6">
             {/* Company Information */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-3 sm:p-4 border border-blue-100">
+                          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-3 sm:p-4 lg:p-6 border border-blue-100">
               <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
                 {logoUrl && (
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-lg p-1 shadow-sm border border-blue-200 flex-shrink-0">
@@ -370,7 +405,7 @@ const PublicQuoteShareViewer = () => {
             </div>
 
             {/* Client Information */}
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-3 sm:p-4 border border-green-100">
+                          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-3 sm:p-4 lg:p-6 border border-green-100">
               <div className="mb-3 sm:mb-4">
                 <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">{t('quoteShare.client.client')}</h3>
                 <p className="text-green-600 font-medium text-xs sm:text-sm">{t('quoteShare.client.recipient')}</p>
@@ -409,7 +444,7 @@ const PublicQuoteShareViewer = () => {
 
           {/* Quote Details */}
           <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-3 sm:p-4 border border-gray-200">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
               <div className="text-center">
                 <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
                   <Icon name="Calendar" size={14} className="sm:w-4 sm:h-4 text-blue-600" />
@@ -440,18 +475,19 @@ const PublicQuoteShareViewer = () => {
         </div>
 
         {/* Services Table */}
-        <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 mb-6 border border-gray-100">
+        <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 lg:p-8 mb-6 border border-gray-100">
           <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4 flex items-center">
             <Icon name="Wrench" size={16} className="sm:w-[18px] sm:h-[18px] text-blue-600 mr-2" />
             {t('quoteShare.services.title')}
           </h3>
-          <div className="overflow-x-auto -mx-4 sm:mx-0">
-            <table className="w-full min-w-[600px] sm:min-w-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
               <thead>
                 <tr className="border-b-2 border-gray-200">
                   <th className="text-left py-2 sm:py-3 px-2 sm:px-3 font-semibold text-gray-700 bg-gray-50 text-xs sm:text-sm">{t('quoteShare.services.description')}</th>
                   <th className="text-center py-2 sm:py-3 px-2 sm:px-3 font-semibold text-gray-700 bg-gray-50 text-xs sm:text-sm">{t('quoteShare.services.quantity')}</th>
                   <th className="text-right py-2 sm:py-3 px-2 sm:px-3 font-semibold text-gray-700 bg-gray-50 text-xs sm:text-sm">{t('quoteShare.services.unitPrice')}</th>
+                  <th className="text-center py-2 sm:py-3 px-2 sm:px-3 font-semibold text-gray-700 bg-gray-50 text-xs sm:text-sm">{t('quoteShare.services.unit')}</th>
                   <th className="text-right py-2 sm:py-3 px-2 sm:px-3 font-semibold text-gray-700 bg-gray-50 text-xs sm:text-sm">{t('quoteShare.services.total')}</th>
                 </tr>
               </thead>
@@ -481,6 +517,7 @@ const PublicQuoteShareViewer = () => {
                           </div>
                         </td>
                         <td className="py-2 sm:py-3 px-2 sm:px-3 text-center text-gray-600 font-medium text-xs sm:text-sm">{task.quantity || 1}</td>
+                        <td className="py-2 sm:py-3 px-2 sm:px-3 text-center text-gray-600 font-medium text-xs sm:text-sm">{task.unit || 'piece'}</td>
                         <td className="py-2 sm:py-3 px-2 sm:px-3 text-right text-gray-600 font-medium text-xs sm:text-sm">{currency(task.unit_price || 0)}</td>
                         <td className="py-2 sm:py-3 px-2 sm:px-3 text-right font-bold text-blue-800 text-xs sm:text-sm">
                           {currency(totalHT)}
@@ -496,21 +533,16 @@ const PublicQuoteShareViewer = () => {
                               <span className="text-xs">{material.name}</span>
                             </div>
                           </td>
-                          <td className="py-1.5 sm:py-2 px-2 sm:px-3 text-center text-gray-600 text-xs">{material.quantity} {material.unit || ''}</td>
+                          <td className="py-1.5 sm:py-2 px-2 sm:px-3 text-center text-gray-600 text-xs">{material.quantity}</td>
+                          <td className="py-1.5 sm:py-2 px-2 sm:px-3 text-center text-gray-600 text-xs">{material.unit || 'piece'}</td>
                           <td className="py-1.5 sm:py-2 px-2 sm:px-3 text-right text-gray-600 text-xs">
                             {includeMaterialsPrices ? currency(material.unit_price || 0) : ''}
                           </td>
                           <td className="py-1.5 sm:py-2 px-2 sm:px-3 text-right text-gray-600 text-xs">
                             {includeMaterialsPrices ? currency((parseFloat(material.quantity) || 0) * (parseFloat(material.unit_price) || 0)) : ''}
                           </td>
-                          <td className="py-1.5 sm:py-2 px-2 sm:px-3 text-right text-gray-600 text-xs">
-                            {includeMaterialsPrices ? (() => {
-                              const materialTotal = (parseFloat(material.quantity) || 0) * (parseFloat(material.unit_price) || 0);
-                              return currency(materialTotal);
-                            })() : ''}
-                          </td>
-                  </tr>
-                ))}
+                        </tr>
+                      ))}
                     </React.Fragment>
                   );
                 })}
@@ -523,7 +555,7 @@ const PublicQuoteShareViewer = () => {
           {/* Financial Summary */}
           <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-200">
             <div className="flex justify-end">
-              <div className="w-full sm:w-72 space-y-2">
+              <div className="w-full sm:w-80 lg:w-96 space-y-3">
                 <div className="flex justify-between text-gray-600 text-xs sm:text-sm">
                   <span>{t('quoteShare.financial.subtotal')}:</span>
                 <span className="font-medium">{currency(totalPrice)}</span>
@@ -562,7 +594,7 @@ const PublicQuoteShareViewer = () => {
 
         {/* Additional Information */}
         {quote.notes && (
-          <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 mb-6 border border-gray-100">
+          <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 lg:p-8 mb-6 border border-gray-100">
             <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 flex items-center">
               <Icon name="FileText" size={16} className="sm:w-[18px] sm:h-[18px] text-purple-600 mr-2" />
               {t('quoteShare.additionalInfo.title')}
@@ -573,12 +605,12 @@ const PublicQuoteShareViewer = () => {
 
         {/* Files Section */}
         {quote.quote_files && quote.quote_files.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 mb-6 border border-gray-100">
+          <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 lg:p-8 mb-6 border border-gray-100">
             <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4 flex items-center">
               <Icon name="Paperclip" size={16} className="sm:w-[18px] sm:h-[18px] text-blue-600 mr-2" />
               {t('quoteShare.files.title')} ({quote.quote_files.length})
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {quote.quote_files.map((file, index) => (
                 <div key={file.id || index} className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200 hover:border-blue-300 transition-colors">
                   <div className="flex items-center space-x-2 sm:space-x-3">
@@ -738,9 +770,9 @@ const PublicQuoteShareViewer = () => {
           </div>
         )}
 
-        {/* Footer */}
         
       </div>
+      {/* Footer */}
       <Footer />
       {/* Reject Modal */}
       {showRejectModal && (
@@ -794,7 +826,6 @@ const PublicQuoteShareViewer = () => {
           clientName={quote?.client?.name || t('quoteShare.client.client')}
         />
       )}
-    </div>
     </div>
   );
 };

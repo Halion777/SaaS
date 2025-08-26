@@ -437,9 +437,20 @@ class ClientQuoteService {
         }
       };
 
+      // Note: quote_workflow_history table removed - using quote_events instead
+      // Log to quote_events table for tracking
       const { error } = await supabase
-        .from('quote_workflow_history')
-        .insert(workflowData);
+        .from('quote_events')
+        .insert({
+          quote_id: quoteId,
+          user_id: null,
+          type: 'client_action',
+          meta: {
+            ...workflowData,
+            timestamp: new Date().toISOString(),
+            client_action: true
+          }
+        });
 
       if (error) {
         console.error('Error logging workflow event:', error);
@@ -869,20 +880,22 @@ class ClientQuoteService {
         return { success: false, error: eventsError.message };
       }
 
-      // Get workflow history
-      const { data: workflowHistory, error: workflowError } = await supabase
-        .from('quote_workflow_history')
-        .select('action, status_from, status_to, metadata, created_at')
+      // Note: quote_workflow_history table removed - using quote_events instead
+      // Get workflow events from quote_events table
+      const { data: workflowEvents, error: workflowError } = await supabase
+        .from('quote_events')
+        .select('type, meta, created_at')
         .eq('quote_id', quoteId)
+        .in('type', ['client_action', 'quote_accepted', 'quote_rejected', 'quote_pending'])
         .order('created_at', { ascending: false });
 
       if (workflowError) {
-        console.warn('Failed to get workflow history:', workflowError);
+        console.warn('Failed to get workflow events:', workflowError);
         // Don't fail if this table doesn't exist
       }
 
       // Analyze tracking data for relance decisions
-      const trackingData = this.analyzeTrackingData(quote, accessLogs, events, workflowHistory);
+      const trackingData = this.analyzeTrackingData(quote, accessLogs, events, workflowEvents);
 
       return {
         success: true,
@@ -890,7 +903,7 @@ class ClientQuoteService {
           quote,
           accessLogs,
           events,
-          workflowHistory: workflowHistory || [],
+          workflowEvents: workflowEvents || [],
           trackingData
         }
       };
@@ -903,7 +916,7 @@ class ClientQuoteService {
   /**
    * Analyze tracking data to determine relance strategy
    */
-  static analyzeTrackingData(quote, accessLogs, events, workflowHistory = []) {
+  static analyzeTrackingData(quote, accessLogs, events, workflowEvents = []) {
     const now = new Date();
     const quoteCreated = new Date(quote.created_at);
     const daysSinceCreation = Math.floor((now - quoteCreated) / (1000 * 60 * 60 * 24));
@@ -914,15 +927,15 @@ class ClientQuoteService {
     const firstView = accessLogs.find(log => log.action === 'viewed');
     const hasBeenViewed = !!firstView;
 
-    // Find client actions from workflow history
-    const clientAccepted = workflowHistory.some(workflow => 
-      workflow.action === 'quote_accepted' || workflow.status_to === 'accepted'
+    // Find client actions from workflow events
+    const clientAccepted = workflowEvents.some(event => 
+      event.type === 'quote_accepted' || (event.meta && event.meta.status_to === 'accepted')
     );
-    const clientRejected = workflowHistory.some(workflow => 
-      workflow.action === 'quote_rejected' || workflow.status_to === 'rejected'
+    const clientRejected = workflowEvents.some(event => 
+      event.type === 'quote_rejected' || (event.meta && event.meta.status_to === 'rejected')
     );
-    const clientPending = workflowHistory.some(workflow => 
-      workflow.action === 'quote_pending' || workflow.status_to === 'pending'
+    const clientPending = workflowEvents.some(event => 
+      event.type === 'quote_pending' || (event.meta && event.meta.status_to === 'pending')
     );
 
     // Determine relance status
@@ -950,7 +963,7 @@ class ClientQuoteService {
       relanceReason = 'Client requested modifications';
       
       // Suggest next relance date (2-3 days after pending)
-      const lastPending = workflowHistory.find(w => w.status_to === 'pending');
+      const lastPending = workflowEvents.find(e => e.type === 'quote_pending' || (e.meta && e.meta.status_to === 'pending'));
       if (lastPending) {
         const pendingDate = new Date(lastPending.created_at);
         nextRelanceDate = new Date(pendingDate.getTime() + (2.5 * 24 * 60 * 60 * 1000)); // 2.5 days

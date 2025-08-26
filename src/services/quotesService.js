@@ -830,7 +830,7 @@ export async function deleteQuote(id) {
     await supabase.from('quote_files').delete().eq('quote_id', id);
     await supabase.from('quote_financial_configs').delete().eq('quote_id', id);
     await supabase.from('quote_signatures').delete().eq('quote_id', id);
-    await supabase.from('quote_workflow_history').delete().eq('quote_id', id);
+    // Note: quote_workflow_history table removed - no longer needed
     await supabase.from('quote_shares').delete().eq('quote_id', id);
     await supabase.from('quote_access_logs').delete().eq('quote_id', id);
     
