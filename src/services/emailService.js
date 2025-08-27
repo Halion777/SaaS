@@ -609,6 +609,60 @@ export class EmailService {
       return { success: false, error: error.message };
     }
   }
+
+  /**
+   * Send credit insurance application email to info@haliqo.com
+   */
+  static async sendCreditInsuranceApplicationEmail(application) {
+    try {
+      const emailData = {
+        to: 'info@haliqo.com',
+        subject: `Nouvelle demande d'assurance crédit - ${application.companyName}`,
+        application,
+        text: `Nouvelle demande d'assurance crédit reçue de ${application.companyName}`
+      };
+      
+      const result = await this.sendEmailViaEdgeFunction('credit_insurance_application', emailData);
+      
+      if (result.success) {
+        console.log('Credit insurance application email sent successfully to info@haliqo.com');
+        return { success: true, data: result.data, error: null };
+      } else {
+        console.error('Failed to send credit insurance application email:', result.error);
+        return { success: false, data: null, error: result.error };
+      }
+    } catch (error) {
+      console.error('Error sending credit insurance application email:', error);
+      return { success: false, data: null, error: error.message };
+    }
+  }
+
+  /**
+   * Send credit insurance confirmation email to applicant
+   */
+  static async sendCreditInsuranceConfirmationEmail(application) {
+    try {
+      const emailData = {
+        to: application.email,
+        subject: 'Confirmation de votre demande d\'assurance crédit',
+        application,
+        text: `Confirmation de votre demande d'assurance crédit pour ${application.companyName}`
+      };
+      
+      const result = await this.sendEmailViaEdgeFunction('credit_insurance_confirmation', emailData);
+      
+      if (result.success) {
+        console.log('Credit insurance confirmation email sent successfully to applicant');
+        return { success: true, data: result.data, error: null };
+      } else {
+        console.error('Failed to send credit insurance confirmation email:', result.error);
+        return { success: false, data: null, error: result.error };
+      }
+    } catch (error) {
+      console.error('Error sending credit insurance confirmation email:', error);
+      return { success: false, data: null, error: error.message };
+    }
+  }
 }
 
 export default EmailService;

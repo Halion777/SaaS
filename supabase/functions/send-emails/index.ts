@@ -120,6 +120,28 @@ serve(async (req) => {
         });
         break;
         
+      case 'credit_insurance_application':
+        // Handle credit insurance application emails
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [emailData.to],
+          subject: emailData.subject,
+          html: generateCreditInsuranceApplicationEmail(emailData.application),
+          text: emailData.text
+        });
+        break;
+        
+      case 'credit_insurance_confirmation':
+        // Handle credit insurance confirmation emails to applicants
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [emailData.to],
+          subject: emailData.subject,
+          html: generateCreditInsuranceConfirmationEmail(emailData.application),
+          text: emailData.text
+        });
+        break;
+        
       default:
         throw new Error(`Unknown email type: ${emailType}`);
     }
@@ -281,5 +303,158 @@ function generateQuoteStatusEmail(html: string, variables: any) {
     });
   }
   return processedHtml;
+}
+
+function generateCreditInsuranceApplicationEmail(application: any) {
+  return `
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Nouvelle demande d'assurance crédit</title>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #1e40af; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+        .content { background: #f8f9fa; padding: 20px; border-radius: 0 0 8px 8px; }
+        .field { margin: 15px 0; }
+        .field-label { font-weight: bold; color: #1e40af; }
+        .field-value { margin-top: 5px; }
+        .highlight { background: #e0e7ff; padding: 15px; border-radius: 6px; margin: 20px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Nouvelle demande d'assurance crédit</h1>
+          <p>Une nouvelle demande a été soumise via le formulaire en ligne</p>
+        </div>
+        
+        <div class="content">
+          <div class="highlight">
+            <p><strong>ID de la demande:</strong> ${application.id}</p>
+            <p><strong>Date de soumission:</strong> ${new Date().toLocaleString('fr-FR')}</p>
+          </div>
+          
+          <div class="field">
+            <div class="field-label">Entreprise</div>
+            <div class="field-value">${application.companyName}</div>
+          </div>
+          
+          <div class="field">
+            <div class="field-label">Personne de contact</div>
+            <div class="field-value">${application.contactPerson}</div>
+          </div>
+          
+          <div class="field">
+            <div class="field-label">Email</div>
+            <div class="field-value">${application.email}</div>
+          </div>
+          
+          <div class="field">
+            <div class="field-label">Téléphone</div>
+            <div class="field-value">${application.telephone}</div>
+          </div>
+          
+          <div class="field">
+            <div class="field-label">Adresse</div>
+            <div class="field-value">${application.address}</div>
+          </div>
+          
+          <div class="field">
+            <div class="field-label">Secteur d'activité</div>
+            <div class="field-value">${application.sector}</div>
+          </div>
+          
+          <div class="field">
+            <div class="field-label">Description de l'activité</div>
+            <div class="field-value">${application.activityDescription}</div>
+          </div>
+          
+          <div class="field">
+            <div class="field-label">Chiffre d'affaires annuel</div>
+            <div class="field-value">${application.annualTurnover}€</div>
+          </div>
+          
+          <div class="field">
+            <div class="field-label">Principaux clients B2B</div>
+            <div class="field-value">${application.topCustomers}</div>
+          </div>
+          
+          <p style="margin-top: 30px; padding: 15px; background: #fef3c7; border-radius: 6px; border-left: 4px solid #f59e0b;">
+            <strong>Action requise:</strong> Veuillez examiner cette demande et contacter le client pour une proposition personnalisée.
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+function generateCreditInsuranceConfirmationEmail(application: any) {
+  return `
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Confirmation de votre demande d'assurance crédit</title>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #059669; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+        .content { background: #f8f9fa; padding: 20px; border-radius: 0 0 8px 8px; }
+        .highlight { background: #d1fae5; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #059669; }
+        .footer { margin-top: 30px; padding: 20px; background: #f3f4f6; border-radius: 6px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Confirmation de votre demande</h1>
+          <p>Nous avons bien reçu votre demande d'assurance crédit</p>
+        </div>
+        
+        <div class="content">
+          <p>Bonjour,</p>
+          
+          <p>Nous avons bien reçu votre demande d'assurance crédit pour l'entreprise <strong>${application.companyName}</strong>.</p>
+          
+          <div class="highlight">
+            <p><strong>Numéro de référence:</strong> ${application.id}</p>
+            <p><strong>Date de soumission:</strong> ${new Date().toLocaleString('fr-FR')}</p>
+          </div>
+          
+          <p>Notre équipe va examiner votre dossier et vous contactera dans les plus brefs délais pour vous proposer une offre personnalisée.</p>
+          
+          <p>En attendant, voici un récapitulatif de votre demande :</p>
+          
+          <ul>
+            <li><strong>Entreprise:</strong> ${application.companyName}</li>
+            <li><strong>Personne de contact:</strong> ${application.contactPerson}</li>
+            <li><strong>Secteur:</strong> ${application.sector}</li>
+            <li><strong>Chiffre d'affaires annuel:</strong> ${application.annualTurnover}€</li>
+          </ul>
+          
+          <div class="footer">
+            <p><strong>Prochaines étapes:</strong></p>
+            <ol>
+              <li>Analyse de votre dossier par nos experts</li>
+              <li>Évaluation des risques et de la solvabilité</li>
+              <li>Proposition personnalisée sous 48-72h</li>
+              <li>Signature du contrat et activation de la garantie</li>
+            </ol>
+          </div>
+          
+          <p>Merci de votre confiance.</p>
+          
+          <p>Cordialement,<br>
+          <strong>L'équipe Haliqo</strong></p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
 }
 

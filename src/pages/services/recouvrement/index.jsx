@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
+import FileUpload from '../../../components/ui/FileUpload';
 import MainSidebar from '../../../components/ui/MainSidebar';
 
 const RecouvrementPage = () => {
@@ -13,6 +14,7 @@ const RecouvrementPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedInvoices, setSelectedInvoices] = useState([]);
   const [context, setContext] = useState('');
+  const [uploadedFiles, setUploadedFiles] = useState([]);
 
   React.useEffect(() => {
     const handleSidebarToggle = (e) => {
@@ -130,12 +132,27 @@ const RecouvrementPage = () => {
     );
   };
 
+  const handleFileUpload = (file) => {
+    const newFile = {
+      id: Date.now() + Math.random(),
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      file: file
+    };
+    setUploadedFiles(prev => [...prev, newFile]);
+  };
+
+  const handleFileRemove = (fileId) => {
+    setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
+  };
+
   const handleSubmitCollection = () => {
     if (selectedInvoices.length === 0) {
       alert('Veuillez sélectionner au moins une facture');
       return;
     }
-    console.log('Submitting for collection:', selectedInvoices, context);
+    console.log('Submitting for collection:', selectedInvoices, context, uploadedFiles);
     alert('Vos factures ont été envoyées pour recouvrement');
   };
 
@@ -343,7 +360,7 @@ const RecouvrementPage = () => {
 
       {/* Context and Submit */}
       <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
-        <h2 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">Contexte et explications (optionnel)</h2>
+        <h2 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">Contexte et explications</h2>
         
         <Input
           type="textarea"
@@ -352,6 +369,48 @@ const RecouvrementPage = () => {
           placeholder="Décrivez le contexte de ces impayés, les tentatives de contact effectuées, les raisons invoquées par le client..."
           className="mb-3 sm:mb-4"
         />
+
+        {/* File Upload Section */}
+        <div className="mb-4 sm:mb-6">
+          <h3 className="text-sm sm:text-base font-medium text-foreground mb-2 sm:mb-3">Pièces jointes (factures, justificatifs)</h3>
+          
+          <FileUpload
+            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            maxSize={10 * 1024 * 1024} // 10MB
+            onFileSelect={handleFileUpload}
+            label="Ajouter des documents"
+            description="Glissez-déposez ou cliquez pour sélectionner des fichiers"
+            className="mb-3"
+          />
+
+          {/* Uploaded Files List */}
+          {uploadedFiles.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-xs sm:text-sm font-medium text-foreground">Fichiers ajoutés:</h4>
+              {uploadedFiles.map((file) => (
+                <div key={file.id} className="flex items-center justify-between bg-muted/30 rounded-lg p-2 sm:p-3">
+                  <div className="flex items-center space-x-2 sm:space-x-3">
+                    <Icon name="FileText" size={16} className="text-primary" />
+                    <div>
+                      <p className="text-xs sm:text-sm font-medium text-foreground">{file.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(file.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleFileRemove(file.id)}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Icon name="X" size={14} />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <Button
           onClick={handleSubmitCollection}

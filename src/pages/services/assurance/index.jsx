@@ -5,6 +5,7 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import MainSidebar from '../../../components/ui/MainSidebar';
+import CreditInsuranceService from '../../../services/creditInsuranceService';
 
 const AssuranceCreditPage = () => {
   const navigate = useNavigate();
@@ -100,11 +101,40 @@ const AssuranceCreditPage = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle form submission
-    console.log('Formulaire soumis :', formData);
-    alert('Votre demande a été envoyée avec succès !');
+    
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      const result = await CreditInsuranceService.createApplication(formData);
+      
+      if (result.success) {
+        // Reset form without showing alert
+        setFormData({
+          companyName: '',
+          contactPerson: '',
+          email: '',
+          telephone: '',
+          address: '',
+          sector: '',
+          activityDescription: '',
+          annualTurnover: '150000',
+          topCustomers: ''
+        });
+      } else {
+        alert(`Erreur: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert('Erreur lors de l\'envoi de la demande');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const renderOverview = () => (
@@ -269,7 +299,7 @@ const AssuranceCreditPage = () => {
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
               <Input
-                label="Nom de l'entreprise *"
+                label="Nom de l'entreprise"
                 type="text"
                 value={formData.companyName}
                 onChange={(e) => handleChange('companyName', e.target.value)}
@@ -278,7 +308,7 @@ const AssuranceCreditPage = () => {
               />
               
               <Input
-                label="Personne de contact *"
+                label="Personne de contact"
                 type="text"
                 value={formData.contactPerson}
                 onChange={(e) => handleChange('contactPerson', e.target.value)}
@@ -289,7 +319,7 @@ const AssuranceCreditPage = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
               <Input
-                label="Email *"
+                label="Email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleChange('email', e.target.value)}
@@ -298,7 +328,7 @@ const AssuranceCreditPage = () => {
               />
               
               <Input
-                label="Téléphone *"
+                label="Téléphone"
                 type="tel"
                 value={formData.telephone}
                 onChange={(e) => handleChange('telephone', e.target.value)}
@@ -308,7 +338,7 @@ const AssuranceCreditPage = () => {
             </div>
 
             <Input
-              label="Adresse complète *"
+              label="Adresse complète"
               type="textarea"
               value={formData.address}
               onChange={(e) => handleChange('address', e.target.value)}
@@ -322,7 +352,7 @@ const AssuranceCreditPage = () => {
             <h2 className="text-base sm:text-lg font-semibold text-foreground">Secteur d'activité</h2>
             
             <Select
-              label="Secteur principal *"
+              label="Secteur principal"
               options={sectorOptions}
               value={formData.sector}
               onChange={(e) => handleChange('sector', e.target.value)}
@@ -331,7 +361,7 @@ const AssuranceCreditPage = () => {
             />
             
             <Input
-              label="Description de l'activité *"
+              label="Description de l'activité"
               type="textarea"
               value={formData.activityDescription}
               onChange={(e) => handleChange('activityDescription', e.target.value)}
@@ -346,7 +376,7 @@ const AssuranceCreditPage = () => {
             
             <div className="relative">
               <Input
-                label="Chiffre d'affaires annuel *"
+                label="Chiffre d'affaires annuel"
                 type="text"
                 value={formData.annualTurnover}
                 onChange={(e) => handleChange('annualTurnover', e.target.value)}
@@ -357,7 +387,7 @@ const AssuranceCreditPage = () => {
             </div>
             
             <Input
-              label="Principaux clients B2B *"
+              label="Principaux clients B2B"
               type="textarea"
               value={formData.topCustomers}
               onChange={(e) => handleChange('topCustomers', e.target.value)}
@@ -371,10 +401,11 @@ const AssuranceCreditPage = () => {
             type="submit"
             variant="default"
             className="w-full"
-            iconName="Send"
+            iconName={isSubmitting ? "Loader" : "Send"}
             iconPosition="left"
+            disabled={isSubmitting}
           >
-            Envoyer ma demande
+            {isSubmitting ? 'Envoi en cours...' : 'Envoyer ma demande'}
           </Button>
         </form>
 
