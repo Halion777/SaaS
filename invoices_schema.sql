@@ -58,10 +58,10 @@ DECLARE
     next_number INTEGER;
     invoice_number TEXT;
 BEGIN
-    SELECT COALESCE(MAX(CAST(SUBSTRING(invoice_number FROM 'FACT-([0-9]+)') AS INTEGER)), 0) + 1
+    SELECT COALESCE(MAX(CAST(SUBSTRING(inv.invoice_number FROM 'FACT-([0-9]+)') AS INTEGER)), 0) + 1
     INTO next_number
-    FROM public.invoices
-    WHERE user_id = $1;
+    FROM public.invoices inv
+    WHERE inv.user_id = $1;
     
     invoice_number := 'FACT-' || LPAD(next_number::TEXT, 6, '0');
     RETURN invoice_number;

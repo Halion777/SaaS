@@ -1551,8 +1551,6 @@ export async function convertQuoteToInvoice(quote, userId) {
     // Prepare invoice data
     const invoiceData = {
       user_id: userId,
-      profile_id: quote.profile_id,
-      company_profile_id: quote.company_profile_id,
       client_id: quote.client_id,
       quote_id: quote.id,
       invoice_number: invoiceNumber,

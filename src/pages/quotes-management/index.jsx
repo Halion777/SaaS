@@ -697,9 +697,6 @@ const QuotesManagement = () => {
       const result = await convertQuoteToInvoice(quote, user.id);
       
       if (result.success) {
-        // Show success message
-        alert('Devis converti en facture avec succès !');
-        
         // Refresh quotes list
         await handleRefresh();
         

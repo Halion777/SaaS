@@ -14,7 +14,6 @@ export class InvoiceService {
         .select(`
           *,
           client:clients(id, name, email, phone, address, city, postal_code),
-          company_profile:company_profiles(id, company_name, logo_path, address, city, postal_code, phone, email, website, vat_number),
           quote:quotes(id, quote_number, title, description)
         `)
         .eq('user_id', userId)

@@ -16,6 +16,13 @@ const InvoicesManagement = () => {
   const [invoices, setInvoices] = useState([]);
   const [filteredInvoices, setFilteredInvoices] = useState([]);
   const [selectedInvoices, setSelectedInvoices] = useState([]);
+  const [filters, setFilters] = useState({
+    search: '',
+    status: '',
+    client: '',
+    dateRange: { start: '', end: '' },
+    amountRange: { min: '', max: '' }
+  });
 
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -154,20 +161,19 @@ const InvoicesManagement = () => {
     const loadData = async () => {
       setIsLoading(true);
       await new Promise(resolve => setTimeout(resolve, 1000));
-      setInvoices(mockInvoices);
-      setFilteredInvoices(mockInvoices);
       setIsLoading(false);
     };
 
     loadData();
   }, []);
 
-  const handleFiltersChange = (filters) => {
+  const handleFiltersChange = (newFilters) => {
+    setFilters(newFilters);
     let filtered = [...invoices];
 
     // Search filter
-    if (filters.search) {
-      const searchTerm = filters.search.toLowerCase();
+    if (newFilters.search) {
+      const searchTerm = newFilters.search.toLowerCase();
       filtered = filtered.filter(invoice =>
         invoice.number.toLowerCase().includes(searchTerm) ||
         invoice.clientName.toLowerCase().includes(searchTerm) ||
@@ -176,67 +182,58 @@ const InvoicesManagement = () => {
     }
 
     // Status filter
-    if (filters.status) {
-      filtered = filtered.filter(invoice => invoice.status === filters.status);
+    if (newFilters.status) {
+      filtered = filtered.filter(invoice => invoice.status === newFilters.status);
     }
 
-    // Date range filter
-    if (filters.dateRange) {
-      const today = new Date();
-      const filterDate = new Date();
+    // Client filter
+    if (newFilters.client) {
+      filtered = filtered.filter(invoice => invoice.client?.id?.toString() === newFilters.client);
+    }
 
-      switch (filters.dateRange) {
-        case 'today':
-          filterDate.setHours(0, 0, 0, 0);
-          filtered = filtered.filter(invoice => 
-            new Date(invoice.issueDate) >= filterDate
-          );
-          break;
-        case 'week':
-          filterDate.setDate(today.getDate() - 7);
-          filtered = filtered.filter(invoice => 
-            new Date(invoice.issueDate) >= filterDate
-          );
-          break;
-        case 'month':
-          filterDate.setMonth(today.getMonth() - 1);
-          filtered = filtered.filter(invoice => 
-            new Date(invoice.issueDate) >= filterDate
-          );
-          break;
-        case 'quarter':
-          filterDate.setMonth(today.getMonth() - 3);
-          filtered = filtered.filter(invoice => 
-            new Date(invoice.issueDate) >= filterDate
-          );
-          break;
-        case 'year':
-          filterDate.setFullYear(today.getFullYear() - 1);
-          filtered = filtered.filter(invoice => 
-            new Date(invoice.issueDate) >= filterDate
-          );
-          break;
+    // Date range filter (custom date range)
+    if (newFilters.dateRange && (newFilters.dateRange.start || newFilters.dateRange.end)) {
+      if (newFilters.dateRange.start) {
+        const startDate = new Date(newFilters.dateRange.start);
+        startDate.setHours(0, 0, 0, 0);
+        filtered = filtered.filter(invoice => 
+          new Date(invoice.issueDate) >= startDate
+        );
+      }
+      if (newFilters.dateRange.end) {
+        const endDate = new Date(newFilters.dateRange.end);
+        endDate.setHours(23, 59, 59, 999);
+        filtered = filtered.filter(invoice => 
+          new Date(invoice.issueDate) <= endDate
+        );
       }
     }
 
-    // Payment method filter
-    if (filters.paymentMethod) {
-      filtered = filtered.filter(invoice => 
-        invoice.paymentMethod === filters.paymentMethod
-      );
-    }
-
-    // Amount range filter
-    if (filters.amountRange) {
-      const [min, max] = filters.amountRange.split('-').map(v => 
-        v === '5000+' ? Infinity : parseInt(v)
-      );
-      filtered = filtered.filter(invoice => 
-        invoice.amount >= min && (max === Infinity || invoice.amount <= max)
-      );
+    // Amount range filter (custom amount range)
+    if (newFilters.amountRange && (newFilters.amountRange.min || newFilters.amountRange.max)) {
+      if (newFilters.amountRange.min) {
+        const minAmount = parseFloat(newFilters.amountRange.min);
+        filtered = filtered.filter(invoice => invoice.amount >= minAmount);
+      }
+      if (newFilters.amountRange.max) {
+        const maxAmount = parseFloat(newFilters.amountRange.max);
+        filtered = filtered.filter(invoice => invoice.amount <= maxAmount);
+      }
     }
 
     setFilteredInvoices(filtered);
+  };
+
+  const clearFilters = () => {
+    const clearedFilters = {
+      search: '',
+      status: '',
+      client: '',
+      dateRange: { start: '', end: '' },
+      amountRange: { min: '', max: '' }
+    };
+    setFilters(clearedFilters);
+    setFilteredInvoices(invoices);
   };
 
   const handleInvoiceAction = async (action, invoice) => {
@@ -447,9 +444,9 @@ const InvoicesManagement = () => {
 
           {/* Filters */}
           <InvoicesFilterToolbar
+            filters={filters}
             onFiltersChange={handleFiltersChange}
-            onBulkAction={handleBulkAction}
-            selectedCount={selectedInvoices.length}
+            invoices={invoices}
           />
 
           {/* Bulk Actions */}
@@ -534,6 +531,8 @@ const InvoicesManagement = () => {
             onInvoiceAction={handleInvoiceAction}
             selectedInvoices={selectedInvoices}
             onSelectionChange={setSelectedInvoices}
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
           />
 
           {/* Pagination */}

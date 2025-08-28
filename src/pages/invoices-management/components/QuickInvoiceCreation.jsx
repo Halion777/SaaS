@@ -184,40 +184,8 @@ const QuickInvoiceCreation = ({ isOpen, onClose, onCreateInvoice }) => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Invoice Type Selection */}
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                type="button"
-                onClick={() => handleInputChange('type', 'manual')}
-                className={`p-4 border-2 rounded-lg transition-all duration-150 ${
-                  invoiceData.type === 'manual' ?'border-primary bg-primary/5' :'border-border hover:border-primary/50'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <Icon name="Edit" size={20} color="var(--color-primary)" />
-                  <div className="text-left">
-                    <p className="font-medium text-foreground">Facture manuelle</p>
-                    <p className="text-sm text-muted-foreground">Créer une facture personnalisée</p>
-                  </div>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleInputChange('type', 'from_quote')}
-                className={`p-4 border-2 rounded-lg transition-all duration-150 ${
-                  invoiceData.type === 'from_quote' ?'border-primary bg-primary/5' :'border-border hover:border-primary/50'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <Icon name="FileCheck" size={20} color="var(--color-primary)" />
-                  <div className="text-left">
-                    <p className="font-medium text-foreground">Depuis un devis</p>
-                    <p className="text-sm text-muted-foreground">Convertir un devis signé</p>
-                  </div>
-                </div>
-              </button>
-            </div>
+            {/* Invoice Type Selection - Manual Only */}
+           
 
             {/* OCR File Upload */}
             {invoiceData.type === 'manual' && (
@@ -252,62 +220,49 @@ const QuickInvoiceCreation = ({ isOpen, onClose, onCreateInvoice }) => {
             )}
 
             {/* Form Fields */}
-            {invoiceData.type === 'from_quote' ? (
-              <Select
-                label="Devis signé à convertir"
-                placeholder="Sélectionner un devis"
-                options={signedQuoteOptions}
-                value={invoiceData.quoteId}
-                onChange={(e) => handleInputChange('quoteId', e.target.value)}
-                required
+            <Select
+              label="Client"
+              placeholder={isLoadingClients ? "Chargement des clients..." : "Sélectionner un client"}
+              options={clientOptions}
+              value={invoiceData.clientId}
+              onChange={(e) => handleInputChange('clientId', e.target.value)}
+              required
+              disabled={isLoadingClients}
+            />
+            {clientOptions.length === 0 && !isLoadingClients && (
+              <p className="text-sm text-muted-foreground">
+                Aucun client trouvé. Veuillez d'abord créer des clients.
+              </p>
+            )}
+
+            <Input
+              label="Montant (€)"
+              type="number"
+              placeholder="0.00"
+              value={invoiceData.amount}
+              onChange={(e) => handleInputChange('amount', e.target.value)}
+              required
+              min="0"
+              step="0.01"
+            />
+
+            <Input
+              label="Description"
+              type="text"
+              placeholder="Description des travaux réalisés"
+              value={invoiceData.description}
+              onChange={(e) => handleInputChange('description', e.target.value)}
+              required
+            />
+
+            {invoiceData.notes && (
+              <Input
+                label="Notes (extrait par OCR)"
+                type="text"
+                placeholder="Notes additionnelles"
+                value={invoiceData.notes}
+                onChange={(e) => handleInputChange('notes', e.target.value)}
               />
-            ) : (
-              <>
-                <Select
-                  label="Client"
-                  placeholder={isLoadingClients ? "Chargement des clients..." : "Sélectionner un client"}
-                  options={clientOptions}
-                  value={invoiceData.clientId}
-                  onChange={(e) => handleInputChange('clientId', e.target.value)}
-                  required
-                  disabled={isLoadingClients}
-                />
-                {clientOptions.length === 0 && !isLoadingClients && (
-                  <p className="text-sm text-muted-foreground">
-                    Aucun client trouvé. Veuillez d'abord créer des clients.
-                  </p>
-                )}
-
-                <Input
-                  label="Montant (€)"
-                  type="number"
-                  placeholder="0.00"
-                  value={invoiceData.amount}
-                  onChange={(e) => handleInputChange('amount', e.target.value)}
-                  required
-                  min="0"
-                  step="0.01"
-                />
-
-                <Input
-                  label="Description"
-                  type="text"
-                  placeholder="Description des travaux réalisés"
-                  value={invoiceData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  required
-                />
-
-                {invoiceData.notes && (
-                  <Input
-                    label="Notes (extrait par OCR)"
-                    type="text"
-                    placeholder="Notes additionnelles"
-                    value={invoiceData.notes}
-                    onChange={(e) => handleInputChange('notes', e.target.value)}
-                  />
-                )}
-              </>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

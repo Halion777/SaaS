@@ -4,38 +4,48 @@ import Select from '../../../components/ui/Select';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 
-const InvoicesFilterToolbar = ({ onFiltersChange }) => {
-  const [filters, setFilters] = useState({
-    search: '',
-    status: '',
-    dateRange: '',
-    paymentMethod: '',
-    amountRange: ''
-  });
+const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [amountRange, setAmountRange] = useState({ min: '', max: '' });
   const [isExpanded, setIsExpanded] = useState(false);
 
   const statusOptions = [
     { value: '', label: 'Tous les statuts' },
+    { value: 'unpaid', label: 'Non payée' },
     { value: 'paid', label: 'Payée' },
-    { value: 'pending', label: 'En attente' },
-    { value: 'overdue', label: 'En retard' }
+    { value: 'overdue', label: 'En retard' },
+    { value: 'cancelled', label: 'Annulée' }
   ];
 
+  // Generate client options from actual invoices data
+  const clientOptions = React.useMemo(() => {
+    const uniqueClients = new Map();
+    
+    // Add default option
+    uniqueClients.set('', { value: '', label: 'Tous les clients' });
+    
+    // Extract unique clients from invoices
+    invoices.forEach(invoice => {
+      if (invoice.client && invoice.client.id) {
+        const clientId = invoice.client.id.toString();
+        const clientName = invoice.client.name || invoice.clientName || 'Client inconnu';
+        
+        if (!uniqueClients.has(clientId)) {
+          uniqueClients.set(clientId, { value: clientId, label: clientName });
+        }
+      }
+    });
+    
+    return Array.from(uniqueClients.values());
+  }, [invoices]);
+
   const dateRangeOptions = [
-    { value: '', label: 'Toutes les dates' },
-    { value: 'today', label: "Aujourd\'hui" },
+    { value: '', label: 'Toutes les périodes' },
+    { value: 'today', label: "Aujourd'hui" },
     { value: 'week', label: 'Cette semaine' },
     { value: 'month', label: 'Ce mois' },
     { value: 'quarter', label: 'Ce trimestre' },
     { value: 'year', label: 'Cette année' }
-  ];
-
-  const paymentMethodOptions = [
-    { value: '', label: 'Tous les moyens' },
-    { value: 'bank_transfer', label: 'Virement bancaire' },
-    { value: 'check', label: 'Chèque' },
-    { value: 'cash', label: 'Espèces' },
-    { value: 'card', label: 'Carte bancaire' }
   ];
 
   const amountRangeOptions = [
@@ -46,35 +56,42 @@ const InvoicesFilterToolbar = ({ onFiltersChange }) => {
     { value: '5000+', label: '5 000€+' }
   ];
 
-  const handleFilterChange = (key, value) => {
-    const newFilters = { ...filters, [key]: value };
-    setFilters(newFilters);
-    onFiltersChange(newFilters);
+  const handleDateRangeChange = (field, value) => {
+    const newRange = { ...dateRange, [field]: value };
+    setDateRange(newRange);
+    onFiltersChange({ ...filters, dateRange: newRange });
   };
 
-  const clearFilters = () => {
-    const clearedFilters = {
-      search: '',
-      status: '',
-      dateRange: '',
-      paymentMethod: '',
-      amountRange: ''
-    };
-    setFilters(clearedFilters);
-    onFiltersChange(clearedFilters);
+  const handleAmountRangeChange = (field, value) => {
+    const newRange = { ...amountRange, [field]: value };
+    setAmountRange(newRange);
+    onFiltersChange({ ...filters, amountRange: newRange });
   };
 
   const getActiveFiltersCount = () => {
     let count = 0;
     if (filters.search) count++;
     if (filters.status) count++;
-    if (filters.dateRange) count++;
-    if (filters.paymentMethod) count++;
-    if (filters.amountRange) count++;
+    if (filters.client) count++;
+    if (dateRange.start || dateRange.end) count++;
+    if (amountRange.min || amountRange.max) count++;
     return count;
   };
 
   const activeFiltersCount = getActiveFiltersCount();
+
+  const clearFilters = () => {
+    const clearedFilters = {
+      search: '',
+      status: '',
+      client: '',
+      dateRange: { start: '', end: '' },
+      amountRange: { min: '', max: '' }
+    };
+    setDateRange({ start: '', end: '' });
+    setAmountRange({ min: '', max: '' });
+    onFiltersChange(clearedFilters);
+  };
 
   return (
     <div className="bg-card border border-border rounded-lg shadow-sm">
@@ -117,71 +134,69 @@ const InvoicesFilterToolbar = ({ onFiltersChange }) => {
 
       {/* Desktop Filters - Always visible on md+ screens */}
       <div className="hidden md:block p-4 space-y-4 border-t border-border">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-        <div className="lg:col-span-2">
-          <Input
-            type="search"
-            placeholder="Rechercher par numéro, client..."
-            value={filters.search}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
-            className="w-full"
-          />
-        </div>
-
-        <Select
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Select
             label="Statut"
-          options={statusOptions}
-          value={filters.status}
-          onChange={(e) => handleFilterChange('status', e.target.value)}
-            placeholder="Sélectionner un statut"
-        />
-
-        <Select
-            label="Période"
-          options={dateRangeOptions}
-          value={filters.dateRange}
-          onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-            placeholder="Sélectionner une période"
-        />
-
-        <Select
-            label="Paiement"
-          options={paymentMethodOptions}
-          value={filters.paymentMethod}
-          onChange={(e) => handleFilterChange('paymentMethod', e.target.value)}
-            placeholder="Sélectionner un moyen"
-        />
-
-        <Select
-            label="Montant"
-          options={amountRangeOptions}
-          value={filters.amountRange}
-          onChange={(e) => handleFilterChange('amountRange', e.target.value)}
-            placeholder="Sélectionner un montant"
+            options={statusOptions}
+            value={filters.status || ''}
+            onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
+            placeholder="Tous les statuts"
           />
+
+          <Select
+            label="Client"
+            options={clientOptions}
+            value={filters.client || ''}
+            onChange={(e) => onFiltersChange({ ...filters, client: e.target.value })}
+            placeholder="Sélectionner un client"
+            searchable
+          />
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Période</label>
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                type="date"
+                placeholder="Du"
+                value={dateRange.start}
+                onChange={(e) => handleDateRangeChange('start', e.target.value)}
+              />
+              <Input
+                type="date"
+                placeholder="Au"
+                value={dateRange.end}
+                onChange={(e) => handleDateRangeChange('end', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Montant (€)</label>
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                type="number"
+                placeholder="Min"
+                value={amountRange.min}
+                onChange={(e) => handleAmountRangeChange('min', e.target.value)}
+              />
+              <Input
+                type="number"
+                placeholder="Max"
+                value={amountRange.max}
+                onChange={(e) => handleAmountRangeChange('max', e.target.value)}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Active Filter Chips */}
         {activeFiltersCount > 0 && (
           <div className="flex flex-wrap gap-2 pt-3 border-t border-border">
-            {filters.search && (
-              <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
-                <span>Recherche: {filters.search}</span>
-                <button
-                  onClick={() => handleFilterChange('search', '')}
-                  className="hover:bg-primary/20 rounded-full p-0.5"
-                  aria-label="Supprimer la recherche"
-                >
-                  <Icon name="X" size={12} />
-                </button>
-              </div>
-            )}
-            
             {filters.status && (
               <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
                 <span>Statut: {statusOptions.find(opt => opt.value === filters.status)?.label}</span>
                 <button
-                  onClick={() => handleFilterChange('status', '')}
+                  onClick={() => onFiltersChange({ ...filters, status: '' })}
                   className="hover:bg-primary/20 rounded-full p-0.5"
                   aria-label="Supprimer le filtre de statut"
                 >
@@ -190,11 +205,29 @@ const InvoicesFilterToolbar = ({ onFiltersChange }) => {
               </div>
             )}
             
-            {filters.dateRange && (
+            {filters.client && (
               <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
-                <span>Période: {dateRangeOptions.find(opt => opt.value === filters.dateRange)?.label}</span>
+                <span>Client: {clientOptions.find(opt => opt.value === filters.client)?.label}</span>
                 <button
-                  onClick={() => handleFilterChange('dateRange', '')}
+                  onClick={() => onFiltersChange({ ...filters, client: '' })}
+                  className="hover:bg-primary/20 rounded-full p-0.5"
+                  aria-label="Supprimer le filtre de client"
+                >
+                  <Icon name="X" size={12} />
+                </button>
+              </div>
+            )}
+            
+            {(dateRange.start || dateRange.end) && (
+              <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
+                <span>
+                  Période: {dateRange.start || '...'} - {dateRange.end || '...'}
+                </span>
+                <button
+                  onClick={() => {
+                    setDateRange({ start: '', end: '' });
+                    onFiltersChange({ ...filters, dateRange: { start: '', end: '' } });
+                  }}
                   className="hover:bg-primary/20 rounded-full p-0.5"
                   aria-label="Supprimer le filtre de période"
                 >
@@ -203,24 +236,16 @@ const InvoicesFilterToolbar = ({ onFiltersChange }) => {
               </div>
             )}
             
-            {filters.paymentMethod && (
+            {(amountRange.min || amountRange.max) && (
               <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
-                <span>Paiement: {paymentMethodOptions.find(opt => opt.value === filters.paymentMethod)?.label}</span>
+                <span>
+                  Montant: {amountRange.min || '0'}€ - {amountRange.max || '∞'}€
+                </span>
                 <button
-                  onClick={() => handleFilterChange('paymentMethod', '')}
-                  className="hover:bg-primary/20 rounded-full p-0.5"
-                  aria-label="Supprimer le filtre de paiement"
-                >
-                  <Icon name="X" size={12} />
-                </button>
-              </div>
-            )}
-            
-            {filters.amountRange && (
-              <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
-                <span>Montant: {amountRangeOptions.find(opt => opt.value === filters.amountRange)?.label}</span>
-                <button
-                  onClick={() => handleFilterChange('amountRange', '')}
+                  onClick={() => {
+                    setAmountRange({ min: '', max: '' });
+                    onFiltersChange({ ...filters, amountRange: { min: '', max: '' } });
+                  }}
                   className="hover:bg-primary/20 rounded-full p-0.5"
                   aria-label="Supprimer le filtre de montant"
                 >
@@ -236,66 +261,67 @@ const InvoicesFilterToolbar = ({ onFiltersChange }) => {
       {isExpanded && (
         <div className="md:hidden p-3 space-y-4 border-t border-border">
           <div className="space-y-3">
-            <Input
-              type="search"
-              placeholder="Rechercher par numéro, client..."
-              value={filters.search}
-              onChange={(e) => handleFilterChange('search', e.target.value)}
-            />
-
             <Select
               label="Statut"
               options={statusOptions}
-              value={filters.status}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
+              value={filters.status || ''}
+              onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
               placeholder="Tous les statuts"
             />
 
             <Select
-              label="Période"
-              options={dateRangeOptions}
-              value={filters.dateRange}
-              onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-              placeholder="Toutes les dates"
+              label="Client"
+              options={clientOptions}
+              value={filters.client || ''}
+              onChange={(e) => onFiltersChange({ ...filters, client: e.target.value })}
+              placeholder="Tous les clients"
             />
 
-            <Select
-              label="Paiement"
-              options={paymentMethodOptions}
-              value={filters.paymentMethod}
-              onChange={(e) => handleFilterChange('paymentMethod', e.target.value)}
-              placeholder="Tous les moyens"
-            />
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Période</label>
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  type="date"
+                  placeholder="Du"
+                  value={dateRange.start}
+                  onChange={(e) => handleDateRangeChange('start', e.target.value)}
+                />
+                <Input
+                  type="date"
+                  placeholder="Au"
+                  value={dateRange.end}
+                  onChange={(e) => handleDateRangeChange('end', e.target.value)}
+                />
+              </div>
+            </div>
 
-            <Select
-              label="Montant"
-              options={amountRangeOptions}
-              value={filters.amountRange}
-              onChange={(e) => handleFilterChange('amountRange', e.target.value)}
-              placeholder="Tous les montants"
-            />
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Montant (€)</label>
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  type="number"
+                  placeholder="Min"
+                  value={amountRange.min}
+                  onChange={(e) => handleAmountRangeChange('min', e.target.value)}
+                />
+                <Input
+                  type="number"
+                  placeholder="Max"
+                  value={amountRange.max}
+                  onChange={(e) => handleAmountRangeChange('max', e.target.value)}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Active Filter Chips - Mobile */}
           {activeFiltersCount > 0 && (
             <div className="flex flex-wrap gap-2 pt-3 border-t border-border">
-              {filters.search && (
-                <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
-                  <span>Recherche: {filters.search}</span>
-                  <button
-                    onClick={() => handleFilterChange('search', '')}
-                    className="hover:bg-primary/20 rounded-full p-0.5"
-                  >
-                    <Icon name="X" size={12} />
-                  </button>
-                </div>
-              )}
-              
               {filters.status && (
                 <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
                   <span>Statut: {statusOptions.find(opt => opt.value === filters.status)?.label}</span>
                   <button
-                    onClick={() => handleFilterChange('status', '')}
+                    onClick={() => onFiltersChange({ ...filters, status: '' })}
                     className="hover:bg-primary/20 rounded-full p-0.5"
                   >
                     <Icon name="X" size={12} />
@@ -303,11 +329,11 @@ const InvoicesFilterToolbar = ({ onFiltersChange }) => {
                 </div>
               )}
               
-              {filters.dateRange && (
+              {filters.client && (
                 <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
-                  <span>Période: {dateRangeOptions.find(opt => opt.value === filters.dateRange)?.label}</span>
+                  <span>Client: {clientOptions.find(opt => opt.value === filters.client)?.label}</span>
                   <button
-                    onClick={() => handleFilterChange('dateRange', '')}
+                    onClick={() => onFiltersChange({ ...filters, client: '' })}
                     className="hover:bg-primary/20 rounded-full p-0.5"
                   >
                     <Icon name="X" size={12} />
@@ -315,23 +341,29 @@ const InvoicesFilterToolbar = ({ onFiltersChange }) => {
                 </div>
               )}
               
-              {filters.paymentMethod && (
+              {(dateRange.start || dateRange.end) && (
                 <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
-                  <span>Paiement: {paymentMethodOptions.find(opt => opt.value === filters.paymentMethod)?.label}</span>
+                  <span>Période: {dateRange.start || '...'} - {dateRange.end || '...'}</span>
                   <button
-                    onClick={() => handleFilterChange('paymentMethod', '')}
+                    onClick={() => {
+                      setDateRange({ start: '', end: '' });
+                      onFiltersChange({ ...filters, dateRange: { start: '', end: '' } });
+                    }}
                     className="hover:bg-primary/20 rounded-full p-0.5"
                   >
                     <Icon name="X" size={12} />
                   </button>
-        </div>
+                </div>
               )}
               
-              {filters.amountRange && (
+              {(amountRange.min || amountRange.max) && (
                 <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
-                  <span>Montant: {amountRangeOptions.find(opt => opt.value === filters.amountRange)?.label}</span>
+                  <span>Montant: {amountRange.min || '0'}€ - {amountRange.max || '∞'}€</span>
                   <button
-                    onClick={() => handleFilterChange('amountRange', '')}
+                    onClick={() => {
+                      setAmountRange({ min: '', max: '' });
+                      onFiltersChange({ ...filters, amountRange: { min: '', max: '' } });
+                    }}
                     className="hover:bg-primary/20 rounded-full p-0.5"
                   >
                     <Icon name="X" size={12} />
@@ -349,14 +381,13 @@ const InvoicesFilterToolbar = ({ onFiltersChange }) => {
           <div className="text-sm text-muted-foreground">
             <span className="font-medium">{activeFiltersCount} filtre{activeFiltersCount > 1 ? 's' : ''} actif{activeFiltersCount > 1 ? 's' : ''}</span>
             <span className="text-xs ml-2">
-              {filters.search && '• Recherche'}
               {filters.status && ` • ${statusOptions.find(opt => opt.value === filters.status)?.label}`}
-              {filters.dateRange && ` • ${dateRangeOptions.find(opt => opt.value === filters.dateRange)?.label}`}
-              {filters.paymentMethod && ` • ${paymentMethodOptions.find(opt => opt.value === filters.paymentMethod)?.label}`}
-              {filters.amountRange && ` • ${amountRangeOptions.find(opt => opt.value === filters.amountRange)?.label}`}
+              {filters.client && ` • ${clientOptions.find(opt => opt.value === filters.client)?.label}`}
+              {(dateRange.start || dateRange.end) && ` • Période`}
+              {(amountRange.min || amountRange.max) && ` • Montant`}
             </span>
+          </div>
         </div>
-      </div>
       )}
     </div>
   );

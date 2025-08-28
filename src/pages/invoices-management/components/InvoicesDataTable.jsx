@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import Input from '../../../components/ui/Input';
 import { Checkbox } from '../../../components/ui/Checkbox';
 
-const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSelectionChange }) => {
+const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSelectionChange, filters, onFiltersChange }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'issueDate', direction: 'desc' });
   const [viewMode, setViewMode] = useState(() => {
     // Default to card view on mobile/tablet, table view on desktop
@@ -193,6 +194,35 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
 
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden">
+      {/* Search Bar */}
+      <div className="p-3 md:p-4 border-b border-border">
+        <div className="flex items-center justify-between">
+          <div className="relative flex-1 max-w-md">
+            <Icon name="Search" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Rechercher par numéro, client, description ou statut..."
+              value={filters?.search || ''}
+              onChange={(e) => onFiltersChange?.({ ...filters, search: e.target.value })}
+              className="pl-9 w-full"
+            />
+          </div>
+          {filters?.search && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onFiltersChange?.({ ...filters, search: '' })}
+              className="ml-3 h-8"
+            >
+              <span className="flex items-center">
+                <Icon name="X" size={14} className="mr-1" />
+                Effacer
+              </span>
+            </Button>
+            )}
+        </div>
+      </div>
+
       {/* View Toggle */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center space-x-2">
