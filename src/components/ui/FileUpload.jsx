@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import Icon from '../AppIcon';
 import { cn } from '../../utils/cn';
-import { Button } from '../ui/Button';
+import Button from '../ui/Button';
 
 const FileUpload = ({
   onFileUpload,
@@ -16,7 +16,6 @@ const FileUpload = ({
   ...props
 }) => {
   const [dragActive, setDragActive] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState([]);
   const inputRef = useRef(null);
 
   const handleDrag = useCallback((e) => {
@@ -74,7 +73,6 @@ const FileUpload = ({
     });
 
     if (validFiles.length > 0) {
-      setUploadedFiles(prev => [...prev, ...validFiles]);
       if (onFileUpload) {
         onFileUpload(validFiles);
       }
@@ -82,14 +80,11 @@ const FileUpload = ({
   }, [acceptedTypes, maxSize, onFileUpload]);
 
   const handleFileRemove = useCallback((index) => {
-    setUploadedFiles(prev => {
-      const newFiles = prev.filter((_, i) => i !== index);
-      if (onFileRemove) {
-        onFileRemove(newFiles);
-      }
-      return newFiles;
-    });
-  }, [onFileRemove]);
+    if (onFileRemove) {
+      const newFiles = uploadedFiles.filter((_, i) => i !== index);
+      onFileRemove(newFiles);
+    }
+  }, [onFileRemove, uploadedFiles]);
 
   const handleOCRProcess = async (file) => {
     if (onOCRProcess) {
@@ -148,7 +143,7 @@ const FileUpload = ({
       </div>
 
       {/* OCR Button for invoice files */}
-      {showOCRButton && uploadedFiles.length > 0 && (
+      {showOCRButton && uploadedFiles && uploadedFiles.length > 0 && (
         <div className="mt-3">
           <Button
             onClick={() => handleOCRProcess(uploadedFiles[0])}
@@ -163,7 +158,7 @@ const FileUpload = ({
       )}
 
       {/* File list */}
-      {uploadedFiles.length > 0 && (
+      {uploadedFiles && uploadedFiles.length > 0 && (
         <div className="mt-4 space-y-2">
           {uploadedFiles.map((file, index) => (
             <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">

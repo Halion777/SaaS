@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabaseClient';
+import { supabase } from './supabaseClient';
 
 export class OCRService {
   static async processInvoice(file) {

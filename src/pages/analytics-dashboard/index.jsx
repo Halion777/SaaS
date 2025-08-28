@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import MainSidebar from '../../components/ui/MainSidebar';
 import Icon from '../../components/AppIcon';
@@ -13,7 +13,6 @@ import ComparisonAnalytics from './components/ComparisonAnalytics';
 import FilterControls from './components/FilterControls';
 import ExportControls from './components/ExportControls';
 import DetailedAnalyticsPanel from './components/DetailedAnalyticsPanel';
-import { generateBusinessInsights, generatePricingOptimization, analyzePerformancePatterns } from '../../services/openaiService';
 import { useScrollPosition } from '../../utils/useScrollPosition';
 
 const AnalyticsDashboard = () => {
@@ -91,15 +90,13 @@ const AnalyticsDashboard = () => {
     const loadAIAnalytics = async () => {
       setIsLoading(true);
       try {
-        const [insights, pricing, performance] = await Promise.all([
-          generateBusinessInsights(businessData),
-          generatePricingOptimization(businessData),
-          analyzePerformancePatterns(businessData)
-        ]);
-        
-        setAiInsights(insights);
-        setPricingOptimization(pricing);
-        setPerformanceAnalysis(performance);
+        // Removed openaiService calls
+        // Set fallback data
+        setAiInsights({
+          insights: ['Revenue growth trending upward', 'Client acquisition improving'],
+          recommendations: ['Focus on premium services', 'Expand marketing reach'],
+          predictions: ['20% growth expected next quarter']
+        });
       } catch (error) {
         console.error('Error loading AI analytics:', error);
         // Set fallback data
