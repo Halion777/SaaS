@@ -315,17 +315,17 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                   >
                     <Icon name="Edit" size={16} />
                   </Button>
-                  {(!quote.isDraftPlaceholder && quote.status === 'sent') && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onQuoteAction('convert', quote)}
-                      title={t('quotesManagement.table.actions.convertToInvoice')}
-                      className="h-8 w-8"
-                    >
-                      <Icon name="Receipt" size={16} />
-                    </Button>
-                  )}
+                              {(!quote.isDraftPlaceholder && quote.status !== 'draft' && quote.status !== 'expired') && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onQuoteAction('convert', quote)}
+                title={t('quotesManagement.table.actions.convertToInvoice')}
+                className="h-8 w-8"
+              >
+                <Icon name="Receipt" size={16} />
+              </Button>
+            )}
                   {/* Follow-up management icon removed per request */}
                   {/* Send reminder icon removed: manage via Follow-up panel */}
                   <Button
@@ -437,7 +437,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
             >
               <Icon name="Edit" size={14} />
             </Button>
-            {(!quote.isDraftPlaceholder && quote.status === 'sent') && (
+            {(!quote.isDraftPlaceholder && quote.status !== 'draft' && quote.status !== 'expired') && (
               <Button
                 variant="ghost"
                 size="icon"

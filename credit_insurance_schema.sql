@@ -25,8 +25,8 @@ CREATE INDEX IF NOT EXISTS idx_credit_insurance_applications_status ON credit_in
 CREATE INDEX IF NOT EXISTS idx_credit_insurance_applications_created_at ON credit_insurance_applications(created_at);
 CREATE INDEX IF NOT EXISTS idx_credit_insurance_applications_sector ON credit_insurance_applications(sector);
 
--- Create updated_at trigger function if it doesn't exist
-CREATE OR REPLACE FUNCTION update_updated_at_column()
+-- Create updated_at trigger function
+CREATE OR REPLACE FUNCTION update_credit_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
@@ -38,33 +38,4 @@ $$ language 'plpgsql';
 DROP TRIGGER IF EXISTS update_credit_insurance_applications_updated_at ON credit_insurance_applications;
 CREATE TRIGGER update_credit_insurance_applications_updated_at 
     BEFORE UPDATE ON credit_insurance_applications 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- Insert sample sectors (optional, for reference)
--- These are already defined in the frontend, but you can add them here if needed
--- INSERT INTO sectors (value, label) VALUES
---     ('construction', 'Construction'),
---     ('manufacturing', 'Fabrication'),
---     ('retail', 'Commerce de détail'),
---     ('services', 'Services'),
---     ('technology', 'Technologie'),
---     ('healthcare', 'Santé'),
---     ('finance', 'Finance'),
---     ('other', 'Autre');
-
--- Grant permissions (adjust according to your Supabase setup)
--- GRANT ALL ON credit_insurance_applications TO authenticated;
--- GRANT ALL ON credit_insurance_applications TO service_role;
-
--- Enable Row Level Security (RLS) if needed
--- ALTER TABLE credit_insurance_applications ENABLE ROW LEVEL SECURITY;
-
--- Create RLS policies if needed
--- CREATE POLICY "Users can view their own applications" ON credit_insurance_applications
---     FOR SELECT USING (auth.uid()::text = email);
--- 
--- CREATE POLICY "Users can insert their own applications" ON credit_insurance_applications
---     FOR INSERT WITH CHECK (true);
--- 
--- CREATE POLICY "Only admins can update applications" ON credit_insurance_applications
---     FOR UPDATE USING (auth.jwt() ->> 'role' = 'admin');
+    FOR EACH ROW EXECUTE FUNCTION update_credit_updated_at_column();

@@ -20,7 +20,8 @@ import {
   loadQuoteDraft, 
   deleteQuoteDraftById, 
   listQuoteDrafts,
-  processQuoteExpirations 
+  processQuoteExpirations,
+  convertQuoteToInvoice
 } from '../../services/quotesService';
 import { supabase } from '../../services/supabaseClient';
 import { 
@@ -689,6 +690,32 @@ const QuotesManagement = () => {
     setSelectedQuotes([]);
   };
 
+  const handleConvertToInvoice = async (quote) => {
+    try {
+      setTableLoading(true);
+      
+      const result = await convertQuoteToInvoice(quote, user.id);
+      
+      if (result.success) {
+        // Show success message
+        alert('Devis converti en facture avec succès !');
+        
+        // Refresh quotes list
+        await handleRefresh();
+        
+        // Navigate to invoices management
+        navigate('/invoices-management');
+      } else {
+        alert(`Erreur lors de la conversion: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error converting quote to invoice:', error);
+      alert('Erreur lors de la conversion du devis en facture');
+    } finally {
+      setTableLoading(false);
+    }
+  };
+
   const handleQuoteAction = async (action, quote) => {
     switch (action) {
       case 'edit':
@@ -701,11 +728,7 @@ const QuotesManagement = () => {
         await handleMarkAsSent(quote);
         break;
       case 'convert':
-        if (quote.status === 'accepted') {
-          navigate(`/invoices-management?convert=${quote.id}`);
-        } else {
-          console.log('Quote must be accepted before converting to invoice');
-        }
+        await handleConvertToInvoice(quote);
         break;
       // Removed optimize (AI)
       case 'delete':

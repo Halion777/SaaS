@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
+import FileUpload from '../../../components/ui/FileUpload';
+import { fetchClients } from '../../../services/clientsService';
+import { OCRService } from '../../../services/ocrService';
 
 const QuickInvoiceCreation = ({ isOpen, onClose, onCreateInvoice }) => {
   const [invoiceData, setInvoiceData] = useState({
@@ -16,14 +19,36 @@ const QuickInvoiceCreation = ({ isOpen, onClose, onCreateInvoice }) => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isOCRProcessing, setIsOCRProcessing] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
 
-  const clientOptions = [
-    { value: '1', label: 'Jean Martin - Plomberie' },
-    { value: '2', label: 'Sophie Dubois - Électricité' },
-    { value: '3', label: 'Pierre Moreau - Peinture' },
-    { value: '4', label: 'Marie Leroy - Carrelage' },
-    { value: '5', label: 'Paul Bernard - Menuiserie' }
-  ];
+  const [clientOptions, setClientOptions] = useState([]);
+  const [isLoadingClients, setIsLoadingClients] = useState(false);
+
+  // Fetch clients when component mounts
+  useEffect(() => {
+    const loadClients = async () => {
+      setIsLoadingClients(true);
+      try {
+        const result = await fetchClients();
+        if (result.data) {
+          const options = result.data.map(client => ({
+            value: client.id,
+            label: `${client.name}${client.company_name ? ` - ${client.company_name}` : ''}`
+          }));
+          setClientOptions(options);
+        }
+      } catch (error) {
+        console.error('Error loading clients:', error);
+      } finally {
+        setIsLoadingClients(false);
+      }
+    };
+
+    if (isOpen) {
+      loadClients();
+    }
+  }, [isOpen]);
 
   const signedQuoteOptions = [
     { value: '1', label: 'DEVIS-2024-001 - Jean Martin (1 250€)' },
@@ -46,24 +71,68 @@ const QuickInvoiceCreation = ({ isOpen, onClose, onCreateInvoice }) => {
     }));
   };
 
+  const handleFileUpload = (files) => {
+    setUploadedFiles(files);
+  };
+
+  const handleFileRemove = (files) => {
+    setUploadedFiles(files);
+  };
+
+  const handleOCRProcess = async (file) => {
+    setIsOCRProcessing(true);
+    try {
+      const result = await OCRService.extractInvoiceData(file);
+      
+      if (result.success) {
+        const extractedData = result.data;
+        
+        // Auto-fill form with extracted data
+        setInvoiceData(prev => ({
+          ...prev,
+          amount: extractedData.amount?.toString() || '',
+          description: extractedData.description || '',
+          dueDate: extractedData.due_date || getDefaultDueDate(),
+          notes: extractedData.notes || ''
+        }));
+
+        // Show success message
+        console.log('OCR data extracted successfully:', extractedData);
+        
+        // Remove the file after successful OCR
+        setUploadedFiles([]);
+      } else {
+        console.error('OCR failed:', result.error);
+        alert('OCR processing failed. Please try again or fill the form manually.');
+      }
+    } catch (error) {
+      console.error('OCR error:', error);
+      alert('OCR processing failed. Please try again or fill the form manually.');
+    } finally {
+      setIsOCRProcessing(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const newInvoice = {
-        id: Date.now(),
-        number: `FACT-2024-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
-        ...invoiceData,
-        issueDate: new Date().toISOString(),
-        status: 'pending'
+      // Prepare invoice data for backend
+      const invoiceDataForBackend = {
+        clientId: invoiceData.clientId,
+        amount: invoiceData.amount,
+        description: invoiceData.description,
+        dueDate: invoiceData.dueDate || getDefaultDueDate(),
+        paymentMethod: invoiceData.paymentMethod,
+        title: invoiceData.description, // Use description as title
+        notes: invoiceData.notes || '', // Can be added later if needed
+        taxAmount: 0, // Can be added later if needed
+        discountAmount: 0 // Can be added later if needed
       };
 
-      onCreateInvoice(newInvoice);
-      onClose();
+      // Call the parent handler with the prepared data
+      await onCreateInvoice(invoiceDataForBackend);
       
       // Reset form
       setInvoiceData({
@@ -75,6 +144,7 @@ const QuickInvoiceCreation = ({ isOpen, onClose, onCreateInvoice }) => {
         dueDate: '',
         paymentMethod: ''
       });
+      setUploadedFiles([]);
     } catch (error) {
       console.error('Error creating invoice:', error);
     } finally {
@@ -149,6 +219,38 @@ const QuickInvoiceCreation = ({ isOpen, onClose, onCreateInvoice }) => {
               </button>
             </div>
 
+            {/* OCR File Upload */}
+            {invoiceData.type === 'manual' && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3 mb-3">
+                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Icon name="Scan" size={16} color="var(--color-blue-600)" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-blue-900 mb-1">Scanner automatique de facture</h4>
+                    <p className="text-sm text-blue-700">Téléchargez une facture pour extraire automatiquement les données</p>
+                  </div>
+                </div>
+                
+                <FileUpload
+                  onFileUpload={handleFileUpload}
+                  onFileRemove={handleFileRemove}
+                  uploadedFiles={uploadedFiles}
+                  acceptedTypes=".pdf,.jpg,.jpeg,.png"
+                  maxSize={10 * 1024 * 1024}
+                  showOCRButton={true}
+                  onOCRProcess={handleOCRProcess}
+                />
+                
+                {isOCRProcessing && (
+                  <div className="mt-3 flex items-center space-x-2 text-sm text-blue-700">
+                    <Icon name="Loader" size={16} className="animate-spin" />
+                    <span>Analyse de la facture en cours...</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Form Fields */}
             {invoiceData.type === 'from_quote' ? (
               <Select
@@ -163,12 +265,18 @@ const QuickInvoiceCreation = ({ isOpen, onClose, onCreateInvoice }) => {
               <>
                 <Select
                   label="Client"
-                  placeholder="Sélectionner un client"
+                  placeholder={isLoadingClients ? "Chargement des clients..." : "Sélectionner un client"}
                   options={clientOptions}
                   value={invoiceData.clientId}
                   onChange={(e) => handleInputChange('clientId', e.target.value)}
                   required
+                  disabled={isLoadingClients}
                 />
+                {clientOptions.length === 0 && !isLoadingClients && (
+                  <p className="text-sm text-muted-foreground">
+                    Aucun client trouvé. Veuillez d'abord créer des clients.
+                  </p>
+                )}
 
                 <Input
                   label="Montant (€)"
@@ -189,6 +297,16 @@ const QuickInvoiceCreation = ({ isOpen, onClose, onCreateInvoice }) => {
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   required
                 />
+
+                {invoiceData.notes && (
+                  <Input
+                    label="Notes (extrait par OCR)"
+                    type="text"
+                    placeholder="Notes additionnelles"
+                    value={invoiceData.notes}
+                    onChange={(e) => handleInputChange('notes', e.target.value)}
+                  />
+                )}
               </>
             )}
 

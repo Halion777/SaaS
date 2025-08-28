@@ -1523,3 +1523,93 @@ export async function checkAndUpdateQuoteExpiration(quoteId, userId) {
   }
 }
 
+/**
+ * Convert a quote to an invoice
+ * @param {Object} quote - The quote object to convert
+ * @param {string} userId - The current user ID
+ * @returns {Promise<{success: boolean, data: Object, error: string}>}
+ */
+export async function convertQuoteToInvoice(quote, userId) {
+  try {
+    // Validate quote status - only convert quotes that are not draft or expired
+    if (quote.status === 'draft' || quote.status === 'expired') {
+      throw new Error('Cannot convert draft or expired quotes to invoices');
+    }
+
+    // Generate invoice number
+    const { data: invoiceNumber, error: numberError } = await supabase
+      .rpc('generate_invoice_number', { user_id: userId });
+
+    if (numberError) {
+      throw new Error(`Failed to generate invoice number: ${numberError.message}`);
+    }
+
+    // Calculate due date (30 days from today by default)
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 30);
+
+    // Prepare invoice data
+    const invoiceData = {
+      user_id: userId,
+      profile_id: quote.profile_id,
+      company_profile_id: quote.company_profile_id,
+      client_id: quote.client_id,
+      quote_id: quote.id,
+      invoice_number: invoiceNumber,
+      quote_number: quote.quote_number,
+      title: quote.title || `Facture pour ${quote.description || 'Projet'}`,
+      description: quote.description,
+      status: 'unpaid', // Always start as unpaid
+      amount: quote.total_amount || 0,
+      tax_amount: quote.tax_amount || 0,
+      discount_amount: quote.discount_amount || 0,
+      final_amount: quote.final_amount || quote.total_amount || 0,
+      issue_date: new Date().toISOString().split('T')[0],
+      due_date: dueDate.toISOString().split('T')[0],
+      payment_method: 'À définir',
+      payment_terms: 'Paiement à 30 jours',
+      notes: `Facture générée automatiquement depuis le devis ${quote.quote_number}`,
+      converted_from_quote_at: new Date().toISOString()
+    };
+
+    // Insert the invoice
+    const { data: invoice, error: insertError } = await supabase
+      .from('invoices')
+      .insert([invoiceData])
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Error inserting invoice:', insertError);
+      throw new Error(`Failed to create invoice: ${insertError.message}`);
+    }
+
+    // Update quote status to indicate it has been converted
+    const { error: updateError } = await supabase
+      .from('quotes')
+      .update({ 
+        status: 'converted_to_invoice',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', quote.id);
+
+    if (updateError) {
+      console.warn('Warning: Failed to update quote status:', updateError);
+      // Don't fail the whole operation if quote update fails
+    }
+
+    return {
+      success: true,
+      data: invoice,
+      message: 'Quote successfully converted to invoice'
+    };
+
+  } catch (error) {
+    console.error('Error converting quote to invoice:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+

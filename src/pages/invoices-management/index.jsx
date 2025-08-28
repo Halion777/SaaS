@@ -5,15 +5,18 @@ import Button from '../../components/ui/Button';
 import InvoicesSummaryBar from './components/InvoicesSummaryBar';
 import InvoicesFilterToolbar from './components/InvoicesFilterToolbar';
 import InvoicesDataTable from './components/InvoicesDataTable';
-import PaymentAnalyticsSidebar from './components/PaymentAnalyticsSidebar';
+
 import QuickInvoiceCreation from './components/QuickInvoiceCreation';
 import Select from '../../components/ui/Select';
+import InvoiceService from '../../services/invoiceService';
+import { useAuth } from '../../context/AuthContext';
 
 const InvoicesManagement = () => {
+  const { user } = useAuth();
   const [invoices, setInvoices] = useState([]);
   const [filteredInvoices, setFilteredInvoices] = useState([]);
   const [selectedInvoices, setSelectedInvoices] = useState([]);
-  const [isAnalyticsSidebarVisible, setIsAnalyticsSidebarVisible] = useState(false);
+
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [sidebarOffset, setSidebarOffset] = useState(288);
@@ -81,141 +84,70 @@ const InvoicesManagement = () => {
     };
   }, []);
 
-  // Mock data for invoices
-  const mockInvoices = [
-    {
-      id: 1,
-      number: "FACT-2024-001",
-      quoteNumber: "DEVIS-2024-001",
-      clientName: "Jean Martin",
-      clientEmail: "jean.martin@email.com",
-      amount: 1250.00,
-      status: "paid",
-      issueDate: "2024-07-01",
-      dueDate: "2024-07-31",
-      paymentMethod: "Virement bancaire"
-    },
-    {
-      id: 2,
-      number: "FACT-2024-002",
-      quoteNumber: "DEVIS-2024-003",
-      clientName: "Sophie Dubois",
-      clientEmail: "sophie.dubois@email.com",
-      amount: 2800.00,
-      status: "pending",
-      issueDate: "2024-07-05",
-      dueDate: "2024-08-04",
-      paymentMethod: "Chèque"
-    },
-    {
-      id: 3,
-      number: "FACT-2024-003",
-      quoteNumber: null,
-      clientName: "Pierre Moreau",
-      clientEmail: "pierre.moreau@email.com",
-      amount: 950.00,
-      status: "overdue",
-      issueDate: "2024-06-15",
-      dueDate: "2024-07-15",
-      paymentMethod: "Espèces"
-    },
-    {
-      id: 4,
-      number: "FACT-2024-004",
-      quoteNumber: "DEVIS-2024-007",
-      clientName: "Marie Leroy",
-      clientEmail: "marie.leroy@email.com",
-      amount: 3200.00,
-      status: "paid",
-      issueDate: "2024-07-10",
-      dueDate: "2024-08-09",
-      paymentMethod: "Virement bancaire"
-    },
-    {
-      id: 5,
-      number: "FACT-2024-005",
-      quoteNumber: "DEVIS-2024-012",
-      clientName: "Paul Bernard",
-      clientEmail: "paul.bernard@email.com",
-      amount: 1800.00,
-      status: "pending",
-      issueDate: "2024-07-12",
-      dueDate: "2024-08-11",
-      paymentMethod: "Carte bancaire"
-    },
-    {
-      id: 6,
-      number: "FACT-2024-006",
-      quoteNumber: null,
-      clientName: "Lucie Petit",
-      clientEmail: "lucie.petit@email.com",
-      amount: 750.00,
-      status: "overdue",
-      issueDate: "2024-06-20",
-      dueDate: "2024-07-20",
-      paymentMethod: "Chèque"
-    },
-    {
-      id: 7,
-      number: "FACT-2024-007",
-      quoteNumber: "DEVIS-2024-015",
-      clientName: "Thomas Roux",
-      clientEmail: "thomas.roux@email.com",
-      amount: 4500.00,
-      status: "paid",
-      issueDate: "2024-07-15",
-      dueDate: "2024-08-14",
-      paymentMethod: "Virement bancaire"
-    },
-    {
-      id: 8,
-      number: "FACT-2024-008",
-      quoteNumber: "DEVIS-2024-018",
-      clientName: "Emma Blanc",
-      clientEmail: "emma.blanc@email.com",
-      amount: 1650.00,
-      status: "pending",
-      issueDate: "2024-07-18",
-      dueDate: "2024-08-17",
-      paymentMethod: "Virement bancaire"
+  // Fetch invoices when component mounts
+  useEffect(() => {
+    if (user) {
+      fetchInvoices();
     }
-  ];
+  }, [user]);
 
-  // Mock summary data
-  const summaryData = {
-    totalRevenue: 16900.00,
-    paidRevenue: 9450.00,
-    outstandingAmount: 7450.00,
-    revenueGrowth: 12.5,
-    overdueCount: 2
+  // Load data function for compatibility
+  const loadData = () => {
+    if (user) {
+      fetchInvoices();
+    }
   };
 
-  // Mock analytics data
-  const analyticsData = {
-    avgPaymentTime: 14,
-    recoveryRate: 92,
-    overdueCount: 2,
-    upcomingDeadlines: [
-      {
-        invoiceNumber: "FACT-2024-002",
-        clientName: "Sophie Dubois",
-        amount: 2800.00,
-        daysLeft: 3
-      },
-      {
-        invoiceNumber: "FACT-2024-005",
-        clientName: "Paul Bernard",
-        amount: 1800.00,
-        daysLeft: 7
-      },
-      {
-        invoiceNumber: "FACT-2024-008",
-        clientName: "Emma Blanc",
-        amount: 1650.00,
-        daysLeft: 12
+  // Fetch invoices from database
+  const fetchInvoices = async () => {
+    if (!user) return;
+    
+    try {
+      setIsLoading(true);
+      const result = await InvoiceService.fetchInvoices(user.id);
+      
+      if (result.success) {
+        // Transform the data to match the expected format
+        const transformedInvoices = result.data.map(invoice => ({
+          id: invoice.id,
+          number: invoice.invoice_number,
+          quoteNumber: invoice.quote_number,
+          clientName: invoice.client?.name || 'Client inconnu',
+          clientEmail: invoice.client?.email || '',
+          amount: parseFloat(invoice.final_amount || 0),
+          status: invoice.status,
+          issueDate: invoice.issue_date,
+          dueDate: invoice.due_date,
+          paymentMethod: invoice.payment_method || 'À définir'
+        }));
+        
+        setInvoices(transformedInvoices);
+        setFilteredInvoices(transformedInvoices);
+      } else {
+        console.error('Failed to fetch invoices:', result.error);
+        // Fallback to empty array
+        setInvoices([]);
+        setFilteredInvoices([]);
       }
-    ]
+    } catch (error) {
+      console.error('Error fetching invoices:', error);
+      setInvoices([]);
+      setFilteredInvoices([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  // Calculate summary data from invoices
+  const summaryData = {
+    totalRevenue: invoices.reduce((sum, invoice) => sum + invoice.amount, 0),
+    paidRevenue: invoices.filter(invoice => invoice.status === 'paid').reduce((sum, invoice) => sum + invoice.amount, 0),
+    outstandingAmount: invoices.filter(invoice => invoice.status === 'unpaid' || invoice.status === 'overdue').reduce((sum, invoice) => sum + invoice.amount, 0),
+    revenueGrowth: 0, // Could be calculated from historical data
+    overdueCount: invoices.filter(invoice => invoice.status === 'overdue').length
+  };
+
+
 
   useEffect(() => {
     // Simulate loading
@@ -307,7 +239,76 @@ const InvoicesManagement = () => {
     setFilteredInvoices(filtered);
   };
 
-  const handleBulkAction = (action) => {
+  const handleInvoiceAction = async (action, invoice) => {
+    switch (action) {
+      case 'mark_paid':
+        await handleMarkAsPaid(invoice);
+        break;
+      case 'edit':
+        // Handle edit action
+        console.log('Edit invoice:', invoice);
+        break;
+      case 'delete':
+        // Handle delete action
+        console.log('Delete invoice:', invoice);
+        break;
+      default:
+        console.log('Unknown action:', action);
+    }
+  };
+
+  const handleMarkAsPaid = async (invoice) => {
+    try {
+      const result = await InvoiceService.updateInvoiceStatus(invoice.id, 'paid', 'Marqué comme payé manuellement');
+      
+      if (result.success) {
+        // Update local state
+        setInvoices(prev => prev.map(inv => 
+          inv.id === invoice.id ? { ...inv, status: 'paid' } : inv
+        ));
+        setFilteredInvoices(prev => prev.map(inv => 
+          inv.id === invoice.id ? { ...inv, status: 'paid' } : inv
+        ));
+        
+        alert('Facture marquée comme payée avec succès !');
+      } else {
+        alert(`Erreur: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error marking invoice as paid:', error);
+      alert('Erreur lors de la mise à jour du statut');
+    }
+  };
+
+  const handleBulkMarkAsPaid = async () => {
+    try {
+      // Update all selected invoices to paid status
+      for (const invoiceId of selectedInvoices) {
+        const invoice = invoices.find(inv => inv.id === invoiceId);
+        if (invoice && invoice.status !== 'paid') {
+          await InvoiceService.updateInvoiceStatus(invoiceId, 'paid', 'Marqué comme payé en lot');
+        }
+      }
+      
+      // Update local state
+      const updatedInvoices = invoices.map(invoice =>
+        selectedInvoices.includes(invoice.id) && invoice.status !== 'paid'
+          ? { ...invoice, status: 'paid' }
+          : invoice
+      );
+      
+      setInvoices(updatedInvoices);
+      setFilteredInvoices(updatedInvoices);
+      setSelectedInvoices([]);
+      
+      alert(`${selectedInvoices.length} facture(s) marquée(s) comme payée(s) avec succès !`);
+    } catch (error) {
+      console.error('Error marking invoices as paid:', error);
+      alert('Erreur lors de la mise à jour des factures');
+    }
+  };
+
+  const handleBulkAction = async (action) => {
     if (selectedInvoices.length === 0) {
       alert('Veuillez sélectionner au moins une facture');
       return;
@@ -315,14 +316,7 @@ const InvoicesManagement = () => {
 
     switch (action) {
       case 'mark_paid':
-        const updatedInvoices = invoices.map(invoice =>
-          selectedInvoices.includes(invoice.id)
-            ? { ...invoice, status: 'paid' }
-            : invoice
-        );
-        setInvoices(updatedInvoices);
-        setFilteredInvoices(updatedInvoices);
-        setSelectedInvoices([]);
+        await handleBulkMarkAsPaid();
         break;
       case 'export':
         alert(`Export de ${selectedInvoices.length} facture(s) en cours...`);
@@ -340,43 +334,44 @@ const InvoicesManagement = () => {
     }
   };
 
-  const handleInvoiceAction = (action, invoice) => {
-    switch (action) {
-      case 'view':
-        alert(`Affichage de la facture ${invoice.number}`);
-        break;
-      case 'edit':
-        alert(`Édition de la facture ${invoice.number}`);
-        break;
-      case 'duplicate':
-        const duplicatedInvoice = {
-          ...invoice,
-          id: Date.now(),
-          number: `FACT-2024-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
-          status: 'pending',
-          issueDate: new Date().toISOString().split('T')[0]
+
+
+  const handleCreateInvoice = async (newInvoice) => {
+    try {
+      const result = await InvoiceService.createInvoice(newInvoice, user.id);
+      
+      if (result.success) {
+        // Transform the new invoice to match the expected format
+        const transformedInvoice = {
+          id: result.data.id,
+          number: result.data.invoice_number,
+          quoteNumber: result.data.quote_number,
+          clientName: result.data.client?.name || 'Client inconnu',
+          clientEmail: result.data.client?.email || '',
+          amount: parseFloat(result.data.final_amount || 0),
+          status: result.data.status,
+          issueDate: result.data.issue_date,
+          dueDate: result.data.due_date,
+          paymentMethod: result.data.payment_method || 'À définir'
         };
-        const updatedInvoices = [...invoices, duplicatedInvoice];
+        
+        // Add to local state
+        const updatedInvoices = [...invoices, transformedInvoice];
         setInvoices(updatedInvoices);
         setFilteredInvoices(updatedInvoices);
-        break;
-      case 'sendReminder':
-        alert(`Rappel envoyé pour la facture ${invoice.number}`);
-        break;
-      case 'markPaid':
-        const paidInvoices = invoices.map(inv =>
-          inv.id === invoice.id ? { ...inv, status: 'paid' } : inv
-        );
-        setInvoices(paidInvoices);
-        setFilteredInvoices(paidInvoices);
-        break;
+        
+        // Close modal
+        setIsQuickCreateOpen(false);
+        
+        // Show success message
+        alert('Facture créée avec succès !');
+      } else {
+        alert(`Erreur lors de la création: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error creating invoice:', error);
+      alert('Erreur lors de la création de la facture');
     }
-  };
-
-  const handleCreateInvoice = (newInvoice) => {
-    const updatedInvoices = [...invoices, newInvoice];
-    setInvoices(updatedInvoices);
-    setFilteredInvoices(updatedInvoices);
   };
 
   if (isLoading) {
@@ -424,24 +419,26 @@ const InvoicesManagement = () => {
               </p>
             </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
-              <Button
-                variant="outline"
-                iconName="BarChart3"
-                iconPosition="left"
-                onClick={() => setIsAnalyticsSidebarVisible(!isAnalyticsSidebarVisible)}
+                <Button
+                  variant="outline"
+                  onClick={fetchInvoices}
+                  iconName="RefreshCw"
+                  iconPosition="left"
                   className="text-xs sm:text-sm"
-              >
-                Analyses
-              </Button>
-              <Button
-                iconName="Plus"
-                iconPosition="left"
-                onClick={() => setIsQuickCreateOpen(true)}
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Actualisation...' : 'Actualiser'}
+                </Button>
+
+                <Button
+                  iconName="Plus"
+                  iconPosition="left"
+                  onClick={() => setIsQuickCreateOpen(true)}
                   className="text-xs sm:text-sm"
-              >
-                Nouvelle facture
-              </Button>
-            </div>
+                >
+                  Nouvelle facture
+                </Button>
+              </div>
           </div>
           </header>
 
@@ -558,18 +555,7 @@ const InvoicesManagement = () => {
         </div>
       </main>
 
-      {/* Payment Analytics Sidebar */}
-      {isAnalyticsSidebarVisible && (
-        <div 
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40"
-          onClick={() => setIsAnalyticsSidebarVisible(false)}
-        />
-      )}
-      <PaymentAnalyticsSidebar
-        analyticsData={analyticsData}
-        isVisible={isAnalyticsSidebarVisible}
-        onToggle={() => setIsAnalyticsSidebarVisible(!isAnalyticsSidebarVisible)}
-      />
+
 
       {/* Quick Invoice Creation Modal */}
       <QuickInvoiceCreation
