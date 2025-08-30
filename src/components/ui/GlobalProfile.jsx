@@ -18,7 +18,7 @@ const GlobalProfile = () => {
     const dashboardPages = [
       '/dashboard', '/quotes-management', '/invoices-management', 
       '/client-management', '/analytics-dashboard', '/follow-up-management',
-      '/leads-management', '/supplier-invoices', '/multi-user-profiles',
+              '/leads-management', '/expense-invoices', '/multi-user-profiles',
       '/quote-creation'
     ];
     

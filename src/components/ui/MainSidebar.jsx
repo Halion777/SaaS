@@ -74,7 +74,7 @@ const MainSidebar = () => {
       setExpandedSections(prev => ({ ...prev, quotes: false, clients: true, services: false, invoices: false, followUps: false }));
     } else if (path.startsWith('/services/')) {
       setExpandedSections(prev => ({ ...prev, quotes: false, clients: false, services: true, invoices: false, followUps: false }));
-    } else if (path.startsWith('/invoices-management') || path.startsWith('/supplier-invoices')) {
+            } else if (path.startsWith('/invoices-management') || path.startsWith('/expense-invoices')) {
       setExpandedSections(prev => ({ ...prev, quotes: false, clients: false, services: false, invoices: true, followUps: false }));
     } else if (path.startsWith('/dashboard') || path.startsWith('/analytics-dashboard') || path.startsWith('/peppol-access-point') || path.startsWith('/leads-management')) {
       // Keep all sections collapsed for main pages
@@ -215,9 +215,9 @@ const MainSidebar = () => {
           notifications: 1
         },
         {
-          id: 'supplier-invoices',
-          label: t('sidebar.categories.invoices.items.supplierInvoices'),
-          path: '/supplier-invoices',
+          id: 'expense-invoices',
+          label: t('sidebar.categories.invoices.items.expenseInvoices'),
+          path: '/expense-invoices',
           icon: 'FileText',
           notifications: 2
         }

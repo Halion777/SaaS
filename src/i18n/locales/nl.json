@@ -1512,7 +1512,7 @@
         "label": "Facturen",
         "items": {
           "clientInvoices": "Klantfacturen",
-          "supplierInvoices": "Leveranciersfacturen"
+          "expenseInvoices": "Uitgavenfacturen"
         }
       },
       "clients": {

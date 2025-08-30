@@ -24,7 +24,7 @@ import Dashboard from './pages/dashboard';
 import QuoteCreation from './pages/quote-creation';
 import QuotesManagement from './pages/quotes-management';
 import InvoicesManagement from './pages/invoices-management';
-import SupplierInvoicesManagement from './pages/supplier-invoices';
+import ExpenseInvoicesManagement from './pages/expense-invoices';
 
 import ClientManagement from './pages/client-management';
 import FollowUpManagement from './pages/follow-up-management/index';
@@ -141,9 +141,9 @@ const AppRoutes = () => {
               <InvoicesManagement />
             </ProtectedRoute>
           } />
-          <Route path="/supplier-invoices" element={
+          <Route path="/expense-invoices" element={
             <ProtectedRoute>
-              <SupplierInvoicesManagement />
+              <ExpenseInvoicesManagement />
             </ProtectedRoute>
           } />
           <Route path="/client-management" element={

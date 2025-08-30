@@ -1,7 +1,7 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
 
-const SupplierInvoicesSummaryBar = ({ summaryData }) => {
+const ExpenseInvoicesSummaryBar = ({ summaryData }) => {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -39,7 +39,8 @@ const SupplierInvoicesSummaryBar = ({ summaryData }) => {
       icon: 'AlertTriangle',
       color: 'text-red-600',
       bgColor: 'bg-red-50'
-    }
+    },
+
   ];
 
   return (
@@ -87,4 +88,4 @@ const SupplierInvoicesSummaryBar = ({ summaryData }) => {
   );
 };
 
-export default SupplierInvoicesSummaryBar; 
+export default ExpenseInvoicesSummaryBar; 

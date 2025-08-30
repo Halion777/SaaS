@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
 
-const QuickSupplierInvoiceUpload = ({ onInvoiceUpload, isDebtCollection = false }) => {
+const QuickExpenseInvoiceUpload = ({ onInvoiceUpload, isDebtCollection = false }) => {
   const { t } = useTranslation();
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploadMethod, setUploadMethod] = useState('manual');
@@ -182,4 +182,4 @@ const QuickSupplierInvoiceUpload = ({ onInvoiceUpload, isDebtCollection = false 
   );
 };
 
-export default QuickSupplierInvoiceUpload; 
+export default QuickExpenseInvoiceUpload; 

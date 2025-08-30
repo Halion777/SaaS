@@ -4,15 +4,9 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 
-const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
-  const [filters, setFilters] = useState({
-    search: '',
-    status: '',
-    category: '',
-    dateRange: '',
-    paymentMethod: '',
-    amountRange: ''
-  });
+const ExpenseInvoicesFilterToolbar = ({ filters, onFiltersChange }) => {
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [amountRange, setAmountRange] = useState({ min: '', max: '' });
   const [isExpanded, setIsExpanded] = useState(false);
 
   const statusOptions = [
@@ -22,61 +16,40 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
     { value: 'overdue', label: 'En retard' }
   ];
 
+
+
   const categoryOptions = [
     { value: '', label: 'Toutes les catégories' },
-    { value: 'Matériaux', label: 'Matériaux' },
-    { value: 'Outillage', label: 'Outillage' },
-    { value: 'Services', label: 'Services' },
-    { value: 'Fournitures', label: 'Fournitures' },
-    { value: 'Assurance', label: 'Assurance' },
-    { value: 'Transport', label: 'Transport' },
-    { value: 'Marketing', label: 'Marketing' }
+    { value: 'fuel', label: 'Fuel' },
+    { value: 'it_software', label: 'IT/Software' },
+    { value: 'energy', label: 'Energy' },
+    { value: 'materials_supplies', label: 'Materials/Supplies' },
+    { value: 'telecommunications', label: 'Telecommunications' },
+    { value: 'rent_property', label: 'Rent & Property' },
+    { value: 'professional_services', label: 'Professional Services' },
+    { value: 'insurance', label: 'Insurance' },
+    { value: 'travel_accommodation', label: 'Travel & Accommodation' },
+    { value: 'banking_financial', label: 'Banking & Financial' },
+    { value: 'marketing_advertising', label: 'Marketing & Advertising' },
+    { value: 'other_professional', label: 'Other Professional Costs' }
   ];
 
-  const dateRangeOptions = [
-    { value: '', label: 'Toutes les dates' },
-    { value: 'today', label: 'Aujourd\'hui' },
-    { value: 'week', label: '7 derniers jours' },
-    { value: 'month', label: '30 derniers jours' },
-    { value: 'quarter', label: '3 derniers mois' },
-    { value: 'year', label: '12 derniers mois' }
+  const sourceOptions = [
+    { value: '', label: 'Toutes les sources' },
+    { value: 'manual', label: 'Manuel' },
+    { value: 'peppol', label: 'Peppol' }
   ];
 
-  const paymentMethodOptions = [
-    { value: '', label: 'Toutes les méthodes' },
-    { value: 'Virement bancaire', label: 'Virement bancaire' },
-    { value: 'Chèque', label: 'Chèque' },
-    { value: 'Prélèvement', label: 'Prélèvement' },
-    { value: 'Espèces', label: 'Espèces' },
-    { value: 'Carte bancaire', label: 'Carte bancaire' }
-  ];
-
-  const amountRangeOptions = [
-    { value: '', label: 'Tous les montants' },
-    { value: '0-100', label: '0€ - 100€' },
-    { value: '100-500', label: '100€ - 500€' },
-    { value: '500-1000', label: '500€ - 1000€' },
-    { value: '1000-5000', label: '1000€ - 5000€' },
-    { value: '5000+', label: '5000€ et plus' }
-  ];
-
-  const handleFilterChange = (key, value) => {
-    const newFilters = { ...filters, [key]: value };
-    setFilters(newFilters);
-    onFiltersChange(newFilters);
+  const handleDateRangeChange = (field, value) => {
+    const newRange = { ...dateRange, [field]: value };
+    setDateRange(newRange);
+    onFiltersChange({ ...filters, dateRange: newRange });
   };
 
-  const clearFilters = () => {
-    const clearedFilters = {
-      search: '',
-      status: '',
-      category: '',
-      dateRange: '',
-      paymentMethod: '',
-      amountRange: ''
-    };
-    setFilters(clearedFilters);
-    onFiltersChange(clearedFilters);
+  const handleAmountRangeChange = (field, value) => {
+    const newRange = { ...amountRange, [field]: value };
+    setAmountRange(newRange);
+    onFiltersChange({ ...filters, amountRange: newRange });
   };
 
   const getActiveFiltersCount = () => {
@@ -84,13 +57,27 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
     if (filters.search) count++;
     if (filters.status) count++;
     if (filters.category) count++;
-    if (filters.dateRange) count++;
-    if (filters.paymentMethod) count++;
-    if (filters.amountRange) count++;
+    if (filters.source) count++;
+    if (dateRange.start || dateRange.end) count++;
+    if (amountRange.min || amountRange.max) count++;
     return count;
   };
 
   const activeFiltersCount = getActiveFiltersCount();
+
+  const clearFilters = () => {
+    const clearedFilters = {
+      search: '',
+      status: '',
+      category: '',
+      source: '',
+      dateRange: { start: '', end: '' },
+      amountRange: { min: '', max: '' }
+    };
+    setDateRange({ start: '', end: '' });
+    setAmountRange({ min: '', max: '' });
+    onFiltersChange(clearedFilters);
+  };
 
   return (
     <div className="bg-card border border-border rounded-lg shadow-sm">
@@ -104,7 +91,7 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
               {activeFiltersCount}
             </span>
           )}
-            </div>
+        </div>
         <div className="flex items-center space-x-2">
           {activeFiltersCount > 0 && (
             <Button
@@ -117,8 +104,8 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
                 <Icon name="X" size={14} className="mr-1" />
                 Effacer
               </span>
-              </Button>
-            )}
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -128,84 +115,75 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
           >
             <Icon name={isExpanded ? "ChevronUp" : "ChevronDown"} size={16} />
           </Button>
-          </div>
         </div>
+      </div>
 
       {/* Desktop Filters - Always visible on md+ screens */}
       <div className="hidden md:block p-4 space-y-4 border-t border-border">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-          <div className="lg:col-span-2">
-            <Input
-              type="search"
-              placeholder="Rechercher par numéro, fournisseur..."
-              value={filters.search}
-              onChange={(e) => handleFilterChange('search', e.target.value)}
-              className="w-full"
-            />
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Select
             label="Statut"
             options={statusOptions}
-            value={filters.status}
-            onChange={(e) => handleFilterChange('status', e.target.value)}
-            placeholder="Sélectionner un statut"
+            value={filters.status || ''}
+            onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
+            placeholder="Tous les statuts"
           />
+
+
 
           <Select
             label="Catégorie"
             options={categoryOptions}
-            value={filters.category}
-            onChange={(e) => handleFilterChange('category', e.target.value)}
-            placeholder="Sélectionner une catégorie"
+            value={filters.category || ''}
+            onChange={(e) => onFiltersChange({ ...filters, category: e.target.value })}
+            placeholder="Toutes les catégories"
           />
 
-          <Select
-            label="Période"
-            options={dateRangeOptions}
-            value={filters.dateRange}
-            onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-            placeholder="Sélectionner une période"
-          />
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Période</label>
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                type="date"
+                placeholder="Du"
+                value={dateRange.start}
+                onChange={(e) => handleDateRangeChange('start', e.target.value)}
+              />
+              <Input
+                type="date"
+                placeholder="Au"
+                value={dateRange.end}
+                onChange={(e) => handleDateRangeChange('end', e.target.value)}
+              />
+            </div>
+          </div>
 
-          <Select
-            label="Paiement"
-            options={paymentMethodOptions}
-            value={filters.paymentMethod}
-            onChange={(e) => handleFilterChange('paymentMethod', e.target.value)}
-            placeholder="Sélectionner un moyen"
-          />
-
-          <Select
-            label="Montant"
-            options={amountRangeOptions}
-            value={filters.amountRange}
-            onChange={(e) => handleFilterChange('amountRange', e.target.value)}
-            placeholder="Sélectionner un montant"
-          />
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Montant (€)</label>
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                type="number"
+                placeholder="Min"
+                value={amountRange.min}
+                onChange={(e) => handleAmountRangeChange('min', e.target.value)}
+              />
+              <Input
+                type="number"
+                placeholder="Max"
+                value={amountRange.max}
+                onChange={(e) => handleAmountRangeChange('max', e.target.value)}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Active Filter Chips */}
         {activeFiltersCount > 0 && (
           <div className="flex flex-wrap gap-2 pt-3 border-t border-border">
-            {filters.search && (
-              <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
-                <span>Recherche: {filters.search}</span>
-                <button
-                  onClick={() => handleFilterChange('search', '')}
-                  className="hover:bg-primary/20 rounded-full p-0.5"
-                  aria-label="Supprimer la recherche"
-                >
-                  <Icon name="X" size={12} />
-                </button>
-              </div>
-            )}
-            
             {filters.status && (
               <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
                 <span>Statut: {statusOptions.find(opt => opt.value === filters.status)?.label}</span>
                 <button
-                  onClick={() => handleFilterChange('status', '')}
+                  onClick={() => onFiltersChange({ ...filters, status: '' })}
                   className="hover:bg-primary/20 rounded-full p-0.5"
                   aria-label="Supprimer le filtre de statut"
                 >
@@ -214,11 +192,13 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
               </div>
             )}
             
+
+
             {filters.category && (
               <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
                 <span>Catégorie: {categoryOptions.find(opt => opt.value === filters.category)?.label}</span>
                 <button
-                  onClick={() => handleFilterChange('category', '')}
+                  onClick={() => onFiltersChange({ ...filters, category: '' })}
                   className="hover:bg-primary/20 rounded-full p-0.5"
                   aria-label="Supprimer le filtre de catégorie"
                 >
@@ -226,12 +206,30 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
                 </button>
               </div>
             )}
-            
-            {filters.dateRange && (
+
+            {filters.source && (
               <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
-                <span>Période: {dateRangeOptions.find(opt => opt.value === filters.dateRange)?.label}</span>
+                <span>Source: {sourceOptions.find(opt => opt.value === filters.source)?.label}</span>
                 <button
-                  onClick={() => handleFilterChange('dateRange', '')}
+                  onClick={() => onFiltersChange({ ...filters, source: '' })}
+                  className="hover:bg-primary/20 rounded-full p-0.5"
+                  aria-label="Supprimer le filtre de source"
+                >
+                  <Icon name="X" size={12} />
+                </button>
+              </div>
+            )}
+            
+            {(dateRange.start || dateRange.end) && (
+              <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
+                <span>
+                  Période: {dateRange.start || '...'} - {dateRange.end || '...'}
+                </span>
+                <button
+                  onClick={() => {
+                    setDateRange({ start: '', end: '' });
+                    onFiltersChange({ ...filters, dateRange: { start: '', end: '' } });
+                  }}
                   className="hover:bg-primary/20 rounded-full p-0.5"
                   aria-label="Supprimer le filtre de période"
                 >
@@ -240,24 +238,16 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
               </div>
             )}
             
-            {filters.paymentMethod && (
+            {(amountRange.min || amountRange.max) && (
               <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
-                <span>Paiement: {paymentMethodOptions.find(opt => opt.value === filters.paymentMethod)?.label}</span>
+                <span>
+                  Montant: {amountRange.min || '0'}€ - {amountRange.max || '∞'}€
+                </span>
                 <button
-                  onClick={() => handleFilterChange('paymentMethod', '')}
-                  className="hover:bg-primary/20 rounded-full p-0.5"
-                  aria-label="Supprimer le filtre de paiement"
-                >
-                  <Icon name="X" size={12} />
-                </button>
-              </div>
-            )}
-            
-            {filters.amountRange && (
-              <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
-                <span>Montant: {amountRangeOptions.find(opt => opt.value === filters.amountRange)?.label}</span>
-                <button
-                  onClick={() => handleFilterChange('amountRange', '')}
+                  onClick={() => {
+                    setAmountRange({ min: '', max: '' });
+                    onFiltersChange({ ...filters, amountRange: { min: '', max: '' } });
+                  }}
                   className="hover:bg-primary/20 rounded-full p-0.5"
                   aria-label="Supprimer le filtre de montant"
                 >
@@ -273,74 +263,77 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
       {isExpanded && (
         <div className="md:hidden p-3 space-y-4 border-t border-border">
           <div className="space-y-3">
-            <Input
-              type="search"
-              placeholder="Rechercher par numéro, fournisseur..."
-              value={filters.search}
-              onChange={(e) => handleFilterChange('search', e.target.value)}
-            />
-
             <Select
               label="Statut"
               options={statusOptions}
-              value={filters.status}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
+              value={filters.status || ''}
+              onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
               placeholder="Tous les statuts"
             />
+
+
 
             <Select
               label="Catégorie"
               options={categoryOptions}
-              value={filters.category}
-              onChange={(e) => handleFilterChange('category', e.target.value)}
+              value={filters.category || ''}
+              onChange={(e) => onFiltersChange({ ...filters, category: e.target.value })}
               placeholder="Toutes les catégories"
             />
 
             <Select
-              label="Période"
-              options={dateRangeOptions}
-              value={filters.dateRange}
-              onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-              placeholder="Toutes les dates"
+              label="Source"
+              options={sourceOptions}
+              value={filters.source || ''}
+              onChange={(e) => onFiltersChange({ ...filters, source: e.target.value })}
+              placeholder="Toutes les sources"
             />
 
-            <Select
-              label="Paiement"
-              options={paymentMethodOptions}
-              value={filters.paymentMethod}
-              onChange={(e) => handleFilterChange('paymentMethod', e.target.value)}
-              placeholder="Toutes les méthodes"
-            />
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Période</label>
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  type="date"
+                  placeholder="Du"
+                  value={dateRange.start}
+                  onChange={(e) => handleDateRangeChange('start', e.target.value)}
+                />
+                <Input
+                  type="date"
+                  placeholder="Au"
+                  value={dateRange.end}
+                  onChange={(e) => handleDateRangeChange('end', e.target.value)}
+                />
+              </div>
+            </div>
 
-            <Select
-              label="Montant"
-              options={amountRangeOptions}
-              value={filters.amountRange}
-              onChange={(e) => handleFilterChange('amountRange', e.target.value)}
-              placeholder="Tous les montants"
-            />
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Montant (€)</label>
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  type="number"
+                  placeholder="Min"
+                  value={amountRange.min}
+                  onChange={(e) => handleAmountRangeChange('min', e.target.value)}
+                />
+                <Input
+                  type="number"
+                  placeholder="Max"
+                  value={amountRange.max}
+                  onChange={(e) => handleAmountRangeChange('max', e.target.value)}
+                />
+              </div>
+            </div>
           </div>
-          
+
           {/* Active Filter Chips - Mobile */}
           {activeFiltersCount > 0 && (
             <div className="flex flex-wrap gap-2 pt-3 border-t border-border">
-              {filters.search && (
-                <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
-                  <span>Recherche: {filters.search}</span>
-                  <button
-                    onClick={() => handleFilterChange('search', '')}
-                    className="hover:bg-primary/20 rounded-full p-0.5"
-                  >
-                    <Icon name="X" size={12} />
-                  </button>
-                </div>
-              )}
-              
               {filters.status && (
                 <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
                   <span>Statut: {statusOptions.find(opt => opt.value === filters.status)?.label}</span>
                   <button
-                    onClick={() => handleFilterChange('status', '')}
+                    onClick={() => onFiltersChange({ ...filters, status: '' })}
                     className="hover:bg-primary/20 rounded-full p-0.5"
                   >
                     <Icon name="X" size={12} />
@@ -348,11 +341,25 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
                 </div>
               )}
               
+
+
               {filters.category && (
                 <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
                   <span>Catégorie: {categoryOptions.find(opt => opt.value === filters.category)?.label}</span>
                   <button
-                    onClick={() => handleFilterChange('category', '')}
+                    onClick={() => onFiltersChange({ ...filters, category: '' })}
+                    className="hover:bg-primary/20 rounded-full p-0.5"
+                  >
+                    <Icon name="X" size={12} />
+                  </button>
+                </div>
+              )}
+
+              {filters.source && (
+                <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
+                  <span>Source: {sourceOptions.find(opt => opt.value === filters.source)?.label}</span>
+                  <button
+                    onClick={() => onFiltersChange({ ...filters, source: '' })}
                     className="hover:bg-primary/20 rounded-full p-0.5"
                   >
                     <Icon name="X" size={12} />
@@ -360,11 +367,14 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
                 </div>
               )}
               
-              {filters.dateRange && (
+              {(dateRange.start || dateRange.end) && (
                 <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
-                  <span>Période: {dateRangeOptions.find(opt => opt.value === filters.dateRange)?.label}</span>
+                  <span>Période: {dateRange.start || '...'} - {dateRange.end || '...'}</span>
                   <button
-                    onClick={() => handleFilterChange('dateRange', '')}
+                    onClick={() => {
+                      setDateRange({ start: '', end: '' });
+                      onFiltersChange({ ...filters, dateRange: { start: '', end: '' } });
+                    }}
                     className="hover:bg-primary/20 rounded-full p-0.5"
                   >
                     <Icon name="X" size={12} />
@@ -372,23 +382,14 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
                 </div>
               )}
               
-              {filters.paymentMethod && (
+              {(amountRange.min || amountRange.max) && (
                 <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
-                  <span>Paiement: {paymentMethodOptions.find(opt => opt.value === filters.paymentMethod)?.label}</span>
+                  <span>Montant: {amountRange.min || '0'}€ - {amountRange.max || '∞'}€</span>
                   <button
-                    onClick={() => handleFilterChange('paymentMethod', '')}
-                    className="hover:bg-primary/20 rounded-full p-0.5"
-                  >
-                    <Icon name="X" size={12} />
-                  </button>
-                </div>
-              )}
-              
-              {filters.amountRange && (
-                <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
-                  <span>Montant: {amountRangeOptions.find(opt => opt.value === filters.amountRange)?.label}</span>
-                  <button
-                    onClick={() => handleFilterChange('amountRange', '')}
+                    onClick={() => {
+                      setAmountRange({ min: '', max: '' });
+                      onFiltersChange({ ...filters, amountRange: { min: '', max: '' } });
+                    }}
                     className="hover:bg-primary/20 rounded-full p-0.5"
                   >
                     <Icon name="X" size={12} />
@@ -406,12 +407,11 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
           <div className="text-sm text-muted-foreground">
             <span className="font-medium">{activeFiltersCount} filtre{activeFiltersCount > 1 ? 's' : ''} actif{activeFiltersCount > 1 ? 's' : ''}</span>
             <span className="text-xs ml-2">
-              {filters.search && '• Recherche'}
               {filters.status && ` • ${statusOptions.find(opt => opt.value === filters.status)?.label}`}
               {filters.category && ` • ${categoryOptions.find(opt => opt.value === filters.category)?.label}`}
-              {filters.dateRange && ` • ${dateRangeOptions.find(opt => opt.value === filters.dateRange)?.label}`}
-              {filters.paymentMethod && ` • ${paymentMethodOptions.find(opt => opt.value === filters.paymentMethod)?.label}`}
-              {filters.amountRange && ` • ${amountRangeOptions.find(opt => opt.value === filters.amountRange)?.label}`}
+              {filters.source && ` • ${sourceOptions.find(opt => opt.value === filters.source)?.label}`}
+              {(dateRange.start || dateRange.end) && ` • Période`}
+              {(amountRange.min || amountRange.max) && ` • Montant`}
             </span>
           </div>
         </div>
@@ -420,4 +420,4 @@ const SupplierInvoicesFilterToolbar = ({ onFiltersChange }) => {
   );
 };
 
-export default SupplierInvoicesFilterToolbar; 
+export default ExpenseInvoicesFilterToolbar; 

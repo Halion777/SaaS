@@ -1844,7 +1844,7 @@
         "label": "Factures",
         "items": {
           "clientInvoices": "Factures clients",
-          "supplierInvoices": "Factures fournisseurs"
+          "expenseInvoices": "Factures de dépenses"
         }
       },
       "clients": {

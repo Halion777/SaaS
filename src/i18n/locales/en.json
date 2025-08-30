@@ -1479,7 +1479,7 @@
         "label": "Invoices",
         "items": {
           "clientInvoices": "Client Invoices",
-          "supplierInvoices": "Supplier Invoices"
+          "expenseInvoices": "Expense Invoices"
         }
       },
       "clients": {

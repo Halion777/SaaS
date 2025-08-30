@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import Input from '../../../components/ui/Input';
 import { Checkbox } from '../../../components/ui/Checkbox';
 
-const SupplierInvoicesDataTable = ({ supplierInvoices, onSupplierInvoiceAction, selectedSupplierInvoices, onSelectionChange }) => {
+const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, selectedExpenseInvoices, onSelectionChange, filters, onFiltersChange }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'issueDate', direction: 'desc' });
   const [viewMode, setViewMode] = useState(() => {
     // Default to card view on mobile/tablet, table view on desktop
@@ -51,19 +52,25 @@ const SupplierInvoicesDataTable = ({ supplierInvoices, onSupplierInvoiceAction, 
   };
 
   const getCategoryBadge = (category) => {
-    const categoryColors = {
-      'Matériaux': 'bg-blue-100 text-blue-800',
-      'Outillage': 'bg-green-100 text-green-800',
-      'Services': 'bg-purple-100 text-purple-800',
-      'Fournitures': 'bg-orange-100 text-orange-800',
-      'Assurance': 'bg-red-100 text-red-800',
-      'Transport': 'bg-yellow-100 text-yellow-800',
-      'Marketing': 'bg-pink-100 text-pink-800'
+    const categoryConfig = {
+      'fuel': { label: 'Fuel', color: 'bg-blue-100 text-blue-800' },
+      'it_software': { label: 'IT/Software', color: 'bg-purple-100 text-purple-800' },
+      'energy': { label: 'Energy', color: 'bg-yellow-100 text-yellow-800' },
+      'materials_supplies': { label: 'Materials/Supplies', color: 'bg-green-100 text-green-800' },
+      'telecommunications': { label: 'Telecom', color: 'bg-indigo-100 text-indigo-800' },
+      'rent_property': { label: 'Rent/Property', color: 'bg-orange-100 text-orange-800' },
+      'professional_services': { label: 'Professional', color: 'bg-pink-100 text-pink-800' },
+      'insurance': { label: 'Insurance', color: 'bg-red-100 text-red-800' },
+      'travel_accommodation': { label: 'Travel', color: 'bg-teal-100 text-teal-800' },
+      'banking_financial': { label: 'Banking', color: 'bg-emerald-100 text-emerald-800' },
+      'marketing_advertising': { label: 'Marketing', color: 'bg-rose-100 text-rose-800' },
+      'other_professional': { label: 'Other', color: 'bg-gray-100 text-gray-800' }
     };
 
+    const config = categoryConfig[category] || { label: category, color: 'bg-gray-100 text-gray-800' };
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${categoryColors[category] || 'bg-gray-100 text-gray-800'}`}>
-        {category}
+      <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${config.color}`}>
+        {config.label}
       </span>
     );
   };
@@ -77,6 +84,24 @@ const SupplierInvoicesDataTable = ({ supplierInvoices, onSupplierInvoiceAction, 
     return diffDays;
   };
 
+  const getSourceBadge = (source) => {
+    if (source === 'peppol') {
+      return (
+        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          <Icon name="Globe" size={12} className="mr-1" />
+          Peppol
+        </span>
+      );
+    } else {
+      return (
+        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          <Icon name="Upload" size={12} className="mr-1" />
+          Manual
+        </span>
+      );
+    }
+  };
+
   const handleSort = (key) => {
     let direction = 'asc';
     if (sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -87,7 +112,7 @@ const SupplierInvoicesDataTable = ({ supplierInvoices, onSupplierInvoiceAction, 
 
   const handleSelectAll = (checked) => {
     if (checked) {
-      onSelectionChange(supplierInvoices.map(invoice => invoice.id));
+      onSelectionChange(expenseInvoices.map(invoice => invoice.id));
     } else {
       onSelectionChange([]);
     }
@@ -95,9 +120,9 @@ const SupplierInvoicesDataTable = ({ supplierInvoices, onSupplierInvoiceAction, 
 
   const handleSelectInvoice = (invoiceId, checked) => {
     if (checked) {
-      onSelectionChange([...selectedSupplierInvoices, invoiceId]);
+      onSelectionChange([...selectedExpenseInvoices, invoiceId]);
     } else {
-      onSelectionChange(selectedSupplierInvoices.filter(id => id !== invoiceId));
+      onSelectionChange(selectedExpenseInvoices.filter(id => id !== invoiceId));
     }
   };
 
@@ -210,6 +235,35 @@ const SupplierInvoicesDataTable = ({ supplierInvoices, onSupplierInvoiceAction, 
 
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden">
+      {/* Search Bar */}
+      <div className="p-3 md:p-4 border-b border-border">
+        <div className="flex items-center justify-between">
+          <div className="relative flex-1 max-w-md">
+            <Icon name="Search" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Rechercher par numéro, fournisseur, catégorie ou statut..."
+              value={filters?.search || ''}
+              onChange={(e) => onFiltersChange?.({ ...filters, search: e.target.value })}
+              className="pl-9 w-full"
+            />
+          </div>
+          {filters?.search && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onFiltersChange?.({ ...filters, search: '' })}
+              className="ml-3 h-8"
+            >
+              <span className="flex items-center">
+                <Icon name="X" size={14} className="mr-1" />
+                Effacer
+              </span>
+            </Button>
+          )}
+        </div>
+      </div>
+
       {/* View Toggle */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center space-x-2">
@@ -240,16 +294,16 @@ const SupplierInvoicesDataTable = ({ supplierInvoices, onSupplierInvoiceAction, 
           </div>
         </div>
         <div className="text-xs text-muted-foreground">
-          {supplierInvoices.length} facture(s)
+          {expenseInvoices.length} facture(s)
         </div>
       </div>
 
       {/* Content */}
-      {supplierInvoices.length === 0 ? (
+      {expenseInvoices.length === 0 ? (
         <div className="text-center py-12">
           <Icon name="FileText" size={48} color="var(--color-muted-foreground)" className="mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">Aucune facture fournisseur trouvée</h3>
-          <p className="text-muted-foreground">Commencez par importer votre première facture fournisseur ou ajustez vos filtres.</p>
+          <h3 className="text-lg font-medium text-foreground mb-2">Aucune facture de dépense trouvée</h3>
+          <p className="text-muted-foreground">Commencez par importer votre première facture de dépense ou ajustez vos filtres.</p>
         </div>
       ) : viewMode === 'card' ? (
         renderCardView()
@@ -260,7 +314,7 @@ const SupplierInvoicesDataTable = ({ supplierInvoices, onSupplierInvoiceAction, 
             <tr>
               <th className="px-6 py-3 text-left">
                 <Checkbox
-                  checked={selectedSupplierInvoices.length === supplierInvoices.length && supplierInvoices.length > 0}
+                  checked={selectedExpenseInvoices.length === expenseInvoices.length && expenseInvoices.length > 0}
                   onChange={(e) => handleSelectAll(e.target.checked)}
                 />
               </th>
@@ -269,6 +323,9 @@ const SupplierInvoicesDataTable = ({ supplierInvoices, onSupplierInvoiceAction, 
               <SortableHeader label="Montant" sortKey="amount" />
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Catégorie
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Source
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Statut
@@ -281,13 +338,13 @@ const SupplierInvoicesDataTable = ({ supplierInvoices, onSupplierInvoiceAction, 
             </tr>
           </thead>
           <tbody className="bg-card divide-y divide-border">
-            {supplierInvoices.map((invoice) => {
+            {expenseInvoices.map((invoice) => {
               const daysOverdue = getDaysOverdue(invoice.dueDate, invoice.status);
               return (
                 <tr key={invoice.id} className="hover:bg-muted/30 transition-colors duration-150">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <Checkbox
-                      checked={selectedSupplierInvoices.includes(invoice.id)}
+                      checked={selectedExpenseInvoices.includes(invoice.id)}
                       onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
                     />
                   </td>
@@ -298,15 +355,24 @@ const SupplierInvoicesDataTable = ({ supplierInvoices, onSupplierInvoiceAction, 
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-foreground">{invoice.supplierName}</div>
                     <div className="text-xs text-muted-foreground">{invoice.supplierEmail}</div>
+                    {invoice.supplierVatNumber && (
+                      <div className="text-xs text-muted-foreground">VAT: {invoice.supplierVatNumber}</div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-foreground">{formatCurrency(invoice.amount)}</div>
-                    {invoice.paymentMethod && (
-                      <div className="text-xs text-muted-foreground">{invoice.paymentMethod}</div>
+                    {invoice.netAmount && (
+                      <div className="text-xs text-muted-foreground">Net: {formatCurrency(invoice.netAmount)}</div>
+                    )}
+                    {invoice.vatAmount && (
+                      <div className="text-xs text-muted-foreground">VAT: {formatCurrency(invoice.vatAmount)}</div>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {getCategoryBadge(invoice.category)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {getSourceBadge(invoice.source)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col space-y-1">
@@ -330,19 +396,19 @@ const SupplierInvoicesDataTable = ({ supplierInvoices, onSupplierInvoiceAction, 
                         variant="ghost"
                         size="sm"
                         iconName="Eye"
-                        onClick={() => onSupplierInvoiceAction('view', invoice)}
+                        onClick={() => onExpenseInvoiceAction('view', invoice)}
                       />
                       <Button
                         variant="ghost"
                         size="sm"
                         iconName="Edit"
-                        onClick={() => onSupplierInvoiceAction('edit', invoice)}
+                        onClick={() => onExpenseInvoiceAction('edit', invoice)}
                       />
                       <Button
                         variant="ghost"
                         size="sm"
                         iconName="Copy"
-                        onClick={() => onSupplierInvoiceAction('duplicate', invoice)}
+                        onClick={() => onExpenseInvoiceAction('duplicate', invoice)}
                       />
                     </div>
                   </td>
@@ -357,4 +423,4 @@ const SupplierInvoicesDataTable = ({ supplierInvoices, onSupplierInvoiceAction, 
   );
   };
   
-export default SupplierInvoicesDataTable; 
+export default ExpenseInvoicesDataTable; 

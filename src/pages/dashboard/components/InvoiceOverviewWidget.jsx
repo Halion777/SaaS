@@ -64,7 +64,7 @@ const InvoiceOverviewWidget = () => {
             size="xs"
             iconName="Truck"
             iconPosition="left"
-            onClick={() => navigate('/supplier-invoices')}
+            onClick={() => navigate('/expense-invoices')}
             className="text-xs h-8 sm:h-9"
           >
             <span className="hidden sm:inline">{t('dashboard.invoiceOverview.buttons.supplierInvoices.full')}</span>

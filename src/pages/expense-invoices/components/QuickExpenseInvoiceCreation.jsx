@@ -4,30 +4,42 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 
-const QuickSupplierInvoiceCreation = ({ isOpen, onClose, onCreateSupplierInvoice }) => {
+const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice }) => {
   const [formData, setFormData] = useState({
     supplierName: '',
     supplierEmail: '',
+    supplierVatNumber: '',
     invoiceNumber: '',
     amount: '',
+    netAmount: '',
+    vatAmount: '',
     category: '',
+    source: 'manual',
     issueDate: '',
     dueDate: '',
     paymentMethod: '',
-    notes: ''
+    notes: '',
+    invoiceFile: null
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isOCRProcessing, setIsOCRProcessing] = useState(false);
+  const [ocrStatus, setOcrStatus] = useState('');
 
   const categoryOptions = [
     { value: '', label: 'Sélectionner une catégorie' },
-    { value: 'Matériaux', label: 'Matériaux' },
-    { value: 'Outillage', label: 'Outillage' },
-    { value: 'Services', label: 'Services' },
-    { value: 'Fournitures', label: 'Fournitures' },
-    { value: 'Assurance', label: 'Assurance' },
-    { value: 'Transport', label: 'Transport' },
-    { value: 'Marketing', label: 'Marketing' }
+    { value: 'fuel', label: 'Fuel (véhicules, machines, transport)' },
+    { value: 'it_software', label: 'IT / Services logiciels' },
+    { value: 'energy', label: 'Énergie (électricité, gaz, eau, chauffage)' },
+    { value: 'materials_supplies', label: 'Matériaux / Fournitures' },
+    { value: 'telecommunications', label: 'Télécommunications' },
+    { value: 'rent_property', label: 'Loyer & Coûts immobiliers' },
+    { value: 'professional_services', label: 'Services professionnels' },
+    { value: 'insurance', label: 'Assurance' },
+    { value: 'travel_accommodation', label: 'Voyage & Hébergement' },
+    { value: 'banking_financial', label: 'Coûts bancaires & financiers' },
+    { value: 'marketing_advertising', label: 'Marketing & Publicité' },
+    { value: 'other_professional', label: 'Autres coûts professionnels' }
   ];
 
   const paymentMethodOptions = [
@@ -39,8 +51,20 @@ const QuickSupplierInvoiceCreation = ({ isOpen, onClose, onCreateSupplierInvoice
     { value: 'Carte bancaire', label: 'Carte bancaire' }
   ];
 
+  const sourceOptions = [
+    { value: 'manual', label: 'Manuel (OCR)' },
+    { value: 'peppol', label: 'Peppol (automatique)' }
+  ];
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData(prev => ({ ...prev, invoiceFile: file }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -54,39 +78,45 @@ const QuickSupplierInvoiceCreation = ({ isOpen, onClose, onCreateSupplierInvoice
     setIsSubmitting(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const newInvoice = {
-        id: Date.now(),
-        number: formData.invoiceNumber || `FOURN-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
+      // Prepare invoice data for the service
+      const invoiceData = {
         supplierName: formData.supplierName,
         supplierEmail: formData.supplierEmail,
+        supplierVatNumber: formData.supplierVatNumber,
+        invoiceNumber: formData.invoiceNumber,
         amount: parseFloat(formData.amount),
-        status: 'pending',
+        netAmount: parseFloat(formData.netAmount) || parseFloat(formData.amount),
+        vatAmount: parseFloat(formData.vatAmount) || 0,
+        category: formData.category,
+        source: formData.source,
         issueDate: formData.issueDate || new Date().toISOString().split('T')[0],
         dueDate: formData.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         paymentMethod: formData.paymentMethod,
-        category: formData.category,
-        invoiceFile: null,
         notes: formData.notes,
-        createdAt: new Date().toISOString()
+        invoiceFile: formData.invoiceFile
       };
 
-      onCreateSupplierInvoice(newInvoice);
+      // Call the parent handler which will use the service
+      await onCreateExpenseInvoice(invoiceData);
+      
       onClose();
       
       // Reset form
       setFormData({
         supplierName: '',
         supplierEmail: '',
+        supplierVatNumber: '',
         invoiceNumber: '',
         amount: '',
+        netAmount: '',
+        vatAmount: '',
         category: '',
+        source: 'manual',
         issueDate: '',
         dueDate: '',
         paymentMethod: '',
-        notes: ''
+        notes: '',
+        invoiceFile: null
       });
     } catch (error) {
       alert('Erreur lors de la création de la facture. Veuillez réessayer.');
@@ -102,13 +132,18 @@ const QuickSupplierInvoiceCreation = ({ isOpen, onClose, onCreateSupplierInvoice
       setFormData({
         supplierName: '',
         supplierEmail: '',
+        supplierVatNumber: '',
         invoiceNumber: '',
         amount: '',
+        netAmount: '',
+        vatAmount: '',
         category: '',
+        source: 'manual',
         issueDate: '',
         dueDate: '',
         paymentMethod: '',
-        notes: ''
+        notes: '',
+        invoiceFile: null
       });
     }
   };
@@ -248,6 +283,68 @@ const QuickSupplierInvoiceCreation = ({ isOpen, onClose, onCreateSupplierInvoice
                   />
                 </div>
               </div>
+
+              {/* File Upload */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Fichier de facture
+                </label>
+                <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-primary/50 transition-colors">
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.xml"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    id="invoice-file-upload"
+                  />
+                  <label htmlFor="invoice-file-upload" className="cursor-pointer">
+                    <Icon name="Upload" size={24} className="mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      {formData.invoiceFile ? formData.invoiceFile.name : 'Cliquez pour sélectionner un fichier ou glissez-déposez'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Formats acceptés: PDF, JPG, PNG, XML
+                    </p>
+                  </label>
+                </div>
+                {formData.invoiceFile && (
+                  <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                    <Icon name="FileText" size={16} />
+                    <span>{formData.invoiceFile.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, invoiceFile: null }))}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <Icon name="X" size={14} />
+                    </button>
+                  </div>
+                )}
+                
+                {/* OCR Status Display */}
+                {formData.invoiceFile && (
+                  <div className="mt-3 p-3 bg-muted/30 rounded-lg">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Icon name="Scan" size={16} className="text-primary" />
+                      <span className="font-medium">Traitement OCR</span>
+                      {isOCRProcessing && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
+                          <span>Analyse en cours...</span>
+                        </div>
+                      )}
+                    </div>
+                    {ocrStatus && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {ocrStatus}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Les informations seront automatiquement extraites du fichier lors de la création
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Additional Information */}
@@ -331,4 +428,4 @@ const QuickSupplierInvoiceCreation = ({ isOpen, onClose, onCreateSupplierInvoice
   );
 };
 
-export default QuickSupplierInvoiceCreation; 
+export default QuickExpenseInvoiceCreation; 
