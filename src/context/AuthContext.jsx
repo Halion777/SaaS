@@ -104,6 +104,34 @@ export const AuthProvider = ({ children }) => {
     }
   }, [isProfileSelected]);
 
+  // Handle role-based redirects when user is authenticated
+  useEffect(() => {
+    if (user && session && isProfileSelected && !showProfileSelection) {
+      // User is authenticated and profile is selected, check role for redirect
+      const checkRoleAndRedirect = async () => {
+        try {
+          const { data: userData, error: roleError } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+          if (!roleError && userData?.role === 'superadmin') {
+            // Check if we're already on a superadmin page
+            const currentPath = window.location.pathname;
+            if (!currentPath.startsWith('/admin/super')) {
+              navigate('/admin/super/dashboard');
+            }
+          }
+        } catch (roleCheckError) {
+          console.error('Error checking user role for redirect:', roleCheckError);
+        }
+      };
+
+      checkRoleAndRedirect();
+    }
+  }, [user, session, isProfileSelected, showProfileSelection, navigate]);
+
   // Listen for auth state changes
   useEffect(() => {
     // Prevent multiple listeners
@@ -216,6 +244,24 @@ export const AuthProvider = ({ children }) => {
           const multiUserService = (await import('../services/multiUserService')).default;
           const profiles = await multiUserService.getCompanyProfiles(data.user.id);
           
+          // Check user role for role-based redirect
+          try {
+            const { data: userData, error: roleError } = await supabase
+              .from('users')
+              .select('role')
+              .eq('id', data.user.id)
+              .single();
+
+            if (!roleError && userData?.role === 'superadmin') {
+              // Superadmin - redirect to superadmin dashboard
+              navigate('/admin/super/dashboard');
+              return;
+            }
+          } catch (roleCheckError) {
+            console.error('Error checking user role:', roleCheckError);
+            // Fallback to normal flow if role check fails
+          }
+
           if (profiles.length > 1 && !isProfileSelected) {
             // Multiple profiles exist and no profile is selected yet, show profile selection
             // All profiles will require PIN (including admin)
@@ -337,7 +383,25 @@ export const AuthProvider = ({ children }) => {
       setShowProfileSelection(false);
       setIsProfileSelected(true);
       
-      // Navigate to dashboard
+      // Check user role for role-based redirect
+      try {
+        const { data: userData, error: roleError } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        if (!roleError && userData?.role === 'superadmin') {
+          // Superadmin - redirect to superadmin dashboard
+          navigate('/admin/super/dashboard');
+          return;
+        }
+      } catch (roleCheckError) {
+        console.error('Error checking user role:', roleCheckError);
+        // Fallback to normal dashboard if role check fails
+      }
+      
+      // Navigate to regular dashboard for admin users
       navigate('/dashboard');
     } catch (error) {
       console.error('Error selecting profile:', error);

@@ -40,6 +40,10 @@ import NotFound from './pages/NotFound';
 import StripeSuccessPage from './pages/stripe-success';
 import PublicQuoteShareViewer from './pages/quote-share';
 
+// Super Admin imports
+import SuperAdminDashboard from './pages/admin/super/dashboard';
+import SuperAdminUsers from './pages/admin/super/users';
+
 const AppRoutes = () => {
   return (
     <>
@@ -196,6 +200,10 @@ const AppRoutes = () => {
               <MultiUserProfilesPage />
             </ProtectedRoute>
           } />
+
+          {/* Super Admin Routes */}
+                  <Route path="/admin/super/dashboard" element={<SuperAdminDashboard />} />
+        <Route path="/admin/super/users" element={<SuperAdminUsers />} />
 
           {/* 404 Route */}
           <Route path="*" element={<NotFound />} />

@@ -54,7 +54,7 @@ const Login = () => {
         }
       } else if (data) {
         // Successful login - navigation handled in AuthContext
-        navigate(from, { replace: true });
+        // No need to navigate here, AuthContext will handle role-based redirect
       }
     } catch (err) {
       console.error('Login error:', err);

@@ -37,18 +37,7 @@ CREATE TABLE public.user_profiles (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- User invitations table
-CREATE TABLE public.user_invitations (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  company_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
-  email TEXT NOT NULL,
-  role TEXT NOT NULL,
-  permissions JSONB DEFAULT '{}'::jsonb,
-  status TEXT DEFAULT 'pending',
-  token TEXT UNIQUE NOT NULL,
-  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+
 
 -- Clients table for storing client information
 CREATE TABLE public.clients (
