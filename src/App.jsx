@@ -40,14 +40,14 @@ function App() {
     const { showProfileSelection, handleProfileSelect, closeProfileSelection } = useAuth();
 
     return (
-      <>
+      <MultiUserProvider>
         <Routes />
         <ProfileSelectionModal
           isOpen={showProfileSelection}
           onProfileSelect={handleProfileSelect}
           onClose={closeProfileSelection}
         />
-      </>
+      </MultiUserProvider>
     );
   }
   
@@ -55,9 +55,7 @@ function App() {
     <I18nextProvider i18n={i18n}>
       <Router>
         <AuthProvider>
-          <MultiUserProvider>
-            <AppContent />
-          </MultiUserProvider>
+          <AppContent />
         </AuthProvider>
       </Router>
     </I18nextProvider>

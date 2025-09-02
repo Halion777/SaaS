@@ -350,11 +350,11 @@ const LeadsManagementPage = () => {
         loadLeads();
       } else {
         console.error('Error reporting spam:', error);
-        alert('Failed to report lead as spam. Please try again.');
+        alert(t('leadsManagement.spamModal.error'));
       }
     } catch (error) {
       console.error('Error reporting spam:', error);
-      alert('Failed to report lead as spam. Please try again.');
+      alert(t('leadsManagement.spamModal.error'));
     }
   };
 
@@ -561,7 +561,7 @@ const LeadsManagementPage = () => {
                     className="text-red-600 border-red-200 hover:bg-red-50"
                   >
                     <Icon name="AlertTriangle" className="w-4 h-4 mr-1" />
-                    Report Spam
+                    {t('leadsManagement.leadsTab.leadCard.reportSpam')}
                   </Button>
                   
                   {lead.can_send_quote ? (
@@ -1032,7 +1032,7 @@ const LeadsManagementPage = () => {
           <div className="bg-card border border-border rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-foreground">Report Lead as Spam</h3>
+                <h3 className="text-lg font-semibold text-foreground">{t('leadsManagement.spamModal.title')}</h3>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -1048,17 +1048,17 @@ const LeadsManagementPage = () => {
               
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Please provide a reason for reporting this lead as spam. This helps us maintain quality and improve our service.
+                  {t('leadsManagement.spamModal.description')}
                 </p>
                 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Reason for reporting spam *
+                    {t('leadsManagement.spamModal.reasonLabel')}
                   </label>
                   <textarea
                     value={spamReason}
                     onChange={(e) => setSpamReason(e.target.value)}
-                    placeholder="Please describe why you believe this lead is spam..."
+                    placeholder={t('leadsManagement.spamModal.reasonPlaceholder')}
                     className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
                     rows={4}
                     required
@@ -1074,7 +1074,7 @@ const LeadsManagementPage = () => {
                       setSelectedLeadForSpam(null);
                     }}
                   >
-                    Cancel
+                    {t('leadsManagement.spamModal.cancel')}
                   </Button>
                   <Button
                     onClick={submitSpamReport}
@@ -1082,7 +1082,7 @@ const LeadsManagementPage = () => {
                     className="bg-red-600 hover:bg-red-700 text-white"
                   >
                     <Icon name="AlertTriangle" className="w-4 h-4 mr-2" />
-                    Report as Spam
+                    {t('leadsManagement.spamModal.submit')}
                   </Button>
                 </div>
               </div>

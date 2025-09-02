@@ -21,14 +21,15 @@ const Login = () => {
   const [error, setError] = useState('');
 
   // Check if there's a redirect state from previous route
-  const from = location.state?.from || '/dashboard';
+  const from = location.state?.from;
 
   useEffect(() => {
-    // If already authenticated, redirect to dashboard or previous page
+    // If already authenticated, let AuthContext handle role-based redirect
+    // Don't redirect here as it interferes with role-based navigation
     if (isAuthenticated) {
-      navigate(from, { replace: true });
+      // AuthContext will handle the redirect based on user role
     }
-  }, [isAuthenticated, navigate, from]);
+  }, [isAuthenticated]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

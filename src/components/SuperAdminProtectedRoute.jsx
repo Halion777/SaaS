@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabaseClient';
@@ -15,12 +15,25 @@ const SuperAdminProtectedRoute = ({ children }) => {
   const location = useLocation();
   const [userRole, setUserRole] = useState(null);
   const [roleLoading, setRoleLoading] = useState(true);
+  const [roleChecked, setRoleChecked] = useState(false);
+  const roleCheckRef = useRef(null);
   
   // Check user role from database
   useEffect(() => {
     const checkUserRole = async () => {
+      // Only proceed if we have a user and are authenticated
       if (!user || !isAuthenticated) {
+        roleCheckRef.current = { role: null, completed: true };
         setRoleLoading(false);
+        setRoleChecked(true);
+        return;
+      }
+
+      // If we already have a role for this user, don't check again
+      if (roleCheckRef.current?.completed && roleCheckRef.current?.userId === user.id) {
+        setUserRole(roleCheckRef.current.role);
+        setRoleLoading(false);
+        setRoleChecked(true);
         return;
       }
 
@@ -31,41 +44,53 @@ const SuperAdminProtectedRoute = ({ children }) => {
           .eq('id', user.id)
           .single();
 
-        if (!error && userData) {
-          setUserRole(userData.role);
-        } else {
-          setUserRole(null);
-        }
+        const finalRole = (!error && userData) ? userData.role : null;
+        
+        // Store the result in ref immediately with user ID
+        roleCheckRef.current = { role: finalRole, completed: true, userId: user.id };
+        
+        setUserRole(finalRole);
       } catch (error) {
         console.error('Error checking user role:', error);
+        roleCheckRef.current = { role: null, completed: true, userId: user.id };
         setUserRole(null);
       } finally {
         setRoleLoading(false);
+        setRoleChecked(true);
       }
     };
 
+    // Only reset states if user actually changed
+    if (!roleCheckRef.current?.completed || roleCheckRef.current?.userId !== user?.id) {
+      setRoleLoading(true);
+      setRoleChecked(false);
+      setUserRole(null);
+      roleCheckRef.current = { role: null, completed: false, userId: user?.id };
+    }
+    
     checkUserRole();
   }, [user, isAuthenticated]);
   
-  // Show loading state while checking authentication or role
-  if (loading || roleLoading) {
+  // STRICT CHECKING: Show loading until ALL checks are complete
+  if (loading || roleLoading || !roleChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
           <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-muted-foreground">Chargement...</p>
+          <p className="text-muted-foreground">Verifying access...</p>
         </div>
       </div>
     );
   }
   
-  // Redirect to login if not authenticated
+  // Only redirect AFTER role check is complete
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
   
-  // Redirect to dashboard if not superadmin
-  if (!user || userRole !== 'superadmin') {
+  // Only redirect AFTER role check is complete
+  const actualRole = roleCheckRef.current?.role || userRole;
+  if (!user || actualRole !== 'superadmin') {
     return <Navigate to="/dashboard" replace />;
   }
   

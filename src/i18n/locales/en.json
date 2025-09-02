@@ -1903,6 +1903,7 @@
       "noLeads": "No quote requests received yet.",
       "retry": "Retry",
       "leadCard": {
+        "reportSpam": "Report Spam",
         "requestReceived": "Request received on",
         "estimatedBudget": "Estimated budget",
         "desiredCompletionDate": "Desired completion date",
@@ -1917,6 +1918,15 @@
         "alreadyProcessed": "Already processed",
         "quotesCount": "quotes"
       }
+    },
+    "spamModal": {
+      "title": "Report Lead as Spam",
+      "description": "Please provide a reason for reporting this lead as spam. This helps us maintain quality and improve our service.",
+      "reasonLabel": "Reason for reporting spam *",
+      "reasonPlaceholder": "Please describe why you believe this lead is spam...",
+      "cancel": "Cancel",
+      "submit": "Report as Spam",
+      "error": "Failed to report lead as spam. Please try again."
     },
     "settingsTab": {
       "title": "Lead Reception Settings",

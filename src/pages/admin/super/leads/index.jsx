@@ -260,25 +260,55 @@ const SuperAdminLeads = () => {
     if (!selectedReport) return;
 
     try {
-      const { error } = await supabase
-        .rpc('review_spam_report', {
-          lead_uuid: selectedReport.lead_id,
-          reviewer_user_uuid: (await supabase.auth.getUser()).data.user.id,
-          review_status_text: reviewStatus,
-          review_notes_text: reviewNotes
-        });
+      // Update the spam report status
+      const { error: reportError } = await supabase
+        .from('lead_spam_reports')
+        .update({
+          review_status: reviewStatus,
+          review_notes: reviewNotes,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', selectedReport.id);
 
-      if (error) throw error;
+      if (reportError) throw reportError;
+
+      // Also update the lead based on review status
+      if (reviewStatus === 'approved') {
+        // Mark lead as spam and make it unavailable
+        const { error: leadError } = await supabase
+          .from('lead_requests')
+          .update({
+            is_spam: true,
+            spam_reason: reviewNotes || 'Marked as spam by superadmin',
+            status: 'spam'
+          })
+          .eq('id', selectedReport.lead_id);
+
+        if (leadError) throw leadError;
+      } else if (reviewStatus === 'rejected') {
+        // Mark lead as not spam and make it available
+        const { error: leadError } = await supabase
+          .from('lead_requests')
+          .update({
+            is_spam: false,
+            spam_reason: null,
+            status: 'active'
+          })
+          .eq('id', selectedReport.lead_id);
+
+        if (leadError) throw leadError;
+      }
 
       // Refresh data
-      await loadSpamReports();
-      await loadLeads();
+      await Promise.all([loadSpamReports(), loadLeads()]);
       
       setShowReviewModal(false);
       setSelectedReport(null);
       setReviewNotes('');
+      alert(`Spam report ${reviewStatus === 'approved' ? 'approved and lead marked as spam' : 'rejected and lead made available'} successfully.`);
     } catch (error) {
       console.error('Error reviewing spam report:', error);
+      alert('Failed to review spam report. Please try again.');
     }
   };
 
@@ -296,39 +326,15 @@ const SuperAdminLeads = () => {
       if (error) throw error;
 
       // Refresh data
-      await loadLeads();
-      await loadSpamReports();
+      await Promise.all([loadLeads(), loadSpamReports()]);
+      alert('Lead deleted successfully.');
     } catch (error) {
       console.error('Error deleting lead:', error);
+      alert('Failed to delete lead. Please try again.');
     }
   };
 
-  const markAsNotSpam = async (report) => {
-    if (!confirm('Are you sure you want to mark this lead as not spam? This will reject the spam report.')) {
-      return;
-    }
 
-    try {
-      const { error } = await supabase
-        .from('lead_spam_reports')
-        .update({
-          review_status: 'rejected',
-          review_notes: 'Marked as not spam by superadmin',
-          reviewed_at: new Date().toISOString()
-        })
-        .eq('id', report.id);
-
-      if (error) throw error;
-
-      // Refresh data
-      await loadLeads();
-      await loadSpamReports();
-      alert('Lead marked as not spam successfully.');
-    } catch (error) {
-      console.error('Error marking lead as not spam:', error);
-      alert('Failed to mark lead as not spam. Please try again.');
-    }
-  };
 
   const viewLeadDetails = (lead) => {
     setSelectedLead(lead);
@@ -909,18 +915,9 @@ const SuperAdminLeads = () => {
                                 size="sm"
                                 onClick={() => handleReviewSpamReport(report)}
                                 className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                                title="View Details"
+                                title="Review Spam Report"
                               >
                                 <Icon name="Eye" size={14} />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => markAsNotSpam(report)}
-                                className="text-green-600 border-green-200 hover:bg-green-50"
-                                title="Mark as Not Spam"
-                              >
-                                <Icon name="Shield" size={14} />
                               </Button>
                               <Button
                                 variant="outline"

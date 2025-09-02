@@ -1736,6 +1736,7 @@
       "noLeads": "Aucune demande de devis reçue pour le moment.",
       "retry": "Réessayer",
       "leadCard": {
+        "reportSpam": "Signaler comme spam",
         "requestReceived": "Demande reçue le",
         "estimatedBudget": "Budget estimé",
         "desiredCompletionDate": "Date de fin souhaitée",
@@ -1750,6 +1751,15 @@
         "alreadyProcessed": "Déjà traité",
         "quotesCount": "devis"
       }
+    },
+    "spamModal": {
+      "title": "Signaler un lead comme spam",
+      "description": "Veuillez fournir un motif pour signaler ce lead comme spam. Cela nous aide à maintenir la qualité et à améliorer nos services.",
+      "reasonLabel": "Motif de signalement *",
+      "reasonPlaceholder": "Veuillez décrire pourquoi vous pensez que ce lead est spam...",
+      "cancel": "Annuler",
+      "submit": "Signaler comme spam",
+      "error": "Erreur lors du signalement du lead comme spam. Veuillez réessayer."
     },
     "settingsTab": {
       "title": "Paramètres de réception des leads",

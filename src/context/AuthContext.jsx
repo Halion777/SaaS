@@ -26,6 +26,13 @@ export const AuthProvider = ({ children }) => {
   const location = useLocation();
   const authListenerRef = useRef(null);
   const autoLoginRef = useRef(false);
+  const redirectInProgressRef = useRef(false);
+  const navigateRef = useRef(navigate);
+
+  // Update navigate ref when navigate changes
+  useEffect(() => {
+    navigateRef.current = navigate;
+  }, [navigate]);
 
   // Auto login function with profile selection
   const autoLogin = useCallback(async () => {
@@ -105,7 +112,14 @@ export const AuthProvider = ({ children }) => {
   }, [isProfileSelected]);
 
   // Simple role-based redirect function
-  const redirectBasedOnRole = async (userId) => {
+  const redirectBasedOnRole = useCallback(async (userId) => {
+    // Prevent multiple simultaneous redirects
+    if (redirectInProgressRef.current) {
+      return;
+    }
+    
+    redirectInProgressRef.current = true;
+    
     try {
       const { data: userData, error: roleError } = await supabase
         .from('users')
@@ -117,15 +131,24 @@ export const AuthProvider = ({ children }) => {
         const currentPath = window.location.pathname;
         
         if (userData.role === 'superadmin' && !currentPath.startsWith('/admin/super')) {
-          navigate('/admin/super/dashboard');
+          navigateRef.current('/admin/super/dashboard');
         } else if (userData.role === 'admin' && currentPath.startsWith('/admin/super')) {
-          navigate('/dashboard');
+          navigateRef.current('/dashboard');
+        } else if (userData.role === 'superadmin' && currentPath === '/dashboard') {
+          navigateRef.current('/admin/super/dashboard');
+        } else if (userData.role === 'admin' && !currentPath.startsWith('/admin/super') && currentPath !== '/dashboard') {
+          navigateRef.current('/dashboard');
         }
       }
     } catch (error) {
       console.error('Error checking user role:', error);
+    } finally {
+      // Reset the flag after a short delay to allow navigation to complete
+      setTimeout(() => {
+        redirectInProgressRef.current = false;
+      }, 1000);
     }
-  };
+  }, []);
 
   // Listen for auth state changes
   useEffect(() => {
@@ -219,7 +242,7 @@ export const AuthProvider = ({ children }) => {
         redirectBasedOnRole(user.id);
       }
     }
-  }, [user, isProfileSelected, loading, location.pathname]);
+  }, [user, isProfileSelected, loading, location.pathname, redirectBasedOnRole]);
 
   // Login function
   const login = async (email, password) => {
@@ -240,9 +263,6 @@ export const AuthProvider = ({ children }) => {
           const multiUserService = (await import('../services/multiUserService')).default;
           const profiles = await multiUserService.getCompanyProfiles(data.user.id);
           
-          // Redirect based on role
-          redirectBasedOnRole(data.user.id);
-
           if (profiles.length > 1 && !isProfileSelected) {
             // Multiple profiles exist and no profile is selected yet, show profile selection
             // All profiles will require PIN (including admin)
@@ -253,21 +273,21 @@ export const AuthProvider = ({ children }) => {
             const profile = profiles[0];
             await multiUserService.switchProfile(data.user.id, profile.id);
             setIsProfileSelected(true);
-            
-            // Force navigation to dashboard
-            navigate('/dashboard');
           } else if (profiles.length === 0) {
             // No profiles exist, this is normal for workers
             setIsProfileSelected(false);
-            navigate('/dashboard');
           } else {
-            // Profile is already selected, navigate to dashboard
-            navigate('/dashboard');
+            // Profile is already selected
+            setIsProfileSelected(true);
           }
+          
+          // Redirect based on role AFTER profile logic is complete
+          redirectBasedOnRole(data.user.id);
         } catch (profileError) {
           console.error('Error checking profiles during login:', profileError);
           setIsProfileSelected(false);
-          navigate('/dashboard');
+          // Redirect based on role even on error
+          redirectBasedOnRole(data.user.id);
         }
       }
       

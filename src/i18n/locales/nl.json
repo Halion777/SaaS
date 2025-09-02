@@ -1886,6 +1886,7 @@
       "noLeads": "Nog geen offerteaanvragen ontvangen.",
       "retry": "Opnieuw proberen",
       "leadCard": {
+        "reportSpam": "Spam melden",
         "requestReceived": "Aanvraag ontvangen op",
         "estimatedBudget": "Geschat budget",
         "desiredCompletionDate": "Gewenste einddatum",
@@ -1900,6 +1901,15 @@
         "alreadyProcessed": "Reeds verwerkt",
         "quotesCount": "offertes"
       }
+    },  
+    "spamModal": {
+      "title": "Lead als spam melden",
+      "description": "Voorzie een reden voor het melden van deze lead als spam. Dit helpt ons de kwaliteit te behouden en onze diensten te verbeteren.",
+      "reasonLabel": "Reden voor spammelden *",
+      "reasonPlaceholder": "Beschrijf waarom u denkt dat deze lead spam is...",
+      "cancel": "Annuleren",
+      "submit": "Melden als spam",
+      "error": "Fout bij het melden van de lead als spam. Probeer het opnieuw."
     },
     "settingsTab": {
       "title": "Instellingen voor leadontvangst",
