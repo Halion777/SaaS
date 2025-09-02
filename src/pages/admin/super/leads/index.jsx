@@ -731,14 +731,14 @@ const SuperAdminLeads = () => {
                         <td className="px-4 py-3">
                           <div className="space-y-1">
                             <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
-                              (lead.lead_spam_reports && lead.lead_spam_reports.length > 0) ? 'spam' : lead.status
+                              lead.is_spam ? 'spam' : lead.status
                             )}`}>
-                              {(lead.lead_spam_reports && lead.lead_spam_reports.length > 0) && (
+                              {lead.is_spam && (
                                 <Icon name="AlertTriangle" size={12} />
                               )}
-                              {(lead.lead_spam_reports && lead.lead_spam_reports.length > 0) ? 'spam' : lead.status}
+                              {lead.is_spam ? 'spam' : lead.status}
                             </span>
-                            {lead.lead_spam_reports && lead.lead_spam_reports.length > 0 && (
+                            {lead.is_spam && lead.lead_spam_reports && lead.lead_spam_reports.length > 0 && (
                               <div className="text-xs text-muted-foreground">
                                 {lead.lead_spam_reports.length} report(s)
                               </div>
