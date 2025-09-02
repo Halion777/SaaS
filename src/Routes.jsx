@@ -43,6 +43,9 @@ import PublicQuoteShareViewer from './pages/quote-share';
 // Super Admin imports
 import SuperAdminDashboard from './pages/admin/super/dashboard';
 import SuperAdminUsers from './pages/admin/super/users';
+import SuperAdminLeads from './pages/admin/super/leads';
+import SuperAdminBilling from './pages/admin/super/billing';
+import SuperAdminCustomization from './pages/admin/super/customization';
 
 const AppRoutes = () => {
   return (
@@ -203,7 +206,10 @@ const AppRoutes = () => {
 
           {/* Super Admin Routes */}
                   <Route path="/admin/super/dashboard" element={<SuperAdminDashboard />} />
+        <Route path="/admin/super/leads" element={<SuperAdminLeads />} />
         <Route path="/admin/super/users" element={<SuperAdminUsers />} />
+        <Route path="/admin/super/billing" element={<SuperAdminBilling />} />
+        <Route path="/admin/super/customization" element={<SuperAdminCustomization />} />
 
           {/* 404 Route */}
           <Route path="*" element={<NotFound />} />

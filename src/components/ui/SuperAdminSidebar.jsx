@@ -11,9 +11,10 @@ const SuperAdminSidebar = () => {
   const [isTablet, setIsTablet] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     system: true,
+    leads: false,
     users: false,
-    analytics: false,
-    security: false
+    billing: false,
+    customization: false
   });
   const location = useLocation();
   const navigate = useNavigate();
@@ -60,13 +61,15 @@ const SuperAdminSidebar = () => {
     
     // Determine which section should be expanded based on the current path
     if (path.startsWith('/admin/super/dashboard')) {
-      setExpandedSections(prev => ({ ...prev, system: true, users: false, analytics: false, security: false }));
+      setExpandedSections(prev => ({ ...prev, system: true, leads: false, users: false, billing: false, customization: false }));
+    } else if (path.startsWith('/admin/super/leads')) {
+      setExpandedSections(prev => ({ ...prev, system: false, leads: true, users: false, billing: false, customization: false }));
     } else if (path.startsWith('/admin/super/users')) {
-      setExpandedSections(prev => ({ ...prev, system: false, users: true, analytics: false, security: false }));
-    } else if (path.startsWith('/admin/super/analytics')) {
-      setExpandedSections(prev => ({ ...prev, system: false, users: false, analytics: true, security: false }));
-    } else if (path.startsWith('/admin/super/security')) {
-      setExpandedSections(prev => ({ ...prev, system: false, users: false, analytics: false, security: true }));
+      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: true, billing: false, customization: false }));
+    } else if (path.startsWith('/admin/super/billing')) {
+      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: false, billing: true, customization: false }));
+    } else if (path.startsWith('/admin/super/customization')) {
+      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: false, billing: false, customization: true }));
     }
   }, [location.pathname, isCollapsed, isTablet]);
 
@@ -99,9 +102,10 @@ const SuperAdminSidebar = () => {
       // Otherwise, expand only the clicked section and collapse others
       return {
         system: sectionId === 'system',
+        leads: sectionId === 'leads',
         users: sectionId === 'users',
-        analytics: sectionId === 'analytics',
-        security: sectionId === 'security'
+        billing: sectionId === 'billing',
+        customization: sectionId === 'customization'
       };
     });
   };
@@ -130,23 +134,24 @@ const SuperAdminSidebar = () => {
       items: [
         {
           id: 'dashboard',
-          label: 'Dashboard Overview',
+          label: 'Dashboard Analytics',
           path: '/admin/super/dashboard',
-          icon: 'LayoutDashboard',
+          icon: 'BarChart3',
           notifications: 0
-        },
+        }
+      ]
+    },
+    {
+      id: 'leads',
+      label: 'Lead Management',
+      isCollapsible: true,
+      isExpanded: expandedSections.leads,
+      items: [
         {
-          id: 'system-status',
-          label: 'System Status',
-          path: '/admin/super/system-status',
-          icon: 'Activity',
-          notifications: 0
-        },
-        {
-          id: 'backup-restore',
-          label: 'Backup & Restore',
-          path: '/admin/super/backup-restore',
-          icon: 'Database',
+          id: 'lead-management',
+          label: 'Lead Management',
+          path: '/admin/super/leads',
+          icon: 'Target',
           notifications: 0
         }
       ]
@@ -159,81 +164,39 @@ const SuperAdminSidebar = () => {
       items: [
         {
           id: 'all-users',
-          label: 'All Users',
+          label: 'Users Management',
           path: '/admin/super/users',
           icon: 'Users',
           notifications: 0
-        },
+        }
+      ]
+    },
+    {
+      id: 'billing',
+      label: 'Billing & Subscriptions',
+      isCollapsible: true,
+      isExpanded: expandedSections.billing,
+      items: [
         {
-          id: 'user-roles',
-          label: 'User Roles',
-          path: '/admin/super/user-roles',
-          icon: 'Shield',
-          notifications: 0
-        },
-        {
-          id: 'user-activity',
-          label: 'User Activity',
-          path: '/admin/super/user-activity',
-          icon: 'Activity',
+          id: 'billing-subscriptions',
+          label: 'Billing & Subscriptions',
+          path: '/admin/super/billing',
+          icon: 'CreditCard',
           notifications: 0
         }
       ]
     },
     {
-      id: 'analytics',
-      label: 'Analytics & Reports',
+      id: 'customization',
+      label: 'Customization',
       isCollapsible: true,
-      isExpanded: expandedSections.analytics,
+      isExpanded: expandedSections.customization,
       items: [
         {
-          id: 'system-analytics',
-          label: 'System Analytics',
-          path: '/admin/super/analytics',
-          icon: 'BarChart3',
-          notifications: 0
-        },
-        {
-          id: 'audit-logs',
-          label: 'Audit Logs',
-          path: '/admin/super/audit-logs',
-          icon: 'FileText',
-          notifications: 0
-        },
-        {
-          id: 'performance-metrics',
-          label: 'Performance Metrics',
-          path: '/admin/super/performance',
-          icon: 'TrendingUp',
-          notifications: 0
-        }
-      ]
-    },
-    {
-      id: 'security',
-      label: 'Security & Access',
-      isCollapsible: true,
-      isExpanded: expandedSections.security,
-      items: [
-        {
-          id: 'access-control',
-          label: 'Access Control',
-          path: '/admin/super/access-control',
-          icon: 'Lock',
-          notifications: 0
-        },
-        {
-          id: 'security-settings',
-          label: 'Security Settings',
-          path: '/admin/super/security-settings',
+          id: 'customization',
+          label: 'Customization',
+          path: '/admin/super/customization',
           icon: 'Settings',
-          notifications: 0
-        },
-        {
-          id: 'threat-monitoring',
-          label: 'Threat Monitoring',
-          path: '/admin/super/threat-monitoring',
-          icon: 'AlertTriangle',
           notifications: 0
         }
       ]
