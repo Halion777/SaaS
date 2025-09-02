@@ -104,33 +104,28 @@ export const AuthProvider = ({ children }) => {
     }
   }, [isProfileSelected]);
 
-  // Handle role-based redirects when user is authenticated
-  useEffect(() => {
-    if (user && session && isProfileSelected && !showProfileSelection) {
-      // User is authenticated and profile is selected, check role for redirect
-      const checkRoleAndRedirect = async () => {
-        try {
-          const { data: userData, error: roleError } = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', user.id)
-            .single();
+  // Simple role-based redirect function
+  const redirectBasedOnRole = async (userId) => {
+    try {
+      const { data: userData, error: roleError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', userId)
+        .single();
 
-          if (!roleError && userData?.role === 'superadmin') {
-            // Check if we're already on a superadmin page
-            const currentPath = window.location.pathname;
-            if (!currentPath.startsWith('/admin/super')) {
-              navigate('/admin/super/dashboard');
-            }
-          }
-        } catch (roleCheckError) {
-          console.error('Error checking user role for redirect:', roleCheckError);
+      if (!roleError && userData?.role) {
+        const currentPath = window.location.pathname;
+        
+        if (userData.role === 'superadmin' && !currentPath.startsWith('/admin/super')) {
+          navigate('/admin/super/dashboard');
+        } else if (userData.role === 'admin' && currentPath.startsWith('/admin/super')) {
+          navigate('/dashboard');
         }
-      };
-
-      checkRoleAndRedirect();
+      }
+    } catch (error) {
+      console.error('Error checking user role:', error);
     }
-  }, [user, session, isProfileSelected, showProfileSelection, navigate]);
+  };
 
   // Listen for auth state changes
   useEffect(() => {
@@ -141,16 +136,18 @@ export const AuthProvider = ({ children }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        // Only log significant auth events, not every token refresh
         if (event === 'SIGNED_IN' && session) {
           setUser(session.user);
           setSession(session);
+          // Redirect based on role after sign in
+          if (session.user) {
+            redirectBasedOnRole(session.user.id);
+          }
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setSession(null);
           setIsProfileSelected(false);
         } else if (event === 'TOKEN_REFRESHED' && session) {
-          // Only update if the user actually changed
           setUser(prevUser => {
             if (prevUser?.id !== session.user?.id) {
               return session.user;
@@ -183,11 +180,9 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       
       try {
-        // First, try auto login
         const autoLoginSuccess = await autoLogin();
         
         if (!autoLoginSuccess && isMounted) {
-          // If auto login fails, proceed with normal session check
           const currentSession = await authService.checkAndRefreshSession();
           if (isMounted) {
             setSession(currentSession);
@@ -211,7 +206,7 @@ export const AuthProvider = ({ children }) => {
     return () => {
       isMounted = false;
     };
-  }, []); // Remove autoLogin from dependencies to prevent infinite loops
+  }, []);
 
   // Handle navigation after successful authentication
   useEffect(() => {
@@ -220,10 +215,11 @@ export const AuthProvider = ({ children }) => {
       const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password'];
       
       if (publicPaths.includes(currentPath)) {
-        navigate('/dashboard');
+        // Redirect based on role instead of always going to dashboard
+        redirectBasedOnRole(user.id);
       }
     }
-  }, [user, isProfileSelected, loading, location.pathname, navigate]);
+  }, [user, isProfileSelected, loading, location.pathname]);
 
   // Login function
   const login = async (email, password) => {
@@ -244,23 +240,8 @@ export const AuthProvider = ({ children }) => {
           const multiUserService = (await import('../services/multiUserService')).default;
           const profiles = await multiUserService.getCompanyProfiles(data.user.id);
           
-          // Check user role for role-based redirect
-          try {
-            const { data: userData, error: roleError } = await supabase
-              .from('users')
-              .select('role')
-              .eq('id', data.user.id)
-              .single();
-
-            if (!roleError && userData?.role === 'superadmin') {
-              // Superadmin - redirect to superadmin dashboard
-              navigate('/admin/super/dashboard');
-              return;
-            }
-          } catch (roleCheckError) {
-            console.error('Error checking user role:', roleCheckError);
-            // Fallback to normal flow if role check fails
-          }
+          // Redirect based on role
+          redirectBasedOnRole(data.user.id);
 
           if (profiles.length > 1 && !isProfileSelected) {
             // Multiple profiles exist and no profile is selected yet, show profile selection
@@ -383,26 +364,8 @@ export const AuthProvider = ({ children }) => {
       setShowProfileSelection(false);
       setIsProfileSelected(true);
       
-      // Check user role for role-based redirect
-      try {
-        const { data: userData, error: roleError } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-
-        if (!roleError && userData?.role === 'superadmin') {
-          // Superadmin - redirect to superadmin dashboard
-          navigate('/admin/super/dashboard');
-          return;
-        }
-      } catch (roleCheckError) {
-        console.error('Error checking user role:', roleCheckError);
-        // Fallback to normal dashboard if role check fails
-      }
-      
-      // Navigate to regular dashboard for admin users
-      navigate('/dashboard');
+      // Redirect based on role
+      redirectBasedOnRole(user.id);
     } catch (error) {
       console.error('Error selecting profile:', error);
     }

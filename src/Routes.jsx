@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from './components/ProtectedRoute';
+import SuperAdminProtectedRoute from './components/SuperAdminProtectedRoute';
 import PublicRoute from './components/PublicRoute';
 import GlobalProfile from './components/ui/GlobalProfile';
 
@@ -205,11 +206,31 @@ const AppRoutes = () => {
           } />
 
           {/* Super Admin Routes */}
-                  <Route path="/admin/super/dashboard" element={<SuperAdminDashboard />} />
-        <Route path="/admin/super/leads" element={<SuperAdminLeads />} />
-        <Route path="/admin/super/users" element={<SuperAdminUsers />} />
-        <Route path="/admin/super/billing" element={<SuperAdminBilling />} />
-        <Route path="/admin/super/customization" element={<SuperAdminCustomization />} />
+          <Route path="/admin/super/dashboard" element={
+            <SuperAdminProtectedRoute>
+              <SuperAdminDashboard />
+            </SuperAdminProtectedRoute>
+          } />
+          <Route path="/admin/super/leads" element={
+            <SuperAdminProtectedRoute>
+              <SuperAdminLeads />
+            </SuperAdminProtectedRoute>
+          } />
+          <Route path="/admin/super/users" element={
+            <SuperAdminProtectedRoute>
+              <SuperAdminUsers />
+            </SuperAdminProtectedRoute>
+          } />
+          <Route path="/admin/super/billing" element={
+            <SuperAdminProtectedRoute>
+              <SuperAdminBilling />
+            </SuperAdminProtectedRoute>
+          } />
+          <Route path="/admin/super/customization" element={
+            <SuperAdminProtectedRoute>
+              <SuperAdminCustomization />
+            </SuperAdminProtectedRoute>
+          } />
 
           {/* 404 Route */}
           <Route path="*" element={<NotFound />} />

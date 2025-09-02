@@ -18,6 +18,9 @@ const LeadsManagementPage = () => {
   const [isTablet, setIsTablet] = useState(false);
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
   const [regionDropdownOpen, setRegionDropdownOpen] = useState({});
+  const [showSpamModal, setShowSpamModal] = useState(false);
+  const [spamReason, setSpamReason] = useState('');
+  const [selectedLeadForSpam, setSelectedLeadForSpam] = useState(null);
   const tabsScrollRef = useScrollPosition('leads-tabs-scroll');
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -320,6 +323,41 @@ const LeadsManagementPage = () => {
     window.location.href = `/quote-creation?${params.toString()}`;
   };
 
+  const handleReportSpam = (leadId) => {
+    setSelectedLeadForSpam(leadId);
+    setSpamReason('');
+    setShowSpamModal(true);
+  };
+
+  const submitSpamReport = async () => {
+    if (!spamReason.trim()) {
+      return;
+    }
+
+    try {
+      const { success, error } = await LeadManagementService.reportLeadAsSpam(
+        selectedLeadForSpam, 
+        user.id, 
+        spamReason.trim(),
+        'spam'
+      );
+
+      if (success) {
+        setShowSpamModal(false);
+        setSpamReason('');
+        setSelectedLeadForSpam(null);
+        // Refresh leads to update the UI
+        loadLeads();
+      } else {
+        console.error('Error reporting spam:', error);
+        alert('Failed to report lead as spam. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error reporting spam:', error);
+      alert('Failed to report lead as spam. Please try again.');
+    }
+  };
+
   const renderLeadsTab = () => (
     <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
       <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4">{t('leadsManagement.leadsTab.title')}</h2>
@@ -515,21 +553,33 @@ const LeadsManagementPage = () => {
                   </div>
                 </div>
                 
-                {lead.can_send_quote ? (
+                <div className="flex items-center gap-2">
                   <Button
-                    onClick={() => handleQuoteLead(lead.lead_id)}
-                    variant="default"
-                    size="default"
-                    className="px-6 py-2 font-semibold"
+                    onClick={() => handleReportSpam(lead.lead_id)}
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600 border-red-200 hover:bg-red-50"
                   >
-                    <Icon name="FileText" className="w-4 h-4 mr-2" />
-                    {t('leadsManagement.leadsTab.leadCard.createQuote')}
+                    <Icon name="AlertTriangle" className="w-4 h-4 mr-1" />
+                    Report Spam
                   </Button>
-                ) : (
-                  <span className="text-sm text-muted-foreground px-4 py-2 bg-muted/50 rounded-lg border">
-                    {lead.quote_status === 'max_reached' ? t('leadsManagement.leadsTab.leadCard.maxQuotesReached') : t('leadsManagement.leadsTab.leadCard.alreadyProcessed')}
-                  </span>
-                )}
+                  
+                  {lead.can_send_quote ? (
+                    <Button
+                      onClick={() => handleQuoteLead(lead.lead_id)}
+                      variant="default"
+                      size="default"
+                      className="px-6 py-2 font-semibold"
+                    >
+                      <Icon name="FileText" className="w-4 h-4 mr-2" />
+                      {t('leadsManagement.leadsTab.leadCard.createQuote')}
+                    </Button>
+                  ) : (
+                    <span className="text-sm text-muted-foreground px-4 py-2 bg-muted/50 rounded-lg border">
+                      {lead.quote_status === 'max_reached' ? t('leadsManagement.leadsTab.leadCard.maxQuotesReached') : t('leadsManagement.leadsTab.leadCard.alreadyProcessed')}
+                    </span>
+                  )}
+                </div>
               </div>
               </div>
             </div>
@@ -972,6 +1022,71 @@ const LeadsManagementPage = () => {
                 e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjNjY2NjY2Ii8+Cjx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlPC90ZXh0Pgo8L3N2Zz4K';
               }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Spam Report Modal */}
+      {showSpamModal && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-foreground">Report Lead as Spam</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowSpamModal(false);
+                    setSpamReason('');
+                    setSelectedLeadForSpam(null);
+                  }}
+                >
+                  <Icon name="X" size={16} />
+                </Button>
+              </div>
+              
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Please provide a reason for reporting this lead as spam. This helps us maintain quality and improve our service.
+                </p>
+                
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Reason for reporting spam *
+                  </label>
+                  <textarea
+                    value={spamReason}
+                    onChange={(e) => setSpamReason(e.target.value)}
+                    placeholder="Please describe why you believe this lead is spam..."
+                    className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+                    rows={4}
+                    required
+                  />
+                </div>
+                
+                <div className="flex justify-end space-x-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowSpamModal(false);
+                      setSpamReason('');
+                      setSelectedLeadForSpam(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={submitSpamReport}
+                    disabled={!spamReason.trim()}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    <Icon name="AlertTriangle" className="w-4 h-4 mr-2" />
+                    Report as Spam
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -443,6 +443,94 @@ export class LeadManagementService {
   }
   
   // ========================================
+  // SPAM REPORTING
+  // ========================================
+  
+  /**
+   * Report a lead as spam
+   */
+  static async reportLeadAsSpam(leadId, userId, reason, reportType = 'spam', additionalDetails = null) {
+    try {
+      const { data, error } = await supabase
+        .rpc('report_lead_as_spam', {
+          lead_uuid: leadId,
+          reporter_user_uuid: userId,
+          spam_reason_text: reason,
+          report_type_text: reportType,
+          additional_details_text: additionalDetails
+        });
+      
+      if (error) throw error;
+      
+      return { success: true, data, error: null };
+    } catch (error) {
+      console.error('Error reporting lead as spam:', error);
+      return { success: false, data: null, error };
+    }
+  }
+  
+  /**
+   * Get spam reports for superadmin
+   */
+  static async getSpamReports(limit = 50, offset = 0) {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_spam_reports', {
+          limit_count: limit,
+          offset_count: offset
+        });
+      
+      if (error) throw error;
+      
+      return { success: true, data: data || [], error: null };
+    } catch (error) {
+      console.error('Error fetching spam reports:', error);
+      return { success: false, data: [], error };
+    }
+  }
+  
+  /**
+   * Review spam report (superadmin action)
+   */
+  static async reviewSpamReport(leadId, reviewerId, reviewStatus, reviewNotes = null) {
+    try {
+      const { data, error } = await supabase
+        .rpc('review_spam_report', {
+          lead_uuid: leadId,
+          reviewer_user_uuid: reviewerId,
+          review_status_text: reviewStatus,
+          review_notes_text: reviewNotes
+        });
+      
+      if (error) throw error;
+      
+      return { success: true, data, error: null };
+    } catch (error) {
+      console.error('Error reviewing spam report:', error);
+      return { success: false, data: null, error };
+    }
+  }
+  
+  /**
+   * Delete lead (superadmin action)
+   */
+  static async deleteLead(leadId) {
+    try {
+      const { error } = await supabase
+        .from('lead_requests')
+        .delete()
+        .eq('id', leadId);
+      
+      if (error) throw error;
+      
+      return { success: true, data: null, error: null };
+    } catch (error) {
+      console.error('Error deleting lead:', error);
+      return { success: false, data: null, error };
+    }
+  }
+
+  // ========================================
   // NOTIFICATIONS
   // ========================================
   

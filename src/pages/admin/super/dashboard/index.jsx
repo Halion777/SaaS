@@ -11,6 +11,9 @@ import SuperAdminSidebar from 'components/ui/SuperAdminSidebar';
 const SuperAdminDashboard = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [sidebarOffset, setSidebarOffset] = useState(288);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [systemStats, setSystemStats] = useState({
@@ -31,6 +34,83 @@ const SuperAdminDashboard = () => {
     converted: 0,
     spam: 0
   });
+
+  // Handle sidebar offset for responsive layout
+  React.useEffect(() => {
+    const handleSidebarToggle = (e) => {
+      const { isCollapsed } = e.detail;
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setIsTablet(tablet);
+
+      if (mobile) {
+        setSidebarOffset(0);
+      } else if (tablet) {
+        // On tablet, sidebar is always collapsed
+        setSidebarOffset(80);
+      } else {
+        // On desktop, respond to sidebar state
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+    
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setIsTablet(tablet);
+
+      if (mobile) {
+        setSidebarOffset(0);
+      } else if (tablet) {
+        // On tablet, sidebar is always collapsed
+        setSidebarOffset(80);
+      } else {
+        // On desktop, check sidebar state
+        const savedCollapsed = localStorage.getItem('superadmin-sidebar-collapsed');
+        const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+
+    const handleStorage = () => {
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      
+      if (!mobile && !tablet) {
+        const savedCollapsed = localStorage.getItem('superadmin-sidebar-collapsed');
+        const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+    
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('superadmin-sidebar-toggle', handleSidebarToggle);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('superadmin-sidebar-toggle', handleSidebarToggle);
+    };
+  }, []);
+
+  // Set initial sidebar offset based on saved state
+  useEffect(() => {
+    const mobile = window.innerWidth < 768;
+    const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+    
+    if (mobile) {
+      setSidebarOffset(0);
+    } else if (tablet) {
+      setSidebarOffset(80);
+    } else {
+      const savedCollapsed = localStorage.getItem('superadmin-sidebar-collapsed');
+      const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
+      setSidebarOffset(isCollapsed ? 64 : 288);
+    }
+  }, []);
 
   // Update current time
   useEffect(() => {
@@ -285,9 +365,11 @@ const SuperAdminDashboard = () => {
       {/* Sidebar */}
       <SuperAdminSidebar />
       
-             {/* Main Content */}
-       <main className="ml-0 lg:ml-64 transition-all duration-300 ease-out">
-        <div className="px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
+      <div
+        className="flex-1 flex flex-col pb-20 md:pb-6"
+        style={{ marginLeft: `${sidebarOffset}px` }}
+      >
+        <main className="flex-1 px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
           {/* Header */}
           <div className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
@@ -558,8 +640,8 @@ const SuperAdminDashboard = () => {
               </div>
             </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 };
