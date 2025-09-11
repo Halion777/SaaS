@@ -711,7 +711,7 @@
     "pagination": {
       "previous": "Previous",
       "next": "Next",
-      "showing": "Showing {start} to {end} of {total} blog posts"
+      "showing": "Showing {{start}} to {{end}} of {{total}} blog posts"
     },
     "loading": {
       "message": "Loading blog posts..."

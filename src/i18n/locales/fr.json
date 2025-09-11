@@ -712,8 +712,8 @@
     "pagination": {
       "previous": "Précédent",
       "next": "Suivant",
-      "showing": "Affichage de {start} à {end} sur {total} articles de blog"
-    },
+      "showing": "Affichage de {{start}} à {{end}} sur {{total}} articles de blog"
+    },  
     "loading": {
       "message": "Chargement des articles de blog..."
     },

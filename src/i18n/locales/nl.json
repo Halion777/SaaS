@@ -711,7 +711,7 @@
     "pagination": {
       "previous": "Vorige",
       "next": "Volgende",
-      "showing": "Toont {start} tot {end} van {total} blogberichten"
+      "showing": "Toont {{start}} tot {{end}} van {{total}} blogberichten"
     },
     "loading": {
       "message": "Blogberichten laden..."
