@@ -46,7 +46,8 @@ import SuperAdminDashboard from './pages/admin/super/dashboard';
 import SuperAdminUsers from './pages/admin/super/users';
 import SuperAdminLeads from './pages/admin/super/leads';
 import SuperAdminBilling from './pages/admin/super/billing';
-import SuperAdminCustomization from './pages/admin/super/customization';
+import SuperAdminEmailTemplates from './pages/admin/super/email-templates';
+import SuperAdminBlogs from './pages/admin/super/blogs';
 
 const AppRoutes = () => {
   return (
@@ -226,9 +227,14 @@ const AppRoutes = () => {
               <SuperAdminBilling />
             </SuperAdminProtectedRoute>
           } />
-          <Route path="/admin/super/customization" element={
+          <Route path="/admin/super/email-templates" element={
             <SuperAdminProtectedRoute>
-              <SuperAdminCustomization />
+              <SuperAdminEmailTemplates />
+            </SuperAdminProtectedRoute>
+          } />
+          <Route path="/admin/super/blogs" element={
+            <SuperAdminProtectedRoute>
+              <SuperAdminBlogs />
             </SuperAdminProtectedRoute>
           } />
 

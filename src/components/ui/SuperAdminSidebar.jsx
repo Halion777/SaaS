@@ -14,7 +14,7 @@ const SuperAdminSidebar = () => {
     leads: false,
     users: false,
     billing: false,
-    customization: false
+    content: false
   });
   const location = useLocation();
   const navigate = useNavigate();
@@ -61,15 +61,15 @@ const SuperAdminSidebar = () => {
     
     // Determine which section should be expanded based on the current path
     if (path.startsWith('/admin/super/dashboard')) {
-      setExpandedSections(prev => ({ ...prev, system: true, leads: false, users: false, billing: false, customization: false }));
+      setExpandedSections(prev => ({ ...prev, system: true, leads: false, users: false, billing: false, content: false }));
     } else if (path.startsWith('/admin/super/leads')) {
-      setExpandedSections(prev => ({ ...prev, system: false, leads: true, users: false, billing: false, customization: false }));
+      setExpandedSections(prev => ({ ...prev, system: false, leads: true, users: false, billing: false, content: false }));
     } else if (path.startsWith('/admin/super/users')) {
-      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: true, billing: false, customization: false }));
+      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: true, billing: false, content: false }));
     } else if (path.startsWith('/admin/super/billing')) {
-      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: false, billing: true, customization: false }));
-    } else if (path.startsWith('/admin/super/customization')) {
-      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: false, billing: false, customization: true }));
+      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: false, billing: true, content: false }));
+    } else if (path.startsWith('/admin/super/email-templates') || path.startsWith('/admin/super/blogs')) {
+      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: false, billing: false, content: true }));
     }
   }, [location.pathname, isCollapsed, isTablet]);
 
@@ -105,7 +105,7 @@ const SuperAdminSidebar = () => {
         leads: sectionId === 'leads',
         users: sectionId === 'users',
         billing: sectionId === 'billing',
-        customization: sectionId === 'customization'
+        content: sectionId === 'content'
       };
     });
   };
@@ -187,16 +187,23 @@ const SuperAdminSidebar = () => {
       ]
     },
     {
-      id: 'customization',
-      label: 'Customization',
+      id: 'content',
+      label: 'Content Management',
       isCollapsible: true,
-      isExpanded: expandedSections.customization,
+      isExpanded: expandedSections.content,
       items: [
         {
-          id: 'customization',
-          label: 'Customization',
-          path: '/admin/super/customization',
-          icon: 'Settings',
+          id: 'email-templates',
+          label: 'Email Templates',
+          path: '/admin/super/email-templates',
+          icon: 'Mail',
+          notifications: 0
+        },
+        {
+          id: 'blogs',
+          label: 'Blog Posts',
+          path: '/admin/super/blogs',
+          icon: 'FileText',
           notifications: 0
         }
       ]
@@ -337,28 +344,42 @@ const SuperAdminSidebar = () => {
         {/* User Profile */}
         <div className="mt-auto">
           <div className="p-4 border-t border-border">
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center justify-center w-8 h-8 bg-red-600 rounded-full">
-                <Icon name="User" size={16} className="text-white" />
-              </div>
-              {!isCollapsed && !isTablet && (
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    Super Admin
-                  </p>
-                  <p className="text-xs text-muted-foreground">Administrator</p>
-                </div>
-              )}
-              {!isMobile && !isTablet && (
+            {isCollapsed ? (
+              // Collapsed state - show only logout icon
+              <div className="flex justify-center">
                 <button
                   onClick={handleLogout}
-                  className="p-1.5 rounded-md hover:bg-muted transition-colors duration-150"
+                  className="p-2 rounded-md hover:bg-muted transition-colors duration-150"
                   title="Logout"
                 >
-                  <Icon name="LogOut" size={16} color="var(--color-muted-foreground)" />
+                  <Icon name="LogOut" size={20} color="var(--color-muted-foreground)" />
                 </button>
-              )}
-            </div>
+              </div>
+            ) : (
+              // Expanded state - show full profile
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center justify-center w-8 h-8 bg-red-600 rounded-full">
+                  <Icon name="User" size={16} className="text-white" />
+                </div>
+                {!isTablet && (
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      Super Admin
+                    </p>
+                    <p className="text-xs text-muted-foreground">Administrator</p>
+                  </div>
+                )}
+                {!isMobile && !isTablet && (
+                  <button
+                    onClick={handleLogout}
+                    className="p-1.5 rounded-md hover:bg-muted transition-colors duration-150"
+                    title="Logout"
+                  >
+                    <Icon name="LogOut" size={16} color="var(--color-muted-foreground)" />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

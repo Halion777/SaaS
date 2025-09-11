@@ -32,6 +32,9 @@ export async function signIn(email, password) {
       try {
         sessionStorage.setItem('user_email', data.user.email);
         sessionStorage.setItem('user_id', data.user.id);
+        
+        // Track the login immediately
+        trackUserLogin(data.user.id);
       } catch (storageError) {
         console.error('Error storing user data:', storageError);
       }
@@ -461,13 +464,63 @@ export async function checkTrialStatus(userId) {
 }
 
 /**
+ * Track user login by updating last_login_at timestamp
+ * @param {string} userId - User ID
+ * @returns {Promise<{data, error}>} Update result
+ */
+export async function trackUserLogin(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        last_login_at: new Date().toISOString()
+      })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error tracking user login:', error);
+      return { data: null, error };
+    }
+
+    console.log('User login tracked successfully:', data);
+    return { data, error: null };
+  } catch (error) {
+    console.error('Unexpected error tracking login:', error);
+    return { data: null, error };
+  }
+}
+
+// Track if we've already processed a login for this session
+let lastTrackedUserId = null;
+let lastTrackedTime = null;
+
+/**
  * Listen to authentication state changes
  * @param {Function} callback - Callback function for auth state changes
  * @returns {Object} Subscription data
  */
 export function onAuthStateChange(callback) {
   return supabase.auth.onAuthStateChange((event, session) => {
-    // Log auth state changes for debugging
+    // Only track login on actual sign in events, not tab switches or token refreshes
+    if (event === 'SIGNED_IN' && session?.user?.id) {
+      const now = Date.now();
+      const userId = session.user.id;
+      
+      // Only track if:
+      // 1. This is a different user than last tracked
+      // 2. OR it's been more than 5 minutes since last tracking for same user
+      // 3. OR this is the first time tracking
+      if (userId !== lastTrackedUserId || 
+          !lastTrackedTime || 
+          (now - lastTrackedTime) > 5 * 60 * 1000) { // 5 minutes
+        
+        trackUserLogin(userId);
+        lastTrackedUserId = userId;
+        lastTrackedTime = now;
+      }
+    }
     
     // Call provided callback
     callback(session, event);

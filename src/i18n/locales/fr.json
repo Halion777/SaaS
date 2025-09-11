@@ -698,16 +698,28 @@
   },
   "blog": {
     "hero": {
-      "badge": "Blog en développement",
-      "title": "Notre blog",
-      "titleHighlight": "arrive bientôt",
-      "subtitle": "Notre blog est en cours de création. Vous y trouverez bientôt des articles sur les meilleures pratiques et conseils pour les artisans.",
+      "badge": "Dernières actualités",
+      "title": "Notre",
+      "titleHighlight": "Blog",
+      "subtitle": "Découvrez des insights, tutoriels et actualités sur la technologie de construction et la gestion d'entreprise",
       "benefits": {
-        "expertAdvice": "Conseils d'experts",
+        "expertAdvice": "Insights d'experts",
         "bestPractices": "Bonnes pratiques",
-        "industryNews": "Actualités du secteur"
+        "industryNews": "Tendances du secteur"
       },
       "backToHome": "Retour à l'accueil"
+    },
+    "pagination": {
+      "previous": "Précédent",
+      "next": "Suivant",
+      "showing": "Affichage de {start} à {end} sur {total} articles de blog"
+    },
+    "loading": {
+      "message": "Chargement des articles de blog..."
+    },
+    "empty": {
+      "title": "Aucun article de blog pour le moment",
+      "message": "Revenez bientôt pour découvrir de nouveaux contenus !"
     }
   },
   "login": {

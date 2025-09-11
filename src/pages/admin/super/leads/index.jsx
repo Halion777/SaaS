@@ -10,6 +10,7 @@ import Button from 'components/ui/Button';
 import Input from 'components/ui/Input';
 import Select from 'components/ui/Select';
 import SuperAdminSidebar from 'components/ui/SuperAdminSidebar';
+import TableLoader from 'components/ui/TableLoader';
 
 const SuperAdminLeads = () => {
   const { t } = useTranslation();
@@ -24,6 +25,8 @@ const SuperAdminLeads = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedLeads, setSelectedLeads] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   const [activeTab, setActiveTab] = useState('leads');
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -126,6 +129,7 @@ const SuperAdminLeads = () => {
 
   useEffect(() => {
     filterLeads();
+    setCurrentPage(1); // Reset to first page when filters change
   }, [leads, searchTerm, statusFilter]);
 
   const loadLeads = async () => {
@@ -208,6 +212,12 @@ const SuperAdminLeads = () => {
     setFilteredLeads(filtered);
   };
 
+  // Pagination
+  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
+
   const handleSelectLead = (leadId) => {
     setSelectedLeads(prev =>
       prev.includes(leadId)
@@ -217,10 +227,10 @@ const SuperAdminLeads = () => {
   };
 
   const handleSelectAll = () => {
-    if (selectedLeads.length === filteredLeads.length) {
+    if (selectedLeads.length === paginatedLeads.length) {
       setSelectedLeads([]);
     } else {
-      setSelectedLeads(filteredLeads.map(lead => lead.id));
+      setSelectedLeads(paginatedLeads.map(lead => lead.id));
     }
   };
 
@@ -436,9 +446,9 @@ const SuperAdminLeads = () => {
         className="flex-1 flex flex-col pb-20 md:pb-6"
         style={{ marginLeft: `${sidebarOffset}px` }}
       >
-        <main className="flex-1 px-2 sm:px-4 pt-4 pb-6 space-y-4 sm:space-y-6">
+        <main className="flex-1 px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
           {/* Header */}
-          <header className="bg-card border-b border-border px-2 sm:px-4 py-4 mb-4 sm:mb-6">
+          <div className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
             <div className="space-y-1">
               <div className="flex items-center">
@@ -478,7 +488,7 @@ const SuperAdminLeads = () => {
               </Button>
             </div>
             </div>
-          </header>
+          </div>
 
           {/* Tabs */}
           <div className="border-b border-border mb-6">
@@ -639,9 +649,7 @@ const SuperAdminLeads = () => {
           {/* Leads Table */}
           <div className="bg-card border border-border rounded-lg overflow-hidden">
             {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              </div>
+              <TableLoader message="Loading leads..." />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -650,7 +658,7 @@ const SuperAdminLeads = () => {
                       <th className="px-4 py-3 text-left">
                         <input
                           type="checkbox"
-                          checked={selectedLeads.length === filteredLeads.length && filteredLeads.length > 0}
+                          checked={selectedLeads.length === paginatedLeads.length && paginatedLeads.length > 0}
                           onChange={handleSelectAll}
                           className="rounded border-border"
                         />
@@ -676,7 +684,7 @@ const SuperAdminLeads = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredLeads.map((lead) => (
+                    {paginatedLeads.map((lead) => (
                       <tr key={lead.id} className="border-t border-border hover:bg-muted/25">
                         <td className="px-4 py-3">
                           <input
@@ -751,16 +759,17 @@ const SuperAdminLeads = () => {
                         <td className="px-4 py-3">
                           <div className="flex items-center space-x-2">
                             <Button
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
                               onClick={() => viewLeadDetails(lead)}
-                              className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                              className="h-8 px-2"
+                              title="View Details"
                             >
                               <Icon name="Eye" size={14} />
                             </Button>
                             {lead.is_spam && lead.spam_review_status === 'pending' && (
                               <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
                                 onClick={() => {
                                   // Review spam report
@@ -778,16 +787,18 @@ const SuperAdminLeads = () => {
                                     });
                                   }
                                 }}
-                                className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                                className="h-8 px-2 text-orange-600 hover:text-orange-700"
+                                title="Review Spam Report"
                               >
                                 <Icon name="Shield" size={14} />
                               </Button>
                             )}
                             <Button
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
                               onClick={() => deleteLead(lead.id)}
-                              className="text-red-600 border-red-200 hover:bg-red-50"
+                              className="h-8 px-2 text-red-600 hover:text-red-700"
+                              title="Delete Lead"
                             >
                               <Icon name="Trash2" size={14} />
                             </Button>
@@ -807,6 +818,38 @@ const SuperAdminLeads = () => {
               </div>
             )}
           </div>
+
+          {/* Pagination */}
+          {activeTab === 'leads' && (
+            <div className="bg-card border border-border rounded-lg px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredLeads.length)} of {filteredLeads.length} results
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
             </>
           )}
 
@@ -821,9 +864,7 @@ const SuperAdminLeads = () => {
               </div>
               
               {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                </div>
+                <TableLoader message="Loading spam reports..." />
               ) : spamReports.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <Icon name="Shield" className="w-12 h-12 text-muted-foreground mb-4" />
@@ -911,19 +952,19 @@ const SuperAdminLeads = () => {
                           <td className="px-4 py-3">
                             <div className="flex items-center space-x-2">
                               <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
                                 onClick={() => handleReviewSpamReport(report)}
-                                className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                                className="h-8 px-2"
                                 title="Review Spam Report"
                               >
                                 <Icon name="Eye" size={14} />
                               </Button>
                               <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
                                 onClick={() => deleteLead(report.lead_id)}
-                                className="text-red-600 border-red-200 hover:bg-red-50"
+                                className="h-8 px-2 text-red-600 hover:text-red-700"
                                 title="Delete Lead"
                               >
                                 <Icon name="Trash2" size={14} />

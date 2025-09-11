@@ -697,16 +697,28 @@
   },
   "blog": {
     "hero": {
-      "badge": "Blog in development",
-      "title": "Our blog",
-      "titleHighlight": "coming soon",
-      "subtitle": "Our blog is being created. You will soon find articles on best practices and advice for craftsmen.",
+      "badge": "Latest Insights",
+      "title": "Our",
+      "titleHighlight": "Blog",
+      "subtitle": "Discover insights, tutorials, and news about construction technology and business management",
       "benefits": {
-        "expertAdvice": "Expert advice",
+        "expertAdvice": "Expert insights",
         "bestPractices": "Best practices",
-        "industryNews": "Industry news"
+        "industryNews": "Industry trends"
       },
       "backToHome": "Back to home"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "showing": "Showing {start} to {end} of {total} blog posts"
+    },
+    "loading": {
+      "message": "Loading blog posts..."
+    },
+    "empty": {
+      "title": "No blog posts yet",
+      "message": "Check back soon for new content!"
     }
   },
   "login": {

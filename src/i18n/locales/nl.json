@@ -697,16 +697,28 @@
   },    
   "blog": {
     "hero": {
-      "badge": "Blog in ontwikkeling",
-      "title": "Onze blog",
-      "titleHighlight": "komt binnenkort",
-      "subtitle": "Onze blog wordt gemaakt. Je vindt binnenkort artikelen over beste praktijken en advies voor vakmensen.",
+      "badge": "Laatste inzichten",
+      "title": "Onze",
+      "titleHighlight": "Blog",
+      "subtitle": "Ontdek inzichten, tutorials en nieuws over bouwtechnologie en bedrijfsmanagement",
       "benefits": {
-        "expertAdvice": "Expertadvies",
+        "expertAdvice": "Expert inzichten",
         "bestPractices": "Beste praktijken",
-        "industryNews": "Sectornieuws"
+        "industryNews": "Sectortrends"
       },
       "backToHome": "Terug naar home"
+    },
+    "pagination": {
+      "previous": "Vorige",
+      "next": "Volgende",
+      "showing": "Toont {start} tot {end} van {total} blogberichten"
+    },
+    "loading": {
+      "message": "Blogberichten laden..."
+    },
+    "empty": {
+      "title": "Nog geen blogberichten",
+      "message": "Kom binnenkort terug voor nieuwe content!"
     }
   },
   "login": {

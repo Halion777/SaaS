@@ -6,11 +6,16 @@ import { supabase } from 'services/supabaseClient';
 import Icon from 'components/AppIcon';
 import Button from 'components/ui/Button';
 import Input from 'components/ui/Input';
+import Select from 'components/ui/Select';
 import SuperAdminSidebar from 'components/ui/SuperAdminSidebar';
+import TableLoader from 'components/ui/TableLoader';
 
 const SuperAdminBilling = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [sidebarOffset, setSidebarOffset] = useState(288);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
   const [loading, setLoading] = useState(true);
   const [subscriptions, setSubscriptions] = useState([]);
   const [payments, setPayments] = useState([]);
@@ -23,6 +28,49 @@ const SuperAdminBilling = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
+  // Handle sidebar offset for responsive layout
+  React.useEffect(() => {
+    const updateSidebarOffset = (isCollapsed) => {
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setIsTablet(tablet);
+
+      if (mobile) {
+        setSidebarOffset(0);
+      } else if (tablet) {
+        setSidebarOffset(80);
+      } else {
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+
+    const handleSidebarToggle = (e) => {
+      const { isCollapsed } = e.detail;
+      updateSidebarOffset(isCollapsed);
+    };
+    
+    const handleResize = () => {
+      // Get current sidebar state from localStorage
+      const savedCollapsed = localStorage.getItem('superadmin-sidebar-collapsed');
+      const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
+      updateSidebarOffset(isCollapsed);
+    };
+
+    window.addEventListener('superadmin-sidebar-toggle', handleSidebarToggle);
+    window.addEventListener('resize', handleResize);
+    
+    // Set initial state based on saved sidebar state
+    const savedCollapsed = localStorage.getItem('superadmin-sidebar-collapsed');
+    const initialCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
+    updateSidebarOffset(initialCollapsed);
+
+    return () => {
+      window.removeEventListener('superadmin-sidebar-toggle', handleSidebarToggle);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
   useEffect(() => {
     loadBillingData();
   }, []);
@@ -30,6 +78,7 @@ const SuperAdminBilling = () => {
   const loadBillingData = async () => {
     try {
       setLoading(true);
+      console.log('Loading billing data...');
       
       // Load subscriptions
       const { data: subscriptionsData, error: subsError } = await supabase
@@ -40,7 +89,10 @@ const SuperAdminBilling = () => {
         `)
         .order('created_at', { ascending: false });
 
-      if (subsError) throw subsError;
+      if (subsError) {
+        console.error('Error loading subscriptions:', subsError);
+        throw subsError;
+      }
 
       // Load payments from invoices
       const { data: paymentsData, error: paymentsError } = await supabase
@@ -52,19 +104,49 @@ const SuperAdminBilling = () => {
         .eq('status', 'paid')
         .order('created_at', { ascending: false });
 
-      if (paymentsError) throw paymentsError;
+      if (paymentsError) {
+        console.error('Error loading payments:', paymentsError);
+        throw paymentsError;
+      }
+
+      // Load quotes for additional revenue data
+      const { data: quotesData, error: quotesError } = await supabase
+        .from('quotes')
+        .select(`
+          id,
+          total_amount,
+          status,
+          created_at,
+          users!quotes_user_id_fkey(full_name, email, company_name)
+        `)
+        .eq('status', 'accepted')
+        .order('created_at', { ascending: false });
+
+      if (quotesError) {
+        console.error('Error loading quotes:', quotesError);
+      }
+
+      console.log('Billing data loaded:', {
+        subscriptions: subscriptionsData?.length || 0,
+        payments: paymentsData?.length || 0,
+        quotes: quotesData?.length || 0
+      });
 
       setSubscriptions(subscriptionsData || []);
       setPayments(paymentsData || []);
 
-      // Calculate stats
-      const totalRevenue = paymentsData?.reduce((sum, payment) => sum + (payment.final_amount || 0), 0) || 0;
+      // Calculate comprehensive stats
+      const totalRevenue = (paymentsData?.reduce((sum, payment) => sum + (payment.final_amount || 0), 0) || 0) +
+                         (quotesData?.reduce((sum, quote) => sum + (quote.total_amount || 0), 0) || 0);
       
       const currentMonth = new Date();
       currentMonth.setDate(1);
-      const monthlyRevenue = paymentsData?.filter(payment => 
+      const monthlyRevenue = (paymentsData?.filter(payment => 
         new Date(payment.created_at) >= currentMonth
-      ).reduce((sum, payment) => sum + (payment.final_amount || 0), 0) || 0;
+      ).reduce((sum, payment) => sum + (payment.final_amount || 0), 0) || 0) +
+      (quotesData?.filter(quote => 
+        new Date(quote.created_at) >= currentMonth
+      ).reduce((sum, quote) => sum + (quote.total_amount || 0), 0) || 0);
 
       const activeSubscriptions = subscriptionsData?.filter(sub => sub.status === 'active').length || 0;
       const cancelledSubscriptions = subscriptionsData?.filter(sub => sub.status === 'cancelled').length || 0;
@@ -120,33 +202,43 @@ const SuperAdminBilling = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex">
       <Helmet>
         <title>Billing & Subscriptions - Super Admin | Haliqo</title>
       </Helmet>
 
       <SuperAdminSidebar />
+      
+      <div
+        className="flex-1 flex flex-col pb-20 md:pb-6"
+        style={{ marginLeft: `${sidebarOffset}px` }}
+      >
 
-      <main className="ml-0 lg:ml-64">
-        <div className="p-6">
+        <main className="flex-1 px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Billing & Subscriptions</h1>
-              <p className="text-muted-foreground mt-1">
-                Manage subscriptions and monitor revenue
-              </p>
+          <header className="bg-card border-b border-border px-2 sm:px-4 py-4 mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+              <div className="space-y-1">
+                <div className="flex items-center">
+                  <Icon name="CreditCard" size={24} className="text-primary mr-3" />
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Billing & Subscriptions</h1>
+                </div>
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  Manage subscriptions and monitor revenue
+                </p>
+              </div>
+              <div className="flex items-center space-x-3 mt-4 sm:mt-0">
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/admin/super/dashboard')}
+                  className="flex items-center gap-2"
+                >
+                  <Icon name="ArrowLeft" size={16} />
+                  Back to Dashboard
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center space-x-2 mt-4 sm:mt-0">
-              <Button
-                variant="outline"
-                onClick={() => navigate('/admin/super/dashboard')}
-              >
-                <Icon name="ArrowLeft" size={16} className="mr-2" />
-                Back to Dashboard
-              </Button>
-            </div>
-          </div>
+          </header>
 
           {/* Revenue Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -198,8 +290,9 @@ const SuperAdminBilling = () => {
 
           {/* Filters */}
           <div className="bg-card border border-border rounded-lg p-4 mb-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Search</label>
                 <Input
                   placeholder="Search subscriptions..."
                   value={searchTerm}
@@ -207,17 +300,33 @@ const SuperAdminBilling = () => {
                   className="w-full"
                 />
               </div>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-border rounded-md bg-background text-foreground"
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="past_due">Past Due</option>
-                <option value="trialing">Trialing</option>
-              </select>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Status</label>
+                <Select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  options={[
+                    { value: 'all', label: 'All Status' },
+                    { value: 'active', label: 'Active' },
+                    { value: 'cancelled', label: 'Cancelled' },
+                    { value: 'past_due', label: 'Past Due' },
+                    { value: 'trialing', label: 'Trialing' }
+                  ]}
+                  className="w-full"
+                />
+              </div>
+              <div className="flex items-end">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setStatusFilter('all');
+                  }}
+                  className="w-full"
+                >
+                  Clear Filters
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -227,9 +336,7 @@ const SuperAdminBilling = () => {
               <h3 className="text-lg font-semibold text-foreground">Subscriptions</h3>
             </div>
             {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              </div>
+              <TableLoader message="Loading subscriptions..." />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -415,8 +522,8 @@ const SuperAdminBilling = () => {
               )}
             </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 };
