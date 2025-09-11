@@ -227,7 +227,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50 relative">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50 relative overflow-hidden">
       <Helmet>
         <title>{t('meta.register.title')}</title>
         <meta name="description" content={t('meta.register.description')} />
@@ -396,10 +396,8 @@ const Register = () => {
             </div>
           </div>
         </div>
-        
-        {/* Footer */}
-        <Footer />
       </div>
+      <Footer />
     </div>
   );
 };
