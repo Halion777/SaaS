@@ -2,6 +2,35 @@ import { supabase } from './supabaseClient';
 import { sessionManager } from './supabaseClient';
 
 /**
+ * Check if user can register with given email
+ * @param {string} email - User email
+ * @returns {Promise<{data, error}>} Check result
+ */
+export async function checkUserRegistration(email) {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-user-registration`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify({ email })
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return { data: null, error: data };
+    }
+
+    return { data, error: null };
+  } catch (error) {
+    console.error('Error checking user registration:', error);
+    return { data: null, error };
+  }
+}
+
+/**
  * Sign in user
  * @param {string} email - User email
  * @param {string} password - User password
@@ -27,16 +56,58 @@ export async function signIn(email, password) {
       return { data: null, error };
     }
 
-    // Optional: Store minimal user info in session storage
+    // Check if user has completed payment/registration
     if (data?.user) {
       try {
+        // Check if user exists in public.users table (indicates completed registration)
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('id, registration_completed')
+          .eq('id', data.user.id)
+          .single();
+
+        if (userError || !userData) {
+          // User doesn't exist in public.users table - registration incomplete
+          console.log('User registration incomplete, blocking login');
+          
+          // Sign out the user immediately
+          await supabase.auth.signOut();
+          
+          return { 
+            data: null, 
+            error: { 
+              message: 'Registration incomplete. Please complete your payment to access your account.',
+              code: 'registration_incomplete'
+            } 
+          };
+        }
+
+        if (!userData.registration_completed) {
+          // User exists but registration not completed
+          console.log('User registration not completed, blocking login');
+          
+          // Sign out the user immediately
+          await supabase.auth.signOut();
+          
+          return { 
+            data: null, 
+            error: { 
+              message: 'Registration incomplete. Please complete your payment to access your account.',
+              code: 'registration_incomplete'
+            } 
+          };
+        }
+
+        // Registration is complete, proceed with login
         sessionStorage.setItem('user_email', data.user.email);
         sessionStorage.setItem('user_id', data.user.id);
         
         // Track the login immediately
         trackUserLogin(data.user.id);
+        
       } catch (storageError) {
-        console.error('Error storing user data:', storageError);
+        console.error('Error checking user registration status:', storageError);
+        return { data: null, error: storageError };
       }
     }
 
@@ -291,7 +362,7 @@ export async function completeRegistration(formData) {
     sessionStorage.removeItem('pendingRegistration');
     sessionStorage.removeItem('registration_complete');
     
-    // Step 1: Create auth user ONLY (no profile, no user record yet)
+    // Step 1: Create auth user (will fail if user already exists with completed registration)
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: formData.email,
       password: formData.password,

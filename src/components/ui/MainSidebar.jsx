@@ -154,6 +154,13 @@ const MainSidebar = () => {
           path: '/leads-management',
           icon: 'Users',
           notifications: 0
+        },
+        {
+          id: 'subscription',
+          label: t('sidebar.categories.main.items.subscription'),
+          path: '/subscription',
+          icon: 'CreditCard',
+          notifications: 0
         }
       ]
     },

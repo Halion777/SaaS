@@ -129,14 +129,16 @@ export const AuthProvider = ({ children }) => {
 
       if (!roleError && userData?.role) {
         const currentPath = window.location.pathname;
+        const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/about', '/pricing', '/contact', '/blog'];
         
-        if (userData.role === 'superadmin' && !currentPath.startsWith('/admin/super')) {
+        // Only redirect if user is on a public page or wrong role page
+        if (userData.role === 'superadmin' && !currentPath.startsWith('/admin/super') && publicPaths.includes(currentPath)) {
           navigateRef.current('/admin/super/dashboard');
         } else if (userData.role === 'admin' && currentPath.startsWith('/admin/super')) {
           navigateRef.current('/dashboard');
         } else if (userData.role === 'superadmin' && currentPath === '/dashboard') {
           navigateRef.current('/admin/super/dashboard');
-        } else if (userData.role === 'admin' && !currentPath.startsWith('/admin/super') && currentPath !== '/dashboard') {
+        } else if (userData.role === 'admin' && publicPaths.includes(currentPath)) {
           navigateRef.current('/dashboard');
         }
       }
@@ -162,9 +164,16 @@ export const AuthProvider = ({ children }) => {
         if (event === 'SIGNED_IN' && session) {
           setUser(session.user);
           setSession(session);
-          // Redirect based on role after sign in
-          if (session.user) {
-            redirectBasedOnRole(session.user.id);
+          
+          // Check if this is during registration process (don't redirect yet)
+          const isRegistrationPending = sessionStorage.getItem('registration_pending') || 
+                                      sessionStorage.getItem('pendingRegistration');
+          
+          if (!isRegistrationPending) {
+            // Redirect based on role after sign in (only if not during registration)
+            if (session.user) {
+              redirectBasedOnRole(session.user.id);
+            }
           }
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
@@ -238,11 +247,44 @@ export const AuthProvider = ({ children }) => {
       const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password'];
       
       if (publicPaths.includes(currentPath)) {
-        // Redirect based on role instead of always going to dashboard
-        redirectBasedOnRole(user.id);
+        // Check if user has completed registration before redirecting
+        checkRegistrationStatusAndRedirect(user.id);
       }
     }
-  }, [user, isProfileSelected, loading, location.pathname, redirectBasedOnRole]);
+  }, [user, isProfileSelected, loading, location.pathname]);
+
+  // Check registration status and redirect accordingly
+  const checkRegistrationStatusAndRedirect = async (userId) => {
+    try {
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('registration_completed, role')
+        .eq('id', userId)
+        .single();
+
+      if (error || !userData) {
+        // User doesn't exist in public.users - registration incomplete
+        console.log('Registration incomplete, staying on current page');
+        return;
+      }
+
+      if (!userData.registration_completed) {
+        // Registration not completed - stay on current page
+        console.log('Registration not completed, staying on current page');
+        return;
+      }
+
+      // Registration completed - only redirect if on public pages
+      const currentPath = window.location.pathname;
+      const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/about', '/pricing', '/contact', '/blog'];
+      
+      if (publicPaths.includes(currentPath)) {
+        redirectBasedOnRole(userId);
+      }
+    } catch (error) {
+      console.error('Error checking registration status:', error);
+    }
+  };
 
   // Login function
   const login = async (email, password) => {

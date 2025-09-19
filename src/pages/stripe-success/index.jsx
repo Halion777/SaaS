@@ -47,6 +47,10 @@ const StripeSuccessPage = () => {
           sessionStorage.removeItem('registration_complete');
         }
         
+        // Clear registration pending flag
+        sessionStorage.removeItem('registration_pending');
+        sessionStorage.removeItem('pendingRegistration');
+        
         setStatus('success');
         // Redirect to dashboard after a short delay
         setTimeout(() => {

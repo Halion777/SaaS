@@ -31,6 +31,14 @@ const QuickActions = () => {
       icon: 'Receipt',
       variant: 'secondary',
       path: '/invoices-management'
+    },
+    {
+      id: 'manage-subscription',
+      label: 'Manage Subscription',
+      description: 'Upgrade, downgrade, or manage your plan',
+      icon: 'CreditCard',
+      variant: 'outline',
+      path: '/subscription'
     }
   ];
 

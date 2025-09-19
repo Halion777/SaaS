@@ -466,10 +466,10 @@ const SuperAdminUsers = () => {
                   >
                     <Icon name="Trash2" size={16} className="mr-1" />
                     Delete
-                  </Button>
-                </div>
+                </Button>
               </div>
             </div>
+          </div>
           )}
 
           {/* Users Table */}
@@ -477,8 +477,8 @@ const SuperAdminUsers = () => {
             {loading ? (
               <TableLoader message="Loading users..." />
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
+            <div className="overflow-x-auto">
+              <table className="w-full">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -621,10 +621,10 @@ const SuperAdminUsers = () => {
                 >
                   Next
                 </Button>
-              </div>
             </div>
           </div>
-        </main>
+        </div>
+      </main>
       </div>
 
       {/* User Details Modal */}

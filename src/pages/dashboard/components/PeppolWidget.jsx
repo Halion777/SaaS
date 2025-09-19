@@ -37,6 +37,18 @@ const PeppolWidget = () => {
     try {
       setLoading(true);
       
+      // Check if user is a business user first
+      const isBusiness = await peppolService.isBusinessUser();
+      if (!isBusiness) {
+        // Individual users don't have access to Peppol
+        setPeppolData({
+          settings: { isConfigured: false, peppolId: '', businessName: '', sandboxMode: true },
+          stats: { totalSent: 0, totalReceived: 0, sentThisMonth: 0, receivedThisMonth: 0, pending: 0, failed: 0, successRate: 0, lastActivity: null },
+          connectionStatus: 'not_available'
+        });
+        return;
+      }
+      
       // Load settings
       const settingsResult = await peppolService.getPeppolSettings();
       const settings = settingsResult.success ? settingsResult.data : {
@@ -93,6 +105,8 @@ const PeppolWidget = () => {
         return 'CheckCircle';
       case 'disconnected':
         return 'XCircle';
+      case 'not_available':
+        return 'Building2';
       default:
         return 'HelpCircle';
     }
@@ -108,6 +122,40 @@ const PeppolWidget = () => {
             <div className="h-3 bg-muted rounded w-2/3"></div>
             <div className="h-3 bg-muted rounded w-1/2"></div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show special message for individual users
+  if (peppolData.connectionStatus === 'not_available') {
+    return (
+      <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-professional">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0">
+          <div className="flex items-center space-x-2">
+            <div className="p-1.5 sm:p-2 bg-muted rounded-lg">
+              <Icon name="Building2" size={14} className="sm:w-4 sm:h-4" color="var(--color-muted-foreground)" />
+            </div>
+            <div>
+              <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('dashboard.peppolWidget.title')}</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.peppolWidget.businessOnly')}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="text-center py-4">
+          <p className="text-sm text-muted-foreground mb-3">
+            {t('dashboard.peppolWidget.individualUserMessage')}
+          </p>
+          <Button
+            onClick={() => navigate('/subscription')}
+            variant="outline"
+            size="sm"
+            iconName="Settings"
+            iconPosition="left"
+          >
+            {t('dashboard.peppolWidget.upgradeAccount')}
+          </Button>
         </div>
       </div>
     );

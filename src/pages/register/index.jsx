@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
-import { completeRegistration } from '../../services/authService';
+import { completeRegistration, checkUserRegistration } from '../../services/authService';
 import { createCheckoutSession } from '../../services/stripeService';
 import { optimizePaymentFlow } from '../../utils/paymentOptimization';
 import Button from '../../components/ui/Button';
@@ -129,6 +129,23 @@ const Register = () => {
     const cleanupOptimization = optimizePaymentFlow();
     
     try {
+      // Step 0: Check if user can register with this email
+      const { data: checkData, error: checkError } = await checkUserRegistration(formData.email);
+      
+      if (checkError) {
+        setErrors({ general: t('errors.registrationFailed') });
+        setIsLoading(false);
+        cleanupOptimization();
+        return;
+      }
+      
+      if (!checkData.canRegister) {
+        setErrors({ email: checkData.message || t('errors.emailAlreadyExists') });
+        setIsLoading(false);
+        cleanupOptimization();
+        return;
+      }
+      
       // Step 1: Complete user registration
       const { data: authData, error: authError } = await completeRegistration(formData);
       

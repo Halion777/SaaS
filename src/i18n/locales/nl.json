@@ -823,7 +823,7 @@
         "secure": "Veilig",
         "certified": "Gecertificeerd"
       },
-      "saveAnnual": "Bespaar {amount}€ per jaar",
+      "saveAnnual": "Bespaar {{amount}}€ per jaar",
       "plans": {
         "starter": {
           "name": "Starter",
@@ -1503,7 +1503,8 @@
           "dashboard": "Dashboard",
           "analytics": "Analyse",
           "peppolAccessPoint": "PEPPOL Toegangspunt",
-          "leadsManagement": "Lead Beheer"
+          "leadsManagement": "Lead Beheer",
+          "subscription": "Abonnement"
         }
       },
       "quotes": {

@@ -147,7 +147,7 @@ const MultiUserProfilesPage = () => {
       permissions: {
         dashboard: 'full_access',
         analytics: 'full_access',
-        peppolAccessPoint: 'full_access',
+        peppolAccessPoint: 'full_access', // Only available for business users
         leadsManagement: 'full_access',
         quoteCreation: 'full_access',
         quotesManagement: 'full_access',
@@ -167,7 +167,7 @@ const MultiUserProfilesPage = () => {
       permissions: {
         dashboard: 'full_access',
         analytics: 'full_access',
-        peppolAccessPoint: 'view_only',
+        peppolAccessPoint: 'no_access',
         leadsManagement: 'full_access',
         quoteCreation: 'full_access',
         quotesManagement: 'full_access',

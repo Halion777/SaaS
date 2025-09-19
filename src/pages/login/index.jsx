@@ -48,7 +48,9 @@ const Login = () => {
 
       if (loginError) {
         // Handle specific error types
-        if (loginError.message.includes('Invalid login credentials')) {
+        if (loginError.code === 'registration_incomplete') {
+          setError(loginError.message);
+        } else if (loginError.message.includes('Invalid login credentials')) {
           setError(t('errors.invalidCredentials'));
         } else {
           setError(loginError.message || t('errors.loginFailed'));

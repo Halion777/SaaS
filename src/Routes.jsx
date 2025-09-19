@@ -37,6 +37,7 @@ import RecouvrementPage from './pages/services/recouvrement';
 import LeadsManagementPage from './pages/leads-management';
 import StatisticsPage from './pages/statistics';
 import MultiUserProfilesPage from './pages/multi-user-profiles';
+import SubscriptionManagement from './pages/subscription';
 import NotFound from './pages/NotFound';
 import StripeSuccessPage from './pages/stripe-success';
 import PublicQuoteShareViewer from './pages/quote-share';
@@ -48,6 +49,8 @@ import SuperAdminLeads from './pages/admin/super/leads';
 import SuperAdminBilling from './pages/admin/super/billing';
 import SuperAdminEmailTemplates from './pages/admin/super/email-templates';
 import SuperAdminBlogs from './pages/admin/super/blogs';
+import SuperAdminPeppolParticipants from './pages/admin/super/peppol-participants';
+import SuperAdminPeppolInvoices from './pages/admin/super/peppol-invoices';
 
 const AppRoutes = () => {
   return (
@@ -205,6 +208,11 @@ const AppRoutes = () => {
               <MultiUserProfilesPage />
             </ProtectedRoute>
           } />
+          <Route path="/subscription" element={
+            <ProtectedRoute>
+              <SubscriptionManagement />
+            </ProtectedRoute>
+          } />
 
           {/* Super Admin Routes */}
           <Route path="/admin/super/dashboard" element={
@@ -235,6 +243,16 @@ const AppRoutes = () => {
           <Route path="/admin/super/blogs" element={
             <SuperAdminProtectedRoute>
               <SuperAdminBlogs />
+            </SuperAdminProtectedRoute>
+          } />
+          <Route path="/admin/super/peppol-participants" element={
+            <SuperAdminProtectedRoute>
+              <SuperAdminPeppolParticipants />
+            </SuperAdminProtectedRoute>
+          } />
+          <Route path="/admin/super/peppol-invoices" element={
+            <SuperAdminProtectedRoute>
+              <SuperAdminPeppolInvoices />
             </SuperAdminProtectedRoute>
           } />
 

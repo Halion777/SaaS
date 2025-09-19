@@ -824,7 +824,7 @@
         "secure": "Sécurisé",
         "certified": "Certifié"
       },
-      "saveAnnual": "Économisez {amount}€ par an",
+      "saveAnnual": "Économisez {{amount}}€ par an",
       "plans": {
         "starter": {
           "name": "Starter",
@@ -1845,7 +1845,8 @@
           "dashboard": "Tableau de bord",
           "analytics": "Analytics",
           "peppolAccessPoint": "Point d'accès PEPPOL",
-          "leadsManagement": "Gestion des Leads"
+          "leadsManagement": "Gestion des Leads",
+          "subscription": "Abonnement"
         }
       },
       "quotes": {

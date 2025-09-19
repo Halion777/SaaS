@@ -283,6 +283,17 @@ export const MultiUserProvider = ({ children }) => {
       return false;
     }
 
+    // Special handling for Peppol - only available for business users
+    if (module === 'peppolAccessPoint') {
+      // Check if user is a business user (not solo/individual)
+      const businessSizes = ['small', 'medium', 'large'];
+      const isBusiness = businessSizes.includes(user?.business_size);
+      
+      if (!isBusiness) {
+        return false; // Individual users cannot access Peppol
+      }
+    }
+
     // Admin has all permissions
     if (currentProfile.role === 'admin') {
       return true;

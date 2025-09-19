@@ -12,8 +12,8 @@ export async function createCheckoutSession(subscriptionData) {
         planType: subscriptionData.planType,
         billingCycle: subscriptionData.billingCycle,
         userId: subscriptionData.userId,
-        successUrl: `${window.location.origin}/dashboard?success=true`,
-        cancelUrl: `${window.location.origin}/register?step=3&canceled=true`
+        successUrl: subscriptionData.successUrl || `${window.location.origin}/dashboard?success=true`,
+        cancelUrl: subscriptionData.cancelUrl || `${window.location.origin}/register?step=3&canceled=true`
       }
     });
 

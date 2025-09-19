@@ -7,6 +7,7 @@ import Icon from 'components/AppIcon';
 import Button from 'components/ui/Button';
 import SuperAdminSidebar from 'components/ui/SuperAdminSidebar';
 import TableLoader from 'components/ui/TableLoader';
+import RevenueChart from 'components/ui/RevenueChart';
 
 
 const SuperAdminDashboard = () => {
@@ -23,6 +24,8 @@ const SuperAdminDashboard = () => {
     totalQuotes: 0,
     totalInvoices: 0,
     totalLeads: 0,
+    subscriptionRevenue: 0,
+    invoiceRevenue: 0,
     totalRevenue: 0,
     systemUptime: '99.8%',
     lastBackup: '2 hours ago'
@@ -45,6 +48,11 @@ const SuperAdminDashboard = () => {
     active: 0,
     converted: 0,
     spam: 0
+  });
+  const [chartData, setChartData] = useState({
+    monthlyRevenue: [],
+    userGrowth: [],
+    quoteTrends: []
   });
 
   // Handle sidebar offset for responsive layout
@@ -309,6 +317,110 @@ const SuperAdminDashboard = () => {
   };
 
   // Load system statistics
+  // Process chart data
+  const processChartData = async () => {
+    try {
+      // Monthly revenue data (last 12 months)
+      const monthlyRevenue = [];
+      const currentDate = new Date();
+      
+      for (let i = 11; i >= 0; i--) {
+        const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+        const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        
+        const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+        const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
+        
+        // Get subscription revenue from subscriptions table
+        const { data: subscriptionData } = await supabase
+          .from('subscriptions')
+          .select('amount, created_at')
+          .eq('status', 'active')
+          .gte('created_at', monthStart.toISOString())
+          .lte('created_at', monthEnd.toISOString());
+        
+        const subscriptionRevenue = subscriptionData?.reduce((sum, sub) => sum + (sub.amount || 0), 0) || 0;
+        
+        // Get payment records for this month (actual payments received)
+        const { data: paymentData } = await supabase
+          .from('payment_records')
+          .select('amount, paid_at')
+          .eq('status', 'succeeded')
+          .gte('paid_at', monthStart.toISOString())
+          .lte('paid_at', monthEnd.toISOString());
+        
+        const paymentRevenue = paymentData?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+        
+        // Get invoice revenue for this month (client invoices)
+        const { data: invoiceData } = await supabase
+          .from('invoices')
+          .select('final_amount, created_at')
+          .eq('status', 'paid')
+          .gte('created_at', monthStart.toISOString())
+          .lte('created_at', monthEnd.toISOString());
+        
+        const invoiceRevenue = invoiceData?.reduce((sum, invoice) => sum + (invoice.final_amount || 0), 0) || 0;
+        
+        monthlyRevenue.push({
+          name: monthName,
+          revenue: paymentRevenue + invoiceRevenue
+        });
+      }
+
+      // User growth data (last 12 months)
+      const userGrowth = [];
+      for (let i = 11; i >= 0; i--) {
+        const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+        const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        
+        const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+        const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
+        
+        const { count: newUsers } = await supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', monthStart.toISOString())
+          .lte('created_at', monthEnd.toISOString());
+        
+        userGrowth.push({
+          name: monthName,
+          users: newUsers || 0
+        });
+      }
+
+      // Quote trends (last 30 days)
+      const quoteTrends = [];
+      for (let i = 29; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dayName = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        
+        const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+        
+        const { count: dailyQuotes } = await supabase
+          .from('quotes')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', dayStart.toISOString())
+          .lte('created_at', dayEnd.toISOString());
+        
+        quoteTrends.push({
+          name: dayName,
+          quotes: dailyQuotes || 0
+        });
+      }
+
+      setChartData({
+        monthlyRevenue,
+        userGrowth,
+        quoteTrends
+      });
+
+    } catch (error) {
+      console.error('Error processing chart data:', error);
+    }
+  };
+
   useEffect(() => {
     const loadSystemStats = async () => {
       try {
@@ -354,13 +466,31 @@ const SuperAdminDashboard = () => {
           .select('*', { count: 'exact', head: true })
           .eq('status', 'completed');
 
-        // Get total revenue from invoices
-        const { data: revenueData } = await supabase
+        // Get subscription revenue from subscriptions table
+        const { data: subscriptionData } = await supabase
+          .from('subscriptions')
+          .select('amount')
+          .eq('status', 'active');
+
+        const subscriptionRevenue = subscriptionData?.reduce((sum, sub) => sum + (sub.amount || 0), 0) || 0;
+
+        // Get actual payment revenue from payment_records table
+        const { data: paymentData } = await supabase
+          .from('payment_records')
+          .select('amount')
+          .eq('status', 'succeeded');
+
+        const paymentRevenue = paymentData?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+
+        // Get invoice revenue from paid invoices (client invoices)
+        const { data: invoiceData } = await supabase
           .from('invoices')
           .select('final_amount')
           .eq('status', 'paid');
 
-        const totalRevenue = revenueData?.reduce((sum, invoice) => sum + (invoice.final_amount || 0), 0) || 0;
+        const invoiceRevenue = invoiceData?.reduce((sum, invoice) => sum + (invoice.final_amount || 0), 0) || 0;
+
+        const totalRevenue = paymentRevenue + invoiceRevenue;
 
         setSystemStats({
           totalUsers: totalUsers || 0,
@@ -368,6 +498,8 @@ const SuperAdminDashboard = () => {
           totalQuotes: totalQuotes || 0,
           totalInvoices: totalInvoices || 0,
           totalLeads: totalLeads || 0,
+          subscriptionRevenue: paymentRevenue,
+          invoiceRevenue: invoiceRevenue,
           totalRevenue: totalRevenue,
           systemUptime: '99.8%',
           lastBackup: '2 hours ago'
@@ -391,6 +523,9 @@ const SuperAdminDashboard = () => {
 
         // Calculate system uptime
         calculateSystemUptime();
+
+        // Process chart data
+        await processChartData();
 
       } catch (error) {
         console.error('Error loading system stats:', error);
@@ -676,6 +811,46 @@ const SuperAdminDashboard = () => {
              <div className="bg-card border border-border rounded-lg p-6">
                <div className="flex items-center justify-between">
                  <div>
+                   <p className="text-sm font-medium text-muted-foreground">Subscription Revenue</p>
+                   <p className="text-2xl font-bold text-foreground">
+                     {loading ? '...' : `€${systemStats.subscriptionRevenue.toLocaleString()}`}
+                   </p>
+                 </div>
+                 <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                   <Icon name="CreditCard" size={24} className="text-blue-600" />
+                 </div>
+               </div>
+               <div className="mt-4">
+                 <div className="flex items-center text-sm text-muted-foreground">
+                   <Icon name="TrendingUp" size={16} className="text-green-500 mr-1" />
+                   <span>From user subscriptions</span>
+                 </div>
+               </div>
+             </div>
+
+             <div className="bg-card border border-border rounded-lg p-6">
+               <div className="flex items-center justify-between">
+                 <div>
+                   <p className="text-sm font-medium text-muted-foreground">Invoice Revenue</p>
+                   <p className="text-2xl font-bold text-foreground">
+                     {loading ? '...' : `€${systemStats.invoiceRevenue.toLocaleString()}`}
+                   </p>
+                 </div>
+                 <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                   <Icon name="Receipt" size={24} className="text-green-600" />
+                 </div>
+               </div>
+               <div className="mt-4">
+                 <div className="flex items-center text-sm text-muted-foreground">
+                   <Icon name="TrendingUp" size={16} className="text-green-500 mr-1" />
+                   <span>From client invoices</span>
+                 </div>
+               </div>
+             </div>
+
+             <div className="bg-card border border-border rounded-lg p-6">
+               <div className="flex items-center justify-between">
+                 <div>
                    <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
                    <p className="text-2xl font-bold text-foreground">
                      {loading ? '...' : `€${systemStats.totalRevenue.toLocaleString()}`}
@@ -688,11 +863,56 @@ const SuperAdminDashboard = () => {
                <div className="mt-4">
                  <div className="flex items-center text-sm text-muted-foreground">
                    <Icon name="TrendingUp" size={16} className="text-green-500 mr-1" />
-                   <span>From paid invoices</span>
+                   <span>Combined revenue</span>
                  </div>
                </div>
              </div>
            </div>
+
+          {/* Revenue Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Monthly Revenue Chart */}
+            <div className="bg-card border border-border rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-foreground">Monthly Revenue</h3>
+                <Icon name="TrendingUp" size={20} className="text-blue-600" />
+              </div>
+              <RevenueChart
+                data={chartData.monthlyRevenue}
+                type="area"
+                height={300}
+                color="#3b82f6"
+              />
+            </div>
+
+            {/* User Growth Chart */}
+            <div className="bg-card border border-border rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-foreground">User Growth</h3>
+                <Icon name="Users" size={20} className="text-green-600" />
+              </div>
+              <RevenueChart
+                data={chartData.userGrowth}
+                type="line"
+                height={300}
+                color="#10b981"
+              />
+            </div>
+          </div>
+
+          {/* Quote Trends Chart */}
+          <div className="bg-card border border-border rounded-lg p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-foreground">Quote Trends (Last 30 Days)</h3>
+              <Icon name="BarChart" size={20} className="text-purple-600" />
+            </div>
+            <RevenueChart
+              data={chartData.quoteTrends}
+              type="bar"
+              height={250}
+              color="#8b5cf6"
+            />
+          </div>
 
                      {/* Quick Actions */}
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

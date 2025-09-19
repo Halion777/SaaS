@@ -855,7 +855,7 @@
         "secure": "Secure",
         "certified": "Certified"
       },
-      "saveAnnual": "Save {amount}€ per year"
+      "saveAnnual": "Save {{amount}}€ per year"
     },
     "professions": {
       "electrician": "Electrician",
@@ -1470,7 +1470,8 @@
           "dashboard": "Dashboard",
           "analytics": "Analytics",
           "peppolAccessPoint": "PEPPOL Access Point",
-          "leadsManagement": "Leads Management"
+          "leadsManagement": "Leads Management",
+          "subscription": "Subscription"
         }
       },
       "quotes": {
