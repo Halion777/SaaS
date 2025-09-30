@@ -3,6 +3,8 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
+import FileUpload from '../../../components/ui/FileUpload';
+import { OCRService } from '../../../services/ocrService';
 
 const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice }) => {
   const [formData, setFormData] = useState({
@@ -25,6 +27,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice }
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOCRProcessing, setIsOCRProcessing] = useState(false);
   const [ocrStatus, setOcrStatus] = useState('');
+  const [uploadedFiles, setUploadedFiles] = useState([]);
 
   const categoryOptions = [
     { value: '', label: 'Sélectionner une catégorie' },
@@ -60,10 +63,52 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice }
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormData(prev => ({ ...prev, invoiceFile: file }));
+  const handleFileUpload = (files) => {
+    setUploadedFiles(files);
+  };
+
+  const handleFileRemove = (files) => {
+    setUploadedFiles(files);
+  };
+
+  const handleOCRProcess = async (file) => {
+    setIsOCRProcessing(true);
+    setOcrStatus('Analyse de la facture en cours...');
+    
+    try {
+      const result = await OCRService.extractInvoiceData(file);
+      
+      if (result.success) {
+        const extractedData = result.data;
+        
+        // Auto-fill form with extracted data
+        setFormData(prev => ({
+          ...prev,
+          supplierName: extractedData.supplier_name || '',
+          supplierEmail: extractedData.supplier_email || '',
+          supplierVatNumber: extractedData.supplier_vat_number || '',
+          invoiceNumber: extractedData.invoice_number || '',
+          amount: extractedData.amount?.toString() || '',
+          netAmount: extractedData.net_amount?.toString() || '',
+          vatAmount: extractedData.vat_amount?.toString() || '',
+          issueDate: extractedData.issue_date || new Date().toISOString().split('T')[0],
+          dueDate: extractedData.due_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          notes: extractedData.notes || ''
+        }));
+
+        setOcrStatus('Données extraites avec succès !');
+        
+        // Remove the file after successful OCR
+        setUploadedFiles([]);
+      } else {
+        setOcrStatus('Échec de l\'extraction. Veuillez remplir manuellement.');
+        console.error('OCR failed:', result.error);
+      }
+    } catch (error) {
+      setOcrStatus('Erreur lors de l\'extraction. Veuillez remplir manuellement.');
+      console.error('OCR error:', error);
+    } finally {
+      setIsOCRProcessing(false);
     }
   };
 
@@ -118,6 +163,8 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice }
         notes: '',
         invoiceFile: null
       });
+      setUploadedFiles([]);
+      setOcrStatus('');
     } catch (error) {
       alert('Erreur lors de la création de la facture. Veuillez réessayer.');
     } finally {
@@ -145,6 +192,8 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice }
         notes: '',
         invoiceFile: null
       });
+      setUploadedFiles([]);
+      setOcrStatus('');
     }
   };
 
@@ -156,15 +205,18 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice }
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-semibold text-foreground">Nouvelle facture fournisseur</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Créez une nouvelle facture fournisseur manuellement
-              </p>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                <Icon name="FileText" size={20} color="var(--color-primary)" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-foreground">Création rapide de facture</h2>
+                <p className="text-sm text-muted-foreground">Créez une nouvelle facture en quelques clics</p>
+              </div>
             </div>
             <button
               onClick={handleClose}
-              className="p-2 rounded-md hover:bg-muted transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors duration-150"
               disabled={isSubmitting}
             >
               <Icon name="X" size={20} color="var(--color-muted-foreground)" />
@@ -172,6 +224,42 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice }
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* OCR File Upload */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start space-x-3 mb-3">
+                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Icon name="Scan" size={16} color="var(--color-blue-600)" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-blue-900 mb-1">Scanner automatique de facture</h4>
+                  <p className="text-sm text-blue-700">Téléchargez une facture pour extraire automatiquement les données</p>
+                </div>
+              </div>
+              
+              <FileUpload
+                onFileUpload={handleFileUpload}
+                onFileRemove={handleFileRemove}
+                uploadedFiles={uploadedFiles}
+                acceptedTypes=".pdf,.jpg,.jpeg,.png"
+                maxSize={10 * 1024 * 1024}
+                showOCRButton={true}
+                onOCRProcess={handleOCRProcess}
+              />
+              
+              {isOCRProcessing && (
+                <div className="mt-3 flex items-center space-x-2 text-sm text-blue-700">
+                  <Icon name="Loader" size={16} className="animate-spin" />
+                  <span>Analyse de la facture en cours...</span>
+                </div>
+              )}
+              
+              {ocrStatus && !isOCRProcessing && (
+                <div className="mt-3 p-2 bg-blue-100 rounded text-sm text-blue-800">
+                  {ocrStatus}
+                </div>
+              )}
+            </div>
+
             {/* Supplier Information */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-foreground border-b border-border pb-2">
@@ -284,67 +372,6 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice }
                 </div>
               </div>
 
-              {/* File Upload */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Fichier de facture
-                </label>
-                <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-primary/50 transition-colors">
-                  <input
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png,.xml"
-                    onChange={handleFileChange}
-                    className="hidden"
-                    id="invoice-file-upload"
-                  />
-                  <label htmlFor="invoice-file-upload" className="cursor-pointer">
-                    <Icon name="Upload" size={24} className="mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      {formData.invoiceFile ? formData.invoiceFile.name : 'Cliquez pour sélectionner un fichier ou glissez-déposez'}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Formats acceptés: PDF, JPG, PNG, XML
-                    </p>
-                  </label>
-                </div>
-                {formData.invoiceFile && (
-                  <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-                    <Icon name="FileText" size={16} />
-                    <span>{formData.invoiceFile.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, invoiceFile: null }))}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Icon name="X" size={14} />
-                    </button>
-                  </div>
-                )}
-                
-                {/* OCR Status Display */}
-                {formData.invoiceFile && (
-                  <div className="mt-3 p-3 bg-muted/30 rounded-lg">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Icon name="Scan" size={16} className="text-primary" />
-                      <span className="font-medium">Traitement OCR</span>
-                      {isOCRProcessing && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
-                          <span>Analyse en cours...</span>
-                        </div>
-                      )}
-                    </div>
-                    {ocrStatus && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {ocrStatus}
-                      </p>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Les informations seront automatiquement extraites du fichier lors de la création
-                    </p>
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* Additional Information */}
