@@ -14,8 +14,7 @@ const SuperAdminSidebar = () => {
     leads: false,
     users: false,
     billing: false,
-    content: false,
-    peppol: false
+    content: false
   });
   const location = useLocation();
   const navigate = useNavigate();
@@ -62,17 +61,15 @@ const SuperAdminSidebar = () => {
     
     // Determine which section should be expanded based on the current path
     if (path.startsWith('/admin/super/dashboard')) {
-      setExpandedSections(prev => ({ ...prev, system: true, leads: false, users: false, billing: false, content: false, peppol: false }));
+      setExpandedSections(prev => ({ ...prev, system: true, leads: false, users: false, billing: false, content: false }));
     } else if (path.startsWith('/admin/super/leads')) {
-      setExpandedSections(prev => ({ ...prev, system: false, leads: true, users: false, billing: false, content: false, peppol: false }));
+      setExpandedSections(prev => ({ ...prev, system: false, leads: true, users: false, billing: false, content: false }));
     } else if (path.startsWith('/admin/super/users')) {
-      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: true, billing: false, content: false, peppol: false }));
+      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: true, billing: false, content: false }));
     } else if (path.startsWith('/admin/super/billing')) {
-      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: false, billing: true, content: false, peppol: false }));
+      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: false, billing: true, content: false }));
     } else if (path.startsWith('/admin/super/email-templates') || path.startsWith('/admin/super/blogs')) {
-      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: false, billing: false, content: true, peppol: false }));
-    } else if (path.startsWith('/admin/super/peppol')) {
-      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: false, billing: false, content: false, peppol: true }));
+      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: false, billing: false, content: true }));
     }
   }, [location.pathname, isCollapsed, isTablet]);
 
@@ -108,8 +105,7 @@ const SuperAdminSidebar = () => {
         leads: sectionId === 'leads',
         users: sectionId === 'users',
         billing: sectionId === 'billing',
-        content: sectionId === 'content',
-        peppol: sectionId === 'peppol'
+        content: sectionId === 'content'
       };
     });
   };
@@ -208,28 +204,6 @@ const SuperAdminSidebar = () => {
           label: 'Blog Posts',
           path: '/admin/super/blogs',
           icon: 'FileText',
-          notifications: 0
-        }
-      ]
-    },
-    {
-      id: 'peppol',
-      label: 'Peppol Integration',
-      isCollapsible: true,
-      isExpanded: expandedSections.peppol,
-      items: [
-        {
-          id: 'peppol-participants',
-          label: 'Participants',
-          path: '/admin/super/peppol-participants',
-          icon: 'Building2',
-          notifications: 0
-        },
-        {
-          id: 'peppol-invoices',
-          label: 'Invoices',
-          path: '/admin/super/peppol-invoices',
-          icon: 'Receipt',
           notifications: 0
         }
       ]
