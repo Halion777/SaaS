@@ -90,10 +90,13 @@ const SubscriptionManagement = () => {
     try {
       setLoading(true);
       
-      const { data: userData, error } = await supabase
-        .from('users')
-        .select('selected_plan, subscription_status, stripe_subscription_id, trial_end_date')
-        .eq('id', user.id)
+      // Load subscription data from subscriptions table
+      const { data: subscriptionData, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .single();
 
       if (error) {
@@ -101,11 +104,11 @@ const SubscriptionManagement = () => {
         return;
       }
 
-      setSubscription(userData);
+      setSubscription(subscriptionData);
       
       // Mark current plan
       plans.forEach(plan => {
-        plan.current = plan.id === userData.selected_plan;
+        plan.current = plan.id === subscriptionData.plan_type;
       });
 
     } catch (error) {
@@ -150,7 +153,9 @@ const SubscriptionManagement = () => {
 
   const handleManageBilling = async () => {
     try {
-      const { data, error } = await createPortalSession(user.id);
+      // Use subscription's Stripe customer ID if available, fallback to user ID
+      const customerId = subscription?.stripe_customer_id || user.id;
+      const { data, error } = await createPortalSession(customerId);
       
       if (error) {
         console.error('Error creating portal session:', error);
@@ -171,7 +176,8 @@ const SubscriptionManagement = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return 'text-green-600 bg-green-100';
-      case 'trialing': return 'text-blue-600 bg-blue-100';
+      case 'trialing': 
+      case 'trial': return 'text-blue-600 bg-blue-100';
       case 'cancelled': return 'text-red-600 bg-red-100';
       case 'inactive': return 'text-gray-600 bg-gray-100';
       default: return 'text-gray-600 bg-gray-100';
@@ -181,7 +187,8 @@ const SubscriptionManagement = () => {
   const getStatusText = (status) => {
     switch (status) {
       case 'active': return 'Active';
-      case 'trialing': return 'Trial';
+      case 'trialing': 
+      case 'trial': return 'Trial';
       case 'cancelled': return 'Cancelled';
       case 'inactive': return 'Inactive';
       default: return 'Unknown';
@@ -225,8 +232,8 @@ const SubscriptionManagement = () => {
             <div className="bg-card border border-border rounded-lg p-6 mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-foreground">Current Plan</h2>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(subscription.subscription_status)}`}>
-                {getStatusText(subscription.subscription_status)}
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(subscription.status)}`}>
+                {getStatusText(subscription.status)}
               </span>
             </div>
             
@@ -234,20 +241,20 @@ const SubscriptionManagement = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Plan</p>
                 <p className="text-lg font-semibold text-foreground">
-                  {plans.find(p => p.id === subscription.selected_plan)?.name || 'Unknown Plan'}
+                  {subscription.plan_name || 'Unknown Plan'}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Price</p>
                 <p className="text-lg font-semibold text-foreground">
-                  €{plans.find(p => p.id === subscription.selected_plan)?.price?.[billingCycle] || 0}/{billingCycle === 'monthly' ? 'month' : 'year'}
+                  €{subscription.amount || 0}/{subscription.interval || 'month'}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Trial End</p>
                 <p className="text-lg font-semibold text-foreground">
-                  {subscription.trial_end_date 
-                    ? new Date(subscription.trial_end_date).toLocaleDateString()
+                  {subscription.trial_end 
+                    ? new Date(subscription.trial_end).toLocaleDateString()
                     : 'N/A'
                   }
                 </p>
