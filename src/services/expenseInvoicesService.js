@@ -121,7 +121,7 @@ export class ExpenseInvoicesService {
   async createExpenseInvoice(invoiceData) {
     try {
       // Insert the main invoice record
-      const { data: invoice, error: invoiceError } = await supabase
+      let { data: invoice, error: invoiceError } = await supabase
         .from(this.tableName)
         .insert([{
           invoice_number: invoiceData.invoiceNumber || `EXP-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
