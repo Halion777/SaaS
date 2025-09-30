@@ -1558,7 +1558,8 @@ export async function convertQuoteToInvoice(quote, userId) {
       title: quote.title || `Facture pour ${quote.description || 'Projet'}`,
       description: quote.description,
       status: 'unpaid', // Always start as unpaid
-      amount: quote.total_amount || 0,
+      amount: quote.net_amount || quote.total_amount || 0, // Net amount (HT)
+      net_amount: quote.net_amount || quote.total_amount || 0, // Net amount (HT)
       tax_amount: quote.tax_amount || 0,
       discount_amount: quote.discount_amount || 0,
       final_amount: quote.final_amount || quote.total_amount || 0,

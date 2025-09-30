@@ -144,20 +144,20 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
 
   const renderCardView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-      {supplierInvoices.map((invoice) => {
-        const daysOverdue = getDaysOverdue(invoice.dueDate, invoice.status);
+      {expenseInvoices.map((invoice) => {
+        const daysOverdue = getDaysOverdue(invoice.due_date, invoice.status);
         return (
           <div key={invoice.id} className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow duration-150">
             {/* Header with checkbox and invoice number */}
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center space-x-2">
                 <Checkbox
-                  checked={selectedSupplierInvoices.includes(invoice.id)}
+                  checked={selectedExpenseInvoices.includes(invoice.id)}
                   onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
                 />
                 <div>
-                  <div className="text-sm font-medium text-foreground">{invoice.number}</div>
-                  <div className="text-xs text-muted-foreground">{invoice.invoiceFile}</div>
+                  <div className="text-sm font-medium text-foreground">{invoice.invoice_number}</div>
+                  <div className="text-xs text-muted-foreground">{invoice.category || 'N/A'}</div>
                 </div>
               </div>
               <div className="flex items-center space-x-1">
@@ -165,28 +165,28 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                   variant="ghost"
                   size="sm"
                   iconName="Eye"
-                  onClick={() => onSupplierInvoiceAction('view', invoice)}
+                  onClick={() => onExpenseInvoiceAction('view', invoice)}
                 />
                 <Button
                   variant="ghost"
                   size="sm"
                   iconName="Edit"
-                  onClick={() => onSupplierInvoiceAction('edit', invoice)}
+                  onClick={() => onExpenseInvoiceAction('edit', invoice)}
                 />
               </div>
             </div>
 
             {/* Supplier Info */}
             <div className="mb-3">
-              <div className="text-sm font-medium text-foreground">{invoice.supplierName}</div>
-              <div className="text-xs text-muted-foreground">{invoice.supplierEmail}</div>
+              <div className="text-sm font-medium text-foreground">{invoice.supplier_name}</div>
+              <div className="text-xs text-muted-foreground">{invoice.supplier_email}</div>
             </div>
 
             {/* Amount and Payment Method */}
             <div className="mb-3">
               <div className="text-lg font-bold text-foreground">{formatCurrency(invoice.amount)}</div>
-              {invoice.paymentMethod && (
-                <div className="text-xs text-muted-foreground">{invoice.paymentMethod}</div>
+              {invoice.payment_method && (
+                <div className="text-xs text-muted-foreground">{invoice.payment_method}</div>
               )}
             </div>
 
@@ -205,12 +205,12 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
             <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-3">
               <div>
                 <div className="font-medium">Émission:</div>
-                <div>{formatDate(invoice.issueDate)}</div>
+                <div>{formatDate(invoice.issue_date)}</div>
               </div>
               <div>
                 <div className="font-medium">Échéance:</div>
                 <div className={`${invoice.status === 'overdue' ? 'text-error font-medium' : ''}`}>
-                  {formatDate(invoice.dueDate)}
+                  {formatDate(invoice.due_date)}
                 </div>
               </div>
             </div>
@@ -221,7 +221,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                 variant="outline"
                 size="sm"
                 iconName="Copy"
-                onClick={() => onSupplierInvoiceAction('duplicate', invoice)}
+                onClick={() => onExpenseInvoiceAction('duplicate', invoice)}
                 className="text-xs"
               >
                 Dupliquer
@@ -319,7 +319,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                 />
               </th>
               <SortableHeader label="N° Facture" sortKey="number" />
-              <SortableHeader label="Fournisseur" sortKey="supplierName" />
+              <SortableHeader label="Fournisseur" sortKey="supplier_name" />
               <SortableHeader label="Montant" sortKey="amount" />
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Catégorie
@@ -339,7 +339,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
           </thead>
           <tbody className="bg-card divide-y divide-border">
             {expenseInvoices.map((invoice) => {
-              const daysOverdue = getDaysOverdue(invoice.dueDate, invoice.status);
+              const daysOverdue = getDaysOverdue(invoice.due_date, invoice.status);
               return (
                 <tr key={invoice.id} className="hover:bg-muted/30 transition-colors duration-150">
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -349,23 +349,23 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                     />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-foreground">{invoice.number}</div>
-                    <div className="text-xs text-muted-foreground">{invoice.invoiceFile}</div>
+                    <div className="text-sm font-medium text-foreground">{invoice.invoice_number}</div>
+                    <div className="text-xs text-muted-foreground">{invoice.category || 'N/A'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-foreground">{invoice.supplierName}</div>
-                    <div className="text-xs text-muted-foreground">{invoice.supplierEmail}</div>
-                    {invoice.supplierVatNumber && (
-                      <div className="text-xs text-muted-foreground">VAT: {invoice.supplierVatNumber}</div>
+                    <div className="text-sm text-foreground">{invoice.supplier_name}</div>
+                    <div className="text-xs text-muted-foreground">{invoice.supplier_email}</div>
+                    {invoice.supplier_vat_number && (
+                      <div className="text-xs text-muted-foreground">VAT: {invoice.supplier_vat_number}</div>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-foreground">{formatCurrency(invoice.amount)}</div>
-                    {invoice.netAmount && (
-                      <div className="text-xs text-muted-foreground">Net: {formatCurrency(invoice.netAmount)}</div>
+                    {invoice.net_amount && (
+                      <div className="text-xs text-muted-foreground">Net: {formatCurrency(invoice.net_amount)}</div>
                     )}
-                    {invoice.vatAmount && (
-                      <div className="text-xs text-muted-foreground">VAT: {formatCurrency(invoice.vatAmount)}</div>
+                    {invoice.vat_amount && (
+                      <div className="text-xs text-muted-foreground">VAT: {formatCurrency(invoice.vat_amount)}</div>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -383,11 +383,11 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                    {formatDate(invoice.issueDate)}
+                    {formatDate(invoice.issue_date)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                     <div className={`${invoice.status === 'overdue' ? 'text-error font-medium' : ''}`}>
-                      {formatDate(invoice.dueDate)}
+                      {formatDate(invoice.due_date)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

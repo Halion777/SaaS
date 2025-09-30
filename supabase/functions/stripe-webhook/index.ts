@@ -140,6 +140,9 @@ serve(async (req) => {
           }
           
           console.log('Creating user record:', userRecord)
+          console.log('Session subscription ID:', session.subscription)
+          console.log('Session customer ID:', session.customer)
+          console.log('Session metadata:', session.metadata)
 
           // Insert or update user record
           const { error: userError } = await supabaseClient
@@ -158,6 +161,7 @@ serve(async (req) => {
           }
 
           console.log('User record created successfully')
+          console.log('Final user record:', userRecord)
           
           // Create initial user profile for multi-user system
           const { error: profileError } = await supabaseClient
@@ -252,18 +256,7 @@ serve(async (req) => {
           console.log(`Registration completed for user: ${session.metadata.userId}`)
         } else if (session.payment_status === 'unpaid') {
           console.log(`Payment failed for user: ${session.metadata?.userId}`)
-          
-          // Delete the auth user since payment failed
-          try {
-            const { error: deleteError } = await supabaseClient.auth.admin.deleteUser(session.metadata.userId)
-            if (deleteError) {
-              console.error('Error deleting auth user after payment failure:', deleteError)
-            } else {
-              console.log('Auth user deleted after payment failure')
-            }
-          } catch (error) {
-            console.error('Error deleting auth user:', error)
-          }
+          // Payment failed - user can retry payment later
         }
         break
 
@@ -289,42 +282,20 @@ serve(async (req) => {
       case 'checkout.session.async_payment_failed':
         const asyncFailedSession = event.data.object as Stripe.Checkout.Session
         
-        // Handle async payment failure - delete auth user
+        // Handle async payment failure
         if (asyncFailedSession.metadata?.userId) {
           console.log(`Async payment failed for user: ${asyncFailedSession.metadata.userId}`)
-          
-          // Delete the auth user since payment failed
-          try {
-            const { error: deleteError } = await supabaseClient.auth.admin.deleteUser(asyncFailedSession.metadata.userId)
-            if (deleteError) {
-              console.error('Error deleting auth user after async payment failure:', deleteError)
-            } else {
-              console.log('Auth user deleted after async payment failure')
-            }
-          } catch (error) {
-            console.error('Error deleting auth user:', error)
-          }
+          // Async payment failed - user can retry payment later
         }
         break
 
       case 'checkout.session.expired':
         const expiredSession = event.data.object as Stripe.Checkout.Session
         
-        // Handle expired checkout session - delete auth user
+        // Handle expired checkout session
         if (expiredSession.metadata?.userId) {
           console.log(`Checkout session expired for user: ${expiredSession.metadata.userId}`)
-          
-          // Delete the auth user since session expired
-          try {
-            const { error: deleteError } = await supabaseClient.auth.admin.deleteUser(expiredSession.metadata.userId)
-            if (deleteError) {
-              console.error('Error deleting auth user after session expiry:', deleteError)
-            } else {
-              console.log('Auth user deleted after session expiry')
-            }
-          } catch (error) {
-            console.error('Error deleting auth user:', error)
-          }
+          // Session expired - user can retry registration later
         }
         break
 

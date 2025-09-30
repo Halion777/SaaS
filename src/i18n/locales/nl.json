@@ -957,6 +957,13 @@
     "aiBoost": {
       "title": "Boost je handtekeningen met 40%",
       "description": "Onze AI optimaliseert automatisch je offertes om je kansen op ondertekening te maximaliseren."
+    },
+    "processing": "Registratie verwerken",
+    "processingDescription": "Even geduld terwijl we je account instellen en je gratis proefperiode voorbereiden...",
+    "steps": {
+      "validating": "E-mail valideren",
+      "creating": "Account aanmaken",
+      "redirecting": "Doorverwijzen naar betaling"
     }
   },
   "forgotPassword": {

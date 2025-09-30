@@ -45,6 +45,37 @@ export const AuthProvider = ({ children }) => {
       }
       
       if (data.session) {
+        // Check if user has completed payment/registration
+        try {
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('id, registration_completed')
+            .eq('id', data.session.user.id)
+            .single();
+
+          if (userError || !userData) {
+            // User doesn't exist in public.users table - registration incomplete
+            console.log('User registration incomplete, blocking auto-login');
+            
+            // Sign out the user immediately
+            await supabase.auth.signOut();
+            return false;
+          }
+
+          if (!userData.registration_completed) {
+            // User exists but registration not completed
+            console.log('User registration not completed, blocking auto-login');
+            
+            // Sign out the user immediately
+            await supabase.auth.signOut();
+            return false;
+          }
+        } catch (error) {
+          console.error('Error checking user registration status:', error);
+          await supabase.auth.signOut();
+          return false;
+        }
+
         setUser(data.session.user);
         setSession(data.session);
         

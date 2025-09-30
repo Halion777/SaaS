@@ -132,7 +132,7 @@ export async function signUp(email, password, fullName, companyName) {
     sessionManager.clearAllAuthData();
 
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: email.toLowerCase().trim(),
       password,
       options: {
         data: {
@@ -364,7 +364,7 @@ export async function completeRegistration(formData) {
     
     // Step 1: Create auth user (will fail if user already exists with completed registration)
     const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: formData.email,
+      email: formData.email.toLowerCase().trim(),
       password: formData.password,
       options: {
         data: {

@@ -958,6 +958,13 @@
     "aiBoost": {
       "title": "Boost your signatures by 40%",
       "description": "Our AI automatically optimizes your quotes to maximize your chances of signing."
+    },
+    "processing": "Processing Registration",
+    "processingDescription": "Please wait while we set up your account and prepare your free trial...",
+    "steps": {
+      "validating": "Validating email",
+      "creating": "Creating account",
+      "redirecting": "Redirecting to payment"
     }
   },
   "forgotPassword": {

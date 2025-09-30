@@ -9,15 +9,19 @@ import { useTranslation } from 'react-i18next';
  * @param {string} props.message - Message to display in the overlay
  * @param {string} props.id - Optional ID for the overlay
  * @param {function} props.onClose - Optional callback when the overlay is closed
+ * @param {boolean} props.preventNavigation - Whether to prevent navigation with warning (default: true)
  * @returns {React.ReactNode}
  */
-const ProcessingOverlay = ({ isVisible, message = null, id = "processing-overlay", onClose = null }) => {
+const ProcessingOverlay = ({ isVisible, message = null, id = "processing-overlay", onClose = null, preventNavigation = true }) => {
   const { t } = useTranslation();
   
   // Use provided message or fallback to default translation
   const displayMessage = message || t('ui.processingOverlay.defaultMessage');
   
   useEffect(() => {
+    // Only prevent navigation if preventNavigation is true
+    if (!preventNavigation) return;
+    
     // Prevent closing the tab with a warning when overlay is visible
     const beforeUnloadListener = (event) => {
       if (isVisible) {
@@ -40,7 +44,7 @@ const ProcessingOverlay = ({ isVisible, message = null, id = "processing-overlay
         onClose();
       }
     };
-  }, [isVisible, onClose, t]);
+  }, [isVisible, onClose, t, preventNavigation]);
   
   if (!isVisible) return null;
   

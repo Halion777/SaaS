@@ -958,6 +958,13 @@
     "aiBoost": {
       "title": "Boostez vos signatures de 40%",
       "description": "Notre IA optimise automatiquement vos devis pour maximiser vos chances de signature."
+    },
+    "processing": "Traitement de l'inscription",
+    "processingDescription": "Veuillez patienter pendant que nous configurons votre compte et préparons votre essai gratuit...",
+    "steps": {
+      "validating": "Validation de l'email",
+      "creating": "Création du compte",
+      "redirecting": "Redirection vers le paiement"
     }
   },
   "forgotPassword": {

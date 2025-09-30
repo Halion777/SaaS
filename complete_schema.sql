@@ -275,10 +275,16 @@ BEGIN
     full_name, 
     company_name,
     vat_number,
+    phone,
+    profession,
+    country,
+    business_size,
+    selected_plan,
     avatar_url,
     trial_start_date,
     trial_end_date,
-    subscription_status
+    subscription_status,
+    registration_completed
   )
   VALUES (
     NEW.id,
@@ -286,10 +292,16 @@ BEGIN
     NEW.raw_user_meta_data->>'full_name',
     NEW.raw_user_meta_data->>'company_name',
     NEW.raw_user_meta_data->>'vat_number',
+    NEW.raw_user_meta_data->>'phone',
+    NEW.raw_user_meta_data->>'profession',
+    NEW.raw_user_meta_data->>'country',
+    NEW.raw_user_meta_data->>'business_size',
+    NEW.raw_user_meta_data->>'selected_plan',
     NEW.raw_user_meta_data->>'avatar_url',
     NOW(),
     NOW() + INTERVAL '14 days',
-    'trial'
+    'trial',
+    false
   );
   -- NO profile creation here - let our application code handle it
   RETURN NEW;

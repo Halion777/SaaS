@@ -5,10 +5,12 @@ import { useTranslation } from 'react-i18next';
 import { completeRegistration, checkUserRegistration } from '../../services/authService';
 import { createCheckoutSession } from '../../services/stripeService';
 import { optimizePaymentFlow } from '../../utils/paymentOptimization';
+import { supabase } from '../../services/supabaseClient';
 import Button from '../../components/ui/Button';
 import { Checkbox } from '../../components/ui/Checkbox';
 import Icon from '../../components/AppIcon';
 import ErrorMessage from '../../components/ui/ErrorMessage';
+import ProcessingOverlay from '../../components/ui/ProcessingOverlay';
 import StepOne from './components/StepOne';
 import StepTwo from './components/StepTwo';
 import StepThree from './components/StepThree';
@@ -130,7 +132,9 @@ const Register = () => {
     
     try {
       // Step 0: Check if user can register with this email
-      const { data: checkData, error: checkError } = await checkUserRegistration(formData.email);
+      const { data: checkData, error: checkError } = await checkUserRegistration(formData.email.toLowerCase().trim());
+      
+      console.log('Check user registration result:', checkData);
       
       if (checkError) {
         setErrors({ general: t('errors.registrationFailed') });
@@ -146,7 +150,111 @@ const Register = () => {
         return;
       }
       
-      // Step 1: Complete user registration
+      // Check if this is resuming an incomplete registration
+      if (checkData.userExists && !checkData.registrationComplete) {
+        // Resume incomplete registration - sign in existing user and proceed to payment
+        console.log('Resuming incomplete registration for user:', checkData.userId);
+        
+        // Set registration pending flag BEFORE signing in to prevent dashboard redirect
+        sessionStorage.setItem('registration_pending', JSON.stringify({
+          email: formData.email.toLowerCase().trim(),
+          plan: formData.selectedPlan,
+          billingCycle: formData.billingCycle,
+          timestamp: Date.now(),
+          resumingRegistration: true
+        }));
+        
+        // Sign in the existing user
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: formData.email.toLowerCase().trim(),
+          password: formData.password
+        });
+        
+        if (signInError) {
+          setErrors({ general: t('errors.loginFailed') });
+          setIsLoading(false);
+          cleanupOptimization();
+          sessionStorage.removeItem('registration_pending');
+          return;
+        }
+        
+        // Update user metadata with new form data
+        const { error: updateError } = await supabase.auth.updateUser({
+          data: {
+            full_name: formData.fullName,
+            company_name: formData.companyName,
+            vat_number: formData.vatNumber,
+            phone: formData.phone,
+            profession: formData.profession,
+            country: formData.country,
+            business_size: formData.businessSize,
+            selected_plan: formData.selectedPlan
+          }
+        });
+        
+        if (updateError) {
+          console.error('Error updating user metadata:', updateError);
+          // Continue anyway - metadata update is not critical
+        }
+        
+        // Proceed directly to Stripe checkout with updated user data
+        const { data: stripeData, error: stripeError } = await createCheckoutSession({
+          planType: formData.selectedPlan,
+          billingCycle: formData.billingCycle,
+          userId: signInData.user.id,
+          // Include all form data for user record creation in webhook
+          userData: {
+            email: formData.email.toLowerCase().trim(),
+            fullName: formData.fullName,
+            companyName: formData.companyName,
+            vatNumber: formData.vatNumber,
+            phone: formData.phone,
+            profession: formData.profession,
+            country: formData.country,
+            businessSize: formData.businessSize
+          }
+        });
+
+        if (stripeError) {
+          setErrors({ general: t('errors.paymentFailed') });
+          setIsLoading(false);
+          cleanupOptimization();
+          sessionStorage.removeItem('registration_pending');
+          return;
+        }
+
+        // Redirect to Stripe checkout
+        if (stripeData?.url) {
+          // Update registration pending with userId
+          sessionStorage.setItem('registration_pending', JSON.stringify({
+            userId: signInData.user.id,
+            email: signInData.user.email,
+            plan: formData.selectedPlan,
+            billingCycle: formData.billingCycle,
+            timestamp: Date.now(),
+            resumingRegistration: true
+          }));
+          
+          // Redirect to Stripe checkout
+          window.location.href = stripeData.url;
+        } else {
+          setErrors({ general: t('errors.paymentFailed') });
+          setIsLoading(false);
+          cleanupOptimization();
+        }
+        
+        return;
+      }
+      
+      // Set registration pending flag BEFORE creating auth user to prevent dashboard redirect
+      sessionStorage.setItem('registration_pending', JSON.stringify({
+        email: formData.email.toLowerCase().trim(),
+        plan: formData.selectedPlan,
+        billingCycle: formData.billingCycle,
+        timestamp: Date.now()
+      }));
+      
+      // Step 1: Complete user registration (only for new users)
       const { data: authData, error: authError } = await completeRegistration(formData);
       
       if (authError) {
@@ -157,6 +265,8 @@ const Register = () => {
         }
         setIsLoading(false);
         cleanupOptimization(); // Clean up optimization
+        // Clear registration pending flag on error
+        sessionStorage.removeItem('registration_pending');
         return;
       }
 
@@ -171,12 +281,14 @@ const Register = () => {
         setErrors({ general: t('errors.paymentFailed') });
         setIsLoading(false);
         cleanupOptimization(); // Clean up optimization
+        // Clear registration pending flag on error
+        sessionStorage.removeItem('registration_pending');
         return;
       }
 
       // Step 3: Redirect to Stripe checkout
       if (stripeData?.url) {
-        // Store detailed registration completion information
+        // Update registration pending with userId
         sessionStorage.setItem('registration_pending', JSON.stringify({
           userId: authData.user.id,
           email: authData.user.email,
@@ -197,6 +309,8 @@ const Register = () => {
     } catch (error) {
       setErrors({ general: t('errors.registrationFailed') });
       cleanupOptimization(); // Clean up optimization
+      // Clear registration pending flag on error
+      sessionStorage.removeItem('registration_pending');
     } finally {
       setIsLoading(false);
     }
@@ -250,6 +364,14 @@ const Register = () => {
         <meta name="description" content={t('meta.register.description')} />
         <html lang={i18n.language} />
       </Helmet>
+      
+      {/* Processing Overlay */}
+      <ProcessingOverlay 
+        isVisible={isLoading}
+        message={t('register.processing')}
+        id="registration-processing-overlay"
+        preventNavigation={false}
+      />
       
       {/* Background Pattern */}
       <div className="absolute inset-0 z-0 opacity-5">

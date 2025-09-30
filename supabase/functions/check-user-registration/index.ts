@@ -35,14 +35,32 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Check if user exists in auth.users by listing users with email filter
+    // Check if user exists in auth.users (case-insensitive)
+    const normalizedEmail = email.toLowerCase().trim()
+    
+    // Try to get user by email with exact match first
     const { data: authUsers, error: authError } = await supabaseClient.auth.admin.listUsers({
       page: 1,
-      perPage: 1,
-      filter: `email.eq.${email}`
+      perPage: 1000 // Get all users for now - can optimize later
     })
 
-    if (authError || !authUsers?.users || authUsers.users.length === 0) {
+    if (authError || !authUsers?.users) {
+      console.error('Error fetching auth users:', authError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to check user existence' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // Find user with case-insensitive email match
+    const authUser = authUsers.users.find(user => 
+      user.email && user.email.toLowerCase().trim() === normalizedEmail
+    )
+
+    if (!authUser) {
       // User doesn't exist in auth, can register
       return new Response(
         JSON.stringify({ 
@@ -57,8 +75,6 @@ serve(async (req) => {
       )
     }
 
-    const authUser = authUsers.users[0]
-
     // User exists in auth, check if registration is complete
     const { data: userData, error: userError } = await supabaseClient
       .from('users')
@@ -66,8 +82,12 @@ serve(async (req) => {
       .eq('id', authUser.id)
       .single()
 
+    console.log('User data from public.users:', userData);
+    console.log('User error:', userError);
+
     if (userError || !userData) {
       // User exists in auth but not in public.users (incomplete registration)
+      console.log('User exists in auth but not in public.users - allowing registration');
       return new Response(
         JSON.stringify({ 
           canRegister: true,
@@ -84,6 +104,7 @@ serve(async (req) => {
 
     if (userData.registration_completed) {
       // User has completed registration
+      console.log('User has completed registration - blocking registration');
       return new Response(
         JSON.stringify({ 
           canRegister: false,
@@ -99,6 +120,7 @@ serve(async (req) => {
     }
 
     // User exists but registration not complete
+    console.log('User exists but registration not complete - allowing registration');
     return new Response(
       JSON.stringify({ 
         canRegister: true,

@@ -12,10 +12,19 @@ const QuickInvoiceCreation = ({ isOpen, onClose, onCreateInvoice }) => {
     type: 'manual',
     clientId: '',
     quoteId: '',
-    amount: '',
+    invoiceNumber: '',
+    title: '',
     description: '',
+    amount: '',
+    netAmount: '',
+    taxAmount: '',
+    discountAmount: '',
+    finalAmount: '',
+    issueDate: '',
     dueDate: '',
-    paymentMethod: ''
+    paymentMethod: '',
+    paymentTerms: '',
+    notes: ''
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -121,14 +130,18 @@ const QuickInvoiceCreation = ({ isOpen, onClose, onCreateInvoice }) => {
       // Prepare invoice data for backend
       const invoiceDataForBackend = {
         clientId: invoiceData.clientId,
-        amount: invoiceData.amount,
+        invoiceNumber: invoiceData.invoiceNumber,
+        title: invoiceData.title,
         description: invoiceData.description,
+        amount: parseFloat(invoiceData.netAmount) || 0,
+        taxAmount: parseFloat(invoiceData.taxAmount) || 0,
+        discountAmount: parseFloat(invoiceData.discountAmount) || 0,
+        finalAmount: parseFloat(invoiceData.finalAmount) || 0,
+        issueDate: invoiceData.issueDate || new Date().toISOString().split('T')[0],
         dueDate: invoiceData.dueDate || getDefaultDueDate(),
         paymentMethod: invoiceData.paymentMethod,
-        title: invoiceData.description, // Use description as title
-        notes: invoiceData.notes || '', // Can be added later if needed
-        taxAmount: 0, // Can be added later if needed
-        discountAmount: 0 // Can be added later if needed
+        paymentTerms: invoiceData.paymentTerms,
+        notes: invoiceData.notes || ''
       };
 
       // Call the parent handler with the prepared data
@@ -139,10 +152,19 @@ const QuickInvoiceCreation = ({ isOpen, onClose, onCreateInvoice }) => {
         type: 'manual',
         clientId: '',
         quoteId: '',
-        amount: '',
+        invoiceNumber: '',
+        title: '',
         description: '',
+        amount: '',
+        netAmount: '',
+        taxAmount: '',
+        discountAmount: '',
+        finalAmount: '',
+        issueDate: '',
         dueDate: '',
-        paymentMethod: ''
+        paymentMethod: '',
+        paymentTerms: '',
+        notes: ''
       });
       setUploadedFiles([]);
     } catch (error) {
@@ -235,16 +257,70 @@ const QuickInvoiceCreation = ({ isOpen, onClose, onCreateInvoice }) => {
               </p>
             )}
 
-            <Input
-              label="Montant (€)"
-              type="number"
-              placeholder="0.00"
-              value={invoiceData.amount}
-              onChange={(e) => handleInputChange('amount', e.target.value)}
-              required
-              min="0"
-              step="0.01"
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="N° Facture"
+                type="text"
+                placeholder="INV-2024-001"
+                value={invoiceData.invoiceNumber}
+                onChange={(e) => handleInputChange('invoiceNumber', e.target.value)}
+                required
+              />
+
+              <Input
+                label="Titre"
+                type="text"
+                placeholder="Titre de la facture"
+                value={invoiceData.title}
+                onChange={(e) => handleInputChange('title', e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Montant HT (€)"
+                type="number"
+                placeholder="0.00"
+                value={invoiceData.netAmount}
+                onChange={(e) => handleInputChange('netAmount', e.target.value)}
+                min="0"
+                step="0.01"
+              />
+
+              <Input
+                label="Montant TVA (€)"
+                type="number"
+                placeholder="0.00"
+                value={invoiceData.taxAmount}
+                onChange={(e) => handleInputChange('taxAmount', e.target.value)}
+                min="0"
+                step="0.01"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Remise (€)"
+                type="number"
+                placeholder="0.00"
+                value={invoiceData.discountAmount}
+                onChange={(e) => handleInputChange('discountAmount', e.target.value)}
+                min="0"
+                step="0.01"
+              />
+
+              <Input
+                label="Montant TTC (€)"
+                type="number"
+                placeholder="0.00"
+                value={invoiceData.finalAmount}
+                onChange={(e) => handleInputChange('finalAmount', e.target.value)}
+                required
+                min="0"
+                step="0.01"
+              />
+            </div>
 
             <Input
               label="Description"
@@ -267,13 +343,23 @@ const QuickInvoiceCreation = ({ isOpen, onClose, onCreateInvoice }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
+                label="Date d'émission"
+                type="date"
+                value={invoiceData.issueDate || new Date().toISOString().split('T')[0]}
+                onChange={(e) => handleInputChange('issueDate', e.target.value)}
+                required
+              />
+
+              <Input
                 label="Date d'échéance"
                 type="date"
                 value={invoiceData.dueDate || getDefaultDueDate()}
                 onChange={(e) => handleInputChange('dueDate', e.target.value)}
                 required
               />
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Select
                 label="Moyen de paiement préféré"
                 placeholder="Sélectionner"
@@ -281,7 +367,23 @@ const QuickInvoiceCreation = ({ isOpen, onClose, onCreateInvoice }) => {
                 value={invoiceData.paymentMethod}
                 onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
               />
+
+              <Input
+                label="Conditions de paiement"
+                type="text"
+                placeholder="Ex: 30 jours net"
+                value={invoiceData.paymentTerms}
+                onChange={(e) => handleInputChange('paymentTerms', e.target.value)}
+              />
             </div>
+
+            <Input
+              label="Notes"
+              type="text"
+              placeholder="Notes additionnelles"
+              value={invoiceData.notes}
+              onChange={(e) => handleInputChange('notes', e.target.value)}
+            />
 
             {/* AI Suggestions */}
             <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">

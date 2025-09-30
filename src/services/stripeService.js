@@ -7,14 +7,21 @@ import { supabase } from './supabaseClient';
  */
 export async function createCheckoutSession(subscriptionData) {
   try {
+    const body = {
+      planType: subscriptionData.planType,
+      billingCycle: subscriptionData.billingCycle,
+      userId: subscriptionData.userId,
+      successUrl: subscriptionData.successUrl || `${window.location.origin}/dashboard?success=true`,
+      cancelUrl: subscriptionData.cancelUrl || `${window.location.origin}/register?step=3&canceled=true`
+    };
+
+    // Include userData if provided (for resume registration)
+    if (subscriptionData.userData) {
+      body.userData = subscriptionData.userData;
+    }
+
     const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-      body: {
-        planType: subscriptionData.planType,
-        billingCycle: subscriptionData.billingCycle,
-        userId: subscriptionData.userId,
-        successUrl: subscriptionData.successUrl || `${window.location.origin}/dashboard?success=true`,
-        cancelUrl: subscriptionData.cancelUrl || `${window.location.origin}/register?step=3&canceled=true`
-      }
+      body: body
     });
 
     return { data, error };

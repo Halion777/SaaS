@@ -315,7 +315,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                   >
                     <Icon name="Edit" size={16} />
                   </Button>
-                              {(!quote.isDraftPlaceholder && quote.status !== 'draft' && quote.status !== 'expired') && (
+                              {(!quote.isDraftPlaceholder && quote.status === 'accepted') && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -437,7 +437,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
             >
               <Icon name="Edit" size={14} />
             </Button>
-            {(!quote.isDraftPlaceholder && quote.status !== 'draft' && quote.status !== 'expired') && (
+            {(!quote.isDraftPlaceholder && quote.status === 'accepted') && (
               <Button
                 variant="ghost"
                 size="icon"

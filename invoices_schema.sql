@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS public.invoices (
     description TEXT,
     status VARCHAR(50) DEFAULT 'unpaid' CHECK (status IN ('unpaid', 'paid', 'overdue', 'cancelled')),
     amount DECIMAL(15,2) NOT NULL,
+    net_amount DECIMAL(15,2) DEFAULT 0,
     tax_amount DECIMAL(15,2) DEFAULT 0,
     discount_amount DECIMAL(15,2) DEFAULT 0,
     final_amount DECIMAL(15,2) NOT NULL,
@@ -35,6 +36,7 @@ CREATE INDEX IF NOT EXISTS idx_invoices_invoice_number ON public.invoices(invoic
 CREATE INDEX IF NOT EXISTS idx_invoices_status ON public.invoices(status);
 CREATE INDEX IF NOT EXISTS idx_invoices_due_date ON public.invoices(due_date);
 CREATE INDEX IF NOT EXISTS idx_invoices_created_at ON public.invoices(created_at);
+CREATE INDEX IF NOT EXISTS idx_invoices_net_amount ON public.invoices(net_amount);
 
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION update_invoice_updated_at_column()
