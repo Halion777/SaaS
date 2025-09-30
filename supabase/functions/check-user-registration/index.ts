@@ -82,12 +82,10 @@ serve(async (req) => {
       .eq('id', authUser.id)
       .single()
 
-    console.log('User data from public.users:', userData);
-    console.log('User error:', userError);
-
+    
     if (userError || !userData) {
       // User exists in auth but not in public.users (incomplete registration)
-      console.log('User exists in auth but not in public.users - allowing registration');
+     
       return new Response(
         JSON.stringify({ 
           canRegister: true,
