@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { createUserAfterPayment } from '../../services/authService';
+import RegistrationService from '../../services/registrationService';
 import Icon from '../../components/AppIcon';
 
 const StripeSuccessPage = () => {
@@ -13,58 +13,73 @@ const StripeSuccessPage = () => {
   useEffect(() => {
     const handleSuccess = async () => {
       try {
-        // Check if we have pending registration data
+        // Get session ID from URL
+        const sessionId = searchParams.get('session_id');
+        if (!sessionId) {
+          console.error('No session ID found in URL');
+          setStatus('error');
+          return;
+        }
+
+        // Get pending registration data
         const pendingRegistration = sessionStorage.getItem('pendingRegistration');
-        const registrationComplete = sessionStorage.getItem('registration_complete');
-        
-        if (pendingRegistration) {
-          try {
-            const registrationData = JSON.parse(pendingRegistration);
-            
-            // Create user record in database after successful payment
-            const { error } = await createUserAfterPayment(
-              registrationData.userId,
-              registrationData
-            );
-            
-            if (error) {
-              console.error('Error creating user after payment:', error);
-              setStatus('error');
-              return;
-            }
-            
-            // Clear the pending registration data
-            sessionStorage.removeItem('pendingRegistration');
-          } catch (error) {
-            console.error('Error processing registration data:', error);
-            setStatus('error');
-            return;
-          }
+        if (!pendingRegistration) {
+          console.error('No pending registration data found');
+          setStatus('error');
+          return;
         }
-        
-        // Clear the registration complete flag
-        if (registrationComplete === 'true') {
+
+        try {
+          const registrationData = JSON.parse(pendingRegistration);
+          
+          // Create session data object from URL and registration data
+          // We'll use the registration data and session ID to complete registration
+          const sessionData = {
+            id: sessionId,
+            payment_status: 'paid', // Assume paid since we're on success page
+            subscription: 'sub_placeholder', // Will be updated by webhook later
+            customer: 'cus_placeholder', // Will be updated by webhook later
+            amount_total: 0, // Will be updated by webhook later
+            currency: 'eur',
+            subscription_status: 'trialing', // Default to trial
+            trial_start: Math.floor(Date.now() / 1000),
+            trial_end: Math.floor(Date.now() / 1000) + (14 * 24 * 60 * 60), // 14 days
+            current_period_start: Math.floor(Date.now() / 1000),
+            current_period_end: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60), // 30 days
+            payment_intent: null,
+            invoice: null
+          };
+
+          // Use RegistrationService to complete registration
+          await RegistrationService.completeRegistration(sessionData, registrationData);
+          
+          console.log('Registration completed successfully');
+          
+          // Clear all registration data
+          sessionStorage.removeItem('pendingRegistration');
           sessionStorage.removeItem('registration_complete');
+          sessionStorage.removeItem('registration_pending');
+          
+          setStatus('success');
+          
+          // Redirect to dashboard after a short delay
+          setTimeout(() => {
+            navigate('/dashboard', { replace: true });
+          }, 2000);
+          
+        } catch (error) {
+          console.error('Error completing registration:', error);
+          setStatus('error');
         }
-        
-        // Clear registration pending flag
-        sessionStorage.removeItem('registration_pending');
-        sessionStorage.removeItem('pendingRegistration');
-        
-        setStatus('success');
-        // Redirect to dashboard after a short delay
-        setTimeout(() => {
-          navigate('/dashboard', { replace: true });
-        }, 2000);
       } catch (error) {
         console.error('Error handling Stripe success:', error);
         setStatus('error');
       }
     };
 
-    // Handle success immediately - don't wait for authentication
+    // Handle success immediately
     handleSuccess();
-  }, [navigate]);
+  }, [navigate, searchParams]);
 
   const renderContent = () => {
     switch (status) {

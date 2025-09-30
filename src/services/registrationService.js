@@ -1,6 +1,7 @@
 // src/services/registrationService.js
 
-import { supabase } from '../lib/supabase'
+import { supabase } from './supabaseClient';
+
 
 class RegistrationService {
   /**

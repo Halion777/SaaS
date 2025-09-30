@@ -5,6 +5,8 @@ declare const Deno: any;
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 // @ts-ignore
 import Stripe from 'https://esm.sh/stripe@14.21.0'
+// @ts-ignore
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'), {
   apiVersion: '2024-12-18.acacia',
@@ -62,7 +64,19 @@ serve(async (req) => {
       )
     }
 
-    // Handle the event - SIMPLIFIED VERSION
+    // Create Supabase client with service role key
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
+    // Handle the event - SIMPLIFIED VERSION WITH USER UPDATE
     switch (event.type) {
       case 'checkout.session.completed':
         const session = event.data.object as Stripe.Checkout.Session
@@ -75,6 +89,24 @@ serve(async (req) => {
           customer: session.customer,
           subscription: session.subscription
         })
+
+        // Update user record with real Stripe data if payment was successful
+        if (session.payment_status === 'paid' && session.metadata?.userId) {
+          try {
+            await supabaseClient
+              .from('users')
+              .update({
+                stripe_customer_id: session.customer as string,
+                stripe_subscription_id: session.subscription as string,
+                registration_completed: true
+              })
+              .eq('id', session.metadata.userId)
+            
+            console.log('User record updated with Stripe data')
+          } catch (error) {
+            console.error('Error updating user record:', error)
+          }
+        }
         break
 
       case 'checkout.session.async_payment_succeeded':
