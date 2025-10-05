@@ -317,13 +317,42 @@ const SuperAdminDashboard = () => {
   };
 
   // Load system statistics
-  // Process chart data
+  // Process chart data with optimized queries
   const processChartData = async () => {
     try {
-      // Monthly revenue data (last 12 months)
-      const monthlyRevenue = [];
       const currentDate = new Date();
-      
+      const twelveMonthsAgo = new Date(currentDate.getFullYear(), currentDate.getMonth() - 11, 1);
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+
+      // Single optimized query for all payment data (last 12 months)
+      const { data: paymentData } = await supabase
+        .from('payment_records')
+        .select('amount, paid_at')
+        .eq('status', 'succeeded')
+        .gte('paid_at', twelveMonthsAgo.toISOString());
+
+      // Single optimized query for all invoice data (last 12 months)
+      const { data: invoiceData } = await supabase
+        .from('invoices')
+        .select('final_amount, created_at')
+        .eq('status', 'paid')
+        .gte('created_at', twelveMonthsAgo.toISOString());
+
+      // Single optimized query for all user data (last 12 months)
+      const { data: userData } = await supabase
+        .from('users')
+        .select('created_at')
+        .gte('created_at', twelveMonthsAgo.toISOString());
+
+      // Single optimized query for all quote data (last 30 days)
+      const { data: quoteData } = await supabase
+        .from('quotes')
+        .select('created_at')
+        .gte('created_at', thirtyDaysAgo.toISOString());
+
+      // Process monthly revenue data
+      const monthlyRevenue = [];
       for (let i = 11; i >= 0; i--) {
         const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
         const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
@@ -331,35 +360,19 @@ const SuperAdminDashboard = () => {
         const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
         const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
         
-        // Get subscription revenue from subscriptions table
-        const { data: subscriptionData } = await supabase
-          .from('subscriptions')
-          .select('amount, created_at')
-          .eq('status', 'active')
-          .gte('created_at', monthStart.toISOString())
-          .lte('created_at', monthEnd.toISOString());
+        // Filter data in JavaScript instead of making separate queries
+        const monthPayments = paymentData?.filter(payment => {
+          const paymentDate = new Date(payment.paid_at);
+          return paymentDate >= monthStart && paymentDate <= monthEnd;
+        }) || [];
         
-        const subscriptionRevenue = subscriptionData?.reduce((sum, sub) => sum + (sub.amount || 0), 0) || 0;
+        const monthInvoices = invoiceData?.filter(invoice => {
+          const invoiceDate = new Date(invoice.created_at);
+          return invoiceDate >= monthStart && invoiceDate <= monthEnd;
+        }) || [];
         
-        // Get payment records for this month (actual payments received)
-        const { data: paymentData } = await supabase
-          .from('payment_records')
-          .select('amount, paid_at')
-          .eq('status', 'succeeded')
-          .gte('paid_at', monthStart.toISOString())
-          .lte('paid_at', monthEnd.toISOString());
-        
-        const paymentRevenue = paymentData?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
-        
-        // Get invoice revenue for this month (client invoices)
-        const { data: invoiceData } = await supabase
-          .from('invoices')
-          .select('final_amount, created_at')
-          .eq('status', 'paid')
-          .gte('created_at', monthStart.toISOString())
-          .lte('created_at', monthEnd.toISOString());
-        
-        const invoiceRevenue = invoiceData?.reduce((sum, invoice) => sum + (invoice.final_amount || 0), 0) || 0;
+        const paymentRevenue = monthPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+        const invoiceRevenue = monthInvoices.reduce((sum, invoice) => sum + (invoice.final_amount || 0), 0);
         
         monthlyRevenue.push({
           name: monthName,
@@ -367,7 +380,7 @@ const SuperAdminDashboard = () => {
         });
       }
 
-      // User growth data (last 12 months)
+      // Process user growth data
       const userGrowth = [];
       for (let i = 11; i >= 0; i--) {
         const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
@@ -376,19 +389,18 @@ const SuperAdminDashboard = () => {
         const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
         const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
         
-        const { count: newUsers } = await supabase
-          .from('users')
-          .select('*', { count: 'exact', head: true })
-          .gte('created_at', monthStart.toISOString())
-          .lte('created_at', monthEnd.toISOString());
+        const monthUsers = userData?.filter(user => {
+          const userDate = new Date(user.created_at);
+          return userDate >= monthStart && userDate <= monthEnd;
+        }) || [];
         
         userGrowth.push({
           name: monthName,
-          users: newUsers || 0
+          users: monthUsers.length
         });
       }
 
-      // Quote trends (last 30 days)
+      // Process quote trends data
       const quoteTrends = [];
       for (let i = 29; i >= 0; i--) {
         const date = new Date();
@@ -398,15 +410,14 @@ const SuperAdminDashboard = () => {
         const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
         const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
         
-        const { count: dailyQuotes } = await supabase
-          .from('quotes')
-          .select('*', { count: 'exact', head: true })
-          .gte('created_at', dayStart.toISOString())
-          .lte('created_at', dayEnd.toISOString());
+        const dayQuotes = quoteData?.filter(quote => {
+          const quoteDate = new Date(quote.created_at);
+          return quoteDate >= dayStart && quoteDate <= dayEnd;
+        }) || [];
         
         quoteTrends.push({
           name: dayName,
-          quotes: dailyQuotes || 0
+          quotes: dayQuotes.length
         });
       }
 
@@ -426,106 +437,78 @@ const SuperAdminDashboard = () => {
       try {
         setLoading(true);
         
-        // Get total users
-        const { count: totalUsers } = await supabase
-          .from('users')
-          .select('*', { count: 'exact', head: true });
-
-        // Get active users (last 30 days)
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        
-        const { count: activeUsers } = await supabase
-          .from('users')
-          .select('*', { count: 'exact', head: true })
-          .gte('updated_at', thirtyDaysAgo.toISOString());
 
-        // Get total quotes
-        const { count: totalQuotes } = await supabase
-          .from('quotes')
-          .select('*', { count: 'exact', head: true });
+        // Execute all basic stats queries in parallel
+        const [
+          totalUsersResult,
+          activeUsersResult,
+          totalQuotesResult,
+          totalInvoicesResult,
+          totalLeadsResult,
+          activeLeadsResult,
+          convertedLeadsResult,
+          subscriptionDataResult,
+          paymentDataResult,
+          invoiceDataResult
+        ] = await Promise.all([
+          supabase.from('users').select('*', { count: 'exact', head: true }),
+          supabase.from('users').select('*', { count: 'exact', head: true }).gte('updated_at', thirtyDaysAgo.toISOString()),
+          supabase.from('quotes').select('*', { count: 'exact', head: true }),
+          supabase.from('invoices').select('*', { count: 'exact', head: true }),
+          supabase.from('lead_requests').select('*', { count: 'exact', head: true }),
+          supabase.from('lead_requests').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+          supabase.from('lead_requests').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
+          supabase.from('subscriptions').select('amount').eq('status', 'active'),
+          supabase.from('payment_records').select('amount').eq('status', 'succeeded'),
+          supabase.from('invoices').select('final_amount').eq('status', 'paid')
+        ]);
 
-        // Get total invoices
-        const { count: totalInvoices } = await supabase
-          .from('invoices')
-          .select('*', { count: 'exact', head: true });
+        // Process results
+        const totalUsers = totalUsersResult.count || 0;
+        const activeUsers = activeUsersResult.count || 0;
+        const totalQuotes = totalQuotesResult.count || 0;
+        const totalInvoices = totalInvoicesResult.count || 0;
+        const totalLeads = totalLeadsResult.count || 0;
+        const activeLeads = activeLeadsResult.count || 0;
+        const convertedLeads = convertedLeadsResult.count || 0;
 
-        // Get total leads
-        const { count: totalLeads } = await supabase
-          .from('lead_requests')
-          .select('*', { count: 'exact', head: true });
-
-        // Get lead statistics
-        const { count: activeLeads } = await supabase
-          .from('lead_requests')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'active');
-
-        const { count: convertedLeads } = await supabase
-          .from('lead_requests')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'completed');
-
-        // Get subscription revenue from subscriptions table
-        const { data: subscriptionData } = await supabase
-          .from('subscriptions')
-          .select('amount')
-          .eq('status', 'active');
-
-        const subscriptionRevenue = subscriptionData?.reduce((sum, sub) => sum + (sub.amount || 0), 0) || 0;
-
-        // Get actual payment revenue from payment_records table
-        const { data: paymentData } = await supabase
-          .from('payment_records')
-          .select('amount')
-          .eq('status', 'succeeded');
-
-        const paymentRevenue = paymentData?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
-
-        // Get invoice revenue from paid invoices (client invoices)
-        const { data: invoiceData } = await supabase
-          .from('invoices')
-          .select('final_amount')
-          .eq('status', 'paid');
-
-        const invoiceRevenue = invoiceData?.reduce((sum, invoice) => sum + (invoice.final_amount || 0), 0) || 0;
-
+        const subscriptionRevenue = subscriptionDataResult.data?.reduce((sum, sub) => sum + (sub.amount || 0), 0) || 0;
+        const paymentRevenue = paymentDataResult.data?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+        const invoiceRevenue = invoiceDataResult.data?.reduce((sum, invoice) => sum + (invoice.final_amount || 0), 0) || 0;
         const totalRevenue = paymentRevenue + invoiceRevenue;
 
         setSystemStats({
-          totalUsers: totalUsers || 0,
-          activeUsers: activeUsers || 0,
-          totalQuotes: totalQuotes || 0,
-          totalInvoices: totalInvoices || 0,
-          totalLeads: totalLeads || 0,
+          totalUsers,
+          activeUsers,
+          totalQuotes,
+          totalInvoices,
+          totalLeads,
           subscriptionRevenue: paymentRevenue,
-          invoiceRevenue: invoiceRevenue,
-          totalRevenue: totalRevenue,
+          invoiceRevenue,
+          totalRevenue,
           systemUptime: '99.8%',
           lastBackup: '2 hours ago'
         });
 
         setLeadStats({
-          total: totalLeads || 0,
-          active: activeLeads || 0,
-          converted: convertedLeads || 0,
-          spam: 0 // We'll implement spam detection later
+          total: totalLeads,
+          active: activeLeads,
+          converted: convertedLeads,
+          spam: 0
         });
 
-        // Load recent activity
-        await loadRecentActivity();
-        
-        // Load top users
-        await loadTopUsers();
+        // Execute remaining operations in parallel
+        await Promise.all([
+          loadRecentActivity(),
+          loadTopUsers(),
+          performHealthChecks(),
+          processChartData()
+        ]);
 
-        // Perform health checks
-        await performHealthChecks();
-
-        // Calculate system uptime
+        // Calculate system uptime after health checks
         calculateSystemUptime();
-
-        // Process chart data
-        await processChartData();
 
       } catch (error) {
         console.error('Error loading system stats:', error);
@@ -548,35 +531,41 @@ const SuperAdminDashboard = () => {
 
   const loadRecentActivity = async () => {
     try {
-      // Get recent quotes
-      const { data: recentQuotes } = await supabase
-        .from('quotes')
-        .select(`
-          id,
-          quote_number,
-          status,
-          created_at,
-          users!quotes_user_id_fkey(full_name, email)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(5);
+      // Execute all recent activity queries in parallel
+      const [
+        recentQuotesResult,
+        recentUsersResult,
+        recentLeadsResult
+      ] = await Promise.all([
+        supabase
+          .from('quotes')
+          .select(`
+            id,
+            quote_number,
+            status,
+            created_at,
+            users!quotes_user_id_fkey(full_name, email)
+          `)
+          .order('created_at', { ascending: false })
+          .limit(5),
+        supabase
+          .from('users')
+          .select('id, full_name, email, created_at')
+          .order('created_at', { ascending: false })
+          .limit(5),
+        supabase
+          .from('lead_requests')
+          .select('id, client_name, project_description, created_at')
+          .order('created_at', { ascending: false })
+          .limit(5)
+      ]);
 
-      // Get recent users
-      const { data: recentUsers } = await supabase
-        .from('users')
-        .select('id, full_name, email, created_at')
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      // Get recent leads
-      const { data: recentLeads } = await supabase
-        .from('lead_requests')
-        .select('id, client_name, project_description, created_at')
-        .order('created_at', { ascending: false })
-        .limit(5);
+      const recentQuotes = recentQuotesResult.data || [];
+      const recentUsers = recentUsersResult.data || [];
+      const recentLeads = recentLeadsResult.data || [];
 
       const activity = [
-        ...(recentQuotes || []).map(quote => ({
+        ...recentQuotes.map(quote => ({
           id: quote.id,
           type: 'quote',
           title: `New quote ${quote.quote_number}`,
@@ -584,7 +573,7 @@ const SuperAdminDashboard = () => {
           timestamp: quote.created_at,
           status: quote.status
         })),
-        ...(recentUsers || []).map(user => ({
+        ...recentUsers.map(user => ({
           id: user.id,
           type: 'user',
           title: `New user registered`,
@@ -592,7 +581,7 @@ const SuperAdminDashboard = () => {
           timestamp: user.created_at,
           status: 'active'
         })),
-        ...(recentLeads || []).map(lead => ({
+        ...recentLeads.map(lead => ({
           id: lead.id,
           type: 'lead',
           title: `New lead request`,
@@ -610,44 +599,36 @@ const SuperAdminDashboard = () => {
 
   const loadTopUsers = async () => {
     try {
-      // Get users with most quotes using a different approach
-      const { data: quotesData, error: quotesError } = await supabase
-        .from('quotes')
-        .select('user_id');
+      // Execute queries in parallel
+      const [quotesResult, usersResult] = await Promise.all([
+        supabase.from('quotes').select('user_id'),
+        supabase.from('users').select('id, full_name, email, company_name')
+      ]);
 
-      if (quotesError) {
-        console.error('Error fetching quotes:', quotesError);
+      if (quotesResult.error) {
+        console.error('Error fetching quotes:', quotesResult.error);
         return;
       }
 
+      if (usersResult.error) {
+        console.error('Error fetching users:', usersResult.error);
+        return;
+      }
+
+      const quotesData = quotesResult.data || [];
+      const usersData = usersResult.data || [];
+
       // Count quotes per user
       const userQuoteCounts = {};
-      quotesData?.forEach(quote => {
+      quotesData.forEach(quote => {
         if (quote.user_id) {
           userQuoteCounts[quote.user_id] = (userQuoteCounts[quote.user_id] || 0) + 1;
         }
       });
 
-      // Get user details for users with quotes
-      const userIds = Object.keys(userQuoteCounts);
-      if (userIds.length === 0) {
-        setTopUsers([]);
-        return;
-      }
-
-      const { data: usersData, error: usersError } = await supabase
-        .from('users')
-        .select('id, full_name, email, company_name')
-        .in('id', userIds);
-
-      if (usersError) {
-        console.error('Error fetching users:', usersError);
-        return;
-      }
-
       // Create a map of user data
       const userMap = {};
-      usersData?.forEach(user => {
+      usersData.forEach(user => {
         userMap[user.id] = user;
       });
 
@@ -665,6 +646,7 @@ const SuperAdminDashboard = () => {
         })
         .sort((a, b) => b.quoteCount - a.quoteCount)
         .slice(0, 5);
+      
       setTopUsers(topUsersList);
     } catch (error) {
       console.error('Error loading top users:', error);

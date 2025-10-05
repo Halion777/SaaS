@@ -1,6 +1,7 @@
 // src/services/registrationService.js
 
 import { supabase } from './supabaseClient';
+import SubscriptionNotificationService from './subscriptionNotificationService';
 
 
 class RegistrationService {
@@ -24,6 +25,9 @@ class RegistrationService {
       
       // 4. Create payment record
       await this.createPaymentRecord(sessionData, userData, subscriptionId)
+      
+      // 5. Send subscription notification email
+      await this.sendRegistrationSubscriptionNotification(sessionData, userData, subscriptionId)
       
       console.log('Registration completed successfully')
       return { success: true }
@@ -165,6 +169,80 @@ class RegistrationService {
     }
     
     console.log('Payment record created successfully')
+  }
+
+  /**
+   * Send subscription notification email after successful registration
+   */
+  async sendRegistrationSubscriptionNotification(sessionData, userData, subscriptionId) {
+    try {
+      // Get the created subscription data
+      const { data: subscriptionData, error: subscriptionError } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('id', subscriptionId)
+        .single()
+
+      if (subscriptionError || !subscriptionData) {
+        console.error('Error fetching subscription data for notification:', subscriptionError)
+        return // Don't fail registration if notification fails
+      }
+
+      // Prepare user data for notification
+      const userNotificationData = {
+        id: userData.userId,
+        email: userData.email,
+        full_name: userData.fullName
+      }
+
+      // Determine notification type based on subscription status
+      const isTrial = subscriptionData.status === 'trial' || subscriptionData.status === 'trialing'
+      
+      if (isTrial) {
+        // Send trial notification
+        const notificationData = {
+          plan_name: subscriptionData.plan_name,
+          plan_type: subscriptionData.plan_type,
+          amount: subscriptionData.amount,
+          billing_interval: subscriptionData.interval,
+          status: subscriptionData.status,
+          trial_end_date: subscriptionData.trial_end ? new Date(subscriptionData.trial_end).toLocaleDateString('fr-FR') : 'Bientôt',
+          new_amount: `${subscriptionData.amount}€`
+        }
+
+        await SubscriptionNotificationService.sendTrialEndingNotification(notificationData, userNotificationData)
+      } else {
+        // Send subscription activated notification (treat as upgrade from trial to active)
+        const notificationData = {
+          plan_name: subscriptionData.plan_name,
+          plan_type: subscriptionData.plan_type,
+          amount: subscriptionData.amount,
+          billing_interval: subscriptionData.interval,
+          status: subscriptionData.status,
+          oldPlanName: 'Trial',
+          newPlanName: subscriptionData.plan_name,
+          oldAmount: '0',
+          newAmount: `${subscriptionData.amount}€`,
+          effectiveDate: new Date().toLocaleDateString('fr-FR')
+        }
+
+        await SubscriptionNotificationService.sendSubscriptionActivationNotification(notificationData, userNotificationData)
+      }
+
+      // Log the notification event
+      await SubscriptionNotificationService.logSubscriptionNotificationEvent(
+        userData.userId,
+        isTrial ? 'trial_started' : 'subscription_activated',
+        subscriptionData,
+        { success: true }
+      )
+
+      console.log('Registration subscription notification sent successfully')
+      
+    } catch (error) {
+      console.error('Error sending registration subscription notification:', error)
+      // Don't fail registration if notification fails
+    }
   }
 
   /**

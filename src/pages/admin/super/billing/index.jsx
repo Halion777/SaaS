@@ -10,6 +10,9 @@ import Select from 'components/ui/Select';
 import SuperAdminSidebar from 'components/ui/SuperAdminSidebar';
 import TableLoader from 'components/ui/TableLoader';
 import RevenueChart from 'components/ui/RevenueChart';
+import SubscriptionViewModal from './components/SubscriptionViewModal';
+import SubscriptionEditModal from './components/SubscriptionEditModal';
+import SubscriptionCancelModal from './components/SubscriptionCancelModal';
 
 const SuperAdminBilling = () => {
   const { t } = useTranslation();
@@ -38,6 +41,12 @@ const SuperAdminBilling = () => {
     planDistribution: [],
     paymentTrends: []
   });
+
+  // Modal states
+  const [selectedSubscription, setSelectedSubscription] = useState(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
   // Handle sidebar offset for responsive layout
   React.useEffect(() => {
@@ -326,6 +335,33 @@ const SuperAdminBilling = () => {
     return matchesSearch && matchesStatus;
   });
 
+  // Modal handlers
+  const handleViewSubscription = (subscription) => {
+    setSelectedSubscription(subscription);
+    setIsViewModalOpen(true);
+  };
+
+  const handleEditSubscription = (subscription) => {
+    setSelectedSubscription(subscription);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCancelSubscription = (subscription) => {
+    setSelectedSubscription(subscription);
+    setIsCancelModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setSelectedSubscription(null);
+    setIsViewModalOpen(false);
+    setIsEditModalOpen(false);
+    setIsCancelModalOpen(false);
+  };
+
+  const handleSubscriptionUpdate = () => {
+    loadBillingData(); // Refresh data after update
+  };
+
   return (
     <div className="min-h-screen bg-background flex">
       <Helmet>
@@ -592,33 +628,36 @@ const SuperAdminBilling = () => {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center space-x-2">
+                            {/* View Button */}
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => {
-                                // View subscription details
-                                console.log('View subscription:', subscription.id);
-                              }}
+                              onClick={() => handleViewSubscription(subscription)}
+                              title="View subscription details"
                             >
                               <Icon name="Eye" size={14} />
                             </Button>
-                            {subscription.status === 'active' && (
+                            
+                            {/* Edit Button */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditSubscription(subscription)}
+                              title="Edit subscription"
+                            >
+                              <Icon name="Edit" size={14} />
+                            </Button>
+                            
+                            {/* Cancel Button */}
+                            {(subscription.status === 'active' || subscription.status === 'trialing') && (
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => {
-                                  // Cancel subscription
-                                  if (confirm('Are you sure you want to cancel this subscription?')) {
-                                    supabase
-                                      .from('users')
-                                      .update({ subscription_status: 'cancelled' })
-                                      .eq('id', subscription.id)
-                                      .then(() => loadBillingData());
-                                  }
-                                }}
+                                onClick={() => handleCancelSubscription(subscription)}
                                 className="text-red-600 border-red-200 hover:bg-red-50"
+                                title="Cancel subscription"
                               >
-                                <Icon name="X" size={14} />
+                                <Icon name="Trash2" size={14} />
                               </Button>
                             )}
                           </div>
@@ -713,6 +752,27 @@ const SuperAdminBilling = () => {
         </div>
       </main>
       </div>
+
+      {/* Modals */}
+      <SubscriptionViewModal
+        isOpen={isViewModalOpen}
+        onClose={handleModalClose}
+        subscription={selectedSubscription}
+      />
+
+      <SubscriptionEditModal
+        isOpen={isEditModalOpen}
+        onClose={handleModalClose}
+        subscription={selectedSubscription}
+        onUpdate={handleSubscriptionUpdate}
+      />
+
+      <SubscriptionCancelModal
+        isOpen={isCancelModalOpen}
+        onClose={handleModalClose}
+        subscription={selectedSubscription}
+        onUpdate={handleSubscriptionUpdate}
+      />
     </div>
   );
 };

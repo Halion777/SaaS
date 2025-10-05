@@ -141,6 +141,61 @@ serve(async (req) => {
           text: emailData.text
         });
         break;
+
+      case 'subscription_upgraded':
+        // Handle subscription upgrade notification emails
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [emailData.user_email],
+          subject: emailData.subject,
+          html: emailData.html,
+          text: emailData.text
+        });
+        break;
+
+      case 'subscription_downgraded':
+        // Handle subscription downgrade notification emails
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [emailData.user_email],
+          subject: emailData.subject,
+          html: emailData.html,
+          text: emailData.text
+        });
+        break;
+
+      case 'subscription_cancelled':
+        // Handle subscription cancellation notification emails
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [emailData.user_email],
+          subject: emailData.subject,
+          html: emailData.html,
+          text: emailData.text
+        });
+        break;
+
+      case 'subscription_trial_ending':
+        // Handle trial ending notification emails
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [emailData.user_email],
+          subject: emailData.subject,
+          html: emailData.html,
+          text: emailData.text
+        });
+        break;
+
+      case 'subscription_activated':
+        // Handle subscription activation notification emails (for new registrations)
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [emailData.user_email],
+          subject: emailData.subject,
+          html: emailData.html,
+          text: emailData.text
+        });
+        break;
         
       default:
         throw new Error(`Unknown email type: ${emailType}`);

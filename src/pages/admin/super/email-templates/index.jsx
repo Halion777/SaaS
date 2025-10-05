@@ -187,7 +187,12 @@ const EmailTemplatesManagement = () => {
       'welcome_client': 'Welcome Client',
       'general_followup': 'General Follow-up',
       'client_rejected': 'Client Rejected',
-      'followup_not_viewed': 'Follow-up - Not Viewed'
+      'followup_not_viewed': 'Follow-up - Not Viewed',
+      'subscription_upgraded': 'Subscription Upgraded',
+      'subscription_downgraded': 'Subscription Downgraded',
+      'subscription_cancelled': 'Subscription Cancelled',
+      'subscription_activated': 'Subscription Activated',
+      'subscription_trial_ending': 'Trial Ending'
     };
     return typeNames[type] || type;
   };
@@ -201,7 +206,12 @@ const EmailTemplatesManagement = () => {
       'welcome_client': 'bg-purple-100 text-purple-800',
       'general_followup': 'bg-orange-100 text-orange-800',
       'client_rejected': 'bg-red-100 text-red-800',
-      'followup_not_viewed': 'bg-pink-100 text-pink-800'
+      'followup_not_viewed': 'bg-pink-100 text-pink-800',
+      'subscription_upgraded': 'bg-emerald-100 text-emerald-800',
+      'subscription_downgraded': 'bg-amber-100 text-amber-800',
+      'subscription_cancelled': 'bg-red-100 text-red-800',
+      'subscription_activated': 'bg-green-100 text-green-800',
+      'subscription_trial_ending': 'bg-indigo-100 text-indigo-800'
     };
     return colors[type] || 'bg-gray-100 text-gray-800';
   };
@@ -636,7 +646,12 @@ const EmailTemplatesManagement = () => {
                         { value: 'welcome_client', label: 'Welcome Client' },
                         { value: 'general_followup', label: 'General Follow-up' },
                         { value: 'client_rejected', label: 'Client Rejected' },
-                        { value: 'followup_not_viewed', label: 'Follow-up - Not Viewed' }
+                        { value: 'followup_not_viewed', label: 'Follow-up - Not Viewed' },
+                        { value: 'subscription_upgraded', label: 'Subscription Upgraded' },
+                        { value: 'subscription_downgraded', label: 'Subscription Downgraded' },
+                        { value: 'subscription_cancelled', label: 'Subscription Cancelled' },
+                        { value: 'subscription_activated', label: 'Subscription Activated' },
+                        { value: 'subscription_trial_ending', label: 'Trial Ending' }
                       ]}
                     />
                   </div>
