@@ -32,8 +32,7 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
 
   const planOptions = [
     { value: 'starter', label: 'Starter Plan' },
-    { value: 'pro', label: 'Pro Plan' },
-    { value: 'enterprise', label: 'Enterprise Plan' }
+    { value: 'pro', label: 'Pro Plan' }
   ];
 
   const statusOptions = [
