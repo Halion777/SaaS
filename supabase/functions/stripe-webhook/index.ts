@@ -66,8 +66,7 @@ serve(async (req) => {
     let event: Stripe.Event
 
     try {
-      event = stripe.webhooks.constructEvent(body, signature, endpointSecret)
-      console.log('✅ Signature verified successfully')
+      event = await stripe.webhooks.constructEventAsync(body, signature, endpointSecret)
     } catch (err) {
       console.error('❌ Signature verification failed:', err.message)
       return new Response(
@@ -92,15 +91,6 @@ serve(async (req) => {
     switch (event.type) {
       case 'checkout.session.completed':
         const session = event.data.object as Stripe.Checkout.Session
-        console.log('Payment completed:', {
-          sessionId: session.id,
-          userId: session.metadata?.userId,
-          paymentStatus: session.payment_status,
-          amount: session.amount_total,
-          currency: session.currency,
-          customer: session.customer,
-          subscription: session.subscription
-        })
 
         // Update user record with real Stripe data if payment was successful
         if (session.payment_status === 'paid' && session.metadata?.userId) {
@@ -113,8 +103,6 @@ serve(async (req) => {
                 registration_completed: true
               })
               .eq('id', session.metadata.userId)
-            
-            console.log('User record updated with Stripe data')
           } catch (error) {
             console.error('Error updating user record:', error)
           }
@@ -123,39 +111,21 @@ serve(async (req) => {
 
       case 'checkout.session.async_payment_succeeded':
         const asyncSuccessSession = event.data.object as Stripe.Checkout.Session
-        console.log('Async payment succeeded:', {
-          sessionId: asyncSuccessSession.id,
-          userId: asyncSuccessSession.metadata?.userId,
-          paymentStatus: asyncSuccessSession.payment_status
-        })
+        // Handle async payment success if needed
         break
 
       case 'checkout.session.async_payment_failed':
         const asyncFailedSession = event.data.object as Stripe.Checkout.Session
-        console.log('Async payment failed:', {
-          sessionId: asyncFailedSession.id,
-          userId: asyncFailedSession.metadata?.userId,
-          paymentStatus: asyncFailedSession.payment_status
-        })
+        // Handle async payment failure if needed
         break
 
       case 'checkout.session.expired':
         const expiredSession = event.data.object as Stripe.Checkout.Session
-        console.log('Checkout session expired:', {
-          sessionId: expiredSession.id,
-          userId: expiredSession.metadata?.userId
-        })
+        // Handle expired session if needed
         break
 
       case 'invoice.payment_succeeded':
         const invoice = event.data.object as Stripe.Invoice
-        console.log('Payment succeeded (trial ended or renewal):', {
-          invoiceId: invoice.id,
-          subscriptionId: invoice.subscription,
-          customer: invoice.customer,
-          amount: invoice.amount_paid,
-          status: invoice.status
-        })
 
         // Update subscription status to 'active' after trial ends
         if (invoice.subscription) {
@@ -189,8 +159,6 @@ serve(async (req) => {
                 description: 'Subscription payment after trial',
                 created_at: new Date().toISOString()
               })
-            
-            console.log('Subscription activated and payment recorded after trial end')
           } catch (error) {
             console.error('Error updating subscription after payment:', error)
           }
@@ -199,12 +167,6 @@ serve(async (req) => {
 
       case 'invoice.payment_failed':
         const failedInvoice = event.data.object as Stripe.Invoice
-        console.log('Payment failed:', {
-          invoiceId: failedInvoice.id,
-          subscriptionId: failedInvoice.subscription,
-          customer: failedInvoice.customer,
-          attemptCount: failedInvoice.attempt_count
-        })
 
         // Update subscription status to 'past_due'
         if (failedInvoice.subscription) {
@@ -223,8 +185,6 @@ serve(async (req) => {
                 subscription_status: 'past_due'
               })
               .eq('stripe_subscription_id', failedInvoice.subscription as string)
-            
-            console.log('Subscription marked as past_due after payment failure')
           } catch (error) {
             console.error('Error updating subscription after payment failure:', error)
           }
@@ -233,11 +193,6 @@ serve(async (req) => {
 
       case 'customer.subscription.updated':
         const updatedSubscription = event.data.object as Stripe.Subscription
-        console.log('Subscription updated:', {
-          subscriptionId: updatedSubscription.id,
-          status: updatedSubscription.status,
-          customer: updatedSubscription.customer
-        })
 
         // Update subscription status in database
         try {
@@ -262,10 +217,6 @@ serve(async (req) => {
 
       case 'customer.subscription.deleted':
         const deletedSubscription = event.data.object as Stripe.Subscription
-        console.log('Subscription deleted:', {
-          subscriptionId: deletedSubscription.id,
-          customer: deletedSubscription.customer
-        })
 
         // Update subscription status to 'cancelled'
         try {
@@ -289,7 +240,8 @@ serve(async (req) => {
         break
 
       default:
-        console.log(`Unhandled event type: ${event.type}`)
+        // Unhandled event type - no action needed
+        break
     }
 
     return new Response(JSON.stringify({ received: true }), {
