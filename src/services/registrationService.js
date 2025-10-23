@@ -158,11 +158,16 @@ class RegistrationService {
     // Determine subscription status based on trial period
     const subscriptionStatus = sessionData.subscription_status === 'trialing' ? 'trial' : 'active'
     
+    // Map plan type to display name
+    const planDisplayName = userData.selectedPlan === 'pro' ? 'Pro Plan' : 
+                           userData.selectedPlan === 'starter' ? 'Starter Plan' : 
+                           userData.selectedPlan;
+    
     const subscriptionRecord = {
       user_id: userData.userId,
       stripe_subscription_id: sessionData.subscription,
       stripe_customer_id: sessionData.customer,
-      plan_name: subscriptionStatus === 'trial' ? 'Trial' : userData.selectedPlan,
+      plan_name: planDisplayName,
       plan_type: userData.selectedPlan,
       status: subscriptionStatus,
       interval: userData.billingCycle,

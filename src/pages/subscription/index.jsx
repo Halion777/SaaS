@@ -241,6 +241,9 @@ const SubscriptionManagement = () => {
                 <p className="text-sm text-muted-foreground">Plan</p>
                 <p className="text-lg font-semibold text-foreground">
                   {subscription.plan_name || 'Unknown Plan'}
+                  {(subscription.status === 'trial' || subscription.status === 'trialing') && 
+                    <span className="text-sm text-primary ml-2">(Trial)</span>
+                  }
                 </p>
               </div>
               <div>
@@ -248,13 +251,22 @@ const SubscriptionManagement = () => {
                 <p className="text-lg font-semibold text-foreground">
                   €{subscription.amount || 0}/{subscription.interval || 'month'}
                 </p>
+                {(subscription.status === 'trial' || subscription.status === 'trialing') && subscription.trial_end && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Billing starts after trial
+                  </p>
+                )}
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Trial End</p>
+                <p className="text-sm text-muted-foreground">
+                  {(subscription.status === 'trial' || subscription.status === 'trialing') ? 'Trial End' : 'Next Billing'}
+                </p>
                 <p className="text-lg font-semibold text-foreground">
                   {subscription.trial_end 
                     ? new Date(subscription.trial_end).toLocaleDateString()
-                    : 'N/A'
+                    : subscription.current_period_end 
+                      ? new Date(subscription.current_period_end).toLocaleDateString()
+                      : 'N/A'
                   }
                 </p>
               </div>
