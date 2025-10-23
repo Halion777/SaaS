@@ -2028,6 +2028,11 @@
       "title": "Welkom bij uw Dashboard",
       "subtitle": "Hier is een snel overzicht van uw activiteiten en belangrijke acties"
     },
+    "emailVerification": {
+      "title": "E-mailadres niet geverifieerd",
+      "description": "Verifieer uw e-mailadres om de beveiliging van uw account te garanderen en belangrijke meldingen te ontvangen.",
+      "verifyNow": "Nu verifiëren"
+    },
     "buttons": {
       "personalize": "Personaliseren",
       "detailedAnalytics": "Gedetailleerde Analyses",

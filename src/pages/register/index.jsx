@@ -244,11 +244,18 @@ const Register = () => {
 
         // Redirect to Stripe checkout
         if (stripeData?.url) {
-          // Update registration pending with userId
+          // Update registration pending with complete user data
           sessionStorage.setItem('registration_pending', JSON.stringify({
             userId: signInData.user.id,
-            email: signInData.user.email,
-            plan: formData.selectedPlan,
+            email: formData.email.toLowerCase().trim(),
+            fullName: formData.fullName,
+            companyName: formData.companyName,
+            vatNumber: formData.vatNumber,
+            phone: formData.phone,
+            profession: formData.profession,
+            country: formData.country,
+            businessSize: formData.businessSize,
+            selectedPlan: formData.selectedPlan,
             billingCycle: formData.billingCycle,
             timestamp: Date.now(),
             resumingRegistration: true
@@ -307,11 +314,18 @@ const Register = () => {
 
       // Step 3: Redirect to Stripe checkout
       if (stripeData?.url) {
-        // Update registration pending with userId
+        // Update registration pending with complete user data
         sessionStorage.setItem('registration_pending', JSON.stringify({
           userId: authData.user.id,
-          email: authData.user.email,
-          plan: formData.selectedPlan,
+          email: formData.email.toLowerCase().trim(),
+          fullName: formData.fullName,
+          companyName: formData.companyName,
+          vatNumber: formData.vatNumber,
+          phone: formData.phone,
+          profession: formData.profession,
+          country: formData.country,
+          businessSize: formData.businessSize,
+          selectedPlan: formData.selectedPlan,
           billingCycle: formData.billingCycle,
           timestamp: Date.now()
         }));

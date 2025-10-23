@@ -45,30 +45,62 @@ class RegistrationService {
     // Determine subscription status based on trial period
     const subscriptionStatus = sessionData.subscription_status === 'trialing' ? 'trial' : 'active'
     
+    // Use upsert to create the record if it doesn't exist, or update if it does
+    const userRecord = {
+      id: userData.userId,
+      email: userData.email,
+      full_name: userData.fullName,
+      company_name: userData.companyName,
+      vat_number: userData.vatNumber,
+      phone: userData.phone,
+      profession: userData.profession,
+      country: userData.country,
+      business_size: userData.businessSize,
+      selected_plan: userData.selectedPlan,
+      subscription_status: subscriptionStatus,
+      stripe_subscription_id: sessionData.subscription,
+      stripe_customer_id: sessionData.customer,
+      trial_start_date: sessionData.trial_start ? new Date(sessionData.trial_start * 1000).toISOString() : null,
+      trial_end_date: sessionData.trial_end ? new Date(sessionData.trial_end * 1000).toISOString() : null,
+      registration_completed: true
+    }
+
     const { error } = await supabase
       .from('users')
-      .update({
-        subscription_status: subscriptionStatus,
-        stripe_subscription_id: sessionData.subscription,
-        stripe_customer_id: sessionData.customer,
-        trial_start_date: sessionData.trial_start ? new Date(sessionData.trial_start * 1000).toISOString() : null,
-        trial_end_date: sessionData.trial_end ? new Date(sessionData.trial_end * 1000).toISOString() : null,
-        registration_completed: true
+      .upsert(userRecord, {
+        onConflict: 'id',
+        ignoreDuplicates: false
       })
-      .eq('id', userData.userId)
 
     if (error) {
-      console.error('Error updating user record:', error)
+      console.error('Error creating/updating user record:', error)
       throw error
     }
     
-    console.log('User record updated successfully')
+    console.log('User record created/updated successfully')
   }
 
   /**
    * Create user profile for multi-user system
    */
   async createUserProfile(sessionData, userData) {
+    // Check if user profile already exists (idempotency)
+    const { data: existingProfile, error: checkError } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('user_id', userData.userId)
+      .maybeSingle()
+    
+    if (checkError) {
+      console.error('Error checking existing user profile:', checkError)
+      // Continue anyway
+    }
+    
+    if (existingProfile) {
+      console.log('User profile already exists, skipping creation:', existingProfile.id)
+      return
+    }
+    
     const { error } = await supabase
       .from('user_profiles')
       .insert({
@@ -106,6 +138,23 @@ class RegistrationService {
    * Create subscription record
    */
   async createSubscriptionRecord(sessionData, userData) {
+    // Check if subscription already exists for this user (idempotency)
+    const { data: existingSub, error: checkError } = await supabase
+      .from('subscriptions')
+      .select('id, stripe_subscription_id')
+      .eq('user_id', userData.userId)
+      .maybeSingle()
+    
+    if (checkError) {
+      console.error('Error checking existing subscription:', checkError)
+      // Continue anyway - better to try creating than to fail
+    }
+    
+    if (existingSub) {
+      console.log('Subscription already exists for user, returning existing ID:', existingSub.id)
+      return existingSub.id
+    }
+    
     // Determine subscription status based on trial period
     const subscriptionStatus = sessionData.subscription_status === 'trialing' ? 'trial' : 'active'
     
@@ -134,6 +183,21 @@ class RegistrationService {
       .single()
 
     if (error) {
+      // Handle duplicate key error gracefully (shouldn't happen with NULL, but just in case)
+      if (error.code === '23505') {
+        console.log('Duplicate key detected, fetching existing subscription for this user')
+        const { data: existing } = await supabase
+          .from('subscriptions')
+          .select('id')
+          .eq('user_id', userData.userId)
+          .maybeSingle()
+        
+        if (existing) {
+          console.log('Found existing subscription, returning ID:', existing.id)
+          return existing.id
+        }
+      }
+      
       console.error('Error creating subscription record:', error)
       throw error
     }
@@ -146,29 +210,59 @@ class RegistrationService {
    * Create payment record
    */
   async createPaymentRecord(sessionData, userData, subscriptionId) {
+    console.log('Creating payment record for subscription:', subscriptionId)
+    
+    // Check if payment record already exists (idempotency)
+    const { data: existingPayment, error: checkError } = await supabase
+      .from('payment_records')
+      .select('id')
+      .eq('subscription_id', subscriptionId)
+      .eq('user_id', userData.userId)
+      .maybeSingle()
+    
+    if (checkError) {
+      console.error('Error checking existing payment record:', checkError)
+      // Continue anyway
+    }
+    
+    if (existingPayment) {
+      console.log('Payment record already exists, skipping creation:', existingPayment.id)
+      return
+    }
+    
     const paymentRecord = {
       subscription_id: subscriptionId,
       user_id: userData.userId,
-      stripe_payment_intent_id: sessionData.payment_intent,
-      stripe_invoice_id: sessionData.invoice,
-      amount: sessionData.amount_total / 100, // Convert from cents
+      stripe_payment_intent_id: sessionData.payment_intent || null,
+      stripe_invoice_id: sessionData.invoice || null,
+      amount: sessionData.amount_total ? (sessionData.amount_total / 100) : 0, // Convert from cents, default to 0
       currency: sessionData.currency?.toUpperCase() || 'EUR',
       status: sessionData.payment_status === 'paid' ? 'succeeded' : 'pending',
       payment_method: 'card',
-      description: `${userData.selectedPlan} plan subscription`,
+      description: `${userData.selectedPlan} plan subscription - Trial period`,
       paid_at: sessionData.payment_status === 'paid' ? new Date().toISOString() : null
     }
 
-    const { error } = await supabase
+    console.log('Payment record to insert:', {
+      subscription_id: paymentRecord.subscription_id,
+      user_id: paymentRecord.user_id,
+      amount: paymentRecord.amount,
+      status: paymentRecord.status,
+      currency: paymentRecord.currency
+    })
+
+    const { data: insertedData, error } = await supabase
       .from('payment_records')
       .insert(paymentRecord)
+      .select()
 
     if (error) {
       console.error('Error creating payment record:', error)
+      console.error('Payment record that failed:', paymentRecord)
       throw error
     }
     
-    console.log('Payment record created successfully')
+    console.log('Payment record created successfully:', insertedData)
   }
 
   /**

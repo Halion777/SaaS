@@ -310,8 +310,8 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
   const handleManageBilling = async () => {
     try {
       const { createPortalSession } = await import('../../services/stripeService');
-      const customerId = subscription?.stripe_customer_id || actualUser.id;
-      const { data, error } = await createPortalSession(customerId);
+      // Always use Supabase user ID - the Edge Function will look up the Stripe customer ID
+      const { data, error } = await createPortalSession(actualUser.id);
       
       if (error) {
         console.error('Error creating portal session:', error);
@@ -539,16 +539,24 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
             <>
               {/* Plan and Status */}
               <div className="flex items-center justify-between">
-                <div>
+                <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">
                     {subscription.plan_name || 'Unknown Plan'}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {(subscription.status === 'trial' || subscription.status === 'trialing') && subscription.trial_end
-                      ? `Trial ends ${new Date(subscription.trial_end).toLocaleDateString()}`
-                      : `€${subscription.amount || 0}/${subscription.interval || 'month'}`
-                    }
-                  </p>
+                  {(subscription.status === 'trial' || subscription.status === 'trialing') && subscription.trial_end ? (
+                    <>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Trial ends {new Date(subscription.trial_end).toLocaleDateString()}
+                      </p>
+                      <p className="text-xs font-medium text-foreground mt-1">
+                        Then €{subscription.amount || 0}/{subscription.billing_cycle || subscription.interval || 'month'}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      €{subscription.amount || 0}/{subscription.billing_cycle || subscription.interval || 'month'}
+                    </p>
+                  )}
                 </div>
                 <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(subscription.status)}`}>
                   {getStatusText(subscription.status)}

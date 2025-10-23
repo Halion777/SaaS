@@ -153,9 +153,8 @@ const SubscriptionManagement = () => {
 
   const handleManageBilling = async () => {
     try {
-      // Use subscription's Stripe customer ID if available, fallback to user ID
-      const customerId = subscription?.stripe_customer_id || user.id;
-      const { data, error } = await createPortalSession(customerId);
+      // Always use Supabase user ID - the Edge Function will look up the Stripe customer ID
+      const { data, error } = await createPortalSession(user.id);
       
       if (error) {
         console.error('Error creating portal session:', error);

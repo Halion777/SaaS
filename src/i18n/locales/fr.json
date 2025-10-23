@@ -2036,6 +2036,11 @@
       "title": "Bienvenue sur votre tableau de bord",
       "subtitle": "Voici un aperçu rapide de votre activité et des actions importantes"
     },
+    "emailVerification": {
+      "title": "Adresse e-mail non vérifiée",
+      "description": "Veuillez vérifier votre adresse e-mail pour garantir la sécurité de votre compte et recevoir des notifications importantes.",
+      "verifyNow": "Vérifier maintenant"
+    },
     "buttons": {
       "personalize": "Personnaliser",
       "detailedAnalytics": "Analyses détaillées",

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import RegistrationService from '../../services/registrationService';
+import { getStripeSession } from '../../services/stripeSessionService';
 import Icon from '../../components/AppIcon';
 
 const StripeSuccessPage = () => {
@@ -9,56 +10,100 @@ const StripeSuccessPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState('processing');
+  const [errorDetails, setErrorDetails] = useState('');
 
   useEffect(() => {
     const handleSuccess = async () => {
       try {
         // Get session ID from URL
         const sessionId = searchParams.get('session_id');
+        console.log('Session ID from URL:', sessionId);
+        
         if (!sessionId) {
           console.error('No session ID found in URL');
+          setErrorDetails('Missing session ID from payment confirmation');
           setStatus('error');
           return;
         }
 
-        // Get pending registration data
-        const pendingRegistration = sessionStorage.getItem('pendingRegistration');
+        // Get pending registration data - check both possible keys
+        let pendingRegistration = sessionStorage.getItem('pendingRegistration');
         if (!pendingRegistration) {
-          console.error('No pending registration data found');
+          pendingRegistration = sessionStorage.getItem('registration_pending');
+        }
+        
+        console.log('Pending registration data:', pendingRegistration ? 'Found' : 'Not found');
+        console.log('Checking keys:', {
+          pendingRegistration: !!sessionStorage.getItem('pendingRegistration'),
+          registration_pending: !!sessionStorage.getItem('registration_pending')
+        });
+        
+        if (!pendingRegistration) {
+          console.error('No pending registration data found in sessionStorage');
+          console.error('Available sessionStorage keys:', Object.keys(sessionStorage));
+          setErrorDetails('Registration data was lost during payment redirect. This may be due to browser privacy settings. Please try registering again or contact support with session ID: ' + sessionId);
           setStatus('error');
           return;
         }
 
         try {
           const registrationData = JSON.parse(pendingRegistration);
+          console.log('Parsed registration data:', { 
+            userId: registrationData.userId,
+            email: registrationData.email,
+            plan: registrationData.selectedPlan
+          });
           
-          // Create session data object from URL and registration data
-          // We'll use the registration data and session ID to complete registration
+          // Fetch real Stripe session data
+          console.log('Fetching real Stripe session data...');
+          const { data: stripeSessionData, error: stripeError } = await getStripeSession(sessionId);
+          
+          if (stripeError) {
+            console.error('Error fetching Stripe session:', stripeError);
+            setErrorDetails('Failed to retrieve payment information. Please contact support with session ID: ' + sessionId);
+            setStatus('error');
+            return;
+          }
+
+          console.log('Real Stripe session data retrieved:', stripeSessionData);
+          
+          // Create session data object with REAL Stripe IDs
           const sessionData = {
             id: sessionId,
-            payment_status: 'paid', // Assume paid since we're on success page
-            subscription: 'sub_placeholder', // Will be updated by webhook later
-            customer: 'cus_placeholder', // Will be updated by webhook later
-            amount_total: 0, // Will be updated by webhook later
-            currency: 'eur',
-            subscription_status: 'trialing', // Default to trial
-            trial_start: Math.floor(Date.now() / 1000),
-            trial_end: Math.floor(Date.now() / 1000) + (14 * 24 * 60 * 60), // 14 days
-            current_period_start: Math.floor(Date.now() / 1000),
-            current_period_end: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60), // 30 days
-            payment_intent: null,
-            invoice: null
+            payment_status: stripeSessionData.payment_status || 'paid',
+            subscription: stripeSessionData.subscription, // Real Stripe subscription ID
+            customer: stripeSessionData.customer, // Real Stripe customer ID
+            payment_intent: stripeSessionData.payment_intent,
+            amount_total: stripeSessionData.plan_amount || stripeSessionData.amount_total || 0, // Use plan_amount for trials
+            currency: stripeSessionData.currency || 'eur',
+            subscription_status: stripeSessionData.subscription_details?.status || 'trialing',
+            trial_start: stripeSessionData.subscription_details?.trial_start,
+            trial_end: stripeSessionData.subscription_details?.trial_end,
+            current_period_start: stripeSessionData.subscription_details?.current_period_start,
+            current_period_end: stripeSessionData.subscription_details?.current_period_end,
+            subscription_items: stripeSessionData.subscription_details?.items
           };
 
+          console.log('Session data with real Stripe IDs:', {
+            subscription: sessionData.subscription,
+            customer: sessionData.customer,
+            payment_intent: sessionData.payment_intent,
+            amount_total: sessionData.amount_total,
+            plan_amount: stripeSessionData.plan_amount,
+            is_trial: sessionData.subscription_status === 'trialing'
+          });
+
+          console.log('Starting registration completion...');
+          
           // Use RegistrationService to complete registration
           await RegistrationService.completeRegistration(sessionData, registrationData);
           
           console.log('Registration completed successfully');
           
-          // Clear all registration data
+          // Clear all registration data (both possible keys)
           sessionStorage.removeItem('pendingRegistration');
-          sessionStorage.removeItem('registration_complete');
           sessionStorage.removeItem('registration_pending');
+          sessionStorage.removeItem('registration_complete');
           
           setStatus('success');
           
@@ -69,10 +114,12 @@ const StripeSuccessPage = () => {
           
         } catch (error) {
           console.error('Error completing registration:', error);
+          setErrorDetails(error.message || 'Database error while creating your account. Please contact support with session ID: ' + sessionId);
           setStatus('error');
         }
       } catch (error) {
         console.error('Error handling Stripe success:', error);
+        setErrorDetails(error.message || 'Unexpected error occurred');
         setStatus('error');
       }
     };
@@ -144,8 +191,13 @@ const StripeSuccessPage = () => {
               {t('stripeSuccess.error.title')}
             </h2>
             <p className="text-muted-foreground mb-4">
-              {t('stripeSuccess.error.description')}
+              {errorDetails || t('stripeSuccess.error.description')}
             </p>
+            {errorDetails && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-left">
+                <p className="text-xs font-mono text-red-800 break-all">{errorDetails}</p>
+              </div>
+            )}
             <button
               onClick={() => navigate('/login')}
               className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors"

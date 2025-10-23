@@ -1995,6 +1995,11 @@
       "title": "Welcome to your Dashboard",
       "subtitle": "Here's a quick overview of your activity and important actions"
     },
+    "emailVerification": {
+      "title": "Email Address Not Verified",
+      "description": "Please verify your email address to ensure account security and receive important notifications.",
+      "verifyNow": "Verify Now"
+    },
     "buttons": {
       "personalize": "Personalize",
       "detailedAnalytics": "Detailed Analytics",

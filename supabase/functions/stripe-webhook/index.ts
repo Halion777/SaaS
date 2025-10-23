@@ -1,6 +1,5 @@
 // @ts-ignore
 declare const Deno: any;
-
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 // @ts-ignore
@@ -14,9 +13,10 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'), {
 
 const endpointSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')
 
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
 }
 
 serve(async (req) => {
@@ -46,10 +46,20 @@ serve(async (req) => {
     const body = await req.text()
     const signature = req.headers.get('stripe-signature')
 
-    if (!signature || !endpointSecret) {
+ 
+    if (!signature) {
+      console.error('ERROR: Missing stripe-signature header')
       return new Response(
-        JSON.stringify({ error: 'Missing signature or endpoint secret' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Missing stripe-signature header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (!endpointSecret) {
+      console.error('ERROR: Missing STRIPE_WEBHOOK_SECRET environment variable')
+      return new Response(
+        JSON.stringify({ error: 'Missing webhook secret configuration' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -57,10 +67,12 @@ serve(async (req) => {
 
     try {
       event = stripe.webhooks.constructEvent(body, signature, endpointSecret)
+      console.log('✅ Signature verified successfully')
     } catch (err) {
+      console.error('❌ Signature verification failed:', err.message)
       return new Response(
-        JSON.stringify({ error: 'Webhook signature verification failed' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Webhook signature verification failed', details: err.message }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -135,6 +147,90 @@ serve(async (req) => {
         })
         break
 
+      case 'invoice.payment_succeeded':
+        const invoice = event.data.object as Stripe.Invoice
+        console.log('Payment succeeded (trial ended or renewal):', {
+          invoiceId: invoice.id,
+          subscriptionId: invoice.subscription,
+          customer: invoice.customer,
+          amount: invoice.amount_paid,
+          status: invoice.status
+        })
+
+        // Update subscription status to 'active' after trial ends
+        if (invoice.subscription) {
+          try {
+            // Update subscriptions table
+            await supabaseClient
+              .from('subscriptions')
+              .update({
+                status: 'active',
+                updated_at: new Date().toISOString()
+              })
+              .eq('stripe_subscription_id', invoice.subscription as string)
+
+            // Update users table
+            await supabaseClient
+              .from('users')
+              .update({
+                subscription_status: 'active'
+              })
+              .eq('stripe_subscription_id', invoice.subscription as string)
+
+            // Create payment record
+            await supabaseClient
+              .from('payment_records')
+              .insert({
+                stripe_payment_intent_id: invoice.payment_intent as string,
+                stripe_invoice_id: invoice.id,
+                amount: (invoice.amount_paid / 100).toFixed(2),
+                currency: invoice.currency.toUpperCase(),
+                status: 'succeeded',
+                description: 'Subscription payment after trial',
+                created_at: new Date().toISOString()
+              })
+            
+            console.log('Subscription activated and payment recorded after trial end')
+          } catch (error) {
+            console.error('Error updating subscription after payment:', error)
+          }
+        }
+        break
+
+      case 'invoice.payment_failed':
+        const failedInvoice = event.data.object as Stripe.Invoice
+        console.log('Payment failed:', {
+          invoiceId: failedInvoice.id,
+          subscriptionId: failedInvoice.subscription,
+          customer: failedInvoice.customer,
+          attemptCount: failedInvoice.attempt_count
+        })
+
+        // Update subscription status to 'past_due'
+        if (failedInvoice.subscription) {
+          try {
+            await supabaseClient
+              .from('subscriptions')
+              .update({
+                status: 'past_due',
+                updated_at: new Date().toISOString()
+              })
+              .eq('stripe_subscription_id', failedInvoice.subscription as string)
+
+            await supabaseClient
+              .from('users')
+              .update({
+                subscription_status: 'past_due'
+              })
+              .eq('stripe_subscription_id', failedInvoice.subscription as string)
+            
+            console.log('Subscription marked as past_due after payment failure')
+          } catch (error) {
+            console.error('Error updating subscription after payment failure:', error)
+          }
+        }
+        break
+
       case 'customer.subscription.updated':
         const updatedSubscription = event.data.object as Stripe.Subscription
         console.log('Subscription updated:', {
@@ -142,6 +238,26 @@ serve(async (req) => {
           status: updatedSubscription.status,
           customer: updatedSubscription.customer
         })
+
+        // Update subscription status in database
+        try {
+          await supabaseClient
+            .from('subscriptions')
+            .update({
+              status: updatedSubscription.status,
+              updated_at: new Date().toISOString()
+            })
+            .eq('stripe_subscription_id', updatedSubscription.id)
+
+          await supabaseClient
+            .from('users')
+            .update({
+              subscription_status: updatedSubscription.status
+            })
+            .eq('stripe_subscription_id', updatedSubscription.id)
+        } catch (error) {
+          console.error('Error updating subscription:', error)
+        }
         break
 
       case 'customer.subscription.deleted':
@@ -150,6 +266,26 @@ serve(async (req) => {
           subscriptionId: deletedSubscription.id,
           customer: deletedSubscription.customer
         })
+
+        // Update subscription status to 'cancelled'
+        try {
+          await supabaseClient
+            .from('subscriptions')
+            .update({
+              status: 'cancelled',
+              updated_at: new Date().toISOString()
+            })
+            .eq('stripe_subscription_id', deletedSubscription.id)
+
+          await supabaseClient
+            .from('users')
+            .update({
+              subscription_status: 'cancelled'
+            })
+            .eq('stripe_subscription_id', deletedSubscription.id)
+        } catch (error) {
+          console.error('Error updating cancelled subscription:', error)
+        }
         break
 
       default:
