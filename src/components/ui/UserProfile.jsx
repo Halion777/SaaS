@@ -36,6 +36,9 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
   const [userAccountData, setUserAccountData] = useState(null);
   const [loadingAccountData, setLoadingAccountData] = useState(false);
   const [isAccountInfoExpanded, setIsAccountInfoExpanded] = useState(false);
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [changingEmail, setChangingEmail] = useState(false);
 
   // Get multi-user context with fallback
   const multiUserContext = useMultiUser();
@@ -190,6 +193,48 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
       alert('An unexpected error occurred');
     } finally {
       setSendingPasswordReset(false);
+    }
+  };
+
+  // Handle change email
+  const handleChangeEmail = async () => {
+    if (!newEmail || !newEmail.trim()) {
+      alert('Please enter a new email address');
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      alert('Please enter a valid email address');
+      return;
+    }
+
+    if (newEmail === actualUser?.email) {
+      alert('New email is the same as current email');
+      return;
+    }
+
+    setChangingEmail(true);
+    
+    try {
+      const { supabase } = await import('../../services/supabaseClient');
+      const { error } = await supabase.auth.updateUser({
+        email: newEmail
+      });
+      
+      if (error) {
+        alert(`❌ Failed to update email:\n${error.message}`);
+      } else {
+        alert('✅ Email update confirmation sent!\n\nPlease check your new email inbox and click the confirmation link to complete the change.');
+        setIsChangingEmail(false);
+        setNewEmail('');
+      }
+    } catch (error) {
+      console.error('Error changing email:', error);
+      alert('An unexpected error occurred');
+    } finally {
+      setChangingEmail(false);
     }
   };
 
@@ -547,7 +592,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
   );
 
   const renderAccountSection = () => (
-        <div className="space-y-4">
+          <div className="space-y-4">
           {/* Account Information */}
           {loadingAccountData ? (
             <div className="flex items-center justify-center py-4">
@@ -621,67 +666,67 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
             <div className="flex-1">
               <h4 className="text-sm font-medium text-foreground">{t('profile.settings.account.pinSettings.title')}</h4>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {pinSettings.hasPin 
-                  ? t('profile.settings.account.pinSettings.configured') 
-                  : t('profile.settings.account.pinSettings.notConfigured')
-                }
-              </p>
-              {!canEditPin() && (
-                <p className="text-xs text-muted-foreground mt-0.5 italic">
-                  {t('profile.settings.account.pinSettings.adminNote')}
+                  {pinSettings.hasPin 
+                    ? t('profile.settings.account.pinSettings.configured') 
+                    : t('profile.settings.account.pinSettings.notConfigured')
+                  }
                 </p>
+                {!canEditPin() && (
+                <p className="text-xs text-muted-foreground mt-0.5 italic">
+                    {t('profile.settings.account.pinSettings.adminNote')}
+                  </p>
+                )}
+              </div>
+              {!pinSettings.isSettingPin && canEditPin() && (
+                <Button
+                  variant={pinSettings.hasPin ? "outline" : "default"}
+                  size="sm"
+                  onClick={pinSettings.hasPin ? handleRemovePin : handleSetPin}
+                >
+                  {pinSettings.hasPin ? t('common.remove') : t('common.configure')}
+                </Button>
               )}
             </div>
-            {!pinSettings.isSettingPin && canEditPin() && (
-              <Button
-                variant={pinSettings.hasPin ? "outline" : "default"}
-                size="sm"
-                onClick={pinSettings.hasPin ? handleRemovePin : handleSetPin}
-              >
-                {pinSettings.hasPin ? t('common.remove') : t('common.configure')}
-              </Button>
+
+            {pinSettings.isSettingPin && canEditPin() && (
+            <div className="space-y-3 bg-muted/30 rounded-lg p-4 mt-3">
+                <div>
+                <label className="block text-xs font-medium text-foreground mb-1.5">
+                    {t('profile.settings.account.pinSettings.newPinLabel')}
+                  </label>
+                  <input
+                    type="password"
+                    value={pinSettings.pin}
+                    onChange={(e) => setPinSettings(prev => ({ ...prev, pin: e.target.value }))}
+                  className="w-full p-2 text-sm border border-border rounded-md bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-primary"
+                    placeholder="••••"
+                    maxLength={6}
+                  />
+                </div>
+                <div>
+                <label className="block text-xs font-medium text-foreground mb-1.5">
+                    {t('profile.settings.account.pinSettings.confirmPinLabel')}
+                  </label>
+                  <input
+                    type="password"
+                    value={pinSettings.confirmPin}
+                    onChange={(e) => setPinSettings(prev => ({ ...prev, confirmPin: e.target.value }))}
+                  className="w-full p-2 text-sm border border-border rounded-md bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-primary"
+                    placeholder="••••"
+                    maxLength={6}
+                  />
+                </div>
+              <div className="flex gap-2">
+                  <Button size="sm" onClick={handleSavePin}>
+                    {t('common.save')}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleCancelPin}>
+                    {t('common.cancel')}
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
-
-          {pinSettings.isSettingPin && canEditPin() && (
-            <div className="space-y-3 bg-muted/30 rounded-lg p-4 mt-3">
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1.5">
-                  {t('profile.settings.account.pinSettings.newPinLabel')}
-                </label>
-                <input
-                  type="password"
-                  value={pinSettings.pin}
-                  onChange={(e) => setPinSettings(prev => ({ ...prev, pin: e.target.value }))}
-                  className="w-full p-2 text-sm border border-border rounded-md bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-primary"
-                  placeholder="••••"
-                  maxLength={6}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1.5">
-                  {t('profile.settings.account.pinSettings.confirmPinLabel')}
-                </label>
-                <input
-                  type="password"
-                  value={pinSettings.confirmPin}
-                  onChange={(e) => setPinSettings(prev => ({ ...prev, confirmPin: e.target.value }))}
-                  className="w-full p-2 text-sm border border-border rounded-md bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-primary"
-                  placeholder="••••"
-                  maxLength={6}
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button size="sm" onClick={handleSavePin}>
-                  {t('common.save')}
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleCancelPin}>
-                  {t('common.cancel')}
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
   );
 
   const renderPreferencesSection = () => {
@@ -699,54 +744,54 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
         const selectedLanguageDetails = languages.find(lang => lang.code === currentLanguage) || languages[0];
 
         return (
-          <div className="space-y-4">
-            {/* Language Selection */}
-            <div className="flex items-center justify-between">
+            <div className="space-y-4">
+                {/* Language Selection */}
+                <div className="flex items-center justify-between">
               <div className="flex-1">
-                <h5 className="text-sm font-medium text-foreground">{t('profile.settings.preferences.language.title')}</h5>
+                    <h5 className="text-sm font-medium text-foreground">{t('profile.settings.preferences.language.title')}</h5>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {selectedLanguageDetails.flag} {selectedLanguageDetails.name}
-                </p>
-              </div>
+                    </p>
+                  </div>
               <div className="flex items-center gap-1">
-                {languages.map((language) => (
-                  <button
-                    key={language.code}
-                    onClick={() => {
-                      localStorage.setItem('language', language.code);
-                      window.location.reload();
-                    }}
-                    className={`
+                      {languages.map((language) => (
+                        <button
+                          key={language.code}
+                          onClick={() => {
+                            localStorage.setItem('language', language.code);
+                            window.location.reload();
+                          }}
+                          className={`
                       w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-150
-                      ${currentLanguage === language.code 
+                            ${currentLanguage === language.code 
                         ? 'bg-primary/10 ring-2 ring-primary' 
-                        : 'hover:bg-muted'}
-                    `}
+                              : 'hover:bg-muted'}
+                          `}
                     title={language.name}
-                  >
+                        >
                     <span className="text-xl">{language.flag}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            {/* Show/Hide material prices in quote preview */}
-            <div className="flex items-center justify-between">
+                        </button>
+                      ))}
+                  </div>
+                </div>
+                
+                {/* Show/Hide material prices in quote preview */}
+                <div className="flex items-center justify-between">
               <div className="flex-1">
-                <h5 className="text-sm font-medium text-foreground">Afficher les prix des matériaux</h5>
+                    <h5 className="text-sm font-medium text-foreground">Afficher les prix des matériaux</h5>
                 <p className="text-xs text-muted-foreground mt-0.5">Contrôle l'affichage des prix matériaux dans l'aperçu du devis</p>
-              </div>
+                  </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
+                    <input
+                      type="checkbox"
                   className="sr-only peer"
-                  defaultChecked={(localStorage.getItem('include-materials-prices') ?? 'true') === 'true'}
-                  onChange={(e) => {
-                    const v = e.target.checked;
-                    localStorage.setItem('include-materials-prices', String(v));
-                    window.dispatchEvent(new StorageEvent('storage', { key: 'include-materials-prices', newValue: String(v) }));
-                  }}
-                />
+                      defaultChecked={(localStorage.getItem('include-materials-prices') ?? 'true') === 'true'}
+                      onChange={(e) => {
+                        const v = e.target.checked;
+                        localStorage.setItem('include-materials-prices', String(v));
+                        window.dispatchEvent(new StorageEvent('storage', { key: 'include-materials-prices', newValue: String(v) }));
+                      }}
+                    />
                 <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
               </label>
             </div>
@@ -755,11 +800,11 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
   };
 
   const renderSecuritySection = () => (
-        <div className="space-y-4">
+          <div className="space-y-4">
           {/* Email Verification */}
-          <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between">
             <div className="flex-1">
-              <h5 className="text-sm font-medium text-foreground">{t('profile.settings.security.authentication.twoFactor.title')}</h5>
+                  <h5 className="text-sm font-medium text-foreground">{t('profile.settings.security.authentication.twoFactor.title')}</h5>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {emailVerified 
                   ? '✓ Email verified' 
@@ -768,7 +813,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                     : t('profile.settings.security.authentication.twoFactor.status')
                 }
               </p>
-            </div>
+                </div>
             {emailVerified ? (
               <Icon name="CheckCircle" size={20} className="text-green-600" />
             ) : (
@@ -783,21 +828,21 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                 ) : (
                   'Verify'
                 )}
-              </Button>
+                </Button>
             )}
-          </div>
+              </div>
           
           {/* Reset Password */}
-          <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between">
             <div className="flex-1">
-              <h5 className="text-sm font-medium text-foreground">{t('profile.settings.security.authentication.resetPassword.title')}</h5>
+                  <h5 className="text-sm font-medium text-foreground">{t('profile.settings.security.authentication.resetPassword.title')}</h5>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {sendingPasswordReset 
                   ? 'Sending reset email...' 
                   : t('profile.settings.security.authentication.resetPassword.description')
                 }
               </p>
-            </div>
+                </div>
             <Button 
               variant="outline" 
               size="sm"
@@ -809,9 +854,9 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
               ) : (
                 t('common.reset')
               )}
-            </Button>
-          </div>
-        </div>
+                </Button>
+              </div>
+            </div>
   );
 
   return (
@@ -1046,12 +1091,12 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
           {/* Backdrop */}
           <div
             className="fixed inset-0 bg-black/30 z-[9999] transition-opacity"
-            onClick={() => setIsAccountSettingsOpen(false)}
+                onClick={() => setIsAccountSettingsOpen(false)}
           />
           
           {/* Settings Panel */}
           <div 
-            className={`
+                  className={`
               fixed bg-card border border-border rounded-lg shadow-2xl z-[10000]
               transition-all duration-300 ease-out
               ${isGlobal 
@@ -1081,7 +1126,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                 className="p-2 rounded-lg hover:bg-muted transition-colors"
               >
                 <Icon name="X" size={18} />
-              </button>
+                </button>
             </div>
 
             {/* All Settings Content - Stacked with Separators */}
@@ -1093,9 +1138,9 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                   <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                     {t('profile.settings.tabs.account')}
                   </h4>
-                </div>
-                {renderAccountSection()}
               </div>
+                {renderAccountSection()}
+          </div>
 
               {/* Preferences Section */}
               <div className="p-4 border-b border-border">

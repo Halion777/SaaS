@@ -1542,6 +1542,8 @@
       "account": {
         "fullName": "Full Name",
         "email": "Email Address",
+        "newEmail": "New Email Address",
+        "newEmailPlaceholder": "Enter new email address",
         "companyName": "Company Name",
         "phone": "Phone Number",
         "country": "Country",
@@ -1590,6 +1592,8 @@
   "common": {
     "save": "Save",
     "cancel": "Cancel",
+    "change": "Change",
+    "update": "Update",
     "configure": "Configure",
     "remove": "Remove",
     "reset": "Reset",

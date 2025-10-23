@@ -1917,6 +1917,8 @@
       "account": {
         "fullName": "Nom complet",
         "email": "Adresse e-mail",
+        "newEmail": "Nouvelle adresse e-mail",
+        "newEmailPlaceholder": "Entrez la nouvelle adresse e-mail",
         "companyName": "Nom de l'entreprise",
         "phone": "Numéro de téléphone",
         "country": "Pays",
@@ -1965,6 +1967,8 @@
   "common": {
     "save": "Enregistrer",
     "cancel": "Annuler",
+    "change": "Modifier",
+    "update": "Mettre à jour",
     "configure": "Configurer",
     "remove": "Supprimer",
     "reset": "Réinitialiser",

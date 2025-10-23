@@ -160,7 +160,13 @@ export const AuthProvider = ({ children }) => {
 
       if (!roleError && userData?.role) {
         const currentPath = window.location.pathname;
-        const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/about', '/pricing', '/contact', '/blog'];
+        const publicPaths = ['/login', '/register', '/forgot-password', '/about', '/pricing', '/contact', '/blog'];
+        const authPaths = ['/reset-password', '/auth/confirm']; // Don't redirect from these pages
+        
+        // Skip redirect if on auth-related pages
+        if (authPaths.includes(currentPath)) {
+          return;
+        }
         
         // Only redirect if user is on a public page or wrong role page
         if (userData.role === 'superadmin' && !currentPath.startsWith('/admin/super') && publicPaths.includes(currentPath)) {
@@ -200,8 +206,11 @@ export const AuthProvider = ({ children }) => {
           const isRegistrationPending = sessionStorage.getItem('registration_pending') || 
                                       sessionStorage.getItem('pendingRegistration');
           
-          if (!isRegistrationPending) {
-            // Redirect based on role after sign in (only if not during registration)
+          // Check if user is on password reset page (don't redirect)
+          const isPasswordReset = window.location.pathname === '/reset-password';
+          
+          if (!isRegistrationPending && !isPasswordReset) {
+            // Redirect based on role after sign in (only if not during registration or password reset)
             if (session.user) {
               redirectBasedOnRole(session.user.id);
             }
@@ -275,7 +284,12 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (user && isProfileSelected && !loading) {
       const currentPath = location.pathname;
-      const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password'];
+      const publicPaths = ['/login', '/register', '/forgot-password'];
+      
+      // Skip redirect if on reset-password or auth-confirm page
+      if (currentPath === '/reset-password' || currentPath === '/auth/confirm') {
+        return;
+      }
       
       if (publicPaths.includes(currentPath)) {
         // Check if user has completed registration before redirecting

@@ -152,7 +152,7 @@ const Register = () => {
       
       // Check if this is resuming an incomplete registration
       if (checkData.userExists && !checkData.registrationComplete) {
-        // Resume incomplete registration - sign in existing user and proceed to payment
+        // Resume incomplete registration
         console.log('Resuming incomplete registration for user:', checkData.userId);
         
         // Set registration pending flag BEFORE signing in to prevent dashboard redirect
@@ -164,14 +164,33 @@ const Register = () => {
           resumingRegistration: true
         }));
         
-        // Sign in the existing user
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        // First, try to sign in with the password provided
+        let signInData, signInError;
+        const signInResult = await supabase.auth.signInWithPassword({
           email: formData.email.toLowerCase().trim(),
           password: formData.password
         });
         
+        signInData = signInResult.data;
+        signInError = signInResult.error;
+        
+        // If password doesn't match (user might have entered a different password)
+        if (signInError && (signInError.message?.includes('Invalid') || signInError.message?.includes('credentials'))) {
+          // Show helpful error message with options
+          setErrors({ 
+            general: `This email is already registered but payment was not completed.\n\nPlease either:\n1. Use your original password, or\n2. Use "Forgot Password" to reset it, then try registering again.`
+          });
+          setIsLoading(false);
+          cleanupOptimization();
+          sessionStorage.removeItem('registration_pending');
+          return;
+        }
+        
+        // If other sign-in error occurred
         if (signInError) {
-          setErrors({ general: t('errors.loginFailed') });
+          setErrors({ 
+            general: signInError.message || 'Unable to resume registration. Please contact support.'
+          });
           setIsLoading(false);
           cleanupOptimization();
           sessionStorage.removeItem('registration_pending');
