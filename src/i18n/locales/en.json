@@ -1534,16 +1534,24 @@
     "settings": {
       "title": "Account Settings",
       "tabs": {
+        "subscription": "Subscription",
         "account": "Account",
         "preferences": "Preferences",
         "security": "Security"
       },
       "account": {
+        "fullName": "Full Name",
+        "email": "Email Address",
+        "companyName": "Company Name",
+        "phone": "Phone Number",
+        "country": "Country",
         "pinSettings": {
           "title": "PIN Code",
           "configured": "PIN Code Configured",
           "notConfigured": "No PIN Code Configured",
-          "adminNote": "Only administrators or profile owners can modify the PIN"
+          "adminNote": "Only administrators or profile owners can modify the PIN",
+          "newPinLabel": "New PIN Code",
+          "confirmPinLabel": "Confirm PIN Code"
         },
         "permissions": {
           "title": "Permissions"
@@ -1568,8 +1576,8 @@
         "authentication": {
           "title": "Authentication",
           "twoFactor": {
-            "title": "Two-Factor Authentication",
-            "status": "Disabled"
+            "title": "Verify Email Address",
+            "status": "Click to verify your email address"
           },
           "resetPassword": {
             "title": "Reset Password",

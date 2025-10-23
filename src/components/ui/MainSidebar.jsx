@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../services/supabaseClient';
 import Icon from '../AppIcon';
 import NavigationItem from './NavigationItem';
 import UserProfile from './UserProfile';
@@ -19,6 +20,10 @@ const MainSidebar = () => {
     services: false,
     invoices: false,
     followUps: false
+  });
+  const [serviceVisibility, setServiceVisibility] = useState({
+    creditInsurance: true,
+    recovery: true
   });
   const location = useLocation();
   const navigate = useNavigate();
@@ -119,6 +124,28 @@ const MainSidebar = () => {
     });
   };
 
+  // Load service visibility settings
+  useEffect(() => {
+    const loadServiceVisibility = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('app_settings')
+          .select('*')
+          .eq('setting_key', 'service_visibility')
+          .single();
+
+        if (data && data.setting_value) {
+          setServiceVisibility(data.setting_value);
+        }
+      } catch (error) {
+        console.error('Error loading service visibility:', error);
+        // Use default settings if there's an error
+      }
+    };
+
+    loadServiceVisibility();
+  }, []);
+
 
 
   // Navigation items organized by categories with collapsible sections
@@ -153,13 +180,6 @@ const MainSidebar = () => {
           label: t('sidebar.categories.main.items.leadsManagement'),
           path: '/leads-management',
           icon: 'Users',
-          notifications: 0
-        },
-        {
-          id: 'subscription',
-          label: t('sidebar.categories.main.items.subscription'),
-          path: '/subscription',
-          icon: 'CreditCard',
           notifications: 0
         }
       ]
@@ -251,23 +271,29 @@ const MainSidebar = () => {
       isCollapsible: true,
       isExpanded: expandedSections.services,
       items: [
-        {
+        ...(serviceVisibility.creditInsurance ? [{
           id: 'assurance-credit',
           label: t('sidebar.categories.services.items.creditInsurance'),
           path: '/services/assurance',
           icon: 'Shield',
           notifications: 0
-        },
-        {
+        }] : []),
+        ...(serviceVisibility.recovery ? [{
           id: 'recouvrement',
           label: t('sidebar.categories.services.items.recovery'),
           path: '/services/recouvrement',
           icon: 'Banknote',
           notifications: 0
-        }
+        }] : [])
       ]
     }
-  ];
+  ].filter(category => {
+    // Hide the services category if all services are hidden
+    if (category.id === 'services' && category.items.length === 0) {
+      return false;
+    }
+    return true;
+  });
 
   const handleLogout = async () => {
     try {

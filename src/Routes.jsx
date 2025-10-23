@@ -12,6 +12,7 @@ import Login from './pages/login';
 import Register from './pages/register';
 import ForgotPasswordPage from './pages/forgot-password';
 import ResetPasswordPage from './pages/reset-password';
+import AuthConfirm from './pages/auth-confirm';
 import PricingPage from './pages/pricing';
 import FindArtisanPage from './pages/find-artisan';
 import AboutPage from './pages/about';
@@ -49,6 +50,7 @@ import SuperAdminLeads from './pages/admin/super/leads';
 import SuperAdminBilling from './pages/admin/super/billing';
 import SuperAdminEmailTemplates from './pages/admin/super/email-templates';
 import SuperAdminBlogs from './pages/admin/super/blogs';
+import SuperAdminCustomization from './pages/admin/super/customization';
 
 const AppRoutes = () => {
   return (
@@ -83,6 +85,7 @@ const AppRoutes = () => {
               <ResetPasswordPage />
             </PublicRoute>
           } />
+          <Route path="/auth/confirm" element={<AuthConfirm />} />
           <Route path="/pricing" element={
             <PublicRoute>
               <PricingPage />
@@ -231,6 +234,11 @@ const AppRoutes = () => {
           <Route path="/admin/super/billing" element={
             <SuperAdminProtectedRoute>
               <SuperAdminBilling />
+            </SuperAdminProtectedRoute>
+          } />
+          <Route path="/admin/super/customization" element={
+            <SuperAdminProtectedRoute>
+              <SuperAdminCustomization />
             </SuperAdminProtectedRoute>
           } />
           <Route path="/admin/super/email-templates" element={

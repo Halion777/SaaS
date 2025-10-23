@@ -1567,16 +1567,24 @@
     "settings": {
       "title": "Account Instellingen",
       "tabs": {
+        "subscription": "Abonnement",
         "account": "Account",
         "preferences": "Voorkeuren",
         "security": "Beveiliging"
       },
       "account": {
+        "fullName": "Volledige naam",
+        "email": "E-mailadres",
+        "companyName": "Bedrijfsnaam",
+        "phone": "Telefoonnummer",
+        "country": "Land",
         "pinSettings": {
           "title": "PIN Code",
           "configured": "PIN Code Ingesteld",
           "notConfigured": "Geen PIN Code Ingesteld",
-          "adminNote": "Alleen beheerders of profieleigenaren kunnen de PIN wijzigen"
+          "adminNote": "Alleen beheerders of profieleigenaren kunnen de PIN wijzigen",
+          "newPinLabel": "Nieuwe PIN Code",
+          "confirmPinLabel": "Bevestig PIN Code"
         },
         "permissions": {
           "title": "Machtigingen"
@@ -1601,8 +1609,8 @@
         "authentication": {
           "title": "Authenticatie",
           "twoFactor": {
-            "title": "Twee-Factor Authenticatie",
-            "status": "Uitgeschakeld"
+            "title": "E-mailadres verifiëren",
+            "status": "Klik om uw e-mailadres te verifiëren"
           },
           "resetPassword": {
             "title": "Wachtwoord Resetten",

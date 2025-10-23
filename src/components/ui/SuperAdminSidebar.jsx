@@ -14,7 +14,8 @@ const SuperAdminSidebar = () => {
     leads: false,
     users: false,
     billing: false,
-    content: false
+    content: false,
+    customization: false
   });
   const location = useLocation();
   const navigate = useNavigate();
@@ -61,15 +62,17 @@ const SuperAdminSidebar = () => {
     
     // Determine which section should be expanded based on the current path
     if (path.startsWith('/admin/super/dashboard')) {
-      setExpandedSections(prev => ({ ...prev, system: true, leads: false, users: false, billing: false, content: false }));
+      setExpandedSections(prev => ({ ...prev, system: true, leads: false, users: false, billing: false, content: false, customization: false }));
     } else if (path.startsWith('/admin/super/leads')) {
-      setExpandedSections(prev => ({ ...prev, system: false, leads: true, users: false, billing: false, content: false }));
+      setExpandedSections(prev => ({ ...prev, system: false, leads: true, users: false, billing: false, content: false, customization: false }));
     } else if (path.startsWith('/admin/super/users')) {
-      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: true, billing: false, content: false }));
+      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: true, billing: false, content: false, customization: false }));
     } else if (path.startsWith('/admin/super/billing')) {
-      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: false, billing: true, content: false }));
+      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: false, billing: true, content: false, customization: false }));
     } else if (path.startsWith('/admin/super/email-templates') || path.startsWith('/admin/super/blogs')) {
-      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: false, billing: false, content: true }));
+      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: false, billing: false, content: true, customization: false }));
+    } else if (path.startsWith('/admin/super/customization')) {
+      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: false, billing: false, content: false, customization: true }));
     }
   }, [location.pathname, isCollapsed, isTablet]);
 
@@ -105,7 +108,8 @@ const SuperAdminSidebar = () => {
         leads: sectionId === 'leads',
         users: sectionId === 'users',
         billing: sectionId === 'billing',
-        content: sectionId === 'content'
+        content: sectionId === 'content',
+        customization: sectionId === 'customization'
       };
     });
   };
@@ -204,6 +208,21 @@ const SuperAdminSidebar = () => {
           label: 'Blog Posts',
           path: '/admin/super/blogs',
           icon: 'FileText',
+          notifications: 0
+        }
+      ]
+    },
+    {
+      id: 'customization',
+      label: 'Customization',
+      isCollapsible: true,
+      isExpanded: expandedSections.customization,
+      items: [
+        {
+          id: 'app-customization',
+          label: 'App Customization',
+          path: '/admin/super/customization',
+          icon: 'Sliders',
           notifications: 0
         }
       ]

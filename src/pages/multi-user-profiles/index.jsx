@@ -764,12 +764,6 @@ const MultiUserProfilesPage = () => {
                 </p>
               </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
-                {isPremium && canManageUsers() && (
-                  <Button onClick={() => setShowInviteModal(true)}>
-                    <Icon name="Mail" size={16} className="mr-2" />
-                    Inviter un utilisateur
-                  </Button>
-                )}
                 {isPremium && isAdmin() && companyProfiles.length < subscriptionLimits.maxProfiles && (
                   <Button onClick={() => setShowAddProfileModal(true)}>
                     <Icon name="Plus" size={16} className="mr-2" />

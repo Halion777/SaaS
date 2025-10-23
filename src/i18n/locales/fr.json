@@ -1909,16 +1909,24 @@
     "settings": {
       "title": "Paramètres du compte",
       "tabs": {
+        "subscription": "Abonnement",
         "account": "Compte",
         "preferences": "Préférences",
         "security": "Sécurité"
       },
       "account": {
+        "fullName": "Nom complet",
+        "email": "Adresse e-mail",
+        "companyName": "Nom de l'entreprise",
+        "phone": "Numéro de téléphone",
+        "country": "Pays",
         "pinSettings": {
           "title": "Code PIN",
           "configured": "Code PIN configuré",
           "notConfigured": "Aucun code PIN configuré",
-          "adminNote": "Seuls les administrateurs ou le propriétaire du profil peuvent modifier le code PIN"
+          "adminNote": "Seuls les administrateurs ou le propriétaire du profil peuvent modifier le code PIN",
+          "newPinLabel": "Nouveau code PIN",
+          "confirmPinLabel": "Confirmer le code PIN"
         },
         "permissions": {
           "title": "Permissions"
@@ -1943,8 +1951,8 @@
         "authentication": {
           "title": "Authentification",
           "twoFactor": {
-            "title": "Authentification à deux facteurs",
-            "status": "Désactivé"
+            "title": "Vérifier l'adresse e-mail",
+            "status": "Cliquez pour vérifier votre adresse e-mail"
           },
           "resetPassword": {
             "title": "Réinitialiser le mot de passe",

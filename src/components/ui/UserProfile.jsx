@@ -7,7 +7,8 @@ import Button from './Button';
 import PinModal from './PinModal';
 import { useMultiUser } from '../../context/MultiUserContext';
 import { useAuth } from '../../context/AuthContext';
-import { createPortal } from 'react-dom';
+import emailVerificationService from '../../services/emailVerificationService';
+import { resetPassword } from '../../services/authService';
 
 const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) => {
   const { t } = useTranslation();
@@ -27,7 +28,14 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
     error: ''
   });
   const dropdownRef = useRef(null);
-  const [activeSettingsTab, setActiveSettingsTab] = useState('account');
+  const [subscription, setSubscription] = useState(null);
+  const [loadingSubscription, setLoadingSubscription] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [sendingVerification, setSendingVerification] = useState(false);
+  const [sendingPasswordReset, setSendingPasswordReset] = useState(false);
+  const [userAccountData, setUserAccountData] = useState(null);
+  const [loadingAccountData, setLoadingAccountData] = useState(false);
+  const [isAccountInfoExpanded, setIsAccountInfoExpanded] = useState(false);
 
   // Get multi-user context with fallback
   const multiUserContext = useMultiUser();
@@ -107,6 +115,193 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
         hasPin: hasPin,
         isSettingPin: false
       }));
+    }
+    
+    // Load subscription data
+    loadSubscriptionData();
+    
+    // Check email verification status
+    checkEmailVerificationStatus();
+    
+    // Load account data
+    loadAccountData();
+  };
+
+  // Check email verification status
+  const checkEmailVerificationStatus = async () => {
+    if (!actualUser?.id) return;
+    
+    try {
+      const status = await emailVerificationService.getVerificationStatus(actualUser.id);
+      setEmailVerified(status.verified);
+    } catch (error) {
+      console.error('Error checking email verification:', error);
+    }
+  };
+
+  // Handle verify email button click
+  const handleVerifyEmail = async () => {
+    if (!actualUser?.email) {
+      alert('No email address found');
+      return;
+    }
+
+    if (emailVerified) {
+      return; // Already verified
+    }
+
+    setSendingVerification(true);
+    
+    try {
+      const result = await emailVerificationService.sendVerificationEmail(actualUser.email);
+      
+      if (result.success) {
+        alert('✅ Verification email sent!\n\nPlease check your inbox and click the verification link.');
+      } else {
+        alert(`❌ Failed to send verification email:\n${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error sending verification email:', error);
+      alert('An unexpected error occurred');
+    } finally {
+      setSendingVerification(false);
+    }
+  };
+
+  // Handle reset password button click
+  const handleResetPassword = async () => {
+    if (!actualUser?.email) {
+      alert('No email address found');
+      return;
+    }
+
+    setSendingPasswordReset(true);
+    
+    try {
+      const { error } = await resetPassword(actualUser.email);
+      
+      if (error) {
+        alert(`❌ Failed to send password reset email:\n${error.message}`);
+      } else {
+        alert('✅ Password reset email sent!\n\nPlease check your inbox and click the link to reset your password.');
+      }
+    } catch (error) {
+      console.error('Error sending password reset email:', error);
+      alert('An unexpected error occurred');
+    } finally {
+      setSendingPasswordReset(false);
+    }
+  };
+
+  // Load account data from database
+  const loadAccountData = async () => {
+    if (!actualUser?.id) {
+      console.log('No user found, skipping account data load');
+      return;
+    }
+    
+    try {
+      setLoadingAccountData(true);
+      const { supabase } = await import('../../services/supabaseClient');
+      
+      const { data, error } = await supabase
+        .from('users')
+        .select('email, full_name, company_name, phone, country, vat_number, profession, business_size')
+        .eq('id', actualUser.id)
+        .single();
+
+      if (error) {
+        console.error('Error loading account data:', error);
+        return;
+      }
+
+      setUserAccountData(data);
+    } catch (error) {
+      console.error('Error loading account data:', error);
+    } finally {
+      setLoadingAccountData(false);
+    }
+  };
+
+  const loadSubscriptionData = async () => {
+    if (!actualUser) {
+      console.log('No user found, skipping subscription load');
+      return;
+    }
+    
+    try {
+      setLoadingSubscription(true);
+      const { supabase } = await import('../../services/supabaseClient');
+      
+      console.log('Loading subscription for user:', actualUser.id);
+      
+      const { data: subscriptionData, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', actualUser.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error) {
+        console.error('Error loading subscription:', error);
+        // Don't set null if it's just "no rows" error
+        if (error.code !== 'PGRST116') {
+          setSubscription(null);
+        }
+        return;
+      }
+
+      console.log('Subscription data received:', subscriptionData);
+      setSubscription(subscriptionData);
+    } catch (error) {
+      console.error('Error loading subscription:', error);
+      setSubscription(null);
+    } finally {
+      setLoadingSubscription(false);
+    }
+  };
+
+  const handleManageBilling = async () => {
+    try {
+      const { createPortalSession } = await import('../../services/stripeService');
+      const customerId = subscription?.stripe_customer_id || actualUser.id;
+      const { data, error } = await createPortalSession(customerId);
+      
+      if (error) {
+        console.error('Error creating portal session:', error);
+        alert('Error opening billing portal. Please try again.');
+        return;
+      }
+
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error('Error opening billing portal:', error);
+      alert('Error opening billing portal. Please try again.');
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'active': return 'text-green-600 bg-green-100';
+      case 'trialing': 
+      case 'trial': return 'text-blue-600 bg-blue-100';
+      case 'cancelled': return 'text-red-600 bg-red-100';
+      case 'inactive': return 'text-gray-600 bg-gray-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'active': return 'Active';
+      case 'trialing': 
+      case 'trial': return 'Trial';
+      case 'cancelled': return 'Cancelled';
+      case 'inactive': return 'Inactive';
+      default: return 'Unknown';
     }
   };
 
@@ -289,90 +484,207 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
     }));
   };
 
-  const settingsTabs = [
-    { 
-      id: 'account', 
-      label: t('profile.settings.tabs.account'), 
-      icon: 'User',
-      content: () => (
-        <div className="space-y-6">
-          {/* Existing PIN Settings */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium text-foreground">{t('profile.settings.account.pinSettings.title')}</h4>
-                <p className="text-sm text-muted-foreground">
-                  {pinSettings.hasPin 
-                    ? t('profile.settings.account.pinSettings.configured') 
-                    : t('profile.settings.account.pinSettings.notConfigured')
-                  }
-                </p>
-                {!canEditPin() && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {t('profile.settings.account.pinSettings.adminNote')}
+  const renderSubscriptionSection = () => (
+        <div className="space-y-3">
+          {loadingSubscription ? (
+            <div className="flex items-center justify-center py-6">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            </div>
+          ) : subscription ? (
+            <>
+              {/* Plan and Status */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    {subscription.plan_name || 'Unknown Plan'}
                   </p>
-                )}
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {(subscription.status === 'trial' || subscription.status === 'trialing') && subscription.trial_end
+                      ? `Trial ends ${new Date(subscription.trial_end).toLocaleDateString()}`
+                      : `€${subscription.amount || 0}/${subscription.interval || 'month'}`
+                    }
+                  </p>
+                </div>
+                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(subscription.status)}`}>
+                  {getStatusText(subscription.status)}
+                </span>
               </div>
-              {!pinSettings.isSettingPin && canEditPin() && (
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-2 pt-1">
                 <Button
-                  variant={pinSettings.hasPin ? "outline" : "default"}
+                  onClick={handleManageBilling}
+                  className="flex items-center justify-center gap-1.5"
                   size="sm"
-                  onClick={pinSettings.hasPin ? handleRemovePin : handleSetPin}
                 >
-                  {pinSettings.hasPin ? t('common.remove') : t('common.configure')}
+                  <Icon name="CreditCard" size={14} />
+                  <span className="text-xs">Manage</span>
                 </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/subscription')}
+                  className="flex items-center justify-center gap-1.5"
+                  size="sm"
+                >
+                  <Icon name="Eye" size={14} />
+                  <span className="text-xs">View Plans</span>
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-6">
+              <Icon name="AlertCircle" size={24} className="text-muted-foreground mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground mb-3">No active subscription</p>
+              <Button
+                onClick={() => navigate('/subscription')}
+                size="sm"
+              >
+                View Plans
+              </Button>
+            </div>
+          )}
+        </div>
+  );
+
+  const renderAccountSection = () => (
+        <div className="space-y-4">
+          {/* Account Information */}
+          {loadingAccountData ? (
+            <div className="flex items-center justify-center py-4">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+            </div>
+          ) : userAccountData && (
+            <div className="pb-4 border-b border-border">
+              {/* Email - Always Visible */}
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  {userAccountData.email && (
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">{t('profile.settings.account.email')}</label>
+                      <p className="text-sm text-foreground mt-0.5">{userAccountData.email}</p>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => setIsAccountInfoExpanded(!isAccountInfoExpanded)}
+                  className="ml-3 p-1.5 hover:bg-muted rounded-md transition-colors"
+                >
+                  <Icon 
+                    name={isAccountInfoExpanded ? "ChevronUp" : "ChevronDown"} 
+                    size={18} 
+                    className="text-muted-foreground"
+                  />
+                </button>
+              </div>
+              
+              {/* Expanded Information */}
+              {isAccountInfoExpanded && (
+                <div className="space-y-3 mt-3 pt-3 border-t border-border">
+                  {/* Full Name */}
+                  {userAccountData.full_name && (
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">{t('profile.settings.account.fullName')}</label>
+                      <p className="text-sm text-foreground mt-0.5">{userAccountData.full_name}</p>
+                    </div>
+                  )}
+                  
+                  {/* Company Name */}
+                  {userAccountData.company_name && (
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">{t('profile.settings.account.companyName')}</label>
+                      <p className="text-sm text-foreground mt-0.5">{userAccountData.company_name}</p>
+                    </div>
+                  )}
+                  
+                  {/* Phone */}
+                  {userAccountData.phone && (
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">{t('profile.settings.account.phone')}</label>
+                      <p className="text-sm text-foreground mt-0.5">{userAccountData.phone}</p>
+                    </div>
+                  )}
+                  
+                  {/* Country */}
+                  {userAccountData.country && (
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">{t('profile.settings.account.country')}</label>
+                      <p className="text-sm text-foreground mt-0.5">{userAccountData.country}</p>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
-
-            {pinSettings.isSettingPin && canEditPin() && (
-              <div className="space-y-4 bg-muted/30 rounded-lg p-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    {t('profile.settings.account.pinSettings.newPinLabel')}
-                  </label>
-                  <input
-                    type="password"
-                    value={pinSettings.pin}
-                    onChange={(e) => setPinSettings(prev => ({ ...prev, pin: e.target.value }))}
-                    className="w-full p-2 border border-border rounded-md bg-background text-foreground"
-                    placeholder="••••"
-                    maxLength={6}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    {t('profile.settings.account.pinSettings.confirmPinLabel')}
-                  </label>
-                  <input
-                    type="password"
-                    value={pinSettings.confirmPin}
-                    onChange={(e) => setPinSettings(prev => ({ ...prev, confirmPin: e.target.value }))}
-                    className="w-full p-2 border border-border rounded-md bg-background text-foreground"
-                    placeholder="••••"
-                    maxLength={6}
-                  />
-                </div>
-                <div className="flex space-x-2">
-                  <Button size="sm" onClick={handleSavePin}>
-                    {t('common.save')}
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handleCancelPin}>
-                    {t('common.cancel')}
-                  </Button>
-                </div>
-              </div>
+          )}
+          
+          {/* PIN Settings */}
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-foreground">{t('profile.settings.account.pinSettings.title')}</h4>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {pinSettings.hasPin 
+                  ? t('profile.settings.account.pinSettings.configured') 
+                  : t('profile.settings.account.pinSettings.notConfigured')
+                }
+              </p>
+              {!canEditPin() && (
+                <p className="text-xs text-muted-foreground mt-0.5 italic">
+                  {t('profile.settings.account.pinSettings.adminNote')}
+                </p>
+              )}
+            </div>
+            {!pinSettings.isSettingPin && canEditPin() && (
+              <Button
+                variant={pinSettings.hasPin ? "outline" : "default"}
+                size="sm"
+                onClick={pinSettings.hasPin ? handleRemovePin : handleSetPin}
+              >
+                {pinSettings.hasPin ? t('common.remove') : t('common.configure')}
+              </Button>
             )}
           </div>
 
-
+          {pinSettings.isSettingPin && canEditPin() && (
+            <div className="space-y-3 bg-muted/30 rounded-lg p-4 mt-3">
+              <div>
+                <label className="block text-xs font-medium text-foreground mb-1.5">
+                  {t('profile.settings.account.pinSettings.newPinLabel')}
+                </label>
+                <input
+                  type="password"
+                  value={pinSettings.pin}
+                  onChange={(e) => setPinSettings(prev => ({ ...prev, pin: e.target.value }))}
+                  className="w-full p-2 text-sm border border-border rounded-md bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-primary"
+                  placeholder="••••"
+                  maxLength={6}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-foreground mb-1.5">
+                  {t('profile.settings.account.pinSettings.confirmPinLabel')}
+                </label>
+                <input
+                  type="password"
+                  value={pinSettings.confirmPin}
+                  onChange={(e) => setPinSettings(prev => ({ ...prev, confirmPin: e.target.value }))}
+                  className="w-full p-2 text-sm border border-border rounded-md bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-primary"
+                  placeholder="••••"
+                  maxLength={6}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleSavePin}>
+                  {t('common.save')}
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleCancelPin}>
+                  {t('common.cancel')}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
-      )
-    },
-    { 
-      id: 'preferences', 
-      label: t('profile.settings.tabs.preferences'), 
-      icon: 'Settings',
-      content: () => {
+  );
+
+  const renderPreferencesSection = () => {
         // Get current language from localStorage
         const currentLanguage = localStorage.getItem('language') || 'fr';
         
@@ -387,102 +699,120 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
         const selectedLanguageDetails = languages.find(lang => lang.code === currentLanguage) || languages[0];
 
         return (
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <h4 className="font-medium text-foreground">{t('profile.settings.preferences.applicationSettings')}</h4>
-              <div className="space-y-3">
-
-                {/* Language Selection */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h5 className="text-sm font-medium text-foreground">{t('profile.settings.preferences.language.title')}</h5>
-                    <p className="text-xs text-muted-foreground">
-                      {selectedLanguageDetails.flag} {selectedLanguageDetails.name} ({currentLanguage})
-                    </p>
-                  </div>
-                  <div className="relative">
-                    <div className="flex items-center space-x-2">
-                      {languages.map((language) => (
-                        <button
-                          key={language.code}
-                          onClick={() => {
-                            // Update localStorage with selected language
-                            localStorage.setItem('language', language.code);
-                            
-                            // Reload to apply translations
-                            window.location.reload();
-                          }}
-                          className={`
-                            p-1 rounded-full transition-all duration-150
-                            ${currentLanguage === language.code 
-                              ? 'bg-primary text-primary-foreground' 
-                              : 'hover:bg-muted'}
-                          `}
-                        >
-                          <span className="text-2xl">{language.flag}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Show/Hide material prices in quote preview */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h5 className="text-sm font-medium text-foreground">Afficher les prix des matériaux</h5>
-                    <p className="text-xs text-muted-foreground">Contrôle l'affichage des prix matériaux dans l'aperçu du devis</p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      defaultChecked={(localStorage.getItem('include-materials-prices') ?? 'true') === 'true'}
-                      onChange={(e) => {
-                        const v = e.target.checked;
-                        localStorage.setItem('include-materials-prices', String(v));
-                        window.dispatchEvent(new StorageEvent('storage', { key: 'include-materials-prices', newValue: String(v) }));
-                      }}
-                    />
-                  </div>
-                </div>
+          <div className="space-y-4">
+            {/* Language Selection */}
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <h5 className="text-sm font-medium text-foreground">{t('profile.settings.preferences.language.title')}</h5>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {selectedLanguageDetails.flag} {selectedLanguageDetails.name}
+                </p>
               </div>
+              <div className="flex items-center gap-1">
+                {languages.map((language) => (
+                  <button
+                    key={language.code}
+                    onClick={() => {
+                      localStorage.setItem('language', language.code);
+                      window.location.reload();
+                    }}
+                    className={`
+                      w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-150
+                      ${currentLanguage === language.code 
+                        ? 'bg-primary/10 ring-2 ring-primary' 
+                        : 'hover:bg-muted'}
+                    `}
+                    title={language.name}
+                  >
+                    <span className="text-xl">{language.flag}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Show/Hide material prices in quote preview */}
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <h5 className="text-sm font-medium text-foreground">Afficher les prix des matériaux</h5>
+                <p className="text-xs text-muted-foreground mt-0.5">Contrôle l'affichage des prix matériaux dans l'aperçu du devis</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  defaultChecked={(localStorage.getItem('include-materials-prices') ?? 'true') === 'true'}
+                  onChange={(e) => {
+                    const v = e.target.checked;
+                    localStorage.setItem('include-materials-prices', String(v));
+                    window.dispatchEvent(new StorageEvent('storage', { key: 'include-materials-prices', newValue: String(v) }));
+                  }}
+                />
+                <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+              </label>
             </div>
           </div>
         );
-      }
-    },
-    { 
-      id: 'security', 
-      label: t('profile.settings.tabs.security'), 
-      icon: 'Shield',
-      content: () => (
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <h4 className="font-medium text-foreground">{t('profile.settings.security.authentication.title')}</h4>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h5 className="text-sm font-medium text-foreground">{t('profile.settings.security.authentication.twoFactor.title')}</h5>
-                  <p className="text-xs text-muted-foreground">{t('profile.settings.security.authentication.twoFactor.status')}</p>
-                </div>
-                <Button variant="outline" size="sm">
-                  {t('common.configure')}
-                </Button>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h5 className="text-sm font-medium text-foreground">{t('profile.settings.security.authentication.resetPassword.title')}</h5>
-                  <p className="text-xs text-muted-foreground">{t('profile.settings.security.authentication.resetPassword.description')}</p>
-                </div>
-                <Button variant="outline" size="sm">
-                  {t('common.reset')}
-                </Button>
-              </div>
+  };
+
+  const renderSecuritySection = () => (
+        <div className="space-y-4">
+          {/* Email Verification */}
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h5 className="text-sm font-medium text-foreground">{t('profile.settings.security.authentication.twoFactor.title')}</h5>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {emailVerified 
+                  ? '✓ Email verified' 
+                  : sendingVerification 
+                    ? 'Sending verification email...' 
+                    : t('profile.settings.security.authentication.twoFactor.status')
+                }
+              </p>
             </div>
+            {emailVerified ? (
+              <Icon name="CheckCircle" size={20} className="text-green-600" />
+            ) : (
+              <Button 
+                variant="outline"
+                size="sm"
+                onClick={handleVerifyEmail}
+                disabled={sendingVerification}
+              >
+                {sendingVerification ? (
+                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  'Verify'
+                )}
+              </Button>
+            )}
+          </div>
+          
+          {/* Reset Password */}
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h5 className="text-sm font-medium text-foreground">{t('profile.settings.security.authentication.resetPassword.title')}</h5>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {sendingPasswordReset 
+                  ? 'Sending reset email...' 
+                  : t('profile.settings.security.authentication.resetPassword.description')
+                }
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleResetPassword}
+              disabled={sendingPasswordReset}
+            >
+              {sendingPasswordReset ? (
+                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                t('common.reset')
+              )}
+            </Button>
           </div>
         </div>
-      )
-    }
-  ];
+  );
 
   return (
     <div className={`relative overflow-hidden ${isGlobal ? 'w-auto' : ''}`} ref={dropdownRef}>
@@ -710,48 +1040,98 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
         </div>
       )}
 
-      {/* Account Settings Modal */}
-      {isAccountSettingsOpen && createPortal(
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000] p-4">
-          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2  overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-medium text-foreground">Paramètres du compte</h3>
+      {/* Account Settings Panel - Nested View */}
+      {isAccountSettingsOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/30 z-[9999] transition-opacity"
+            onClick={() => setIsAccountSettingsOpen(false)}
+          />
+          
+          {/* Settings Panel */}
+          <div 
+            className={`
+              fixed bg-card border border-border rounded-lg shadow-2xl z-[10000]
+              transition-all duration-300 ease-out
+              ${isGlobal 
+                ? 'right-4 top-20 w-96' 
+                : isCollapsed 
+                  ? 'left-20 bottom-24 w-96' 
+                  : 'left-6 bottom-24 w-96'
+              }
+              max-h-[calc(100vh-120px)] flex flex-col
+            `}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-border bg-muted/30">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Icon name="Settings" size={20} className="text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-foreground">
+                    {t('profile.dropdown.accountSettings')}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">Manage your account preferences</p>
+                </div>
+              </div>
               <button
                 onClick={() => setIsAccountSettingsOpen(false)}
-                className="p-1 rounded hover:bg-muted transition-colors"
+                className="p-2 rounded-lg hover:bg-muted transition-colors"
               >
-                <Icon name="X" size={20} />
+                <Icon name="X" size={18} />
               </button>
             </div>
 
-            {/* Settings Tabs Navigation */}
-            <div className="flex border-b border-border mb-6">
-              {settingsTabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveSettingsTab(tab.id)}
-                  className={`
-                    flex items-center space-x-2 px-4 py-2 text-sm 
-                    ${activeSettingsTab === tab.id 
-                      ? 'border-b-2 border-primary text-primary' 
-                      : 'text-muted-foreground hover:text-foreground'}
-                  `}
-                >
-                  <Icon name={tab.icon} size={16} />
-                  <span>{tab.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Settings Content */}
-            {currentProfile && (
-              <div>
-                {settingsTabs.find(tab => tab.id === activeSettingsTab)?.content()}
+            {/* All Settings Content - Stacked with Separators */}
+            <div className="flex-1 overflow-y-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {/* Account Section */}
+              <div className="p-4 border-b border-border">
+                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/50">
+                  <Icon name="User" size={16} className="text-primary" />
+                  <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    {t('profile.settings.tabs.account')}
+                  </h4>
+                </div>
+                {renderAccountSection()}
               </div>
-            )}
+
+              {/* Preferences Section */}
+              <div className="p-4 border-b border-border">
+                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/50">
+                  <Icon name="Settings" size={16} className="text-primary" />
+                  <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    {t('profile.settings.tabs.preferences')}
+                  </h4>
+                </div>
+                {renderPreferencesSection()}
+              </div>
+
+              {/* Security Section */}
+              <div className="p-4 border-b border-border">
+                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/50">
+                  <Icon name="Shield" size={16} className="text-primary" />
+                  <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    {t('profile.settings.tabs.security')}
+                  </h4>
+                </div>
+                {renderSecuritySection()}
+              </div>
+
+              {/* Subscription Section */}
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/50">
+                  <Icon name="CreditCard" size={16} className="text-primary" />
+                  <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    {t('profile.settings.tabs.subscription') || 'Subscription'}
+                  </h4>
+                </div>
+                {renderSubscriptionSection()}
+              </div>
+            </div>
           </div>
-        </div>,
-        document.body
+        </>
       )}
 
       {/* PIN Modal for Profile Switching */}
