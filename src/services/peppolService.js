@@ -327,87 +327,66 @@ export class PeppolService {
     return `${countryNum}:${cleanVat}`;
   }
 
-  // Check if recipient supports Peppol
+  // Check if recipient supports Peppol - via edge function to avoid CORS
   async checkRecipientSupport(recipientId) {
     try {
-      const response = await fetch(`${this.config.baseUrl}/api/v1/peppol/supported-document-types`, {
-        method: 'POST',
-        headers: {
-          'Authorization': createAuthHeader(this.config.username, this.config.password),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          participantId: recipientId
-        })
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const response = await supabase.functions.invoke('peppol-webhook-config', {
+        body: {
+          endpoint: this.config.baseUrl,
+          username: this.config.username,
+          password: this.config.password,
+          action: 'get-participant',
+          peppolIdentifier: recipientId
+        }
       });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+
+      if (response.error) {
+        throw new Error(response.error.message);
       }
-      
-      return await response.json();
+
+      return response.data;
     } catch (error) {
       console.error('Failed to check recipient support:', error);
       throw error;
     }
   }
 
-  // Send UBL invoice via Peppol
+  // Send UBL invoice via Peppol - via edge function to avoid CORS
   async sendInvoice(invoiceData) {
     try {
       const xml = generatePEPPOLXML(invoiceData);
-      const formData = createFormData(xml);
       
-      const response = await fetch(`${this.config.baseUrl}/api/v1/peppol/outbound-ubl-documents`, {
-        method: "POST",
-        headers: {
-          "Authorization": createAuthHeader(this.config.username, this.config.password)
-        },
-        body: formData
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const response = await supabase.functions.invoke('peppol-webhook-config', {
+        body: {
+          endpoint: this.config.baseUrl,
+          username: this.config.username,
+          password: this.config.password,
+          action: 'send-ubl-document',
+          xmlDocument: xml
+        }
       });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+
+      if (response.error) {
+        throw new Error(response.error.message);
       }
-      
-      const result = await response.text();
-      if (result.includes("OK")) {
-        console.log(`Invoice ${invoiceData.billName} sent successfully via PEPPOL`);
-        return {
-          success: true,
-          message: "Invoice sent successfully"
-        };
-      } else {
-        throw new Error(`PEPPOL service error: ${result}`);
-      }
+
+      console.log(`Invoice ${invoiceData.billName} sent successfully via PEPPOL`);
+      return {
+        success: true,
+        message: "Invoice sent successfully"
+      };
     } catch (error) {
       console.error("Failed to send PEPPOL invoice:", error);
       throw error;
     }
   }
 
-  // Register participant for Peppol
-  async registerParticipant(participantData) {
-    try {
-      const response = await fetch(`${this.config.baseUrl}/api/v1/peppol/register-participant`, {
-        method: 'POST',
-        headers: {
-          'Authorization': createAuthHeader(this.config.username, this.config.password),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(participantData)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Failed to register participant:', error);
-      throw error;
-    }
-  }
 
   // Convert Haliqo invoice to Peppol format
   convertHaliqoInvoiceToPeppol(haliqoInvoice, senderInfo, receiverInfo) {
@@ -626,16 +605,42 @@ export class PeppolService {
         .single();
 
       if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows found
+      
+      // Map database fields to camelCase for frontend
+      const mappedData = data ? {
+        isConfigured: data.is_configured,
+        peppolId: data.peppol_id,
+        name: data.business_name,
+        countryCode: data.country_code,
+        // Parse contact person name into first/last name
+        firstName: data.contact_person_name?.split(' ')[0] || '',
+        lastName: data.contact_person_name?.split(' ').slice(1).join(' ') || '',
+        email: data.contact_person_email,
+        phoneNumber: data.contact_person_phone,
+        language: data.contact_person_language,
+        supportedDocumentTypes: data.supported_document_types,
+        limitedToOutboundTraffic: data.limited_to_outbound_traffic,
+        sandboxMode: data.sandbox_mode,
+        lastTested: data.last_tested
+      } : {
+        isConfigured: false,
+        peppolId: '',
+        name: '',
+        countryCode: 'BE',
+        firstName: '',
+        lastName: '',
+        email: '',
+        phoneNumber: '',
+        language: 'en-US',
+        supportedDocumentTypes: ['INVOICE', 'CREDIT_NOTE'],
+        limitedToOutboundTraffic: false,
+        sandboxMode: true,
+        lastTested: null
+      };
         
-        return {
-          success: true,
-        data: data || {
-          isConfigured: false,
-          peppolId: '',
-          businessName: '',
-            sandboxMode: true,
-          lastTested: null
-        }
+      return {
+        success: true,
+        data: mappedData
       };
     } catch (error) {
       console.error('Failed to get Peppol settings:', error);
@@ -661,31 +666,101 @@ export class PeppolService {
         };
       }
 
+      // Check if this participant already exists in our database
+      const { data: existingSettings } = await supabase
+        .from('peppol_settings')
+        .select('peppol_id, is_configured')
+        .eq('peppol_id', settings.peppolId)
+        .single();
+
+      let registrationResult = null;
+      
+      if (existingSettings && existingSettings.is_configured) {
+        // Participant already registered in our system, skip Digiteal registration
+        console.log('Participant already exists in database, skipping Digiteal registration');
+        registrationResult = { success: true, alreadyRegistered: true };
+      } else {
+        // First, try to register participant with Digiteal
+        registrationResult = await this.registerParticipant({
+          peppolIdentifier: settings.peppolId,
+          name: settings.name,
+          countryCode: settings.countryCode,
+          contactPerson: {
+            firstName: settings.firstName,
+            lastName: settings.lastName,
+            email: settings.email,
+            phoneNumber: settings.phoneNumber,
+            language: settings.language
+          },
+          supportedDocumentTypes: settings.supportedDocumentTypes || ['INVOICE', 'CREDIT_NOTE'],
+          limitedToOutboundTraffic: settings.limitedToOutboundTraffic || false
+        });
+
+        // If registration failed but participant is already registered, continue to save settings
+        if (!registrationResult.success && !registrationResult.alreadyRegistered) {
+          return registrationResult;
+        }
+      }
+
+      // Then save to database using upsert to handle updates
       const { data, error } = await supabase
         .from('peppol_settings')
         .upsert({
           user_id: user.id,
           peppol_id: settings.peppolId,
-          business_name: settings.businessName,
+          business_name: settings.name,
+          country_code: settings.countryCode || 'BE',
+          contact_person_name: `${settings.firstName} ${settings.lastName}`,
+          contact_person_email: settings.email,
+          contact_person_phone: settings.phoneNumber || null,
+          contact_person_language: settings.language || 'en-US',
+          supported_document_types: settings.supportedDocumentTypes || ['INVOICE', 'CREDIT_NOTE'],
+          limited_to_outbound_traffic: settings.limitedToOutboundTraffic || false,
           sandbox_mode: settings.sandboxMode,
-          is_configured: !!settings.peppolId,
+          is_configured: !!settings.peppolId && !!settings.name && !!settings.email,
           updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Handle specific database errors
+        if (error.code === '23505') {
+          if (error.message.includes('peppol_settings_user_id_key')) {
+            throw new Error('You already have Peppol settings. Please update your existing settings instead.');
+          } else if (error.message.includes('peppol_settings_peppol_id_key')) {
+            throw new Error('This Peppol ID is already registered by another user.');
+          }
+        }
+        throw error;
+      }
 
+      // Determine success message based on registration result
+      let successMessage = 'Settings saved successfully';
+      if (registrationResult.alreadyRegistered) {
+        successMessage = 'Settings saved successfully. This participant is already registered in Digiteal.';
+      }
+      
       return {
         success: true,
         data: {
           isConfigured: data.is_configured,
           peppolId: data.peppol_id,
-          businessName: data.business_name,
+          name: data.business_name,
+          countryCode: data.country_code,
+          firstName: data.contact_person_name?.split(' ')[0] || '',
+          lastName: data.contact_person_name?.split(' ').slice(1).join(' ') || '',
+          email: data.contact_person_email,
+          phoneNumber: data.contact_person_phone,
+          language: data.contact_person_language,
+          supportedDocumentTypes: data.supported_document_types,
+          limitedToOutboundTraffic: data.limited_to_outbound_traffic,
           sandboxMode: data.sandbox_mode,
           lastTested: data.last_tested
         },
-        message: 'Settings saved successfully'
+        message: successMessage
       };
     } catch (error) {
       console.error('Failed to save Peppol settings:', error);
@@ -702,10 +777,10 @@ export class PeppolService {
       const startTime = Date.now();
       
       // Validate required fields
-      if (!settings.peppolId || !settings.businessName || !settings.vatNumber) {
+      if (!settings.peppolId || !settings.name || !settings.email || !settings.firstName || !settings.lastName) {
         return {
           success: false,
-          error: 'Peppol ID, Business Name, and VAT Number are required for integration test'
+          error: 'Peppol ID, Participant Name, Email, First Name, and Last Name are required for integration test'
         };
       }
 
@@ -776,20 +851,23 @@ export class PeppolService {
       const registrationData = {
         peppolIdentifier: settings.peppolId,
         contactPerson: {
-          language: settings.contactPerson?.language || 'en-US',
-          name: settings.contactPerson?.name || settings.businessName,
-          email: settings.contactPerson?.email || '',
-          phone: settings.contactPerson?.phone || ''
+          language: settings.language || 'en-US',
+          firstName: settings.firstName || '',
+          lastName: settings.lastName || '',
+          email: settings.email || '',
+          phoneNumber: settings.phoneNumber || ''
         },
+        name: settings.name,
+        countryCode: settings.countryCode || 'BE',
         limitedToOutboundTraffic: settings.limitedToOutboundTraffic || false,
         supportedDocumentTypes: settings.supportedDocumentTypes || ['INVOICE', 'CREDIT_NOTE']
       };
 
       // Validate all required fields
-      if (!registrationData.peppolIdentifier || !registrationData.contactPerson.name) {
+      if (!registrationData.peppolIdentifier || !registrationData.name || !registrationData.contactPerson.firstName || !registrationData.contactPerson.lastName || !registrationData.contactPerson.email) {
         return {
           success: false,
-          error: 'Missing required registration data'
+          error: 'Missing required registration data (Peppol ID, Name, First Name, Last Name, Email)'
         };
       }
 
@@ -823,29 +901,16 @@ export class PeppolService {
     }
   }
 
-  // Generate comprehensive test result message
+  // Generate simple test result message
   generateTestResultMessage(supportedDocsResult, participantTest, registrationTest, responseTime) {
-    let message = `✅ Peppol Integration Test Results\n\n`;
-    message += `📡 API Response Time: ${responseTime}ms\n`;
-    message += `🔗 Digiteal API Connected: ${supportedDocsResult.success ? 'Yes' : 'No'}\n`;
-    message += `📄 Supported Document Types: ${supportedDocsResult.data?.length || 0}\n`;
-    message += `👤 Participant in Network: ${participantTest.success ? 'Yes' : 'No'}\n`;
-    message += `📋 Registration Data Valid: ${registrationTest.success ? 'Yes' : 'No'}\n\n`;
-    
     if (supportedDocsResult.success && registrationTest.success) {
-      message += `🎉 Your Peppol integration is ready! You can now:\n`;
-      message += `• Send electronic invoices via Peppol network\n`;
-      message += `• Receive invoices from other Peppol participants\n`;
-      message += `• Process ${supportedDocsResult.data?.length || 0} different document types\n\n`;
-      message += `Next step: Click "Save Settings" to complete the integration.`;
+      return 'Peppol test success';
     } else {
-      message += `⚠️ Integration not ready. Please check:\n`;
-      if (!supportedDocsResult.success) message += `• API connection issues\n`;
-      if (!registrationTest.success) message += `• Missing or invalid registration data\n`;
-      message += `\nFix these issues and test again.`;
+      let errorMsg = 'Peppol test failed: ';
+      if (!supportedDocsResult.success) errorMsg += 'API connection failed. ';
+      if (!registrationTest.success) errorMsg += 'Invalid registration data.';
+      return errorMsg.trim();
     }
-    
-    return message;
   }
 
   // Get Peppol statistics
@@ -930,172 +995,308 @@ export class PeppolService {
     }
   }
 
-  // Register a new Peppol participant (company)
+  // Register a new Peppol participant (company) - via edge function to avoid CORS
   async registerParticipant(participantData) {
     try {
-      const response = await fetch(`${this.config.baseUrl}/api/v1/peppol/registered-participants`, {
-        method: 'POST',
-        headers: {
-          'Authorization': createAuthHeader(this.config.username, this.config.password),
-          'Content-Type': 'application/json'
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const payload = {
+        peppolIdentifier: participantData.peppolIdentifier,
+        contactPerson: {
+          language: participantData.contactPerson?.language || 'en-US',
+          firstName: participantData.contactPerson?.firstName || '',
+          lastName: participantData.contactPerson?.lastName || '',
+          phoneNumber: participantData.contactPerson?.phoneNumber || '',
+          email: participantData.contactPerson?.email || ''
         },
-        body: JSON.stringify({
-          peppolIdentifier: participantData.peppolIdentifier,
-          contactPerson: {
-            language: participantData.contactPerson?.language || 'en-US',
-            name: participantData.contactPerson?.name || '',
-            email: participantData.contactPerson?.email || '',
-            phone: participantData.contactPerson?.phone || ''
-          },
-          limitedToOutboundTraffic: participantData.limitedToOutboundTraffic || false,
-          supportedDocumentTypes: participantData.supportedDocumentTypes || ['INVOICE', 'CREDIT_NOTE']
-        })
+        name: participantData.name,
+        countryCode: participantData.countryCode,
+        limitedToOutboundTraffic: participantData.limitedToOutboundTraffic || false,
+        supportedDocumentTypes: participantData.supportedDocumentTypes || ['INVOICE', 'CREDIT_NOTE']
+      };
+
+      const response = await supabase.functions.invoke('peppol-webhook-config', {
+        body: {
+          endpoint: this.config.baseUrl,
+          username: this.config.username,
+          password: this.config.password,
+          action: 'register-participant',
+          participantData: payload
+        }
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        return { success: true, data, message: 'Participant registered successfully' };
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        return { 
-          success: false, 
-          error: errorData.message || `HTTP ${response.status}: ${response.statusText}` 
-        };
+      if (response.error) {
+        // Extract error message
+        let errorMessage = '';
+        if (typeof response.error === 'string') {
+          errorMessage = response.error;
+        } else if (response.error.message) {
+          errorMessage = response.error.message;
+        } else {
+          errorMessage = JSON.stringify(response.error);
+        }
+        
+        // Check if participant is already registered
+        if (errorMessage.includes('ALREADY_REGISTERED') || errorMessage.includes('already registered')) {
+          return { 
+            success: false, 
+            error: errorMessage,
+            alreadyRegistered: true
+          };
+        }
+        return { success: false, error: errorMessage };
       }
+
+      // Handle empty response (common for successful POSTs)
+      const data = response.data || { success: true };
+      
+      // Check if the data contains an error about already being registered
+      if (data && data.error) {
+        if (data.error.includes('ALREADY_REGISTERED') || data.error.includes('already registered')) {
+          return { 
+            success: false, 
+            error: data.error,
+            alreadyRegistered: true
+          };
+        }
+      }
+      
+      return { success: true, data, message: 'Participant registered successfully' };
     } catch (error) {
       return { success: false, error: error.message };
     }
   }
 
-  // Get all registered participants
+  // Get all registered participants - via edge function to avoid CORS
   async getParticipants() {
     try {
-      const response = await fetch(`${this.config.baseUrl}/api/v1/peppol/registered-participants`, {
-        method: 'GET',
-        headers: {
-          'Authorization': createAuthHeader(this.config.username, this.config.password),
-          'Content-Type': 'application/json'
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const response = await supabase.functions.invoke('peppol-webhook-config', {
+        body: {
+          endpoint: this.config.baseUrl,
+          username: this.config.username,
+          password: this.config.password,
+          action: 'get-participants'
         }
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        return { success: true, data };
-      } else {
-        return { success: false, error: `HTTP ${response.status}: ${response.statusText}` };
+      if (response.error) {
+        return { success: false, error: response.error.message };
       }
+
+      return { success: true, data: response.data };
     } catch (error) {
       return { success: false, error: error.message };
     }
   }
 
-  // Get specific participant details
+  // Get specific participant details - via edge function to avoid CORS
   async getParticipant(peppolIdentifier) {
     try {
-      const response = await fetch(`${this.config.baseUrl}/api/v1/peppol/registered-participants/${peppolIdentifier}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': createAuthHeader(this.config.username, this.config.password),
-          'Content-Type': 'application/json'
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const response = await supabase.functions.invoke('peppol-webhook-config', {
+        body: {
+          endpoint: this.config.baseUrl,
+          username: this.config.username,
+          password: this.config.password,
+          action: 'get-participant',
+          peppolIdentifier
         }
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        return { success: true, data };
-      } else {
-        return { success: false, error: `HTTP ${response.status}: ${response.statusText}` };
+      if (response.error) {
+        return { success: false, error: response.error.message };
       }
+
+      return { success: true, data: response.data };
     } catch (error) {
       return { success: false, error: error.message };
     }
   }
 
-  // Unregister a participant
+  // Unregister a participant - via edge function to avoid CORS
   async unregisterParticipant(peppolIdentifier) {
     try {
-      const response = await fetch(`${this.config.baseUrl}/api/v1/peppol/registered-participants/${peppolIdentifier}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': createAuthHeader(this.config.username, this.config.password),
-          'Content-Type': 'application/json'
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const response = await supabase.functions.invoke('peppol-webhook-config', {
+        body: {
+          endpoint: this.config.baseUrl,
+          username: this.config.username,
+          password: this.config.password,
+          action: 'unregister-participant',
+          peppolIdentifier
         }
       });
 
-      if (response.ok) {
-        return { success: true, message: 'Participant unregistered successfully' };
-      } else {
-        return { success: false, error: `HTTP ${response.status}: ${response.statusText}` };
+      if (response.error) {
+        return { success: false, error: response.error.message };
       }
+
+      return { success: true, message: 'Participant unregistered successfully' };
     } catch (error) {
       return { success: false, error: error.message };
     }
   }
 
-  // Validate a Peppol document
+  // Validate a Peppol document - via edge function to avoid CORS
   async validateDocument(documentFile) {
     try {
-      const formData = new FormData();
-      formData.append('document', documentFile);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
 
-      const response = await fetch(`${this.config.baseUrl}/api/v1/peppol/public/validate-document`, {
-        method: 'POST',
-        headers: {
-          'Authorization': createAuthHeader(this.config.username, this.config.password)
-        },
-        body: formData
+      const response = await supabase.functions.invoke('peppol-webhook-config', {
+        body: {
+          endpoint: this.config.baseUrl,
+          username: this.config.username,
+          password: this.config.password,
+          action: 'validate-document',
+          xmlDocument: documentFile
+        }
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        return { success: true, data };
-      } else {
-        return { success: false, error: `HTTP ${response.status}: ${response.statusText}` };
+      if (response.error) {
+        return { success: false, error: response.error.message };
       }
+
+      return { success: true, data: response.data };
     } catch (error) {
       return { success: false, error: error.message };
     }
   }
 
-  // Get public supported document types
+  // Get public supported document types (via edge function to avoid CORS)
   async getPublicSupportedDocumentTypes() {
     try {
-      const response = await fetch(`${this.config.baseUrl}/api/v1/peppol/public/supported-document-types`, {
-        method: 'GET',
-        headers: {
-          'Authorization': createAuthHeader(this.config.username, this.config.password),
-          'Content-Type': 'application/json'
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const response = await supabase.functions.invoke('peppol-webhook-config', {
+        body: {
+          endpoint: this.config.baseUrl,
+          username: this.config.username,
+          password: this.config.password,
+          action: 'test-connection'
         }
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        return { success: true, data };
-      } else {
-        return { success: false, error: `HTTP ${response.status}: ${response.statusText}` };
+      if (response.error) {
+        return { success: false, error: response.error.message };
       }
+
+      return { success: true, data: response.data };
     } catch (error) {
       return { success: false, error: error.message };
     }
   }
 
-  // Get detailed participant information (public)
+  // Get detailed participant information (public) - via edge function to avoid CORS
   async getDetailedParticipantInfo(peppolIdentifier) {
     try {
-      const response = await fetch(`${this.config.baseUrl}/api/v1/peppol/public/participants/${peppolIdentifier}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': createAuthHeader(this.config.username, this.config.password),
-          'Content-Type': 'application/json'
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const response = await supabase.functions.invoke('peppol-webhook-config', {
+        body: {
+          endpoint: this.config.baseUrl,
+          username: this.config.username,
+          password: this.config.password,
+          action: 'get-participant',
+          peppolIdentifier
         }
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        return { success: true, data };
-      } else {
-        return { success: false, error: `HTTP ${response.status}: ${response.statusText}` };
+      if (response.error) {
+        return { success: false, error: response.error.message };
       }
+
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Add a supported document type for a participant - via edge function to avoid CORS
+  async addSupportedDocumentType(peppolIdentifier, documentType) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const response = await supabase.functions.invoke('peppol-webhook-config', {
+        body: {
+          endpoint: this.config.baseUrl,
+          username: this.config.username,
+          password: this.config.password,
+          action: 'add-document-type',
+          peppolIdentifier,
+          documentType
+        }
+      });
+
+      if (response.error) {
+        return { success: false, error: response.error.message };
+      }
+
+      return { success: true, message: `Document type ${documentType} added successfully` };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Remove a supported document type for a participant - via edge function to avoid CORS
+  async removeSupportedDocumentType(peppolIdentifier, documentType) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const response = await supabase.functions.invoke('peppol-webhook-config', {
+        body: {
+          endpoint: this.config.baseUrl,
+          username: this.config.username,
+          password: this.config.password,
+          action: 'remove-document-type',
+          peppolIdentifier,
+          documentType
+        }
+      });
+
+      if (response.error) {
+        return { success: false, error: response.error.message };
+      }
+
+      return { success: true, message: `Document type ${documentType} removed successfully` };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Get supported document types for a remote participant - via edge function to avoid CORS
+  async getSupportedDocumentTypes(peppolIdentifier) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const response = await supabase.functions.invoke('peppol-webhook-config', {
+        body: {
+          endpoint: this.config.baseUrl,
+          username: this.config.username,
+          password: this.config.password,
+          action: 'get-supported-document-types',
+          peppolIdentifier
+        }
+      });
+
+      if (response.error) {
+        return { success: false, error: response.error.message };
+      }
+
+      return { success: true, data: response.data };
     } catch (error) {
       return { success: false, error: error.message };
     }

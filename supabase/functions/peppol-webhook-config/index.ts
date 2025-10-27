@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, username, password, method, config } = await req.json();
+    const { endpoint, username, password, method, config, action, peppolIdentifier, participantData, xmlDocument, documentType } = await req.json();
 
     if (!endpoint || !username || !password) {
       return new Response(
@@ -28,29 +28,98 @@ serve(async (req) => {
     // Create Basic Auth header
     const auth = btoa(`${username}:${password}`);
 
-    // Determine if this is a POST request (to configure) or GET (to fetch)
-    const isPost = method === 'POST' && config;
-
-    // Call Digiteal API
-    const url = isPost 
-      ? `${endpoint}/api/v1/webhook/configuration`
-      : `${endpoint}/api/v1/webhook`;
-
-    const response = await fetch(url, {
-      method: isPost ? 'POST' : 'GET',
+    let url: string;
+    let fetchOptions: RequestInit = {
       headers: {
         'Authorization': `Basic ${auth}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-      },
-      body: isPost ? JSON.stringify(config) : undefined,
-    });
+      }
+    };
+
+    // Handle different actions
+    if (action === 'test-connection') {
+      // Get supported document types (public API for testing)
+      url = `${endpoint}/api/v1/peppol/public/supported-document-types`;
+      fetchOptions.method = 'GET';
+    } else if (action === 'get-participant' && peppolIdentifier) {
+      // Get detailed participant information (public API)
+      url = `${endpoint}/api/v1/peppol/public/participants/${peppolIdentifier}`;
+      fetchOptions.method = 'GET';
+    } else if (action === 'register-participant' && participantData) {
+      // Register a new participant (POST)
+      url = `${endpoint}/api/v1/peppol/registered-participants`;
+      fetchOptions.method = 'POST';
+      fetchOptions.body = JSON.stringify(participantData);
+    } else if (action === 'get-participants') {
+      // Get all registered participants (GET)
+      url = `${endpoint}/api/v1/peppol/registered-participants`;
+      fetchOptions.method = 'GET';
+    } else if (action === 'unregister-participant' && peppolIdentifier) {
+      // Unregister a participant (DELETE)
+      url = `${endpoint}/api/v1/peppol/registered-participants/${peppolIdentifier}`;
+      fetchOptions.method = 'DELETE';
+    } else if (action === 'validate-document' && xmlDocument) {
+      // Validate a document (POST with form-data)
+      url = `${endpoint}/api/v1/peppol/public/validate-document`;
+      fetchOptions.method = 'POST';
+      // Note: FormData needs special handling in Deno
+      const formData = new FormData();
+      formData.append('document', xmlDocument);
+      fetchOptions.body = formData;
+      delete fetchOptions.headers['Content-Type']; // Let browser set boundary
+    } else if (action === 'send-ubl-document' && xmlDocument) {
+      // Send UBL document (POST with form-data)
+      url = `${endpoint}/api/v1/peppol/outbound-ubl-documents`;
+      fetchOptions.method = 'POST';
+      const formData = new FormData();
+      formData.append('document', xmlDocument);
+      fetchOptions.body = formData;
+      delete fetchOptions.headers['Content-Type']; // Let browser set boundary
+    } else if (action === 'add-document-type' && peppolIdentifier && documentType) {
+      // Add supported document type for a remote participant (POST)
+      url = `${endpoint}/api/v1/peppol/remote-participants/${peppolIdentifier}/supported-document-types/${documentType}`;
+      fetchOptions.method = 'POST';
+    } else if (action === 'remove-document-type' && peppolIdentifier && documentType) {
+      // Remove supported document type for a remote participant (DELETE)
+      url = `${endpoint}/api/v1/peppol/remote-participants/${peppolIdentifier}/supported-document-types/${documentType}`;
+      fetchOptions.method = 'DELETE';
+    } else if (action === 'get-supported-document-types' && peppolIdentifier) {
+      // Get supported document types for a remote participant (GET)
+      url = `${endpoint}/api/v1/peppol/remote-participants/${peppolIdentifier}/supported-document-types`;
+      fetchOptions.method = 'GET';
+    } else if (method === 'POST' && config) {
+      // Configure webhook (POST)
+      url = `${endpoint}/api/v1/webhook/configuration`;
+      fetchOptions.method = 'POST';
+      fetchOptions.body = JSON.stringify(config);
+    } else {
+      // Get webhook configuration (GET)
+      url = `${endpoint}/api/v1/webhook`;
+      fetchOptions.method = 'GET';
+    }
+
+    const response = await fetch(url, fetchOptions);
 
     if (!response.ok) {
       const errorText = await response.text();
+      
+      // Try to parse the error details from Digiteal
+      let errorMessage = 'Failed to configure/fetch webhook';
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.message) {
+          errorMessage = errorJson.message;
+        } else if (errorJson.error) {
+          errorMessage = errorJson.error;
+        }
+      } catch {
+        errorMessage = errorText || errorMessage;
+      }
+      
       return new Response(
         JSON.stringify({
-          error: 'Failed to configure/fetch webhook',
+          error: errorMessage,
           details: errorText,
           status: response.status,
         }),
