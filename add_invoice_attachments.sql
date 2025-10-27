@@ -72,18 +72,6 @@ CREATE POLICY "Users can delete attachments for their own invoices"
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.invoice_attachments TO authenticated;
 GRANT USAGE, SELECT ON SEQUENCE public.invoice_attachments_id_seq TO authenticated;
 
--- Create view for invoices with attachment count
-CREATE OR REPLACE VIEW public.invoices_with_attachments AS
-SELECT 
-  i.*,
-  COUNT(ia.id) as attachment_count,
-  COALESCE(SUM(ia.file_size), 0) as total_attachment_size
-FROM public.invoices i
-LEFT JOIN public.invoice_attachments ia ON i.id = ia.invoice_id
-GROUP BY i.id;
-
-GRANT SELECT ON public.invoices_with_attachments TO authenticated;
-
 -- Create helper function
 CREATE OR REPLACE FUNCTION public.get_invoice_attachments(p_invoice_id UUID)
 RETURNS TABLE (

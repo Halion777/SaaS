@@ -76,22 +76,7 @@ CREATE POLICY "Service role can insert expense invoices"
   ON public.expense_invoices FOR INSERT
   WITH CHECK (true);
 
--- Create helper views
-CREATE OR REPLACE VIEW public.invoices_with_peppol AS
-SELECT 
-  i.*,
-  c.name AS client_name,
-  c.email AS client_email,
-  c.peppol_id AS client_peppol_id,
-  CASE WHEN i.peppol_enabled THEN 'peppol' ELSE 'manual' END AS invoice_source
-FROM public.invoices i
-LEFT JOIN public.clients c ON i.client_id = c.id;
-
-CREATE OR REPLACE VIEW public.expense_invoices_with_peppol AS
-SELECT 
-  e.*,
-  CASE WHEN e.peppol_enabled THEN 'peppol' ELSE e.source END AS invoice_source
-FROM public.expense_invoices e;
+-- No views needed - tables provide all functionality
 
 -- Create helper functions
 CREATE OR REPLACE FUNCTION public.mark_invoice_sent_via_peppol(
@@ -133,8 +118,6 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Grant permissions
-GRANT SELECT ON public.invoices_with_peppol TO authenticated;
-GRANT SELECT ON public.expense_invoices_with_peppol TO authenticated;
 GRANT EXECUTE ON FUNCTION public.mark_invoice_sent_via_peppol TO authenticated;
 GRANT EXECUTE ON FUNCTION public.update_peppol_invoice_status TO authenticated;
 
