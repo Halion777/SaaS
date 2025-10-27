@@ -710,7 +710,7 @@ const SuperAdminDashboard = () => {
       
       <div
         className="flex-1 flex flex-col pb-20 md:pb-6"
-        style={{ marginLeft: `${sidebarOffset}px` }}
+        style={{ marginLeft: isMobile ? '0' : `${sidebarOffset}px` }}
       >
         <main className="flex-1 px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
           {/* Header */}

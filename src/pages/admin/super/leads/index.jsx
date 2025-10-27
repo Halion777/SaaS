@@ -18,6 +18,9 @@ const SuperAdminLeads = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+  const [viewMode, setViewMode] = useState(() => {
+    return window.innerWidth < 1024 ? 'card' : 'table';
+  });
   const [loading, setLoading] = useState(true);
   const [leads, setLeads] = useState([]);
   const [filteredLeads, setFilteredLeads] = useState([]);
@@ -56,6 +59,11 @@ const SuperAdminLeads = () => {
       } else {
         // On desktop, respond to sidebar state
         setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+
+      // Auto-switch to card view on mobile/tablet
+      if (window.innerWidth < 1024) {
+        setViewMode('card');
       }
     };
     
@@ -444,7 +452,7 @@ const SuperAdminLeads = () => {
 
       <div
         className="flex-1 flex flex-col pb-20 md:pb-6"
-        style={{ marginLeft: `${sidebarOffset}px` }}
+        style={{ marginLeft: isMobile ? '0' : `${sidebarOffset}px` }}
       >
         <main className="flex-1 px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
           {/* Header */}
@@ -646,11 +654,47 @@ const SuperAdminLeads = () => {
             </div>
           </div>
 
-          {/* Leads Table */}
+          {/* View Toggle */}
+          <div className="flex items-center justify-between p-4 border-b border-border bg-card rounded-lg mb-6">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium text-muted-foreground">View:</span>
+              <div className="flex bg-muted rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center ${
+                    viewMode === 'table'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Icon name="Table" size={14} className="mr-1" />
+                  Table
+                </button>
+                <button
+                  onClick={() => setViewMode('card')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center ${
+                    viewMode === 'card'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Icon name="Grid" size={14} className="mr-1" />
+                  Cards
+                </button>
+              </div>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {filteredLeads.length} lead(s)
+            </div>
+          </div>
+
+          {/* Leads Table/Card View */}
           <div className="bg-card border border-border rounded-lg overflow-hidden">
             {loading ? (
               <TableLoader message="Loading leads..." />
             ) : (
+              <>
+              {viewMode === 'table' && (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-muted/50">
@@ -816,6 +860,82 @@ const SuperAdminLeads = () => {
                   </div>
                 )}
               </div>
+              )}
+
+              {viewMode === 'card' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+                  {paginatedLeads.map((lead) => (
+                    <div key={lead.id} className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h3 className="text-sm font-semibold text-foreground truncate">{lead.client_name}</h3>
+                          <p className="text-xs text-muted-foreground truncate">{lead.client_email}</p>
+                          <p className="text-xs text-muted-foreground">{lead.client_phone}</p>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={selectedLeads.includes(lead.id)}
+                          onChange={() => handleSelectLead(lead.id)}
+                          className="rounded border-border"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+
+                      <div className="space-y-2 mb-3">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Project:</p>
+                          <p className="text-sm text-foreground line-clamp-2">{lead.project_description}</p>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {lead.project_categories?.map((category) => (
+                            <span key={category} className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded">
+                              {category}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">Location:</span>
+                          <span className="text-foreground">{lead.location}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">Status:</span>
+                          <span className={`px-2 py-0.5 rounded-full text-xs ${lead.is_spam ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                            {lead.is_spam ? 'Spam' : 'Active'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end space-x-1 pt-3 border-t border-border">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => viewLeadDetails(lead)}
+                          className="h-8 px-2"
+                          title="View Details"
+                        >
+                          <Icon name="Eye" size={14} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteLead(lead.id)}
+                          className="h-8 px-2 text-red-600 hover:text-red-700"
+                          title="Delete Lead"
+                        >
+                          <Icon name="Trash2" size={14} />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  {filteredLeads.length === 0 && (
+                    <div className="col-span-full text-center py-12">
+                      <Icon name="Search" size={48} className="mx-auto text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground">No leads found</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              </>
             )}
           </div>
 

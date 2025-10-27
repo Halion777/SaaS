@@ -12,23 +12,55 @@ const Customization = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sidebarOffset, setSidebarOffset] = useState(288);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
   const [serviceSettings, setServiceSettings] = useState({
     creditInsurance: true,
     recovery: true
   });
 
-  // Handle sidebar toggle
+  // Handle sidebar toggle and responsive layout
   useEffect(() => {
     const handleSidebarToggle = (e) => {
       const { isCollapsed } = e.detail;
-      setSidebarOffset(isCollapsed ? 80 : 288);
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setIsTablet(tablet);
+
+      if (mobile) {
+        setSidebarOffset(0);
+      } else if (tablet) {
+        setSidebarOffset(80);
+      } else {
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
     };
 
-    const isCollapsed = localStorage.getItem('superadmin-sidebar-collapsed') === 'true';
-    setSidebarOffset(isCollapsed ? 80 : 288);
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setIsTablet(tablet);
 
+      if (mobile) {
+        setSidebarOffset(0);
+      } else if (tablet) {
+        setSidebarOffset(80);
+      } else {
+        const isCollapsed = localStorage.getItem('superadmin-sidebar-collapsed') === 'true';
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
     window.addEventListener('superadmin-sidebar-toggle', handleSidebarToggle);
-    return () => window.removeEventListener('superadmin-sidebar-toggle', handleSidebarToggle);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('superadmin-sidebar-toggle', handleSidebarToggle);
+    };
   }, []);
 
   useEffect(() => {
@@ -138,7 +170,7 @@ const Customization = () => {
       
       <div
         className="flex-1 flex flex-col pb-20 md:pb-6"
-        style={{ marginLeft: `${sidebarOffset}px` }}
+        style={{ marginLeft: isMobile ? '0' : `${sidebarOffset}px` }}
       >
         <main className="flex-1 px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
           {/* Header */}

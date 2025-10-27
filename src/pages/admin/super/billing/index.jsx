@@ -20,6 +20,9 @@ const SuperAdminBilling = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+  const [viewMode, setViewMode] = useState(() => {
+    return window.innerWidth < 1024 ? 'card' : 'table';
+  });
   const [loading, setLoading] = useState(true);
   const [subscriptions, setSubscriptions] = useState([]);
   const [payments, setPayments] = useState([]);
@@ -62,6 +65,11 @@ const SuperAdminBilling = () => {
         setSidebarOffset(80);
       } else {
         setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+
+      // Auto-switch to card view on mobile/tablet
+      if (window.innerWidth < 1024) {
+        setViewMode('card');
       }
     };
 
@@ -372,7 +380,7 @@ const SuperAdminBilling = () => {
 
       <div
         className="flex-1 flex flex-col pb-20 md:pb-6"
-        style={{ marginLeft: `${sidebarOffset}px` }}
+        style={{ marginLeft: isMobile ? '0' : `${sidebarOffset}px` }}
       >
 
         <main className="flex-1 px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
@@ -552,7 +560,41 @@ const SuperAdminBilling = () => {
             </div>
           </div>
 
-          {/* Subscriptions Table */}
+          {/* View Toggle */}
+          <div className="flex items-center justify-between p-4 border-b border-border bg-card rounded-lg mb-6">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium text-muted-foreground">View:</span>
+              <div className="flex bg-muted rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center ${
+                    viewMode === 'table'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Icon name="Table" size={14} className="mr-1" />
+                  Table
+                </button>
+                <button
+                  onClick={() => setViewMode('card')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center ${
+                    viewMode === 'card'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Icon name="Grid" size={14} className="mr-1" />
+                  Cards
+                </button>
+              </div>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {filteredSubscriptions.length} subscription(s)
+            </div>
+          </div>
+
+          {/* Subscriptions Table/Card View */}
           <div className="bg-card border border-border rounded-lg overflow-hidden mb-6">
             <div className="p-4 border-b border-border">
               <h3 className="text-lg font-semibold text-foreground">Subscriptions</h3>
@@ -560,6 +602,8 @@ const SuperAdminBilling = () => {
             {loading ? (
               <TableLoader message="Loading subscriptions..." />
             ) : (
+              <>
+              {viewMode === 'table' && (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-muted/50">
@@ -674,6 +718,93 @@ const SuperAdminBilling = () => {
                   </div>
                 )}
               </div>
+              )}
+
+              {viewMode === 'card' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+                  {filteredSubscriptions.map((subscription) => (
+                    <div key={subscription.id} className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow">
+                      {/* User Info */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h3 className="text-sm font-semibold text-foreground truncate">
+                            {subscription.users?.full_name || 'Unknown'}
+                          </h3>
+                          <p className="text-xs text-muted-foreground truncate">{subscription.users?.email || 'No email'}</p>
+                        </div>
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(subscription.status)}`}>
+                          {subscription.status}
+                        </span>
+                      </div>
+
+                      {/* Subscription Details */}
+                      <div className="space-y-2 mb-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Plan:</span>
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-foreground">{subscription.plan_name || 'Standard Plan'}</p>
+                            <p className="text-xs text-muted-foreground">{subscription.interval || 'monthly'}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Amount:</span>
+                          <span className="text-sm font-semibold text-foreground">{formatCurrency(subscription.amount || 0)}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Next Billing:</span>
+                          <span className="text-xs text-foreground">
+                            {subscription.current_period_end ? formatDate(subscription.current_period_end) : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Created:</span>
+                          <span className="text-xs text-foreground">{formatDate(subscription.created_at)}</span>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center justify-end space-x-1 pt-3 border-t border-border">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewSubscription(subscription)}
+                          className="h-8 px-2"
+                          title="View Details"
+                        >
+                          <Icon name="Eye" size={14} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditSubscription(subscription)}
+                          className="h-8 px-2"
+                          title="Edit"
+                        >
+                          <Icon name="Edit" size={14} />
+                        </Button>
+                        {(subscription.status === 'active' || subscription.status === 'trialing') && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCancelSubscription(subscription)}
+                            className="h-8 px-2 text-red-600 hover:text-red-700"
+                            title="Cancel"
+                          >
+                            <Icon name="Trash2" size={14} />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {filteredSubscriptions.length === 0 && (
+                    <div className="col-span-full text-center py-12">
+                      <Icon name="CreditCard" size={48} className="mx-auto text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground">No subscriptions found</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              </>
             )}
           </div>
 
@@ -682,6 +813,7 @@ const SuperAdminBilling = () => {
             <div className="p-4 border-b border-border">
               <h3 className="text-lg font-semibold text-foreground">Recent Payments</h3>
             </div>
+            {viewMode === 'table' && (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-muted/50">
@@ -748,8 +880,55 @@ const SuperAdminBilling = () => {
                   <p className="text-muted-foreground">No payments found</p>
                 </div>
               )}
+            </div>
+            )}
+
+            {viewMode === 'card' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+                {filteredPayments.slice(0, 10).map((payment) => (
+                  <div key={payment.id} className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    {/* User Info */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="text-sm font-semibold text-foreground truncate">
+                          {payment.subscriptions?.users?.full_name || 'Unknown'}
+                        </h3>
+                        <p className="text-xs text-muted-foreground truncate">{payment.subscriptions?.users?.email || 'No email'}</p>
+                      </div>
+                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                        {payment.status}
+                      </span>
+                    </div>
+
+                    {/* Payment Details */}
+                    <div className="space-y-2 mb-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Invoice:</span>
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-foreground">{payment.stripe_invoice_id || `#${payment.id.slice(-8)}`}</p>
+                          <p className="text-xs text-muted-foreground">{payment.description || 'Subscription Payment'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Amount:</span>
+                        <span className="text-sm font-semibold text-foreground">{formatCurrency(payment.amount || 0)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Date:</span>
+                        <span className="text-xs text-foreground">{formatDate(payment.paid_at)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {filteredPayments.length === 0 && (
+                  <div className="col-span-full text-center py-12">
+                    <Icon name="Receipt" size={48} className="mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">No payments found</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        </div>
       </main>
       </div>
 

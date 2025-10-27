@@ -16,6 +16,9 @@ const SuperAdminUsers = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+  const [viewMode, setViewMode] = useState(() => {
+    return window.innerWidth < 1024 ? 'card' : 'table';
+  });
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -50,6 +53,11 @@ const SuperAdminUsers = () => {
         setSidebarOffset(80);
       } else {
         setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+
+      // Auto-switch to card view on mobile/tablet
+      if (window.innerWidth < 1024) {
+        setViewMode('card');
       }
     };
 
@@ -334,7 +342,7 @@ const SuperAdminUsers = () => {
       
       <div
         className="flex-1 flex flex-col pb-20 md:pb-6"
-        style={{ marginLeft: `${sidebarOffset}px` }}
+        style={{ marginLeft: isMobile ? '0' : `${sidebarOffset}px` }}
       >
         <main className="flex-1 px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
           {/* Header */}
@@ -472,11 +480,47 @@ const SuperAdminUsers = () => {
           </div>
           )}
 
-          {/* Users Table */}
+          {/* View Toggle */}
+          <div className="flex items-center justify-between p-4 border-b border-border bg-card rounded-lg mb-6">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium text-muted-foreground">View:</span>
+              <div className="flex bg-muted rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center ${
+                    viewMode === 'table'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Icon name="Table" size={14} className="mr-1" />
+                  Table
+                </button>
+                <button
+                  onClick={() => setViewMode('card')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center ${
+                    viewMode === 'card'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Icon name="Grid" size={14} className="mr-1" />
+                  Cards
+                </button>
+              </div>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {filteredUsers.length} user(s)
+            </div>
+          </div>
+
+          {/* Users Table/Card View */}
           <div className="bg-card border border-border rounded-lg overflow-hidden">
             {loading ? (
               <TableLoader message="Loading users..." />
             ) : (
+            <>
+            {viewMode === 'table' && (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-muted/50">
@@ -592,6 +636,93 @@ const SuperAdminUsers = () => {
                 </tbody>
               </table>
             </div>
+            )}
+
+            {viewMode === 'card' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+                {paginatedUsers.map((user) => (
+                  <div key={user.id} className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center space-x-3 flex-1">
+                        <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                          <Icon name="User" size={24} className="text-muted-foreground" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-semibold text-foreground truncate">
+                            {user.full_name || 'No Name'}
+                          </h3>
+                          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                          {user.company_name && (
+                            <p className="text-xs text-muted-foreground truncate">{user.company_name}</p>
+                          )}
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={selectedUsers.includes(user.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedUsers([...selectedUsers, user.id]);
+                          } else {
+                            setSelectedUsers(selectedUsers.filter(id => id !== user.id));
+                          }
+                        }}
+                        className="rounded border-gray-300"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+
+                    <div className="space-y-2 mb-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Role:</span>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(user.role)}`}>
+                          {user.role || 'admin'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Last Login:</span>
+                        <span className="text-xs text-foreground">{formatDateTime(user.last_sign_in_at)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Created:</span>
+                        <span className="text-xs text-foreground">{formatDate(user.created_at)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end space-x-1 pt-3 border-t border-border">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleUserAction(user.id, 'view')}
+                        className="h-8 px-2"
+                        title="View Details"
+                      >
+                        <Icon name="Eye" size={14} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleUserAction(user.id, 'edit')}
+                        className="h-8 px-2"
+                        title="Edit User"
+                      >
+                        <Icon name="Edit" size={14} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleUserAction(user.id, 'delete')}
+                        className="h-8 px-2 text-red-600 hover:text-red-700"
+                        title="Delete User"
+                      >
+                        <Icon name="Trash2" size={14} />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            </>
             )}
           </div>
 

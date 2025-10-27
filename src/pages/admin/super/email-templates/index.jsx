@@ -16,6 +16,9 @@ const EmailTemplatesManagement = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+  const [viewMode, setViewMode] = useState(() => {
+    return window.innerWidth < 1024 ? 'card' : 'table';
+  });
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState([]);
   const [filteredTemplates, setFilteredTemplates] = useState([]);
@@ -53,6 +56,11 @@ const EmailTemplatesManagement = () => {
         setSidebarOffset(80);
       } else {
         setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+
+      // Auto-switch to card view on mobile/tablet
+      if (window.innerWidth < 1024) {
+        setViewMode('card');
       }
     };
 
@@ -378,7 +386,7 @@ const EmailTemplatesManagement = () => {
       
       <div
         className="flex-1 flex flex-col pb-20 md:pb-6"
-        style={{ marginLeft: `${sidebarOffset}px` }}
+        style={{ marginLeft: isMobile ? '0' : `${sidebarOffset}px` }}
       >
         <main className="flex-1 px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
           {/* Header */}
@@ -457,7 +465,41 @@ const EmailTemplatesManagement = () => {
             </div>
           </div>
 
-          {/* Templates List */}
+          {/* View Toggle */}
+          <div className="flex items-center justify-between p-4 border-b border-border bg-card rounded-lg mb-6">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium text-muted-foreground">View:</span>
+              <div className="flex bg-muted rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center ${
+                    viewMode === 'table'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Icon name="Table" size={14} className="mr-1" />
+                  Table
+                </button>
+                <button
+                  onClick={() => setViewMode('card')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center ${
+                    viewMode === 'card'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Icon name="Grid" size={14} className="mr-1" />
+                  Cards
+                </button>
+              </div>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {filteredTemplates.length} template(s)
+            </div>
+          </div>
+
+          {/* Templates List/Card View */}
           <div className="bg-card border border-border rounded-lg">
             <div className="px-6 py-4 border-b border-border">
               <h3 className="text-lg font-semibold text-foreground">
@@ -467,6 +509,8 @@ const EmailTemplatesManagement = () => {
             {loading ? (
               <TableLoader message="Loading email templates..." />
             ) : (
+              <>
+              {viewMode === 'table' && (
               <div className="overflow-x-auto">
                 <table className="w-full">
                 <thead className="bg-muted/50">
@@ -560,6 +604,103 @@ const EmailTemplatesManagement = () => {
                 </tbody>
               </table>
             </div>
+              )}
+
+              {viewMode === 'card' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+                  {filteredTemplates.map((template) => (
+                    <div key={template.id} className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow">
+                      {/* Template Header */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h3 className="text-sm font-semibold text-foreground truncate">{template.template_name}</h3>
+                          <p className="text-xs text-muted-foreground truncate">{template.subject}</p>
+                        </div>
+                      </div>
+
+                      {/* Template Details */}
+                      <div className="space-y-2 mb-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Type:</span>
+                          <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${getTemplateTypeColor(template.template_type)}`}>
+                            {getTemplateTypeName(template.template_type)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Language:</span>
+                          <span className="text-xs text-foreground">{template.language.toUpperCase()}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Status:</span>
+                          <div className="flex items-center space-x-1">
+                            <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
+                              template.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {template.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                            {template.is_default && (
+                              <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                Default
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Created:</span>
+                          <span className="text-xs text-foreground">{new Date(template.created_at).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center justify-end space-x-1 pt-3 border-t border-border">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handlePreviewTemplate(template)}
+                          className="h-8 px-2"
+                          title="Preview"
+                        >
+                          <Icon name="Eye" size={14} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditTemplate(template)}
+                          className="h-8 px-2"
+                          title="Edit"
+                        >
+                          <Icon name="Edit" size={14} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleActive(template.id)}
+                          className="h-8 px-2"
+                          title={template.is_active ? 'Deactivate' : 'Activate'}
+                        >
+                          <Icon name={template.is_active ? "EyeOff" : "Eye"} size={14} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteTemplate(template.id)}
+                          className="h-8 px-2 text-red-600 hover:text-red-700"
+                          title="Delete"
+                        >
+                          <Icon name="Trash2" size={14} />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  {filteredTemplates.length === 0 && (
+                    <div className="col-span-full text-center py-12">
+                      <Icon name="Mail" size={48} className="mx-auto text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground">No email templates found</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              </>
             )}
           </div>
         </main>

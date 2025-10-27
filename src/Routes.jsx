@@ -51,6 +51,7 @@ import SuperAdminBilling from './pages/admin/super/billing';
 import SuperAdminEmailTemplates from './pages/admin/super/email-templates';
 import SuperAdminBlogs from './pages/admin/super/blogs';
 import SuperAdminCustomization from './pages/admin/super/customization';
+import SuperAdminPeppol from './pages/admin/super/peppol-settings';
 
 const AppRoutes = () => {
   return (
@@ -239,6 +240,11 @@ const AppRoutes = () => {
           <Route path="/admin/super/customization" element={
             <SuperAdminProtectedRoute>
               <SuperAdminCustomization />
+            </SuperAdminProtectedRoute>
+          } />
+          <Route path="/admin/super/peppol-settings" element={
+            <SuperAdminProtectedRoute>
+              <SuperAdminPeppol />
             </SuperAdminProtectedRoute>
           } />
           <Route path="/admin/super/email-templates" element={

@@ -16,6 +16,9 @@ const BlogsManagement = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+  const [viewMode, setViewMode] = useState(() => {
+    return window.innerWidth < 1024 ? 'card' : 'table';
+  });
   const [loading, setLoading] = useState(true);
   const [blogs, setBlogs] = useState([]);
   const [filteredBlogs, setFilteredBlogs] = useState([]);
@@ -56,6 +59,11 @@ const BlogsManagement = () => {
         setSidebarOffset(80);
       } else {
         setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+
+      // Auto-switch to card view on mobile/tablet
+      if (window.innerWidth < 1024) {
+        setViewMode('card');
       }
     };
 
@@ -385,7 +393,7 @@ const BlogsManagement = () => {
       
       <div
         className="flex-1 flex flex-col pb-20 md:pb-6"
-        style={{ marginLeft: `${sidebarOffset}px` }}
+        style={{ marginLeft: isMobile ? '0' : `${sidebarOffset}px` }}
       >
         <main className="flex-1 px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
           {/* Header */}
@@ -470,7 +478,41 @@ const BlogsManagement = () => {
             </div>
           </div>
 
-          {/* Blogs List */}
+          {/* View Toggle */}
+          <div className="flex items-center justify-between p-4 border-b border-border bg-card rounded-lg mb-6">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium text-muted-foreground">View:</span>
+              <div className="flex bg-muted rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center ${
+                    viewMode === 'table'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Icon name="Table" size={14} className="mr-1" />
+                  Table
+                </button>
+                <button
+                  onClick={() => setViewMode('card')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center ${
+                    viewMode === 'card'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Icon name="Grid" size={14} className="mr-1" />
+                  Cards
+                </button>
+              </div>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {filteredBlogs.length} blog post(s)
+            </div>
+          </div>
+
+          {/* Blogs List/Card View */}
           <div className="bg-card border border-border rounded-lg">
             <div className="px-6 py-4 border-b border-border">
               <h3 className="text-lg font-semibold text-foreground">
@@ -480,6 +522,8 @@ const BlogsManagement = () => {
             {loading ? (
               <TableLoader message="Loading blog posts..." />
             ) : (
+              <>
+              {viewMode === 'table' && (
               <div className="overflow-x-auto">
                 <table className="w-full">
                 <thead className="bg-muted/50">
@@ -569,6 +613,105 @@ const BlogsManagement = () => {
                 </tbody>
               </table>
             </div>
+              )}
+
+              {viewMode === 'card' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+                  {filteredBlogs.map((blog) => (
+                    <div key={blog.id} className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow">
+                      {/* Blog Image */}
+                      {blog.featured_image && (
+                        <div className="mb-3 rounded-lg overflow-hidden h-32 bg-muted">
+                          <img 
+                            src={blog.featured_image} 
+                            alt={blog.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Blog Header */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h3 className="text-sm font-semibold text-foreground line-clamp-2">{blog.title}</h3>
+                          <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{blog.excerpt}</p>
+                        </div>
+                      </div>
+
+                      {/* Blog Details */}
+                      <div className="space-y-2 mb-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Category:</span>
+                          <span className="text-xs text-foreground">{blog.category || 'Uncategorized'}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Status:</span>
+                          <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${getStatusColor(blog.status)}`}>
+                            {blog.status}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Author:</span>
+                          <span className="text-xs text-foreground">{blog.author_id ? 'Author' : 'No Author'}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Published:</span>
+                          <span className="text-xs text-foreground">
+                            {blog.published_at ? new Date(blog.published_at).toLocaleDateString() : 'Not published'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center justify-end space-x-1 pt-3 border-t border-border">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handlePreviewBlog(blog)}
+                          className="h-8 px-2"
+                          title="Preview"
+                        >
+                          <Icon name="Eye" size={14} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditBlog(blog)}
+                          className="h-8 px-2"
+                          title="Edit"
+                        >
+                          <Icon name="Edit" size={14} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleStatus(blog)}
+                          className="h-8 px-2"
+                          title={blog.status === 'published' ? 'Unpublish' : 'Publish'}
+                        >
+                          <Icon name={blog.status === 'published' ? 'EyeOff' : 'Eye'} size={14} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteBlog(blog.id)}
+                          className="h-8 px-2 text-red-600 hover:text-red-700"
+                          title="Delete"
+                        >
+                          <Icon name="Trash2" size={14} />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  {filteredBlogs.length === 0 && (
+                    <div className="col-span-full text-center py-12">
+                      <Icon name="FileText" size={48} className="mx-auto text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground">No blog posts found</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              </>
             )}
           </div>
         </main>
