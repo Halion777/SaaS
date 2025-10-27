@@ -116,7 +116,7 @@ const Peppol = () => {
 
       // Call Supabase Edge Function to avoid CORS issues
       // Note: Only authentication is needed - the credentials identify the company
-      const { data, error } = await supabase.functions.invoke('get-peppol-webhook-config', {
+      const { data, error } = await supabase.functions.invoke('peppol-webhook-config', {
         body: {
           endpoint: endpoint,
           username: settings.apiUsername,
@@ -172,43 +172,48 @@ const Peppol = () => {
         'PEPPOL_FUTURE_VALIDATION_FAILED'
       ];
 
+      // According to Digiteal API docs, POST /api/v1/webhook/configuration only needs login, password, and webHooks
       const webhookConfig = {
-        vatNumber: 'BE1001464622',
-        identificationNumber: 'BE:VAT:BE1001464622',
         login: settings.apiUsername,
+        password: settings.apiPassword,
         webHooks: webhookTypes.map(type => ({
           type: type,
           url: settings.webhookUrl
         }))
       };
 
-      const response = await fetch(`${endpoint}/api/v1/webhook/configuration`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Basic ' + btoa(`${settings.apiUsername}:${settings.apiPassword}`)
-        },
-        body: JSON.stringify(webhookConfig)
+      // Call Supabase Edge Function to avoid CORS issues
+      const { data, error } = await supabase.functions.invoke('peppol-webhook-config', {
+        body: {
+          endpoint: endpoint,
+          username: settings.apiUsername,
+          password: settings.apiPassword,
+          method: 'POST',
+          config: webhookConfig
+        }
       });
 
-      if (response.ok) {
+      if (error) {
+        setTestResult({
+          success: false,
+          message: 'Failed to configure webhook',
+          details: error.message
+        });
+      } else {
         setWebhookConfigured(true);
         setTestResult({
           success: true,
-          message: '✅ Webhook configured successfully!',
+          message: 'Webhook configured successfully!',
           details: 'All 9 Peppol event types are now active'
         });
         // Refresh the configuration
         await fetchWebhookConfiguration();
-      } else {
-        const errorText = await response.text();
-        throw new Error(`Failed to configure webhook: ${errorText}`);
       }
     } catch (error) {
       console.error('Error configuring webhook:', error);
       setTestResult({
         success: false,
-        message: '❌ Webhook configuration failed',
+        message: 'Webhook configuration failed',
         details: error.message
       });
     } finally {

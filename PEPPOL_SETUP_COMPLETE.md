@@ -61,13 +61,13 @@ Deploy both required edge functions:
 # Deploy the webhook handler
 npx supabase functions deploy peppol-webhook
 
-# Deploy the webhook config fetcher (avoids CORS issues)
-npx supabase functions deploy get-peppol-webhook-config
+# Deploy the webhook config manager (avoids CORS issues)
+npx supabase functions deploy peppol-webhook-config
 ```
 
 **Functions:**
 - `peppol-webhook` - Receives Peppol events from Digiteal
-- `get-peppol-webhook-config` - Fetches webhook configuration (avoids CORS)
+- `peppol-webhook-config` - Manages webhook configuration (GET/POST)
 
 ---
 
