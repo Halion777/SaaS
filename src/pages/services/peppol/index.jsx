@@ -1078,7 +1078,7 @@ const PeppolNetworkPage = () => {
                             <div className="text-left">
                               <h3 className="text-base font-semibold text-green-900">Peppol Participant Registered</h3>
                               <p className="text-sm text-green-700 mt-0.5">
-                                Your participant is active in the Peppol network
+                                Participant is active in the Peppol network
                               </p>
                             </div>
                           </div>
@@ -1096,44 +1096,45 @@ const PeppolNetworkPage = () => {
                       </button>
 
                       {showParticipantDetails && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="bg-card border border-border rounded-lg p-3">
-                          <label className="text-xs text-muted-foreground">Participant Name</label>
-                          <p className="text-sm font-medium text-foreground mt-1">{peppolSettings.name || 'N/A'}</p>
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="bg-card border border-border rounded-lg p-3">
+                              <label className="text-xs text-muted-foreground">Participant Name</label>
+                              <p className="text-sm font-medium text-foreground mt-1">{peppolSettings.name || 'N/A'}</p>
+                            </div>
+                            
+                            <div className="bg-card border border-border rounded-lg p-3">
+                              <label className="text-xs text-muted-foreground">Contact Person</label>
+                              <p className="text-sm font-medium text-foreground mt-1">{peppolSettings.firstName} {peppolSettings.lastName}</p>
+                            </div>
+                            
+                            <div className="bg-card border border-border rounded-lg p-3">
+                              <label className="text-xs text-muted-foreground">Email</label>
+                              <p className="text-sm font-medium text-foreground mt-1 break-all">{peppolSettings.email || 'N/A'}</p>
+                            </div>
+                            
+                            <div className="bg-card border border-border rounded-lg p-3">
+                              <label className="text-xs text-muted-foreground">Language</label>
+                              <p className="text-sm font-medium text-foreground mt-1">{peppolSettings.language || 'N/A'}</p>
+                            </div>
+                          </div>
+                          
+                          {/* Unregister Button */}
+                          {!showUnregisterSection && (
+                            <div className="flex justify-end mt-3">
+                              <Button
+                                onClick={() => setShowUnregisterSection(true)}
+                                variant="outline"
+                                className="border-red-500 text-red-500 hover:bg-red-50"
+                                iconName="Trash2"
+                                iconPosition="left"
+                              >
+                                Unregister Participant
+                              </Button>
+                            </div>
+                          )}
                         </div>
-                        
-                        <div className="bg-card border border-border rounded-lg p-3">
-                          <label className="text-xs text-muted-foreground">Contact Person</label>
-                          <p className="text-sm font-medium text-foreground mt-1">{peppolSettings.firstName} {peppolSettings.lastName}</p>
-                        </div>
-                        
-                        <div className="bg-card border border-border rounded-lg p-3">
-                          <label className="text-xs text-muted-foreground">Email</label>
-                          <p className="text-sm font-medium text-foreground mt-1 break-all">{peppolSettings.email || 'N/A'}</p>
-                        </div>
-                        
-                        <div className="bg-card border border-border rounded-lg p-3">
-                          <label className="text-xs text-muted-foreground">Language</label>
-                          <p className="text-sm font-medium text-foreground mt-1">{peppolSettings.language || 'N/A'}</p>
-                        </div>
-                      </div>
                       )}
-
-                      {/* Unregister Button */}
-                      {!showUnregisterSection && (
-                        <div className="flex justify-end">
-                          <Button
-                            onClick={() => setShowUnregisterSection(true)}
-                            variant="outline"
-                            className="border-red-500 text-red-500 hover:bg-red-50"
-                            iconName="Trash2"
-                            iconPosition="left"
-                          >
-                            Unregister Participant
-                          </Button>
-                        </div>
-                      )}
-
                       {/* Unregister Section - Only shown when button is clicked */}
                       {showUnregisterSection && (
                         <div className="bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-lg p-4 space-y-3">

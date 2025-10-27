@@ -117,28 +117,3 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION public.get_invoice_attachments TO authenticated;
 
--- Success message
-DO $$
-BEGIN
-  RAISE NOTICE '✅ STEP 3 COMPLETE!';
-  RAISE NOTICE '📎 Invoice attachments table created';
-  RAISE NOTICE '🔐 RLS policies enabled';
-  RAISE NOTICE '👀 Helper view and function created';
-  RAISE NOTICE '';
-  RAISE NOTICE '═══════════════════════════════════════';
-  RAISE NOTICE '🎉 ALL DATABASE MIGRATIONS COMPLETE!';
-  RAISE NOTICE '═══════════════════════════════════════';
-  RAISE NOTICE '';
-  RAISE NOTICE '✅ Your existing tables enhanced with Peppol';
-  RAISE NOTICE '✅ 8 new Peppol support tables created';
-  RAISE NOTICE '✅ Invoice attachments support added';
-  RAISE NOTICE '✅ All RLS policies configured';
-  RAISE NOTICE '';
-  RAISE NOTICE '➡️  NEXT STEPS:';
-  RAISE NOTICE '   1. Deploy webhook: npx supabase functions deploy peppol-webhook';
-  RAISE NOTICE '   2. Configure webhooks in your app or Digiteal';
-  RAISE NOTICE '   3. Test the integration';
-  RAISE NOTICE '';
-  RAISE NOTICE '📚 See README_PEPPOL_SETUP.md for complete guide';
-END $$;
-

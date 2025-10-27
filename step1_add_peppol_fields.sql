@@ -143,15 +143,4 @@ UPDATE public.expense_invoices
 SET peppol_enabled = true
 WHERE source = 'peppol';
 
--- Success message
-DO $$
-BEGIN
-  RAISE NOTICE '✅ STEP 1 COMPLETE!';
-  RAISE NOTICE '📊 Peppol fields added to invoices and expense_invoices';
-  RAISE NOTICE '👀 Helper views created';
-  RAISE NOTICE '⚙️  Helper functions created';
-  RAISE NOTICE '🔐 RLS policies updated';
-  RAISE NOTICE '';
-  RAISE NOTICE '➡️  Next: Run step2_create_peppol_tables.sql';
-END $$;
 
