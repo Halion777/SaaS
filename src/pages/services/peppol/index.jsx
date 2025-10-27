@@ -37,6 +37,7 @@ const PeppolNetworkPage = () => {
   const [userBusinessInfo, setUserBusinessInfo] = useState(null);
   const [isBusinessUser, setIsBusinessUser] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingInvoices, setLoadingInvoices] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [filters, setFilters] = useState({
     search: '',
@@ -179,6 +180,7 @@ const PeppolNetworkPage = () => {
   // Load Peppol invoices (for sent/received tabs)
   const loadPeppolInvoices = async () => {
     try {
+      setLoadingInvoices(true);
       const invoicesResult = await peppolService.getPeppolInvoices();
       if (invoicesResult.success) {
         const invoices = invoicesResult.data || [];
@@ -212,6 +214,8 @@ const PeppolNetworkPage = () => {
       }
     } catch (error) {
       console.error('Error loading Peppol invoices:', error);
+    } finally {
+      setLoadingInvoices(false);
     }
   };
 
@@ -688,23 +692,6 @@ const PeppolNetworkPage = () => {
 
 
 
-  // Show loading state
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <MainSidebar />
-        <div
-          className="flex-1 flex flex-col pb-20 md:pb-6"
-          style={{ marginLeft: `${sidebarOffset}px` }}
-        >
-          <main className="flex-1 px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
-            <TableLoader message="Loading Peppol configuration..." />
-          </main>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <MainSidebar />
@@ -738,7 +725,9 @@ const PeppolNetworkPage = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs sm:text-sm text-muted-foreground">Factures envoyées</p>
-                  <p className="text-lg sm:text-xl lg:text-2xl font-bold">{peppolStats.totalSent}</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold">
+                    {loading ? '...' : peppolStats.totalSent}
+                  </p>
                 </div>
                 <div className="bg-primary/10 p-2 sm:p-3 rounded-lg">
                   <Icon name="Send" size={18} className="sm:w-6 sm:h-6 text-primary" />
@@ -749,7 +738,9 @@ const PeppolNetworkPage = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs sm:text-sm text-muted-foreground">Factures reçues</p>
-                  <p className="text-lg sm:text-xl lg:text-2xl font-bold">{peppolStats.totalReceived}</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold">
+                    {loading ? '...' : peppolStats.totalReceived}
+                  </p>
                 </div>
                 <div className="bg-success/10 p-2 sm:p-3 rounded-lg">
                   <Icon name="Download" size={18} className="sm:w-6 sm:h-6 text-success" />
@@ -761,7 +752,7 @@ const PeppolNetworkPage = () => {
                 <div>
                   <p className="text-xs sm:text-sm text-muted-foreground">Total envoyé</p>
                   <p className="text-lg sm:text-xl lg:text-2xl font-bold">
-                    {peppolStats.totalSentAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                    {loading ? '...' : peppolStats.totalSentAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                   </p>
                 </div>
                 <div className="bg-warning/10 p-2 sm:p-3 rounded-lg">
@@ -774,7 +765,7 @@ const PeppolNetworkPage = () => {
                 <div>
                   <p className="text-xs sm:text-sm text-muted-foreground">Total reçu</p>
                   <p className="text-lg sm:text-xl lg:text-2xl font-bold">
-                    {peppolStats.totalReceivedAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                    {loading ? '...' : peppolStats.totalReceivedAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                   </p>
                 </div>
                 <div className="bg-info/10 p-2 sm:p-3 rounded-lg">
@@ -824,7 +815,12 @@ const PeppolNetworkPage = () => {
           <div className="mt-6">
             {activeTab === 'setup' && (
               <div className="w-full">
-                {/* Peppol Integration Setup */}
+                {loading ? (
+                  <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+                    <TableLoader message="Chargement de la configuration..." />
+                  </div>
+                ) : (
+                /* Peppol Integration Setup */
                 <div className="bg-card border border-border rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
                   {/* Header - Only show when NOT configured */}
                   {!peppolSettings.isConfigured && (
@@ -1375,6 +1371,7 @@ const PeppolNetworkPage = () => {
                   </div>
                   )}
                 </div>
+                )}
               </div>
             )}
 
@@ -1607,7 +1604,9 @@ const PeppolNetworkPage = () => {
                   </div>
 
                   {/* Content */}
-                  {filteredSentInvoices.length === 0 ? (
+                  {loadingInvoices ? (
+                    <TableLoader message="Chargement des factures..." />
+                  ) : filteredSentInvoices.length === 0 ? (
                     <div className="text-center py-12">
                       <Icon name="Send" size={48} className="text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-lg font-medium mb-2">
@@ -1859,7 +1858,9 @@ const PeppolNetworkPage = () => {
                   </div>
 
                   {/* Content */}
-                  {filteredReceivedInvoices.length === 0 ? (
+                  {loadingInvoices ? (
+                    <TableLoader message="Chargement des factures..." />
+                  ) : filteredReceivedInvoices.length === 0 ? (
                     <div className="text-center py-12">
                       <Icon name="Download" size={48} className="text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-lg font-medium mb-2">
