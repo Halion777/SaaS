@@ -53,33 +53,58 @@ Open **Supabase Dashboard → SQL Editor** and run these files **IN ORDER**:
 
 ---
 
-### 2️⃣ Deploy Webhook (2 min)
+### 2️⃣ Deploy Edge Functions (3 min)
+
+Deploy both required edge functions:
 
 ```bash
+# Deploy the webhook handler
 npx supabase functions deploy peppol-webhook
+
+# Deploy the webhook config fetcher (avoids CORS issues)
+npx supabase functions deploy get-peppol-webhook-config
 ```
 
-Your webhook is at: `supabase/functions/peppol-webhook/index.ts`
+**Functions:**
+- `peppol-webhook` - Receives Peppol events from Digiteal
+- `get-peppol-webhook-config` - Fetches webhook configuration (avoids CORS)
 
 ---
 
-### 3️⃣ Configure Peppol Settings (2 min)
+### 3️⃣ Set Environment Variables (3 min)
 
-**Method A - Super Admin Dashboard (Recommended):**
+Add these to your `.env` file:
+
+```bash
+# Peppol Configuration (Required)
+VITE_PEPPOL_TEST_MODE=true
+VITE_PEPPOL_API_USERNAME=haliqo-test
+VITE_PEPPOL_API_PASSWORD=Haliqo123
+VITE_PEPPOL_API_ENDPOINT=https://test.digiteal.eu
+VITE_PEPPOL_WEBHOOK_URL=https://kvuvjtbfvzhtccinhmcl.supabase.co/functions/v1/peppol-webhook
+
+# Peppol Company Info (Optional - for display purposes)
+VITE_PEPPOL_VAT_NUMBER=BE1001464622
+VITE_PEPPOL_IDENTIFICATION_NUMBER=BE:VAT:BE1001464622
+```
+
+**Note:** 
+- VAT Number and Identification Number are optional - shown in the UI for reference
+- Authentication credentials automatically identify your company in Digiteal
+- Replace with your production values when going live!
+
+---
+
+### 4️⃣ Configure Webhook via Super Admin (2 min)
+
+**Access Peppol Settings:**
 
 1. Login as **Super Admin**
-2. Go to **Sidebar → Integrations → Peppol Settings**
-3. **API Credentials Tab:**
-   - Set Environment: Test Mode (toggle on)
-   - Username: `haliqo-test`
-   - Password: `Haliqo123`
-   - Click "Test Connection" ✅
-   - Click "Save Settings" 💾
-
-4. **Webhook Configuration Tab:**
-   - Webhook URL: `https://kvuvjtbfvzhtccinhmcl.supabase.co/functions/v1/peppol-webhook`
-   - Click "Configure Webhook" 🔗
-   - Wait for success message ✅
+2. Go to **Sidebar → Integrations → Peppol**
+3. Verify all settings are loaded from environment variables
+4. Click **"Configure Webhook"** button
+5. Wait for success message ✅
+6. Webhook status indicators should turn green
 
 **Method B - Manual via Digiteal API:**
 
@@ -110,7 +135,7 @@ const configureWebhook = async () => {
 
 ---
 
-### 4️⃣ Test (2 min)
+### 5️⃣ Test (2 min)
 
 ```javascript
 import PeppolService from './services/peppolService';

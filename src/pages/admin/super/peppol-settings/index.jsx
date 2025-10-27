@@ -14,6 +14,8 @@ const Peppol = () => {
   const [testResult, setTestResult] = useState(null);
   const [configuredWebhooks, setConfiguredWebhooks] = useState([]);
   const [loadingConfig, setLoadingConfig] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showWebhookTypes, setShowWebhookTypes] = useState(false);
   
   // Read from environment variables
   const settings = {
@@ -21,7 +23,9 @@ const Peppol = () => {
     apiUsername: import.meta.env.VITE_PEPPOL_API_USERNAME || '',
     apiPassword: import.meta.env.VITE_PEPPOL_API_PASSWORD || '',
     apiEndpoint: import.meta.env.VITE_PEPPOL_API_ENDPOINT || 'https://test.digiteal.eu',
-    webhookUrl: import.meta.env.VITE_PEPPOL_WEBHOOK_URL || ''
+    webhookUrl: import.meta.env.VITE_PEPPOL_WEBHOOK_URL || '',
+    vatNumber: import.meta.env.VITE_PEPPOL_VAT_NUMBER || '',
+    identificationNumber: import.meta.env.VITE_PEPPOL_IDENTIFICATION_NUMBER || ''
   };
 
   // All possible webhook types
@@ -110,23 +114,33 @@ const Peppol = () => {
         ? 'https://test.digiteal.eu' 
         : settings.apiEndpoint;
 
-      const response = await fetch(`${endpoint}/api/v1/webhook/configuration`, {
-        method: 'GET',
-        headers: {
-          'Authorization': 'Basic ' + btoa(`${settings.apiUsername}:${settings.apiPassword}`)
+      // Call Supabase Edge Function to avoid CORS issues
+      // Note: Only authentication is needed - the credentials identify the company
+      const { data, error } = await supabase.functions.invoke('get-peppol-webhook-config', {
+        body: {
+          endpoint: endpoint,
+          username: settings.apiUsername,
+          password: settings.apiPassword
         }
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      if (error) {
+        console.error('Error calling edge function:', error);
+        setConfiguredWebhooks([]);
+        return;
+      }
+
+      if (data) {
         // Extract webhook types from the response
         if (data.webHooks && Array.isArray(data.webHooks)) {
           const types = data.webHooks.map(wh => wh.type);
           setConfiguredWebhooks(types);
           setWebhookConfigured(types.length > 0);
+        } else {
+          setConfiguredWebhooks([]);
         }
       } else {
-        console.error('Failed to fetch webhook configuration:', response.status);
+        console.error('No data returned from edge function');
         setConfiguredWebhooks([]);
       }
     } catch (error) {
@@ -335,7 +349,20 @@ const Peppol = () => {
                     <p className="text-xs text-muted-foreground mt-1">Secure credentials</p>
                   </div>
                   <div className="text-right ml-4">
-                    <p className="text-sm text-foreground font-mono bg-muted px-3 py-1.5 rounded">{settings.apiPassword ? '••••••••' : 'Not configured'}</p>
+                    <div className="inline-flex items-center gap-2 bg-muted px-3 py-1.5 rounded">
+                      <p className="text-sm text-foreground font-mono">
+                        {settings.apiPassword ? (showPassword ? settings.apiPassword : '••••••••') : 'Not configured'}
+                      </p>
+                      {settings.apiPassword && (
+                        <button
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                          title={showPassword ? "Hide password" : "Show password"}
+                        >
+                          <Icon name={showPassword ? "EyeOff" : "Eye"} size={18} />
+                        </button>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground mt-1">VITE_PEPPOL_API_PASSWORD</p>
                   </div>
                 </div>
@@ -386,21 +413,32 @@ const Peppol = () => {
 
               {/* Webhook Event Types */}
               <div className="bg-gradient-to-br from-muted/50 to-muted/30 rounded-xl p-5 border border-border">
-                <h4 className="text-sm font-bold text-foreground mb-4 flex items-center justify-between">
+                <button 
+                  onClick={() => setShowWebhookTypes(!showWebhookTypes)}
+                  className="w-full text-sm font-bold text-foreground mb-4 flex items-center justify-between hover:opacity-80 transition-opacity"
+                >
                   <div className="flex items-center gap-2">
                     <div className="p-1.5 bg-primary/10 rounded-lg">
                       <Icon name="List" size={16} className="text-primary" />
                     </div>
                     Webhook Event Types
                   </div>
-                  {loadingConfig ? (
-                    <Icon name="Loader2" size={14} className="animate-spin text-muted-foreground" />
-                  ) : (
-                    <span className="text-xs font-normal text-muted-foreground">
-                      {configuredWebhooks.length} / {allWebhookTypes.length} configured
-                    </span>
-                  )}
-                </h4>
+                  <div className="flex items-center gap-2">
+                    {loadingConfig ? (
+                      <Icon name="Loader2" size={14} className="animate-spin text-muted-foreground" />
+                    ) : (
+                      <span className="text-xs font-normal text-muted-foreground">
+                        {configuredWebhooks.length} / {allWebhookTypes.length} configured
+                      </span>
+                    )}
+                    <Icon 
+                      name={showWebhookTypes ? "ChevronUp" : "ChevronDown"} 
+                      size={16} 
+                      className="text-muted-foreground" 
+                    />
+                  </div>
+                </button>
+                {showWebhookTypes && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {allWebhookTypes.map((event, index) => {
                     const isConfigured = configuredWebhooks.includes(event.type);
@@ -409,25 +447,23 @@ const Peppol = () => {
                         key={index} 
                         className={`flex items-start gap-2 text-xs p-2.5 rounded-lg transition-colors ${
                           isConfigured 
-                            ? 'bg-green-50/80 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
+                            ? 'bg-white border border-black' 
                             : 'bg-background/60 border border-border/50'
                         }`}
                       >
-                        <div className={`p-1 rounded flex-shrink-0 ${
+                        <div className={`p-1 rounded border border-black flex-shrink-0 ${
                           isConfigured 
-                            ? 'bg-green-100 dark:bg-green-900/40' 
+                            ? 'bg-white' 
                             : 'bg-muted'
                         }`}>
                           <Icon 
                             name={isConfigured ? "Check" : "X"} 
                             size={10} 
-                            className={isConfigured ? "text-green-600 dark:text-green-400" : "text-muted-foreground"} 
+                            className={isConfigured ? "text-black" : "text-muted-foreground"} 
                           />
                         </div>
                         <div className="flex-1">
-                          <span className={`font-semibold block ${
-                            isConfigured ? 'text-green-900 dark:text-green-100' : 'text-foreground'
-                          }`}>
+                          <span className="font-semibold block text-black">
                             {event.type.replace('PEPPOL_', '')}
                           </span>
                           <span className="text-muted-foreground text-[11px]">{event.desc}</span>
@@ -436,6 +472,7 @@ const Peppol = () => {
                     );
                   })}
                 </div>
+                )}
               </div>
             </div>
           </div>
