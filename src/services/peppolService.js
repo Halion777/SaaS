@@ -235,7 +235,7 @@ const generateInvoiceLines = (lines) => lines.map((line, index) => `
   `).join("");
 
 // Main UBL generation function
-const generatePEPPOLXML = (invoiceData) => {
+export const generatePEPPOLXML = (invoiceData) => {
   const timestamp = formatDate(new Date());
   const taxCategories = calculateTaxCategories(invoiceData.invoiceLines);
   const totals = calculateTotals(invoiceData.invoiceLines);

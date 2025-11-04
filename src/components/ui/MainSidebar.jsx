@@ -26,6 +26,7 @@ const MainSidebar = () => {
     recovery: true
   });
   const [overdueExpenseInvoicesCount, setOverdueExpenseInvoicesCount] = useState(0);
+  const [overdueClientInvoicesCount, setOverdueClientInvoicesCount] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
@@ -184,8 +185,51 @@ const MainSidebar = () => {
 
     fetchOverdueCount();
     
-    // Refresh every 30 seconds to keep count updated
+    // Refresh every 5 minutes to keep count updated
     const interval = setInterval(fetchOverdueCount, 300000);
+    
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // Fetch overdue client invoices count
+  useEffect(() => {
+    const fetchOverdueClientCount = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (!currentUser) return;
+
+        // Get all client invoices for the current user
+        const { data: invoices, error } = await supabase
+          .from('invoices')
+          .select('id, due_date, status')
+          .eq('user_id', currentUser.id);
+
+        if (error) throw error;
+
+        // Count overdue invoices (due_date < today AND status != 'paid')
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const overdueCount = invoices?.filter(invoice => {
+          if (invoice.status === 'paid') return false;
+          const dueDate = new Date(invoice.due_date);
+          dueDate.setHours(0, 0, 0, 0);
+          return dueDate < today;
+        }).length || 0;
+
+        setOverdueClientInvoicesCount(overdueCount);
+      } catch (error) {
+        console.error('Error fetching overdue client invoices count:', error);
+        setOverdueClientInvoicesCount(0);
+      }
+    };
+
+    fetchOverdueClientCount();
+    
+    // Refresh every 5 minutes to keep count updated
+    const interval = setInterval(fetchOverdueClientCount, 300000);
     
     return () => clearInterval(interval);
   }, [user]);
@@ -283,7 +327,7 @@ const MainSidebar = () => {
           label: t('sidebar.categories.invoices.items.clientInvoices'),
           path: '/invoices-management',
           icon: 'Receipt',
-          notifications: 1
+          notifications: overdueClientInvoicesCount
         },
         {
           id: 'expense-invoices',

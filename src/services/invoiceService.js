@@ -13,8 +13,22 @@ export class InvoiceService {
         .from('invoices')
         .select(`
           *,
-          client:clients(id, name, email, phone, address, city, postal_code),
-          quote:quotes(id, quote_number, title, description)
+          client:clients(id, name, email, phone, address, city, postal_code, country, vat_number, peppol_id, peppol_enabled),
+          quote:quotes(
+            id, 
+            quote_number, 
+            title, 
+            description,
+            quote_tasks(
+              id,
+              name,
+              description,
+              quantity,
+              unit,
+              unit_price,
+              total_price
+            )
+          )
         `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false });

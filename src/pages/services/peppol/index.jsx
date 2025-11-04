@@ -181,37 +181,111 @@ const PeppolNetworkPage = () => {
   const loadPeppolInvoices = async () => {
     try {
       setLoadingInvoices(true);
-      const invoicesResult = await peppolService.getPeppolInvoices();
-      if (invoicesResult.success) {
-        const invoices = invoicesResult.data || [];
-        
-        // Separate sent and received invoices
-        const sent = invoices.filter(inv => inv.sender_id && !inv.receiver_id);
-        const received = invoices.filter(inv => inv.receiver_id && !inv.sender_id);
-        
-        setSentInvoices(sent);
-        setReceivedInvoices(received);
-        
-        // Calculate stats
-        const totalSentAmount = sent.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
-        const totalReceivedAmount = received.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
-        
-        setPeppolStats({
-          totalSent: sent.length,
-          totalReceived: received.length,
-          totalSentAmount,
-          totalReceivedAmount
-        });
+      
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.error('User not authenticated');
+        return;
       }
 
-      // Load Peppol statistics
-      const statsResult = await peppolService.getStatistics();
-      if (statsResult.success) {
-        setPeppolStats(prev => ({
-          ...prev,
-          ...statsResult.data
-        }));
+      // Load sent invoices (from invoices table where peppol_enabled = true)
+      const { data: sentInvoicesData, error: sentError } = await supabase
+        .from('invoices')
+        .select(`
+          id,
+          invoice_number,
+          client_id,
+          amount,
+          final_amount,
+          issue_date,
+          due_date,
+          peppol_status,
+          peppol_message_id,
+          peppol_sent_at,
+          peppol_delivered_at,
+          receiver_peppol_id,
+          clients (
+            name,
+            email,
+            peppol_id
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('peppol_enabled', true)
+        .order('peppol_sent_at', { ascending: false });
+
+      // Load received invoices (from expense_invoices table where peppol_enabled = true)
+      const { data: receivedInvoicesData, error: receivedError } = await supabase
+        .from('expense_invoices')
+        .select(`
+          id,
+          invoice_number,
+          supplier_name,
+          supplier_email,
+          amount,
+          issue_date,
+          due_date,
+          peppol_message_id,
+          peppol_received_at,
+          sender_peppol_id
+        `)
+        .eq('user_id', user.id)
+        .eq('peppol_enabled', true)
+        .order('peppol_received_at', { ascending: false });
+
+      if (sentError) {
+        console.error('Error loading sent invoices:', sentError);
       }
+      if (receivedError) {
+        console.error('Error loading received invoices:', receivedError);
+      }
+
+      // Transform sent invoices to match expected format
+      const sent = (sentInvoicesData || []).map(inv => ({
+        id: inv.id,
+        invoice_number: inv.invoice_number,
+        recipient_name: inv.clients?.name || 'Unknown Client',
+        recipient_email: inv.clients?.email || '',
+        peppol_identifier: inv.receiver_peppol_id || inv.clients?.peppol_id || 'N/A',
+        total_amount: parseFloat(inv.final_amount || inv.amount || 0),
+        issue_date: inv.issue_date,
+        due_date: inv.due_date,
+        status: inv.peppol_status === 'delivered' ? 'delivered' : 
+                inv.peppol_status === 'sent' ? 'pending' :
+                inv.peppol_status === 'failed' ? 'failed' : 'pending',
+        peppol_message_id: inv.peppol_message_id,
+        created_at: inv.peppol_sent_at || inv.issue_date
+      }));
+
+      // Transform received invoices to match expected format
+      const received = (receivedInvoicesData || []).map(inv => ({
+        id: inv.id,
+        invoice_number: inv.invoice_number,
+        sender_name: inv.supplier_name || 'Unknown Supplier',
+        sender_email: inv.supplier_email || '',
+        peppol_identifier: inv.sender_peppol_id || 'N/A',
+        total_amount: parseFloat(inv.amount || 0),
+        issue_date: inv.issue_date,
+        due_date: inv.due_date,
+        status: 'received',
+        peppol_message_id: inv.peppol_message_id,
+        created_at: inv.peppol_received_at || inv.issue_date
+      }));
+      
+      setSentInvoices(sent);
+      setReceivedInvoices(received);
+      
+      // Calculate stats
+      const totalSentAmount = sent.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
+      const totalReceivedAmount = received.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
+      
+      setPeppolStats({
+        totalSent: sent.length,
+        totalReceived: received.length,
+        totalSentAmount,
+        totalReceivedAmount
+      });
     } catch (error) {
       console.error('Error loading Peppol invoices:', error);
     } finally {
@@ -321,7 +395,7 @@ const PeppolNetworkPage = () => {
   // Helper function to format invoice data for display
   const formatInvoiceForDisplay = (invoice, type = 'sent') => {
     return {
-      id: invoice.invoice_number || invoice.id,
+      id: invoice.invoice_number || invoice.id?.toString() || 'N/A',
       recipient: type === 'sent' ? (invoice.recipient_name || 'Unknown Recipient') : (invoice.sender_name || 'Unknown Sender'),
       recipientEmail: type === 'sent' ? (invoice.recipient_email || '') : (invoice.sender_email || ''),
       sender: type === 'received' ? (invoice.sender_name || 'Unknown Sender') : (invoice.recipient_name || 'Unknown Recipient'),
@@ -708,6 +782,18 @@ const PeppolNetworkPage = () => {
                 <div className="flex items-center">
                   <Icon name="Network" size={24} className="text-primary mr-3" />
                   <h1 className="text-xl sm:text-2xl font-bold text-foreground">Réseau Peppol</h1>
+                  {peppolSettings.isConfigured && (
+                    <div className="ml-3 flex items-center space-x-2">
+                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                      <span className="text-xs text-muted-foreground">Connecté</span>
+                    </div>
+                  )}
+                  {!peppolSettings.isConfigured && peppolSettings.peppolId && (
+                    <div className="ml-3 flex items-center space-x-2">
+                      <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                      <span className="text-xs text-muted-foreground">Configuration requise</span>
+                    </div>
+                  )}
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                 Factures envoyées et reçues via le réseau Peppol

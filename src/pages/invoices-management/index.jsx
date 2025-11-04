@@ -5,6 +5,8 @@ import Button from '../../components/ui/Button';
 import InvoicesSummaryBar from './components/InvoicesSummaryBar';
 import InvoicesFilterToolbar from './components/InvoicesFilterToolbar';
 import InvoicesDataTable from './components/InvoicesDataTable';
+import InvoiceDetailModal from './components/InvoiceDetailModal';
+import SendPeppolModal from './components/SendPeppolModal';
 
 import Select from '../../components/ui/Select';
 import InvoiceService from '../../services/invoiceService';
@@ -27,6 +29,9 @@ const InvoicesManagement = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isSendPeppolModalOpen, setIsSendPeppolModalOpen] = useState(false);
 
   // Handle sidebar offset for responsive layout
   useEffect(() => {
@@ -119,11 +124,27 @@ const InvoicesManagement = () => {
           quoteNumber: invoice.quote_number,
           clientName: invoice.client?.name || 'Client inconnu',
           clientEmail: invoice.client?.email || '',
+          client: invoice.client, // Keep full client object
+          quote: invoice.quote, // Keep quote data for line items
           amount: parseFloat(invoice.final_amount || 0),
+          netAmount: parseFloat(invoice.net_amount || 0),
+          taxAmount: parseFloat(invoice.tax_amount || 0),
+          discountAmount: parseFloat(invoice.discount_amount || 0),
           status: invoice.status,
           issueDate: invoice.issue_date,
           dueDate: invoice.due_date,
-          paymentMethod: invoice.payment_method || 'À définir'
+          paymentMethod: invoice.payment_method || 'À définir',
+          title: invoice.title,
+          description: invoice.description,
+          notes: invoice.notes,
+          // Peppol fields
+          peppolEnabled: invoice.peppol_enabled || false,
+          peppolStatus: invoice.peppol_status || 'not_sent',
+          peppolMessageId: invoice.peppol_message_id,
+          peppolSentAt: invoice.peppol_sent_at,
+          peppolDeliveredAt: invoice.peppol_delivered_at,
+          receiverPeppolId: invoice.receiver_peppol_id,
+          peppolErrorMessage: invoice.peppol_error_message
         }));
         
         setInvoices(transformedInvoices);
@@ -236,8 +257,16 @@ const InvoicesManagement = () => {
 
   const handleInvoiceAction = async (action, invoice) => {
     switch (action) {
+      case 'view':
+        setSelectedInvoice(invoice);
+        setIsDetailModalOpen(true);
+        break;
       case 'mark_paid':
         await handleMarkAsPaid(invoice);
+        break;
+      case 'send_peppol':
+        setSelectedInvoice(invoice);
+        setIsSendPeppolModalOpen(true);
         break;
       case 'edit':
         // Handle edit action
@@ -310,9 +339,6 @@ const InvoicesManagement = () => {
     }
 
     switch (action) {
-      case 'mark_paid':
-        await handleBulkMarkAsPaid();
-        break;
       case 'export':
         alert(`Export de ${selectedInvoices.length} facture(s) en cours...`);
         break;
@@ -430,7 +456,6 @@ const InvoicesManagement = () => {
                     <Select
                       options={[
                         { value: '', label: 'Choisir une action...' },
-                        { value: 'mark_paid', label: 'Marquer comme payée' },
                         { value: 'export', label: 'Exporter' },
                         { value: 'delete', label: 'Supprimer' }
                       ]}
@@ -444,16 +469,6 @@ const InvoicesManagement = () => {
 
               {/* Quick Action Buttons */}
               <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-primary/20">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleBulkAction('mark_paid')}
-                  iconName="CheckCircle"
-                  iconPosition="left"
-                >
-                  Marquer payée
-                </Button>
-                
                 <Button
                   variant="outline"
                   size="sm"
@@ -487,22 +502,29 @@ const InvoicesManagement = () => {
             onFiltersChange={handleFiltersChange}
           />
 
-          {/* Pagination */}
-          {filteredInvoices.length > 0 && (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mt-4 sm:mt-6">
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Affichage de {filteredInvoices.length} facture(s) sur {invoices.length}
-              </p>
-              <div className="flex items-center space-x-2">
-                <Button variant="outline" size="sm" iconName="ChevronLeft" className="text-xs sm:text-sm">
-                  Précédent
-                </Button>
-                <Button variant="outline" size="sm" iconName="ChevronRight" className="text-xs sm:text-sm">
-                  Suivant
-                </Button>
-              </div>
-            </div>
-          )}
+          {/* Invoice Detail Modal */}
+          <InvoiceDetailModal
+            invoice={selectedInvoice}
+            isOpen={isDetailModalOpen}
+            onClose={() => {
+              setIsDetailModalOpen(false);
+              setSelectedInvoice(null);
+            }}
+          />
+
+          {/* Send Peppol Modal */}
+          <SendPeppolModal
+            invoice={selectedInvoice}
+            isOpen={isSendPeppolModalOpen}
+            onClose={() => {
+              setIsSendPeppolModalOpen(false);
+              setSelectedInvoice(null);
+            }}
+            onSuccess={() => {
+              fetchInvoices(); // Refresh invoices to show updated Peppol status
+            }}
+          />
+
         </div>
       </main>
     </div>

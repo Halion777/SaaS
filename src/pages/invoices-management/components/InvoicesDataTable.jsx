@@ -39,14 +39,32 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
   const getStatusBadge = (status) => {
     const statusConfig = {
       paid: { label: 'Payée', color: 'bg-success text-success-foreground' },
-      pending: { label: 'En attente', color: 'bg-warning text-warning-foreground' },
-      overdue: { label: 'En retard', color: 'bg-error text-error-foreground' }
+      unpaid: { label: 'Non payée', color: 'bg-warning text-warning-foreground' },
+      overdue: { label: 'En retard', color: 'bg-error text-error-foreground' },
+      cancelled: { label: 'Annulée', color: 'bg-muted text-muted-foreground' }
     };
 
-    const config = statusConfig[status] || statusConfig.pending;
+    const config = statusConfig[status] || statusConfig.unpaid;
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${config.color}`}>
         {config.label}
+      </span>
+    );
+  };
+
+  const getPeppolStatusBadge = (status) => {
+    const statusConfig = {
+      not_sent: { label: 'Non envoyée', color: 'bg-muted text-muted-foreground', icon: 'X' },
+      sending: { label: 'Envoi en cours', color: 'bg-warning text-warning-foreground', icon: 'Loader2' },
+      sent: { label: 'Envoyée', color: 'bg-primary text-primary-foreground', icon: 'Send' },
+      delivered: { label: 'Livrée', color: 'bg-success text-success-foreground', icon: 'CheckCircle' },
+      failed: { label: 'Échouée', color: 'bg-error text-error-foreground', icon: 'AlertCircle' }
+    };
+    const config = statusConfig[status] || statusConfig.not_sent;
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${config.color}`}>
+        <Icon name={config.icon} size={12} />
+        <span>{config.label}</span>
       </span>
     );
   };
@@ -154,6 +172,9 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
             <div className="flex items-center justify-between mb-3">
               <div className="flex flex-col space-y-1">
                 {getStatusBadge(invoice.status)}
+                {invoice.peppolEnabled && invoice.peppolStatus && (
+                  getPeppolStatusBadge(invoice.peppolStatus)
+                )}
                 {daysOverdue && (
                   <span className="text-xs text-error">+{daysOverdue} jours</span>
                 )}
@@ -175,16 +196,23 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-between pt-3 border-t border-border">
+            <div className="flex items-center justify-between pt-3 border-t border-border space-x-2">
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                iconName="Copy"
-                onClick={() => onInvoiceAction('duplicate', invoice)}
+                iconName="Eye"
+                onClick={() => onInvoiceAction('view', invoice)}
                 className="text-xs"
-              >
-                Dupliquer
-              </Button>
+                title="Voir les détails"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                iconName="Send"
+                onClick={() => onInvoiceAction('send_peppol', invoice)}
+                className="text-xs text-primary hover:text-primary/80"
+                title="Envoyer via Peppol"
+              />
             </div>
           </div>
         );
@@ -320,6 +348,9 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col space-y-1">
                       {getStatusBadge(invoice.status)}
+                      {invoice.peppolEnabled && invoice.peppolStatus && (
+                        getPeppolStatusBadge(invoice.peppolStatus)
+                      )}
                       {daysOverdue && (
                         <span className="text-xs text-error">+{daysOverdue} jours</span>
                       )}
@@ -340,18 +371,15 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                         size="sm"
                         iconName="Eye"
                         onClick={() => onInvoiceAction('view', invoice)}
+                        title="Voir les détails"
                       />
                       <Button
                         variant="ghost"
                         size="sm"
-                        iconName="Edit"
-                        onClick={() => onInvoiceAction('edit', invoice)}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        iconName="Copy"
-                        onClick={() => onInvoiceAction('duplicate', invoice)}
+                        iconName="Send"
+                        onClick={() => onInvoiceAction('send_peppol', invoice)}
+                        title="Envoyer via Peppol"
+                        className="text-primary hover:text-primary/80"
                       />
                     </div>
                   </td>

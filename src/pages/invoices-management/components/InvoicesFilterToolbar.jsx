@@ -153,24 +153,6 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
           />
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Période</label>
-            <div className="grid grid-cols-2 gap-2">
-              <Input
-                type="date"
-                placeholder="Du"
-                value={dateRange.start}
-                onChange={(e) => handleDateRangeChange('start', e.target.value)}
-              />
-              <Input
-                type="date"
-                placeholder="Au"
-                value={dateRange.end}
-                onChange={(e) => handleDateRangeChange('end', e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Montant (€)</label>
             <div className="grid grid-cols-2 gap-2">
               <Input
@@ -184,6 +166,24 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
                 placeholder="Max"
                 value={amountRange.max}
                 onChange={(e) => handleAmountRangeChange('max', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Période</label>
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                type="date"
+                placeholder="Du"
+                value={dateRange.start}
+                onChange={(e) => handleDateRangeChange('start', e.target.value)}
+              />
+              <Input
+                type="date"
+                placeholder="Au"
+                value={dateRange.end}
+                onChange={(e) => handleDateRangeChange('end', e.target.value)}
               />
             </div>
           </div>
@@ -278,24 +278,6 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
             />
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Période</label>
-              <div className="grid grid-cols-2 gap-2">
-                <Input
-                  type="date"
-                  placeholder="Du"
-                  value={dateRange.start}
-                  onChange={(e) => handleDateRangeChange('start', e.target.value)}
-                />
-                <Input
-                  type="date"
-                  placeholder="Au"
-                  value={dateRange.end}
-                  onChange={(e) => handleDateRangeChange('end', e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Montant (€)</label>
               <div className="grid grid-cols-2 gap-2">
                 <Input
@@ -309,6 +291,24 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
                   placeholder="Max"
                   value={amountRange.max}
                   onChange={(e) => handleAmountRangeChange('max', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Période</label>
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  type="date"
+                  placeholder="Du"
+                  value={dateRange.start}
+                  onChange={(e) => handleDateRangeChange('start', e.target.value)}
+                />
+                <Input
+                  type="date"
+                  placeholder="Au"
+                  value={dateRange.end}
+                  onChange={(e) => handleDateRangeChange('end', e.target.value)}
                 />
               </div>
             </div>
