@@ -145,12 +145,6 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                   iconName="Eye"
                   onClick={() => onInvoiceAction('view', invoice)}
                 />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  iconName="Edit"
-                  onClick={() => onInvoiceAction('edit', invoice)}
-                />
               </div>
             </div>
 

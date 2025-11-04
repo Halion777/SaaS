@@ -2,602 +2,778 @@
 
 ## Overview
 
-This guide explains how Peppol integrates with your SaaS invoicing system - specifically the differences between client invoices and expense invoices, which tables are used, and which Digiteal Peppol APIs you'll use.
+This guide explains the Peppol integration in your SaaS invoicing system. It covers the database tables used, files involved, data structures, APIs needed, and step-by-step flows for both client invoices (outbound) and expense invoices (inbound).
 
 ---
 
-## 📊 Two Types of Invoices
+## 📊 Tables Used
 
-### 1. Client Invoices (`invoices` table)
-**What:** Invoices you send TO your clients
+### 1. `invoices` (Client Invoices - Outbound)
 
-**Table:** `public.invoices`
+**Purpose:** Invoices you send TO your clients
+
+**Key Fields:**
+- `id` (UUID) - Primary key
+- `user_id` (UUID) - Links to user account
+- `client_id` (UUID) - Links to client
+- `quote_id` (UUID) - Links to original quote (if converted)
+- `invoice_number` (VARCHAR) - Invoice number
+- `status` (VARCHAR) - Payment status: `unpaid`, `paid`, `overdue`, `cancelled`
+- `amount` (NUMERIC) - Net amount
+- `tax_amount` (NUMERIC) - Tax amount
+- `final_amount` (NUMERIC) - Total amount with tax
+- `issue_date` (DATE) - Invoice issue date
+- `due_date` (DATE) - Payment due date
+
+**Peppol Fields:**
+- `peppol_enabled` (BOOLEAN) - Is invoice sent via Peppol?
+- `peppol_status` (VARCHAR) - Status: `not_sent`, `sending`, `sent`, `delivered`, `failed`
+- `peppol_message_id` (VARCHAR) - Digiteal message ID
+- `peppol_sent_at` (TIMESTAMP) - When invoice was sent
+- `peppol_delivered_at` (TIMESTAMP) - When invoice was delivered
+- `peppol_error_message` (TEXT) - Error details if failed
+- `receiver_peppol_id` (VARCHAR) - Client's Peppol identifier
+- `ubl_xml` (TEXT) - Complete UBL XML content
+- `peppol_metadata` (JSONB) - Additional Peppol data
 
 **Storage:**
-- **Attachments:** Files are stored directly in Supabase Storage bucket `invoice-uploads`
-- **No Database Table:** No `invoice_attachments` table is used - files are managed via storage bucket only
-
-**Creation Methods:**
-Client invoices can be created in **one way**:
-
-**Quote Conversion:**
-- Convert an **accepted quote** to an invoice
-- Automatically copies quote data (client, amounts, line items, etc.) to invoice
-- Quote status is updated to `converted_to_invoice`
-- Location: `src/services/quotesService.js` - `convertQuoteToInvoice()`
-- Database: `invoices.quote_id` links back to the original quote
-- **Note:** Manual invoice creation and OCR have been removed. All invoices must be created from accepted quotes.
-
-**Peppol Fields Added:**
-- `peppol_enabled` - Is this invoice sent via Peppol?
-- `peppol_status` - Status: `not_sent`, `sending`, `sent`, `delivered`, `failed`
-- `peppol_message_id` - Digiteal message ID
-- `peppol_sent_at` - When invoice was sent
-- `peppol_delivered_at` - When invoice was delivered
-- `peppol_error_message` - Error details if failed
-- `receiver_peppol_id` - Client's Peppol identifier
-- `ubl_xml` - UBL XML content
-- `peppol_metadata` - Additional Peppol data
-
-**Direction:** OUTBOUND (you send to clients)
-
-**API Used:**
-- `POST /api/v1/peppol/outbound-ubl-documents` - Send invoice to client via Peppol
+- **Attachments:** Files stored in Supabase Storage bucket `invoice-uploads`
+- **No Database Table:** No `invoice_attachments` table - files managed via storage bucket only
 
 ---
 
-### 2. Expense Invoices (`expense_invoices` table)
-**What:** Invoices you receive FROM suppliers
+### 2. `expense_invoices` (Expense Invoices - Inbound)
 
-**Table:** `public.expense_invoices`
+**Purpose:** Invoices you receive FROM suppliers
 
-**Peppol Fields Added:**
-- `peppol_enabled` - Was this invoice received via Peppol?
-- `peppol_message_id` - Digiteal message ID
-- `peppol_received_at` - When invoice was received
-- `sender_peppol_id` - Supplier's Peppol identifier
-- `ubl_xml` - UBL XML content
-- `peppol_metadata` - Additional Peppol data
-- `user_id` - Links to your user account
+**Key Fields:**
+- `id` (SERIAL) - Primary key
+- `user_id` (UUID) - Links to user account
+- `invoice_number` (VARCHAR) - Invoice number from supplier
+- `supplier_name` (VARCHAR) - Supplier company name
+- `supplier_email` (VARCHAR) - Supplier email
+- `supplier_vat_number` (VARCHAR) - Supplier VAT number
+- `amount` (NUMERIC) - Total amount with tax
+- `net_amount` (NUMERIC) - Net amount (before tax)
+- `vat_amount` (NUMERIC) - Tax amount
+- `status` (VARCHAR) - Status: `pending`, `paid`, `overdue`, `cancelled`
+- `category` (VARCHAR) - Invoice category
+- `source` (VARCHAR) - Source: `peppol` or `manual`
+- `issue_date` (DATE) - Invoice issue date
+- `due_date` (DATE) - Payment due date
+- `payment_method` (VARCHAR) - Payment method
 
-**Direction:** INBOUND (suppliers send to you)
-
-**Process:**
-- Automatically processed by Peppol webhook
-- Creates `expense_invoices` record
-- Stores UBL XML for compliance
+**Peppol Fields:**
+- `peppol_enabled` (BOOLEAN) - Was invoice received via Peppol?
+- `peppol_message_id` (VARCHAR) - Digiteal message ID
+- `peppol_received_at` (TIMESTAMP) - When invoice was received
+- `sender_peppol_id` (VARCHAR) - Supplier's Peppol identifier
+- `ubl_xml` (TEXT) - Complete UBL XML content
+- `peppol_metadata` (JSONB) - Additional Peppol data
 
 ---
 
-## 🗂️ Peppol Support Tables
+### 3. `peppol_settings`
 
-### 1. `peppol_settings`
 **Purpose:** Your company's Peppol configuration
 
 **Key Fields:**
-- `user_id` - Your account
-- `peppol_id` - Your Peppol identifier (e.g., `0208:0630675588`)
-- `business_name` - Your company name
-- `country_code` - Your country code (e.g., `BE`)
-- `supported_document_types` - Types you can send/receive
-- `sandbox_mode` - Test or production environment
-
-**Used By:** Registration and API authentication
+- `user_id` (UUID) - Links to user account
+- `peppol_id` (VARCHAR) - Your Peppol identifier (e.g., `0208:0630675588`)
+- `business_name` (VARCHAR) - Your company name
+- `country_code` (VARCHAR) - Your country code (e.g., `BE`)
+- `supported_document_types` (TEXT[]) - Document types you can send/receive
+- `sandbox_mode` (BOOLEAN) - Test or production environment
 
 ---
 
-### 2. `peppol_participants`
+### 4. `peppol_participants`
+
 **Purpose:** Trading partners (your clients and suppliers)
 
 **Key Fields:**
-- `user_id` - Your account
-- `peppol_identifier` - Partner's Peppol ID (e.g., `0208:1234567890`)
-- `business_name` - Partner's company name
-- `contact_email` - Partner's contact email
-- `is_registered` - Is partner active in Peppol?
-
-**Used By:** Tracking who you can send/receive invoices from
+- `user_id` (UUID) - Links to user account
+- `peppol_identifier` (VARCHAR) - Partner's Peppol ID (e.g., `0208:1234567890`)
+- `business_name` (VARCHAR) - Partner's company name
+- `vat_number` (VARCHAR) - Partner's VAT number
+- `country_code` (VARCHAR) - Partner's country code
+- `contact_email` (VARCHAR) - Partner's contact email
+- `is_active` (BOOLEAN) - Is partner active?
+- `verification_status` (VARCHAR) - Verification status
 
 ---
 
-### 3. `peppol_invoices`
+### 5. `peppol_invoices`
+
 **Purpose:** Tracking table for all Peppol invoice activity
 
 **Key Fields:**
-- `user_id` - Your account
-- `direction` - `outbound` (you send) or `inbound` (you receive)
-- `sender_peppol_id` - Who sent it
-- `receiver_peppol_id` - Who received it
-- `status` - Current status: `pending`, `sent`, `delivered`, `failed`
-- `peppol_message_id` - Digiteal tracking ID
-- `client_invoice_id` - Links to `invoices` table (if outbound)
-- `supplier_invoice_id` - Links to `expense_invoices` table (if inbound)
-
-**Used By:** 
-- Dashboard statistics
-- Invoice tracking
-- Audit trail
+- `user_id` (UUID) - Links to user account
+- `invoice_number` (VARCHAR) - Invoice number
+- `document_type` (VARCHAR) - Document type: `INVOICE`, `CREDIT_NOTE`, etc.
+- `direction` (VARCHAR) - `outbound` (you send) or `inbound` (you receive)
+- `sender_peppol_id` (VARCHAR) - Who sent it
+- `receiver_peppol_id` (VARCHAR) - Who received it
+- `status` (VARCHAR) - Current status: `pending`, `sent`, `delivered`, `failed`, `received`
+- `peppol_message_id` (VARCHAR) - Digiteal tracking ID
+- `client_invoice_id` (UUID) - Links to `invoices` table (if outbound)
+- `supplier_invoice_id` (INTEGER) - Links to `expense_invoices` table (if inbound)
+- `ubl_xml` (TEXT) - Complete UBL XML content
+- `metadata` (JSONB) - Additional tracking data
 
 ---
 
-## 🔑 Key Digiteal Peppol APIs
+### 6. `clients`
 
-### For Sending Client Invoices
+**Purpose:** Your clients (for sending invoices)
 
-**API:** `POST /api/v1/peppol/outbound-ubl-documents`
+**Key Fields:**
+- `id` (UUID) - Primary key
+- `user_id` (UUID) - Links to user account
+- `name` (VARCHAR) - Client name
+- `email` (VARCHAR) - Client email
+- `phone` (VARCHAR) - Client phone
+- `address` (VARCHAR) - Client address
+- `city` (VARCHAR) - Client city
+- `postal_code` (VARCHAR) - Client postal code
+- `country` (VARCHAR) - Client country
+- `vat_number` (VARCHAR) - Client VAT number
+- `peppol_id` (VARCHAR) - Client's Peppol identifier
+- `peppol_enabled` (BOOLEAN) - Can receive Peppol invoices?
 
-**What it does:**
-- Sends your invoice to client via Peppol network
-- Converts invoice to UBL XML format
-- Returns message ID for tracking
+---
 
-**Request Body:**
-```json
+### 7. `quotes`
+
+**Purpose:** Quotes that can be converted to invoices
+
+**Key Fields:**
+- `id` (UUID) - Primary key
+- `user_id` (UUID) - Links to user account
+- `client_id` (UUID) - Links to client
+- `quote_number` (VARCHAR) - Quote number
+- `status` (VARCHAR) - Quote status
+- `total_amount` (NUMERIC) - Total amount
+- `tax_amount` (NUMERIC) - Tax amount
+- `final_amount` (NUMERIC) - Final amount
+- `quote_tasks` (relation) - Quote line items (tasks)
+
+---
+
+## 📁 Files Used
+
+### Frontend Files
+
+#### Client Invoices (Outbound)
+- **`src/pages/invoices-management/index.jsx`** - Main invoice management page
+- **`src/pages/invoices-management/components/InvoicesDataTable.jsx`** - Invoice table/card display
+- **`src/pages/invoices-management/components/SendPeppolModal.jsx`** - Modal for sending invoice via Peppol
+- **`src/pages/invoices-management/components/InvoiceDetailModal.jsx`** - Modal for viewing invoice details
+- **`src/pages/invoices-management/components/InvoicesFilterToolbar.jsx`** - Filter toolbar
+
+#### Expense Invoices (Inbound)
+- **`src/pages/expense-invoices/index.jsx`** - Main expense invoice management page
+- **`src/pages/expense-invoices/components/ExpenseInvoicesDataTable.jsx`** - Expense invoice table/card display
+- **`src/pages/expense-invoices/components/QuickExpenseInvoiceCreation.jsx`** - Modal for manual expense invoice creation
+
+#### Peppol Configuration
+- **`src/pages/services/peppol/index.jsx`** - Peppol integration setup and status page
+
+---
+
+### Service Files
+
+- **`src/services/invoiceService.js`** - Service for managing client invoices
+  - `fetchInvoices(userId)` - Fetches invoices with client and quote data
+  - `updateInvoiceStatus(invoiceId, status, notes)` - Updates invoice status
+  - `getInvoiceStatistics(userId)` - Calculates invoice statistics
+
+- **`src/services/expenseInvoicesService.js`** - Service for managing expense invoices
+  - `getExpenseInvoices(userId, filters)` - Fetches expense invoices
+  - `getExpenseInvoice(invoiceId)` - Fetches single expense invoice
+  - `updateExpenseInvoiceStatus(invoiceId, status)` - Updates invoice status
+
+- **`src/services/peppolService.js`** - Service for Peppol operations
+  - `sendInvoice(invoiceData)` - Sends invoice via Peppol
+  - `convertHaliqoInvoiceToPeppol(haliqoInvoice, senderInfo, receiverInfo)` - Converts invoice format
+  - `generatePEPPOLXML(invoiceData)` - Generates UBL XML
+  - `getPeppolSettings()` - Gets user's Peppol configuration
+  - `getPeppolParticipants()` - Gets saved Peppol participants
+
+- **`src/services/quotesService.js`** - Service for quote operations
+  - `convertQuoteToInvoice(quote, userId)` - Converts accepted quote to invoice
+
+- **`src/services/companyInfoService.js`** - Service for company information
+  - `loadCompanyInfo()` - Loads company profile information
+
+---
+
+### Edge Functions
+
+- **`supabase/functions/peppol-webhook-config/index.ts`** - Edge function for sending invoices
+  - Handles `send-ubl-document` action
+  - Sends UBL XML to Digiteal API: `POST /api/v1/peppol/outbound-ubl-documents`
+  - Uses Basic Auth
+  - Returns success/error response
+
+- **`supabase/functions/peppol-webhook/index.ts`** - Edge function for receiving webhooks
+  - Receives webhook events from Digiteal
+  - Processes inbound invoices (creates expense invoices)
+  - Updates invoice status based on webhook events
+  - Handles all webhook event types
+
+---
+
+## 🔧 Data Structures
+
+### Client Invoice Structure
+
+```javascript
 {
-  "document": "<UBL-XML-FILE>",
-  "peppolIdentifier": "0208:1234567890"  // Client's Peppol ID
-}
-```
-
-**Your Code:**
-```javascript
-import PeppolService from './services/peppolService';
-
-const peppolService = new PeppolService(true);
-const result = await peppolService.sendInvoice({
-  invoiceId: invoice.id,
-  clientPeppolId: client.peppol_id,
-  ublXml: convertedInvoice
-});
-```
-
----
-
-### For Validating Documents
-
-**API:** `POST /api/v1/peppol/public/validate-document`
-
-**What it does:**
-- Checks if UBL XML is valid before sending
-- Ensures document complies with Peppol standards
-- Returns validation errors if any
-
-**Request Body:**
-```json
-{
-  "document": "<UBL-XML-FILE>"
-}
-```
-
-**Your Code:**
-```javascript
-const result = await peppolService.validateDocument(ublXml);
-if (result.success) {
-  // Safe to send
-  await peppolService.sendInvoice(...);
-} else {
-  console.error('Validation errors:', result.errors);
-}
-```
-
----
-
-## 📝 Complete Flow
-
-### Creating a Client Invoice
-
-Client invoices can be created in two ways:
-
-#### Creating Client Invoice from Quote
-
-```javascript
-// 1. Convert accepted quote to invoice
-const result = await convertQuoteToInvoice(quote, userId);
-
-if (result.success) {
-  const invoice = result.data;
-  // Invoice is automatically created with:
-  // - quote_id linking to original quote
-  // - All quote data copied (client, amounts, line items, etc.)
-  // - Quote status updated to 'converted_to_invoice'
-}
-```
-
-### Sending a Client Invoice via Peppol
-
-After creating the invoice (either method), you can send it via Peppol:
-
-```javascript
-// 1. Invoice already created (from manual entry or quote conversion)
-const invoice = /* ... existing invoice ... */;
-
-// 2. Convert to UBL XML
-const ublXml = await convertInvoiceToUBL(invoice);
-
-// 3. Validate UBL (optional but recommended)
-const validation = await peppolService.validateDocument(ublXml);
-if (!validation.success) {
-  throw new Error('UBL validation failed');
-}
-
-// 4. Send via Peppol
-const result = await peppolService.sendInvoice({
-  invoiceId: invoice.id,
-  clientPeppolId: '0208:1234567890',
-  ublXml: ublXml
-});
-
-// 5. Update invoice with Peppol status
-if (result.success) {
-  await supabase
-    .from('invoices')
-    .update({
-      peppol_enabled: true,
-      peppol_status: 'sent',
-      peppol_message_id: result.data.messageId,
-      receiver_peppol_id: '0208:1234567890',
-      peppol_sent_at: new Date().toISOString()
-    })
-    .eq('id', invoice.id);
-}
-```
-
----
-
-### Receiving an Expense Invoice
-
-**Automated by Webhook - Complete Processing Flow:**
-
-When a supplier sends you an invoice via Peppol, Digiteal sends a webhook to your endpoint. The system automatically processes it and creates an expense invoice record.
-
-**Supported Document Types:**
-- ✅ Regular Invoice (`PEPPOL_INVOICE_RECEIVED`)
-- ✅ Credit Note (`PEPPOL_CREDIT_NOTE_RECEIVED`)
-- ✅ Self-Billing Invoice (`PEPPOL_SELF_BILLING_INVOICE_RECEIVED`)
-- ✅ Self-Billing Credit Note (`PEPPOL_SELF_BILLING_CREDIT_NOTE_RECEIVED`)
-
-**Complete Step-by-Step Flow:**
-
-1. **Supplier Sends Invoice via Peppol**
-   - Supplier sends invoice through Peppol network
-   - Document can be: Invoice, Credit Note, Self-Billing Invoice, or Self-Billing Credit Note
-
-2. **Digiteal Access Point Receives & Validates**
-   - Digiteal receives the invoice
-   - Validates UBL XML against Peppol BIS Billing 3.0
-   - Routes to your Peppol identifier
-   - Sends webhook to your endpoint
-
-3. **Webhook Handler Receives Request**
-   ```
-   POST /functions/v1/peppol-webhook
-   Headers:
-     - Authorization: Basic <credentials>
-   Body:
-     {
-       eventType: "PEPPOL_INVOICE_RECEIVED",
-       timestamp: "2025-01-15T10:30:00Z",
-       data: {
-         messageId: "MSG-123456",
-         senderPeppolId: "0208:7890123456",
-         receiverPeppolId: "0208:0630675588",
-         ublXml: "<Invoice>...</Invoice>",
-         invoiceNumber: "INV-2025-001",
-         ...
-       }
-     }
-   ```
-
-4. **Authentication & Validation**
-   - ✅ Validates Basic Auth credentials
-   - ✅ Extracts `receiverPeppolId` from payload
-   - ✅ Finds user in `peppol_settings` by Peppol ID
-   - ❌ Returns 404 if user not found
-
-5. **Document Type Detection**
-   - Identifies document type from webhook event:
-     - `PEPPOL_INVOICE_RECEIVED` → Regular Invoice
-     - `PEPPOL_CREDIT_NOTE_RECEIVED` → Credit Note
-     - `PEPPOL_SELF_BILLING_INVOICE_RECEIVED` → Self-Billing Invoice
-     - `PEPPOL_SELF_BILLING_CREDIT_NOTE_RECEIVED` → Self-Billing Credit Note
-
-6. **UBL XML Parsing**
-   - Parses UBL XML to extract all mandatory fields
-   - Falls back to webhook payload data if parsing fails
-   - Extracts: Document IDs, Supplier info, Customer info, Tax info, Totals, Invoice lines, Payment info
-
-7. **Supplier Participant Management**
-   - Checks if supplier exists in `peppol_participants` by `senderPeppolId`
-   - If found: Uses existing participant ID
-   - If not found: Creates new participant with extracted information
-
-8. **Amount Calculation**
-   - `totalAmount` = PayableAmount (from UBL)
-   - `taxAmount` = TaxAmount (from UBL)
-   - `netAmount` = TaxExclusiveAmount OR LineExtensionAmount OR (totalAmount - taxAmount)
-
-9. **Create Expense Invoice Record**
-   - Inserts into `expense_invoices` table with all extracted data
-   - Stores complete UBL XML for compliance
-   - Stores metadata with document type, lines, tax breakdown, etc.
-
-10. **Create Tracking Record**
-    - Inserts into `peppol_invoices` table for tracking
-    - Links to `expense_invoices` via `supplier_invoice_id`
-    - Stores direction: `'inbound'`, status: `'received'`
-
-11. **Return Success Response**
-    - Returns 200 OK with processing result
-    - Invoice is now ready for review and payment
-
-**Webhook Handler:** `supabase/functions/peppol-webhook/index.ts`
-
-**What Gets Extracted from UBL XML:**
-
-The webhook handler parses the UBL XML and extracts all mandatory fields:
-
-| Category | Fields Extracted | UBL Path |
-|----------|------------------|----------|
-| **Document Identifiers** | Invoice ID, Issue Date, Due Date, Invoice Type Code, Currency | `cbc:ID`, `cbc:IssueDate`, `cbc:DueDate`, `cbc:InvoiceTypeCode`, `cbc:DocumentCurrencyCode` |
-| **Supplier Information** | Peppol ID, Name, VAT Number, Address, Email | `cac:AccountingSupplierParty` → `cbc:EndpointID`, `cac:PartyName`, `cac:PartyTaxScheme`, `cac:PostalAddress`, `cac:Contact` |
-| **Customer Information** | Peppol ID, Name, VAT Number (should be your company) | `cac:AccountingCustomerParty` → `cbc:EndpointID`, `cac:PartyName`, `cac:PartyTaxScheme` |
-| **Tax Information** | Total Tax Amount, Tax Subtotals (by category), Tax Rates | `cac:TaxTotal` → `cbc:TaxAmount`, `cac:TaxSubtotal` |
-| **Monetary Totals** | Line Extension Amount, Tax Exclusive, Tax Inclusive, Payable Amount | `cac:LegalMonetaryTotal` → all monetary fields |
-| **Invoice Lines** | Line ID, Quantity, Unit Code, Item Name, Price, Tax Category | `cac:InvoiceLine` → all line fields |
-| **Payment Information** | Payment Means Code, Payment ID, IBAN, Payment Terms | `cac:PaymentMeans`, `cac:PaymentTerms` |
-| **Additional** | Buyer Reference, Order Reference, Delivery Date | `cbc:BuyerReference`, `cac:OrderReference`, `cac:Delivery` |
-
-**Database Records Created:**
-
-```javascript
-// 1. expense_invoices record (main record)
-{
-  user_id: userId,
-  invoice_number: 'INV-2025-001',              // From cbc:ID
-  supplier_name: 'ACME Corp',                  // From AccountingSupplierParty/PartyName
-  supplier_vat_number: 'BE123456789',          // From PartyTaxScheme/CompanyID
-  supplier_email: 'info@acme.com',             // From Contact/ElectronicMail
-  amount: 1210.00,                             // From PayableAmount
-  net_amount: 1000.00,                         // From TaxExclusiveAmount
-  vat_amount: 210.00,                          // From TaxAmount
-  issue_date: '2025-01-15',                    // From IssueDate
-  due_date: '2025-02-15',                      // From DueDate
-  payment_method: '30',                        // From PaymentMeansCode
-  status: 'pending',
-  source: 'peppol',
+  id: "uuid",
+  user_id: "uuid",
+  client_id: "uuid",
+  quote_id: "uuid",
+  invoice_number: "INV-2025-001",
+  quote_number: "QT-2025-001",
+  title: "Invoice Title",
+  description: "Invoice Description",
+  status: "unpaid", // unpaid, paid, overdue, cancelled
+  amount: 1000.00, // Net amount
+  tax_amount: 210.00,
+  discount_amount: 0.00,
+  final_amount: 1210.00,
+  net_amount: 1000.00,
+  issue_date: "2025-01-15",
+  due_date: "2025-02-15",
+  payment_method: "bank_transfer",
+  payment_terms: "Net 30 days",
+  notes: "Additional notes",
+  // Peppol fields
   peppol_enabled: true,
-  peppol_message_id: 'MSG-456',
-  sender_peppol_id: '0208:7890123456',        // From EndpointID (schemeID:identifier)
-  ubl_xml: '<Invoice>...</Invoice>',          // Complete UBL XML
-  peppol_received_at: '2025-01-15T10:30:00Z',
-  peppol_metadata: {                          // Additional parsed data stored as JSONB
-    documentType: 'INVOICE',                  // INVOICE or CREDIT_NOTE
-    documentTypeLabel: 'Invoice',              // Human-readable label
-    isSelfBilling: false,                      // Boolean
-    isCreditNote: false,                       // Boolean
-    webhookEventType: 'PEPPOL_INVOICE_RECEIVED',
-    invoiceTypeCode: '380',
-    documentCurrencyCode: 'EUR',
-    buyerReference: 'PO-12345',
-    orderReference: 'ORD-67890',
-    salesOrderId: 'SO-12345',
-    deliveryDate: '2025-01-20',
-    invoiceLines: [                            // All invoice lines with details
+  peppol_status: "sent", // not_sent, sending, sent, delivered, failed
+  peppol_message_id: "MSG-123456",
+  peppol_sent_at: "2025-01-15T10:30:00Z",
+  peppol_delivered_at: null,
+  peppol_error_message: null,
+  receiver_peppol_id: "0208:1234567890",
+  ubl_xml: "<Invoice>...</Invoice>",
+  peppol_metadata: {},
+  // Relations
+  client: {
+    id: "uuid",
+    name: "Client Name",
+    email: "client@example.com",
+    vat_number: "BE123456789",
+    peppol_id: "0208:1234567890",
+    peppol_enabled: true
+  },
+  quote: {
+    id: "uuid",
+    quote_number: "QT-2025-001",
+    title: "Quote Title",
+    description: "Quote Description",
+    quote_tasks: [
       {
-        lineId: '1',
+        id: "uuid",
+        name: "Task Name",
+        description: "Task Description",
         quantity: 10,
-        unitCode: 'C62',
-        itemName: 'Product Name',
-        priceAmount: 100.00,
-        lineExtensionAmount: 1000.00,
-        taxCategoryId: 'S',
-        taxPercent: 21
+        unit: "hours",
+        unit_price: 100.00,
+        total_price: 1000.00
       }
-    ],
-    taxSubtotals: [                            // Tax breakdown by category
-      {
-        taxableAmount: 1000.00,
-        taxAmount: 210.00,
-        taxCategoryId: 'S',
-        taxPercent: 21
-      }
-    ],
-    payment: {                                 // Payment details
-      meansCode: '30',
-      paymentId: 'INV-2025-001',
-      iban: 'BE12345678901234',
-      terms: 'Net within 30 days'
-    },
-    supplierAddress: {                         // Supplier address
-      street: 'Main Street 123',
-      city: 'Brussels',
-      postalCode: '1000',
-      country: 'BE'
-    },
-    totals: {                                  // All monetary totals
-      lineExtensionAmount: 1000.00,
-      taxExclusiveAmount: 1000.00,
-      taxInclusiveAmount: 1210.00,
-      payableAmount: 1210.00,
-      currency: 'EUR'
-    }
+    ]
   }
 }
+```
 
-// 2. peppol_participants record (if supplier doesn't exist)
-{
-  user_id: userId,
-  peppol_identifier: '0208:7890123456',
-  business_name: 'ACME Corp',
-  vat_number: 'BE123456789',
-  country_code: 'BE',
-  contact_email: 'info@acme.com',
-  is_active: true,
-  verification_status: 'verified'
-}
+### Expense Invoice Structure
 
-// 3. peppol_invoices record (tracking)
+```javascript
 {
-  user_id: userId,
-  invoice_number: 'INV-2025-001',
-  document_type: 'INVOICE',
-  direction: 'inbound',
-  sender_peppol_id: '0208:7890123456',
-  receiver_peppol_id: '0208:0630675588',       // Your company's Peppol ID
-  total_amount: 1210.00,
-  currency: 'EUR',
-  status: 'received',
-  supplier_invoice_id: expenseInvoice.id,     // Links to expense_invoices
-  ubl_xml: '<Invoice>...</Invoice>',
-  metadata: {                                  // Additional tracking data
-    documentTypeLabel: 'Invoice',
+  id: 123,
+  user_id: "uuid",
+  invoice_number: "INV-2025-001",
+  supplier_name: "ACME Corp",
+  supplier_email: "info@acme.com",
+  supplier_vat_number: "BE123456789",
+  amount: 1210.00, // Total with tax
+  net_amount: 1000.00, // Net amount
+  vat_amount: 210.00, // Tax amount
+  status: "pending", // pending, paid, overdue, cancelled
+  category: "General",
+  source: "peppol", // peppol or manual
+  issue_date: "2025-01-15",
+  due_date: "2025-02-15",
+  payment_method: "30",
+  notes: "Received via Peppol network",
+  // Peppol fields
+  peppol_enabled: true,
+  peppol_message_id: "MSG-123456",
+  peppol_received_at: "2025-01-15T10:30:00Z",
+  sender_peppol_id: "0208:7890123456",
+  ubl_xml: "<Invoice>...</Invoice>",
+  peppol_metadata: {
+    documentType: "INVOICE",
+    documentTypeLabel: "Invoice",
     isSelfBilling: false,
     isCreditNote: false,
-    webhookEventType: 'PEPPOL_INVOICE_RECEIVED',
+    webhookEventType: "PEPPOL_INVOICE_RECEIVED",
     invoiceLines: [...],
     taxSubtotals: [...],
     payment: {...},
-    orderReference: 'ORD-67890',
-    salesOrderId: 'SO-12345'
+    totals: {...}
   }
 }
 ```
 
-**Webhook Configuration:**
+### Peppol Invoice Data Structure (for UBL Generation)
 
-You must configure the webhook URL in Digiteal for all supported document types:
-- **Endpoint:** `https://your-project.supabase.co/functions/v1/peppol-webhook`
-- **Event Types to Configure:**
-  - `PEPPOL_INVOICE_RECEIVED` - Regular invoices
-  - `PEPPOL_CREDIT_NOTE_RECEIVED` - Credit notes
-  - `PEPPOL_SELF_BILLING_INVOICE_RECEIVED` - Self-billing invoices
-  - `PEPPOL_SELF_BILLING_CREDIT_NOTE_RECEIVED` - Self-billing credit notes
-- **Authentication:** Basic Auth (configured in webhook handler)
+```javascript
+{
+  billName: "INV-2025-001",
+  issueDate: "2025-01-15",
+  dueDate: "2025-02-15",
+  deliveryDate: "2025-01-20",
+  buyerReference: "PO-12345",
+  paymentDelay: 30,
+  paymentMeans: 31, // Debit transfer
+  sender: {
+    vatNumber: "BE0262465766",
+    name: "Your Company BVBA",
+    addressLine1: "Main Street 123",
+    city: "Brussels",
+    countryCode: "BE",
+    zipCode: "1000",
+    iban: "BE0403019261"
+  },
+  receiver: {
+    vatNumber: "BE123456789",
+    name: "Client Company BV",
+    addressLine1: "Client Street 456",
+    city: "Brussels",
+    zipCode: "1000",
+    countryCode: "BE",
+    peppolIdentifier: "0208:1234567890",
+    contact: {
+      name: "John Doe",
+      phone: "+321234567",
+      email: "john@client.com"
+    }
+  },
+  invoiceLines: [
+    {
+      description: "Consulting Services",
+      quantity: 10,
+      unitPrice: 100.00,
+      taxableAmount: 1000.00,
+      taxAmount: 210.00,
+      totalAmount: 1210.00,
+      vatCode: "S",
+      taxPercentage: 21
+    }
+  ]
+}
+```
 
-**Flow Diagram:**
+---
+
+## 🔑 APIs Needed
+
+### Digiteal Peppol Access Point APIs
+
+**Base URL:** `https://test.digiteal.eu` (test) or `https://app.digiteal.eu` (production)
+
+**Authentication:** Basic Auth (username:password)
+
+#### 1. Send UBL Document (Client Invoices)
+
+**Endpoint:** `POST /api/v1/peppol/outbound-ubl-documents`
+
+**Purpose:** Send invoice to client via Peppol network
+
+**Request:**
+- Method: `POST`
+- Headers: `Authorization: Basic <base64(username:password)>`
+- Body: `multipart/form-data`
+  - `document` (File) - UBL XML document
+  - `comment` (String, optional) - Optional comment
+
+**Response:**
+- Success: 200 OK (may include messageId in response)
+- Error: 400/403 with error details
+
+**Used By:** Edge function `peppol-webhook-config` → `send-ubl-document` action
+
+---
+
+#### 2. Validate Document (Optional but Recommended)
+
+**Endpoint:** `POST /api/v1/peppol/public/validate-document`
+
+**Purpose:** Validate UBL XML before sending
+
+**Request:**
+- Method: `POST`
+- Body: `multipart/form-data`
+  - `file` (File) - UBL XML document
+
+**Response:**
+- Success: `{ valid: true, errors: [], warnings: [] }`
+- Error: `{ valid: false, errors: [...], warnings: [...] }`
+
+**Used By:** Frontend validation (optional)
+
+---
+
+#### 3. Webhook Configuration
+
+**Endpoint:** `POST /api/v1/webhook/configuration`
+
+**Purpose:** Configure webhook URLs for receiving events
+
+**Request:**
+- Method: `POST`
+- Headers: `Authorization: Basic <base64(username:password)>`
+- Body: JSON
+```json
+{
+  "login": "username",
+  "password": "password",
+  "webHooks": [
+    {
+      "type": "PEPPOL_INVOICE_RECEIVED",
+      "url": "https://your-project.supabase.co/functions/v1/peppol-webhook"
+    },
+    {
+      "type": "PEPPOL_CREDIT_NOTE_RECEIVED",
+      "url": "https://your-project.supabase.co/functions/v1/peppol-webhook"
+    },
+    {
+      "type": "PEPPOL_SELF_BILLING_INVOICE_RECEIVED",
+      "url": "https://your-project.supabase.co/functions/v1/peppol-webhook"
+    },
+    {
+      "type": "PEPPOL_SELF_BILLING_CREDIT_NOTE_RECEIVED",
+      "url": "https://your-project.supabase.co/functions/v1/peppol-webhook"
+    },
+    {
+      "type": "PEPPOL_SEND_PROCESSING_OUTCOME",
+      "url": "https://your-project.supabase.co/functions/v1/peppol-webhook"
+    },
+    {
+      "type": "PEPPOL_MLR_RECEIVED",
+      "url": "https://your-project.supabase.co/functions/v1/peppol-webhook"
+    },
+    {
+      "type": "PEPPOL_TRANSPORT_ACK_RECEIVED",
+      "url": "https://your-project.supabase.co/functions/v1/peppol-webhook"
+    },
+    {
+      "type": "PEPPOL_INVOICE_RESPONSE_RECEIVED",
+      "url": "https://your-project.supabase.co/functions/v1/peppol-webhook"
+    },
+    {
+      "type": "PEPPOL_FUTURE_VALIDATION_FAILED",
+      "url": "https://your-project.supabase.co/functions/v1/peppol-webhook"
+    }
+  ]
+}
+```
+
+**Response:**
+- Success: 200 OK
+- Error: 400 with error details
+
+**Used By:** Initial setup (one-time configuration)
+
+---
+
+### Webhook Events (Received from Digiteal)
+
+**Endpoint:** `POST /functions/v1/peppol-webhook` (your Supabase Edge Function)
+
+**Authentication:** Basic Auth (configured in edge function)
+
+**Event Types:**
+- `PEPPOL_INVOICE_RECEIVED` - Regular invoice received
+- `PEPPOL_CREDIT_NOTE_RECEIVED` - Credit note received
+- `PEPPOL_SELF_BILLING_INVOICE_RECEIVED` - Self-billing invoice received
+- `PEPPOL_SELF_BILLING_CREDIT_NOTE_RECEIVED` - Self-billing credit note received
+- `PEPPOL_SEND_PROCESSING_OUTCOME` - Send result (status update)
+- `PEPPOL_MLR_RECEIVED` - Message Level Response (delivery confirmation)
+- `PEPPOL_TRANSPORT_ACK_RECEIVED` - Transport acknowledgment
+- `PEPPOL_INVOICE_RESPONSE_RECEIVED` - Buyer business response
+- `PEPPOL_FUTURE_VALIDATION_FAILED` - Validation warning
+
+**Webhook Payload:**
+```json
+{
+  "eventType": "PEPPOL_INVOICE_RECEIVED",
+  "timestamp": "2025-01-15T10:30:00Z",
+  "data": {
+    "messageId": "MSG-123456",
+    "senderPeppolId": "0208:7890123456",
+    "receiverPeppolId": "0208:0630675588",
+    "ublXml": "<Invoice>...</Invoice>",
+    "invoiceNumber": "INV-2025-001",
+    "senderName": "ACME Corp",
+    "senderEmail": "info@acme.com",
+    "senderVatNumber": "BE123456789",
+    "totalAmount": 1210.00,
+    "taxAmount": 210.00,
+    "currency": "EUR",
+    "issueDate": "2025-01-15",
+    "dueDate": "2025-02-15"
+  }
+}
+```
+
+---
+
+## 🔄 Flows
+
+### Flow 1: Sending Client Invoice via Peppol
 
 ```
-Supplier → Peppol Network → Digiteal AP → Webhook → Your Handler
-                                                         │
-                                                         ├─→ Parse UBL XML
-                                                         ├─→ Extract Mandatory Fields
-                                                         ├─→ Detect Document Type
-                                                         ├─→ Create/Update Supplier (peppol_participants)
-                                                         ├─→ Calculate Amounts
-                                                         ├─→ Create Expense Invoice (expense_invoices)
-                                                         ├─→ Create Tracking Record (peppol_invoices)
-                                                         └─→ Return Success Response
+1. User clicks "Send via Peppol" on invoice
+   ↓
+2. Check Peppol configuration (peppolSettings.isConfigured)
+   ↓
+3. Load company info (sender) and client info (receiver)
+   ↓
+4. Create invoice lines from quote tasks or single line
+   ↓
+5. Convert invoice to Peppol format (convertHaliqoInvoiceToPeppol)
+   ↓
+6. Generate UBL XML (generatePEPPOLXML)
+   ↓
+7. Send via edge function (peppol-webhook-config)
+   ↓
+8. Edge function sends to Digiteal API (POST /api/v1/peppol/outbound-ubl-documents)
+   ↓
+9. Update invoice with initial status (peppol_status = 'sent')
+   ↓
+10. Webhook receives status updates (PEPPOL_SEND_PROCESSING_OUTCOME, PEPPOL_MLR_RECEIVED)
+    ↓
+11. Invoice status updated to 'delivered' when MLR confirms delivery
 ```
 
-**What Happens at Each Step:**
+### Flow 2: Receiving Expense Invoice via Peppol
 
-| Step | Action | Result |
-|------|--------|--------|
-| **1-2** | Supplier → Digiteal | Invoice validated and routed to your Peppol ID |
-| **3** | Webhook received | Handler receives POST request with UBL XML |
-| **4** | Authentication | Validates Basic Auth, finds user by Peppol ID |
-| **5** | Document type detection | Identifies: Invoice, Credit Note, Self-Billing, etc. |
-| **6** | UBL parsing | Extracts all mandatory fields from UBL XML |
-| **7** | Supplier management | Creates/updates supplier in `peppol_participants` |
-| **8** | Amount calculation | Calculates total, tax, and net amounts |
-| **9** | Expense invoice creation | Creates record in `expense_invoices` with all data |
-| **10** | Tracking record creation | Creates record in `peppol_invoices` for tracking |
-| **11** | Success response | Returns 200 OK, invoice ready for processing |
+```
+1. Supplier sends invoice via Peppol network
+   ↓
+2. Digiteal Access Point validates UBL XML
+   ↓
+3. Digiteal routes to your Peppol ID
+   ↓
+4. Digiteal sends webhook to your endpoint (peppol-webhook)
+   ↓
+5. Webhook handler authenticates request
+   ↓
+6. Webhook handler finds user by Peppol ID
+   ↓
+7. Webhook handler detects document type
+   ↓
+8. Webhook handler parses UBL XML (parseUBLInvoice)
+   ↓
+9. Webhook handler extracts all mandatory fields
+   ↓
+10. Webhook handler manages supplier participant (create if not exists)
+    ↓
+11. Webhook handler calculates amounts
+    ↓
+12. Webhook handler creates expense invoice record (expense_invoices table)
+    ↓
+13. Webhook handler creates tracking record (peppol_invoices table)
+    ↓
+14. Expense invoice appears in expense invoices page
+```
 
-**Additional Webhook Events (Not Creating Expense Invoices):**
+### Flow 3: Converting Quote to Invoice
 
-| Event Type | Purpose | Handler |
-|------------|---------|---------|
-| `PEPPOL_MLR_RECEIVED` | Message Level Response | Updates `peppol_invoices.metadata.acknowledgments` |
-| `PEPPOL_TRANSPORT_ACK_RECEIVED` | Transport acknowledgment | Updates `peppol_invoices.metadata.acknowledgments` |
-| `PEPPOL_INVOICE_RESPONSE_RECEIVED` | Buyer business response | Updates `peppol_invoices.metadata.invoiceResponse` |
-| `PEPPOL_FUTURE_VALIDATION_FAILED` | Validation warning | Stores warning in `peppol_metadata` for both invoice types |
-
-**Validation & Error Handling:**
-
-The webhook handler:
-- ✅ Validates webhook authentication (Basic Auth)
-- ✅ Finds user by Peppol identifier (`receiverPeppolId`)
-- ✅ Detects document type (Invoice, Credit Note, Self-Billing, etc.)
-- ✅ Parses UBL XML using DOMParser (with fallback to webhook payload)
-- ✅ Validates extracted mandatory fields
-- ✅ Handles missing data gracefully (uses defaults)
-- ✅ Automatically creates/updates supplier participants
-- ✅ Creates all necessary database records
-- ✅ Stores complete UBL XML for compliance and audit
-- ✅ Stores document type information in metadata
-- ✅ Logs all processing steps for debugging
-
-**See Also:**
-- [Mandatory Fields for Peppol BIS Billing 3.0](../DIGITEAL_API_DOCUMENTATION.md#-mandatory-fields-for-peppol-bis-billing-30) - Complete list of mandatory fields
-- [UBL Syntax & Validation Rules](../DIGITEAL_API_DOCUMENTATION.md#-ubl-syntax--validation-rules-peppol-bis-billing-30) - UBL structure details
-
----
-
-## 🔍 Database Schema Summary
-
-| Table | Purpose | Key Relation |
-|-------|---------|--------------|
-| `invoices` | Client invoices (you send) | OUTBOUND to clients |
-| `expense_invoices` | Supplier invoices (you receive) | INBOUND from suppliers |
-| `peppol_invoices` | Tracking table | Links to both invoice types |
-| `peppol_settings` | Your configuration | Per user |
-| `peppol_participants` | Trading partners | Clients and suppliers |
-| `invoice_attachments` | Client invoice files | Linked to `invoices` |
+```
+1. User clicks "Convert to Invoice" on accepted quote
+   ↓
+2. Validate quote status (not draft or expired)
+   ↓
+3. Fetch full quote data from database
+   ↓
+4. Generate invoice number (via RPC function)
+   ↓
+5. Calculate due date (30 days from today)
+   ↓
+6. Create invoice record with all quote data
+   ↓
+7. Update quote status to 'converted_to_invoice'
+   ↓
+8. Link invoice to quote (quote_id)
+   ↓
+9. Invoice appears in invoices list
+```
 
 ---
 
-## 🎯 Key Differences Summary
+## 📝 Step-by-Step Instructions
 
-### Client Invoices (`invoices`)
-- ✅ YOU send them
-- ✅ Store in `invoices` table
-- ✅ Use `POST /api/v1/peppol/outbound-ubl-documents` API
-- ✅ Track with `peppol_status` (sent, delivered, failed)
-- ✅ Direction: **OUTBOUND**
+### Step 1: Setup Peppol Configuration
 
-### Expense Invoices (`expense_invoices`)
-- ✅ YOU receive them
-- ✅ Store in `expense_invoices` table
-- ✅ Processed by webhook automatically
-- ✅ Links to your `user_id`
-- ✅ Direction: **INBOUND**
+1. Navigate to `/services/peppol`
+2. Register your Peppol participant
+3. Configure webhook URL: `https://your-project.supabase.co/functions/v1/peppol-webhook`
+4. Configure all required webhook event types (see API section above)
+5. Save configuration
+
+**Files:** `src/pages/services/peppol/index.jsx`
 
 ---
 
-## 🛠️ APIs You'll Actually Use
+### Step 2: Create Client Invoice from Quote
 
-### Sending Invoices
-1. **`validate-document`** (Public API) - Validate UBL before sending
-2. **`send-ubl-document`** (Authenticated) - Send invoice to client
+1. Navigate to `/quotes-management`
+2. Find an accepted quote
+3. Click "Convert to Invoice" button
+4. System automatically:
+   - Generates invoice number
+   - Copies quote data (client, amounts, line items)
+   - Creates invoice record
+   - Updates quote status
+   - Navigates to invoices page
 
-### Receiving Invoices
-1. **Webhook** - Automatically processes incoming invoices
-2. **No API calls needed** - It's automated!
-
-### Management
-1. **`register-participant`** - Register your company on Peppol
-2. **`get-supported-document-types`** - See what document types are supported
-3. **`configure-webhook`** - Set up webhook to receive invoices
+**Files:** `src/services/quotesService.js` → `convertQuoteToInvoice()`
 
 ---
 
-## 📖 Quick Reference
+### Step 3: Send Client Invoice via Peppol
 
-### Client Invoice = You Send to Client
-- Table: `invoices`
-- API: `POST /outbound-ubl-documents`
-- Direction: OUTBOUND
-- Status tracking: sent → delivered
+1. Navigate to `/invoices-management`
+2. Find the invoice you want to send
+3. Click "Send via Peppol" button in actions column
+4. System checks if Peppol is configured
+   - If not configured: Shows warning and redirects to configuration page
+   - If configured: Continues with sending
+5. Select client's Peppol ID (from participants or manual entry)
+6. Click "Send" button
+7. System automatically:
+   - Loads company info (sender)
+   - Loads client info (receiver)
+   - Creates invoice lines from quote tasks
+   - Converts invoice to Peppol format
+   - Generates UBL XML
+   - Sends via Peppol edge function
+   - Updates invoice with Peppol status
+8. Invoice status updates automatically via webhooks:
+   - Initial: `sent`
+   - When MLR received: `delivered`
 
-### Expense Invoice = Supplier Sends to You
-- Table: `expense_invoices`
-- API: None (automatic webhook)
-- Direction: INBOUND
-- Status: automatically received
+**Files:**
+- `src/pages/invoices-management/components/SendPeppolModal.jsx`
+- `src/services/peppolService.js` → `sendInvoice()`
+- `supabase/functions/peppol-webhook-config/index.ts`
 
-### Everything is Tracked in `peppol_invoices`
-- One table tracks both directions
-- Links to both `invoices` and `expense_invoices`
-- Used for dashboard statistics
+---
 
+### Step 4: Receive Expense Invoice via Peppol (Automatic)
+
+1. Supplier sends invoice via Peppol network
+2. Digiteal validates and routes to your Peppol ID
+3. Digiteal sends webhook to your endpoint
+4. Webhook handler automatically:
+   - Authenticates request
+   - Finds user by Peppol ID
+   - Detects document type (Invoice/Credit Note/Self-Billing)
+   - Parses UBL XML
+   - Extracts all mandatory fields
+   - Creates/updates supplier participant
+   - Calculates amounts
+   - Creates expense invoice record
+   - Creates tracking record
+5. Expense invoice appears in `/expense-invoices` page
+6. User can review and process the invoice
+
+**Files:** `supabase/functions/peppol-webhook/index.ts` → `processInboundInvoice()`
+
+---
+
+### Step 5: View Invoice Details
+
+**Client Invoices:**
+1. Navigate to `/invoices-management`
+2. Click "View" button on invoice
+3. View invoice details in modal:
+   - General invoice information
+   - Client information
+   - Financial information
+   - Notes
+   - Peppol metadata tab
+
+**Files:** `src/pages/invoices-management/components/InvoiceDetailModal.jsx`
+
+**Expense Invoices:**
+1. Navigate to `/expense-invoices`
+2. Click "View" button on invoice
+3. View invoice details in modal:
+   - General invoice information
+   - Supplier information
+   - Financial information
+   - Notes
+   - Peppol metadata tab
+
+**Files:** `src/pages/expense-invoices/components/ExpenseInvoiceDetailModal.jsx` (if exists)
+
+---
+
+### Step 6: Manual Expense Invoice Creation
+
+1. Navigate to `/expense-invoices`
+2. Click "Add Invoice" button
+3. Upload invoice document (PDF, JPG, PNG, etc.)
+4. System automatically:
+   - Extracts data using OCR (Gemini AI)
+   - Pre-fills form fields
+5. User reviews and verifies extracted data
+6. User fills any missing fields manually
+7. Click "Create Invoice" button
+8. Invoice is created with `source = 'manual'`
+
+**Files:**
+- `src/pages/expense-invoices/components/QuickExpenseInvoiceCreation.jsx`
+- `src/services/ocrService.js` → `extractInvoiceData()`
+- `supabase/functions/process-expense-invoice/index.ts`
+
+---
+
+## 📋 Quick Reference
+
+### Client Invoice (Outbound)
+- **Table:** `invoices`
+- **API:** `POST /api/v1/peppol/outbound-ubl-documents`
+- **Direction:** OUTBOUND (you send)
+- **Status Flow:** `not_sent` → `sending` → `sent` → `delivered`
+- **Creation:** Quote conversion only
+
+### Expense Invoice (Inbound)
+- **Table:** `expense_invoices`
+- **API:** Webhook (automatic)
+- **Direction:** INBOUND (you receive)
+- **Status Flow:** `pending` (when received)
+- **Creation:** Automatic via webhook OR manual with OCR
+
+### Tracking
+- **Table:** `peppol_invoices`
+- **Purpose:** Track all Peppol activity
+- **Links:** Both `invoices` and `expense_invoices`
+
+---
+
+## 📚 Additional Resources
+
+- **Digiteal API Documentation:** See `DIGITEAL_API_DOCUMENTATION.md`
+- **UBL Syntax & Validation:** See `DIGITEAL_API_DOCUMENTATION.md` → UBL Syntax & Validation Rules
+- **Mandatory Fields:** See `DIGITEAL_API_DOCUMENTATION.md` → Mandatory Fields for Peppol BIS Billing 3.0
+
+---
+
+**Last Updated:** 2025-01-15
