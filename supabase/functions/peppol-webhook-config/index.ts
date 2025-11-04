@@ -138,21 +138,48 @@ serve(async (req) => {
     if (responseText && responseText.trim()) {
       try {
         data = JSON.parse(responseText);
-      } catch (parseError) {
-        return new Response(
-          JSON.stringify({
-            error: 'Invalid JSON response from API',
-            rawResponse: responseText,
-          }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        
+        // For send-ubl-document action, try to extract messageId from response
+        if (action === 'send-ubl-document') {
+          // Try various possible fields where messageId might be
+          const messageId = data.messageId || data.id || data.documentId || data.message_id || null;
+          if (messageId) {
+            data.messageId = messageId;
           }
-        );
+        }
+      } catch (parseError) {
+        // If response is not JSON, might be plain text success message
+        // For send-ubl-document, check if it's a success message
+        if (action === 'send-ubl-document' && (responseText.includes('OK') || responseText.includes('success'))) {
+          data = { 
+            success: true, 
+            message: 'UBL document sent successfully',
+            // Note: messageId will be received via webhook later
+          };
+        } else {
+          return new Response(
+            JSON.stringify({
+              error: 'Invalid JSON response from API',
+              rawResponse: responseText,
+            }),
+            {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
+        }
       }
     } else {
       // Empty response - likely successful for POST operations
-      data = { success: true, message: 'Webhook configuration updated successfully' };
+      if (action === 'send-ubl-document') {
+        data = { 
+          success: true, 
+          message: 'UBL document sent successfully',
+          // Note: messageId will be received via webhook later
+        };
+      } else {
+        data = { success: true, message: 'Webhook configuration updated successfully' };
+      }
     }
 
     return new Response(JSON.stringify(data), {

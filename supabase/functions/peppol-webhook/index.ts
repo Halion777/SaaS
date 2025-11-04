@@ -864,38 +864,94 @@ async function processAcknowledgment(supabase: any, userId: string, payload: Web
       return { success: false, error: 'No message ID provided' };
     }
 
-    // Find invoice and update metadata
-    const { data: invoice, error: findError } = await supabase
+    // Check if MLR indicates successful delivery
+    // MLR_RECEIVED typically indicates successful delivery of the invoice
+    const isMLR = payload.eventType === PEPPOL_EVENT_TYPES.MLR_RECEIVED;
+    const isDelivered = isMLR && (data.status === 'delivered' || data.status === 'success' || !data.status || data.status === 'accepted');
+
+    // Find invoice in invoices table (client invoices) by messageId
+    let clientInvoice = null;
+    if (isMLR && isDelivered) {
+      const { data: invoice, error: findInvoiceError } = await supabase
+        .from('invoices')
+        .select('id, peppol_status')
+        .eq('user_id', userId)
+        .eq('peppol_message_id', messageId)
+        .single();
+
+      if (!findInvoiceError && invoice) {
+        clientInvoice = invoice;
+        
+        // Update invoice status to delivered if not already delivered
+        if (invoice.peppol_status !== 'delivered') {
+          const { error: updateInvoiceError } = await supabase
+            .from('invoices')
+            .update({
+              peppol_status: 'delivered',
+              peppol_delivered_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', invoice.id);
+
+          if (updateInvoiceError) {
+            console.error('⚠️ Failed to update invoice status:', updateInvoiceError);
+          } else {
+            console.log('✅ Invoice status updated to delivered:', invoice.id);
+          }
+        }
+      }
+    }
+
+    // Also update peppol_invoices metadata (for tracking)
+    const { data: peppolInvoice, error: findPeppolError } = await supabase
       .from('peppol_invoices')
       .select('id, metadata')
       .eq('user_id', userId)
       .eq('peppol_message_id', messageId)
       .single();
 
-    if (findError || !invoice) {
+    if (!findPeppolError && peppolInvoice) {
+      // Update metadata with acknowledgment info
+      const metadata = peppolInvoice.metadata || {};
+      metadata.acknowledgments = metadata.acknowledgments || [];
+      metadata.acknowledgments.push({
+        type: payload.eventType,
+        receivedAt: new Date().toISOString(),
+        data: data
+      });
+
+      // If MLR indicates delivery, also update status in peppol_invoices
+      if (isMLR && isDelivered) {
+        metadata.deliveredAt = new Date().toISOString();
+        metadata.status = 'delivered';
+      }
+
+      const { error: updateError } = await supabase
+        .from('peppol_invoices')
+        .update({ 
+          metadata,
+          status: isMLR && isDelivered ? 'delivered' : peppolInvoice.status,
+          delivered_at: isMLR && isDelivered ? new Date().toISOString() : peppolInvoice.delivered_at,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', peppolInvoice.id);
+
+      if (updateError) {
+        console.error('⚠️ Failed to update peppol_invoices metadata:', updateError);
+      } else {
+        console.log('✅ Acknowledgment processed:', peppolInvoice.id);
+      }
+    } else if (!clientInvoice && !peppolInvoice) {
+      // Neither invoice nor peppol_invoice found
+      console.log('⚠️ Invoice not found for acknowledgment:', messageId);
       return { success: false, error: 'Invoice not found' };
     }
 
-    // Update metadata with acknowledgment info
-    const metadata = invoice.metadata || {};
-    metadata.acknowledgments = metadata.acknowledgments || [];
-    metadata.acknowledgments.push({
-      type: payload.eventType,
-      receivedAt: new Date().toISOString(),
-      data: data
-    });
-
-    const { error: updateError } = await supabase
-      .from('peppol_invoices')
-      .update({ metadata })
-      .eq('id', invoice.id);
-
-    if (updateError) {
-      return { success: false, error: updateError.message };
-    }
-
-    console.log('✅ Acknowledgment processed:', invoice.id);
-    return { success: true, invoiceId: invoice.id };
+    return { 
+      success: true, 
+      invoiceId: clientInvoice?.id || peppolInvoice?.id,
+      updated: true 
+    };
 
   } catch (error) {
     console.error('❌ Error processing acknowledgment:', error);
