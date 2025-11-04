@@ -6,6 +6,7 @@ import ExpenseInvoicesSummaryBar from './components/ExpenseInvoicesSummaryBar';
 import ExpenseInvoicesFilterToolbar from './components/ExpenseInvoicesFilterToolbar';
 import ExpenseInvoicesDataTable from './components/ExpenseInvoicesDataTable';
 import QuickExpenseInvoiceCreation from './components/QuickExpenseInvoiceCreation';
+import ExpenseInvoiceDetailModal from './components/ExpenseInvoiceDetailModal';
 import Select from '../../components/ui/Select';
 import ExpenseInvoicesService from '../../services/expenseInvoicesService';
 
@@ -24,6 +25,9 @@ const ExpenseInvoicesManagement = () => {
   });
 
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [invoiceToEdit, setInvoiceToEdit] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
@@ -127,8 +131,27 @@ const ExpenseInvoicesManagement = () => {
         // Load invoices
         const result = await expenseService.getExpenseInvoices();
         if (result.success) {
-          setExpenseInvoices(result.data);
-          setFilteredExpenseInvoices(result.data);
+          // Auto-update overdue status based on due_date
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          const updatedInvoices = await Promise.all(result.data.map(async (invoice) => {
+            // If invoice is not paid and due_date has passed, mark as overdue
+            if (invoice.status !== 'paid' && invoice.due_date) {
+              const dueDate = new Date(invoice.due_date);
+              dueDate.setHours(0, 0, 0, 0);
+              
+              if (dueDate < today && invoice.status !== 'overdue') {
+                // Auto-update status to overdue
+                await expenseService.updateExpenseInvoice(invoice.id, { status: 'overdue' });
+                return { ...invoice, status: 'overdue' };
+              }
+            }
+            return invoice;
+          }));
+          
+          setExpenseInvoices(updatedInvoices);
+          setFilteredExpenseInvoices(updatedInvoices);
         } else {
           console.error('Error loading expense invoices:', result.error);
           setExpenseInvoices([]);
@@ -260,7 +283,6 @@ const ExpenseInvoicesManagement = () => {
         case 'send_to_accountant':
           const sendResult = await expenseService.sendToAccountant(selectedExpenseInvoices);
           if (sendResult.success) {
-            alert(sendResult.message);
             setSelectedExpenseInvoices([]);
             // Refresh data
             const refreshResult = await expenseService.getExpenseInvoices();
@@ -268,28 +290,11 @@ const ExpenseInvoicesManagement = () => {
               setExpenseInvoices(refreshResult.data);
               setFilteredExpenseInvoices(refreshResult.data);
             }
-          } else {
-            alert('Erreur: ' + sendResult.error);
-          }
-          break;
-          
-        case 'mark_paid':
-          // Mark each selected invoice as paid
-          for (const invoiceId of selectedExpenseInvoices) {
-            await expenseService.markAsPaid(invoiceId);
-          }
-          alert(`${selectedExpenseInvoices.length} facture(s) marquée(s) comme payée(s)`);
-          setSelectedExpenseInvoices([]);
-          // Refresh data
-          const refreshResult = await expenseService.getExpenseInvoices();
-          if (refreshResult.success) {
-            setExpenseInvoices(refreshResult.data);
-            setFilteredExpenseInvoices(refreshResult.data);
           }
           break;
           
         case 'export':
-          alert(`Export de ${selectedExpenseInvoices.length} facture(s) en cours...`);
+          await exportExpenseInvoices(selectedExpenseInvoices);
           break;
           
         case 'delete':
@@ -315,17 +320,41 @@ const ExpenseInvoicesManagement = () => {
     }
   };
 
+  const handleStatusUpdate = async (invoiceId, newStatus) => {
+    try {
+      const expenseService = new ExpenseInvoicesService();
+      const result = await expenseService.updateExpenseInvoice(invoiceId, { status: newStatus });
+      
+      if (result.success) {
+        // Update local state
+        setExpenseInvoices(prev => 
+          prev.map(inv => inv.id === invoiceId ? { ...inv, status: newStatus } : inv)
+        );
+        setFilteredExpenseInvoices(prev => 
+          prev.map(inv => inv.id === invoiceId ? { ...inv, status: newStatus } : inv)
+        );
+      } else {
+        alert('Erreur lors de la mise à jour du statut: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      alert('Erreur lors de la mise à jour du statut');
+    }
+  };
+
   const handleExpenseInvoiceAction = async (action, invoice) => {
     try {
       const expenseService = new ExpenseInvoicesService();
       
       switch (action) {
         case 'view':
-          alert(`Affichage de la facture de dépense ${invoice.invoice_number || invoice.number}`);
+          setSelectedInvoice(invoice);
+          setIsDetailModalOpen(true);
           break;
           
         case 'edit':
-          alert(`Édition de la facture de dépense ${invoice.invoice_number || invoice.number}`);
+          setInvoiceToEdit(invoice);
+          setIsQuickCreateOpen(true);
           break;
           
         case 'send_to_accountant':
@@ -377,6 +406,55 @@ const ExpenseInvoicesManagement = () => {
     }
   };
 
+  const exportExpenseInvoices = async (invoiceIds) => {
+    try {
+      const expenseService = new ExpenseInvoicesService();
+      const invoicesToExport = expenseInvoices.filter(inv => invoiceIds.includes(inv.id));
+      
+      if (invoicesToExport.length === 0) {
+        return;
+      }
+
+      const csvData = [
+        ['Numéro', 'Fournisseur', 'Email', 'TVA', 'Montant Total', 'Montant HT', 'Montant TVA', 'Statut', 'Catégorie', 'Source', 'Date émission', 'Date échéance', 'Méthode paiement', 'ID Peppol', 'Type document']
+      ];
+
+      invoicesToExport.forEach(invoice => {
+        const row = [
+          invoice.invoice_number,
+          invoice.supplier_name,
+          invoice.supplier_email || '',
+          invoice.supplier_vat_number || '',
+          invoice.amount,
+          invoice.net_amount || '',
+          invoice.vat_amount || '',
+          invoice.status,
+          invoice.category || '',
+          invoice.source,
+          invoice.issue_date,
+          invoice.due_date,
+          invoice.payment_method || '',
+          invoice.sender_peppol_id || '',
+          invoice.peppol_metadata?.documentTypeLabel || ''
+        ];
+        csvData.push(row);
+      });
+
+      const csvContent = csvData.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `expense-invoices-export-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting invoices:', error);
+    }
+  };
+
   const handleCreateExpenseInvoice = async (newInvoice) => {
     try {
       const expenseService = new ExpenseInvoicesService();
@@ -396,6 +474,42 @@ const ExpenseInvoicesManagement = () => {
     } catch (error) {
       console.error('Error creating expense invoice:', error);
       alert('Erreur lors de la création de la facture');
+    }
+  };
+
+  const handleUpdateExpenseInvoice = async (invoiceId, updatedInvoice) => {
+    try {
+      const expenseService = new ExpenseInvoicesService();
+      const result = await expenseService.updateExpenseInvoice(invoiceId, {
+        supplier_name: updatedInvoice.supplierName,
+        supplier_email: updatedInvoice.supplierEmail,
+        supplier_vat_number: updatedInvoice.supplierVatNumber || null,
+        invoice_number: updatedInvoice.invoiceNumber,
+        amount: updatedInvoice.amount,
+        net_amount: updatedInvoice.netAmount || updatedInvoice.amount,
+        vat_amount: updatedInvoice.vatAmount || 0,
+        category: updatedInvoice.category || null,
+        issue_date: updatedInvoice.issueDate,
+        due_date: updatedInvoice.dueDate,
+        payment_method: updatedInvoice.paymentMethod || null,
+        notes: updatedInvoice.notes || null
+      });
+      
+      if (result.success) {
+        // Refresh the data from the service
+        const refreshResult = await expenseService.getExpenseInvoices();
+        if (refreshResult.success) {
+          setExpenseInvoices(refreshResult.data);
+          setFilteredExpenseInvoices(refreshResult.data);
+        }
+        setInvoiceToEdit(null);
+      } else {
+        console.error('Error updating expense invoice:', result.error);
+        alert('Erreur lors de la mise à jour de la facture: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Error updating expense invoice:', error);
+      alert('Erreur lors de la mise à jour de la facture');
     }
   };
 
@@ -496,7 +610,6 @@ const ExpenseInvoicesManagement = () => {
                       options={[
                         { value: '', label: 'Choisir une action...' },
                         { value: 'send_to_accountant', label: 'Envoyer au comptable' },
-                        { value: 'mark_paid', label: 'Marquer comme payée' },
                         { value: 'export', label: 'Exporter' },
                         { value: 'delete', label: 'Supprimer' }
                       ]}
@@ -518,16 +631,6 @@ const ExpenseInvoicesManagement = () => {
                   iconPosition="left"
                 >
                   Envoyer comptable
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleBulkAction('mark_paid')}
-                  iconName="CheckCircle"
-                  iconPosition="left"
-                >
-                  Marquer payée
                 </Button>
                 
                 <Button
@@ -561,24 +664,9 @@ const ExpenseInvoicesManagement = () => {
             onSelectionChange={setSelectedExpenseInvoices}
             filters={filters}
             onFiltersChange={handleFiltersChange}
+            onStatusUpdate={handleStatusUpdate}
           />
 
-          {/* Pagination */}
-          {filteredExpenseInvoices.length > 0 && (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mt-4 sm:mt-6">
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Affichage de {filteredExpenseInvoices.length} facture(s) sur {expenseInvoices.length}
-              </p>
-              <div className="flex items-center space-x-2">
-                <Button variant="outline" size="sm" iconName="ChevronLeft" className="text-xs sm:text-sm">
-                  Précédent
-                </Button>
-                <Button variant="outline" size="sm" iconName="ChevronRight" className="text-xs sm:text-sm">
-                  Suivant
-                </Button>
-              </div>
-            </div>
-          )}
         </div>
       </main>
 
@@ -587,8 +675,23 @@ const ExpenseInvoicesManagement = () => {
       {/* Quick Expense Invoice Creation Modal */}
       <QuickExpenseInvoiceCreation
         isOpen={isQuickCreateOpen}
-        onClose={() => setIsQuickCreateOpen(false)}
+        onClose={() => {
+          setIsQuickCreateOpen(false);
+          setInvoiceToEdit(null);
+        }}
         onCreateExpenseInvoice={handleCreateExpenseInvoice}
+        onUpdateExpenseInvoice={handleUpdateExpenseInvoice}
+        invoiceToEdit={invoiceToEdit}
+      />
+
+      {/* Expense Invoice Detail Modal */}
+      <ExpenseInvoiceDetailModal
+        invoice={selectedInvoice}
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setSelectedInvoice(null);
+        }}
       />
     </div>
   );

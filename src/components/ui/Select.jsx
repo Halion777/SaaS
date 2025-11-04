@@ -23,6 +23,7 @@ const Select = React.forwardRef(({
     id,
     name,
     onChange,
+    onValueChange,
     onOpenChange,
     ...props
 }, ref) => {
@@ -92,23 +93,33 @@ const Select = React.forwardRef(({
                 ? newValue.filter(v => v !== option.value)
                 : [...newValue, option.value];
             
-            // Create a synthetic event object to mimic a native select
-            const syntheticEvent = {
-                target: {
-                    name,
-                    value: updatedValue
-                }
-            };
-            onChange?.(syntheticEvent);
+            // Support both onChange and onValueChange
+            if (onValueChange) {
+                onValueChange(updatedValue);
+            } else {
+                // Create a synthetic event object to mimic a native select
+                const syntheticEvent = {
+                    target: {
+                        name,
+                        value: updatedValue
+                    }
+                };
+                onChange?.(syntheticEvent);
+            }
         } else {
-            // Create a synthetic event object to mimic a native select
-            const syntheticEvent = {
-                target: {
-                    name,
-                    value: option.value
-                }
-            };
-            onChange?.(syntheticEvent);
+            // Support both onChange and onValueChange
+            if (onValueChange) {
+                onValueChange(option.value);
+            } else {
+                // Create a synthetic event object to mimic a native select
+                const syntheticEvent = {
+                    target: {
+                        name,
+                        value: option.value
+                    }
+                };
+                onChange?.(syntheticEvent);
+            }
             setIsOpen(false);
             onOpenChange?.(false);
         }
@@ -117,7 +128,11 @@ const Select = React.forwardRef(({
     const handleClear = (e) => {
         e.stopPropagation();
         e.preventDefault();
-        onChange?.({ target: { name, value: multiple ? [] : '' } });
+        if (onValueChange) {
+            onValueChange(multiple ? [] : '');
+        } else {
+            onChange?.({ target: { name, value: multiple ? [] : '' } });
+        }
     };
 
     const handleSearchChange = (e) => {
@@ -211,7 +226,7 @@ const Select = React.forwardRef(({
 
                 {/* Dropdown */}
                 {isOpen && (
-                    <div className="absolute z-[9999] w-full mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-md">
+                    <div className="absolute z-[9999] w-full mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-md max-h-[200px] overflow-auto">
                         {searchable && (
                             <div className="p-2 border-b border-border">
                                 <div className="relative">

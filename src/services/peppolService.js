@@ -342,11 +342,11 @@ export class PeppolService {
           peppolIdentifier: recipientId
         }
       });
-
+      
       if (response.error) {
         throw new Error(response.error.message);
       }
-
+      
       return response.data;
     } catch (error) {
       console.error('Failed to check recipient support:', error);
@@ -361,7 +361,7 @@ export class PeppolService {
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
-
+      
       const response = await supabase.functions.invoke('peppol-webhook-config', {
         body: {
           endpoint: this.config.baseUrl,
@@ -371,16 +371,16 @@ export class PeppolService {
           xmlDocument: xml
         }
       });
-
+      
       if (response.error) {
         throw new Error(response.error.message);
       }
 
-      console.log(`Invoice ${invoiceData.billName} sent successfully via PEPPOL`);
-      return {
-        success: true,
-        message: "Invoice sent successfully"
-      };
+        console.log(`Invoice ${invoiceData.billName} sent successfully via PEPPOL`);
+        return {
+          success: true,
+          message: "Invoice sent successfully"
+        };
     } catch (error) {
       console.error("Failed to send PEPPOL invoice:", error);
       throw error;
@@ -605,7 +605,7 @@ export class PeppolService {
         .single();
 
       if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows found
-      
+        
       // Map database fields to camelCase for frontend
       const mappedData = data ? {
         isConfigured: data.is_configured,
@@ -623,8 +623,8 @@ export class PeppolService {
         sandboxMode: data.sandbox_mode,
         lastTested: data.last_tested
       } : {
-        isConfigured: false,
-        peppolId: '',
+          isConfigured: false,
+          peppolId: '',
         name: '',
         countryCode: 'BE',
         firstName: '',
@@ -634,8 +634,8 @@ export class PeppolService {
         language: 'en-US',
         supportedDocumentTypes: ['INVOICE', 'CREDIT_NOTE'],
         limitedToOutboundTraffic: false,
-        sandboxMode: true,
-        lastTested: null
+            sandboxMode: true,
+          lastTested: null
       };
         
       return {
@@ -742,7 +742,7 @@ export class PeppolService {
       if (registrationResult.alreadyRegistered) {
         successMessage = 'Settings saved successfully. This participant is already registered in Digiteal.';
       }
-      
+
       return {
         success: true,
         data: {
@@ -1002,9 +1002,9 @@ export class PeppolService {
       if (!user) throw new Error('User not authenticated');
 
       const payload = {
-        peppolIdentifier: participantData.peppolIdentifier,
-        contactPerson: {
-          language: participantData.contactPerson?.language || 'en-US',
+          peppolIdentifier: participantData.peppolIdentifier,
+          contactPerson: {
+            language: participantData.contactPerson?.language || 'en-US',
           firstName: participantData.contactPerson?.firstName || '',
           lastName: participantData.contactPerson?.lastName || '',
           phoneNumber: participantData.contactPerson?.phoneNumber || '',
@@ -1012,8 +1012,8 @@ export class PeppolService {
         },
         name: participantData.name,
         countryCode: participantData.countryCode,
-        limitedToOutboundTraffic: participantData.limitedToOutboundTraffic || false,
-        supportedDocumentTypes: participantData.supportedDocumentTypes || ['INVOICE', 'CREDIT_NOTE']
+          limitedToOutboundTraffic: participantData.limitedToOutboundTraffic || false,
+          supportedDocumentTypes: participantData.supportedDocumentTypes || ['INVOICE', 'CREDIT_NOTE']
       };
 
       const response = await supabase.functions.invoke('peppol-webhook-config', {
@@ -1033,14 +1033,14 @@ export class PeppolService {
           errorMessage = response.error;
         } else if (response.error.message) {
           errorMessage = response.error.message;
-        } else {
+      } else {
           errorMessage = JSON.stringify(response.error);
         }
         
         // Check if participant is already registered
         if (errorMessage.includes('ALREADY_REGISTERED') || errorMessage.includes('already registered')) {
-          return { 
-            success: false, 
+        return { 
+          success: false, 
             error: errorMessage,
             alreadyRegistered: true
           };
@@ -1058,8 +1058,8 @@ export class PeppolService {
             success: false, 
             error: data.error,
             alreadyRegistered: true
-          };
-        }
+        };
+      }
       }
       
       return { success: true, data, message: 'Participant registered successfully' };

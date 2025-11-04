@@ -120,24 +120,31 @@ export class ExpenseInvoicesService {
    */
   async createExpenseInvoice(invoiceData) {
     try {
+      // Get current user from auth
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       // Insert the main invoice record
       let { data: invoice, error: invoiceError } = await supabase
         .from(this.tableName)
         .insert([{
+          user_id: user.id,
           invoice_number: invoiceData.invoiceNumber || `EXP-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
           supplier_name: invoiceData.supplierName,
           supplier_email: invoiceData.supplierEmail,
-          supplier_vat_number: invoiceData.supplierVatNumber,
+          supplier_vat_number: invoiceData.supplierVatNumber || null,
           amount: parseFloat(invoiceData.amount),
           net_amount: parseFloat(invoiceData.netAmount) || parseFloat(invoiceData.amount),
           vat_amount: parseFloat(invoiceData.vatAmount) || 0,
           status: 'pending',
-          category: invoiceData.category,
+          category: invoiceData.category || null,
           source: invoiceData.source || 'manual',
           issue_date: invoiceData.issueDate || new Date().toISOString().split('T')[0],
           due_date: invoiceData.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          payment_method: invoiceData.paymentMethod,
-          notes: invoiceData.notes
+          payment_method: invoiceData.paymentMethod || null,
+          notes: invoiceData.notes || null
         }])
         .select()
         .single();
@@ -399,7 +406,7 @@ export class ExpenseInvoicesService {
       // Get total counts and amounts
       const { data: invoices, error: invoicesError } = await supabase
         .from(this.tableName)
-        .select('status, amount, due_date');
+        .select('status, amount, due_date, source');
 
       if (invoicesError) throw invoicesError;
 
@@ -416,6 +423,13 @@ export class ExpenseInvoicesService {
 
       invoices.forEach(invoice => {
         stats.totalExpenses += parseFloat(invoice.amount || 0);
+        
+        // Count Peppol vs Manual invoices
+        if (invoice.source === 'peppol') {
+          stats.peppolInvoices++;
+        } else {
+          stats.manualInvoices++;
+        }
         
         if (invoice.status === 'paid') {
           stats.paidExpenses += parseFloat(invoice.amount || 0);

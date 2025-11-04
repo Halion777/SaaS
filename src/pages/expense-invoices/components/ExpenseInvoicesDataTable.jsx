@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
+import Select from '../../../components/ui/Select';
 import { Checkbox } from '../../../components/ui/Checkbox';
 
-const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, selectedExpenseInvoices, onSelectionChange, filters, onFiltersChange }) => {
+const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, selectedExpenseInvoices, onSelectionChange, filters, onFiltersChange, onStatusUpdate }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'issueDate', direction: 'desc' });
   const [viewMode, setViewMode] = useState(() => {
     // Default to card view on mobile/tablet, table view on desktop
@@ -36,7 +37,13 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
     return new Intl.DateTimeFormat('fr-FR').format(new Date(date));
   };
 
-  const getStatusBadge = (status) => {
+  const statusOptions = [
+    { value: 'paid', label: 'Payée' },
+    { value: 'pending', label: 'En attente' },
+    { value: 'overdue', label: 'En retard' }
+  ];
+
+  const getStatusBadge = (status, invoiceId = null) => {
     const statusConfig = {
       paid: { label: 'Payée', color: 'bg-success text-success-foreground' },
       pending: { label: 'En attente', color: 'bg-warning text-warning-foreground' },
@@ -44,6 +51,20 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
     };
 
     const config = statusConfig[status] || statusConfig.pending;
+    
+    if (onStatusUpdate && invoiceId) {
+      return (
+        <div className="relative inline-block">
+          <Select
+            value={status}
+            onValueChange={(newStatus) => onStatusUpdate(invoiceId, newStatus)}
+            options={statusOptions}
+            className="w-auto min-w-[120px]"
+          />
+        </div>
+      );
+    }
+    
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${config.color}`}>
         {config.label}
@@ -76,12 +97,27 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
   };
 
   const getDaysOverdue = (dueDate, status) => {
+    // Only show days overdue if:
+    // 1. Status is set to overdue, AND
+    // 2. The due date has actually passed (to avoid showing negative or 0 when manually set)
     if (status !== 'overdue') return null;
+    
+    if (!dueDate) return null;
+    
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to compare dates only
+    
     const due = new Date(dueDate);
+    due.setHours(0, 0, 0, 0);
+    
+    // Only show if due date has actually passed
+    if (due >= today) return null;
+    
     const diffTime = today - due;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+    
+    // Only return positive days (actually overdue)
+    return diffDays > 0 ? diffDays : null;
   };
 
   const getSourceBadge = (source) => {
@@ -167,12 +203,14 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                   iconName="Eye"
                   onClick={() => onExpenseInvoiceAction('view', invoice)}
                 />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  iconName="Edit"
-                  onClick={() => onExpenseInvoiceAction('edit', invoice)}
-                />
+                {invoice.source === 'manual' && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    iconName="Edit"
+                    onClick={() => onExpenseInvoiceAction('edit', invoice)}
+                  />
+                )}
               </div>
             </div>
 
@@ -180,6 +218,15 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
             <div className="mb-3">
               <div className="text-sm font-medium text-foreground">{invoice.supplier_name}</div>
               <div className="text-xs text-muted-foreground">{invoice.supplier_email}</div>
+              {invoice.supplier_vat_number && (
+                <div className="text-xs text-muted-foreground">VAT: {invoice.supplier_vat_number}</div>
+              )}
+              {invoice.source === 'peppol' && invoice.sender_peppol_id && (
+                <div className="text-xs text-blue-600 mt-1 flex items-center">
+                  <Icon name="Globe" size={10} className="mr-1" />
+                  {invoice.sender_peppol_id}
+                </div>
+              )}
             </div>
 
             {/* Amount and Payment Method */}
@@ -190,11 +237,15 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
               )}
             </div>
 
-            {/* Category and Status */}
+            {/* Status */}
             <div className="flex items-center justify-between mb-3">
-              {getCategoryBadge(invoice.category)}
+              <div className="flex flex-col space-y-1">
+                {invoice.source === 'peppol' && invoice.peppol_metadata?.documentTypeLabel && (
+                  <span className="text-xs text-blue-600">{invoice.peppol_metadata.documentTypeLabel}</span>
+                )}
+              </div>
               <div className="flex flex-col items-end space-y-1">
-                {getStatusBadge(invoice.status)}
+                {getStatusBadge(invoice.status, invoice.id)}
                 {daysOverdue && (
                   <span className="text-xs text-error">+{daysOverdue} jours</span>
                 )}
@@ -215,18 +266,6 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center justify-between pt-3 border-t border-border">
-              <Button
-                variant="outline"
-                size="sm"
-                iconName="Copy"
-                onClick={() => onExpenseInvoiceAction('duplicate', invoice)}
-                className="text-xs"
-              >
-                Dupliquer
-              </Button>
-            </div>
           </div>
         );
       })}
@@ -320,16 +359,13 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
               </th>
               <SortableHeader label="N° Facture" sortKey="number" />
               <SortableHeader label="Fournisseur" sortKey="supplier_name" />
-              <SortableHeader label="Montant" sortKey="amount" />
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Catégorie
-              </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Source
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Statut
               </th>
+              <SortableHeader label="Montant" sortKey="amount" />
               <SortableHeader label="Date émission" sortKey="issueDate" />
               <SortableHeader label="Date échéance" sortKey="dueDate" />
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -358,6 +394,35 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                     {invoice.supplier_vat_number && (
                       <div className="text-xs text-muted-foreground">VAT: {invoice.supplier_vat_number}</div>
                     )}
+                    {invoice.source === 'peppol' && invoice.sender_peppol_id && (
+                      <div className="text-xs text-blue-600 mt-1 flex items-center">
+                        <Icon name="Globe" size={10} className="mr-1" />
+                        {invoice.sender_peppol_id}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex flex-col space-y-1">
+                    {getSourceBadge(invoice.source)}
+                      {invoice.source === 'peppol' && invoice.peppol_metadata?.documentTypeLabel && (
+                        <span className="text-xs text-muted-foreground">
+                          {invoice.peppol_metadata.documentTypeLabel}
+                        </span>
+                      )}
+                      {invoice.source === 'peppol' && invoice.peppol_received_at && (
+                        <span className="text-xs text-muted-foreground">
+                          Reçu: {formatDate(invoice.peppol_received_at)}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex flex-col space-y-1">
+                      {getStatusBadge(invoice.status, invoice.id)}
+                      {daysOverdue && (
+                        <span className="text-xs text-error">+{daysOverdue} jours</span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-foreground">{formatCurrency(invoice.amount)}</div>
@@ -367,20 +432,6 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                     {invoice.vat_amount && (
                       <div className="text-xs text-muted-foreground">VAT: {formatCurrency(invoice.vat_amount)}</div>
                     )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getCategoryBadge(invoice.category)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getSourceBadge(invoice.source)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex flex-col space-y-1">
-                      {getStatusBadge(invoice.status)}
-                      {daysOverdue && (
-                        <span className="text-xs text-error">+{daysOverdue} jours</span>
-                      )}
-                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                     {formatDate(invoice.issue_date)}
@@ -398,18 +449,14 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                         iconName="Eye"
                         onClick={() => onExpenseInvoiceAction('view', invoice)}
                       />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        iconName="Edit"
-                        onClick={() => onExpenseInvoiceAction('edit', invoice)}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        iconName="Copy"
-                        onClick={() => onExpenseInvoiceAction('duplicate', invoice)}
-                      />
+                      {invoice.source === 'manual' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          iconName="Edit"
+                          onClick={() => onExpenseInvoiceAction('edit', invoice)}
+                        />
+                      )}
                     </div>
                   </td>
                 </tr>

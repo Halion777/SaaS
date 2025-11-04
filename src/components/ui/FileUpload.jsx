@@ -82,7 +82,8 @@ const FileUpload = ({
   const handleFileRemove = useCallback((index) => {
     if (onFileRemove) {
       const newFiles = uploadedFiles.filter((_, i) => i !== index);
-      onFileRemove(newFiles);
+      // Pass the removed index so parent can delete from storage
+      onFileRemove(newFiles, index);
     }
   }, [onFileRemove, uploadedFiles]);
 
