@@ -163,7 +163,7 @@ const Select = React.forwardRef(({
                 </label>
             )}
 
-            <div className="relative" ref={selectRef}>
+            <div className="relative" ref={selectRef} style={{ zIndex: isOpen ? 1000 : 'auto' }}>
                 <button
                     ref={ref}
                     id={selectId}
@@ -226,7 +226,7 @@ const Select = React.forwardRef(({
 
                 {/* Dropdown */}
                 {isOpen && (
-                    <div className="absolute z-[9999] w-full mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-md max-h-[200px] overflow-auto">
+                    <div className="absolute w-full mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-lg max-h-[200px] overflow-auto" style={{ zIndex: 1001 }}>
                         {searchable && (
                             <div className="p-2 border-b border-border">
                                 <div className="relative">

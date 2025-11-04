@@ -54,7 +54,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
     
     if (onStatusUpdate && invoiceId) {
       return (
-        <div className="relative inline-block">
+        <div className="relative inline-block" style={{ zIndex: 'auto' }}>
           <Select
             value={status}
             onValueChange={(newStatus) => onStatusUpdate(invoiceId, newStatus)}
@@ -183,7 +183,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
       {expenseInvoices.map((invoice) => {
         const daysOverdue = getDaysOverdue(invoice.due_date, invoice.status);
         return (
-          <div key={invoice.id} className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow duration-150">
+          <div key={invoice.id} className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow duration-150 overflow-visible">
             {/* Header with checkbox and invoice number */}
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center space-x-2">
@@ -204,12 +204,12 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                   onClick={() => onExpenseInvoiceAction('view', invoice)}
                 />
                 {invoice.source === 'manual' && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    iconName="Edit"
-                    onClick={() => onExpenseInvoiceAction('edit', invoice)}
-                  />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconName="Edit"
+                  onClick={() => onExpenseInvoiceAction('edit', invoice)}
+                />
                 )}
               </div>
             </div>
@@ -273,7 +273,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
   );
 
   return (
-    <div className="bg-card border border-border rounded-lg overflow-hidden">
+    <div className="bg-card border border-border rounded-lg overflow-visible">
       {/* Search Bar */}
       <div className="p-3 md:p-4 border-b border-border">
         <div className="flex items-center justify-between">
@@ -347,7 +347,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
       ) : viewMode === 'card' ? (
         renderCardView()
       ) : (
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto overflow-y-visible pb-4">
         <table className="min-w-full divide-y divide-border">
           <thead className="bg-muted/30">
             <tr>
@@ -377,7 +377,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
             {expenseInvoices.map((invoice) => {
               const daysOverdue = getDaysOverdue(invoice.due_date, invoice.status);
               return (
-                <tr key={invoice.id} className="hover:bg-muted/30 transition-colors duration-150">
+                <tr key={invoice.id} className="hover:bg-muted/30 transition-colors duration-150" style={{ position: 'relative' }}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <Checkbox
                       checked={selectedExpenseInvoices.includes(invoice.id)}
@@ -416,7 +416,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap" style={{ position: 'relative' }}>
                     <div className="flex flex-col space-y-1">
                       {getStatusBadge(invoice.status, invoice.id)}
                       {daysOverdue && (
@@ -450,12 +450,12 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                         onClick={() => onExpenseInvoiceAction('view', invoice)}
                       />
                       {invoice.source === 'manual' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          iconName="Edit"
-                          onClick={() => onExpenseInvoiceAction('edit', invoice)}
-                        />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        iconName="Edit"
+                        onClick={() => onExpenseInvoiceAction('edit', invoice)}
+                      />
                       )}
                     </div>
                   </td>

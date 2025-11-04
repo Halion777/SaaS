@@ -25,6 +25,7 @@ const MainSidebar = () => {
     creditInsurance: true,
     recovery: true
   });
+  const [overdueExpenseInvoicesCount, setOverdueExpenseInvoicesCount] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
@@ -146,6 +147,49 @@ const MainSidebar = () => {
     loadServiceVisibility();
   }, []);
 
+  // Fetch overdue expense invoices count
+  useEffect(() => {
+    const fetchOverdueCount = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (!currentUser) return;
+
+        // Get all expense invoices for the current user
+        const { data: invoices, error } = await supabase
+          .from('expense_invoices')
+          .select('id, due_date, status')
+          .eq('user_id', currentUser.id);
+
+        if (error) throw error;
+
+        // Count overdue invoices (due_date < today AND status != 'paid')
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const overdueCount = invoices?.filter(invoice => {
+          if (invoice.status === 'paid') return false;
+          const dueDate = new Date(invoice.due_date);
+          dueDate.setHours(0, 0, 0, 0);
+          return dueDate < today;
+        }).length || 0;
+
+        setOverdueExpenseInvoicesCount(overdueCount);
+      } catch (error) {
+        console.error('Error fetching overdue expense invoices count:', error);
+        setOverdueExpenseInvoicesCount(0);
+      }
+    };
+
+    fetchOverdueCount();
+    
+    // Refresh every 30 seconds to keep count updated
+    const interval = setInterval(fetchOverdueCount, 300000);
+    
+    return () => clearInterval(interval);
+  }, [user]);
+
 
 
   // Navigation items organized by categories with collapsible sections
@@ -246,7 +290,7 @@ const MainSidebar = () => {
           label: t('sidebar.categories.invoices.items.expenseInvoices'),
           path: '/expense-invoices',
           icon: 'FileText',
-          notifications: 2
+          notifications: overdueExpenseInvoicesCount
         }
       ]
     },

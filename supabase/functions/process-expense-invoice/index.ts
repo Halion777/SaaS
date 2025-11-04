@@ -22,11 +22,14 @@ serve(async (req) => {
     }
     
     // Initialize Gemini
+    
+// @ts-ignore
     const apiKey = Deno.env.get('GOOGLE_AI_API_KEY');
     if (!apiKey) {
       throw new Error('GOOGLE_AI_API_KEY environment variable is not set in Supabase Edge Function secrets');
     }
-    
+    // @ts-ignore
+
     const modelName = Deno.env.get('GEMINI_MODEL') || 'gemini-2.0-flash-lite';
     
     // @ts-ignore
