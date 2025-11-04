@@ -104,21 +104,27 @@ export class OCRService {
    */
   static async removeFileFromStorage(storagePath) {
     try {
-      if (!storagePath) return;
+      if (!storagePath) {
+        console.warn('removeFileFromStorage called with empty storagePath');
+        return { success: false, error: 'Storage path is empty' };
+      }
       
-      const { error } = await supabase.storage
+      console.log('Attempting to remove file from storage:', storagePath);
+      
+      const { data, error } = await supabase.storage
         .from('expense-invoice-attachments')
         .remove([storagePath]);
 
       if (error) {
         console.error('Error removing file from storage:', error);
-        throw error;
+        return { success: false, error: error.message };
       }
 
-      return { success: true };
+      console.log('File successfully removed from storage:', storagePath, data);
+      return { success: true, data };
     } catch (error) {
       console.error('Failed to remove file from storage:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || 'Unknown error' };
     }
   }
 

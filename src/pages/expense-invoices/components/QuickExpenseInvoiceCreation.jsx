@@ -122,8 +122,12 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
     if (removedIndex !== undefined && fileStoragePaths[removedIndex]) {
       const storagePath = fileStoragePaths[removedIndex];
       try {
-        await OCRService.removeFileFromStorage(storagePath);
-        console.log('File removed from storage:', storagePath);
+        const result = await OCRService.removeFileFromStorage(storagePath);
+        if (result.success) {
+          console.log('File successfully removed from storage:', storagePath);
+        } else {
+          console.error('Failed to remove file from storage:', result.error);
+        }
       } catch (error) {
         console.error('Error removing file from storage:', error);
         // Continue with UI update even if storage deletion fails
@@ -184,9 +188,24 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
         
         // Keep the file in storage - it will be removed when user clicks cross icon
       } else {
-        // Extraction failed - show error message and remove file from UI
+        // Extraction failed - delete file from storage and remove from UI
         setOcrStatus('error');
         const errorMessage = result.error || 'Échec de l\'extraction des données';
+        
+        // Delete file from storage if it exists (OCRService should have already deleted it, but ensure it's gone)
+        const existingStoragePath = fileStoragePaths[fileIndex] || result.storagePath;
+        if (existingStoragePath) {
+          try {
+            const deleteResult = await OCRService.removeFileFromStorage(existingStoragePath);
+            if (deleteResult.success) {
+              console.log('File deleted from storage due to extraction failure:', existingStoragePath);
+            } else {
+              console.error('Failed to delete file from storage:', deleteResult.error);
+            }
+          } catch (deleteError) {
+            console.error('Error deleting file from storage:', deleteError);
+          }
+        }
         
         // Remove file from uploaded files list
         setUploadedFiles(prev => prev.filter((_, index) => index !== fileIndex));
@@ -205,14 +224,29 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
           });
         }
         
-        // Show user-friendly error message
-        alert(`Erreur d'extraction: ${errorMessage}\n\nLa structure du document n'est pas supportée ou le fichier est corrompu.\n\nVeuillez:\n- Vérifier que le document est une facture valide\n- Remplir manuellement les informations`);
-        
+        // Log error (removed alert as per user request)
         console.error('OCR extraction failed:', errorMessage);
       }
     } catch (error) {
-      // Critical error - show error message and remove file
+      // Critical error - delete file from storage and remove from UI
       setOcrStatus('error');
+      
+      // Try to get storage path from fileStoragePaths if available
+      const existingStoragePath = fileStoragePaths[fileIndex];
+      
+      // Delete file from storage if it was uploaded
+      if (existingStoragePath) {
+        try {
+          const deleteResult = await OCRService.removeFileFromStorage(existingStoragePath);
+          if (deleteResult.success) {
+            console.log('File deleted from storage due to processing error:', existingStoragePath);
+          } else {
+            console.error('Failed to delete file from storage:', deleteResult.error);
+          }
+        } catch (deleteError) {
+          console.error('Error deleting file from storage:', deleteError);
+        }
+      }
       
       // Remove file from uploaded files list
       setUploadedFiles(prev => prev.filter((_, index) => index !== fileIndex));
@@ -231,10 +265,8 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
         });
       }
       
-      // Show user-friendly error message
+      // Log error (removed alert as per user request)
       const errorMessage = error.message || 'Erreur lors du traitement du document';
-      alert(`Erreur d'extraction: ${errorMessage}\n\nLa structure du document n'est pas supportée ou le fichier est corrompu.\n\nVeuillez:\n- Vérifier que le document est une facture valide\n- Remplir manuellement les informations`);
-      
       console.error('OCR processing failed:', error);
     } finally {
       setIsOCRProcessing(false);
@@ -318,16 +350,22 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
       // Clean up: Remove all files from storage before closing
       if (Object.keys(fileStoragePaths).length > 0) {
         const storagePaths = Object.values(fileStoragePaths);
+        console.log('Removing files from storage on modal close:', storagePaths);
+        
         for (const storagePath of storagePaths) {
           try {
-            await OCRService.removeFileFromStorage(storagePath);
+            const result = await OCRService.removeFileFromStorage(storagePath);
+            if (result.success) {
+              console.log('File successfully removed from storage on close:', storagePath);
+            } else {
+              console.error('Failed to remove file from storage on close:', result.error);
+            }
           } catch (error) {
             console.error('Error removing file from storage on close:', error);
           }
         }
       }
       
-      onClose();
       // Reset form on close
       setFormData({
         supplierName: '',
@@ -348,6 +386,9 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
       setUploadedFiles([]);
       setFileStoragePaths({}); // Clear storage paths
       setOcrStatus('');
+      
+      // Close modal after cleanup
+      onClose();
     }
   };
 
@@ -398,7 +439,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
                   onFileUpload={handleFileUpload}
                   onFileRemove={handleFileRemove}
                   uploadedFiles={uploadedFiles}
-                  acceptedTypes=".pdf,.jpg,.jpeg,.png"
+                  acceptedTypes=".pdf,.jpg,.jpeg,.png,.gif,.webp,.bmp"
                   maxSize={10 * 1024 * 1024}
                   showOCRButton={false}
                 />

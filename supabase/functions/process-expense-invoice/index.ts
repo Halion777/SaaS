@@ -92,12 +92,36 @@ serve(async (req) => {
     - Be very accurate with numbers and dates - double check your extractions
     `;
 
+    // Determine MIME type based on file extension
+    // Google Gemini Vision API supports: PDF, JPEG, PNG, WEBP, GIF, BMP
+    const getMimeType = (fileName: string): string => {
+      const ext = fileName.toLowerCase().split('.').pop() || '';
+      const mimeTypes: Record<string, string> = {
+        'pdf': 'application/pdf',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'png': 'image/png',
+        'gif': 'image/gif',
+        'webp': 'image/webp',
+        'bmp': 'image/bmp'
+      };
+      
+      if (!mimeTypes[ext]) {
+        throw new Error(`Unsupported file type: .${ext}. Supported formats: PDF, JPEG, JPG, PNG, GIF, WEBP, BMP`);
+      }
+      
+      return mimeTypes[ext];
+    };
+
+    const mimeType = getMimeType(fileName);
+    console.log(`Detected MIME type: ${mimeType} for file: ${fileName}`);
+
     // Process with Gemini
     const result = await model.generateContent([
       prompt,
       {
         inlineData: {
-          mimeType: fileName.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg',
+          mimeType: mimeType,
           data: base64Data
         }
       }
