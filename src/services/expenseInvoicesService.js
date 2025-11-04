@@ -7,7 +7,6 @@ import { uploadFile, getPublicUrl, getSignedUrl } from './storageService';
 export class ExpenseInvoicesService {
   constructor() {
     this.tableName = 'expense_invoices';
-    this.attachmentsTable = 'expense_invoice_attachments';
   }
 
   /**
@@ -17,10 +16,7 @@ export class ExpenseInvoicesService {
     try {
       let query = supabase
         .from(this.tableName)
-        .select(`
-          *,
-          attachments:${this.attachmentsTable}(*)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       // Apply filters
@@ -93,10 +89,7 @@ export class ExpenseInvoicesService {
     try {
       const { data, error } = await supabase
         .from(this.tableName)
-        .select(`
-          *,
-          attachments:${this.attachmentsTable}(*)
-        `)
+        .select('*')
         .eq('id', id)
         .single();
 
@@ -151,64 +144,10 @@ export class ExpenseInvoicesService {
 
       if (invoiceError) throw invoiceError;
 
-      // Handle file upload if present
-      if (invoiceData.invoiceFile) {
-        const fileResult = await this.uploadInvoiceFile(invoiceData.invoiceFile, invoice.id);
-        
-        // Process OCR if file upload was successful
-        if (fileResult.success && this.isOCRSupported(invoiceData.invoiceFile)) {
-          try {
-            const ocrResult = await this.processOCR(fileResult.data.url, invoiceData.invoiceFile.name);
-            if (ocrResult.success) {
-              // Update invoice with OCR data if fields are empty
-              const updateData = {};
-              if (!invoice.supplier_name && ocrResult.data.supplier_name) {
-                updateData.supplier_name = ocrResult.data.supplier_name;
-              }
-              if (!invoice.supplier_email && ocrResult.data.supplier_email) {
-                updateData.supplier_email = ocrResult.data.supplier_email;
-              }
-              if (!invoice.supplier_vat_number && ocrResult.data.supplier_vat_number) {
-                updateData.supplier_vat_number = ocrResult.data.supplier_vat_number;
-              }
-              if (!invoice.invoice_number && ocrResult.data.invoice_number) {
-                updateData.invoice_number = ocrResult.data.invoice_number;
-              }
-              if (!invoice.issue_date && ocrResult.data.issue_date) {
-                updateData.issue_date = ocrResult.data.issue_date;
-              }
-              if (!invoice.due_date && ocrResult.data.due_date) {
-                updateData.due_date = ocrResult.data.due_date;
-              }
-              if (!invoice.category && ocrResult.data.category) {
-                updateData.category = ocrResult.data.category;
-              }
-              if (!invoice.amount && ocrResult.data.amount) {
-                updateData.amount = parseFloat(ocrResult.data.amount);
-              }
-              if (!invoice.net_amount && ocrResult.data.net_amount) {
-                updateData.net_amount = parseFloat(ocrResult.data.net_amount);
-              }
-              if (!invoice.vat_amount && ocrResult.data.tax_amount) {
-                updateData.vat_amount = parseFloat(ocrResult.data.tax_amount);
-              }
-              
-              // Update invoice with OCR data if we have any
-              if (Object.keys(updateData).length > 0) {
-                await this.updateExpenseInvoice(invoice.id, updateData);
-                // Refresh invoice data
-                const updatedInvoice = await this.getExpenseInvoice(invoice.id);
-                if (updatedInvoice.success) {
-                  invoice = updatedInvoice.data;
-                }
-              }
-            }
-          } catch (ocrError) {
-            console.warn('OCR processing failed:', ocrError);
-            // Continue without OCR data
-          }
-        }
-      }
+      // Note: OCR processing is done in the frontend before form submission
+      // Files are already uploaded to Supabase Storage during OCR
+      // User verifies and edits the extracted data before clicking "Add Invoice"
+      // No need to process OCR again here - the invoice is created with the verified data
 
       return {
         success: true,
@@ -281,11 +220,13 @@ export class ExpenseInvoicesService {
   }
 
   /**
-   * Upload invoice file and store metadata
+   * Upload invoice file to storage (metadata not stored in database)
+   * Files are stored directly in Supabase Storage via OCRService
+   * This method is kept for backward compatibility but does not store metadata
    */
   async uploadInvoiceFile(file, invoiceId = null) {
     try {
-      // Upload file to storage
+      // Upload file to storage (expense-invoice-attachments bucket for expense invoices)
       const { data: uploadData, error: uploadError, filePath } = await uploadFile(
         file, 
         'expense-invoice-attachments',
@@ -294,27 +235,13 @@ export class ExpenseInvoicesService {
 
       if (uploadError) throw uploadError;
 
-      // Store file metadata in database
-      const { data: attachmentData, error: attachmentError } = await supabase
-        .from(this.attachmentsTable)
-        .insert([{
-          expense_invoice_id: invoiceId,
-          file_name: file.name,
-          file_path: filePath,
-          file_size: file.size,
-          file_type: file.type.split('/')[1],
-          mime_type: file.type,
-          is_primary: true
-        }])
-        .select()
-        .single();
-
-      if (attachmentError) throw attachmentError;
-
       return {
         success: true,
         data: {
-          ...attachmentData,
+          file_name: file.name,
+          file_path: filePath,
+          file_size: file.size,
+          file_type: file.type,
           url: getPublicUrl('expense-invoice-attachments', filePath)
         },
         message: 'Fichier téléchargé avec succès'

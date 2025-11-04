@@ -1,19 +1,48 @@
 import { supabase } from './supabaseClient';
 
 export class OCRService {
+  /**
+   * Sanitize file name to remove special characters that cause issues with Supabase Storage
+   * @param {string} fileName - Original file name
+   * @returns {string} - Sanitized file name
+   */
+  static sanitizeFileName(fileName) {
+    // Get file extension
+    const lastDotIndex = fileName.lastIndexOf('.');
+    const nameWithoutExt = lastDotIndex > 0 ? fileName.substring(0, lastDotIndex) : fileName;
+    const extension = lastDotIndex > 0 ? fileName.substring(lastDotIndex) : '';
+    
+    // Replace spaces and special characters
+    // Keep only alphanumeric, dots, hyphens, underscores
+    const sanitized = nameWithoutExt
+      .replace(/\s+/g, '_') // Replace spaces with underscores
+      .replace(/[^a-zA-Z0-9._-]/g, '') // Remove all special characters except dots, hyphens, underscores
+      .replace(/_{2,}/g, '_') // Replace multiple underscores with single underscore
+      .replace(/^_+|_+$/g, ''); // Remove leading/trailing underscores
+    
+    // If name is empty after sanitization, use a default name
+    const finalName = sanitized || 'file';
+    
+    return `${finalName}${extension}`;
+  }
+
   static async processInvoice(file, keepFileInStorage = true) {
+    let fileName = null;
     try {
-      // 1. Upload file to Supabase Storage
-      const fileName = `invoices/${Date.now()}_${file.name}`;
+      // 1. Sanitize file name to avoid special character issues
+      const sanitizedFileName = this.sanitizeFileName(file.name);
+      fileName = `invoices/${Date.now()}_${sanitizedFileName}`;
+      
+      // 2. Upload file to Supabase Storage (expense-invoice-attachments bucket for expense invoices)
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('invoice-uploads')
+        .from('expense-invoice-attachments')
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
       // 2. Get public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('invoice-uploads')
+        .from('expense-invoice-attachments')
         .getPublicUrl(fileName);
 
       // 3. Call Gemini OCR via Supabase Edge Function (use process-expense-invoice for expense invoices)
@@ -24,13 +53,28 @@ export class OCRService {
         }
       });
 
-      if (ocrError) throw ocrError;
+      if (ocrError) {
+        // If OCR failed, delete the file and throw error
+        if (fileName) {
+          await this.removeFileFromStorage(fileName);
+        }
+        throw ocrError;
+      }
+
+      // Check if extraction was successful (data exists and has useful content)
+      if (!ocrData || !ocrData.extractedData || !ocrData.success) {
+        // If extraction failed, delete the file
+        if (fileName) {
+          await this.removeFileFromStorage(fileName);
+        }
+        throw new Error('No data extracted from document. Document structure may not be supported.');
+      }
 
       // 4. Clean up uploaded file ONLY if keepFileInStorage is false
       // For expense invoices, we keep files in storage until user removes them
       if (!keepFileInStorage) {
         await supabase.storage
-          .from('invoice-uploads')
+          .from('expense-invoice-attachments')
           .remove([fileName]);
       }
 
@@ -42,7 +86,15 @@ export class OCRService {
 
     } catch (error) {
       console.error('OCR processing error:', error);
-      throw new Error('Failed to process invoice with OCR');
+      // Ensure file is deleted if upload succeeded but processing failed
+      if (fileName) {
+        try {
+          await this.removeFileFromStorage(fileName);
+        } catch (deleteError) {
+          console.error('Error deleting file after processing failure:', deleteError);
+        }
+      }
+      throw error;
     }
   }
 
@@ -55,7 +107,7 @@ export class OCRService {
       if (!storagePath) return;
       
       const { error } = await supabase.storage
-        .from('invoice-uploads')
+        .from('expense-invoice-attachments')
         .remove([storagePath]);
 
       if (error) {
@@ -84,9 +136,11 @@ export class OCRService {
   }
 
   static async extractInvoiceData(file, keepFileInStorage = true) {
+    let storagePath = null;
     try {
       // Process the invoice with OCR
       const result = await this.processInvoice(file, keepFileInStorage);
+      storagePath = result.storagePath;
       
       // Validate the extracted data
       const validatedData = await this.validateExtractedData(result.extractedData);
@@ -99,11 +153,22 @@ export class OCRService {
       };
       
     } catch (error) {
+      // If extraction failed and we have a storage path, delete the file
+      if (storagePath) {
+        try {
+          await this.removeFileFromStorage(storagePath);
+          console.log('File deleted from storage due to extraction failure:', storagePath);
+        } catch (deleteError) {
+          console.error('Error deleting file after extraction failure:', deleteError);
+        }
+      }
+      
       return {
         success: false,
-        error: error.message,
+        error: error.message || 'Failed to extract data from document',
         data: null,
-        storagePath: null
+        storagePath: null,
+        shouldDeleteFile: true // Flag to indicate file should be deleted
       };
     }
   }

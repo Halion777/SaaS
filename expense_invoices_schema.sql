@@ -22,23 +22,13 @@ CREATE TABLE expense_invoices (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- File attachments table for storing uploaded invoice files
-CREATE TABLE expense_invoice_attachments (
-    id SERIAL PRIMARY KEY,
-    expense_invoice_id INTEGER NOT NULL REFERENCES expense_invoices(id) ON DELETE CASCADE,
-    file_name VARCHAR(255) NOT NULL,
-    file_path VARCHAR(500) NOT NULL,
-    file_size BIGINT NOT NULL,
-    file_type VARCHAR(100) NOT NULL,
-    mime_type VARCHAR(100),
-    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- Note: File attachments are stored directly in Supabase Storage (invoice-uploads bucket)
+-- No database table is needed for attachment metadata
 
 -- Basic indexes for performance
 CREATE INDEX idx_expense_invoices_status ON expense_invoices(status);
 CREATE INDEX idx_expense_invoices_category ON expense_invoices(category);
 CREATE INDEX idx_expense_invoices_issue_date ON expense_invoices(issue_date);
-CREATE INDEX idx_expense_invoice_attachments_invoice_id ON expense_invoice_attachments(expense_invoice_id);
 
 -- Trigger to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_expense_column()

@@ -517,7 +517,6 @@ The webhook handler:
 | `peppol_settings` | Your configuration | Per user |
 | `peppol_participants` | Trading partners | Clients and suppliers |
 | `invoice_attachments` | Client invoice files | Linked to `invoices` |
-| `expense_invoice_attachments` | Expense invoice files | Linked to `expense_invoices` |
 
 ---
 

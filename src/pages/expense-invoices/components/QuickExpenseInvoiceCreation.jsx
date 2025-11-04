@@ -184,14 +184,58 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
         
         // Keep the file in storage - it will be removed when user clicks cross icon
       } else {
-        // Silently fail - don't show error message, just let user fill manually
-        setOcrStatus('');
-        console.warn('OCR extraction had issues, but user can fill manually:', result.error);
+        // Extraction failed - show error message and remove file from UI
+        setOcrStatus('error');
+        const errorMessage = result.error || 'Échec de l\'extraction des données';
+        
+        // Remove file from uploaded files list
+        setUploadedFiles(prev => prev.filter((_, index) => index !== fileIndex));
+        
+        // Remove from storage paths if it exists
+        if (fileIndex !== undefined) {
+          setFileStoragePaths(prev => {
+            const newPaths = { ...prev };
+            delete newPaths[fileIndex];
+            // Re-index remaining files
+            const reindexedPaths = {};
+            Object.keys(newPaths).forEach((key, newIndex) => {
+              reindexedPaths[newIndex] = newPaths[key];
+            });
+            return reindexedPaths;
+          });
+        }
+        
+        // Show user-friendly error message
+        alert(`Erreur d'extraction: ${errorMessage}\n\nLa structure du document n'est pas supportée ou le fichier est corrompu.\n\nVeuillez:\n- Vérifier que le document est une facture valide\n- Remplir manuellement les informations`);
+        
+        console.error('OCR extraction failed:', errorMessage);
       }
     } catch (error) {
-      // Silently fail - don't show error message, just let user fill manually
-      setOcrStatus('');
-      console.warn('OCR processing failed, but user can fill manually:', error);
+      // Critical error - show error message and remove file
+      setOcrStatus('error');
+      
+      // Remove file from uploaded files list
+      setUploadedFiles(prev => prev.filter((_, index) => index !== fileIndex));
+      
+      // Remove from storage paths if it exists
+      if (fileIndex !== undefined) {
+        setFileStoragePaths(prev => {
+          const newPaths = { ...prev };
+          delete newPaths[fileIndex];
+          // Re-index remaining files
+          const reindexedPaths = {};
+          Object.keys(newPaths).forEach((key, newIndex) => {
+            reindexedPaths[newIndex] = newPaths[key];
+          });
+          return reindexedPaths;
+        });
+      }
+      
+      // Show user-friendly error message
+      const errorMessage = error.message || 'Erreur lors du traitement du document';
+      alert(`Erreur d'extraction: ${errorMessage}\n\nLa structure du document n'est pas supportée ou le fichier est corrompu.\n\nVeuillez:\n- Vérifier que le document est une facture valide\n- Remplir manuellement les informations`);
+      
+      console.error('OCR processing failed:', error);
     } finally {
       setIsOCRProcessing(false);
     }
@@ -199,6 +243,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
     
     if (!formData.supplierName || !formData.amount) {
       alert('Veuillez remplir au minimum le nom du fournisseur et le montant.');
@@ -209,6 +254,8 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
 
     try {
       // Prepare invoice data for the service
+      // Note: Files are already uploaded to Supabase Storage during OCR processing
+      // User has verified and edited the extracted data before clicking "Add Invoice"
       const invoiceData = {
         supplierName: formData.supplierName,
         supplierEmail: formData.supplierEmail,
@@ -222,8 +269,8 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
         issueDate: formData.issueDate || new Date().toISOString().split('T')[0],
         dueDate: formData.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         paymentMethod: formData.paymentMethod,
-        notes: formData.notes,
-        invoiceFile: formData.invoiceFile
+        notes: formData.notes
+        // Files are already in Supabase Storage from OCR - no need to pass file object
       };
 
       // Call the parent handler - update if editing, create if new
@@ -233,9 +280,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
         await onCreateExpenseInvoice(invoiceData);
       }
       
-      onClose();
-      
-      // Reset form
+      // Reset form before closing to avoid state updates during unmount
       setFormData({
         supplierName: '',
         supplierEmail: '',
@@ -255,9 +300,15 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
       setUploadedFiles([]);
       setFileStoragePaths({}); // Clear storage paths
       setOcrStatus('');
+      
+      // Use setTimeout to ensure state updates complete before closing
+      setTimeout(() => {
+        onClose();
+        setIsSubmitting(false);
+      }, 0);
     } catch (error) {
+      console.error('Error creating expense invoice:', error);
       alert('Erreur lors de la création de la facture. Veuillez réessayer.');
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -300,9 +351,9 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
     }
   };
 
+  if (!isOpen) return null;
+
   return (
-    <>
-    {isOpen && (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-card border border-border rounded-lg shadow-xl max-w-2xl w-full overflow-hidden">
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
@@ -355,7 +406,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
                 {isOCRProcessing && (
                   <div className="mt-3 flex items-center space-x-2 text-sm text-blue-700">
                     <Icon name="Loader2" size={16} className="animate-spin" />
-                    <span>{ocrStatus || 'Analyse de la facture en cours...'}</span>
+                    <span>{ocrStatus === 'Analyse de la facture en cours...' ? ocrStatus : 'Analyse de la facture en cours...'}</span>
                   </div>
                 )}
                 
@@ -363,6 +414,13 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
                   <div className="mt-3 flex items-center space-x-2 text-sm text-green-700">
                     <Icon name="CheckCircle" size={16} />
                     <span>{ocrStatus}</span>
+                  </div>
+                )}
+                
+                {ocrStatus === 'error' && !isOCRProcessing && (
+                  <div className="mt-3 flex items-center space-x-2 text-sm text-red-700">
+                    <Icon name="AlertCircle" size={16} />
+                    <span>Échec de l'extraction - La structure du document n'est pas supportée. Veuillez remplir manuellement.</span>
                   </div>
                 )}
             </div>
@@ -603,8 +661,6 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
         </div>
       </div>
     </div>
-    )}
-    </>
   );
 };
 

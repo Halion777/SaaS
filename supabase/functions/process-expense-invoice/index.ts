@@ -16,15 +16,40 @@ serve(async (req) => {
   try {
     const { fileUrl, fileName } = await req.json();
     
+    // Validate input
+    if (!fileUrl || !fileName) {
+      throw new Error('Missing required parameters: fileUrl and fileName are required');
+    }
+    
     // Initialize Gemini
+    const apiKey = Deno.env.get('GOOGLE_AI_API_KEY');
+    if (!apiKey) {
+      throw new Error('GOOGLE_AI_API_KEY environment variable is not set in Supabase Edge Function secrets');
+    }
+    
+    const modelName = Deno.env.get('GEMINI_MODEL') || 'gemini-2.0-flash-lite';
+    
     // @ts-ignore
-    const genAI = new GoogleGenerativeAI(Deno.env.get('GOOGLE_AI_API_KEY') || '');
+    const genAI = new GoogleGenerativeAI(apiKey);
     // @ts-ignore
-    const model = genAI.getGenerativeModel({ model: Deno.env.get('GEMINI_MODEL') || 'gemini-2.0-flash-lite' });
+    const model = genAI.getGenerativeModel({ model: modelName });
 
     // Download and process the file
+    // The fileUrl from Supabase Storage should already be properly encoded
+    console.log('Downloading file from:', fileUrl);
     const response = await fetch(fileUrl);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to download file: ${response.status} ${response.statusText}. URL: ${fileUrl}`);
+    }
+    
     const fileBuffer = await response.arrayBuffer();
+    
+    if (fileBuffer.byteLength === 0) {
+      throw new Error('Downloaded file is empty');
+    }
+    
+    console.log(`File size: ${fileBuffer.byteLength} bytes`);
     
     // Convert to base64 for Gemini
     // @ts-ignore
