@@ -1757,7 +1757,8 @@
       "sent": "Sent",
       "stopped": "Stopped",
       "failed": "Failed",
-      "expired": "Expired"
+      "expired": "Expired",
+      "ready_for_dispatch": "Ready for dispatch"
     }
   },
   "followUpManagement": {

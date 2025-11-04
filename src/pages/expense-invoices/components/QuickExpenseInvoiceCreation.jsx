@@ -122,7 +122,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
     if (removedIndex !== undefined && fileStoragePaths[removedIndex]) {
       const storagePath = fileStoragePaths[removedIndex];
       try {
-        const result = await OCRService.removeFileFromStorage(storagePath);
+        const result = await OCRService.removeFileFromStorage(storagePath, 'expense-invoice-attachments');
         if (result.success) {
           console.log('File successfully removed from storage:', storagePath);
         } else {
@@ -154,7 +154,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
     
     try {
       // Keep file in storage until user removes it
-      const result = await OCRService.extractInvoiceData(file, true);
+      const result = await OCRService.extractExpenseInvoiceData(file, true);
       
       if (result.success && result.data) {
         const extractedData = result.data;
@@ -196,7 +196,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
         const existingStoragePath = fileStoragePaths[fileIndex] || result.storagePath;
         if (existingStoragePath) {
           try {
-            const deleteResult = await OCRService.removeFileFromStorage(existingStoragePath);
+            const deleteResult = await OCRService.removeFileFromStorage(existingStoragePath, 'expense-invoice-attachments');
             if (deleteResult.success) {
               console.log('File deleted from storage due to extraction failure:', existingStoragePath);
             } else {
@@ -237,7 +237,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
       // Delete file from storage if it was uploaded
       if (existingStoragePath) {
         try {
-          const deleteResult = await OCRService.removeFileFromStorage(existingStoragePath);
+          const deleteResult = await OCRService.removeFileFromStorage(existingStoragePath, 'expense-invoice-attachments');
           if (deleteResult.success) {
             console.log('File deleted from storage due to processing error:', existingStoragePath);
           } else {
@@ -354,7 +354,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
         
         for (const storagePath of storagePaths) {
           try {
-            const result = await OCRService.removeFileFromStorage(storagePath);
+            const result = await OCRService.removeFileFromStorage(storagePath, 'expense-invoice-attachments');
             if (result.success) {
               console.log('File successfully removed from storage on close:', storagePath);
             } else {

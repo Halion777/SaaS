@@ -1576,7 +1576,8 @@
       "sent": "Envoyée",
       "stopped": "Arrêtée",
       "failed": "Échouée",
-      "expired": "Expirée"
+      "expired": "Expirée",
+      "ready_for_dispatch": "Prête à envoyer"
     }
   },
   "followUpManagement": {

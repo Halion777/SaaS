@@ -1525,7 +1525,7 @@ export async function checkAndUpdateQuoteExpiration(quoteId, userId) {
 
 /**
  * Convert a quote to an invoice
- * @param {Object} quote - The quote object to convert
+ * @param {Object} quote - The quote object to convert (can be transformed or raw)
  * @param {string} userId - The current user ID
  * @returns {Promise<{success: boolean, data: Object, error: string}>}
  */
@@ -1534,6 +1534,24 @@ export async function convertQuoteToInvoice(quote, userId) {
     // Validate quote status - only convert quotes that are not draft or expired
     if (quote.status === 'draft' || quote.status === 'expired') {
       throw new Error('Cannot convert draft or expired quotes to invoices');
+    }
+
+    // Fetch full quote data from database to ensure we have all fields
+    // The quote object passed might be transformed and missing some fields
+    const { data: fullQuote, error: fetchError } = await fetchQuoteById(quote.id);
+    
+    if (fetchError || !fullQuote) {
+      throw new Error(`Failed to fetch quote data: ${fetchError?.message || 'Quote not found'}`);
+    }
+
+    // Use full quote data for conversion
+    const quoteData = fullQuote;
+
+    // Extract client_id - handle both transformed (quote.client.id) and raw (quote.client_id) formats
+    const clientId = quoteData.client_id || quoteData.client?.id || quote.client_id || quote.client?.id;
+    
+    if (!clientId) {
+      throw new Error('Quote must have a client to convert to invoice');
     }
 
     // Generate invoice number
@@ -1548,26 +1566,39 @@ export async function convertQuoteToInvoice(quote, userId) {
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 30);
 
-    // Prepare invoice data
+    // Extract description - check both project_description and description fields
+    const description = quoteData.project_description || quoteData.description || quote.description || '';
+
+    // Extract amounts - use final_amount, total_amount, tax_amount, net_amount from quote
+    const totalAmount = parseFloat(quoteData.total_amount || 0);
+    const taxAmount = parseFloat(quoteData.tax_amount || 0);
+    const discountAmount = parseFloat(quoteData.discount_amount || 0);
+    const finalAmount = parseFloat(quoteData.final_amount || quoteData.total_amount || 0);
+    // Calculate net amount if not present
+    const netAmount = quoteData.net_amount 
+      ? parseFloat(quoteData.net_amount) 
+      : (totalAmount - discountAmount);
+
+    // Prepare invoice data with all necessary fields
     const invoiceData = {
       user_id: userId,
-      client_id: quote.client_id,
-      quote_id: quote.id,
+      client_id: clientId,
+      quote_id: quoteData.id,
       invoice_number: invoiceNumber,
-      quote_number: quote.quote_number,
-      title: quote.title || `Facture pour ${quote.description || 'Projet'}`,
-      description: quote.description,
+      quote_number: quoteData.quote_number,
+      title: quoteData.title || `Facture pour ${description || 'Projet'}`,
+      description: description,
       status: 'unpaid', // Always start as unpaid
-      amount: quote.net_amount || quote.total_amount || 0, // Net amount (HT)
-      net_amount: quote.net_amount || quote.total_amount || 0, // Net amount (HT)
-      tax_amount: quote.tax_amount || 0,
-      discount_amount: quote.discount_amount || 0,
-      final_amount: quote.final_amount || quote.total_amount || 0,
+      amount: netAmount, // Net amount (HT)
+      net_amount: netAmount, // Net amount (HT)
+      tax_amount: taxAmount,
+      discount_amount: discountAmount,
+      final_amount: finalAmount,
       issue_date: new Date().toISOString().split('T')[0],
       due_date: dueDate.toISOString().split('T')[0],
       payment_method: 'À définir',
       payment_terms: 'Paiement à 30 jours',
-      notes: `Facture générée automatiquement depuis le devis ${quote.quote_number}`,
+      notes: `Facture générée automatiquement depuis le devis ${quoteData.quote_number}`,
       converted_from_quote_at: new Date().toISOString()
     };
 
@@ -1590,7 +1621,7 @@ export async function convertQuoteToInvoice(quote, userId) {
         status: 'converted_to_invoice',
         updated_at: new Date().toISOString()
       })
-      .eq('id', quote.id);
+      .eq('id', quoteData.id);
 
     if (updateError) {
       console.warn('Warning: Failed to update quote status:', updateError);

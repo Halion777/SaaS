@@ -13,6 +13,21 @@ This guide explains how Peppol integrates with your SaaS invoicing system - spec
 
 **Table:** `public.invoices`
 
+**Storage:**
+- **Attachments:** Files are stored directly in Supabase Storage bucket `invoice-uploads`
+- **No Database Table:** No `invoice_attachments` table is used - files are managed via storage bucket only
+
+**Creation Methods:**
+Client invoices can be created in **one way**:
+
+**Quote Conversion:**
+- Convert an **accepted quote** to an invoice
+- Automatically copies quote data (client, amounts, line items, etc.) to invoice
+- Quote status is updated to `converted_to_invoice`
+- Location: `src/services/quotesService.js` - `convertQuoteToInvoice()`
+- Database: `invoices.quote_id` links back to the original quote
+- **Note:** Manual invoice creation and OCR have been removed. All invoices must be created from accepted quotes.
+
 **Peppol Fields Added:**
 - `peppol_enabled` - Is this invoice sent via Peppol?
 - `peppol_status` - Status: `not_sent`, `sending`, `sent`, `delivered`, `failed`
@@ -169,20 +184,32 @@ if (result.success) {
 
 ## 📝 Complete Flow
 
-### Sending a Client Invoice
+### Creating a Client Invoice
+
+Client invoices can be created in two ways:
+
+#### Creating Client Invoice from Quote
 
 ```javascript
-// 1. Create invoice normally
-const { data: invoice } = await supabase
-  .from('invoices')
-  .insert({
-    client_id: clientId,
-    invoice_number: 'INV-001',
-    amount: 1000,
-    // ... other fields
-  })
-  .select()
-  .single();
+// 1. Convert accepted quote to invoice
+const result = await convertQuoteToInvoice(quote, userId);
+
+if (result.success) {
+  const invoice = result.data;
+  // Invoice is automatically created with:
+  // - quote_id linking to original quote
+  // - All quote data copied (client, amounts, line items, etc.)
+  // - Quote status updated to 'converted_to_invoice'
+}
+```
+
+### Sending a Client Invoice via Peppol
+
+After creating the invoice (either method), you can send it via Peppol:
+
+```javascript
+// 1. Invoice already created (from manual entry or quote conversion)
+const invoice = /* ... existing invoice ... */;
 
 // 2. Convert to UBL XML
 const ublXml = await convertInvoiceToUBL(invoice);

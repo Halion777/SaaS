@@ -26,7 +26,13 @@ export class OCRService {
     return `${finalName}${extension}`;
   }
 
-  static async processInvoice(file, keepFileInStorage = true) {
+  /**
+   * Process expense invoice (for expense invoices)
+   * @param {File} file - The file to process
+   * @param {boolean} keepFileInStorage - Whether to keep file in storage after processing
+   * @returns {Promise<{extractedData: Object, storagePath: string}>}
+   */
+  static async processExpenseInvoice(file, keepFileInStorage = true) {
     let fileName = null;
     try {
       // 1. Sanitize file name to avoid special character issues
@@ -56,7 +62,7 @@ export class OCRService {
       if (ocrError) {
         // If OCR failed, delete the file and throw error
         if (fileName) {
-          await this.removeFileFromStorage(fileName);
+          await this.removeFileFromStorage(fileName, 'expense-invoice-attachments');
         }
         throw ocrError;
       }
@@ -65,7 +71,7 @@ export class OCRService {
       if (!ocrData || !ocrData.extractedData || !ocrData.success) {
         // If extraction failed, delete the file
         if (fileName) {
-          await this.removeFileFromStorage(fileName);
+          await this.removeFileFromStorage(fileName, 'expense-invoice-attachments');
         }
         throw new Error('No data extracted from document. Document structure may not be supported.');
       }
@@ -89,7 +95,7 @@ export class OCRService {
       // Ensure file is deleted if upload succeeded but processing failed
       if (fileName) {
         try {
-          await this.removeFileFromStorage(fileName);
+          await this.removeFileFromStorage(fileName, 'expense-invoice-attachments');
         } catch (deleteError) {
           console.error('Error deleting file after processing failure:', deleteError);
         }
@@ -98,21 +104,27 @@ export class OCRService {
     }
   }
 
+  // Keep old method for backward compatibility (maps to expense invoice)
+  static async processInvoice(file, keepFileInStorage = true) {
+    return this.processExpenseInvoice(file, keepFileInStorage);
+  }
+
   /**
    * Remove file from storage
    * @param {string} storagePath - The file path in storage (e.g., "invoices/1234567890_file.pdf")
+   * @param {string} bucketName - The bucket name ('expense-invoice-attachments' or 'invoice-uploads')
    */
-  static async removeFileFromStorage(storagePath) {
+  static async removeFileFromStorage(storagePath, bucketName = 'expense-invoice-attachments') {
     try {
       if (!storagePath) {
         console.warn('removeFileFromStorage called with empty storagePath');
         return { success: false, error: 'Storage path is empty' };
       }
       
-      console.log('Attempting to remove file from storage:', storagePath);
+      console.log('Attempting to remove file from storage:', storagePath, 'bucket:', bucketName);
       
       const { data, error } = await supabase.storage
-        .from('expense-invoice-attachments')
+        .from(bucketName)
         .remove([storagePath]);
 
       if (error) {
@@ -130,7 +142,7 @@ export class OCRService {
 
   static async validateExtractedData(data) {
     // Validate that at least some useful data is present
-    // Don't require all fields - expense invoices may not have everything
+    // For expense invoices only (client invoice OCR removed)
     const usefulFields = ['amount', 'invoice_number', 'supplier_name', 'issue_date', 'net_amount', 'tax_amount'];
     const hasUsefulData = usefulFields.some(field => data[field]);
     
@@ -141,11 +153,17 @@ export class OCRService {
     return data;
   }
 
-  static async extractInvoiceData(file, keepFileInStorage = true) {
+  /**
+   * Extract expense invoice data (for expense invoices)
+   * @param {File} file - The file to extract data from
+   * @param {boolean} keepFileInStorage - Whether to keep file in storage after processing
+   * @returns {Promise<{success: boolean, data: Object, storagePath: string, error: string}>}
+   */
+  static async extractExpenseInvoiceData(file, keepFileInStorage = true) {
     let storagePath = null;
     try {
       // Process the invoice with OCR
-      const result = await this.processInvoice(file, keepFileInStorage);
+      const result = await this.processExpenseInvoice(file, keepFileInStorage);
       storagePath = result.storagePath;
       
       // Validate the extracted data
@@ -162,7 +180,7 @@ export class OCRService {
       // If extraction failed and we have a storage path, delete the file
       if (storagePath) {
         try {
-          await this.removeFileFromStorage(storagePath);
+          await this.removeFileFromStorage(storagePath, 'expense-invoice-attachments');
           console.log('File deleted from storage due to extraction failure:', storagePath);
         } catch (deleteError) {
           console.error('Error deleting file after extraction failure:', deleteError);
@@ -177,5 +195,10 @@ export class OCRService {
         shouldDeleteFile: true // Flag to indicate file should be deleted
       };
     }
+  }
+
+  // Keep old method for backward compatibility (maps to expense invoice)
+  static async extractInvoiceData(file, keepFileInStorage = true) {
+    return this.extractExpenseInvoiceData(file, keepFileInStorage);
   }
 }

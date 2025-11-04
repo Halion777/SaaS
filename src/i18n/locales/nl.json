@@ -1740,7 +1740,8 @@
       "sent": "Verzonden",
       "stopped": "Gestopt",
       "failed": "Mislukt",
-      "expired": "Verlopen"
+      "expired": "Verlopen",
+      "ready_for_dispatch": "Klaar voor verzending"
     }
   },
   "followUpManagement": {

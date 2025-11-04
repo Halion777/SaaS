@@ -97,28 +97,28 @@ const Select = React.forwardRef(({
             if (onValueChange) {
                 onValueChange(updatedValue);
             } else {
-                // Create a synthetic event object to mimic a native select
-                const syntheticEvent = {
-                    target: {
-                        name,
-                        value: updatedValue
-                    }
-                };
-                onChange?.(syntheticEvent);
+            // Create a synthetic event object to mimic a native select
+            const syntheticEvent = {
+                target: {
+                    name,
+                    value: updatedValue
+                }
+            };
+            onChange?.(syntheticEvent);
             }
         } else {
             // Support both onChange and onValueChange
             if (onValueChange) {
                 onValueChange(option.value);
-            } else {
-                // Create a synthetic event object to mimic a native select
-                const syntheticEvent = {
-                    target: {
-                        name,
-                        value: option.value
-                    }
-                };
-                onChange?.(syntheticEvent);
+        } else {
+            // Create a synthetic event object to mimic a native select
+            const syntheticEvent = {
+                target: {
+                    name,
+                    value: option.value
+                }
+            };
+            onChange?.(syntheticEvent);
             }
             setIsOpen(false);
             onOpenChange?.(false);
@@ -131,7 +131,7 @@ const Select = React.forwardRef(({
         if (onValueChange) {
             onValueChange(multiple ? [] : '');
         } else {
-            onChange?.({ target: { name, value: multiple ? [] : '' } });
+        onChange?.({ target: { name, value: multiple ? [] : '' } });
         }
     };
 

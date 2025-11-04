@@ -6,7 +6,6 @@ import InvoicesSummaryBar from './components/InvoicesSummaryBar';
 import InvoicesFilterToolbar from './components/InvoicesFilterToolbar';
 import InvoicesDataTable from './components/InvoicesDataTable';
 
-import QuickInvoiceCreation from './components/QuickInvoiceCreation';
 import Select from '../../components/ui/Select';
 import InvoiceService from '../../services/invoiceService';
 import { useAuth } from '../../context/AuthContext';
@@ -24,7 +23,6 @@ const InvoicesManagement = () => {
     amountRange: { min: '', max: '' }
   });
 
-  const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
@@ -333,43 +331,6 @@ const InvoicesManagement = () => {
 
 
 
-  const handleCreateInvoice = async (newInvoice) => {
-    try {
-      const result = await InvoiceService.createInvoice(newInvoice, user.id);
-      
-      if (result.success) {
-        // Transform the new invoice to match the expected format
-        const transformedInvoice = {
-          id: result.data.id,
-          number: result.data.invoice_number,
-          quoteNumber: result.data.quote_number,
-          clientName: result.data.client?.name || 'Client inconnu',
-          clientEmail: result.data.client?.email || '',
-          amount: parseFloat(result.data.final_amount || 0),
-          status: result.data.status,
-          issueDate: result.data.issue_date,
-          dueDate: result.data.due_date,
-          paymentMethod: result.data.payment_method || 'À définir'
-        };
-        
-        // Add to local state
-        const updatedInvoices = [...invoices, transformedInvoice];
-        setInvoices(updatedInvoices);
-        setFilteredInvoices(updatedInvoices);
-        
-        // Close modal
-        setIsQuickCreateOpen(false);
-        
-        // Show success message
-        alert('Facture créée avec succès !');
-      } else {
-        alert(`Erreur lors de la création: ${result.error}`);
-      }
-    } catch (error) {
-      console.error('Error creating invoice:', error);
-      alert('Erreur lors de la création de la facture');
-    }
-  };
 
   if (isLoading) {
     return (
@@ -425,15 +386,6 @@ const InvoicesManagement = () => {
                   disabled={isLoading}
                 >
                   {isLoading ? 'Actualisation...' : 'Actualiser'}
-                </Button>
-
-                <Button
-                  iconName="Plus"
-                  iconPosition="left"
-                  onClick={() => setIsQuickCreateOpen(true)}
-                  className="text-xs sm:text-sm"
-                >
-                  Nouvelle facture
                 </Button>
               </div>
           </div>
@@ -553,15 +505,6 @@ const InvoicesManagement = () => {
           )}
         </div>
       </main>
-
-
-
-      {/* Quick Invoice Creation Modal */}
-      <QuickInvoiceCreation
-        isOpen={isQuickCreateOpen}
-        onClose={() => setIsQuickCreateOpen(false)}
-        onCreateInvoice={handleCreateInvoice}
-      />
     </div>
   );
 };
