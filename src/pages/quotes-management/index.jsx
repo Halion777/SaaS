@@ -697,11 +697,11 @@ const QuotesManagement = () => {
       const result = await convertQuoteToInvoice(quote, user.id);
       
       if (result.success) {
-        // Refresh quotes list
-        await handleRefresh();
-        
-        // Navigate to invoices management
+        // Navigate to invoices management page immediately after successful conversion
         navigate('/invoices-management');
+        
+        // Refresh quotes list in background (optional, as user is navigating away)
+        // await handleRefresh();
       } else {
         alert(`Erreur lors de la conversion: ${result.error}`);
       }

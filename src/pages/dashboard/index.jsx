@@ -549,6 +549,7 @@ const Dashboard = () => {
                   size="icon"
                 iconName="Plus" 
                 iconPosition="left"
+                onClick={() => navigate('/quote-creation')}
                   className="dashboard-new-quote-button sm:h-9 sm:px-3 sm:w-auto bg-blue-600 hover:bg-blue-700 text-white [&>svg]:mx-auto sm:[&>svg]:mx-0"
               >
                   <span className="hidden sm:inline">{t('dashboard.buttons.newQuote')}</span>
