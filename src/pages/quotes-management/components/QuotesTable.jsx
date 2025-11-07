@@ -309,15 +309,15 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                   )}
                   {/* Hide edit button for accepted, rejected, or converted quotes */}
                   {quote.status !== 'accepted' && quote.status !== 'rejected' && quote.status !== 'converted_to_invoice' && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onQuoteAction('edit', quote)}
-                      title={t('quotesManagement.table.actions.edit')}
-                      className="h-8 w-8"
-                    >
-                      <Icon name="Edit" size={16} />
-                    </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onQuoteAction('edit', quote)}
+                    title={t('quotesManagement.table.actions.edit')}
+                    className="h-8 w-8"
+                  >
+                    <Icon name="Edit" size={16} />
+                  </Button>
                   )}
                               {(!quote.isDraftPlaceholder && quote.status === 'accepted') && (
               <Button
@@ -434,15 +434,15 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
             )}
             {/* Hide edit button for accepted, rejected, or converted quotes */}
             {quote.status !== 'accepted' && quote.status !== 'rejected' && quote.status !== 'converted_to_invoice' && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onQuoteAction('edit', quote)}
-                title={t('quotesManagement.table.actions.edit')}
-                className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-              >
-                <Icon name="Edit" size={14} />
-              </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onQuoteAction('edit', quote)}
+                              title={t('quotesManagement.table.actions.edit')}
+              className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            >
+              <Icon name="Edit" size={14} />
+            </Button>
             )}
             {(!quote.isDraftPlaceholder && quote.status === 'accepted') && (
               <Button

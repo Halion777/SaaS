@@ -22,6 +22,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
     phone: '',
     email: '',
     website: '',
+    iban: '',
     logo: null,
     signature: null,
     ...initialData
@@ -101,8 +102,42 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
         const { loadCompanyInfo } = await import('../../../services/companyInfoService');
         const companyData = await loadCompanyInfo(user.id);
 
+        // Load Peppol settings to check if Peppol is connected and extract VAT number
+        let peppolVATNumber = null;
+        let isPeppolConnected = false;
+        try {
+          const { PeppolService } = await import('../../../services/peppolService');
+          const peppolService = new PeppolService(true);
+          const peppolSettings = await peppolService.getPeppolSettings();
+          
+          if (peppolSettings.success && peppolSettings.data?.isConfigured && peppolSettings.data?.peppolId) {
+            isPeppolConnected = true;
+            // Extract VAT number from Peppol ID (e.g., "0208:0630675508" -> "BE0630675508")
+            const peppolId = peppolSettings.data.peppolId;
+            const parts = peppolId.split(":");
+            if (parts.length === 2 && parts[0] === '0208') {
+              // Belgian enterprise number: extract 10 digits and add "BE" prefix
+              const enterpriseNumber = parts[1];
+              if (enterpriseNumber.length === 10) {
+                peppolVATNumber = `BE${enterpriseNumber}`;
+              }
+            } else if (parts.length === 2 && parts[0] === '9925' && parts[1].startsWith('BE')) {
+              // VAT-based identifier: use directly
+              peppolVATNumber = parts[1].toUpperCase();
+            }
+          }
+        } catch (peppolError) {
+          console.log('Peppol settings not available:', peppolError);
+          // Continue without Peppol data
+        }
+
         if (companyData) {
           // Use database data directly
+          // If Peppol is connected and VAT number is not set in company profile, use VAT from Peppol
+          if (isPeppolConnected && peppolVATNumber && !companyData.vatNumber) {
+            companyData.vatNumber = peppolVATNumber;
+            companyData.vatNumberFromPeppol = true; // Flag to indicate it came from Peppol
+          }
 
           // Generate public URLs for any images that only have paths (from database)
           if (companyData.logo?.path && !companyData.logo?.url) {
@@ -129,10 +164,10 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
 
           setCompanyInfo(companyData);
         } else {
-          // No database data - set empty state
+          // No database data - set empty state, but use Peppol VAT if available
           setCompanyInfo({
             name: '',
-            vatNumber: '',
+            vatNumber: peppolVATNumber || '',
             address: '',
             postalCode: '',
             city: '',
@@ -141,8 +176,10 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
             phone: '',
             email: '',
             website: '',
+            iban: '',
             logo: null,
-            signature: null
+            signature: null,
+            vatNumberFromPeppol: isPeppolConnected && peppolVATNumber ? true : false
           });
         }
       } catch (error) {
@@ -201,7 +238,8 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
           country: info.country,
           phone: info.phone,
           email: info.email,
-          website: info.website
+          website: info.website,
+          iban: info.iban || ''
         };
         localStorage.setItem(`company-info-${user.id}`, JSON.stringify(companyInfoToSave));
         
@@ -633,13 +671,25 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
               {t('quoteCreation.companyInfo.vatNumber')}
+              {companyInfo.vatNumberFromPeppol && (
+                <span className="text-xs text-muted-foreground ml-2">
+                  (from Peppol)
+                </span>
+              )}
             </label>
           <Input
             type="text"
             value={companyInfo.vatNumber}
             onChange={(e) => handleInputChange('vatNumber', e.target.value)}
             placeholder={t('quoteCreation.companyInfo.vatNumberPlaceholder', "BE0123456789")}
+            disabled={companyInfo.vatNumberFromPeppol}
+            className={companyInfo.vatNumberFromPeppol ? 'bg-muted/30 cursor-not-allowed' : ''}
           />
+          {companyInfo.vatNumberFromPeppol && (
+            <p className="text-xs text-muted-foreground mt-1">
+              VAT number is automatically set from your Peppol configuration
+            </p>
+          )}
           </div>
 
           {/* Address */}
@@ -750,6 +800,23 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
             onChange={(e) => handleInputChange('website', e.target.value)}
             placeholder="www.entreprise.be"
           />
+          </div>
+
+          {/* IBAN */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              {t('quoteCreation.companyInfo.iban', 'IBAN')}
+            </label>
+            <Input
+              type="text"
+              value={companyInfo.iban || ''}
+              onChange={(e) => handleInputChange('iban', e.target.value)}
+              placeholder="BE68539007547034"
+              maxLength={34}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              {t('quoteCreation.companyInfo.ibanHelp', 'International Bank Account Number (optionnel, recommandé pour les paiements par virement)')}
+            </p>
           </div>
 
           {/* Company Signature */}

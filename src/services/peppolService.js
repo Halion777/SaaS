@@ -73,7 +73,65 @@ const formatDate = (date, format = "iso") => {
   return format === "iso" ? d.toISOString() : d.toISOString().split("T")[0];
 };
 
-const getVATPEPPOLIdentifier = (vat) => `0208:${vat.split("BE")[1]}`;
+// Get PEPPOL scheme ID based on VAT number country code
+const getPEPPOLSchemeId = (vatNumber) => {
+  if (!vatNumber || vatNumber.length < 2) return null;
+  
+  const countryCode = vatNumber.substring(0, 2).toUpperCase();
+  
+  const schemeMap = {
+    'AD': '9922',
+    'AL': '9923',
+    'BA': '9924',
+    'BE': '9925', // VAT-based scheme for Belgium (but EndpointID uses 0208)
+    'BG': '9926',
+    'CH': '9927',
+    'CY': '9928',
+    'CZ': '9929',
+    'DE': '9930',
+    'EE': '9931',
+    'GB': '9932',
+    'GR': '9933',
+    'HR': '9934',
+    'IE': '9935',
+    'LI': '9936',
+    'LT': '9937',
+    'LU': '9938',
+    'LV': '9939',
+    'MC': '9940',
+    'ME': '9941',
+    'MK': '9942',
+    'MT': '9943',
+    'NL': '9944',
+    'PO': '9945',
+    'PT': '9946',
+    'RO': '9947',
+    'RS': '9948',
+    'SI': '9949',
+    'SK': '9950',
+    'SM': '9951',
+    'TR': '9952',
+    'VA': '9953',
+    'SE': '9955',
+    'FR': '9957'
+  };
+  
+  return schemeMap[countryCode] || null;
+};
+
+// Get Belgian enterprise number identifier (0208:XXXXXXXXXX)
+const getBelgianEnterpriseNumberIdentifier = (vatNumber) => {
+  if (!vatNumber) return null;
+  
+  // Check if it's a Belgian VAT number (BE followed by 10 digits)
+  if (/^BE\d{10}$/i.test(vatNumber)) {
+    // Extract 10 digits after "BE"
+    const enterpriseNumber = vatNumber.substring(2, 12);
+    return `0208:${enterpriseNumber}`;
+  }
+  
+  return null;
+};
 
 const encodeBase64 = (data) => {
   if (typeof data === "string") {
@@ -124,10 +182,250 @@ const calculateTotals = (lines) => lines.reduce((totals, line) => ({
   totalAmount: 0
 });
 
+// Helper function to clean VAT number (remove Peppol scheme prefixes like "0208:", "9925:", etc.)
+const cleanVATNumber = (vatNumber) => {
+  if (!vatNumber || vatNumber.trim() === '') {
+    return '';
+  }
+  
+  // Remove any Peppol scheme prefix (e.g., "0208:", "9925:", etc.)
+  // Pattern: digits followed by colon, then optional country code and digits
+  let cleaned = vatNumber.trim();
+  
+  // Remove scheme prefix if present (e.g., "0208:BE0630675588" -> "BE0630675588")
+  if (/^\d{4}:[A-Z]{2}/i.test(cleaned)) {
+    cleaned = cleaned.replace(/^\d{4}:/, '');
+  }
+  
+  // Remove any other scheme prefixes (e.g., "9925:BE0630675588" -> "BE0630675588")
+  if (/^\d{4}:[A-Z]{2}/i.test(cleaned)) {
+    cleaned = cleaned.replace(/^\d{4}:/, '');
+  }
+  
+  return cleaned;
+};
+
+// Helper function to convert country name to ISO code
+const countryNameToISO = (countryName) => {
+  if (!countryName) return 'BE';
+  
+  const countryMap = {
+    'belgique': 'BE',
+    'belgium': 'BE',
+    'france': 'FR',
+    'nederland': 'NL',
+    'netherlands': 'NL',
+    'deutschland': 'DE',
+    'germany': 'DE',
+    'espagne': 'ES',
+    'spain': 'ES',
+    'italie': 'IT',
+    'italy': 'IT',
+    'luxembourg': 'LU',
+    'luxemburg': 'LU'
+  };
+  
+  const normalized = countryName.trim().toLowerCase();
+  return countryMap[normalized] || countryName.toUpperCase().substring(0, 2);
+};
+
+// Helper function to format VAT number with country prefix
+const formatVATNumber = (vatNumber, countryCode) => {
+  if (!vatNumber || vatNumber.trim() === '') {
+    // If VAT number is empty, return empty string (will fail validation, but that's expected)
+    return '';
+  }
+  
+  // First, clean the VAT number (remove any Peppol scheme prefixes)
+  let cleanVat = cleanVATNumber(vatNumber);
+  
+  // Convert country code from name to ISO if needed
+  let isoCountryCode = countryCode;
+  if (countryCode && countryCode.length > 2) {
+    isoCountryCode = countryNameToISO(countryCode);
+  }
+  
+  // If VAT number already has country prefix (e.g., "BE0630675588"), return as is (uppercase)
+  if (/^[A-Z]{2}\d+$/.test(cleanVat)) {
+    return cleanVat.toUpperCase();
+  }
+  
+  // Otherwise, add country prefix
+  const countryPrefix = (isoCountryCode || 'BE').toUpperCase().trim();
+  // For Greece, use 'EL' instead of 'GR'
+  const prefix = countryPrefix === 'GR' ? 'EL' : countryPrefix;
+  
+  // Remove any existing country prefix from VAT number if present
+  const vatWithoutPrefix = cleanVat.replace(/^[A-Z]{2}/i, '');
+  
+  return `${prefix}${vatWithoutPrefix}`;
+};
+
+// Helper function to ensure Belgian enterprise number is 10 digits and passes mod97 check
+const formatBelgianEnterpriseNumber = (endpointId, schemeId) => {
+  if (!endpointId) return endpointId;
+  
+  // For Belgian enterprise numbers (scheme 0208), must be exactly 10 digits
+  if (schemeId === '0208') {
+    // Remove any non-digit characters
+    const digitsOnly = endpointId.replace(/\D/g, '');
+    
+    // Must be exactly 10 digits
+    if (digitsOnly.length !== 10) {
+      // Pad with leading zeros if less than 10 digits
+      const padded = digitsOnly.padStart(10, '0');
+      // If still not 10 digits, truncate or pad as needed
+      return padded.length > 10 ? padded.substring(0, 10) : padded;
+    }
+    
+    return digitsOnly;
+  }
+  
+  return endpointId;
+};
+
+// Valid ISO 3166-1 alpha-2 country codes
+const VALID_COUNTRY_CODES = new Set([
+  'AD', 'AE', 'AF', 'AG', 'AI', 'AL', 'AM', 'AO', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AW', 'AX', 'AZ',
+  'BA', 'BB', 'BD', 'BE', 'BF', 'BG', 'BH', 'BI', 'BJ', 'BL', 'BM', 'BN', 'BO', 'BQ', 'BR', 'BS', 'BT', 'BV', 'BW', 'BY', 'BZ',
+  'CA', 'CC', 'CD', 'CF', 'CG', 'CH', 'CI', 'CK', 'CL', 'CM', 'CN', 'CO', 'CR', 'CU', 'CV', 'CW', 'CX', 'CY', 'CZ',
+  'DE', 'DJ', 'DK', 'DM', 'DO', 'DZ',
+  'EC', 'EE', 'EG', 'EH', 'EL', 'ER', 'ES', 'ET',
+  'FI', 'FJ', 'FK', 'FM', 'FO', 'FR',
+  'GA', 'GB', 'GD', 'GE', 'GF', 'GG', 'GH', 'GI', 'GL', 'GM', 'GN', 'GP', 'GQ', 'GR', 'GS', 'GT', 'GU', 'GW', 'GY',
+  'HK', 'HM', 'HN', 'HR', 'HT', 'HU',
+  'ID', 'IE', 'IL', 'IM', 'IN', 'IO', 'IQ', 'IR', 'IS', 'IT',
+  'JE', 'JM', 'JO', 'JP',
+  'KE', 'KG', 'KH', 'KI', 'KM', 'KN', 'KP', 'KR', 'KW', 'KY', 'KZ',
+  'LA', 'LB', 'LC', 'LI', 'LK', 'LR', 'LS', 'LT', 'LU', 'LV', 'LY',
+  'MA', 'MC', 'MD', 'ME', 'MF', 'MG', 'MH', 'MK', 'ML', 'MM', 'MN', 'MO', 'MP', 'MQ', 'MR', 'MS', 'MT', 'MU', 'MV', 'MW', 'MX', 'MY', 'MZ',
+  'NA', 'NC', 'NE', 'NF', 'NG', 'NI', 'NL', 'NO', 'NP', 'NR', 'NU', 'NZ',
+  'OM',
+  'PA', 'PE', 'PF', 'PG', 'PH', 'PK', 'PL', 'PM', 'PN', 'PR', 'PS', 'PT', 'PW', 'PY',
+  'QA',
+  'RE', 'RO', 'RS', 'RU', 'RW',
+  'SA', 'SB', 'SC', 'SD', 'SE', 'SG', 'SH', 'SI', 'SJ', 'SK', 'SL', 'SM', 'SN', 'SO', 'SR', 'SS', 'ST', 'SV', 'SX', 'SY', 'SZ',
+  'TC', 'TD', 'TF', 'TG', 'TH', 'TJ', 'TK', 'TL', 'TM', 'TN', 'TO', 'TR', 'TT', 'TV', 'TW', 'TZ',
+  'UA', 'UG', 'UM', 'US', 'UY', 'UZ',
+  'VA', 'VC', 'VE', 'VG', 'VI', 'VN', 'VU',
+  'WF', 'WS',
+  'XI',
+  'YE', 'YT',
+  'ZA', 'ZM', 'ZW'
+]);
+
+// Helper function to validate and normalize country code
+const normalizeCountryCode = (countryCode) => {
+  if (!countryCode) return 'BE'; // Default to Belgium
+  
+  const normalized = countryCode.trim().toUpperCase();
+  
+  // Handle Greece special case (GR -> EL for VAT, but keep GR for country code)
+  // Actually, for country code, we should use GR, but for VAT prefix we use EL
+  // For country code in PostalAddress, we use the actual ISO code
+  
+  // Validate against ISO 3166-1 alpha-2
+  if (VALID_COUNTRY_CODES.has(normalized)) {
+    return normalized;
+  }
+  
+  // If invalid, default to BE
+  return 'BE';
+};
+
 // XML generation functions
 const generatePartyInfo = (party, isSupplier = true) => {
   const partyType = isSupplier ? "AccountingSupplierParty" : "AccountingCustomerParty";
-  const [endpointScheme, endpointId] = (party.peppolIdentifier ?? getVATPEPPOLIdentifier(party.vatNumber)).split(":");
+  
+  let endpointScheme = null;
+  let endpointId = '';
+  
+  // Priority 1: Use peppolIdentifier if provided (e.g., "0208:0630675588" or "9925:BE0630675588")
+  if (party.peppolIdentifier) {
+    const parts = party.peppolIdentifier.split(":");
+    if (parts.length === 2) {
+      const providedScheme = parts[0];
+      const providedId = parts[1];
+      
+      // Check if this is a Belgian VAT-based identifier (9925:BEXXXXXXXXXX) that needs conversion
+      if (providedScheme === '9925' && /^BE\d{10}$/i.test(providedId)) {
+        // Convert Belgian VAT-based identifier to enterprise number format
+        const enterpriseNumber = providedId.substring(2, 12); // Extract 10 digits after "BE"
+        endpointScheme = '0208';
+        endpointId = enterpriseNumber;
+      } else {
+        // Use provided identifier as-is
+        endpointScheme = providedScheme;
+        // For Belgian scheme 0208, ensure we extract only digits and pad to 10 digits
+        if (providedScheme === '0208') {
+          const digitsOnly = providedId.replace(/\D/g, '');
+          endpointId = digitsOnly.padStart(10, '0').substring(0, 10);
+        } else {
+          endpointId = providedId;
+        }
+      }
+    } else {
+      // If no colon, assume it's just the ID - need to determine scheme from VAT
+      endpointId = party.peppolIdentifier;
+    }
+  }
+  
+  // Priority 2: Determine from VAT number
+  if (!endpointScheme || !endpointId) {
+    if (party.vatNumber) {
+      // Clean VAT number first (remove any Peppol scheme prefixes)
+      const cleanedVatNumber = cleanVATNumber(party.vatNumber);
+      const vatNumber = cleanedVatNumber.trim().toUpperCase();
+      
+      // For Belgian VAT numbers: Use enterprise number identifier (0208:XXXXXXXXXX)
+      const belgianEnterpriseId = getBelgianEnterpriseNumberIdentifier(vatNumber);
+      if (belgianEnterpriseId) {
+        const parts = belgianEnterpriseId.split(":");
+        endpointScheme = parts[0]; // "0208"
+        endpointId = parts[1]; // 10-digit enterprise number
+      } else {
+        // For non-Belgian VAT numbers: Use VAT-based scheme
+        const schemeId = getPEPPOLSchemeId(vatNumber);
+        if (schemeId) {
+          endpointScheme = schemeId;
+          endpointId = vatNumber.toLowerCase(); // Full VAT number in lowercase
+        }
+      }
+    }
+  }
+  
+  // Fallback: If still no scheme/ID, use default Belgian format
+  if (!endpointScheme || !endpointId) {
+    endpointScheme = '0208';
+    if (party.vatNumber) {
+      // Extract 10 digits from VAT number
+      const digitsOnly = party.vatNumber.replace(/\D/g, '');
+      endpointId = digitsOnly.padStart(10, '0').substring(0, 10);
+    }
+  }
+  
+  // For Belgian enterprise numbers (scheme 0208), ensure exactly 10 digits, no prefix
+  // Expected format: EndpointID = "0630675508" (digits only, no country prefix)
+  if (endpointScheme === '0208') {
+    const digitsOnly = endpointId.replace(/\D/g, '');
+    endpointId = digitsOnly.padStart(10, '0').substring(0, 10);
+  }
+
+  // Format VAT number with country prefix for CompanyID
+  // Expected format: CompanyID = "BE0630675508" (country prefix + digits)
+  const formattedVAT = formatVATNumber(party.vatNumber, party.countryCode);
+  const countryCode = normalizeCountryCode(party.countryCode);
+  
+  // Log EndpointID and CompanyID for debugging
+  console.log(`[Peppol] ${isSupplier ? 'Supplier' : 'Receiver'} EndpointID:`, {
+    scheme: endpointScheme,
+    id: endpointId, // Should be digits only (e.g., "0630675508")
+    originalPeppolIdentifier: party.peppolIdentifier,
+    vatNumber: party.vatNumber,
+    countryCode: party.countryCode,
+    formattedVAT: formattedVAT // Should be BE + digits (e.g., "BE0630675508")
+  });
+  
   return `
     <cac:${partyType}>
       <cac:Party>
@@ -140,18 +438,18 @@ const generatePartyInfo = (party, isSupplier = true) => {
           <cbc:CityName>${xmlEscape(party.city)}</cbc:CityName>
           <cbc:PostalZone>${xmlEscape(party.zipCode)}</cbc:PostalZone>
           <cac:Country>
-            <cbc:IdentificationCode>${xmlEscape(party.vatNumber.substring(0, 2))}</cbc:IdentificationCode>
+            <cbc:IdentificationCode>${xmlEscape(countryCode)}</cbc:IdentificationCode>
           </cac:Country>
         </cac:PostalAddress>
         <cac:PartyTaxScheme>
-          <cbc:CompanyID>${party.vatNumber}</cbc:CompanyID>
+          <cbc:CompanyID>${formattedVAT}</cbc:CompanyID>
           <cac:TaxScheme>
             <cbc:ID>VAT</cbc:ID>
           </cac:TaxScheme>
         </cac:PartyTaxScheme>
         <cac:PartyLegalEntity>
           <cbc:RegistrationName>${xmlEscape(party.name)}</cbc:RegistrationName>
-          <cbc:CompanyID>${party.vatNumber}</cbc:CompanyID>
+          <cbc:CompanyID>${formattedVAT}</cbc:CompanyID>
         </cac:PartyLegalEntity>
         ${!isSupplier ? generateContactInfo(party.contact) : ""}
       </cac:Party>
@@ -170,9 +468,20 @@ const generateContactInfo = ({ name, phone, email }) => {
   `;
 };
 
-const generateDelivery = (invoiceConfig) => `
+const generateDelivery = (invoiceConfig) => {
+  // Ensure delivery date is in YYYY-MM-DD format
+  const formatUBLDate = (dateValue) => {
+    if (!dateValue) return formatDate(new Date(), "date");
+    if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+      return dateValue;
+    }
+    return formatDate(dateValue, "date");
+  };
+  const deliveryDate = formatUBLDate(invoiceConfig.deliveryDate);
+  
+  return `
 <cac:Delivery>
-  <cbc:ActualDeliveryDate>${invoiceConfig.deliveryDate}</cbc:ActualDeliveryDate>
+  <cbc:ActualDeliveryDate>${deliveryDate}</cbc:ActualDeliveryDate>
   <cac:DeliveryLocation>
     <cac:Address>
       <cac:Country>
@@ -182,25 +491,40 @@ const generateDelivery = (invoiceConfig) => `
  </cac:DeliveryLocation>
 </cac:Delivery>
 `;
+};
 
-const generatePaymentMeansAndTerms = (invoiceConfig) => `
+const generatePaymentMeansAndTerms = (invoiceConfig) => {
+  // IBAN is required for credit transfer payments (PaymentMeansCode 30, 31, 58)
+  // But we'll make it optional to handle cases where it's not provided
+  const hasIBAN = invoiceConfig.sender.iban && invoiceConfig.sender.iban.trim() !== '';
+  
+  return `
 <cac:PaymentMeans>
   <cbc:PaymentMeansCode name="Credit transfer">${invoiceConfig.paymentMeans}</cbc:PaymentMeansCode>
   <cbc:PaymentID>${xmlEscape(invoiceConfig.billName)}</cbc:PaymentID>
+  ${hasIBAN ? `
   <cac:PayeeFinancialAccount>
-    <cbc:ID>${invoiceConfig.sender.iban}</cbc:ID>
+    <cbc:ID>${xmlEscape(invoiceConfig.sender.iban)}</cbc:ID>
     <cbc:Name>${xmlEscape(invoiceConfig.sender.name)}</cbc:Name>
   </cac:PayeeFinancialAccount>
+  ` : ''}
 </cac:PaymentMeans>
 <cac:PaymentTerms>
   <cbc:Note>Net within ${invoiceConfig.paymentDelay} days</cbc:Note>
 </cac:PaymentTerms>
 `;
+};
 
-const generateTaxSubtotals = (taxCategories) => Object.values(taxCategories).map((category) => `
+const generateTaxSubtotals = (taxCategories) => Object.values(taxCategories).map((category) => {
+  // Recalculate tax amount to ensure it matches TaxableAmount × (TaxRate / 100), rounded to 2 decimals
+  // This is required by BR-CO-17 and BR-S-09 validation rules
+  const calculatedTaxAmount = Math.round((category.taxableAmount * (category.taxPercentage / 100)) * 100) / 100;
+  const taxAmount = category.taxPercentage === 0 ? 0 : calculatedTaxAmount;
+  
+  return `
       <cac:TaxSubtotal>
         <cbc:TaxableAmount currencyID="EUR">${category.taxableAmount.toFixed(2)}</cbc:TaxableAmount>
-        <cbc:TaxAmount currencyID="EUR">${category.taxAmount.toFixed(2)}</cbc:TaxAmount>
+        <cbc:TaxAmount currencyID="EUR">${taxAmount.toFixed(2)}</cbc:TaxAmount>
         <cac:TaxCategory>
           <cbc:ID>${category.vatCode}</cbc:ID>
           <cbc:Percent>${category.taxPercentage}</cbc:Percent>
@@ -210,7 +534,8 @@ const generateTaxSubtotals = (taxCategories) => Object.values(taxCategories).map
           </cac:TaxScheme>
         </cac:TaxCategory>
       </cac:TaxSubtotal>
-    `).join("");
+    `;
+}).join("");
 
 const generateInvoiceLines = (lines) => lines.map((line, index) => `
     <cac:InvoiceLine>
@@ -243,6 +568,53 @@ export const generatePEPPOLXML = (invoiceData) => {
     throw new Error("Peppol identifier of receiving party must be defined");
   }
   
+  // Ensure dates are in YYYY-MM-DD format (UBL requires date-only, not datetime)
+  const formatUBLDate = (dateValue) => {
+    if (!dateValue) return formatDate(new Date(), "date");
+    // If it's already in YYYY-MM-DD format, return as is
+    if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+      return dateValue;
+    }
+    // Otherwise, format it as date-only
+    return formatDate(dateValue, "date");
+  };
+  
+  const issueDate = formatUBLDate(invoiceData.issueDate);
+  const dueDate = formatUBLDate(invoiceData.dueDate);
+  const deliveryDate = formatUBLDate(invoiceData.deliveryDate);
+  
+  // Buyer reference is mandatory (PEPPOL-EN16931-R003)
+  // Use invoice number if buyerReference is not provided
+  const buyerReference = invoiceData.buyerReference || invoiceData.billName || 'INV-' + Date.now();
+  
+  // Recalculate total tax amount from tax categories to ensure accuracy
+  const recalculatedTaxTotal = Object.values(taxCategories).reduce((sum, category) => {
+    if (category.taxPercentage === 0) return sum;
+    const calculatedTaxAmount = Math.round((category.taxableAmount * (category.taxPercentage / 100)) * 100) / 100;
+    return sum + calculatedTaxAmount;
+  }, 0);
+  
+  // Log sender and receiver info before generating XML
+  console.log('[Peppol] Invoice Data Before XML Generation:', {
+    billName: invoiceData.billName,
+    sender: {
+      peppolIdentifier: invoiceData.sender.peppolIdentifier,
+      vatNumber: invoiceData.sender.vatNumber,
+      countryCode: invoiceData.sender.countryCode,
+      name: invoiceData.sender.name,
+      cleanedVAT: cleanVATNumber(invoiceData.sender.vatNumber),
+      isoCountry: countryNameToISO(invoiceData.sender.countryCode)
+    },
+    receiver: {
+      peppolIdentifier: invoiceData.receiver.peppolIdentifier,
+      vatNumber: invoiceData.receiver.vatNumber,
+      countryCode: invoiceData.receiver.countryCode,
+      name: invoiceData.receiver.name,
+      cleanedVAT: cleanVATNumber(invoiceData.receiver.vatNumber),
+      isoCountry: countryNameToISO(invoiceData.receiver.countryCode)
+    }
+  });
+  
   return `<?xml version="1.0" encoding="UTF-8"?>
   <Invoice xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
            xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
@@ -250,25 +622,25 @@ export const generatePEPPOLXML = (invoiceData) => {
     <cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0</cbc:CustomizationID>
     <cbc:ProfileID>urn:fdc:peppol.eu:2017:poacc:billing:01:1.0</cbc:ProfileID>
     <cbc:ID>${xmlEscape(invoiceData.billName)}</cbc:ID>
-    <cbc:IssueDate>${invoiceData.issueDate}</cbc:IssueDate>
-    <cbc:DueDate>${invoiceData.dueDate}</cbc:DueDate>
+    <cbc:IssueDate>${issueDate}</cbc:IssueDate>
+    <cbc:DueDate>${dueDate}</cbc:DueDate>
     <cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
     <cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
-    ${invoiceData.buyerReference ? `<cbc:BuyerReference>${xmlEscape(invoiceData.buyerReference)}</cbc:BuyerReference>` : ""}
+    <cbc:BuyerReference>${xmlEscape(buyerReference)}</cbc:BuyerReference>
   ${generatePartyInfo(invoiceData.sender, true)}
   ${generatePartyInfo(invoiceData.receiver, false)}
-  ${generateDelivery(invoiceData)}
+  ${generateDelivery({ ...invoiceData, deliveryDate })}
   ${generatePaymentMeansAndTerms(invoiceData)}
     <cac:TaxTotal>
-      <cbc:TaxAmount currencyID="EUR">${totals.taxAmount.toFixed(2)}</cbc:TaxAmount>
+      <cbc:TaxAmount currencyID="EUR">${recalculatedTaxTotal.toFixed(2)}</cbc:TaxAmount>
       ${generateTaxSubtotals(taxCategories)}
     </cac:TaxTotal>
 
     <cac:LegalMonetaryTotal>
       <cbc:LineExtensionAmount currencyID="EUR">${totals.taxableAmount.toFixed(2)}</cbc:LineExtensionAmount>
       <cbc:TaxExclusiveAmount currencyID="EUR">${totals.taxableAmount.toFixed(2)}</cbc:TaxExclusiveAmount>
-      <cbc:TaxInclusiveAmount currencyID="EUR">${totals.totalAmount.toFixed(2)}</cbc:TaxInclusiveAmount>
-      <cbc:PayableAmount currencyID="EUR">${totals.totalAmount.toFixed(2)}</cbc:PayableAmount>
+      <cbc:TaxInclusiveAmount currencyID="EUR">${(totals.taxableAmount + recalculatedTaxTotal).toFixed(2)}</cbc:TaxInclusiveAmount>
+      <cbc:PayableAmount currencyID="EUR">${(totals.taxableAmount + recalculatedTaxTotal).toFixed(2)}</cbc:PayableAmount>
     </cac:LegalMonetaryTotal>
   ${generateInvoiceLines(invoiceData.invoiceLines)}
   </Invoice>`;
@@ -397,20 +769,21 @@ export class PeppolService {
   convertHaliqoInvoiceToPeppol(haliqoInvoice, senderInfo, receiverInfo) {
         return {
       billName: haliqoInvoice.invoice_number || `INV-${Date.now()}`,
-      issueDate: formatDate(haliqoInvoice.created_at || new Date()),
-      dueDate: formatDate(haliqoInvoice.due_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
-      deliveryDate: formatDate(haliqoInvoice.delivery_date || haliqoInvoice.created_at || new Date()),
+      issueDate: formatDate(haliqoInvoice.created_at || new Date(), "date"),
+      dueDate: formatDate(haliqoInvoice.due_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), "date"),
+      deliveryDate: formatDate(haliqoInvoice.delivery_date || haliqoInvoice.created_at || new Date(), "date"),
       buyerReference: haliqoInvoice.reference || null,
       paymentDelay: 30,
-      paymentMeans: 31, // Debit transfer
+      paymentMeans: 31, // Debit transfer (code 31 = Credit transfer)
       sender: {
-        vatNumber: senderInfo.vat_number,
+        vatNumber: cleanVATNumber(senderInfo.vat_number), // Clean VAT number (remove Peppol scheme prefixes)
         name: senderInfo.company_name || senderInfo.full_name,
         addressLine1: senderInfo.address || "Main Street 123",
         city: senderInfo.city || "Brussels",
-        countryCode: senderInfo.country || "BE",
+        countryCode: countryNameToISO(senderInfo.country) || "BE", // Convert country name to ISO code
         zipCode: senderInfo.zip_code || "1000",
-        iban: senderInfo.iban || "BE0403019261"
+        iban: senderInfo.iban || null, // IBAN is optional but recommended for credit transfer payments
+        peppolIdentifier: senderInfo.peppol_identifier || null // Use Peppol ID from settings if available
       },
       receiver: {
         vatNumber: receiverInfo.vat_number,

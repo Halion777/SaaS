@@ -65,15 +65,35 @@ serve(async (req) => {
       fetchOptions.method = 'POST';
       // Note: FormData needs special handling in Deno
       const formData = new FormData();
-      formData.append('document', xmlDocument);
+      
+      // Convert XML string to Blob for proper multipart/form-data upload
+      // Ensure UTF-8 encoding for proper character handling
+      // The API expects 'document' to be a File/Blob, not a string
+      // Create Blob with explicit UTF-8 encoding to handle special characters correctly
+      const xmlBlob = new Blob([xmlDocument], { 
+        type: 'application/xml; charset=utf-8' 
+      });
+      formData.append('document', xmlBlob, 'invoice.xml');
+      
       fetchOptions.body = formData;
       delete fetchOptions.headers['Content-Type']; // Let browser set boundary
     } else if (action === 'send-ubl-document' && xmlDocument) {
       // Send UBL document (POST with form-data)
       url = `${endpoint}/api/v1/peppol/outbound-ubl-documents`;
+      
       fetchOptions.method = 'POST';
       const formData = new FormData();
-      formData.append('document', xmlDocument);
+      
+      // Convert XML string to Blob for proper multipart/form-data upload
+      // Ensure UTF-8 encoding for proper character handling
+      // The API expects 'document' to be a File/Blob, not a string
+      // Create Blob with explicit UTF-8 encoding to handle special characters correctly
+      const xmlBlob = new Blob([xmlDocument], { 
+        type: 'application/xml; charset=utf-8' 
+      });
+      
+      formData.append('document', xmlBlob, 'invoice.xml');
+      
       fetchOptions.body = formData;
       delete fetchOptions.headers['Content-Type']; // Let browser set boundary
     } else if (action === 'add-document-type' && peppolIdentifier && documentType) {

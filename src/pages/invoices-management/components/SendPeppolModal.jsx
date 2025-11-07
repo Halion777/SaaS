@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
-import Select from '../../../components/ui/Select';
 import PeppolService, { generatePEPPOLXML } from '../../../services/peppolService';
 import { loadCompanyInfo } from '../../../services/companyInfoService';
 import { fetchClients } from '../../../services/clientsService';
@@ -16,13 +15,14 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState('');
   const [clientPeppolId, setClientPeppolId] = useState('');
-  const [peppolParticipants, setPeppolParticipants] = useState([]);
   const [companyInfo, setCompanyInfo] = useState(null);
   const [peppolSettings, setPeppolSettings] = useState(null);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   useEffect(() => {
     if (isOpen && invoice) {
       loadData();
+      setShowDropdown(false); // Reset dropdown state when modal opens
     }
   }, [isOpen, invoice]);
 
@@ -31,11 +31,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
     setError('');
     
     try {
-      // Load company info
-      const company = await loadCompanyInfo(user?.id);
-      setCompanyInfo(company);
-
-      // Load Peppol settings
+      // Load Peppol settings (primary source for VAT and Peppol ID)
       const peppolService = new PeppolService(true);
       const settings = await peppolService.getPeppolSettings();
       if (settings.success) {
@@ -45,29 +41,22 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
         if (settings.data.peppolDisabled) {
           setError('Peppol functionality is currently disabled. Please enable it in Peppol settings to send invoices.');
         }
+      } else {
+        setError('Configuration Peppol non trouvée. Veuillez configurer Peppol avant d\'envoyer des factures.');
       }
 
-      // Load client Peppol ID if available
-      if (invoice.client?.peppol_id) {
-        setClientPeppolId(invoice.client.peppol_id);
+      // Load company info (fallback for address, city, postal code, IBAN)
+      try {
+        const company = await loadCompanyInfo(user?.id);
+        setCompanyInfo(company);
+      } catch (companyErr) {
+        console.warn('Company info not available, will use Peppol settings only:', companyErr);
+        // Continue without company info - we'll use Peppol settings for most fields
       }
 
-      // Load Peppol participants
-      const participants = await peppolService.getPeppolParticipants();
-      setPeppolParticipants(participants || []);
-
-      // If client has Peppol ID, set it
+      // Use client's Peppol ID from client table if available
       if (invoice.client?.peppol_id) {
         setClientPeppolId(invoice.client.peppol_id);
-      } else if (participants.length > 0) {
-        // Try to find participant by client email
-        const matchingParticipant = participants.find(p => 
-          p.contact_email === invoice.clientEmail || 
-          p.business_name === invoice.clientName
-        );
-        if (matchingParticipant) {
-          setClientPeppolId(matchingParticipant.peppol_identifier);
-        }
       }
     } catch (err) {
       console.error('Error loading data:', err);
@@ -83,8 +72,8 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
       return;
     }
 
-    if (!companyInfo || !peppolSettings) {
-      setError('Informations de l\'entreprise ou configuration Peppol manquantes');
+    if (!peppolSettings) {
+      setError('Configuration Peppol manquante. Veuillez configurer Peppol avant d\'envoyer des factures.');
       return;
     }
 
@@ -100,26 +89,110 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
     try {
       const peppolService = new PeppolService(true);
 
-      // Prepare sender info from company profile and Peppol settings
-      const senderInfo = {
-        vat_number: companyInfo.vatNumber || '',
-        company_name: companyInfo.name || '',
-        full_name: companyInfo.name || '',
-        address: companyInfo.address || '',
-        city: companyInfo.city || '',
-        country: companyInfo.country || 'BE',
-        zip_code: companyInfo.postalCode || '',
-        iban: '' // TODO: Get from company profile if available
+      // Helper function to convert country name to ISO code
+      const countryToISO = (country) => {
+        if (!country) return 'BE';
+        const countryMap = {
+          'belgique': 'BE',
+          'belgium': 'BE',
+          'france': 'FR',
+          'nederland': 'NL',
+          'netherlands': 'NL',
+          'deutschland': 'DE',
+          'germany': 'DE'
+        };
+        const normalized = country.trim().toLowerCase();
+        // If it's already a 2-letter code, return it
+        if (country.length === 2) return country.toUpperCase();
+        // Otherwise, try to map it
+        return countryMap[normalized] || 'BE';
       };
+
+      // Helper function to extract VAT number from Peppol ID
+      const extractVATFromPeppolId = (peppolId) => {
+        if (!peppolId) return '';
+        const parts = peppolId.split(":");
+        if (parts.length === 2 && parts[0] === '0208') {
+          // Belgian enterprise number: extract 10 digits and add "BE" prefix
+          const enterpriseNumber = parts[1];
+          if (enterpriseNumber.length === 10) {
+            return `BE${enterpriseNumber}`;
+          }
+        } else if (parts.length === 2 && parts[0] === '9925' && parts[1].startsWith('BE')) {
+          // VAT-based identifier: use directly
+          return parts[1].toUpperCase();
+        }
+        return '';
+      };
+
+      // Helper function to format VAT number with country prefix
+      const formatVATWithCountryPrefix = (vatNumber, countryCode) => {
+        if (!vatNumber || vatNumber.trim() === '') return '';
+        
+        // Clean VAT number (remove any Peppol scheme prefixes)
+        let cleanVat = vatNumber.replace(/^\d{4}:/, '').trim();
+        
+        // Convert country code from name to ISO if needed
+        let isoCountryCode = countryCode;
+        if (countryCode && countryCode.length > 2) {
+          const countryMap = {
+            'belgique': 'BE', 'belgium': 'BE', 'france': 'FR', 'nederland': 'NL',
+            'netherlands': 'NL', 'deutschland': 'DE', 'germany': 'DE'
+          };
+          const normalized = countryCode.trim().toLowerCase();
+          isoCountryCode = countryMap[normalized] || (countryCode.length === 2 ? countryCode.toUpperCase() : 'BE');
+        } else if (countryCode) {
+          isoCountryCode = countryCode.toUpperCase();
+        } else {
+          isoCountryCode = 'BE';
+        }
+        
+        // If VAT number already has country prefix (e.g., "BE0630675588"), return as is (uppercase)
+        if (/^[A-Z]{2}\d+$/.test(cleanVat)) {
+          return cleanVat.toUpperCase();
+        }
+        
+        // Otherwise, add country prefix
+        const countryPrefix = isoCountryCode === 'GR' ? 'EL' : isoCountryCode;
+        // Remove any existing country prefix from VAT number if present
+        const vatWithoutPrefix = cleanVat.replace(/^[A-Z]{2}/i, '');
+        
+        return `${countryPrefix}${vatWithoutPrefix}`;
+      };
+
+      // Extract VAT number from Peppol ID
+      const senderVATNumber = extractVATFromPeppolId(peppolSettings.peppolId);
+
+      // Prepare sender info from Peppol settings (primary) and company profile (fallback for address/IBAN)
+      const senderInfo = {
+        vat_number: senderVATNumber, // Extract from Peppol ID (already formatted with BE prefix)
+        company_name: peppolSettings.name || companyInfo?.name || '', // Use business_name from Peppol settings
+        full_name: peppolSettings.contact_person_name || companyInfo?.name || '', // Use name from Peppol settings
+        address: companyInfo?.address || '', // Fallback to company info for address
+        city: companyInfo?.city || '', // Fallback to company info for city
+        country: peppolSettings.countryCode || 'BE', // Use country_code from Peppol settings
+        zip_code: companyInfo?.postalCode || '', // Fallback to company info for postal code
+        iban: companyInfo?.iban || '', // Get IBAN from company profile (not in Peppol settings)
+        peppol_identifier: peppolSettings.peppolId // Use Peppol ID directly from settings
+      };
+
+      // Get receiver country code (convert to ISO if needed)
+      const receiverCountryCode = countryToISO(invoice.client?.country || 'BE');
+
+      // Format receiver VAT number with country prefix
+      const receiverVATNumber = formatVATWithCountryPrefix(
+        invoice.client?.vat_number || '',
+        receiverCountryCode
+      );
 
       // Prepare receiver info from client
       const receiverInfo = {
-        vat_number: invoice.client?.vat_number || '',
+        vat_number: receiverVATNumber, // Format with country prefix (e.g., "BE0630344489")
         company_name: invoice.clientName || '',
         full_name: invoice.clientName || '',
         address: invoice.client?.address || '',
         city: invoice.client?.city || '',
-        country: invoice.client?.country || 'BE',
+        country: receiverCountryCode, // Use ISO country code
         zip_code: invoice.client?.postal_code || '',
         peppol_identifier: clientPeppolId,
         contact_name: invoice.clientName || '',
@@ -237,10 +310,8 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
     }
   };
 
-  const participantOptions = peppolParticipants.map(p => ({
-    value: p.peppol_identifier,
-    label: `${p.business_name || p.peppol_identifier} (${p.peppol_identifier})`
-  }));
+  // Check if client has Peppol ID from client table
+  const clientHasPeppolId = invoice.client?.peppol_id;
 
   if (!isOpen) return null;
 
@@ -338,27 +409,42 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
                 <label className="text-sm font-medium text-foreground mb-2 block">
                   ID Peppol du client <span className="text-red-500">*</span>
                 </label>
-                {participantOptions.length > 0 ? (
-                  <Select
-                    options={[
-                      { value: '', label: 'Sélectionner un ID Peppol' },
-                      ...participantOptions
-                    ]}
-                    value={clientPeppolId}
-                    onChange={(e) => setClientPeppolId(e.target.value)}
-                  />
+                {!showDropdown ? (
+                  // If client has Peppol ID from client table, show it directly with option to change
+                  <div className="space-y-2">
+                    <div className="w-full px-3 py-2 border border-border rounded-lg bg-muted/30 text-foreground flex items-center justify-between">
+                      <div>
+                        <span className="text-sm font-medium">{clientPeppolId || 'Non défini'}</span>
+                    
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowDropdown(true)}
+                        className="text-xs text-primary hover:underline ml-2"
+                      >
+                        Modifier
+                      </button>
+                    </div>
+                  </div>
                 ) : (
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
-                    placeholder="Ex: 0208:0630675588"
-                    value={clientPeppolId}
-                    onChange={(e) => setClientPeppolId(e.target.value)}
-                  />
+                  // Show input field for editing
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={clientPeppolId || ''}
+                      onChange={(e) => setClientPeppolId(e.target.value)}
+                      placeholder="0208:0630675588"
+                      className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowDropdown(false)}
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Annuler
+                    </button>
+                  </div>
                 )}
-                <p className="text-xs text-muted-foreground mt-1">
-                  Format: 0208:1234567890 (scheme:identifier)
-                </p>
               </div>
 
               {/* Error Message */}

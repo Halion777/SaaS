@@ -197,6 +197,7 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
       phone: companyInfo.phone || '',
       email: companyInfo.email || '',
       website: companyInfo.website || '',
+      iban: companyInfo.iban || null,
       logo_path: logoPath || existingProfile?.logo_path || null,
       logo_filename: logoFilename,
       logo_size: logoSize,
@@ -291,6 +292,7 @@ export const createDefaultCompanyProfile = async (userId) => {
       email: 'contact@entreprise.be',
       website: 'www.entreprise.be',
       vat_number: 'BE0123456789',
+      iban: null,
       is_default: true
     };
 
@@ -392,6 +394,7 @@ export const loadCompanyInfo = async (userId) => {
       phone: data.phone,
       email: data.email,
       website: data.website,
+      iban: data.iban || null,
       logo: logoData,
       signature: signatureData
     };
@@ -572,6 +575,7 @@ export const getDefaultCompanyInfo = () => {
     phone: '+32 123 45 67 89',
     email: 'contact@entreprise.be',
     website: 'www.entreprise.be',
+    iban: null,
     logo: null,
     signature: null
   };
