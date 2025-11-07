@@ -2,7 +2,7 @@ import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import Icon from '../../../components/AppIcon';
 
-const ClientSegmentChart = ({ data }) => {
+const ClientSegmentChart = ({ data, isLoading = false }) => {
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B'];
 
   const formatCurrency = (value) => {
@@ -100,7 +100,7 @@ const ClientSegmentChart = ({ data }) => {
               <span className="text-sm text-muted-foreground">({item.value}%)</span>
             </div>
             <span className="text-sm font-semibold text-foreground">
-              {formatCurrency(item.revenue)}
+              {isLoading ? '...' : formatCurrency(item.revenue)}
             </span>
           </div>
         ))}
@@ -110,7 +110,7 @@ const ClientSegmentChart = ({ data }) => {
         <div className="flex justify-between items-center">
           <span className="text-sm text-muted-foreground">Total segments</span>
           <span className="text-lg font-bold text-foreground">
-            {formatCurrency(data.reduce((sum, item) => sum + item.revenue, 0))}
+            {isLoading ? '...' : formatCurrency(data.reduce((sum, item) => sum + item.revenue, 0))}
           </span>
         </div>
       </div>

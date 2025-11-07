@@ -489,6 +489,7 @@ const AnalyticsDashboard = () => {
                   key={kpi.title}
                   {...kpi}
                   delay={index * 0.1}
+                  isLoading={isLoading}
                 />
               ))}
             </motion.div>
@@ -500,7 +501,7 @@ const AnalyticsDashboard = () => {
               transition={{ delay: 0.3 }}
               className="mb-6 sm:mb-8"
             >
-              <DetailedAnalyticsPanel data={detailedAnalyticsData} />
+              <DetailedAnalyticsPanel data={detailedAnalyticsData} isLoading={isLoading} />
             </motion.div>
 
             {/* Charts Section */}
@@ -511,7 +512,7 @@ const AnalyticsDashboard = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.4 }}
               >
-                <RevenueChart data={revenueData} />
+                <RevenueChart data={revenueData} isLoading={isLoading} />
               </motion.div>
 
               {/* Conversion Analysis */}
@@ -520,7 +521,7 @@ const AnalyticsDashboard = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.5 }}
               >
-                <ConversionChart data={conversionData} />
+                <ConversionChart data={conversionData} isLoading={isLoading} />
               </motion.div>
             </div>
           </>
@@ -535,7 +536,7 @@ const AnalyticsDashboard = () => {
               transition={{ delay: 0.3 }}
               className="mb-6 sm:mb-8"
             >
-              <ClientSegmentChart data={clientSegmentData} />
+              <ClientSegmentChart data={clientSegmentData} isLoading={isLoading} />
             </motion.div>
 
             {/* Real-time Progress */}
@@ -548,6 +549,7 @@ const AnalyticsDashboard = () => {
               <MetricsProgress 
                 metrics={currentMetrics}
                 userObjectives={userObjectives}
+                isLoading={isLoading}
                 onUpdate={(objectives) => {
                   setUserObjectives(objectives);
                 }}

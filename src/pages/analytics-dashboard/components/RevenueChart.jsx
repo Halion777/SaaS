@@ -2,7 +2,7 @@ import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Icon from '../../../components/AppIcon';
 
-const RevenueChart = ({ data }) => {
+const RevenueChart = ({ data, isLoading = false }) => {
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -93,7 +93,7 @@ const RevenueChart = ({ data }) => {
         <div className="text-center">
           <p className="text-xs sm:text-sm text-muted-foreground">Croissance mensuelle</p>
           <p className="text-sm sm:text-lg font-semibold text-emerald-600">
-            {(() => {
+            {isLoading ? '...' : (() => {
               const validData = data.filter(d => d.revenue !== null && d.revenue !== undefined);
               if (validData.length < 2) return 'N/A';
               const currentMonth = validData[validData.length - 1]?.revenue || 0;
@@ -107,7 +107,7 @@ const RevenueChart = ({ data }) => {
         <div className="text-center">
           <p className="text-xs sm:text-sm text-muted-foreground">Revenu total</p>
           <p className="text-sm sm:text-lg font-semibold text-blue-600">
-            {formatCurrency(data.reduce((sum, item) => sum + (item.revenue || 0), 0))}
+            {isLoading ? '...' : formatCurrency(data.reduce((sum, item) => sum + (item.revenue || 0), 0))}
           </p>
         </div>
       </div>

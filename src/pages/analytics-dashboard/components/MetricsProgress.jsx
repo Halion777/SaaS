@@ -3,7 +3,7 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import { updateAnalyticsObjectives } from '../../../services/authService';
 
-const MetricsProgress = ({ metrics, userObjectives, onUpdate }) => {
+const MetricsProgress = ({ metrics, userObjectives, onUpdate, isLoading = false }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingValues, setEditingValues] = useState({
     revenueTarget: (userObjectives?.revenueTarget ?? metrics.revenueTarget) || 0,
@@ -176,7 +176,7 @@ const MetricsProgress = ({ metrics, userObjectives, onUpdate }) => {
                       </span>
                     </div>
                   ) : (
-                    <span className="text-sm font-bold text-foreground">{item.value}%</span>
+                    <span className="text-sm font-bold text-foreground">{isLoading ? '...' : `${item.value}%`}</span>
                   )}
                   {!isEditing && <Icon name={status.icon} size={16} className={status.color} />}
                 </div>
@@ -205,7 +205,7 @@ const MetricsProgress = ({ metrics, userObjectives, onUpdate }) => {
           <div>
             <p className="text-sm text-muted-foreground">Performance globale</p>
             <p className="text-xl font-bold text-foreground">
-              {Math.round(progressItems.reduce((sum, item) => sum + item.value, 0) / progressItems.length)}%
+              {isLoading ? '...' : `${Math.round(progressItems.reduce((sum, item) => sum + item.value, 0) / progressItems.length)}%`}
             </p>
           </div>
           <div>

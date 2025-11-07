@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import Icon from '../../../components/AppIcon';
 
-const KPICard = ({ title, value, change, trend, icon, color, description, delay = 0 }) => {
+const KPICard = ({ title, value, change, trend, icon, color, description, delay = 0, isLoading = false }) => {
   const colorClasses = {
     emerald: 'bg-emerald-500/10 text-emerald-600 border-emerald-200',
     blue: 'bg-blue-500/10 text-blue-600 border-blue-200',
@@ -28,14 +28,16 @@ const KPICard = ({ title, value, change, trend, icon, color, description, delay 
             </div>
             <div>
               <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">{title}</h3>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{value}</p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">
+                {isLoading ? '...' : value}
+              </p>
             </div>
           </div>
           
           <div className="flex items-center justify-between">
             <div className={`flex items-center space-x-1 ${trendColor}`}>
-              <Icon name={trendIcon} size={14} className="sm:w-4 sm:h-4" />
-              <span className="text-xs sm:text-sm font-medium">{change}</span>
+              {!isLoading && <Icon name={trendIcon} size={14} className="sm:w-4 sm:h-4" />}
+              <span className="text-xs sm:text-sm font-medium">{isLoading ? '...' : change}</span>
             </div>
             <span className="text-xs text-muted-foreground">{description}</span>
           </div>

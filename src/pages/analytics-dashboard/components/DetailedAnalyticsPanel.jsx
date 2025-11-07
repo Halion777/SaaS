@@ -1,7 +1,7 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
 
-const DetailedAnalyticsPanel = ({ data }) => {
+const DetailedAnalyticsPanel = ({ data, isLoading = false }) => {
   const renderSection = (title, items) => (
     <div className="bg-card border border-border rounded-lg p-4 space-y-4">
       <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">{title}</h3>
@@ -34,9 +34,9 @@ const DetailedAnalyticsPanel = ({ data }) => {
                 {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
               </p>
               <p className="text-base font-semibold text-foreground">
-                {typeof value === 'number' 
+                {isLoading ? '...' : (typeof value === 'number' 
                   ? `${key.includes('Revenue') || key.includes('Invoice') ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(value) : value}${key.includes('Clients') ? '%' : ''}` 
-                  : value}
+                  : value)}
               </p>
             </div>
           </div>

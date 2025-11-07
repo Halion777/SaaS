@@ -2,7 +2,7 @@ import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Icon from '../../../components/AppIcon';
 
-const ConversionChart = ({ data }) => {
+const ConversionChart = ({ data, isLoading = false }) => {
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -39,7 +39,7 @@ const ConversionChart = ({ data }) => {
           </div>
         </div>
         <div className="text-right">
-          <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{averageRate}%</p>
+          <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{isLoading ? '...' : `${averageRate}%`}</p>
           <p className="text-xs sm:text-sm text-muted-foreground">Moyenne globale</p>
         </div>
       </div>
@@ -86,8 +86,8 @@ const ConversionChart = ({ data }) => {
               <span className="text-xs sm:text-sm font-medium text-foreground">{item.name}</span>
             </div>
             <div className="text-right">
-              <span className="text-xs sm:text-sm font-semibold text-foreground">{item.rate}%</span>
-              <span className="text-xs text-muted-foreground ml-1 sm:ml-2">({item.count})</span>
+              <span className="text-xs sm:text-sm font-semibold text-foreground">{isLoading ? '...' : `${item.rate}%`}</span>
+              <span className="text-xs text-muted-foreground ml-1 sm:ml-2">{isLoading ? '' : `(${item.count})`}</span>
             </div>
           </div>
         ))}
