@@ -281,10 +281,15 @@ export const generateInvoicePDF = async (invoiceData, invoiceNumber, elementToCa
 };
 
 /**
- * Generate HTML content for the invoice
+ * Generate HTML content for the invoice (improved styling matching quote preview)
  */
 const generateInvoiceHTML = (invoiceData, invoiceNumber) => {
   const { companyInfo, client, invoice, quote } = invoiceData;
+  
+  // Color scheme matching quote preview
+  const primaryColor = '#374151'; // Dark gray
+  const secondaryColor = '#1f2937'; // Darker gray
+  const primaryColorLight = `${primaryColor}20`; // 20% opacity for backgrounds
   
   const currentDate = invoice.issue_date ? new Date(invoice.issue_date).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR');
   const dueDate = invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('fr-FR') : '';
@@ -312,97 +317,123 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber) => {
     }];
   }
   
-  const subtotal = parseFloat(invoice.amount || invoice.net_amount || 0);
+  const subtotal = parseFloat(invoice.net_amount || invoice.amount || 0);
   const taxAmount = parseFloat(invoice.tax_amount || 0);
   const total = parseFloat(invoice.final_amount || invoice.amount || 0);
   
+  // Helper to escape HTML
+  const escapeHtml = (text) => {
+    if (!text) return '';
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+  
+  // Get logo URL if available
+  let logoHtml = '';
+  if (companyInfo?.logo) {
+    if (companyInfo.logo.data) {
+      // Base64 data
+      logoHtml = `<img src="${companyInfo.logo.data}" alt="Logo ${companyInfo.name}" style="width: 80px; height: 80px; object-fit: contain; border-radius: 8px;" />`;
+    } else if (companyInfo.logo.url) {
+      // Public URL
+      logoHtml = `<img src="${companyInfo.logo.url}" alt="Logo ${companyInfo.name}" style="width: 80px; height: 80px; object-fit: contain; border-radius: 8px;" />`;
+    } else if (typeof companyInfo.logo === 'string' && companyInfo.logo.startsWith('http')) {
+      // Direct URL
+      logoHtml = `<img src="${companyInfo.logo}" alt="Logo ${companyInfo.name}" style="width: 80px; height: 80px; object-fit: contain; border-radius: 8px;" />`;
+    }
+  }
+  
   return `
-    <div style="max-width: 800px; margin: 0 auto; font-family: Arial, sans-serif; padding: 20px;">
-      <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 40px; border-bottom: 2px solid #374151; padding-bottom: 20px;">
-        <div style="flex: 1;">
-          <h1 style="margin: 0; font-size: 24px; color: #374151; font-weight: bold;">${companyInfo?.name || 'VOTRE ENTREPRISE'}</h1>
-          <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">${companyInfo?.address || ''}</p>
-          <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">${companyInfo?.postalCode || ''} ${companyInfo?.city || ''}</p>
-          ${companyInfo?.phone ? `<p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Tél: ${companyInfo.phone}</p>` : ''}
-          ${companyInfo?.email ? `<p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Email: ${companyInfo.email}</p>` : ''}
+    <div style="max-width: 900px; margin: 0 auto; font-family: 'Arial', 'Helvetica', sans-serif; background: #ffffff; padding: 40px;">
+      <!-- Header with Logo and Invoice Info -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 50px; padding-bottom: 30px; border-bottom: 2px solid ${primaryColor};">
+        <div style="flex: 1; display: flex; align-items: center; gap: 20px;">
+          ${logoHtml ? `<div style="flex-shrink: 0;">${logoHtml}</div>` : '<div style="width: 80px; height: 80px; background: #e5e7eb; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 12px; font-weight: bold;">LOGO</div>'}
+          <div>
+            <h1 style="margin: 0; font-size: 28px; color: ${primaryColor}; font-weight: bold; line-height: 1.2;">${escapeHtml(companyInfo?.name || 'VOTRE ENTREPRISE')}</h1>
+            <p style="margin: 5px 0 0 0; color: ${secondaryColor}; font-size: 14px; font-weight: 500;">Artisan professionnel</p>
+          </div>
         </div>
         <div style="text-align: right; flex: 1;">
-          <h2 style="margin: 0; font-size: 20px; color: #374151; font-weight: bold;">FACTURE</h2>
-          <p style="margin: 10px 0; font-size: 18px; color: #1f2937; font-weight: bold;">${invoiceNumber || 'N/A'}</p>
-          <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Date: ${currentDate}</p>
-          ${dueDate ? `<p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Échéance: ${dueDate}</p>` : ''}
+          <h2 style="margin: 0 0 15px 0; font-size: 24px; color: ${primaryColor}; font-weight: bold; letter-spacing: 1px;">FACTURE</h2>
+          <p style="margin: 8px 0; font-size: 20px; color: ${primaryColor}; font-weight: bold;">${escapeHtml(invoiceNumber || 'N/A')}</p>
+          <p style="margin: 5px 0; color: ${secondaryColor}; font-size: 14px;">Date: ${currentDate}</p>
+          ${dueDate ? `<p style="margin: 5px 0; color: ${secondaryColor}; font-size: 14px;">Échéance: ${dueDate}</p>` : ''}
         </div>
       </div>
       
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px;">
+      <!-- Company and Client Information -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 50px; margin-bottom: 50px;">
         <div>
-          <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #374151; font-weight: bold;">CLIENT</h3>
-          <p style="margin: 5px 0; font-weight: bold; color: #1f2937;">${client?.name || 'Client'}</p>
-          ${client?.email ? `<p style="margin: 5px 0; color: #6b7280;">${client.email}</p>` : ''}
-          ${client?.phone ? `<p style="margin: 5px 0; color: #6b7280;">${client.phone}</p>` : ''}
-          ${client?.address ? `<p style="margin: 5px 0; color: #6b7280;">${client.address}</p>` : ''}
-          ${client?.postal_code && client?.city ? `<p style="margin: 5px 0; color: #6b7280;">${client.postal_code} ${client.city}</p>` : ''}
+          <h3 style="margin: 0 0 20px 0; font-size: 16px; color: ${primaryColor}; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">CLIENT</h3>
+          <div style="color: ${secondaryColor}; font-size: 14px; line-height: 1.8;">
+            <p style="margin: 0 0 8px 0; font-weight: bold; font-size: 15px;">${escapeHtml(client?.name || 'Client')}</p>
+            ${client?.email ? `<p style="margin: 0 0 5px 0;">${escapeHtml(client.email)}</p>` : ''}
+            ${client?.phone ? `<p style="margin: 0 0 5px 0;">${escapeHtml(client.phone)}</p>` : ''}
+            ${client?.address ? `<p style="margin: 0 0 5px 0;">${escapeHtml(client.address)}</p>` : ''}
+            ${client?.postal_code && client?.city ? `<p style="margin: 0;">${escapeHtml(client.postal_code)} ${escapeHtml(client.city)}</p>` : ''}
+            ${client?.country ? `<p style="margin: 5px 0 0 0;">${escapeHtml(client.country)}</p>` : ''}
+          </div>
         </div>
-        <div>
-          <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #374151; font-weight: bold;">ENTREPRISE</h3>
-          <p style="margin: 5px 0; color: #6b7280;">${companyInfo?.address || ''}</p>
-          <p style="margin: 5px 0; color: #6b7280;">${companyInfo?.postalCode || ''} ${companyInfo?.city || ''}</p>
-          ${companyInfo?.vatNumber ? `<p style="margin: 5px 0; color: #6b7280;">TVA: ${companyInfo.vatNumber}</p>` : ''}
+        <div style="text-align: right;">
+          <h3 style="margin: 0 0 20px 0; font-size: 16px; color: ${primaryColor}; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">ENTREPRISE</h3>
+          <div style="color: ${secondaryColor}; font-size: 14px; line-height: 1.8;">
+            <p style="margin: 0 0 5px 0;">${escapeHtml(companyInfo?.address || '')}</p>
+            <p style="margin: 0 0 5px 0;">${escapeHtml(companyInfo?.postalCode || '')} ${escapeHtml(companyInfo?.city || '')}</p>
+            ${companyInfo?.email ? `<p style="margin: 0 0 5px 0;">${escapeHtml(companyInfo.email)}</p>` : ''}
+            ${companyInfo?.phone ? `<p style="margin: 0 0 5px 0;">${escapeHtml(companyInfo.phone)}</p>` : ''}
+            ${companyInfo?.vatNumber ? `<p style="margin: 5px 0 0 0; font-weight: 500;">TVA: ${escapeHtml(companyInfo.vatNumber)}</p>` : ''}
+          </div>
         </div>
       </div>
       
-      <div style="margin-bottom: 40px;">
-        <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #374151; font-weight: bold;">DÉTAIL DES PRESTATIONS</h3>
-        <table style="width: 100%; border-collapse: collapse;">
+      <!-- Invoice Lines Table -->
+      <div style="margin-bottom: 50px;">
+        <h3 style="margin: 0 0 20px 0; font-size: 16px; color: ${primaryColor}; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">DÉTAIL DES PRESTATIONS</h3>
+        <table style="width: 100%; border-collapse: collapse; border: 1px solid #d1d5db;">
           <thead>
-            <tr style="background-color: #f3f4f6;">
-              <th style="border: 1px solid #d1d5db; padding: 12px; text-align: left;">N°</th>
-              <th style="border: 1px solid #d1d5db; padding: 12px; text-align: left;">Désignation</th>
-              <th style="border: 1px solid #d1d5db; padding: 12px; text-align: center;">Qté</th>
-              <th style="border: 1px solid #d1d5db; padding: 12px; text-align: right;">Prix U.</th>
-              <th style="border: 1px solid #d1d5db; padding: 12px; text-align: right;">Total HT</th>
+            <tr style="background-color: ${primaryColorLight};">
+              <th style="border: 1px solid #d1d5db; padding: 14px 12px; text-align: center; font-weight: bold; color: ${primaryColor}; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">N°</th>
+              <th style="border: 1px solid #d1d5db; padding: 14px 12px; text-align: left; font-weight: bold; color: ${primaryColor}; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Désignation</th>
+              <th style="border: 1px solid #d1d5db; padding: 14px 12px; text-align: center; font-weight: bold; color: ${primaryColor}; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Qté</th>
+              <th style="border: 1px solid #d1d5db; padding: 14px 12px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Prix U.</th>
+              <th style="border: 1px solid #d1d5db; padding: 14px 12px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Total HT</th>
             </tr>
           </thead>
           <tbody>
-            ${invoiceLines.map(line => `
-              <tr>
-                <td style="border: 1px solid #d1d5db; padding: 12px; text-align: center;">${line.number}</td>
-                <td style="border: 1px solid #d1d5db; padding: 12px;">${line.description}</td>
-                <td style="border: 1px solid #d1d5db; padding: 12px; text-align: center;">${line.quantity} ${line.unit}</td>
-                <td style="border: 1px solid #d1d5db; padding: 12px; text-align: right;">${line.unitPrice.toFixed(2)} €</td>
-                <td style="border: 1px solid #d1d5db; padding: 12px; text-align: right;">${line.totalPrice.toFixed(2)} €</td>
+            ${invoiceLines.map((line, index) => `
+              <tr style="${index % 2 === 0 ? 'background-color: #fafafa;' : 'background-color: #ffffff;'}">
+                <td style="border: 1px solid #d1d5db; padding: 12px; text-align: center; color: ${secondaryColor}; font-size: 14px;">${line.number}</td>
+                <td style="border: 1px solid #d1d5db; padding: 12px; color: ${secondaryColor}; font-size: 14px;">${escapeHtml(line.description)}</td>
+                <td style="border: 1px solid #d1d5db; padding: 12px; text-align: center; color: ${secondaryColor}; font-size: 14px;">${line.quantity} ${escapeHtml(line.unit)}</td>
+                <td style="border: 1px solid #d1d5db; padding: 12px; text-align: right; color: ${secondaryColor}; font-size: 14px; font-weight: 500;">${line.unitPrice.toFixed(2)} €</td>
+                <td style="border: 1px solid #d1d5db; padding: 12px; text-align: right; color: ${secondaryColor}; font-size: 14px; font-weight: 500;">${line.totalPrice.toFixed(2)} €</td>
               </tr>
             `).join('')}
           </tbody>
           <tfoot>
-            <tr style="background-color: #f3f4f6;">
-              <td style="border: 1px solid #d1d5db; padding: 12px; font-weight: bold;" colspan="4">SOUS-TOTAL HT:</td>
-              <td style="border: 1px solid #d1d5db; padding: 12px; text-align: right; font-weight: bold;">${subtotal.toFixed(2)} €</td>
+            <tr style="background-color: #f9fafb;">
+              <td style="border: 1px solid #d1d5db; padding: 14px 12px; font-weight: bold; color: ${primaryColor}; font-size: 14px;" colspan="4">SOUS-TOTAL HT:</td>
+              <td style="border: 1px solid #d1d5db; padding: 14px 12px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${subtotal.toFixed(2)} €</td>
             </tr>
             ${taxAmount > 0 ? `
-            <tr style="background-color: #f3f4f6;">
-              <td style="border: 1px solid #d1d5db; padding: 12px; font-weight: bold;" colspan="4">TVA:</td>
-              <td style="border: 1px solid #d1d5db; padding: 12px; text-align: right; font-weight: bold;">${taxAmount.toFixed(2)} €</td>
+            <tr style="background-color: #f9fafb;">
+              <td style="border: 1px solid #d1d5db; padding: 14px 12px; font-weight: bold; color: ${primaryColor}; font-size: 14px;" colspan="4">TVA:</td>
+              <td style="border: 1px solid #d1d5db; padding: 14px 12px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${taxAmount.toFixed(2)} €</td>
             </tr>
             ` : ''}
-            <tr style="background-color: #fef3c7; border: 2px solid #f59e0b;">
-              <td style="border: 1px solid #d1d5db; padding: 12px; font-weight: bold;" colspan="4">TOTAL TTC:</td>
-              <td style="border: 1px solid #d1d5db; padding: 12px; text-align: right; font-weight: bold; font-size: 16px;">${total.toFixed(2)} €</td>
+            <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
+              <td style="border: 1px solid #d1d5db; padding: 16px 12px; font-weight: bold; color: ${primaryColor}; font-size: 16px; text-transform: uppercase; letter-spacing: 0.5px;" colspan="4">TOTAL TTC:</td>
+              <td style="border: 1px solid #d1d5db; padding: 16px 12px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 18px;">${total.toFixed(2)} €</td>
             </tr>
           </tfoot>
         </table>
       </div>
       
-      ${invoice.notes ? `
-      <div style="margin-bottom: 40px;">
-        <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #374151; font-weight: bold;">NOTES</h3>
-        <p style="margin: 0; color: #6b7280; white-space: pre-wrap;">${invoice.notes}</p>
-      </div>
-      ` : ''}
-      
-      <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 12px;">
-        <p>Merci de votre confiance</p>
-      </div>
     </div>
   `;
 };
