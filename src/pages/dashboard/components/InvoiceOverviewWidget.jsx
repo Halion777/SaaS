@@ -3,49 +3,61 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
-import TableLoader from '../../../components/ui/TableLoader';
 
 const InvoiceOverviewWidget = ({ invoiceData, expenseInvoiceData, loading = false }) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   const formatCurrency = (amount) => {
+    if (loading || amount === '...') return '...';
     return new Intl.NumberFormat(i18n.language, {
       style: 'currency',
       currency: 'EUR'
     }).format(amount || 0);
   };
 
+  const formatNumber = (num) => {
+    if (loading || num === '...') return '...';
+    return num?.toString() || '0';
+  };
+
+  const formatPercentage = (num) => {
+    if (loading || num === '...') return '...';
+    return `${num}%`;
+  };
+
   // Use real data or defaults
-  const clientInvoices = invoiceData || {
+  const clientInvoices = loading ? {
+    totalRevenue: '...',
+    paidRevenue: '...',
+    outstandingAmount: '...',
+    overdueCount: '...'
+  } : (invoiceData || {
     totalRevenue: 0,
     paidRevenue: 0,
     outstandingAmount: 0,
     overdueCount: 0
-  };
+  });
 
-  const supplierInvoices = expenseInvoiceData || {
+  const supplierInvoices = loading ? {
+    totalExpenses: '...',
+    paidExpenses: '...',
+    outstandingAmount: '...',
+    overdueCount: '...'
+  } : (expenseInvoiceData || {
     totalExpenses: 0,
     paidExpenses: 0,
     outstandingAmount: 0,
     overdueCount: 0
-  };
+  });
 
-  const netCashFlow = clientInvoices.paidRevenue - supplierInvoices.paidExpenses;
-  const collectionRate = clientInvoices.totalRevenue > 0 
+  const netCashFlow = loading ? '...' : (clientInvoices.paidRevenue - supplierInvoices.paidExpenses);
+  const collectionRate = loading ? '...' : (clientInvoices.totalRevenue > 0 
     ? Math.round((clientInvoices.paidRevenue / clientInvoices.totalRevenue) * 100) 
-    : 0;
-  const paymentRate = supplierInvoices.totalExpenses > 0
+    : 0);
+  const paymentRate = loading ? '...' : (supplierInvoices.totalExpenses > 0
     ? Math.round((supplierInvoices.paidExpenses / supplierInvoices.totalExpenses) * 100)
-    : 0;
-
-  if (loading) {
-    return (
-      <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
-        <TableLoader message="Chargement des données de facturation..." />
-      </div>
-    );
-  }
+    : 0);
 
   return (
     <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
@@ -112,7 +124,7 @@ const InvoiceOverviewWidget = ({ invoiceData, expenseInvoiceData, loading = fals
             <div className="flex justify-between items-center">
               <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.invoiceOverview.sections.clientInvoices.overdue')}</span>
               <span className="text-xs sm:text-sm font-medium text-error">
-                {clientInvoices.overdueCount} {t('common.invoice', { count: clientInvoices.overdueCount })}
+                {formatNumber(clientInvoices.overdueCount)} {!loading && clientInvoices.overdueCount !== '...' && t('common.invoice', { count: clientInvoices.overdueCount })}
               </span>
             </div>
           </div>
@@ -149,7 +161,7 @@ const InvoiceOverviewWidget = ({ invoiceData, expenseInvoiceData, loading = fals
             <div className="flex justify-between items-center">
               <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.invoiceOverview.sections.supplierInvoices.overdue')}</span>
               <span className="text-xs sm:text-sm font-medium text-error">
-                {supplierInvoices.overdueCount} {t('common.invoice', { count: supplierInvoices.overdueCount })}
+                {formatNumber(supplierInvoices.overdueCount)} {!loading && supplierInvoices.overdueCount !== '...' && t('common.invoice', { count: supplierInvoices.overdueCount })}
               </span>
             </div>
           </div>
@@ -158,11 +170,11 @@ const InvoiceOverviewWidget = ({ invoiceData, expenseInvoiceData, loading = fals
         {/* Net Cash Flow */}
         <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center space-x-2">
-            <div className={`p-1.5 sm:p-2 rounded-lg flex items-center justify-center ${netCashFlow >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
+            <div className={`p-1.5 sm:p-2 rounded-lg flex items-center justify-center ${loading || netCashFlow === '...' ? 'bg-gray-100' : (netCashFlow >= 0 ? 'bg-green-100' : 'bg-red-100')}`}>
               <Icon 
-                name={netCashFlow >= 0 ? "TrendingUp" : "TrendingDown"} 
+                name={loading || netCashFlow === '...' ? "Minus" : (netCashFlow >= 0 ? "TrendingUp" : "TrendingDown")} 
                 size={16} 
-                className={`sm:w-5 sm:h-5 ${netCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`} 
+                className={`sm:w-5 sm:h-5 ${loading || netCashFlow === '...' ? 'text-gray-600' : (netCashFlow >= 0 ? 'text-green-600' : 'text-red-600')}`} 
               />
             </div>
             <h4 className="font-medium text-foreground text-sm sm:text-base">{t('dashboard.invoiceOverview.sections.cashFlow.title')}</h4>
@@ -171,25 +183,25 @@ const InvoiceOverviewWidget = ({ invoiceData, expenseInvoiceData, loading = fals
           <div className="space-y-2 sm:space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.invoiceOverview.sections.cashFlow.monthlyNet')}</span>
-              <span className={`text-xs sm:text-sm font-bold ${netCashFlow >= 0 ? 'text-success' : 'text-error'}`}>
+              <span className={`text-xs sm:text-sm font-bold ${loading || netCashFlow === '...' ? 'text-foreground' : (netCashFlow >= 0 ? 'text-success' : 'text-error')}`}>
                 {formatCurrency(netCashFlow)}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.invoiceOverview.sections.cashFlow.collectionRate')}</span>
               <span className="text-xs sm:text-sm font-medium text-foreground">
-                {collectionRate}%
+                {formatPercentage(collectionRate)}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.invoiceOverview.sections.cashFlow.paymentRate')}</span>
               <span className="text-xs sm:text-sm font-medium text-foreground">
-                {paymentRate}%
+                {formatPercentage(paymentRate)}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.invoiceOverview.sections.cashFlow.availableBalance')}</span>
-              <span className="text-xs sm:text-sm font-medium text-foreground">
+              <span className={`text-xs sm:text-sm font-medium ${loading || netCashFlow === '...' ? 'text-foreground' : (netCashFlow >= 0 ? 'text-success' : 'text-error')}`}>
                 {formatCurrency(netCashFlow)}
               </span>
             </div>

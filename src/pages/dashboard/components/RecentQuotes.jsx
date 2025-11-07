@@ -10,6 +10,7 @@ const RecentQuotes = ({ quotes = [], loading = false }) => {
   const navigate = useNavigate();
 
   const formatCurrency = (amount) => {
+    if (loading || amount === '...') return '...';
     return new Intl.NumberFormat(i18n.language || 'fr', {
       style: 'currency',
       currency: 'EUR'

@@ -21,13 +21,15 @@ const MetricsCard = ({ title, value, change, changeType, icon, color = "primary"
     error: 'bg-error/10 text-error'
   };
 
+  const isLoading = value === '...';
+
   return (
     <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-professional hover-reveal">
       <div className="flex items-center justify-between mb-3 sm:mb-4">
         <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center ${colorClasses[color]}`}>
           <Icon name={icon} size={20} className="sm:w-6 sm:h-6" color="currentColor" />
         </div>
-        {change && (
+        {!isLoading && change && (
           <div className={`flex items-center space-x-1 ${getChangeColor()}`}>
             <Icon name={getChangeIcon()} size={14} className="sm:w-4 sm:h-4" color="currentColor" />
             <span className="text-xs sm:text-sm font-medium">{change}</span>

@@ -421,7 +421,40 @@ const Dashboard = () => {
     }).format(amount || 0);
   };
 
-  const metricsData = dashboardData.metrics ? [
+  const metricsData = dashboardData.loading ? [
+    {
+      title: t('dashboard.metrics.quotesThisMonth'),
+      value: '...',
+      change: null,
+      changeType: null,
+      icon: 'FileText',
+      color: 'primary'
+    },
+    {
+      title: t('dashboard.metrics.totalClients'),
+      value: '...',
+      change: null,
+      changeType: null,
+      icon: 'Users',
+      color: 'success'
+    },
+    {
+      title: t('dashboard.metrics.monthlyTurnover'),
+      value: '...',
+      change: null,
+      changeType: null,
+      icon: 'Euro',
+      color: 'warning'
+    },
+    {
+      title: t('dashboard.metrics.overdueInvoices'),
+      value: '...',
+      change: null,
+      changeType: null,
+      icon: 'AlertCircle',
+      color: 'error'
+    }
+  ] : (dashboardData.metrics ? [
     {
       title: t('dashboard.metrics.quotesThisMonth'),
       value: dashboardData.metrics.quotesThisMonth.toString(),
@@ -455,7 +488,7 @@ const Dashboard = () => {
       icon: 'AlertCircle',
       color: dashboardData.metrics.overdueInvoices > 0 ? 'error' : 'success'
     }
-  ] : [];
+  ] : []);
 
 
   return (
@@ -568,23 +601,9 @@ const Dashboard = () => {
           {/* Metrics Cards */}
           {widgetSettings.metricsCards && (
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 dashboard-metrics">
-              {dashboardData.loading ? (
-                <>
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="bg-card border border-border rounded-lg p-4 sm:p-6">
-                      <div className="animate-pulse">
-                        <div className="h-12 w-12 bg-muted rounded-lg mb-4"></div>
-                        <div className="h-8 bg-muted rounded mb-2"></div>
-                        <div className="h-4 bg-muted rounded w-2/3"></div>
-                      </div>
-                    </div>
-                  ))}
-                </>
-              ) : (
-                metricsData.map((metric, index) => (
-                  <MetricsCard key={index} {...metric} />
-                ))
-              )}
+              {metricsData.map((metric, index) => (
+                <MetricsCard key={index} {...metric} />
+              ))}
             </div>
           )}
 

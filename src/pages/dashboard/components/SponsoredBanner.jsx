@@ -26,6 +26,16 @@ const SponsoredBanner = () => {
         if (result.success && result.data) {
           const settings = result.data;
           
+          // Check if banner is disabled first
+          if (settings.enabled === false) {
+            // Banner is disabled, set data but mark as disabled
+            setBannerData({
+              enabled: false
+            });
+            setLoading(false);
+            return;
+          }
+          
           // Get language-specific content
           if (settings.enabled && settings[currentLang]) {
             const langData = settings[currentLang];
@@ -39,8 +49,8 @@ const SponsoredBanner = () => {
               discount: langData.discount || t('dashboard.sponsoredBanner.discount'),
               enabled: settings.enabled
             });
-          } else {
-            // Use default/translation values if settings not found or disabled
+          } else if (settings.enabled) {
+            // Enabled but no language-specific data, use defaults
             setBannerData({
               title: t('dashboard.sponsoredBanner.title'),
               description: t('dashboard.sponsoredBanner.description'),
@@ -48,11 +58,16 @@ const SponsoredBanner = () => {
               buttonText: t('dashboard.sponsoredBanner.cta'),
               buttonLink: '/subscription',
               discount: t('dashboard.sponsoredBanner.discount'),
-              enabled: settings?.enabled !== false
+              enabled: true
+            });
+          } else {
+            // Not explicitly enabled, treat as disabled
+            setBannerData({
+              enabled: false
             });
           }
         } else {
-          // Use default/translation values if settings not found
+          // No settings found, default to enabled with translation values
           setBannerData({
             title: t('dashboard.sponsoredBanner.title'),
             description: t('dashboard.sponsoredBanner.description'),
@@ -65,7 +80,7 @@ const SponsoredBanner = () => {
         }
       } catch (error) {
         console.error('Error loading banner settings:', error);
-        // Use default/translation values on error
+        // On error, default to enabled with translation values
         setBannerData({
           title: t('dashboard.sponsoredBanner.title'),
           description: t('dashboard.sponsoredBanner.description'),
@@ -83,7 +98,36 @@ const SponsoredBanner = () => {
     loadBannerSettings();
   }, [t, i18n.language]);
 
-  if (loading || !bannerData || !bannerData.enabled) return null;
+  // Show skeleton while loading
+  if (loading) {
+    return (
+      <div className="bg-gradient-to-r from-blue-700/90 to-blue-800/90 border border-blue-600/30 rounded-lg p-4 sm:p-6 shadow-lg relative overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 relative z-10">
+          {/* Image skeleton */}
+          <div className="w-16 h-16 sm:w-16 sm:h-16 rounded-lg bg-white/20 animate-pulse flex-shrink-0 mx-auto sm:mx-0"></div>
+          
+          <div className="flex-1 min-w-0 text-center sm:text-left">
+            {/* Title skeleton */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 mb-3 sm:mb-2 space-y-2 sm:space-y-0">
+              <div className="h-5 bg-white/20 rounded animate-pulse w-48 mx-auto sm:mx-0"></div>
+              <div className="h-6 bg-yellow-500/30 rounded-full animate-pulse w-24 mx-auto sm:mx-0"></div>
+            </div>
+            {/* Description skeleton */}
+            <div className="h-4 bg-white/20 rounded animate-pulse mb-4 sm:mb-3 w-full max-w-md mx-auto sm:mx-0"></div>
+            
+            {/* Button skeleton */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+              <div className="h-9 bg-white/30 rounded-lg animate-pulse w-40 mx-auto sm:mx-0"></div>
+              <div className="h-4 bg-white/20 rounded animate-pulse w-20 mx-auto sm:mx-0"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't show if disabled or no data
+  if (!bannerData || bannerData.enabled === false) return null;
 
   const handleCTAClick = () => {
     if (bannerData.buttonLink) {

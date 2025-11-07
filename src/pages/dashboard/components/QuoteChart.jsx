@@ -1,13 +1,22 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import TableLoader from '../../../components/ui/TableLoader';
 
 const QuoteChart = ({ quotes = [], loading = false }) => {
   const { t } = useTranslation();
 
   // Process quotes data to get monthly statistics
   const chartData = useMemo(() => {
+    if (loading) {
+      // Return loading data with "..." for last 7 months
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
+      return months.map(month => ({
+        month: t(`dashboard.quoteChart.months.${month}`) || month,
+        quotes: '...',
+        signed: '...'
+      }));
+    }
+    
     if (!quotes || quotes.length === 0) {
       // Return empty data for last 7 months
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
@@ -50,15 +59,7 @@ const QuoteChart = ({ quotes = [], loading = false }) => {
     });
 
     return Object.values(monthlyData);
-  }, [quotes, t]);
-
-  if (loading) {
-    return (
-      <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-professional">
-        <TableLoader message="Chargement du graphique..." />
-      </div>
-    );
-  }
+  }, [quotes, t, loading]);
 
   return (
     <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-professional">
