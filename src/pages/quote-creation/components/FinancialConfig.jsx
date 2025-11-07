@@ -10,7 +10,9 @@ const FinancialConfig = ({
   marketingBannerConfig,
   onMarketingBannerConfigChange,
   defaultConditions,
-  onDefaultConditionsChange
+  onDefaultConditionsChange,
+  materialPriceDisplay,
+  onMaterialPriceDisplayChange
 }) => {
   const { t } = useTranslation();
   const getDefaultText = (language) => {
@@ -181,6 +183,37 @@ const FinancialConfig = ({
             />
           </div>
         )}
+      </div>
+
+      {/* Material Price Display Configuration */}
+      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+              <Icon name="Package" size={16} className="text-yellow-600" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900">Afficher les prix des matériaux</h3>
+              <p className="text-xs text-gray-600">Contrôle l'affichage des prix matériaux dans l'aperçu du devis</p>
+            </div>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input 
+              type="checkbox"
+              checked={materialPriceDisplay ?? (localStorage.getItem('include-materials-prices') ?? 'true') === 'true'}
+              onChange={(e) => {
+                const value = e.target.checked;
+                localStorage.setItem('include-materials-prices', String(value));
+                window.dispatchEvent(new StorageEvent('storage', { key: 'include-materials-prices', newValue: String(value) }));
+                if (onMaterialPriceDisplayChange) {
+                  onMaterialPriceDisplayChange(value);
+                }
+              }}
+              className="sr-only peer"
+            />
+            <div className="w-10 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
       </div>
 
       {/* Default Conditions */}

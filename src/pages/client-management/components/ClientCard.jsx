@@ -142,17 +142,27 @@ const ClientCard = ({ client, onSelect, onDelete, onStatusToggle, getStatusColor
       )}
 
       {/* PEPPOL Status */}
-      {client.enablePeppol && (
-        <div className="flex items-center space-x-2 mb-4 p-2 bg-green-50 border border-green-200 rounded-lg">
-          <Icon name="CheckCircle" size={16} className="text-green-600" />
-          <span className="text-sm text-green-800 font-medium">PEPPOL Activé</span>
-          {client.peppolId && (
-            <span className="text-xs text-green-700 bg-green-100 px-2 py-1 rounded">
-              {client.peppolId}
-            </span>
-          )}
-        </div>
-      )}
+      <div className={`flex items-center space-x-2 mb-4 p-2 rounded-lg ${
+        client.peppolConfigured 
+          ? 'bg-green-50 border border-green-200' 
+          : 'bg-muted/30 border border-border'
+      }`}>
+        <Icon 
+          name={client.peppolConfigured ? "CheckCircle" : "XCircle"} 
+          size={16} 
+          className={client.peppolConfigured ? "text-green-600" : "text-muted-foreground"} 
+        />
+        <span className={`text-sm font-medium ${
+          client.peppolConfigured ? "text-green-800" : "text-muted-foreground"
+        }`}>
+          {client.peppolConfigured ? 'PEPPOL Configuré' : 'PEPPOL Non configuré'}
+        </span>
+        {client.peppolId && client.peppolConfigured && (
+          <span className="text-xs text-green-700 bg-green-100 px-2 py-1 rounded">
+            {client.peppolId}
+          </span>
+        )}
+      </div>
 
       {/* Statistics */}
       <div className="grid grid-cols-2 gap-4 mb-4">

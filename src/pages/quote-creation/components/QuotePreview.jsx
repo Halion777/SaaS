@@ -96,7 +96,8 @@ const QuotePreview = ({
     defaultConditions: {
       language: 'FR',
       text: '\n• Devis valable 30 jours\n• Acompte de 30% à la commande\n• Solde à la livraison\n• Délai de paiement: 30 jours\n• TVA comprise\n• Matériaux et main d\'œuvre garantis 1 an'
-    }
+    },
+    materialPriceDisplay: (localStorage.getItem('include-materials-prices') ?? 'true') === 'true'
   });
 
   // Load saved company info on component mount - Database First Strategy
@@ -340,6 +341,12 @@ const QuotePreview = ({
           }
         }));
       }
+    } else if (field === 'materialPriceDisplay') {
+      // Handle material price display toggle
+      setFinancialConfig(prev => ({ 
+        ...prev, 
+        materialPriceDisplay: value
+      }));
     }
   };
 
@@ -605,6 +612,8 @@ const QuotePreview = ({
                     handleFinancialConfigChange('defaultConditions', language);
                   }
                 }}
+                materialPriceDisplay={financialConfig.materialPriceDisplay}
+                onMaterialPriceDisplayChange={(value) => handleFinancialConfigChange('materialPriceDisplay', value)}
               />
             )}
           </div>

@@ -1,7 +1,7 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
 
-const ExpenseInvoicesSummaryBar = ({ summaryData }) => {
+const ExpenseInvoicesSummaryBar = ({ summaryData, isLoading = false }) => {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -12,7 +12,7 @@ const ExpenseInvoicesSummaryBar = ({ summaryData }) => {
   const summaryItems = [
     {
       label: 'Total dépenses',
-      value: formatCurrency(summaryData.totalExpenses),
+      value: isLoading ? '...' : formatCurrency(summaryData.totalExpenses || 0),
       icon: 'Receipt',
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
@@ -21,21 +21,21 @@ const ExpenseInvoicesSummaryBar = ({ summaryData }) => {
     },
     {
       label: 'Dépenses payées',
-      value: formatCurrency(summaryData.paidExpenses),
+      value: isLoading ? '...' : formatCurrency(summaryData.paidExpenses || 0),
       icon: 'CheckCircle',
       color: 'text-green-600',
       bgColor: 'bg-green-50'
     },
     {
       label: 'Montant en attente',
-      value: formatCurrency(summaryData.outstandingAmount),
+      value: isLoading ? '...' : formatCurrency(summaryData.outstandingAmount || 0),
       icon: 'Clock',
       color: 'text-orange-600',
       bgColor: 'bg-orange-50'
     },
     {
       label: 'Factures en retard',
-      value: summaryData.overdueCount,
+      value: isLoading ? '...' : summaryData.overdueCount || 0,
       icon: 'AlertTriangle',
       color: 'text-red-600',
       bgColor: 'bg-red-50'

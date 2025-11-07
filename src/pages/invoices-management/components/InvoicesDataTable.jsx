@@ -3,8 +3,9 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import { Checkbox } from '../../../components/ui/Checkbox';
+import Select from '../../../components/ui/Select';
 
-const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSelectionChange, filters, onFiltersChange }) => {
+const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSelectionChange, filters, onFiltersChange, onStatusUpdate }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'issueDate', direction: 'desc' });
   const [viewMode, setViewMode] = useState(() => {
     // Default to card view on mobile/tablet, table view on desktop
@@ -36,7 +37,14 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
     return new Intl.DateTimeFormat('fr-FR').format(new Date(date));
   };
 
-  const getStatusBadge = (status) => {
+  const statusOptions = [
+    { value: 'paid', label: 'Payée' },
+    { value: 'unpaid', label: 'Non payée' },
+    { value: 'overdue', label: 'En retard' },
+    { value: 'cancelled', label: 'Annulée' }
+  ];
+
+  const getStatusBadge = (status, invoice = null) => {
     const statusConfig = {
       paid: { label: 'Payée', color: 'bg-success text-success-foreground' },
       unpaid: { label: 'Non payée', color: 'bg-warning text-warning-foreground' },
@@ -45,6 +53,27 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
     };
 
     const config = statusConfig[status] || statusConfig.unpaid;
+    
+    // Show editable status dropdown only for individual clients (not professional clients who use Peppol)
+    if (onStatusUpdate && invoice) {
+      const clientType = invoice.client?.client_type || invoice.client?.type;
+      const isIndividual = clientType === 'individual' || clientType === 'particulier';
+      
+      // Only show editable status for individual clients
+      if (isIndividual) {
+        return (
+          <div className="relative inline-block" style={{ zIndex: 'auto' }}>
+            <Select
+              value={status}
+              onValueChange={(newStatus) => onStatusUpdate(invoice.id, newStatus)}
+              options={statusOptions}
+              className="w-auto min-w-[120px]"
+            />
+          </div>
+        );
+      }
+    }
+    
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${config.color}`}>
         {config.label}
@@ -138,14 +167,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                   )}
                 </div>
               </div>
-              <div className="flex items-center space-x-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  iconName="Eye"
-                  onClick={() => onInvoiceAction('view', invoice)}
-                />
-              </div>
+              
             </div>
 
             {/* Client Info */}
@@ -165,10 +187,16 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
             {/* Status */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex flex-col space-y-1">
-                {getStatusBadge(invoice.status)}
-                {invoice.peppolEnabled && invoice.peppolStatus && (
-                  getPeppolStatusBadge(invoice.peppolStatus)
-                )}
+                {getStatusBadge(invoice.status, invoice)}
+                {/* Show Peppol status only for professional clients who have sent via Peppol */}
+                {(() => {
+                  const clientType = invoice.client?.client_type || invoice.client?.type;
+                  const isProfessional = clientType === 'company' || clientType === 'professionnel';
+                  if (isProfessional && invoice.peppolEnabled && invoice.peppolStatus) {
+                    return getPeppolStatusBadge(invoice.peppolStatus);
+                  }
+                  return null;
+                })()}
                 {daysOverdue && (
                   <span className="text-xs text-error">+{daysOverdue} jours</span>
                 )}
@@ -203,9 +231,9 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                 variant="ghost"
                 size="sm"
                 iconName="Send"
-                onClick={() => onInvoiceAction('send_peppol', invoice)}
+                onClick={() => onInvoiceAction('send', invoice)}
                 className="text-xs text-primary hover:text-primary/80"
-                title="Envoyer via Peppol"
+                title="Envoyer la facture"
               />
             </div>
           </div>
@@ -341,10 +369,16 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col space-y-1">
-                      {getStatusBadge(invoice.status)}
-                      {invoice.peppolEnabled && invoice.peppolStatus && (
-                        getPeppolStatusBadge(invoice.peppolStatus)
-                      )}
+                      {getStatusBadge(invoice.status, invoice)}
+                      {/* Show Peppol status only for professional clients who have sent via Peppol */}
+                      {(() => {
+                        const clientType = invoice.client?.client_type || invoice.client?.type;
+                        const isProfessional = clientType === 'company' || clientType === 'professionnel';
+                        if (isProfessional && invoice.peppolEnabled && invoice.peppolStatus) {
+                          return getPeppolStatusBadge(invoice.peppolStatus);
+                        }
+                        return null;
+                      })()}
                       {daysOverdue && (
                         <span className="text-xs text-error">+{daysOverdue} jours</span>
                       )}
@@ -371,8 +405,8 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                         variant="ghost"
                         size="sm"
                         iconName="Send"
-                        onClick={() => onInvoiceAction('send_peppol', invoice)}
-                        title="Envoyer via Peppol"
+                        onClick={() => onInvoiceAction('send', invoice)}
+                        title="Envoyer la facture"
                         className="text-primary hover:text-primary/80"
                       />
                     </div>

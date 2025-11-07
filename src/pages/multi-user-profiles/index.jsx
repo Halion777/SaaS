@@ -33,8 +33,6 @@ const MultiUserProfilesPage = () => {
     
   } = useMultiUser();
 
-  const [invitations, setInvitations] = useState([]);
-  const [showInviteModal, setShowInviteModal] = useState(false);
   const [showAddProfileModal, setShowAddProfileModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [editingProfile, setEditingProfile] = useState(null);
@@ -49,25 +47,7 @@ const MultiUserProfilesPage = () => {
     action: null // 'switch', 'edit', 'delete'
   });
 
-  const [inviteForm, setInviteForm] = useState({
-    email: '',
-    role: 'viewer',
-    permissions: {
-      dashboard: 'view_only',
-      analytics: 'view_only',
-      peppolAccessPoint: 'no_access',
-      leadsManagement: 'view_only',
-      quoteCreation: 'no_access',
-      quotesManagement: 'view_only',
-      quotesFollowUp: 'view_only',
-      invoicesFollowUp: 'view_only',
-      clientInvoices: 'view_only',
-      supplierInvoices: 'no_access',
-      clientManagement: 'view_only',
-      creditInsurance: 'no_access',
-      recovery: 'no_access'
-    }
-  });
+  
 
   // Access control configuration - simplified to match sidebar structure
   const accessPermissions = {
@@ -318,22 +298,7 @@ const MultiUserProfilesPage = () => {
     };
   }, []);
 
-  // Load invitations when component mounts
-  useEffect(() => {
-    if (user && isPremium) {
-      loadInvitations();
-    }
-  }, [user, isPremium]);
-
-  const loadInvitations = async () => {
-    try {
-      const pendingInvitations = await getPendingInvitations();
-      setInvitations(pendingInvitations);
-    } catch (error) {
-      console.error('Error loading invitations:', error);
-    }
-  };
-
+ 
   const handleProfileSwitch = async (profileId) => {
     try {
       // Check if profile has PIN protection
@@ -580,55 +545,9 @@ const MultiUserProfilesPage = () => {
     }
   };
 
-  const handleInviteUser = async (e) => {
-    e.preventDefault();
-    try {
-      await inviteUser(inviteForm.email, inviteForm.role, inviteForm.permissions);
-      setInvitations(prev => [...prev, { 
-        id: Date.now().toString(),
-        email: inviteForm.email,
-        role: inviteForm.role,
-        status: 'pending',
-        created_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-      }]);
-      setShowInviteModal(false);
-      setInviteForm({ 
-        email: '', 
-        role: 'viewer', 
-        permissions: {
-          dashboard: 'view_only',
-          analytics: 'view_only',
-          peppolAccessPoint: 'no_access',
-          leadsManagement: 'view_only',
-          quoteCreation: 'no_access',
-          quotesManagement: 'view_only',
-          quotesFollowUp: 'view_only',
-          invoicesFollowUp: 'view_only',
-          clientInvoices: 'view_only',
-          supplierInvoices: 'no_access',
-          clientManagement: 'view_only',
-          creditInsurance: 'no_access',
-          recovery: 'no_access'
-        }
-      });
-      alert('Invitation envoyée avec succès');
-    } catch (error) {
-      console.error('Error inviting user:', error);
-      alert('Erreur lors de l\'envoi de l\'invitation');
-    }
-  };
+  
 
-  const handleCancelInvitation = async (invitationId) => {
-    try {
-      await cancelInvitation(invitationId);
-      setInvitations(prev => prev.filter(inv => inv.id !== invitationId));
-      alert('Invitation annulée');
-    } catch (error) {
-      console.error('Error cancelling invitation:', error);
-      alert('Erreur lors de l\'annulation de l\'invitation');
-    }
-  };
+  
 
   const handleAvatarUpload = async (profileId, file) => {
     try {
@@ -983,55 +902,7 @@ const MultiUserProfilesPage = () => {
             )}
           </div>
 
-          {/* Pending Invitations */}
-          {isPremium && invitations.length > 0 && (
-            <div className="mt-8">
-              <h3 className="text-xl font-semibold mb-4">Invitations en attente</h3>
-              <div className="bg-card border border-border rounded-lg overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-muted/50">
-                      <tr>
-                        <th className="text-left p-4 font-medium">Email</th>
-                        <th className="text-left p-4 font-medium">Rôle</th>
-                        <th className="text-left p-4 font-medium">Date d'invitation</th>
-                        <th className="text-left p-4 font-medium">Expire le</th>
-                        <th className="text-left p-4 font-medium">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {invitations.map((invitation) => (
-                        <tr key={invitation.id} className="border-t border-border">
-                          <td className="p-4">{invitation.email}</td>
-                          <td className="p-4">
-                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              {getRoleLabel(invitation.role)}
-                            </span>
-                          </td>
-                          <td className="p-4 text-sm text-muted-foreground">
-                            {new Date(invitation.created_at).toLocaleDateString('fr-FR')}
-                          </td>
-                          <td className="p-4 text-sm text-muted-foreground">
-                            {new Date(invitation.expires_at).toLocaleDateString('fr-FR')}
-                          </td>
-                          <td className="p-4">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleCancelInvitation(invitation.id)}
-                            >
-                              Annuler
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
+          
           {/* Add Profile Modal */}
           {showAddProfileModal && (
             <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -1514,146 +1385,7 @@ const MultiUserProfilesPage = () => {
             </div>
           )}
 
-          {/* Invite Modal */}
-          {showInviteModal && (
-            <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-              <div className="bg-card border border-border rounded-lg shadow-xl max-w-2xl w-full overflow-hidden">
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-border">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <Icon name="Mail" size={20} className="text-primary" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-semibold text-foreground">Inviter un utilisateur</h2>
-                      <p className="text-sm text-muted-foreground">
-                        Envoyez une invitation à un nouvel utilisateur
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowInviteModal(false)}
-                    iconName="X"
-                  />
-                </div>
-
-                {/* Content */}
-                <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
-                  <form onSubmit={handleInviteUser} className="space-y-6">
-                    {/* Basic Information */}
-                    <div className="space-y-6">
-                  <div>
-                        <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-                          <Icon name="UserPlus" size={18} className="mr-2 text-primary" />
-                          Informations de l'utilisateur
-                        </h3>
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium leading-none text-foreground">
-                              Email <span className="text-destructive">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      value={inviteForm.email}
-                      onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      placeholder="email@exemple.com"
-                      required
-                    />
-                  </div>
-
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium leading-none text-foreground">
-                              Rôle <span className="text-destructive">*</span>
-                    </label>
-                            <EnhancedSelect
-                              options={[
-                                { value: 'viewer', label: 'Lecteur' },
-                                { value: 'sales', label: 'Commercial' },
-                                { value: 'accountant', label: 'Comptable' },
-                                { value: 'manager', label: 'Gestionnaire' },
-                                { value: 'admin', label: 'Administrateur' }
-                              ]}
-                      value={inviteForm.role}
-                              onChange={(value) => setInviteForm({ ...inviteForm, role: value })}
-                              placeholder="Sélectionner un rôle"
-                              size="default"
-                              variant="outline"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                  </div>
-
-                    {/* Role Information */}
-                    <div className="space-y-6">
-                      <div>
-                        <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-                          <Icon name="Shield" size={18} className="mr-2 text-primary" />
-                          Informations sur le rôle
-                        </h3>
-                        <div className="bg-muted/50 rounded-lg p-4">
-                          <div className="flex items-center space-x-3 mb-3">
-                            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                              <Icon name={getModuleIcon('users')} size={16} className="text-primary" />
-                            </div>
-                            <div>
-                              <h4 className="font-semibold text-foreground">{roleTemplates[inviteForm.role]?.name || 'Rôle sélectionné'}</h4>
-                              <p className="text-sm text-muted-foreground">{roleTemplates[inviteForm.role]?.description || 'Description du rôle'}</p>
-                            </div>
-                          </div>
-                          {inviteForm.role && roleTemplates[inviteForm.role] && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                              {Object.entries(roleTemplates[inviteForm.role].permissions).map(([moduleKey, permission]) => (
-                                <div key={moduleKey} className="flex items-center justify-between p-2 bg-background/50 rounded-md border border-border/50">
-                                  <div className="flex items-center space-x-2">
-                                    <div className="w-4 h-4 bg-primary/10 rounded-sm flex items-center justify-center">
-                                      <Icon name={getModuleIcon(moduleKey)} size={10} className="text-primary" />
-                                    </div>
-                                    <span className="text-xs font-medium text-foreground">{accessPermissions[moduleKey]?.label}</span>
-                                  </div>
-                                  <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-md">
-                                    {getPermissionLabel(permission)}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </form>
-                </div>
-
-                {/* Footer */}
-                <div className="flex items-center justify-between p-6 border-t border-border bg-muted/20">
-                  <div className="flex items-center space-x-4">
-                    <p className="text-sm text-muted-foreground">
-                      L'utilisateur recevra un email d'invitation avec un lien de connexion
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setShowInviteModal(false)}
-                    >
-                      Annuler
-                    </Button>
-                    <Button 
-                      type="submit" 
-                      onClick={handleInviteUser}
-                      className="min-w-[140px]"
-                    >
-                      Envoyer l'invitation
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          
 
           {/* PIN Modal for Profile Switching */}
           <PinModal

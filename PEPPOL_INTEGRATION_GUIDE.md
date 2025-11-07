@@ -4,6 +4,24 @@
 
 This guide explains the Peppol integration in your SaaS invoicing system. It covers the database tables used, files involved, data structures, APIs needed, and step-by-step flows for both client invoices (outbound) and expense invoices (inbound).
 
+### Important: Client Type Restrictions
+
+**Peppol sending is only available for professional clients (companies), not individual clients.**
+
+- **Professional Clients (`client_type = 'company'`):**
+  - Can receive invoices via Peppol network (requires Peppol ID and VAT number)
+  - Can also receive invoices via email
+  - Have Peppol ID and VAT number configured
+
+- **Individual Clients (`client_type = 'individual'`):**
+  - Can only receive invoices via email
+  - Do not have Peppol ID or VAT number
+  - Email sending uses Resend service (same as quotes)
+
+When sending an invoice:
+- **Professional clients:** User sees options to send via Peppol or Email
+- **Individual clients:** User directly sees Email option (no Peppol option shown)
+
 ---
 
 ## 📊 Tables Used

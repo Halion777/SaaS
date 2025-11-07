@@ -18,6 +18,10 @@ const PeppolNetworkPage = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const [activeTab, setActiveTab] = useState('setup');
+  // All Peppol document types - automatically enabled for all users
+  // Document types valid for participant registration (MLR and APPLICATION_RESPONSE are response types, not registration types)
+  const ALL_DOCUMENT_TYPES = ['INVOICE', 'CREDIT_NOTE', 'SELF_BILLING_INVOICE', 'SELF_BILLING_CREDIT_NOTE', 'INVOICE_RESPONSE'];
+  
   const [peppolSettings, setPeppolSettings] = useState({
     peppolId: '',
       name: '',
@@ -27,10 +31,11 @@ const PeppolNetworkPage = () => {
       email: '',
     phoneNumber: '',
     language: 'en-US',
-    supportedDocumentTypes: ['INVOICE', 'CREDIT_NOTE'],
+    supportedDocumentTypes: ALL_DOCUMENT_TYPES, // All document types enabled by default
     limitedToOutboundTraffic: false,
     sandboxMode: true,
-    isConfigured: false
+    isConfigured: false,
+    peppolDisabled: false
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -39,6 +44,8 @@ const PeppolNetworkPage = () => {
   const [loading, setLoading] = useState(true);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
   const [filters, setFilters] = useState({
     search: '',
     status: '',
@@ -61,11 +68,8 @@ const PeppolNetworkPage = () => {
     totalSentAmount: 0,
     totalReceivedAmount: 0
   });
-  const [confirmUnregisterId, setConfirmUnregisterId] = useState('');
   const [countrySearchQuery, setCountrySearchQuery] = useState('');
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
-  const [showUnregisterSection, setShowUnregisterSection] = useState(false);
-  const [showDocumentTypesSection, setShowDocumentTypesSection] = useState(false);
   const [showParticipantDetails, setShowParticipantDetails] = useState(false);
   const [loadedTabs, setLoadedTabs] = useState({
     setup: false,
@@ -190,6 +194,7 @@ const PeppolNetworkPage = () => {
       }
 
       // Load sent invoices (from invoices table where peppol_enabled = true)
+      // Only show invoices for professional clients (client_type = 'company')
       const { data: sentInvoicesData, error: sentError } = await supabase
         .from('invoices')
         .select(`
@@ -208,7 +213,8 @@ const PeppolNetworkPage = () => {
           clients (
             name,
             email,
-            peppol_id
+            peppol_id,
+            client_type
           )
         `)
         .eq('user_id', user.id)
@@ -242,21 +248,24 @@ const PeppolNetworkPage = () => {
       }
 
       // Transform sent invoices to match expected format
-      const sent = (sentInvoicesData || []).map(inv => ({
-        id: inv.id,
-        invoice_number: inv.invoice_number,
-        recipient_name: inv.clients?.name || 'Unknown Client',
-        recipient_email: inv.clients?.email || '',
-        peppol_identifier: inv.receiver_peppol_id || inv.clients?.peppol_id || 'N/A',
-        total_amount: parseFloat(inv.final_amount || inv.amount || 0),
-        issue_date: inv.issue_date,
-        due_date: inv.due_date,
-        status: inv.peppol_status === 'delivered' ? 'delivered' : 
-                inv.peppol_status === 'sent' ? 'pending' :
-                inv.peppol_status === 'failed' ? 'failed' : 'pending',
-        peppol_message_id: inv.peppol_message_id,
-        created_at: inv.peppol_sent_at || inv.issue_date
-      }));
+      // Filter to only include invoices for professional clients (client_type = 'company')
+      const sent = (sentInvoicesData || [])
+        .filter(inv => inv.clients?.client_type === 'company') // Only professional clients
+        .map(inv => ({
+          id: inv.id,
+          invoice_number: inv.invoice_number,
+          recipient_name: inv.clients?.name || 'Unknown Client',
+          recipient_email: inv.clients?.email || '',
+          peppol_identifier: inv.receiver_peppol_id || inv.clients?.peppol_id || 'N/A',
+          total_amount: parseFloat(inv.final_amount || inv.amount || 0),
+          issue_date: inv.issue_date,
+          due_date: inv.due_date,
+          status: inv.peppol_status === 'delivered' ? 'delivered' : 
+                  inv.peppol_status === 'sent' ? 'pending' :
+                  inv.peppol_status === 'failed' ? 'failed' : 'pending',
+          peppol_message_id: inv.peppol_message_id,
+          created_at: inv.peppol_sent_at || inv.issue_date
+        }));
 
       // Transform received invoices to match expected format
       const received = (receivedInvoicesData || []).map(inv => ({
@@ -343,6 +352,10 @@ const PeppolNetworkPage = () => {
         if (isBusiness) {
           await loadPeppolSettings();
           setLoadedTabs(prev => ({ ...prev, setup: true }));
+          
+          // Load invoice data immediately to populate KPI cards and stats
+          await loadPeppolInvoices();
+          setLoadedTabs(prev => ({ ...prev, sent: true, received: true }));
         }
         
         // Set loading to false only after we've determined the user type
@@ -373,24 +386,9 @@ const PeppolNetworkPage = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Lazy load data based on active tab
-  useEffect(() => {
-    // Only load data if user is a business and tab hasn't been loaded yet
-    if (!isBusinessUser) return;
-
-    const loadTabData = async () => {
-      if (activeTab === 'sent' && !loadedTabs.sent) {
-        await loadPeppolInvoices();
-        setLoadedTabs(prev => ({ ...prev, sent: true }));
-      } else if (activeTab === 'received' && !loadedTabs.received) {
-        await loadPeppolInvoices();
-        setLoadedTabs(prev => ({ ...prev, received: true }));
-      }
-    };
-
-    loadTabData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, isBusinessUser, loadedTabs.sent, loadedTabs.received]);
+  // Optional: Reload invoice data when user explicitly switches to invoice tabs
+  // This ensures fresh data, but initial load happens on page load for KPI cards
+  // Note: We could add a refresh button instead to avoid unnecessary reloads
 
   // Helper function to format invoice data for display
   const formatInvoiceForDisplay = (invoice, type = 'sent') => {
@@ -439,8 +437,15 @@ const PeppolNetworkPage = () => {
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
+    setSuccessMessage(null);
+    setErrorMessage(null);
     try {
-      const result = await peppolService.savePeppolSettings(peppolSettings);
+      // Automatically set all document types before saving
+      const settingsToSave = {
+        ...peppolSettings,
+        supportedDocumentTypes: ALL_DOCUMENT_TYPES
+      };
+      const result = await peppolService.savePeppolSettings(settingsToSave);
       if (result.success) {
         // Update local settings from result instead of reloading
         setPeppolSettings(prev => ({ 
@@ -448,12 +453,25 @@ const PeppolNetworkPage = () => {
           isConfigured: result.data?.isConfigured || true,
           ...result.data 
         }));
-        alert(result.message || 'Settings saved successfully!');
+        setSuccessMessage(result.message || 'Paramètres enregistrés avec succès !');
+        // Clear success message after 5 seconds
+        setTimeout(() => setSuccessMessage(null), 5000);
       } else {
-        alert('❌ Error saving settings: ' + result.error);
+        // Check if participant is already registered
+        if (result.alreadyRegistered) {
+          setSuccessMessage('Ce participant est déjà enregistré dans Digiteal. Vos paramètres ont été enregistrés avec succès.');
+          // Clear success message after 5 seconds
+          setTimeout(() => setSuccessMessage(null), 5000);
+        } else {
+          setErrorMessage(result.error || 'Erreur lors de l\'enregistrement des paramètres.');
+          // Clear error message after 5 seconds
+          setTimeout(() => setErrorMessage(null), 5000);
+        }
       }
     } catch (error) {
-      alert('❌ Error saving settings: ' + error.message);
+      setErrorMessage('Erreur lors de l\'enregistrement des paramètres : ' + error.message);
+      // Clear error message after 5 seconds
+      setTimeout(() => setErrorMessage(null), 5000);
     } finally {
       setIsSaving(false);
     }
@@ -908,6 +926,42 @@ const PeppolNetworkPage = () => {
                 ) : (
                 /* Peppol Integration Setup */
                 <div className="bg-card border border-border rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
+                  {/* Success Message */}
+                  {successMessage && (
+                    <div className="bg-success/10 border border-success/20 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <Icon name="CheckCircle" size={20} className="text-success flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm text-success font-medium">{successMessage}</p>
+                        </div>
+                        <button
+                          onClick={() => setSuccessMessage(null)}
+                          className="text-success hover:text-success/80 transition-colors"
+                        >
+                          <Icon name="X" size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Error Message */}
+                  {errorMessage && (
+                    <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <Icon name="AlertCircle" size={20} className="text-destructive flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm text-destructive font-medium">{errorMessage}</p>
+                        </div>
+                        <button
+                          onClick={() => setErrorMessage(null)}
+                          className="text-destructive hover:text-destructive/80 transition-colors"
+                        >
+                          <Icon name="X" size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Header - Only show when NOT configured */}
                   {!peppolSettings.isConfigured && (
                     <div className="flex items-center space-x-2 sm:space-x-3">
@@ -1101,30 +1155,6 @@ const PeppolNetworkPage = () => {
                     <div className="space-y-4">
                       <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">Peppol Configuration</h3>
                       
-                      <div>
-                        <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
-                          Supported Document Types
-                        </label>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                          {['INVOICE', 'CREDIT_NOTE', 'SELF_BILLING_INVOICE', 'SELF_BILLING_CREDIT_NOTE', 'INVOICE_RESPONSE', 'MLR', 'APPLICATION_RESPONSE'].map((docType) => (
-                            <label key={docType} className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                checked={peppolSettings.supportedDocumentTypes.includes(docType)}
-                                onChange={(e) => {
-                                  const newTypes = e.target.checked
-                                    ? [...peppolSettings.supportedDocumentTypes, docType]
-                                    : peppolSettings.supportedDocumentTypes.filter(type => type !== docType);
-                                  handleInputChange('supportedDocumentTypes', newTypes);
-                                }}
-                                className="form-checkbox h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary"
-                              />
-                              <span className="text-xs text-foreground">{docType}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-
                     {/* Sandbox Mode Toggle */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-muted/20 rounded-lg gap-3 sm:gap-0">
                       <div>
@@ -1205,210 +1235,41 @@ const PeppolNetworkPage = () => {
                             </div>
                           </div>
                           
-                          {/* Unregister Button */}
-                          {!showUnregisterSection && (
-                            <div className="flex justify-end mt-3">
-                              <Button
-                                onClick={() => setShowUnregisterSection(true)}
-                                variant="outline"
-                                className="border-red-500 text-red-500 hover:bg-red-50"
-                                iconName="Trash2"
-                                iconPosition="left"
-                              >
-                                Unregister Participant
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      {/* Unregister Section - Only shown when button is clicked */}
-                      {showUnregisterSection && (
-                        <div className="bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-lg p-4 space-y-3">
-                          <div className="flex items-start space-x-2">
-                            <Icon name="AlertTriangle" size={20} className="text-red-600 mt-0.5 flex-shrink-0" />
-                            <div className="flex-1">
-                              <h4 className="text-sm font-semibold text-red-900">Unregister Participant</h4>
-                              <p className="text-xs text-red-700">This will permanently remove your participant from the Peppol network. You will not be able to send or receive invoices via Peppol after this action.</p>
-                            </div>
-                          </div>
-
-                          <div className="bg-white rounded-lg p-3 border border-red-200">
-                            
-                            <Input
-                              value={confirmUnregisterId}
-                              onChange={(e) => setConfirmUnregisterId(e.target.value)}
-                              placeholder="Type your Peppol ID"
-                              className="font-mono border-red-300 focus:border-red-500"
-                            />
-                           
-                          </div>
-
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={() => {
-                                setShowUnregisterSection(false);
-                                setConfirmUnregisterId('');
-                              }}
-                              variant="outline"
-                              className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
-                            >
-                              Cancel
-                            </Button>
-                            <Button
-                              onClick={async () => {
-                                if (confirmUnregisterId !== peppolSettings.peppolId) {
-                                  alert('Peppol ID does not match. Please enter the correct ID to proceed.');
-                                  return;
-                                }
-
-                                const result = await peppolService.unregisterParticipant(peppolSettings.peppolId);
-                                if (result.success) {
-                                  // Clear local settings
-                                  setPeppolSettings({
-                                    peppolId: '',
-                                    name: '',
-                                    countryCode: 'BE',
-                                    firstName: '',
-                                    lastName: '',
-                                    email: '',
-                                    phoneNumber: '',
-                                    language: 'en-US',
-                                    supportedDocumentTypes: ['INVOICE', 'CREDIT_NOTE'],
-                                    limitedToOutboundTraffic: false,
-                                    sandboxMode: true,
-                                    isConfigured: false
-                                  });
-                                  // Delete from database
-                                  await supabase.from('peppol_settings').delete().eq('user_id', (await supabase.auth.getUser()).data.user.id);
-                                  setConfirmUnregisterId('');
-                                  setShowUnregisterSection(false);
-                                  alert('Participant unregistered successfully');
-                                  // Reload settings only
-                                  await loadPeppolSettings();
-                                } else {
-                                  alert(`Failed to unregister: ${result.error}`);
-                                }
-                              }}
-                              variant="destructive"
-                              className="flex-1"
-                              iconName="Trash2"
-                              iconPosition="left"
-                              disabled={confirmUnregisterId !== peppolSettings.peppolId}
-                            >
-                              Unregister Participant
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Connection Status */}
-                  {peppolSettings.peppolId && (
-                    <div className="bg-muted/20 border border-border rounded-lg p-3 sm:p-4">
-                      <div className="flex items-center space-x-2 sm:space-x-3">
-                        <div className={`w-2 h-2 rounded-full ${peppolSettings.isConfigured ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-                        <div className="flex-1">
-                          <p className="text-xs sm:text-sm font-medium text-foreground">
-                            {peppolSettings.isConfigured ? 'Peppol Integration Ready' : 'Peppol Integration Pending'}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {peppolSettings.isConfigured 
-                              ? `Ready to send/receive ${peppolSettings.supportedDocumentTypes.length} document types via Peppol network.`
-                              : 'Complete the configuration and test the connection to enable Peppol integration.'
-                            }
-                          </p>
-                          {peppolSettings.isConfigured && (
-                            <div className="mt-2 flex flex-wrap gap-1">
-                              {peppolSettings.supportedDocumentTypes.map((docType) => (
-                                <span key={docType} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-primary/10 text-primary">
-                                  {docType}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Manage Document Types - Only shown if participant is already configured */}
-                  {peppolSettings.isConfigured && peppolSettings.peppolId && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
-                      <button
-                        onClick={() => setShowDocumentTypesSection(!showDocumentTypesSection)}
-                        className="flex items-center justify-between w-full"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <Icon name="FileText" size={20} className="text-blue-600" />
-                          <div className="text-left">
-                            <h3 className="text-sm font-semibold text-blue-900">Manage Supported Document Types</h3>
-                            <p className="text-xs text-blue-700 mt-0.5">
-                              Add or remove document types for your participant
-                            </p>
-                          </div>
-                        </div>
-                        <Icon 
-                          name={showDocumentTypesSection ? "ChevronUp" : "ChevronDown"} 
-                          size={20} 
-                          className="text-blue-600 flex-shrink-0" 
-                        />
-                      </button>
-                      
-                      {showDocumentTypesSection && (
-                        <>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                            {['INVOICE', 'CREDIT_NOTE', 'SELF_BILLING_INVOICE', 'SELF_BILLING_CREDIT_NOTE', 'INVOICE_RESPONSE', 'MLR', 'APPLICATION_RESPONSE'].map((docType) => {
-                              const isSupported = peppolSettings.supportedDocumentTypes.includes(docType);
-                              return (
-                                <button
-                                  key={docType}
-                                  onClick={async () => {
-                                    if (isSupported) {
-                                      // Remove document type
-                                      const result = await peppolService.removeSupportedDocumentType(peppolSettings.peppolId, docType);
-                                      if (result.success) {
-                                        handleInputChange('supportedDocumentTypes', peppolSettings.supportedDocumentTypes.filter(t => t !== docType));
-                                        alert(`Document type ${docType} removed successfully`);
-                                      } else {
-                                        alert(`Failed to remove ${docType}: ${result.error}`);
-                                      }
+                          {/* Disable/Enable Peppol Toggle */}
+                          <div className="mt-4 bg-muted/20 border border-border rounded-lg p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <h4 className="text-sm font-semibold text-foreground mb-1">
+                                  {peppolSettings.peppolDisabled ? 'Peppol Disabled' : 'Peppol Enabled'}
+                                </h4>
+                                <p className="text-xs text-muted-foreground">
+                                  {peppolSettings.peppolDisabled 
+                                    ? 'Peppol functionality is disabled. Historical data is preserved, but you cannot send or receive new Peppol documents.'
+                                    : 'Peppol functionality is active. You can send and receive invoices via Peppol network.'}
+                                </p>
+                              </div>
+                              <label className="relative inline-flex items-center cursor-pointer ml-4">
+                                <input 
+                                  type="checkbox"
+                                  checked={!peppolSettings.peppolDisabled}
+                                  onChange={async (e) => {
+                                    const newDisabled = !e.target.checked;
+                                    const result = await peppolService.togglePeppolDisabled(newDisabled);
+                                    if (result.success) {
+                                      setPeppolSettings(prev => ({ ...prev, peppolDisabled: newDisabled }));
+                                      alert(result.message);
+                                      await loadPeppolSettings();
                                     } else {
-                                      // Add document type
-                                      const result = await peppolService.addSupportedDocumentType(peppolSettings.peppolId, docType);
-                                      if (result.success) {
-                                        handleInputChange('supportedDocumentTypes', [...peppolSettings.supportedDocumentTypes, docType]);
-                                        alert(`Document type ${docType} added successfully`);
-                                      } else {
-                                        alert(`Failed to add ${docType}: ${result.error}`);
-                                      }
+                                      alert(`Failed to ${newDisabled ? 'disable' : 'enable'} Peppol: ${result.error}`);
                                     }
                                   }}
-                                  className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all ${
-                                    isSupported
-                                      ? 'bg-green-50 border-green-300 text-green-900'
-                                      : 'bg-white border-gray-300 text-gray-700 hover:border-blue-400 hover:bg-blue-50'
-                                  }`}
-                                >
-                                  <div className="flex items-center space-x-2">
-                                    {isSupported ? (
-                                      <Icon name="CheckCircle" size={16} className="text-green-600" />
-                                    ) : (
-                                      <Icon name="PlusCircle" size={16} className="text-gray-400" />
-                                    )}
-                                    <span className="text-xs font-medium">{docType}</span>
-                                  </div>
-                                  {isSupported && (
-                                    <Icon name="X" size={14} className="text-red-500 hover:text-red-700" />
-                                  )}
-                                </button>
-                              );
-                            })}
+                                  className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                              </label>
+                            </div>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            Click to toggle document types. Changes are applied immediately to your Peppol participant.
-                          </p>
-                        </>
+                        </div>
                       )}
                     </div>
                   )}

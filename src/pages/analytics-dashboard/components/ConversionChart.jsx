@@ -21,7 +21,10 @@ const ConversionChart = ({ data }) => {
     return null;
   };
 
-  const maxRate = Math.max(...data.map(d => d.rate));
+  // Calculate average conversion rate
+  const totalQuotes = data.reduce((sum, item) => sum + item.count, 0);
+  const totalAccepted = data.reduce((sum, item) => sum + Math.round((item.rate / 100) * item.count), 0);
+  const averageRate = totalQuotes > 0 ? Math.round((totalAccepted / totalQuotes) * 100) : 0;
 
   return (
     <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
@@ -36,7 +39,7 @@ const ConversionChart = ({ data }) => {
           </div>
         </div>
         <div className="text-right">
-          <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">68.5%</p>
+          <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{averageRate}%</p>
           <p className="text-xs sm:text-sm text-muted-foreground">Moyenne globale</p>
         </div>
       </div>

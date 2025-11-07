@@ -15,15 +15,14 @@ const PEPPOL_CONFIG = {
   }
 };
 
-// Peppol Document Types supported by Digiteal
+// Peppol Document Types supported by Digiteal for participant registration
+// Note: MLR and APPLICATION_RESPONSE are response types, not registration types
 const PEPPOL_DOCUMENT_TYPES = [
   'INVOICE',
   'CREDIT_NOTE', 
   'SELF_BILLING_INVOICE',
   'SELF_BILLING_CREDIT_NOTE',
-  'INVOICE_RESPONSE',
-  'MLR',
-  'APPLICATION_RESPONSE'
+  'INVOICE_RESPONSE'
 ];
 
 // Required fields for Peppol integration
@@ -357,6 +356,12 @@ export class PeppolService {
   // Send UBL invoice via Peppol - via edge function to avoid CORS
   async sendInvoice(invoiceData) {
     try {
+      // Check if Peppol is disabled
+      const isDisabled = await this.isPeppolDisabled();
+      if (isDisabled) {
+        throw new Error('Peppol functionality is currently disabled. Please enable it in Peppol settings to send invoices.');
+      }
+
       const xml = generatePEPPOLXML(invoiceData);
       
       const { data: { user } } = await supabase.auth.getUser();
@@ -621,6 +626,7 @@ export class PeppolService {
         supportedDocumentTypes: data.supported_document_types,
         limitedToOutboundTraffic: data.limited_to_outbound_traffic,
         sandboxMode: data.sandbox_mode,
+        peppolDisabled: data.peppol_disabled || false,
         lastTested: data.last_tested
       } : {
           isConfigured: false,
@@ -632,9 +638,10 @@ export class PeppolService {
         email: '',
         phoneNumber: '',
         language: 'en-US',
-        supportedDocumentTypes: ['INVOICE', 'CREDIT_NOTE'],
+        supportedDocumentTypes: ['INVOICE', 'CREDIT_NOTE', 'SELF_BILLING_INVOICE', 'SELF_BILLING_CREDIT_NOTE', 'INVOICE_RESPONSE', 'MLR', 'APPLICATION_RESPONSE'],
         limitedToOutboundTraffic: false,
             sandboxMode: true,
+          peppolDisabled: false,
           lastTested: null
       };
         
@@ -667,11 +674,11 @@ export class PeppolService {
       }
 
       // Check if this participant already exists in our database
-      const { data: existingSettings } = await supabase
+      const { data: existingSettings, error: existingError } = await supabase
         .from('peppol_settings')
         .select('peppol_id, is_configured')
         .eq('peppol_id', settings.peppolId)
-        .single();
+        .maybeSingle(); // Use maybeSingle() instead of single() to handle no rows found
 
       let registrationResult = null;
       
@@ -692,7 +699,7 @@ export class PeppolService {
             phoneNumber: settings.phoneNumber,
             language: settings.language
           },
-          supportedDocumentTypes: settings.supportedDocumentTypes || ['INVOICE', 'CREDIT_NOTE'],
+          supportedDocumentTypes: PEPPOL_DOCUMENT_TYPES, // All document types enabled automatically
           limitedToOutboundTraffic: settings.limitedToOutboundTraffic || false
         });
 
@@ -714,9 +721,10 @@ export class PeppolService {
           contact_person_email: settings.email,
           contact_person_phone: settings.phoneNumber || null,
           contact_person_language: settings.language || 'en-US',
-          supported_document_types: settings.supportedDocumentTypes || ['INVOICE', 'CREDIT_NOTE'],
+          supported_document_types: ['INVOICE', 'CREDIT_NOTE', 'SELF_BILLING_INVOICE', 'SELF_BILLING_CREDIT_NOTE', 'INVOICE_RESPONSE', 'MLR', 'APPLICATION_RESPONSE'], // All document types enabled automatically
           limited_to_outbound_traffic: settings.limitedToOutboundTraffic || false,
           sandbox_mode: settings.sandboxMode,
+          peppol_disabled: settings.peppolDisabled !== undefined ? settings.peppolDisabled : false, // Preserve disabled state if not provided
           is_configured: !!settings.peppolId && !!settings.name && !!settings.email,
           updated_at: new Date().toISOString()
         }, {
@@ -758,6 +766,7 @@ export class PeppolService {
           supportedDocumentTypes: data.supported_document_types,
           limitedToOutboundTraffic: data.limited_to_outbound_traffic,
           sandboxMode: data.sandbox_mode,
+          peppolDisabled: data.peppol_disabled || false,
           lastTested: data.last_tested
         },
         message: successMessage
@@ -1001,6 +1010,17 @@ export class PeppolService {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
+      // Ensure supportedDocumentTypes is a valid array without null values
+      // Default to all document types if not provided or invalid
+      const supportedDocTypes = Array.isArray(participantData.supportedDocumentTypes) 
+        ? participantData.supportedDocumentTypes.filter(type => type && typeof type === 'string')
+        : PEPPOL_DOCUMENT_TYPES;
+      
+      // Ensure we have at least one document type - default to all if empty
+      if (supportedDocTypes.length === 0) {
+        supportedDocTypes.push(...PEPPOL_DOCUMENT_TYPES);
+      }
+
       const payload = {
           peppolIdentifier: participantData.peppolIdentifier,
           contactPerson: {
@@ -1013,7 +1033,7 @@ export class PeppolService {
         name: participantData.name,
         countryCode: participantData.countryCode,
           limitedToOutboundTraffic: participantData.limitedToOutboundTraffic || false,
-          supportedDocumentTypes: participantData.supportedDocumentTypes || ['INVOICE', 'CREDIT_NOTE']
+          supportedDocumentTypes: supportedDocTypes
       };
 
       const response = await supabase.functions.invoke('peppol-webhook-config', {
@@ -1026,41 +1046,69 @@ export class PeppolService {
         }
       });
 
-      if (response.error) {
-        // Extract error message
+      // Check for errors in both response.error and response.data
+      // When edge function returns non-2xx, error data is in response.data
+      const errorData = response.data || {};
+      const hasError = response.error || (errorData && errorData.error);
+      
+      if (hasError) {
+        // Extract error message from response.data (edge function error response)
         let errorMessage = '';
-        if (typeof response.error === 'string') {
-          errorMessage = response.error;
-        } else if (response.error.message) {
-          errorMessage = response.error.message;
-      } else {
-          errorMessage = JSON.stringify(response.error);
+        let isAlreadyRegistered = false;
+        
+        if (errorData && errorData.error) {
+          errorMessage = errorData.error;
+          
+          // Parse details if available to check for ALREADY_REGISTERED status
+          if (errorData.details) {
+            try {
+              const parsedDetails = JSON.parse(errorData.details);
+              if (parsedDetails.status === 'ALREADY_REGISTERED_TO_DIGITEAL') {
+                isAlreadyRegistered = true;
+                if (parsedDetails.message) {
+                  errorMessage = parsedDetails.message;
+                }
+              }
+            } catch (e) {
+              // If parsing fails, check error message text
+            }
+          }
+          
+          // Also check error message text for "already registered" keywords
+          if (errorMessage.includes('ALREADY_REGISTERED') || 
+              errorMessage.includes('already registered') ||
+              errorMessage.includes('already registered for reception')) {
+            isAlreadyRegistered = true;
+          }
+        } else if (response.error) {
+          // Fallback to response.error if response.data doesn't have error
+          if (typeof response.error === 'string') {
+            errorMessage = response.error;
+          } else if (response.error.message) {
+            errorMessage = response.error.message;
+          } else {
+            errorMessage = JSON.stringify(response.error);
+          }
+          
+          if (errorMessage.includes('ALREADY_REGISTERED') || 
+              errorMessage.includes('already registered')) {
+            isAlreadyRegistered = true;
+          }
         }
         
-        // Check if participant is already registered
-        if (errorMessage.includes('ALREADY_REGISTERED') || errorMessage.includes('already registered')) {
-        return { 
-          success: false, 
+        if (isAlreadyRegistered) {
+          return { 
+            success: false, 
             error: errorMessage,
             alreadyRegistered: true
           };
         }
+        
         return { success: false, error: errorMessage };
       }
 
-      // Handle empty response (common for successful POSTs)
+      // Handle successful response
       const data = response.data || { success: true };
-      
-      // Check if the data contains an error about already being registered
-      if (data && data.error) {
-        if (data.error.includes('ALREADY_REGISTERED') || data.error.includes('already registered')) {
-          return { 
-            success: false, 
-            error: data.error,
-            alreadyRegistered: true
-        };
-      }
-      }
       
       return { success: true, data, message: 'Participant registered successfully' };
     } catch (error) {
@@ -1119,29 +1167,56 @@ export class PeppolService {
     }
   }
 
-  // Unregister a participant - via edge function to avoid CORS
-  async unregisterParticipant(peppolIdentifier) {
+  // Toggle Peppol disabled state (soft disable/enable)
+  async togglePeppolDisabled(disabled) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      const response = await supabase.functions.invoke('peppol-webhook-config', {
-        body: {
-          endpoint: this.config.baseUrl,
-          username: this.config.username,
-          password: this.config.password,
-          action: 'unregister-participant',
-          peppolIdentifier
-        }
-      });
+      const { data, error } = await supabase
+        .from('peppol_settings')
+        .update({ 
+          peppol_disabled: disabled,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
+        .select()
+        .single();
 
-      if (response.error) {
-        return { success: false, error: response.error.message };
+      if (error) {
+        return { success: false, error: error.message };
       }
 
-      return { success: true, message: 'Participant unregistered successfully' };
+      return { 
+        success: true, 
+        message: disabled 
+          ? 'Peppol functionality has been disabled. Historical data is preserved.' 
+          : 'Peppol functionality has been enabled.',
+        data: {
+          peppolDisabled: data.peppol_disabled || false
+        }
+      };
     } catch (error) {
       return { success: false, error: error.message };
+    }
+  }
+
+  // Check if Peppol is disabled for the current user
+  async isPeppolDisabled() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+
+      const { data } = await supabase
+        .from('peppol_settings')
+        .select('peppol_disabled')
+        .eq('user_id', user.id)
+        .single();
+
+      return data?.peppol_disabled || false;
+    } catch (error) {
+      console.error('Error checking Peppol disabled state:', error);
+      return false;
     }
   }
 

@@ -92,11 +92,23 @@ const RevenueChart = ({ data }) => {
       <div className="mt-3 sm:mt-4 grid grid-cols-2 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t border-border">
         <div className="text-center">
           <p className="text-xs sm:text-sm text-muted-foreground">Croissance mensuelle</p>
-          <p className="text-sm sm:text-lg font-semibold text-emerald-600">+12.5%</p>
+          <p className="text-sm sm:text-lg font-semibold text-emerald-600">
+            {(() => {
+              const validData = data.filter(d => d.revenue !== null && d.revenue !== undefined);
+              if (validData.length < 2) return 'N/A';
+              const currentMonth = validData[validData.length - 1]?.revenue || 0;
+              const previousMonth = validData[validData.length - 2]?.revenue || 0;
+              if (previousMonth === 0) return currentMonth > 0 ? '+100%' : '0%';
+              const growth = Math.round(((currentMonth - previousMonth) / previousMonth) * 100);
+              return `${growth >= 0 ? '+' : ''}${growth}%`;
+            })()}
+          </p>
         </div>
         <div className="text-center">
-          <p className="text-xs sm:text-sm text-muted-foreground">Prévision T2</p>
-          <p className="text-sm sm:text-lg font-semibold text-blue-600">520K€</p>
+          <p className="text-xs sm:text-sm text-muted-foreground">Revenu total</p>
+          <p className="text-sm sm:text-lg font-semibold text-blue-600">
+            {formatCurrency(data.reduce((sum, item) => sum + (item.revenue || 0), 0))}
+          </p>
         </div>
       </div>
     </div>

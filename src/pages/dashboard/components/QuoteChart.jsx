@@ -1,18 +1,64 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import TableLoader from '../../../components/ui/TableLoader';
 
-const QuoteChart = () => {
+const QuoteChart = ({ quotes = [], loading = false }) => {
   const { t } = useTranslation();
-  const chartData = [
-    { month: t('dashboard.quoteChart.months.Jan'), quotes: 45, signed: 18 },
-    { month: t('dashboard.quoteChart.months.Feb'), quotes: 52, signed: 23 },
-    { month: t('dashboard.quoteChart.months.Mar'), quotes: 48, signed: 19 },
-    { month: t('dashboard.quoteChart.months.Apr'), quotes: 61, signed: 28 },
-    { month: t('dashboard.quoteChart.months.May'), quotes: 55, signed: 24 },
-    { month: t('dashboard.quoteChart.months.Jun'), quotes: 67, signed: 31 },
-    { month: t('dashboard.quoteChart.months.Jul'), quotes: 58, signed: 26 }
-  ];
+
+  // Process quotes data to get monthly statistics
+  const chartData = useMemo(() => {
+    if (!quotes || quotes.length === 0) {
+      // Return empty data for last 7 months
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
+      return months.map(month => ({
+        month: t(`dashboard.quoteChart.months.${month}`) || month,
+        quotes: 0,
+        signed: 0
+      }));
+    }
+
+    // Group quotes by month
+    const monthlyData = {};
+    const now = new Date();
+    
+    // Initialize last 7 months
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthKey = date.toLocaleDateString('en-US', { month: 'short' });
+      monthlyData[monthKey] = {
+        month: t(`dashboard.quoteChart.months.${monthKey}`) || monthKey,
+        quotes: 0,
+        signed: 0
+      };
+    }
+
+    // Process quotes
+    quotes.forEach(quote => {
+      if (!quote.created_at) return;
+      
+      const quoteDate = new Date(quote.created_at);
+      const monthKey = quoteDate.toLocaleDateString('en-US', { month: 'short' });
+      
+      if (monthlyData[monthKey]) {
+        monthlyData[monthKey].quotes++;
+        // Count both 'accepted' and 'converted_to_invoice' as signed quotes
+        if (quote.status === 'accepted' || quote.status === 'converted_to_invoice') {
+          monthlyData[monthKey].signed++;
+        }
+      }
+    });
+
+    return Object.values(monthlyData);
+  }, [quotes, t]);
+
+  if (loading) {
+    return (
+      <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-professional">
+        <TableLoader message="Chargement du graphique..." />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-professional">

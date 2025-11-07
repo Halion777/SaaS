@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import MainSidebar from '../../components/ui/MainSidebar';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
+import TableLoader from '../../components/ui/TableLoader';
 import ExpenseInvoicesSummaryBar from './components/ExpenseInvoicesSummaryBar';
 import ExpenseInvoicesFilterToolbar from './components/ExpenseInvoicesFilterToolbar';
 import ExpenseInvoicesDataTable from './components/ExpenseInvoicesDataTable';
@@ -513,25 +514,6 @@ const ExpenseInvoicesManagement = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <MainSidebar />
-        <div 
-          className="pt-16 sm:pt-4 md:pt-0 p-3 sm:p-4 md:p-6"
-          style={{ marginLeft: `${sidebarOffset}px` }}
-        >
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <Icon name="Loader2" size={32} className="sm:w-12 sm:h-12 animate-spin mx-auto mb-3 sm:mb-4 text-primary" />
-              <p className="text-xs sm:text-sm text-muted-foreground">Chargement des factures de dépenses...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <MainSidebar />
@@ -572,7 +554,7 @@ const ExpenseInvoicesManagement = () => {
           </header>
 
           {/* Summary Bar */}
-          <ExpenseInvoicesSummaryBar summaryData={summaryData} />
+          <ExpenseInvoicesSummaryBar summaryData={summaryData} isLoading={isLoading} />
 
           {/* Filters */}
           <ExpenseInvoicesFilterToolbar
@@ -657,15 +639,21 @@ const ExpenseInvoicesManagement = () => {
           )}
 
           {/* Data Table */}
-          <ExpenseInvoicesDataTable
-            expenseInvoices={filteredExpenseInvoices}
-            onExpenseInvoiceAction={handleExpenseInvoiceAction}
-            selectedExpenseInvoices={selectedExpenseInvoices}
-            onSelectionChange={setSelectedExpenseInvoices}
-            filters={filters}
-            onFiltersChange={handleFiltersChange}
-            onStatusUpdate={handleStatusUpdate}
-          />
+          {isLoading ? (
+            <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+              <TableLoader message="Chargement des factures de dépenses..." />
+            </div>
+          ) : (
+            <ExpenseInvoicesDataTable
+              expenseInvoices={filteredExpenseInvoices}
+              onExpenseInvoiceAction={handleExpenseInvoiceAction}
+              selectedExpenseInvoices={selectedExpenseInvoices}
+              onSelectionChange={setSelectedExpenseInvoices}
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+              onStatusUpdate={handleStatusUpdate}
+            />
+          )}
 
         </div>
       </main>

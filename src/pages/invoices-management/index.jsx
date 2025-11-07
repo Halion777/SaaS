@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import MainSidebar from '../../components/ui/MainSidebar';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
+import TableLoader from '../../components/ui/TableLoader';
 import InvoicesSummaryBar from './components/InvoicesSummaryBar';
 import InvoicesFilterToolbar from './components/InvoicesFilterToolbar';
 import InvoicesDataTable from './components/InvoicesDataTable';
 import InvoiceDetailModal from './components/InvoiceDetailModal';
-import SendPeppolModal from './components/SendPeppolModal';
+import SendInvoiceModal from './components/SendInvoiceModal';
 
 import Select from '../../components/ui/Select';
 import InvoiceService from '../../services/invoiceService';
@@ -31,7 +32,7 @@ const InvoicesManagement = () => {
   const [isTablet, setIsTablet] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [isSendPeppolModalOpen, setIsSendPeppolModalOpen] = useState(false);
+  const [isSendInvoiceModalOpen, setIsSendInvoiceModalOpen] = useState(false);
 
   // Handle sidebar offset for responsive layout
   useEffect(() => {
@@ -256,7 +257,10 @@ const InvoicesManagement = () => {
   };
 
   const handleInvoiceAction = async (action, invoice) => {
-    switch (action) {
+    // Normalize action to handle any whitespace or case issues
+    const normalizedAction = String(action).trim().toLowerCase();
+    
+    switch (normalizedAction) {
       case 'view':
         setSelectedInvoice(invoice);
         setIsDetailModalOpen(true);
@@ -264,9 +268,9 @@ const InvoicesManagement = () => {
       case 'mark_paid':
         await handleMarkAsPaid(invoice);
         break;
-      case 'send_peppol':
+      case 'send':
         setSelectedInvoice(invoice);
-        setIsSendPeppolModalOpen(true);
+        setIsSendInvoiceModalOpen(true);
         break;
       case 'edit':
         // Handle edit action
@@ -277,7 +281,28 @@ const InvoicesManagement = () => {
         console.log('Delete invoice:', invoice);
         break;
       default:
-        console.log('Unknown action:', action);
+        console.warn('Unknown action:', action, 'Normalized:', normalizedAction);
+    }
+  };
+
+  const handleStatusUpdate = async (invoiceId, newStatus) => {
+    try {
+      const result = await InvoiceService.updateInvoiceStatus(invoiceId, newStatus, 'Statut mis à jour manuellement');
+      
+      if (result.success) {
+        // Update local state
+        setInvoices(prev => 
+          prev.map(inv => inv.id === invoiceId ? { ...inv, status: newStatus } : inv)
+        );
+        setFilteredInvoices(prev => 
+          prev.map(inv => inv.id === invoiceId ? { ...inv, status: newStatus } : inv)
+        );
+      } else {
+        alert('Erreur lors de la mise à jour du statut: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      alert('Erreur lors de la mise à jour du statut');
     }
   };
 
@@ -358,25 +383,6 @@ const InvoicesManagement = () => {
 
 
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <MainSidebar />
-        <div 
-          className="pt-16 sm:pt-4 md:pt-0 p-3 sm:p-4 md:p-6"
-          style={{ marginLeft: `${sidebarOffset}px` }}
-        >
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <Icon name="Loader2" size={32} className="sm:w-12 sm:h-12 animate-spin mx-auto mb-3 sm:mb-4 text-primary" />
-              <p className="text-xs sm:text-sm text-muted-foreground">Chargement des factures...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <MainSidebar />
@@ -418,7 +424,7 @@ const InvoicesManagement = () => {
           </header>
 
           {/* Summary Bar */}
-          <InvoicesSummaryBar summaryData={summaryData} />
+          <InvoicesSummaryBar summaryData={summaryData} isLoading={isLoading} />
 
           {/* Filters */}
           <InvoicesFilterToolbar
@@ -493,14 +499,21 @@ const InvoicesManagement = () => {
           )}
 
           {/* Data Table */}
-          <InvoicesDataTable
-            invoices={filteredInvoices}
-            onInvoiceAction={handleInvoiceAction}
-            selectedInvoices={selectedInvoices}
-            onSelectionChange={setSelectedInvoices}
-            filters={filters}
-            onFiltersChange={handleFiltersChange}
-          />
+          {isLoading ? (
+            <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+              <TableLoader message="Chargement des factures..." />
+            </div>
+          ) : (
+            <InvoicesDataTable
+              invoices={filteredInvoices}
+              onInvoiceAction={handleInvoiceAction}
+              selectedInvoices={selectedInvoices}
+              onSelectionChange={setSelectedInvoices}
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+              onStatusUpdate={handleStatusUpdate}
+            />
+          )}
 
           {/* Invoice Detail Modal */}
           <InvoiceDetailModal
@@ -512,16 +525,16 @@ const InvoicesManagement = () => {
             }}
           />
 
-          {/* Send Peppol Modal */}
-          <SendPeppolModal
+          {/* Send Invoice Modal */}
+          <SendInvoiceModal
             invoice={selectedInvoice}
-            isOpen={isSendPeppolModalOpen}
+            isOpen={isSendInvoiceModalOpen}
             onClose={() => {
-              setIsSendPeppolModalOpen(false);
+              setIsSendInvoiceModalOpen(false);
               setSelectedInvoice(null);
             }}
             onSuccess={() => {
-              fetchInvoices(); // Refresh invoices to show updated Peppol status
+              fetchInvoices(); // Refresh invoices to show updated status
             }}
           />
 

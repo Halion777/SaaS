@@ -12,10 +12,10 @@ const DashboardPersonalization = ({ isOpen, onClose, onSave }) => {
     topClients: true,
     taskList: true,
     quickActions: true,
-    aiPerformance: true,
     peppolWidget: true,
     sponsoredBanner: true,
-    aiAlerts: true
+    upcomingEvents: true,
+    recentActivity: true
   });
   const [loading, setLoading] = useState(false);
 
@@ -68,10 +68,10 @@ const DashboardPersonalization = ({ isOpen, onClose, onSave }) => {
       topClients: true,
       taskList: true,
       quickActions: true,
-      aiPerformance: true,
       peppolWidget: true,
       sponsoredBanner: true,
-      aiAlerts: true
+      upcomingEvents: true,
+      recentActivity: true
     };
     setWidgetSettings(defaultSettings);
   };
@@ -120,13 +120,6 @@ const DashboardPersonalization = ({ isOpen, onClose, onSave }) => {
       category: t('dashboard.personalization.widgetCategories.Navigation')
     },
     {
-      key: 'aiPerformance',
-      title: t('dashboard.personalization.widgets.aiPerformance.title'),
-      description: t('dashboard.personalization.widgets.aiPerformance.description'),
-      icon: 'Brain',
-      category: t('dashboard.personalization.widgetCategories.AI')
-    },
-    {
       key: 'peppolWidget',
       title: t('dashboard.personalization.widgets.peppolWidget.title'),
       description: t('dashboard.personalization.widgets.peppolWidget.description'),
@@ -141,11 +134,18 @@ const DashboardPersonalization = ({ isOpen, onClose, onSave }) => {
       category: t('dashboard.personalization.widgetCategories.Marketing')
     },
     {
-      key: 'aiAlerts',
-      title: t('dashboard.personalization.widgets.aiAlerts.title'),
-      description: t('dashboard.personalization.widgets.aiAlerts.description'),
-      icon: 'Bell',
-      category: t('dashboard.personalization.widgetCategories.AI')
+      key: 'upcomingEvents',
+      title: t('dashboard.personalization.widgets.upcomingEvents.title', 'Upcoming Events'),
+      description: t('dashboard.personalization.widgets.upcomingEvents.description', 'View your upcoming events and deadlines'),
+      icon: 'Calendar',
+      category: t('dashboard.personalization.widgetCategories.Productivity')
+    },
+    {
+      key: 'recentActivity',
+      title: t('dashboard.personalization.widgets.recentActivity.title', 'Recent Activity'),
+      description: t('dashboard.personalization.widgets.recentActivity.description', 'Track your recent quotes and invoices'),
+      icon: 'Activity',
+      category: t('dashboard.personalization.widgetCategories.Analytics')
     }
   ];
 

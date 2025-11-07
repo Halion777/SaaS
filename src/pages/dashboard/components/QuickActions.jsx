@@ -22,14 +22,14 @@ const QuickActions = () => {
       description: t('dashboard.quickActions.actions.1.description'),
       icon: 'Phone',
       variant: 'outline',
-      path: '/quotes-management'
+      path: '/client-management'
     },
     {
       id: 'view-invoices',
       label: t('dashboard.quickActions.actions.2.label'),
       description: t('dashboard.quickActions.actions.2.description'),
       icon: 'Receipt',
-      variant: 'secondary',
+      variant: 'outline',
       path: '/invoices-management'
     },
     {
@@ -66,16 +66,6 @@ const QuickActions = () => {
             </div>
           </Button>
         ))}
-      </div>
-      <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-border">
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>{t('dashboard.quickActions.keyboardShortcuts')}</span>
-          <div className="flex items-center space-x-1 sm:space-x-2">
-            <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-muted rounded text-xs">Ctrl</kbd>
-            <span>+</span>
-            <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-muted rounded text-xs">N</kbd>
-          </div>
-        </div>
       </div>
     </div>
   );

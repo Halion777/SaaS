@@ -1497,7 +1497,8 @@
         "viewed": "Consulté",
         "accepted": "Accepté",
         "rejected": "Refusé",
-        "expired": "Expiré"
+        "expired": "Expiré",
+        "converted": "Converti"
       },
       "client": {
         "label": "Client",
@@ -2051,6 +2052,8 @@
     "metrics": {
       "quotesThisMonth": "Devis ce mois",
       "signatureRate": "Taux de signature",
+      "totalClients": "Total clients",
+      "overdueInvoices": "Factures en retard",
       "monthlyTurnover": "CA du mois",
       "aiGain": "Gain IA",
       "changeTexts": {
@@ -2129,6 +2132,18 @@
         "aiAlerts": {
           "title": "Alertes IA",
           "description": "Notifications intelligentes et recommandations"
+        },
+        "recentActivity": {
+          "title": "Activité récente",
+          "description": "Suivez votre activité récente et importantes actions"
+        },
+        "upcomingEvents": {
+          "title": "Événements à venir",
+          "description": "Bekijk uw aankomende evenementen en deadlines"
+        },
+        "quoteChart": {
+          "title": "Évolution des devis",
+          "description": "Suivez l'évolution de vos devis"
         }
       },
       "buttons": {
@@ -2307,7 +2322,9 @@
       "subtitle": "Échange électronique de factures",
       "connectionStatus": {
         "connected": "Connecté",
-        "disconnected": "Déconnecté"
+        "disconnected": "Déconnecté",
+        "configuration_required": "Configuration requise",
+        "not_available": "Non disponible"
       },
       "sandboxMode": "Test",
       "notConfigured": {
@@ -2345,10 +2362,40 @@
       },
       "lastActivity": "Dernière activité : {{date}}"
     },
+    "upcomingEvents": {
+      "title": "Événements à venir",
+      "viewAll": "Voir tout",
+      "noEvents": "Aucun événement à venir",
+      "loading": "Chargement des événements...",
+      "today": "Aujourd'hui",
+      "tomorrow": "Demain",
+      "daysUntil": "Dans {{count}} jours",
+      "types": {
+        "quoteExpiry": "Devis {{number}} expire",
+        "invoiceDue": "Facture {{number}} à échéance",
+        "followUp": "Relance pour devis {{number}}"
+      }
+    },
+    "recentActivity": {
+      "title": "Activité récente",
+      "subtitle": "Suivez votre activité récente et importantes actions",
+      "quoteCreated": "Devis créé : {{number}}",
+      "invoiceCreated": "Facture créée : {{number}}",
+      "noActivity": "Aucune activité récente",
+      "userRegistered": "Utilisateur enregistré : {{name}}",
+      "leadRequest": "Demande de contact : {{name}}",
+      "leadRequestCreated": "Demande de contact créée : {{name}}",
+      "leadRequestUpdated": "Demande de contact mise à jour : {{name}}",
+      "leadRequestDeleted": "Demande de contact supprimée : {{name}}",
+      "leadRequestViewed": "Demande de contact vue : {{name}}",
+      "leadRequestFollowed": "Demande de contact suivie : {{name}}",
+      "leadRequestConverted": "Demande de contact convertie : {{name}}"
+    },
     "taskList": {
       "title": "Tâches du jour",
       "tasksCount": "{{count}} tâches",
       "viewAllTasks": "Voir toutes les tâches",
+      "noTasks": "Aucune tâche en attente",
       "taskTypes": {
         "finalize": "Finaliser",
         "send": "Envoyer",
@@ -2391,7 +2438,12 @@
         "Apr": "Avr",
         "May": "Mai",
         "Jun": "Juin",
-        "Jul": "Juil"
+        "Jul": "Juil",
+        "Aug": "Août",
+        "Sep": "Sep",
+        "Oct": "Oct",
+        "Nov": "Nov",
+        "Dec": "Déc"
       },
       "chartAriaLabel": "Graphique d'évolution des devis"
     },
@@ -2418,6 +2470,21 @@
           "label": "Brouillon",
           "color": "text-muted-foreground",
           "bg": "bg-muted/50"
+        },
+        "rejected": {
+          "label": "Refusé",
+          "color": "text-error",
+          "bg": "bg-error/10"
+        },
+        "expired": {
+          "label": "Expiré",
+          "color": "text-warning",
+          "bg": "bg-warning/10"
+        },
+        "converted": {
+          "label": "Converti",
+          "color": "text-purple",
+          "bg": "bg-purple/10"
         }
       },
       "quotes": [
@@ -2637,7 +2704,7 @@
         "airConditioning": "Climatisation",
         "other": "Autre"
       },
-      "deadline": "Date limite du projet",
+      "deadline": "Date limite de la tâche",
       "description": "Description du projet",
       "descriptionInstruction": "Décrivez précisément le projet pour un devis adapté",
       "aiAnalysis": "L'IA analyse votre contexte",

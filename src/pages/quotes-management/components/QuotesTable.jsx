@@ -67,7 +67,8 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
       viewed: { label: t('quotesManagement.filter.status.viewed'), className: 'bg-orange-100 text-orange-800' },
       accepted: { label: t('quotesManagement.filter.status.accepted'), className: 'bg-green-100 text-green-800' },
       rejected: { label: t('quotesManagement.filter.status.rejected'), className: 'bg-red-100 text-red-800' },
-      expired: { label: t('quotesManagement.filter.status.expired'), className: 'bg-yellow-100 text-yellow-800' }
+      expired: { label: t('quotesManagement.filter.status.expired'), className: 'bg-yellow-100 text-yellow-800' },
+      converted_to_invoice: { label: t('quotesManagement.filter.status.converted'), className: 'bg-purple-100 text-purple-800' }
     };
 
     const config = statusConfig[currentStatus] || { label: currentStatus, className: 'bg-gray-100 text-gray-800' };
@@ -306,15 +307,18 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                       <Icon name="Check" size={16} />
                     </Button>
                   )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onQuoteAction('edit', quote)}
-                    title={t('quotesManagement.table.actions.edit')}
-                    className="h-8 w-8"
-                  >
-                    <Icon name="Edit" size={16} />
-                  </Button>
+                  {/* Hide edit button for accepted, rejected, or converted quotes */}
+                  {quote.status !== 'accepted' && quote.status !== 'rejected' && quote.status !== 'converted_to_invoice' && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onQuoteAction('edit', quote)}
+                      title={t('quotesManagement.table.actions.edit')}
+                      className="h-8 w-8"
+                    >
+                      <Icon name="Edit" size={16} />
+                    </Button>
+                  )}
                               {(!quote.isDraftPlaceholder && quote.status === 'accepted') && (
               <Button
                 variant="ghost"
@@ -428,15 +432,18 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                 <Icon name="Check" size={14} />
               </Button>
             )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onQuoteAction('edit', quote)}
-                              title={t('quotesManagement.table.actions.edit')}
-              className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-            >
-              <Icon name="Edit" size={14} />
-            </Button>
+            {/* Hide edit button for accepted, rejected, or converted quotes */}
+            {quote.status !== 'accepted' && quote.status !== 'rejected' && quote.status !== 'converted_to_invoice' && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onQuoteAction('edit', quote)}
+                title={t('quotesManagement.table.actions.edit')}
+                className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              >
+                <Icon name="Edit" size={14} />
+              </Button>
+            )}
             {(!quote.isDraftPlaceholder && quote.status === 'accepted') && (
               <Button
                 variant="ghost"

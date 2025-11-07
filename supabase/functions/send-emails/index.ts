@@ -38,13 +38,33 @@ serve(async (req) => {
     
     // Send email using Resend API directly (since npm:resend doesn't work in Deno)
     const sendEmail = async (emailPayload: any) => {
+      // Prepare attachments if provided
+      // Resend API expects: { content: base64String, filename: string }
+      const attachments = emailPayload.attachments ? emailPayload.attachments.map((att: any) => ({
+        filename: att.filename,
+        content: att.content // Base64 encoded content (without data URL prefix)
+      })) : undefined;
+
+      const payload: any = {
+        from: emailPayload.from,
+        to: emailPayload.to,
+        subject: emailPayload.subject,
+        html: emailPayload.html,
+        text: emailPayload.text
+      };
+
+      // Add attachments if provided
+      if (attachments && attachments.length > 0) {
+        payload.attachments = attachments;
+      }
+
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${resendApiKey}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(emailPayload)
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
@@ -63,7 +83,8 @@ serve(async (req) => {
           to: [emailData.client_email],
           subject: emailData.subject,
           html: emailData.html,
-          text: emailData.text
+          text: emailData.text,
+          attachments: emailData.attachments || undefined
         });
         break;
         

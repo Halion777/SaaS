@@ -40,6 +40,11 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
       const settings = await peppolService.getPeppolSettings();
       if (settings.success) {
         setPeppolSettings(settings.data);
+        
+        // Check if Peppol is disabled
+        if (settings.data.peppolDisabled) {
+          setError('Peppol functionality is currently disabled. Please enable it in Peppol settings to send invoices.');
+        }
       }
 
       // Load client Peppol ID if available
@@ -80,6 +85,12 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
 
     if (!companyInfo || !peppolSettings) {
       setError('Informations de l\'entreprise ou configuration Peppol manquantes');
+      return;
+    }
+
+    // Check if Peppol is disabled
+    if (peppolSettings.peppolDisabled) {
+      setError('Peppol functionality is currently disabled. Please enable it in Peppol settings to send invoices.');
       return;
     }
 
@@ -281,6 +292,32 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
                       className="w-full"
                     >
                       Configurer Peppol
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : peppolSettings?.peppolDisabled ? (
+            <div className="space-y-4">
+              <div className="bg-error/10 border border-error/20 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <Icon name="AlertCircle" size={20} className="text-error flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-foreground mb-1">
+                      Peppol désactivé
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      La fonctionnalité Peppol est actuellement désactivée. Veuillez l'activer dans les paramètres Peppol pour envoyer des factures.
+                    </p>
+                    <Button
+                      onClick={() => {
+                        onClose();
+                        navigate('/services/peppol');
+                      }}
+                      variant="default"
+                      className="w-full"
+                    >
+                      Activer Peppol
                     </Button>
                   </div>
                 </div>

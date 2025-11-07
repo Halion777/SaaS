@@ -7,6 +7,13 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
 
   if (!isOpen || !invoice) return null;
 
+  // Determine client type
+  const clientType = invoice?.client?.client_type || invoice?.client?.type;
+  const isProfessional = clientType === 'company' || clientType === 'professionnel';
+  
+  // Show Peppol tab only for professional clients who have Peppol enabled
+  const showPeppolTab = isProfessional && invoice.peppolEnabled;
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -85,7 +92,7 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
             >
               Détails
             </button>
-            {invoice.peppolEnabled && (
+            {showPeppolTab && (
               <button
                 onClick={() => setActiveTab('peppol')}
                 className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
@@ -194,7 +201,7 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
               </div>
             )}
 
-            {activeTab === 'peppol' && invoice.peppolEnabled && (
+            {activeTab === 'peppol' && showPeppolTab && (
               <div className="space-y-6">
                 <div>
                   <h3 className="text-lg font-semibold text-foreground mb-4">Informations Peppol</h3>

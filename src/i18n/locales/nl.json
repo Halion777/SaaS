@@ -517,7 +517,7 @@
           "feature3": "Klantenbeheer",
           "feature4": "Professionele sjablonen",
           "feature5": "E-mail ondersteuning"
-        },
+        },    
         "limitations": {
           "limitation1": "Geen klant lead generatie",
           "limitation2": "Geen automatische herinneringen",
@@ -1661,7 +1661,8 @@
         "viewed": "Bekeken",
         "accepted": "Geaccepteerd",
         "rejected": "Afgewezen",
-        "expired": "Verlopen"
+        "expired": "Verlopen",
+        "converted": "Omgezet"
       },
       "client": {
         "label": "Klant",
@@ -2118,9 +2119,18 @@
           "title": "Gesponsorde Banner",
           "description": "Promoties en speciale aanbiedingen"
         },
-        "aiAlerts": {
-          "title": "AI Waarschuwingen",
-          "description": "Slimme meldingen en aanbevelingen"
+        
+        "recentActivity": {
+          "title": "Recente Activiteit",
+          "description": "Volg uw recente activiteit en belangrijke acties"
+        },
+        "upcomingEvents": {
+          "title": "Aankomende Evenementen",
+          "description": "Bekijk uw aankomende evenementen en deadlines"
+        },
+        "quoteChart": {
+          "title": "Offerte Evolutie",
+          "description": "Volg uw offerte evolutie"
         }
       },
       "buttons": {
@@ -2299,7 +2309,9 @@
       "subtitle": "Elektronische factuuruitwisseling",
       "connectionStatus": {
         "connected": "Verbonden",
-        "disconnected": "Niet verbonden"
+        "disconnected": "Niet verbonden",
+        "configuration_required": "Configuratie vereist",
+        "not_available": "Niet beschikbaar"
       },
       "sandboxMode": "Test",
       "notConfigured": {
@@ -2337,10 +2349,40 @@
       },
       "lastActivity": "Laatste activiteit: {{date}}"
     },
+    "upcomingEvents": {
+      "title": "Aankomende Evenementen",
+      "viewAll": "Alles Bekijken",
+      "noEvents": "Geen aankomende evenementen",
+      "loading": "Evenementen laden...",
+      "today": "Vandaag",
+      "tomorrow": "Morgen",
+      "daysUntil": "Over {{count}} dagen",
+      "types": {
+        "quoteExpiry": "Offerte {{number}} verloopt",
+        "invoiceDue": "Factuur {{number}} vervalt",
+        "followUp": "Opvolging voor offerte {{number}}"
+      }
+    },
+    "recentActivity": {
+      "title": "Recente Activiteit",
+      "subtitle": "Volg uw recente activiteit en belangrijke acties",
+      "quoteCreated": "Offerte aangemaakt: {{number}}",
+      "invoiceCreated": "Factuur aangemaakt: {{number}}",
+      "noActivity": "Geen recente activiteit",
+      "userRegistered": "Gebruiker geregistreerd: {{name}}",
+      "leadRequest": "Lead aanvraag: {{name}}",
+      "leadRequestCreated": "Lead aanvraag aangemaakt: {{name}}",
+      "leadRequestUpdated": "Lead aanvraag bijgewerkt: {{name}}",
+      "leadRequestDeleted": "Lead aanvraag verwijderd: {{name}}",
+      "leadRequestViewed": "Lead aanvraag bekeken: {{name}}",
+      "leadRequestFollowed": "Lead aanvraag opgevolgd: {{name}}",
+      "leadRequestConverted": "Lead aanvraag omgezet: {{name}}"
+    },
     "taskList": {
       "title": "Taken van Vandaag",
       "tasksCount": "{{count}} taken",
       "viewAllTasks": "Bekijk Alle Taken",
+      "noTasks": "Geen openstaande taken",
       "taskTypes": {
         "finalize": "Afronden",
         "send": "Verzenden",
@@ -2383,7 +2425,12 @@
         "Apr": "Apr",
         "May": "Mei",
         "Jun": "Jun",
-        "Jul": "Jul"
+        "Jul": "Jul",
+        "Aug": "Aug",
+        "Sep": "Sep",
+        "Oct": "Oct",
+        "Nov": "Nov",
+        "Dec": "Dec"
       },
       "chartAriaLabel": "Offerte Evolutie Grafiek"
     },
@@ -2410,6 +2457,21 @@
           "label": "Concept",
           "color": "text-muted-foreground",
           "bg": "bg-muted/50"
+        },
+        "rejected": {
+          "label": "Afgewezen",
+          "color": "text-error",
+          "bg": "bg-error/10"
+        },
+        "expired": {
+          "label": "Verlopen",
+          "color": "text-warning",
+          "bg": "bg-warning/10"
+        },
+        "converted": {
+          "label": "Omgezet",
+          "color": "text-purple",
+          "bg": "bg-purple/10"
         }
       },
       "quotes": [
@@ -2630,7 +2692,7 @@
         "airConditioning": "Airconditioning",
         "other": "Overig"
       },
-      "deadline": "Project deadline",
+      "deadline": "Taak deadline",
       "description": "Projectbeschrijving",
       "aiAnalysis": "AI analyseert uw context",
       "descriptionPlaceholder": "Beschrijf het project in detail...",

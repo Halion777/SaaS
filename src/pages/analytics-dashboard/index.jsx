@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import MainSidebar from '../../components/ui/MainSidebar';
 import Icon from '../../components/AppIcon';
@@ -7,37 +7,40 @@ import KPICard from './components/KPICard';
 import RevenueChart from './components/RevenueChart';
 import ConversionChart from './components/ConversionChart';
 import ClientSegmentChart from './components/ClientSegmentChart';
-import AIInsightsPanel from './components/AIInsightsPanel';
 import MetricsProgress from './components/MetricsProgress';
-import ComparisonAnalytics from './components/ComparisonAnalytics';
 import FilterControls from './components/FilterControls';
 import ExportControls from './components/ExportControls';
 import DetailedAnalyticsPanel from './components/DetailedAnalyticsPanel';
 import { useScrollPosition } from '../../utils/useScrollPosition';
+import { useAuth } from '../../context/AuthContext';
+import { fetchQuotes } from '../../services/quotesService';
+import { InvoiceService } from '../../services/invoiceService';
+import { fetchClients } from '../../services/clientsService';
+import { ExpenseInvoicesService } from '../../services/expenseInvoicesService';
+import { getAnalyticsObjectives } from '../../services/authService';
 
 const AnalyticsDashboard = () => {
+  const { user } = useAuth();
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [dateRange, setDateRange] = useState('last30days');
   const [selectedSegment, setSelectedSegment] = useState('all');
   const [selectedService, setSelectedService] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
-  const [aiInsights, setAiInsights] = useState(null);
-  const [pricingOptimization, setPricingOptimization] = useState(null);
-  const [performanceAnalysis, setPerformanceAnalysis] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [analyticsData, setAnalyticsData] = useState({
+    quotes: [],
+    invoices: [],
+    clients: [],
+    expenseInvoices: []
+  });
+  const [userObjectives, setUserObjectives] = useState({
+    revenueTarget: null,
+    clientTarget: null,
+    projectsTarget: null
+  });
   const tabsScrollRef = useScrollPosition('analytics-tabs-scroll');
-
-  // Mock business data for AI analysis
-  const businessData = {
-    revenue: 156750,
-    quotes: 245,
-    clients: 89,
-    conversionRate: 68.5,
-    avgProjectValue: 2340,
-    marketSegments: ['residential', 'commercial', 'renovation'],
-    services: ['plumbing', 'electrical', 'renovation', 'maintenance']
-  };
+  const hasLoadedData = useRef(false);
 
   useEffect(() => {
     const handleSidebarToggle = (e) => {
@@ -86,124 +89,388 @@ const AnalyticsDashboard = () => {
     };
   }, []);
 
+  // Fetch analytics data from backend
   useEffect(() => {
-    const loadAIAnalytics = async () => {
-      setIsLoading(true);
+    const loadAnalyticsData = async () => {
+      if (!user?.id) return;
+      
+      // Prevent reloading if data was already loaded for this user
+      if (hasLoadedData.current) return;
+      
       try {
-        // Removed openaiService calls
-        // Set fallback data
-        setAiInsights({
-          insights: ['Revenue growth trending upward', 'Client acquisition improving'],
-          recommendations: ['Focus on premium services', 'Expand marketing reach'],
-          predictions: ['20% growth expected next quarter']
+        hasLoadedData.current = true;
+        setIsLoading(true);
+
+        // Fetch all data in parallel
+        const [quotesResult, clientsResult, invoicesResult, expenseInvoicesResult] = await Promise.all([
+          fetchQuotes(user.id),
+          fetchClients(),
+          InvoiceService.fetchInvoices(user.id),
+          new ExpenseInvoicesService().getExpenseInvoices()
+        ]);
+
+        setAnalyticsData({
+          quotes: quotesResult.data || [],
+          clients: clientsResult.data || [],
+          invoices: invoicesResult.data || [],
+          expenseInvoices: expenseInvoicesResult.data || []
         });
+
+        // Load user objectives
+        const objectivesResult = await getAnalyticsObjectives();
+        if (objectivesResult.data) {
+          setUserObjectives(objectivesResult.data);
+        }
       } catch (error) {
-        console.error('Error loading AI analytics:', error);
-        // Set fallback data
-        setAiInsights({
-          insights: ['Revenue growth trending upward', 'Client acquisition improving'],
-          recommendations: ['Focus on premium services', 'Expand marketing reach'],
-          predictions: ['20% growth expected next quarter']
-        });
+        console.error('Error loading analytics data:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadAIAnalytics();
-  }, [dateRange, selectedSegment, selectedService]);
-
-  const kpiData = [
-    {
-      title: 'Total devis envoyés',
-      value: '245',
-      change: '+15.3%',
-      trend: 'up',
-      icon: 'FileText',
-      color: 'blue',
-      description: 'devis ce mois-ci'
-    },
-    {
-      title: 'Devis acceptés',
-      value: '168',
-      change: '+12.7%',
-      trend: 'up',
-      icon: 'CheckCircle',
-      color: 'emerald',
-      description: 'taux de conversion'
-    },
-    {
-      title: 'Revenu mensuel',
-      value: '156 750€',
-      change: '+12.5%',
-      trend: 'up',
-      icon: 'Euro',
-      color: 'orange',
-      description: 'vs mois précédent'
-    },
-    {
-      title: 'Statut des paiements',
-      value: '92%',
-      change: '+5.2%',
-      trend: 'up',
-      icon: 'CreditCard',
-      color: 'purple',
-      description: 'payés à temps'
+    // Reset the flag when user changes
+    if (user?.id) {
+      hasLoadedData.current = false;
+      loadAnalyticsData();
     }
-  ];
+  }, [user?.id]);
 
-  const detailedAnalyticsData = {
-    paymentStatus: {
-      paid: 68,
-      pending: 22,
-      overdue: 10
-    },
-    clientActivity: {
-      newClients: 15,
-      returningClients: 74,
-      inactiveClients: 11
-    },
-    taskDuration: {
-      avgTaskTime: '3.5 jours',
-      fastestTask: '1 jour',
-      longestTask: '7 jours'
-    },
-    quoteOverview: {
-      totalQuotes: 245,
-      acceptedQuotes: 168,
-      rejectedQuotes: 45,
-      pendingQuotes: 32
+  // Calculate KPIs from backend data
+  const kpiData = useMemo(() => {
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+    const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    // Quotes this month
+    const quotesThisMonth = analyticsData.quotes.filter(q => new Date(q.created_at) >= firstDayOfMonth).length;
+    const quotesLastMonth = analyticsData.quotes.filter(q => {
+      const quoteDate = new Date(q.created_at);
+      return quoteDate >= firstDayOfLastMonth && quoteDate <= lastDayOfLastMonth;
+    }).length;
+    const quotesGrowth = quotesLastMonth > 0 
+      ? Math.round(((quotesThisMonth - quotesLastMonth) / quotesLastMonth) * 100)
+      : (quotesThisMonth > 0 ? 100 : 0);
+
+    // Accepted quotes (including converted)
+    const acceptedQuotesThisMonth = analyticsData.quotes.filter(q => 
+      (q.status === 'accepted' || q.status === 'converted_to_invoice') && 
+      new Date(q.created_at) >= firstDayOfMonth
+    ).length;
+    const acceptedQuotesLastMonth = analyticsData.quotes.filter(q => {
+      const quoteDate = new Date(q.created_at);
+      return (q.status === 'accepted' || q.status === 'converted_to_invoice') &&
+        quoteDate >= firstDayOfLastMonth && quoteDate <= lastDayOfLastMonth;
+    }).length;
+    const acceptedGrowth = acceptedQuotesLastMonth > 0
+      ? Math.round(((acceptedQuotesThisMonth - acceptedQuotesLastMonth) / acceptedQuotesLastMonth) * 100)
+      : (acceptedQuotesThisMonth > 0 ? 100 : 0);
+
+    // Monthly revenue
+    const monthlyRevenue = analyticsData.invoices
+      .filter(inv => new Date(inv.created_at) >= firstDayOfMonth)
+      .reduce((sum, inv) => sum + (parseFloat(inv.final_amount) || 0), 0);
+    const lastMonthRevenue = analyticsData.invoices
+      .filter(inv => {
+        const invDate = new Date(inv.created_at);
+        return invDate >= firstDayOfLastMonth && invDate <= lastDayOfLastMonth;
+      })
+      .reduce((sum, inv) => sum + (parseFloat(inv.final_amount) || 0), 0);
+    const revenueGrowth = lastMonthRevenue > 0
+      ? Math.round(((monthlyRevenue - lastMonthRevenue) / lastMonthRevenue) * 100)
+      : (monthlyRevenue > 0 ? 100 : 0);
+
+    // Payment status
+    const paidInvoices = analyticsData.invoices.filter(inv => inv.status === 'paid').length;
+    const totalInvoices = analyticsData.invoices.length;
+    const paymentRate = totalInvoices > 0 ? Math.round((paidInvoices / totalInvoices) * 100) : 0;
+    const paidInvoicesLastMonth = analyticsData.invoices.filter(inv => {
+      const invDate = new Date(inv.created_at);
+      return inv.status === 'paid' && invDate >= firstDayOfLastMonth && invDate <= lastDayOfLastMonth;
+    }).length;
+    const totalInvoicesLastMonth = analyticsData.invoices.filter(inv => {
+      const invDate = new Date(inv.created_at);
+      return invDate >= firstDayOfLastMonth && invDate <= lastDayOfLastMonth;
+    }).length;
+    const paymentRateLastMonth = totalInvoicesLastMonth > 0 ? Math.round((paidInvoicesLastMonth / totalInvoicesLastMonth) * 100) : 0;
+    const paymentRateGrowth = paymentRateLastMonth > 0
+      ? Math.round(((paymentRate - paymentRateLastMonth) / paymentRateLastMonth) * 100)
+      : (paymentRate > 0 ? 100 : 0);
+
+    const formatCurrency = (amount) => {
+      return new Intl.NumberFormat('fr-FR', {
+        style: 'currency',
+        currency: 'EUR',
+        minimumFractionDigits: 0
+      }).format(amount);
+    };
+
+    return [
+      {
+        title: 'Total devis envoyés',
+        value: quotesThisMonth.toString(),
+        change: `${quotesGrowth >= 0 ? '+' : ''}${quotesGrowth}%`,
+        trend: quotesGrowth >= 0 ? 'up' : 'down',
+        icon: 'FileText',
+        color: 'blue',
+        description: 'devis ce mois-ci'
+      },
+      {
+        title: 'Devis acceptés',
+        value: acceptedQuotesThisMonth.toString(),
+        change: `${acceptedGrowth >= 0 ? '+' : ''}${acceptedGrowth}%`,
+        trend: acceptedGrowth >= 0 ? 'up' : 'down',
+        icon: 'CheckCircle',
+        color: 'emerald',
+        description: 'taux de conversion'
+      },
+      {
+        title: 'Revenu mensuel',
+        value: formatCurrency(monthlyRevenue),
+        change: `${revenueGrowth >= 0 ? '+' : ''}${revenueGrowth}%`,
+        trend: revenueGrowth >= 0 ? 'up' : 'down',
+        icon: 'Euro',
+        color: 'orange',
+        description: 'vs mois précédent'
+      },
+      {
+        title: 'Statut des paiements',
+        value: `${paymentRate}%`,
+        change: `${paymentRateGrowth >= 0 ? '+' : ''}${paymentRateGrowth}%`,
+        trend: paymentRateGrowth >= 0 ? 'up' : 'down',
+        icon: 'CreditCard',
+        color: 'purple',
+        description: 'payés à temps'
+      }
+    ];
+  }, [analyticsData]);
+
+  // Calculate detailed analytics data
+  const detailedAnalyticsData = useMemo(() => {
+    const paidInvoices = analyticsData.invoices.filter(inv => inv.status === 'paid').length;
+    const pendingInvoices = analyticsData.invoices.filter(inv => inv.status === 'pending' || inv.status === 'unpaid').length;
+    const overdueInvoices = analyticsData.invoices.filter(inv => {
+      if (inv.status === 'paid') return false;
+      const dueDate = new Date(inv.due_date);
+      return dueDate < new Date();
+    }).length;
+
+    const totalClients = analyticsData.clients.length;
+    const newClientsThisMonth = analyticsData.clients.filter(c => {
+      const clientDate = new Date(c.created_at);
+      const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+      return clientDate >= firstDayOfMonth;
+    }).length;
+    const returningClients = analyticsData.clients.filter(c => {
+      // Clients with quotes or invoices
+      return analyticsData.quotes.some(q => q.client_id === c.id) || 
+             analyticsData.invoices.some(inv => inv.client_id === c.id);
+    }).length;
+    const inactiveClients = totalClients - returningClients;
+
+    const totalQuotes = analyticsData.quotes.length;
+    const acceptedQuotes = analyticsData.quotes.filter(q => q.status === 'accepted' || q.status === 'converted_to_invoice').length;
+    const rejectedQuotes = analyticsData.quotes.filter(q => q.status === 'rejected').length;
+    const pendingQuotes = analyticsData.quotes.filter(q => q.status === 'sent' || q.status === 'viewed' || q.status === 'draft').length;
+
+    return {
+      paymentStatus: {
+        paid: paidInvoices,
+        pending: pendingInvoices,
+        overdue: overdueInvoices
+      },
+      clientActivity: {
+        newClients: newClientsThisMonth,
+        returningClients: returningClients,
+        inactiveClients: inactiveClients
+      },
+      invoiceStatistics: {
+        totalRevenue: analyticsData.invoices.reduce((sum, inv) => sum + (parseFloat(inv.final_amount) || 0), 0),
+        averageInvoice: analyticsData.invoices.length > 0 
+          ? Math.round(analyticsData.invoices.reduce((sum, inv) => sum + (parseFloat(inv.final_amount) || 0), 0) / analyticsData.invoices.length)
+          : 0,
+        totalInvoices: analyticsData.invoices.length
+      },
+      quoteOverview: {
+        totalQuotes: totalQuotes,
+        acceptedQuotes: acceptedQuotes,
+        rejectedQuotes: rejectedQuotes,
+        pendingQuotes: pendingQuotes
+      }
+    };
+  }, [analyticsData]);
+
+  // Calculate revenue data for chart
+  const revenueData = useMemo(() => {
+    const now = new Date();
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthKey = date.toLocaleDateString('fr-FR', { month: 'short' });
+      const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+      const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      
+      const revenue = analyticsData.invoices
+        .filter(inv => {
+          const invDate = new Date(inv.created_at);
+          return invDate >= firstDay && invDate <= lastDay;
+        })
+        .reduce((sum, inv) => sum + (parseFloat(inv.final_amount) || 0), 0);
+      
+      months.push({
+        month: monthKey,
+        revenue: revenue,
+        forecast: null // No forecast for now
+      });
     }
-  };
+    return months;
+  }, [analyticsData]);
 
-  const revenueData = [
-    { month: 'Jan', revenue: 120000, forecast: 125000 },
-    { month: 'Fév', revenue: 135000, forecast: 140000 },
-    { month: 'Mar', revenue: 148000, forecast: 152000 },
-    { month: 'Avr', revenue: 156750, forecast: 165000 },
-    { month: 'Mai', forecast: 175000 },
-    { month: 'Jun', forecast: 180000 }
-  ];
+  // Calculate conversion data by category (using project_categories from quotes)
+  const conversionData = useMemo(() => {
+    // Category mapping for display
+    const categoryLabels = {
+      'plumbing': 'Plomberie',
+      'electrical': 'Électricité',
+      'carpentry': 'Menuiserie',
+      'painting': 'Peinture',
+      'masonry': 'Maçonnerie',
+      'tiling': 'Carrelage',
+      'roofing': 'Toiture',
+      'heating': 'Chauffage',
+      'renovation': 'Rénovation',
+      'cleaning': 'Nettoyage',
+      'solar': 'Solaire',
+      'gardening': 'Jardinage',
+      'locksmith': 'Serrurerie',
+      'glazing': 'Vitrerie',
+      'insulation': 'Isolation',
+      'airConditioning': 'Climatisation',
+      'other': 'Autre'
+    };
 
-  const conversionData = [
-    { name: 'Plomberie', rate: 75, count: 45 },
-    { name: 'Électricité', rate: 68, count: 32 },
-    { name: 'Rénovation', rate: 62, count: 28 },
-    { name: 'Maintenance', rate: 80, count: 15 }
-  ];
+    // Group quotes by category
+    const categoryGroups = {};
+    analyticsData.quotes.forEach(quote => {
+      // Use project_categories array if available, otherwise use custom_category or fallback
+      const categories = quote.project_categories && quote.project_categories.length > 0
+        ? quote.project_categories
+        : (quote.custom_category ? [quote.custom_category] : ['other']);
+      
+      categories.forEach(category => {
+        const categoryKey = category.toLowerCase();
+        const displayName = categoryLabels[categoryKey] || category || 'Autre';
+        
+        if (!categoryGroups[displayName]) {
+          categoryGroups[displayName] = { total: 0, accepted: 0 };
+        }
+        categoryGroups[displayName].total++;
+        if (quote.status === 'accepted' || quote.status === 'converted_to_invoice') {
+          categoryGroups[displayName].accepted++;
+        }
+      });
+    });
 
-  const clientSegmentData = [
-    { name: 'Résidentiel', value: 65, revenue: 102000 },
-    { name: 'Commercial', value: 25, revenue: 39200 },
-    { name: 'Industriel', value: 10, revenue: 15550 }
-  ];
+    const result = Object.entries(categoryGroups)
+      .map(([name, data]) => ({
+        name: name,
+        rate: data.total > 0 ? Math.round((data.accepted / data.total) * 100) : 0,
+        count: data.total
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 4); // Top 4 categories
+    
+    // Return empty array with at least one item if no data
+    return result.length > 0 ? result : [{ name: 'Aucune donnée', rate: 0, count: 0 }];
+  }, [analyticsData]);
 
-  const currentMetrics = {
-    monthProgress: 78,
-    revenueTarget: 85,
-    clientTarget: 92,
-    projectsTarget: 67
-  };
+  // Calculate client segment data
+  const clientSegmentData = useMemo(() => {
+    const professionalClients = analyticsData.clients.filter(c => c.client_type === 'company');
+    const individualClients = analyticsData.clients.filter(c => c.client_type === 'individual');
+    const totalClients = analyticsData.clients.length;
+
+    const professionalRevenue = analyticsData.invoices
+      .filter(inv => inv.client?.client_type === 'company')
+      .reduce((sum, inv) => sum + (parseFloat(inv.final_amount) || 0), 0);
+    const individualRevenue = analyticsData.invoices
+      .filter(inv => inv.client?.client_type === 'individual')
+      .reduce((sum, inv) => sum + (parseFloat(inv.final_amount) || 0), 0);
+
+    const segments = [
+      {
+        name: 'Professionnel',
+        value: totalClients > 0 ? Math.round((professionalClients.length / totalClients) * 100) : 0,
+        revenue: professionalRevenue
+      },
+      {
+        name: 'Particulier',
+        value: totalClients > 0 ? Math.round((individualClients.length / totalClients) * 100) : 0,
+        revenue: individualRevenue
+      }
+    ].filter(segment => segment.value > 0 || segment.revenue > 0);
+    
+    // Return at least one segment if no data
+    return segments.length > 0 ? segments : [{ name: 'Aucune donnée', value: 100, revenue: 0 }];
+  }, [analyticsData]);
+
+  // Calculate current metrics progress
+  const currentMetrics = useMemo(() => {
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const currentDay = now.getDate();
+    const monthProgress = Math.round((currentDay / daysInMonth) * 100);
+
+    // Get current month values
+    const monthlyRevenue = analyticsData.invoices
+      .filter(inv => new Date(inv.created_at) >= firstDayOfMonth)
+      .reduce((sum, inv) => sum + (parseFloat(inv.final_amount) || 0), 0);
+
+    const newClientsThisMonth = analyticsData.clients.filter(c => {
+      const clientDate = new Date(c.created_at);
+      return clientDate >= firstDayOfMonth;
+    }).length;
+
+    const quotesThisMonth = analyticsData.quotes.filter(q => new Date(q.created_at) >= firstDayOfMonth).length;
+
+    // Use user-defined targets if available, otherwise calculate from current values
+    let revenueTarget, clientTarget, projectsTarget;
+
+    if (userObjectives.revenueTarget !== null && userObjectives.revenueTarget !== undefined && userObjectives.revenueTarget > 0) {
+      // User has set a target value (amount), calculate progress percentage
+      revenueTarget = Math.round((monthlyRevenue / userObjectives.revenueTarget) * 100);
+    } else {
+      // Default: 10% above current
+      const targetRevenue = monthlyRevenue * 1.1;
+      revenueTarget = targetRevenue > 0 ? Math.round((monthlyRevenue / targetRevenue) * 100) : 0;
+    }
+
+    if (userObjectives.clientTarget !== null && userObjectives.clientTarget !== undefined && userObjectives.clientTarget > 0) {
+      // User has set a target value (count), calculate progress percentage
+      clientTarget = Math.round((newClientsThisMonth / userObjectives.clientTarget) * 100);
+    } else {
+      // Default: 20% above current
+      const targetClients = newClientsThisMonth * 1.2;
+      clientTarget = targetClients > 0 ? Math.round((newClientsThisMonth / targetClients) * 100) : 0;
+    }
+
+    if (userObjectives.projectsTarget !== null && userObjectives.projectsTarget !== undefined && userObjectives.projectsTarget > 0) {
+      // User has set a target value (count), calculate progress percentage
+      projectsTarget = Math.round((quotesThisMonth / userObjectives.projectsTarget) * 100);
+    } else {
+      // Default: 15% above current
+      const targetProjects = quotesThisMonth * 1.15;
+      projectsTarget = targetProjects > 0 ? Math.round((quotesThisMonth / targetProjects) * 100) : 0;
+    }
+
+    return {
+      monthProgress,
+      revenueTarget: Math.min(revenueTarget, 100),
+      clientTarget: Math.min(clientTarget, 100),
+      projectsTarget: Math.min(projectsTarget, 100)
+    };
+  }, [analyticsData, userObjectives]);
 
   const renderTabContent = () => {
     switch(activeTab) {
@@ -278,37 +545,15 @@ const AnalyticsDashboard = () => {
               transition={{ delay: 0.4 }}
               className="mb-6 sm:mb-8"
             >
-              <MetricsProgress metrics={currentMetrics} />
-            </motion.div>
-          </>
-        );
-      case 'ai':
-        return (
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
-            {/* AI Insights Panel */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="xl:col-span-2"
-            >
-              <AIInsightsPanel
-                insights={aiInsights}
-                pricingOptimization={pricingOptimization}
-                performanceAnalysis={performanceAnalysis}
-                isLoading={isLoading}
+              <MetricsProgress 
+                metrics={currentMetrics}
+                userObjectives={userObjectives}
+                onUpdate={(objectives) => {
+                  setUserObjectives(objectives);
+                }}
               />
             </motion.div>
-
-            {/* Comparative Analysis */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <ComparisonAnalytics />
-            </motion.div>
-          </div>
+          </>
         );
       default:
         return null;
@@ -346,7 +591,14 @@ const AnalyticsDashboard = () => {
               </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
 
-                <ExportControls />
+                <ExportControls 
+                  analyticsData={analyticsData}
+                  kpiData={kpiData}
+                  detailedAnalyticsData={detailedAnalyticsData}
+                  revenueData={revenueData}
+                  conversionData={conversionData}
+                  clientSegmentData={clientSegmentData}
+                />
               </div>
             </div>
           </motion.div>
@@ -387,39 +639,9 @@ const AnalyticsDashboard = () => {
                   <span className="sm:hidden">Segments</span>
                 </span>
               </button>
-              <button
-                className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-3 font-medium text-sm transition-colors whitespace-nowrap flex-shrink-0 min-w-fit ${
-                  activeTab === 'ai' 
-                    ? 'text-primary border-b-2 border-primary' 
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-                onClick={() => setActiveTab('ai')}
-              >
-                <span className="flex items-center">
-                  <Icon name="Brain" size={16} className="mr-2" />
-                  <span className="hidden sm:inline">Insights IA</span>
-                  <span className="sm:hidden">IA</span>
-                </span>
-              </button>
             </div>
           </motion.div>
 
-          {/* Filter Controls */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="mb-6 sm:mb-8 bg-card border border-border p-3 sm:p-4 rounded-lg"
-          >
-            <FilterControls
-              dateRange={dateRange}
-              onDateRangeChange={setDateRange}
-              selectedSegment={selectedSegment}
-              onSegmentChange={setSelectedSegment}
-              selectedService={selectedService}
-              onServiceChange={setSelectedService}
-            />
-          </motion.div>
 
           {/* Tab Content */}
           {renderTabContent()}

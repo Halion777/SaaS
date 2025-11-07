@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import MainSidebar from '../../components/ui/MainSidebar';
+import TableLoader from '../../components/ui/TableLoader';
 import ClientModal from './components/ClientModal';
 import ClientCard from './components/ClientCard';
 import FilterToolbar from './components/FilterToolbar';
@@ -433,17 +434,6 @@ const ClientManagement = () => {
     return sizes[size] || size;
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading clients...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       {/* Sidebar */}
@@ -507,7 +497,9 @@ const ClientManagement = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-muted-foreground">Total Clients</p>
-                <p className="text-xl font-bold text-foreground">{clients.length}</p>
+                <p className="text-xl font-bold text-foreground">
+                  {isLoading ? '...' : clients.length}
+                </p>
               </div>
               <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center">
                 <Icon name="Users" size={24} className="text-primary" />
@@ -520,7 +512,7 @@ const ClientManagement = () => {
               <div>
                 <p className="text-xs font-medium text-muted-foreground">Particulier</p>
                 <p className="text-xl font-bold text-foreground">
-                  {clients.filter(c => c.type === 'particulier').length}
+                  {isLoading ? '...' : clients.filter(c => c.type === 'particulier').length}
                 </p>
               </div>
               <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -534,7 +526,7 @@ const ClientManagement = () => {
               <div>
                 <p className="text-xs font-medium text-muted-foreground">Professionnel</p>
                 <p className="text-xl font-bold text-foreground">
-                  {clients.filter(c => c.type === 'professionnel').length}
+                  {isLoading ? '...' : clients.filter(c => c.type === 'professionnel').length}
                 </p>
               </div>
               <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -543,12 +535,12 @@ const ClientManagement = () => {
             </div>
           </div>
           
-                        <div className="bg-card border border-border rounded-lg p-4">
+          <div className="bg-card border border-border rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-muted-foreground">CA Total</p>
                 <p className="text-xl font-bold text-foreground">
-                  {clients.reduce((sum, client) => sum + (client.totalRevenue || 0), 0).toLocaleString()}€
+                  {isLoading ? '...' : `${clients.reduce((sum, client) => sum + (client.totalRevenue || 0), 0).toLocaleString()}€`}
                 </p>
               </div>
               <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -696,7 +688,11 @@ const ClientManagement = () => {
         </div>
 
         {/* Clients Display */}
-        {filteredClients.length === 0 ? (
+        {isLoading ? (
+          <div className="w-full">
+            <TableLoader message="Chargement des clients..." />
+          </div>
+        ) : filteredClients.length === 0 ? (
           <div className="text-center py-12">
             <Icon name="Users" size={48} className="mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium text-foreground mb-2">Aucun client trouvé</h3>
@@ -785,7 +781,13 @@ const ClientManagement = () => {
                           </td>
                           <td className="px-4 py-4">
                             <div className="text-sm text-foreground">
-                              {client.peppolId || 'Non configuré'}
+                              {client.peppolConfigured ? (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  Configuré
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">Non configuré</span>
+                              )}
                             </div>
                           </td>
                           <td className="px-4 py-4">
@@ -795,7 +797,7 @@ const ClientManagement = () => {
                           </td>
                           <td className="px-4 py-4">
                             <div className="text-sm font-medium text-foreground">
-                              {client.totalRevenue ? `${client.totalRevenue.toLocaleString()}€` : '0€'}
+                              {client.totalRevenue ? `${client.totalRevenue.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€` : '0€'}
                             </div>
                           </td>
                           <td className="px-4 py-4">

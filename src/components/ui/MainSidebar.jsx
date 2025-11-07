@@ -283,7 +283,7 @@ const MainSidebar = () => {
           label: t('sidebar.categories.quotes.items.quoteCreation'),
           path: '/quote-creation',
           icon: 'FileText',
-          notifications: 2
+          notifications: 0
         },
         {
           id: 'quotes-management',

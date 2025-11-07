@@ -14,30 +14,69 @@ export async function fetchClients() {
       return { error: { message: 'User not authenticated', details: userError?.message } };
     }
 
-    const { data, error } = await supabase
-      .from('clients')
-      .select('*')
-      .order('name', { ascending: true });
+    // Fetch clients, quotes, and invoices in parallel
+    const [clientsResult, quotesResult, invoicesResult] = await Promise.all([
+      supabase
+        .from('clients')
+        .select('*')
+        .order('name', { ascending: true }),
+      supabase
+        .from('quotes')
+        .select('id, client_id')
+        .eq('user_id', user.id),
+      supabase
+        .from('invoices')
+        .select('client_id, final_amount')
+        .eq('user_id', user.id)
+    ]);
     
-    if (error) {
-      console.error('Supabase error fetching clients:', error);
-      return { error };
+    if (clientsResult.error) {
+      console.error('Supabase error fetching clients:', clientsResult.error);
+      return { error: clientsResult.error };
     }
     
-    // Map database fields to frontend fields
-    const mappedData = data ? data.map(client => ({
-      ...client,
-      isActive: client.is_active,
-      type: client.client_type === 'company' ? 'professionnel' : 'particulier',
-      contactPerson: client.contact_person,
-      companySize: client.company_size,
-      regNumber: client.vat_number,
-      peppolId: client.peppol_id,
-      enablePeppol: client.peppol_enabled,
-      preferences: client.communication_preferences || [],
-      city: client.city,
-      postalCode: client.postal_code
-    })) : [];
+    // Aggregate quotes and invoices by client_id
+    const quotesByClient = {};
+    if (quotesResult.data) {
+      quotesResult.data.forEach(quote => {
+        if (quote.client_id) {
+          quotesByClient[quote.client_id] = (quotesByClient[quote.client_id] || 0) + 1;
+        }
+      });
+    }
+    
+    const revenueByClient = {};
+    if (invoicesResult.data) {
+      invoicesResult.data.forEach(invoice => {
+        if (invoice.client_id) {
+          const amount = parseFloat(invoice.final_amount) || 0;
+          revenueByClient[invoice.client_id] = (revenueByClient[invoice.client_id] || 0) + amount;
+        }
+      });
+    }
+    
+    // Map database fields to frontend fields and add calculated stats
+    const mappedData = clientsResult.data ? clientsResult.data.map(client => {
+      // Determine Peppol configuration status
+      const peppolConfigured = client.peppol_enabled && client.peppol_id ? true : false;
+      
+      return {
+        ...client,
+        isActive: client.is_active,
+        type: client.client_type === 'company' ? 'professionnel' : 'particulier',
+        contactPerson: client.contact_person,
+        companySize: client.company_size,
+        regNumber: client.vat_number,
+        peppolId: client.peppol_id,
+        enablePeppol: client.peppol_enabled,
+        preferences: client.communication_preferences || [],
+        city: client.city,
+        postalCode: client.postal_code,
+        projectsCount: quotesByClient[client.id] || 0,
+        totalRevenue: revenueByClient[client.id] || 0,
+        peppolConfigured: peppolConfigured
+      };
+    }) : [];
     
     return { data: mappedData, error: null };
   } catch (error) {

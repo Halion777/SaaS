@@ -42,6 +42,7 @@ import SubscriptionManagement from './pages/subscription';
 import NotFound from './pages/NotFound';
 import StripeSuccessPage from './pages/stripe-success';
 import PublicQuoteShareViewer from './pages/quote-share';
+import TasksPage from './pages/tasks';
 
 // Super Admin imports
 import SuperAdminDashboard from './pages/admin/super/dashboard';
@@ -213,6 +214,11 @@ const AppRoutes = () => {
           <Route path="/subscription" element={
             <ProtectedRoute>
               <SubscriptionManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/tasks" element={
+            <ProtectedRoute>
+              <TasksPage />
             </ProtectedRoute>
           } />
 

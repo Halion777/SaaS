@@ -13,7 +13,7 @@ export class InvoiceService {
         .from('invoices')
         .select(`
           *,
-          client:clients(id, name, email, phone, address, city, postal_code, country, vat_number, peppol_id, peppol_enabled),
+          client:clients(id, name, email, phone, address, city, postal_code, country, vat_number, peppol_id, peppol_enabled, client_type),
           quote:quotes(
             id, 
             quote_number, 

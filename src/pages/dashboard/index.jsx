@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../../components/AppIcon';
@@ -7,18 +7,22 @@ import MainSidebar from '../../components/ui/MainSidebar';
 import MetricsCard from './components/MetricsCard';
 import QuoteChart from './components/QuoteChart';
 import TaskList from './components/TaskList';
-import AIAlerts from './components/AIAlerts';
 import RecentQuotes from './components/RecentQuotes';
 import TopClients from './components/TopClients';
 import QuickActions from './components/QuickActions';
+import UpcomingEvents from './components/UpcomingEvents';
+import RecentActivity from './components/RecentActivity';
 import SponsoredBanner from './components/SponsoredBanner';
-import AIPerformanceWidget from './components/AIPerformanceWidget';
 import DashboardTour from './components/DashboardTour';
 import InvoiceOverviewWidget from './components/InvoiceOverviewWidget';
 import PeppolWidget from './components/PeppolWidget';
 import DashboardPersonalization from './components/DashboardPersonalization';
 import { supabase } from '../../services/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
+import { fetchQuotes } from '../../services/quotesService';
+import InvoiceService from '../../services/invoiceService';
+import ExpenseInvoicesService from '../../services/expenseInvoicesService';
+import { fetchClients } from '../../services/clientsService';
 
 const Dashboard = () => {
   const { t, i18n } = useTranslation();
@@ -34,15 +38,27 @@ const Dashboard = () => {
     topClients: true,
     taskList: true,
     quickActions: true,
-    aiPerformance: true,
     peppolWidget: true,
     sponsoredBanner: true,
-    aiAlerts: true
+    upcomingEvents: true,
+    recentActivity: true
   });
   const [isPersonalizationOpen, setIsPersonalizationOpen] = useState(false);
   const [emailVerified, setEmailVerified] = useState(true); // Default to true to avoid flash
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [checkingVerification, setCheckingVerification] = useState(true);
+  const [dashboardData, setDashboardData] = useState({
+    metrics: null,
+    quotes: [],
+    clients: [],
+    invoices: [],
+    invoiceStats: null,
+    expenseInvoices: null,
+    loading: true
+  });
+  const hasLoadedData = useRef(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isTablet, setIsTablet] = useState(window.innerWidth >= 768 && window.innerWidth < 1024);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -68,12 +84,12 @@ const Dashboard = () => {
     
     const handleSidebarToggle = (e) => {
       const { isCollapsed } = e.detail;
-      const isMobile = window.innerWidth < 768;
-      const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
       
-      if (isMobile) {
+      if (mobile) {
         setSidebarOffset(0);
-      } else if (isTablet) {
+      } else if (tablet) {
         // On tablet, sidebar auto-closes after navigation, so always use collapsed width
         // But account for wider collapsed sidebar on tablet (80px instead of 64px)
         setSidebarOffset(80);
@@ -83,35 +99,56 @@ const Dashboard = () => {
       }
     };
     
-    // Check for mobile and tablet
+    // Debounced resize handler to prevent excessive re-renders
+    let resizeTimeout;
     const handleResize = () => {
-      const isMobile = window.innerWidth < 768;
-      const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
-      
-      if (isMobile) {
-        setSidebarOffset(0);
-      } else if (isTablet) {
-        // On tablet, sidebar auto-closes after navigation, so always use collapsed width
-        // But account for wider collapsed sidebar on tablet (80px instead of 64px)
-        setSidebarOffset(80);
-      } else {
-        // On desktop, check sidebar state
-        const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
-        setSidebarOffset(isCollapsed ? 64 : 288);
-      }
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        const mobile = window.innerWidth < 768;
+        const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+        
+        setIsMobile(mobile);
+        setIsTablet(tablet);
+        
+        if (mobile) {
+          setSidebarOffset(0);
+        } else if (tablet) {
+          // On tablet, sidebar auto-closes after navigation, so always use collapsed width
+          // But account for wider collapsed sidebar on tablet (80px instead of 64px)
+          setSidebarOffset(80);
+        } else {
+          // On desktop, check sidebar state
+          const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+          setSidebarOffset(isCollapsed ? 64 : 288);
+        }
+      }, 150); // Debounce resize events
     };
     
-    handleResize();
+    // Initial check
+    const mobile = window.innerWidth < 768;
+    const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+    setIsMobile(mobile);
+    setIsTablet(tablet);
+    
+    if (mobile) {
+      setSidebarOffset(0);
+    } else if (tablet) {
+      setSidebarOffset(80);
+    } else {
+      setSidebarOffset(isCollapsed ? 64 : 288);
+    }
+    
     window.addEventListener('resize', handleResize);
     window.addEventListener('storage', handleStorage);
     window.addEventListener('sidebar-toggle', handleSidebarToggle);
     
     return () => {
+      clearTimeout(resizeTimeout);
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('sidebar-toggle', handleSidebarToggle);
     };
-  }, []);
+  }, []); // Empty dependency array - only run once on mount
 
   const formatTime = (date) => {
     const locale = i18n.language || 'fr';
@@ -214,43 +251,212 @@ const Dashboard = () => {
     }, 100);
   };
 
-  const metricsData = [
+  // Fetch dashboard data - only load once when user.id is available
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      if (!user?.id) return;
+      
+      // Prevent reloading if data was already loaded for this user
+      if (hasLoadedData.current) return;
+      
+      try {
+        hasLoadedData.current = true;
+        setDashboardData(prev => ({ ...prev, loading: true }));
+
+        // Fetch all data in parallel
+        const [quotesResult, clientsResult, invoicesResult, expenseInvoicesResult] = await Promise.all([
+          fetchQuotes(user.id),
+          fetchClients(),
+          InvoiceService.fetchInvoices(user.id),
+          new ExpenseInvoicesService().getExpenseInvoices()
+        ]);
+
+        // Process quotes data
+        const quotes = quotesResult.data || [];
+        
+        // Calculate dates for current and previous periods
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+        const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        
+        // Calculate quotes this month
+        const quotesThisMonth = quotes.filter(q => new Date(q.created_at) >= firstDayOfMonth).length;
+        
+        // Calculate quotes last month for growth comparison
+        const quotesLastMonth = quotes.filter(q => {
+          const quoteDate = new Date(q.created_at);
+          return quoteDate >= firstDayOfLastMonth && quoteDate <= lastDayOfLastMonth;
+        }).length;
+        
+        // Calculate growth percentage for quotes
+        const quotesGrowth = quotesLastMonth > 0 
+          ? Math.round(((quotesThisMonth - quotesLastMonth) / quotesLastMonth) * 100)
+          : (quotesThisMonth > 0 ? 100 : 0);
+        
+        // Calculate signature rate (accepted / sent)
+        const sentQuotes = quotes.filter(q => q.status === 'sent' || q.status === 'accepted' || q.status === 'rejected').length;
+        const acceptedQuotes = quotes.filter(q => q.status === 'accepted').length;
+        const signatureRate = sentQuotes > 0 ? Math.round((acceptedQuotes / sentQuotes) * 100) : 0;
+
+        // Calculate monthly turnover from invoices
+        const invoices = invoicesResult.success ? invoicesResult.data : [];
+        const invoicesThisMonth = invoices.filter(inv => {
+          const invDate = new Date(inv.created_at);
+          return invDate >= firstDayOfMonth;
+        });
+        const monthlyTurnover = invoicesThisMonth.reduce((sum, inv) => sum + (parseFloat(inv.final_amount || inv.amount || 0)), 0);
+        
+        // Calculate last month's turnover for growth comparison
+        const invoicesLastMonth = invoices.filter(inv => {
+          const invDate = new Date(inv.created_at);
+          return invDate >= firstDayOfLastMonth && invDate <= lastDayOfLastMonth;
+        });
+        const lastMonthTurnover = invoicesLastMonth.reduce((sum, inv) => sum + (parseFloat(inv.final_amount || inv.amount || 0)), 0);
+        
+        // Calculate growth percentage for turnover
+        const turnoverGrowth = lastMonthTurnover > 0
+          ? Math.round(((monthlyTurnover - lastMonthTurnover) / lastMonthTurnover) * 100)
+          : (monthlyTurnover > 0 ? 100 : 0);
+
+        // Process clients data
+        const clients = clientsResult.data || [];
+        
+        // Calculate total clients and clients from last month for growth
+        const totalClients = clients.length;
+        const clientsLastMonth = clients.filter(c => {
+          const clientDate = new Date(c.created_at);
+          return clientDate >= firstDayOfLastMonth && clientDate <= lastDayOfLastMonth;
+        }).length;
+        
+        // Calculate growth percentage for clients (comparing new clients this month vs last month)
+        const newClientsThisMonth = clients.filter(c => {
+          const clientDate = new Date(c.created_at);
+          return clientDate >= firstDayOfMonth;
+        }).length;
+        const clientsGrowth = clientsLastMonth > 0
+          ? Math.round(((newClientsThisMonth - clientsLastMonth) / clientsLastMonth) * 100)
+          : (newClientsThisMonth > 0 ? 100 : 0);
+        
+        // Process expense invoices
+        const expenseInvoices = expenseInvoicesResult.success ? expenseInvoicesResult.data : [];
+        const expenseInvoicesStats = {
+          totalExpenses: expenseInvoices.reduce((sum, inv) => sum + (parseFloat(inv.amount || 0)), 0),
+          paidExpenses: expenseInvoices.filter(inv => inv.status === 'paid').reduce((sum, inv) => sum + (parseFloat(inv.amount || 0)), 0),
+          outstandingAmount: expenseInvoices.filter(inv => inv.status === 'unpaid' || inv.status === 'overdue').reduce((sum, inv) => sum + (parseFloat(inv.amount || 0)), 0),
+          overdueCount: expenseInvoices.filter(inv => inv.status === 'overdue').length
+        };
+
+        // Calculate invoice stats
+        const invoiceStats = {
+          totalRevenue: invoices.reduce((sum, inv) => sum + (parseFloat(inv.final_amount || inv.amount || 0)), 0),
+          paidRevenue: invoices.filter(inv => inv.status === 'paid').reduce((sum, inv) => sum + (parseFloat(inv.final_amount || inv.amount || 0)), 0),
+          outstandingAmount: invoices.filter(inv => inv.status === 'unpaid' || inv.status === 'overdue').reduce((sum, inv) => sum + (parseFloat(inv.final_amount || inv.amount || 0)), 0),
+          overdueCount: invoices.filter(inv => inv.status === 'overdue').length
+        };
+        
+        // Calculate overdue invoices count
+        const overdueInvoices = invoices.filter(inv => {
+          if (inv.status === 'paid') return false;
+          const dueDate = new Date(inv.due_date);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          dueDate.setHours(0, 0, 0, 0);
+          return dueDate < today;
+        }).length;
+        
+        // Calculate overdue invoices from last month for growth comparison
+        const overdueInvoicesLastMonth = invoices.filter(inv => {
+          if (inv.status === 'paid') return false;
+          const dueDate = new Date(inv.due_date);
+          const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+          const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          lastMonthStart.setHours(0, 0, 0, 0);
+          lastMonthEnd.setHours(23, 59, 59, 999);
+          dueDate.setHours(0, 0, 0, 0);
+          // Check if invoice was overdue at the end of last month
+          return dueDate < lastMonthEnd && dueDate >= lastMonthStart;
+        }).length;
+        
+        // Calculate growth percentage for overdue invoices (negative is good, positive is bad)
+        const overdueGrowth = overdueInvoicesLastMonth > 0
+          ? Math.round(((overdueInvoices - overdueInvoicesLastMonth) / overdueInvoicesLastMonth) * 100)
+          : (overdueInvoices > 0 ? 100 : 0);
+
+        setDashboardData({
+          metrics: {
+            quotesThisMonth,
+            quotesGrowth,
+            totalClients,
+            clientsGrowth,
+            monthlyTurnover,
+            turnoverGrowth,
+            overdueInvoices,
+            overdueGrowth
+          },
+          quotes: quotes.slice(0, 10), // Recent 10 quotes
+          clients: clients.sort((a, b) => (b.totalRevenue || 0) - (a.totalRevenue || 0)).slice(0, 4), // Top 4 clients by revenue
+          invoices: invoices, // Full invoices array for RecentActivity widget
+          invoiceStats: invoiceStats, // Invoice statistics
+          expenseInvoices: expenseInvoicesStats,
+          loading: false
+        });
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+        setDashboardData(prev => ({ ...prev, loading: false }));
+      }
+    };
+
+    // Reset the flag when user changes
+    if (user?.id) {
+      hasLoadedData.current = false;
+      loadDashboardData();
+    }
+  }, [user?.id]); // Only depend on user.id, not the entire user object
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat(i18n.language || 'fr', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format(amount || 0);
+  };
+
+  const metricsData = dashboardData.metrics ? [
     {
       title: t('dashboard.metrics.quotesThisMonth'),
-      value: '67',
-      change: t('dashboard.metrics.changeTexts.positive', { value: 12 }),
-      changeType: 'positive',
+      value: dashboardData.metrics.quotesThisMonth.toString(),
+      change: `${dashboardData.metrics.quotesGrowth >= 0 ? '+' : ''}${dashboardData.metrics.quotesGrowth}%`,
+      changeType: dashboardData.metrics.quotesGrowth >= 0 ? 'positive' : 'negative',
       icon: 'FileText',
       color: 'primary'
     },
     {
-      title: t('dashboard.metrics.signatureRate'),
-      value: '78%',
-      change: t('dashboard.metrics.changeTexts.positive', { value: 8 }),
-      changeType: 'positive',
-      icon: 'TrendingUp',
+      title: t('dashboard.metrics.totalClients'),
+      value: dashboardData.metrics.totalClients.toString(),
+      change: `${dashboardData.metrics.clientsGrowth >= 0 ? '+' : ''}${dashboardData.metrics.clientsGrowth}%`,
+      changeType: dashboardData.metrics.clientsGrowth >= 0 ? 'positive' : 'negative',
+      icon: 'Users',
       color: 'success'
     },
     {
       title: t('dashboard.metrics.monthlyTurnover'),
-      value: '24.850€',
-      change: t('dashboard.metrics.changeTexts.positive', { value: 15 }),
-      changeType: 'positive',
+      value: formatCurrency(dashboardData.metrics.monthlyTurnover),
+      change: `${dashboardData.metrics.turnoverGrowth >= 0 ? '+' : ''}${dashboardData.metrics.turnoverGrowth}%`,
+      changeType: dashboardData.metrics.turnoverGrowth >= 0 ? 'positive' : 'negative',
       icon: 'Euro',
       color: 'warning'
     },
     {
-      title: t('dashboard.metrics.aiGain'),
-      value: '+40%',
-      change: t('dashboard.metrics.changeTexts.new'),
-      changeType: 'positive',
-      icon: 'Brain',
-      color: 'primary'
+      title: t('dashboard.metrics.overdueInvoices'),
+      value: dashboardData.metrics.overdueInvoices.toString(),
+      change: `${dashboardData.metrics.overdueGrowth >= 0 ? '+' : ''}${dashboardData.metrics.overdueGrowth}%`,
+      // For overdue invoices, negative growth is good (fewer overdue), positive is bad (more overdue)
+      changeType: dashboardData.metrics.overdueGrowth <= 0 ? 'positive' : 'negative',
+      icon: 'AlertCircle',
+      color: dashboardData.metrics.overdueInvoices > 0 ? 'error' : 'success'
     }
-  ];
+  ] : [];
 
-  const isMobile = window.innerWidth < 768;
-  const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
 
   return (
     <div className="min-h-screen bg-background">
@@ -352,42 +558,44 @@ const Dashboard = () => {
             </div>
           )}
 
-          {/* Welcome Banner */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-4 sm:p-6 shadow-md dashboard-welcome mt-4 sm:mt-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
-              <div>
-                <h2 className="text-lg sm:text-xl font-semibold mb-2 text-white">{t('dashboard.welcomeBanner.title')}</h2>
-                <p className="text-white/90 text-sm sm:text-base">{t('dashboard.welcomeBanner.subtitle')}</p>
-              </div>
-              <div className="w-full md:w-auto">
-                <Button 
-                  variant="outline" 
-                  className="bg-white/10 text-white border-white/20 hover:bg-white/20 w-full md:w-auto"
-                  onClick={startTour}
-                >
-                  <span className="flex items-center justify-center">
-                    <Icon name="Play" size={16} className="mr-2" />
-                    <span className="hidden sm:inline">{t('dashboard.buttons.guidedTour')}</span>
-                    <span className="sm:hidden">{t('dashboard.buttons.guidedTour')}</span>
-                  </span>
-                </Button>
-              </div>
+          {/* Sponsored Banner - Moved to top */}
+          {widgetSettings.sponsoredBanner && (
+            <div className="dashboard-sponsored-banner mb-4 sm:mb-6 mt-4 sm:mt-6">
+              <SponsoredBanner />
             </div>
-          </div>
+          )}
 
           {/* Metrics Cards */}
           {widgetSettings.metricsCards && (
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 dashboard-metrics">
-              {metricsData.map((metric, index) => (
-                <MetricsCard key={index} {...metric} />
-              ))}
+              {dashboardData.loading ? (
+                <>
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="bg-card border border-border rounded-lg p-4 sm:p-6">
+                      <div className="animate-pulse">
+                        <div className="h-12 w-12 bg-muted rounded-lg mb-4"></div>
+                        <div className="h-8 bg-muted rounded mb-2"></div>
+                        <div className="h-4 bg-muted rounded w-2/3"></div>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                metricsData.map((metric, index) => (
+                  <MetricsCard key={index} {...metric} />
+                ))
+              )}
             </div>
           )}
 
           {/* Invoice Overview Widget */}
           {widgetSettings.invoiceOverview && (
             <div className="mb-4 sm:mb-6">
-              <InvoiceOverviewWidget />
+              <InvoiceOverviewWidget 
+                invoiceData={dashboardData.invoiceStats}
+                expenseInvoiceData={dashboardData.expenseInvoices}
+                loading={dashboardData.loading}
+              />
             </div>
           )}
 
@@ -404,13 +612,13 @@ const Dashboard = () => {
             <div className="md:col-span-2 space-y-4 sm:space-y-6">
               {/* Quote Chart */}
               <div className="dashboard-chart">
-                <QuoteChart />
+                <QuoteChart quotes={dashboardData.quotes} loading={dashboardData.loading} />
               </div>
               
               {/* Recent Quotes */}
               {widgetSettings.recentQuotes && (
                 <div className="dashboard-recent-quotes">
-                  <RecentQuotes />
+                  <RecentQuotes quotes={dashboardData.quotes} loading={dashboardData.loading} />
                 </div>
               )}
               
@@ -430,73 +638,48 @@ const Dashboard = () => {
                   <TaskList />
                 </div>
               )}
-              {widgetSettings.aiAlerts && (
-                <div className="dashboard-ai-alerts">
-                  <AIAlerts />
-                </div>
-              )}
               
               {/* Top Clients */}
               {widgetSettings.topClients && (
                 <div className="dashboard-top-clients">
-                  <TopClients />
+                  <TopClients clients={dashboardData.clients} loading={dashboardData.loading} />
+                </div>
+              )}
+
+              {/* Upcoming Events */}
+              {widgetSettings.upcomingEvents && (
+                <div className="dashboard-upcoming-events">
+                  <UpcomingEvents loading={dashboardData.loading} />
+                </div>
+              )}
+
+              {/* Recent Activity */}
+              {widgetSettings.recentActivity && (
+                <div className="dashboard-recent-activity">
+                  <RecentActivity 
+                    quotes={dashboardData.quotes} 
+                    invoices={dashboardData.invoices || []} 
+                    loading={dashboardData.loading} 
+                  />
                 </div>
               )}
             </div>
           </div>
-          
-          {/* AI Performance Insights */}
-          {widgetSettings.aiPerformance && (
-            <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-sm dashboard-ai-insights">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 space-y-3 sm:space-y-0">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center mr-3">
-                    <Icon name="Brain" size={16} className="sm:w-5 sm:h-5 text-primary" />
-                  </div>
-                  <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('dashboard.aiInsights.title')}</h3>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => window.location.href = '/analytics-dashboard'}
-                  className="w-full sm:w-auto"
-                >
-                  <span className="flex items-center justify-center">
-                    <span className="hidden sm:inline">{t('dashboard.aiInsights.viewFullAnalysis')}</span>
-                    <span className="sm:hidden">{t('dashboard.aiInsights.viewFullAnalysis')}</span>
-                    <Icon name="ArrowRight" size={16} className="ml-2" />
-                  </span>
-                </Button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-                <div className="p-3 sm:p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                  <h4 className="text-sm font-medium text-foreground mb-2">{t('dashboard.aiInsights.priceOptimization.title')}</h4>
-                  <p className="text-xs text-muted-foreground">
-                    {t('dashboard.aiInsights.priceOptimization.description')}
-                  </p>
-                </div>
-                <div className="p-3 sm:p-4 bg-success/5 border border-success/20 rounded-lg">
-                  <h4 className="text-sm font-medium text-foreground mb-2">{t('dashboard.aiInsights.bestConversionDay.title')}</h4>
-                  <p className="text-xs text-muted-foreground">
-                    {t('dashboard.aiInsights.bestConversionDay.description')}
-                  </p>
-                </div>
-                <div className="p-3 sm:p-4 bg-warning/5 border border-warning/20 rounded-lg">
-                  <h4 className="text-sm font-medium text-foreground mb-2">{t('dashboard.aiInsights.followUpOpportunity.title')}</h4>
-                  <p className="text-xs text-muted-foreground">
-                    {t('dashboard.aiInsights.followUpOpportunity.description')}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
 
-          {/* Sponsored Banner */}
-          {widgetSettings.sponsoredBanner && (
-            <div className="dashboard-sponsored-banner">
-              <SponsoredBanner />
-            </div>
-                    )}
+          {/* Floating Guide Button */}
+          <button
+            onClick={startTour}
+            className="fixed bottom-6 right-6 z-50 w-14 h-14 sm:w-16 sm:h-16 bg-primary hover:bg-primary/90 text-white rounded-full shadow-lg hover:shadow-xl transform transition-all duration-300 hover:scale-110 flex items-center justify-center group"
+            aria-label={t('dashboard.buttons.guidedTour')}
+            title={t('dashboard.buttons.guidedTour')}
+          >
+            <Icon 
+              name="Play" 
+              size={20} 
+              className="sm:w-6 sm:h-6 ml-0.5 group-hover:scale-110 transition-transform duration-300" 
+              color="white" 
+            />
+          </button>
         </div>
       </main>
 

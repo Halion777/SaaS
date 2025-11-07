@@ -1,13 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
-import peppolService from '../../../services/peppolService';
+import TableLoader from '../../../components/ui/TableLoader';
+import PeppolService from '../../../services/peppolService';
+import { supabase } from '../../../services/supabaseClient';
+import { useAuth } from '../../../context/AuthContext';
 
 const PeppolWidget = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  // Create PeppolService instance (default to sandbox mode)
+  const peppolService = useMemo(() => new PeppolService(true), []);
   const [peppolData, setPeppolData] = useState({
     settings: {
       isConfigured: false,
@@ -28,13 +35,27 @@ const PeppolWidget = () => {
     connectionStatus: 'disconnected'
   });
   const [loading, setLoading] = useState(true);
+  const hasLoadedData = useRef(false);
 
   useEffect(() => {
-    loadPeppolData();
-  }, []);
+    // Reset the flag when user.id changes
+    if (user?.id) {
+      hasLoadedData.current = false;
+      loadPeppolData();
+    }
+  }, [user?.id]); // Only depend on user.id, not the entire user object
 
   const loadPeppolData = async () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+
+    // Prevent reloading if data was already loaded for this user
+    if (hasLoadedData.current) return;
+
     try {
+      hasLoadedData.current = true;
       setLoading(true);
       
       // Check if user is a business user first
@@ -46,35 +67,127 @@ const PeppolWidget = () => {
           stats: { totalSent: 0, totalReceived: 0, sentThisMonth: 0, receivedThisMonth: 0, pending: 0, failed: 0, successRate: 0, lastActivity: null },
           connectionStatus: 'not_available'
         });
+        setLoading(false);
         return;
       }
       
-      // Load settings
+      // Load settings - use the same method as Peppol page
       const settingsResult = await peppolService.getPeppolSettings();
-      const settings = settingsResult.success ? settingsResult.data : {
+      
+      if (!settingsResult.success) {
+        console.error('Error loading Peppol settings:', settingsResult.error);
+        setPeppolData(prev => ({
+          ...prev,
+          settings: { isConfigured: false, peppolId: '', name: '', businessName: '', sandboxMode: true },
+          connectionStatus: 'disconnected'
+        }));
+        setLoading(false);
+        return;
+      }
+      
+      // Use the same logic as Peppol page - directly use settingsResult.data
+      const settings = settingsResult.data || {
         isConfigured: false,
         peppolId: '',
+        name: '',
         businessName: '',
         sandboxMode: true
       };
+      
+     
 
-      // Load statistics
-      const statsResult = await peppolService.getStatistics();
-      const stats = statsResult.success ? statsResult.data : {
-        totalSent: 0,
-        totalReceived: 0,
-        sentThisMonth: 0,
-        receivedThisMonth: 0,
-        pending: 0,
-        failed: 0,
-        successRate: 0,
-        lastActivity: null
+      // Load actual statistics from invoices and expense_invoices tables
+      const now = new Date();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      
+      // Get sent client invoices (from invoices table where peppol_enabled = true)
+      const { data: sentClientInvoices, error: sentClientError } = await supabase
+        .from('invoices')
+        .select('id, peppol_status, peppol_sent_at, created_at')
+        .eq('user_id', user.id)
+        .eq('peppol_enabled', true);
+
+      // Get received expense invoices (from expense_invoices table where peppol_enabled = true)
+      // Note: expense_invoices table does NOT have peppol_status column
+      const { data: receivedExpenseInvoices, error: receivedExpenseError } = await supabase
+        .from('expense_invoices')
+        .select('id, peppol_received_at, created_at')
+        .eq('user_id', user.id)
+        .eq('peppol_enabled', true);
+
+      if (sentClientError) console.error('Error loading sent client invoices:', sentClientError);
+      if (receivedExpenseError) console.error('Error loading received expense invoices:', receivedExpenseError);
+
+      // Calculate statistics
+      const sentInvoices = sentClientInvoices || [];
+      const receivedInvoices = receivedExpenseInvoices || [];
+      
+      const totalSent = sentInvoices.length;
+      const totalReceived = receivedInvoices.length;
+      
+      // This month's counts
+      const sentThisMonth = sentInvoices.filter(inv => {
+        const sentDate = new Date(inv.peppol_sent_at || inv.created_at);
+        return sentDate >= firstDayOfMonth;
+      }).length;
+      
+      const receivedThisMonth = receivedInvoices.filter(inv => {
+        const receivedDate = new Date(inv.peppol_received_at || inv.created_at);
+        return receivedDate >= firstDayOfMonth;
+      }).length;
+
+      // Pending and failed counts
+      const pending = sentInvoices.filter(inv => 
+        inv.peppol_status === 'sent' || inv.peppol_status === 'pending'
+      ).length;
+      
+      const failed = sentInvoices.filter(inv => 
+        inv.peppol_status === 'failed'
+      ).length;
+
+      // Last activity
+      const allActivities = [
+        ...sentInvoices.map(inv => inv.peppol_sent_at || inv.created_at),
+        ...receivedInvoices.map(inv => inv.peppol_received_at || inv.created_at)
+      ].filter(Boolean).sort((a, b) => new Date(b) - new Date(a));
+      
+      const lastActivity = allActivities.length > 0 ? allActivities[0] : null;
+
+      // Success rate
+      const totalInvoices = totalSent + totalReceived;
+      const successRate = totalInvoices > 0 
+        ? Math.round(((totalInvoices - failed) / totalInvoices) * 100) 
+        : 0;
+
+      const stats = {
+        totalSent,
+        totalReceived,
+        sentThisMonth,
+        receivedThisMonth,
+        pending,
+        failed,
+        successRate,
+        lastActivity
       };
+
+      // Determine connection status - EXACTLY matching Peppol page logic
+      // Peppol page shows "Connecté" when peppolSettings.isConfigured is true
+      // Peppol page shows "Configuration requise" when !peppolSettings.isConfigured && peppolSettings.peppolId
+      let connectionStatus = 'disconnected';
+      
+      // Match the exact logic from Peppol page (lines 803-814)
+      if (settings.isConfigured) {
+        connectionStatus = 'connected';
+      } else if (!settings.isConfigured && settings.peppolId) {
+        connectionStatus = 'configuration_required';
+      } else {
+        connectionStatus = 'disconnected';
+      }
 
       setPeppolData({
         settings,
         stats,
-        connectionStatus: settings.isConfigured ? 'connected' : 'disconnected'
+        connectionStatus
       });
     } catch (error) {
       console.error('Error loading Peppol data:', error);
@@ -94,6 +207,10 @@ const PeppolWidget = () => {
         return 'text-success';
       case 'disconnected':
         return 'text-error';
+      case 'configuration_required':
+        return 'text-warning';
+      case 'not_available':
+        return 'text-muted-foreground';
       default:
         return 'text-muted-foreground';
     }
@@ -105,6 +222,8 @@ const PeppolWidget = () => {
         return 'CheckCircle';
       case 'disconnected':
         return 'XCircle';
+      case 'configuration_required':
+        return 'AlertCircle';
       case 'not_available':
         return 'Building2';
       default:
@@ -115,14 +234,7 @@ const PeppolWidget = () => {
   if (loading) {
     return (
       <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-professional">
-        <div className="animate-pulse">
-          <div className="h-4 bg-muted rounded w-1/3 mb-4"></div>
-          <div className="space-y-3">
-            <div className="h-3 bg-muted rounded"></div>
-            <div className="h-3 bg-muted rounded w-2/3"></div>
-            <div className="h-3 bg-muted rounded w-1/2"></div>
-          </div>
-        </div>
+        <TableLoader message="Chargement des données Peppol..." />
       </div>
     );
   }
@@ -164,14 +276,9 @@ const PeppolWidget = () => {
   return (
     <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-professional">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0">
-        <div className="flex items-center space-x-2">
-          <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg">
-            <Icon name="Globe" size={14} className="sm:w-4 sm:h-4" color="var(--color-blue-600)" />
-          </div>
-          <div>
-            <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('dashboard.peppolWidget.title')}</h3>
-            <p className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.peppolWidget.subtitle')}</p>
-          </div>
+        <div>
+          <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('dashboard.peppolWidget.title')}</h3>
+          <p className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.peppolWidget.subtitle')}</p>
         </div>
         <div className="flex items-center space-x-2">
           <div className={`flex items-center space-x-1 ${getStatusColor(peppolData.connectionStatus)}`}>
@@ -231,7 +338,7 @@ const PeppolWidget = () => {
                 <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.peppolWidget.connectionInfo.businessName.label')}</span>
               </div>
               <p className="text-xs sm:text-sm font-medium text-foreground truncate">
-                {peppolData.settings.businessName || t('dashboard.peppolWidget.connectionInfo.businessName.notDefined')}
+                {peppolData.settings.name || peppolData.settings.businessName || t('dashboard.peppolWidget.connectionInfo.businessName.notDefined')}
               </p>
             </div>
           </div>
@@ -278,32 +385,6 @@ const PeppolWidget = () => {
                 style={{ width: `${peppolData.stats.successRate}%` }}
               ></div>
             </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              iconName="Send"
-              iconPosition="left"
-              onClick={() => navigate('/services/peppol')}
-              className="text-xs flex-1 sm:flex-none"
-            >
-              <span className="hidden sm:inline">{t('dashboard.peppolWidget.quickActions.sendInvoice.full')}</span>
-              <span className="sm:hidden">{t('dashboard.peppolWidget.quickActions.sendInvoice.short')}</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              iconName="Settings"
-              iconPosition="left"
-              onClick={() => navigate('/services/peppol')}
-              className="text-xs flex-1 sm:flex-none"
-            >
-              <span className="hidden sm:inline">{t('dashboard.peppolWidget.quickActions.settings.full')}</span>
-              <span className="sm:hidden">{t('dashboard.peppolWidget.quickActions.settings.short')}</span>
-            </Button>
           </div>
 
           {/* Last Activity */}

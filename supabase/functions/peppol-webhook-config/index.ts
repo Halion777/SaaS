@@ -90,9 +90,19 @@ serve(async (req) => {
       fetchOptions.method = 'GET';
     } else if (method === 'POST' && config) {
       // Configure webhook (POST)
+      // Only send required fields: login, password, webHooks
+      // Filter out any extra fields that might cause API errors
+      const webhookConfig = {
+        login: config.login,
+        password: config.password,
+        webHooks: Array.isArray(config.webHooks) 
+          ? config.webHooks.filter(wh => wh && wh.type && wh.url)
+          : []
+      };
+      
       url = `${endpoint}/api/v1/webhook/configuration`;
       fetchOptions.method = 'POST';
-      fetchOptions.body = JSON.stringify(config);
+      fetchOptions.body = JSON.stringify(webhookConfig);
     } else {
       // Get webhook configuration (GET)
       url = `${endpoint}/api/v1/webhook`;

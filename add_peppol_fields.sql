@@ -3,6 +3,18 @@
 -- Adds Peppol support to your existing invoice tables
 -- RUN THIS FIRST
 -- =====================================================
+-- Add peppol_disabled field to peppol_settings table
+-- This allows soft disabling of Peppol functionality without losing historical data
+
+ALTER TABLE public.peppol_settings 
+ADD COLUMN IF NOT EXISTS peppol_disabled BOOLEAN DEFAULT false;
+
+-- Add comment to explain the field
+COMMENT ON COLUMN public.peppol_settings.peppol_disabled IS 
+'When true, Peppol functionality is disabled. Historical data is preserved but new Peppol operations are blocked.';
+
+-- Create index for better query performance
+CREATE INDEX IF NOT EXISTS idx_peppol_settings_disabled ON public.peppol_settings(peppol_disabled) WHERE peppol_disabled = true;
 
 -- Add Peppol fields to CLIENT INVOICES (invoices table)
 ALTER TABLE public.invoices 
@@ -126,4 +138,17 @@ UPDATE public.expense_invoices
 SET peppol_enabled = true
 WHERE source = 'peppol';
 
+
+-- Add peppol_disabled field to peppol_settings table
+-- This allows soft disabling of Peppol functionality without losing historical data
+
+ALTER TABLE public.peppol_settings 
+ADD COLUMN IF NOT EXISTS peppol_disabled BOOLEAN DEFAULT false;
+
+-- Add comment to explain the field
+COMMENT ON COLUMN public.peppol_settings.peppol_disabled IS 
+'When true, Peppol functionality is disabled. Historical data is preserved but new Peppol operations are blocked.';
+
+-- Create index for better query performance
+CREATE INDEX IF NOT EXISTS idx_peppol_settings_disabled ON public.peppol_settings(peppol_disabled) WHERE peppol_disabled = true;
 

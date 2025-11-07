@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import Select from '../../../components/ui/Select';
 import Icon from '../../../components/AppIcon';
 
@@ -8,7 +8,8 @@ const FilterControls = ({
   selectedSegment,
   onSegmentChange,
   selectedService,
-  onServiceChange
+  onServiceChange,
+  analyticsData
 }) => {
   const dateRangeOptions = [
     { value: 'last7days', label: '7 derniers jours' },
@@ -16,23 +17,71 @@ const FilterControls = ({
     { value: 'last3months', label: '3 derniers mois' },
     { value: 'last6months', label: '6 derniers mois' },
     { value: 'lastyear', label: 'Dernière année' },
-    { value: 'custom', label: 'Période personnalisée' }
+    { value: 'all', label: 'Toutes les périodes' }
   ];
 
-  const segmentOptions = [
-    { value: 'all', label: 'Tous les segments' },
-    { value: 'residential', label: 'Résidentiel' },
-    { value: 'commercial', label: 'Commercial' },
-    { value: 'industrial', label: 'Industriel' }
-  ];
+  // Get actual client segments from data
+  const segmentOptions = useMemo(() => {
+    const segments = [{ value: 'all', label: 'Tous les segments' }];
+    
+    const professionalCount = analyticsData?.clients?.filter(c => c.client_type === 'company').length || 0;
+    const individualCount = analyticsData?.clients?.filter(c => c.client_type === 'individual').length || 0;
+    
+    if (professionalCount > 0) {
+      segments.push({ value: 'company', label: `Professionnel (${professionalCount})` });
+    }
+    if (individualCount > 0) {
+      segments.push({ value: 'individual', label: `Particulier (${individualCount})` });
+    }
+    
+    return segments;
+  }, [analyticsData]);
 
-  const serviceOptions = [
-    { value: 'all', label: 'Tous les services' },
-    { value: 'plumbing', label: 'Plomberie' },
-    { value: 'electrical', label: 'Électricité' },
-    { value: 'renovation', label: 'Rénovation' },
-    { value: 'maintenance', label: 'Maintenance' }
-  ];
+  // Get actual service types from quotes
+  const serviceOptions = useMemo(() => {
+    const categoryLabels = {
+      'plumbing': 'Plomberie',
+      'electrical': 'Électricité',
+      'carpentry': 'Menuiserie',
+      'painting': 'Peinture',
+      'masonry': 'Maçonnerie',
+      'tiling': 'Carrelage',
+      'roofing': 'Toiture',
+      'heating': 'Chauffage',
+      'renovation': 'Rénovation',
+      'cleaning': 'Nettoyage',
+      'solar': 'Solaire',
+      'gardening': 'Jardinage',
+      'locksmith': 'Serrurerie',
+      'glazing': 'Vitrerie',
+      'insulation': 'Isolation',
+      'airConditioning': 'Climatisation',
+      'other': 'Autre'
+    };
+
+    const services = [{ value: 'all', label: 'Tous les services' }];
+    const categoryCounts = {};
+    
+    analyticsData?.quotes?.forEach(quote => {
+      const categories = quote.project_categories && quote.project_categories.length > 0
+        ? quote.project_categories
+        : (quote.custom_category ? [quote.custom_category] : ['other']);
+      
+      categories.forEach(category => {
+        const categoryKey = category.toLowerCase();
+        const displayName = categoryLabels[categoryKey] || category || 'Autre';
+        categoryCounts[displayName] = (categoryCounts[displayName] || 0) + 1;
+      });
+    });
+    
+    Object.entries(categoryCounts)
+      .sort((a, b) => b[1] - a[1])
+      .forEach(([name, count]) => {
+        services.push({ value: name.toLowerCase(), label: `${name} (${count})` });
+      });
+    
+    return services;
+  }, [analyticsData]);
 
   return (
     <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
@@ -68,12 +117,6 @@ const FilterControls = ({
         />
       </div>
       
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border space-y-2 sm:space-y-0">
-        <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground">
-          <Icon name="Clock" size={14} className="sm:w-4 sm:h-4" />
-          <span>Dernière mise à jour: il y a 5 minutes</span>
-        </div>
-      </div>
     </div>
   );
 };

@@ -1,31 +1,98 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+import i18n from '../../../i18n';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Image from '../../../components/AppImage';
+import appSettingsService from '../../../services/appSettingsService';
 
 const SponsoredBanner = () => {
   const { t } = useTranslation();
-  const [isVisible, setIsVisible] = useState(true);
+  const navigate = useNavigate();
+  const [bannerData, setBannerData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const bannerData = {
-    title: t('dashboard.sponsoredBanner.title'),
-    description: t('dashboard.sponsoredBanner.description'),
-    image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&h=200&fit=crop',
-    cta: t('dashboard.sponsoredBanner.cta'),
-    sponsor: t('dashboard.sponsoredBanner.sponsor'),
-    discount: t('dashboard.sponsoredBanner.discount')
-  };
+  useEffect(() => {
+    const loadBannerSettings = async () => {
+      try {
+        // Get user's current language
+        const userLanguage = i18n.language || localStorage.getItem('language') || 'fr';
+        const validLanguages = ['fr', 'en', 'nl'];
+        const currentLang = validLanguages.includes(userLanguage) ? userLanguage : 'fr';
 
-  if (!isVisible) return null;
+        const result = await appSettingsService.getSponsoredBannerSettings();
+        
+        if (result.success && result.data) {
+          const settings = result.data;
+          
+          // Get language-specific content
+          if (settings.enabled && settings[currentLang]) {
+            const langData = settings[currentLang];
+            
+            setBannerData({
+              title: langData.title || t('dashboard.sponsoredBanner.title'),
+              description: langData.description || t('dashboard.sponsoredBanner.description'),
+              image: langData.image || 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&h=200&fit=crop',
+              buttonText: langData.buttonText || t('dashboard.sponsoredBanner.cta'),
+              buttonLink: langData.buttonLink || '/subscription',
+              discount: langData.discount || t('dashboard.sponsoredBanner.discount'),
+              enabled: settings.enabled
+            });
+          } else {
+            // Use default/translation values if settings not found or disabled
+            setBannerData({
+              title: t('dashboard.sponsoredBanner.title'),
+              description: t('dashboard.sponsoredBanner.description'),
+              image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&h=200&fit=crop',
+              buttonText: t('dashboard.sponsoredBanner.cta'),
+              buttonLink: '/subscription',
+              discount: t('dashboard.sponsoredBanner.discount'),
+              enabled: settings?.enabled !== false
+            });
+          }
+        } else {
+          // Use default/translation values if settings not found
+          setBannerData({
+            title: t('dashboard.sponsoredBanner.title'),
+            description: t('dashboard.sponsoredBanner.description'),
+            image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&h=200&fit=crop',
+            buttonText: t('dashboard.sponsoredBanner.cta'),
+            buttonLink: '/subscription',
+            discount: t('dashboard.sponsoredBanner.discount'),
+            enabled: true
+          });
+        }
+      } catch (error) {
+        console.error('Error loading banner settings:', error);
+        // Use default/translation values on error
+        setBannerData({
+          title: t('dashboard.sponsoredBanner.title'),
+          description: t('dashboard.sponsoredBanner.description'),
+          image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&h=200&fit=crop',
+          buttonText: t('dashboard.sponsoredBanner.cta'),
+          buttonLink: '/subscription',
+          discount: t('dashboard.sponsoredBanner.discount'),
+          enabled: true
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleClose = () => {
-    setIsVisible(false);
-  };
+    loadBannerSettings();
+  }, [t, i18n.language]);
+
+  if (loading || !bannerData || !bannerData.enabled) return null;
 
   const handleCTAClick = () => {
-    // Handle premium upgrade
-    console.log('Premium upgrade clicked');
+    if (bannerData.buttonLink) {
+      if (bannerData.buttonLink.startsWith('http')) {
+        window.open(bannerData.buttonLink, '_blank');
+      } else {
+        navigate(bannerData.buttonLink);
+      }
+    }
   };
 
   return (
@@ -34,13 +101,6 @@ const SponsoredBanner = () => {
       <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-blue-500/10 rounded-full -translate-y-12 sm:-translate-y-16 translate-x-12 sm:translate-x-16 blur-xl"></div>
       <div className="absolute bottom-0 left-0 w-16 h-16 sm:w-24 sm:h-24 bg-purple-500/10 rounded-full translate-y-8 sm:translate-y-12 -translate-x-8 sm:-translate-x-12 blur-xl"></div>
       <div className="absolute top-1/3 right-1/4 w-4 h-4 sm:w-6 sm:h-6 bg-yellow-300/20 rounded-full blur-md animate-pulse"></div>
-      
-      <button
-        onClick={handleClose}
-        className="absolute top-2 right-2 sm:top-4 sm:right-4 p-1 sm:p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors duration-150 z-10"
-      >
-        <Icon name="X" size={12} className="sm:w-4 sm:h-4" color="white" />
-      </button>
       
       <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 relative z-10">
         <div className="w-16 h-16 sm:w-16 sm:h-16 rounded-lg overflow-hidden flex-shrink-0 shadow-md transform transition-transform duration-300 group-hover:scale-105 mx-auto sm:mx-0">
@@ -69,7 +129,7 @@ const SponsoredBanner = () => {
             >
               <span className="flex items-center justify-center sm:justify-start">
                 <Icon name="Sparkles" size={14} className="sm:w-4 sm:h-4 mr-2 group-hover:animate-pulse" />
-                {bannerData.cta}
+                {bannerData.buttonText || t('dashboard.sponsoredBanner.cta')}
               </span>
             </Button>
             

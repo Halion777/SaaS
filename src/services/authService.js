@@ -297,6 +297,65 @@ export async function updateProfile(profileData) {
 }
 
 /**
+ * Get analytics objectives for the current user
+ * @returns {Promise<{data, error}>} Objectives data or error
+ */
+export async function getAnalyticsObjectives() {
+  try {
+    const { data: user, error: userError } = await getCurrentUser();
+    if (userError || !user) return { error: { message: 'Not authenticated' } };
+    
+    const { data, error } = await supabase
+      .from('users')
+      .select('analytics_objectives')
+      .eq('id', user.id)
+      .single();
+    
+    if (error) return { error };
+    
+    // Return default structure if null
+    const objectives = data?.analytics_objectives || {
+      revenueTarget: null,
+      clientTarget: null,
+      projectsTarget: null
+    };
+    
+    return { data: objectives, error: null };
+  } catch (error) {
+    console.error('Error getting analytics objectives:', error);
+    return { error };
+  }
+}
+
+/**
+ * Update analytics objectives for the current user
+ * @param {Object} objectives - Objectives object { revenueTarget, clientTarget, projectsTarget }
+ * @returns {Promise<{data, error}>} Supabase response
+ */
+export async function updateAnalyticsObjectives(objectives) {
+  try {
+    const { data: user, error: userError } = await getCurrentUser();
+    if (userError || !user) return { error: { message: 'Not authenticated' } };
+    
+    if (!user.id) {
+      return { error: { message: 'User ID not available' } };
+    }
+    
+    const { data, error } = await supabase
+      .from('users')
+      .update({ analytics_objectives: objectives })
+      .eq('id', user.id)
+      .select('analytics_objectives')
+      .single();
+    
+    return { data, error };
+  } catch (error) {
+    console.error('Error updating analytics objectives:', error);
+    return { error };
+  }
+}
+
+/**
  * Send password reset email
  * @param {string} email - User email
  * @returns {Promise<{data, error}>} Supabase response

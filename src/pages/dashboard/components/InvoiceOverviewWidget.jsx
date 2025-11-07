@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import TableLoader from '../../../components/ui/TableLoader';
 
-const InvoiceOverviewWidget = () => {
+const InvoiceOverviewWidget = ({ invoiceData, expenseInvoiceData, loading = false }) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
@@ -12,40 +13,46 @@ const InvoiceOverviewWidget = () => {
     return new Intl.NumberFormat(i18n.language, {
       style: 'currency',
       currency: 'EUR'
-    }).format(amount);
+    }).format(amount || 0);
   };
 
-  // Mock data for the widget
-  const invoiceData = {
-    clientInvoices: {
-      totalRevenue: 16900.00,
-      paidRevenue: 9450.00,
-      outstandingAmount: 7450.00,
-      overdueCount: 2,
-      recentCount: 8
-    },
-    supplierInvoices: {
-      totalExpenses: 4370.00,
-      paidExpenses: 1810.00,
-      outstandingAmount: 2560.00,
-      overdueCount: 2,
-      recentCount: 8
-    }
+  // Use real data or defaults
+  const clientInvoices = invoiceData || {
+    totalRevenue: 0,
+    paidRevenue: 0,
+    outstandingAmount: 0,
+    overdueCount: 0
   };
 
-  const netCashFlow = invoiceData.clientInvoices.paidRevenue - invoiceData.supplierInvoices.paidExpenses;
+  const supplierInvoices = expenseInvoiceData || {
+    totalExpenses: 0,
+    paidExpenses: 0,
+    outstandingAmount: 0,
+    overdueCount: 0
+  };
+
+  const netCashFlow = clientInvoices.paidRevenue - supplierInvoices.paidExpenses;
+  const collectionRate = clientInvoices.totalRevenue > 0 
+    ? Math.round((clientInvoices.paidRevenue / clientInvoices.totalRevenue) * 100) 
+    : 0;
+  const paymentRate = supplierInvoices.totalExpenses > 0
+    ? Math.round((supplierInvoices.paidExpenses / supplierInvoices.totalExpenses) * 100)
+    : 0;
+
+  if (loading) {
+    return (
+      <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+        <TableLoader message="Chargement des données de facturation..." />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 space-y-4 sm:space-y-0">
-        <div className="flex items-center space-x-3">
-          <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg flex items-center justify-center">
-            <Icon name="Receipt" size={16} className="sm:w-5 sm:h-5 text-blue-600" />
-          </div>
-          <div>
-            <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('dashboard.invoiceOverview.title')}</h3>
-            <p className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.invoiceOverview.subtitle')}</p>
-          </div>
+        <div>
+          <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('dashboard.invoiceOverview.title')}</h3>
+          <p className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.invoiceOverview.subtitle')}</p>
         </div>
         <div className="flex flex-row space-x-2">
           <Button
@@ -87,25 +94,25 @@ const InvoiceOverviewWidget = () => {
             <div className="flex justify-between items-center">
               <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.invoiceOverview.sections.clientInvoices.totalRevenue')}</span>
               <span className="text-xs sm:text-sm font-medium text-foreground">
-                {formatCurrency(invoiceData.clientInvoices.totalRevenue)}
+                {formatCurrency(clientInvoices.totalRevenue)}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.invoiceOverview.sections.clientInvoices.paidRevenue')}</span>
               <span className="text-xs sm:text-sm font-medium text-success">
-                {formatCurrency(invoiceData.clientInvoices.paidRevenue)}
+                {formatCurrency(clientInvoices.paidRevenue)}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.invoiceOverview.sections.clientInvoices.outstanding')}</span>
               <span className="text-xs sm:text-sm font-medium text-warning">
-                {formatCurrency(invoiceData.clientInvoices.outstandingAmount)}
+                {formatCurrency(clientInvoices.outstandingAmount)}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.invoiceOverview.sections.clientInvoices.overdue')}</span>
               <span className="text-xs sm:text-sm font-medium text-error">
-                {invoiceData.clientInvoices.overdueCount} {t('common.invoice', { count: invoiceData.clientInvoices.overdueCount })}
+                {clientInvoices.overdueCount} {t('common.invoice', { count: clientInvoices.overdueCount })}
               </span>
             </div>
           </div>
@@ -124,25 +131,25 @@ const InvoiceOverviewWidget = () => {
             <div className="flex justify-between items-center">
               <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.invoiceOverview.sections.supplierInvoices.totalExpenses')}</span>
               <span className="text-xs sm:text-sm font-medium text-foreground">
-                {formatCurrency(invoiceData.supplierInvoices.totalExpenses)}
+                {formatCurrency(supplierInvoices.totalExpenses)}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.invoiceOverview.sections.supplierInvoices.paidExpenses')}</span>
               <span className="text-xs sm:text-sm font-medium text-success">
-                {formatCurrency(invoiceData.supplierInvoices.paidExpenses)}
+                {formatCurrency(supplierInvoices.paidExpenses)}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.invoiceOverview.sections.supplierInvoices.outstanding')}</span>
               <span className="text-xs sm:text-sm font-medium text-warning">
-                {formatCurrency(invoiceData.supplierInvoices.outstandingAmount)}
+                {formatCurrency(supplierInvoices.outstandingAmount)}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.invoiceOverview.sections.supplierInvoices.overdue')}</span>
               <span className="text-xs sm:text-sm font-medium text-error">
-                {invoiceData.supplierInvoices.overdueCount} {t('common.invoice', { count: invoiceData.supplierInvoices.overdueCount })}
+                {supplierInvoices.overdueCount} {t('common.invoice', { count: supplierInvoices.overdueCount })}
               </span>
             </div>
           </div>
@@ -171,13 +178,13 @@ const InvoiceOverviewWidget = () => {
             <div className="flex justify-between items-center">
               <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.invoiceOverview.sections.cashFlow.collectionRate')}</span>
               <span className="text-xs sm:text-sm font-medium text-foreground">
-                {Math.round((invoiceData.clientInvoices.paidRevenue / invoiceData.clientInvoices.totalRevenue) * 100)}%
+                {collectionRate}%
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.invoiceOverview.sections.cashFlow.paymentRate')}</span>
               <span className="text-xs sm:text-sm font-medium text-foreground">
-                {Math.round((invoiceData.supplierInvoices.paidExpenses / invoiceData.supplierInvoices.totalExpenses) * 100)}%
+                {paymentRate}%
               </span>
             </div>
             <div className="flex justify-between items-center">
@@ -195,21 +202,8 @@ const InvoiceOverviewWidget = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
           <div className="flex items-center space-x-4 text-xs sm:text-sm text-muted-foreground">
             <span>{t('dashboard.invoiceOverview.sections.lastUpdate.prefix')} {new Date().toLocaleDateString(i18n.language)}</span>
-            <span>•</span>
-            <span>{t('dashboard.invoiceOverview.sections.lastUpdate.recentInvoices', { count: invoiceData.clientInvoices.recentCount + invoiceData.supplierInvoices.recentCount })}</span>
           </div>
           <div className="flex space-x-2 justify-end">
-            <Button
-              variant="outline"
-              size="xs"
-              iconName="Plus"
-              iconPosition="left"
-              onClick={() => navigate('/invoices-management')}
-              className="text-xs h-8 sm:h-9"
-            >
-              <span className="hidden sm:inline">{t('dashboard.invoiceOverview.buttons.newInvoice.full')}</span>
-              <span className="sm:hidden">{t('dashboard.invoiceOverview.buttons.newInvoice.short')}</span>
-            </Button>
             <Button
               variant="default"
               size="xs"
@@ -228,4 +222,4 @@ const InvoiceOverviewWidget = () => {
   );
 };
 
-export default InvoiceOverviewWidget; 
+export default InvoiceOverviewWidget;

@@ -17,9 +17,9 @@ const DetailedAnalyticsPanel = ({ data }) => {
                   key === 'newClients' ? 'UserPlus' :
                   key === 'returningClients' ? 'Users' :
                   key === 'inactiveClients' ? 'UserX' :
-                  key === 'avgTaskTime' ? 'Clock' :
-                  key === 'fastestTask' ? 'Zap' :
-                  key === 'longestTask' ? 'AlertOctagon' :
+                  key === 'totalRevenue' ? 'Euro' :
+                  key === 'averageInvoice' ? 'TrendingUp' :
+                  key === 'totalInvoices' ? 'FileText' :
                   key === 'totalQuotes' ? 'FileText' :
                   key === 'acceptedQuotes' ? 'CheckCircle' :
                   key === 'rejectedQuotes' ? 'XCircle' :
@@ -34,7 +34,9 @@ const DetailedAnalyticsPanel = ({ data }) => {
                 {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
               </p>
               <p className="text-base font-semibold text-foreground">
-                {typeof value === 'number' ? `${value}${key.includes('Clients') ? '%' : ''}` : value}
+                {typeof value === 'number' 
+                  ? `${key.includes('Revenue') || key.includes('Invoice') ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(value) : value}${key.includes('Clients') ? '%' : ''}` 
+                  : value}
               </p>
             </div>
           </div>
@@ -47,7 +49,7 @@ const DetailedAnalyticsPanel = ({ data }) => {
     <div className="space-y-6">
       {renderSection('Statut des paiements', data.paymentStatus)}
       {renderSection('Activité clients', data.clientActivity)}
-      {renderSection('Durée des tâches', data.taskDuration)}
+      {renderSection('Statistiques factures', data.invoiceStatistics)}
       {renderSection('Vue d\'ensemble des devis', data.quoteOverview)}
     </div>
   );
