@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import { updateAnalyticsObjectives } from '../../../services/authService';
 
 const MetricsProgress = ({ metrics, userObjectives, onUpdate, isLoading = false }) => {
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [editingValues, setEditingValues] = useState({
     revenueTarget: (userObjectives?.revenueTarget ?? metrics.revenueTarget) || 0,
@@ -12,28 +14,32 @@ const MetricsProgress = ({ metrics, userObjectives, onUpdate, isLoading = false 
   });
   const progressItems = [
     {
-      label: 'Progression mensuelle',
+      label: t('analyticsDashboard.metricsProgress.monthlyProgress'),
       value: metrics.monthProgress,
       icon: 'Calendar',
-      color: 'blue'
+      color: 'blue',
+      key: 'monthProgress'
     },
     {
-      label: 'Objectif revenus',
+      label: t('analyticsDashboard.metricsProgress.revenueObjective'),
       value: metrics.revenueTarget,
       icon: 'Euro',
-      color: 'emerald'
+      color: 'emerald',
+      key: 'revenueTarget'
     },
     {
-      label: 'Objectif clients',
+      label: t('analyticsDashboard.metricsProgress.clientObjective'),
       value: metrics.clientTarget,
       icon: 'Users',
-      color: 'purple'
+      color: 'purple',
+      key: 'clientTarget'
     },
     {
-      label: 'Objectif projets',
+      label: t('analyticsDashboard.metricsProgress.projectObjective'),
       value: metrics.projectsTarget,
       icon: 'Briefcase',
-      color: 'orange'
+      color: 'orange',
+      key: 'projectsTarget'
     }
   ];
 
@@ -63,7 +69,7 @@ const MetricsProgress = ({ metrics, userObjectives, onUpdate, isLoading = false 
       
       const result = await updateAnalyticsObjectives(objectives);
       if (result.error) {
-        alert('Erreur lors de la sauvegarde des objectifs');
+        alert(t('analyticsDashboard.metricsProgress.errors.saveError'));
         return;
       }
       
@@ -73,7 +79,7 @@ const MetricsProgress = ({ metrics, userObjectives, onUpdate, isLoading = false 
       }
     } catch (error) {
       console.error('Error saving objectives:', error);
-      alert('Erreur lors de la sauvegarde des objectifs');
+      alert(t('analyticsDashboard.metricsProgress.errors.saveError'));
     }
   };
 
@@ -105,8 +111,8 @@ const MetricsProgress = ({ metrics, userObjectives, onUpdate, isLoading = false 
             <Icon name="Activity" size={20} color="rgb(99 102 241)" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Métriques temps réel</h3>
-            <p className="text-sm text-muted-foreground">Progression vs objectifs</p>
+            <h3 className="text-lg font-semibold text-foreground">{t('analyticsDashboard.metricsProgress.title')}</h3>
+            <p className="text-sm text-muted-foreground">{t('analyticsDashboard.metricsProgress.subtitle')}</p>
           </div>
         </div>
         {!isEditing ? (
@@ -117,7 +123,7 @@ const MetricsProgress = ({ metrics, userObjectives, onUpdate, isLoading = false 
             iconName="Edit"
             iconPosition="left"
           >
-            Modifier
+            {t('analyticsDashboard.metricsProgress.edit')}
           </Button>
         ) : (
           <div className="flex space-x-2">
@@ -126,7 +132,7 @@ const MetricsProgress = ({ metrics, userObjectives, onUpdate, isLoading = false 
               size="sm"
               onClick={handleCancel}
             >
-              Annuler
+              {t('analyticsDashboard.metricsProgress.cancel')}
             </Button>
             <Button
               variant="default"
@@ -135,7 +141,7 @@ const MetricsProgress = ({ metrics, userObjectives, onUpdate, isLoading = false 
               iconName="Save"
               iconPosition="left"
             >
-              Enregistrer
+              {t('analyticsDashboard.metricsProgress.save')}
             </Button>
           </div>
         )}
@@ -144,10 +150,8 @@ const MetricsProgress = ({ metrics, userObjectives, onUpdate, isLoading = false 
       <div className="space-y-6">
         {progressItems.map((item, index) => {
           const status = getStatusIcon(item.value);
-          const isTargetMetric = item.label === 'Objectif revenus' || item.label === 'Objectif clients' || item.label === 'Objectif projets';
-          const targetKey = item.label === 'Objectif revenus' ? 'revenueTarget' : 
-                           item.label === 'Objectif clients' ? 'clientTarget' : 
-                           item.label === 'Objectif projets' ? 'projectsTarget' : null;
+          const isTargetMetric = item.key === 'revenueTarget' || item.key === 'clientTarget' || item.key === 'projectsTarget';
+          const targetKey = item.key;
           
           return (
             <div key={item.label} className="space-y-2">
@@ -169,7 +173,7 @@ const MetricsProgress = ({ metrics, userObjectives, onUpdate, isLoading = false 
                           [targetKey]: parseFloat(e.target.value) || 0
                         })}
                         className="w-24 px-2 py-1 text-sm border border-border rounded bg-background text-foreground"
-                        placeholder={targetKey === 'revenueTarget' ? 'Montant (€)' : 'Nombre'}
+                        placeholder={targetKey === 'revenueTarget' ? t('analyticsDashboard.metricsProgress.amountPlaceholder') : t('analyticsDashboard.metricsProgress.numberPlaceholder')}
                       />
                       <span className="text-xs text-muted-foreground">
                         {targetKey === 'revenueTarget' ? '€' : ''}
@@ -203,16 +207,16 @@ const MetricsProgress = ({ metrics, userObjectives, onUpdate, isLoading = false 
       <div className="mt-6 pt-4 border-t border-border">
         <div className="grid grid-cols-2 gap-4 text-center">
           <div>
-            <p className="text-sm text-muted-foreground">Performance globale</p>
+            <p className="text-sm text-muted-foreground">{t('analyticsDashboard.metricsProgress.overallPerformance')}</p>
             <p className="text-xl font-bold text-foreground">
               {isLoading ? '...' : `${Math.round(progressItems.reduce((sum, item) => sum + item.value, 0) / progressItems.length)}%`}
             </p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Tendance</p>
+            <p className="text-sm text-muted-foreground">{t('analyticsDashboard.metricsProgress.trend')}</p>
             <div className="flex items-center justify-center space-x-1">
               <Icon name="TrendingUp" size={16} className="text-emerald-600" />
-              <span className="text-sm font-semibold text-emerald-600">Positive</span>
+              <span className="text-sm font-semibold text-emerald-600">{t('analyticsDashboard.metricsProgress.positive')}</span>
             </div>
           </div>
         </div>

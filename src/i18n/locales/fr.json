@@ -2717,6 +2717,25 @@
       "generatedBy": "Généré par",
       "pdfError": "Erreur lors de l'export PDF",
       "excelError": "Erreur lors de l'export Excel"
+    },
+    "metricsProgress": {
+      "title": "Métriques temps réel",
+      "subtitle": "Progression vs objectifs",
+      "edit": "Modifier",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "monthlyProgress": "Progression mensuelle",
+      "revenueObjective": "Objectif revenus",
+      "clientObjective": "Objectif clients",
+      "projectObjective": "Objectif projets",
+      "amountPlaceholder": "Montant (€)",
+      "numberPlaceholder": "Nombre",
+      "overallPerformance": "Performance globale",
+      "trend": "Tendance",
+      "positive": "Positive",
+      "errors": {
+        "saveError": "Erreur lors de la sauvegarde des objectifs"
+      }
     }
   },
   "quoteCreation": {
@@ -2848,7 +2867,7 @@
         "airConditioning": "Climatisation",
         "other": "Autre"
       },
-      "deadline": "Date limite de la tâche",
+      "deadline": "Date limite de l'offre",
       "description": "Description du projet",
       "descriptionInstruction": "Décrivez précisément le projet pour un devis adapté",
       "aiAnalysis": "L'IA analyse votre contexte",
@@ -3044,8 +3063,10 @@
       "taxId": "Numéro de TVA",
       "regNumber": "Numéro d'enregistrement",
       "bankAccount": "Compte bancaire",
+      "accountName": "Nom du compte",
+      "accountNamePlaceholder": "Nom du titulaire du compte",
       "bankName": "Nom de la banque",
-      "iban": "IBAN",
+      "bankNamePlaceholder": "Nom de la banque",
       "bic": "BIC/SWIFT",
       "logo": "Logo de l'entreprise",
       "save": "Enregistrer",
@@ -3651,6 +3672,264 @@
         "cancel": "Annuler",
         "update": "Mettre à jour",
         "create": "Créer le client"
+      }
+    },
+    "invoicesManagement": {
+      "title": "Gestion des factures",
+      "subtitle": "Gérez vos factures, suivez les paiements et analysez vos performances",
+      "refresh": "Actualiser",
+      "refreshing": "Actualisation...",
+      "loading": "Chargement des factures...",
+      "unknownClient": "Client inconnu",
+      "paymentMethod": {
+        "toBeDefined": "À définir"
+      },
+      "summary": {
+        "totalRevenue": "Chiffre d'affaires total",
+        "paidRevenue": "Montant encaissé",
+        "outstandingAmount": "Montant en attente",
+        "overdueInvoices": "Factures en retard",
+        "thisMonth": "ce mois",
+        "ofTotal": "du total"
+      },
+      "status": {
+        "paid": "Payée",
+        "unpaid": "Non payée",
+        "overdue": "En retard",
+        "cancelled": "Annulée"
+      },
+      "peppolStatus": {
+        "notSent": "Non envoyée",
+        "sending": "Envoi en cours",
+        "sent": "Envoyée",
+        "delivered": "Livrée",
+        "failed": "Échouée"
+      },
+      "filter": {
+        "title": "Filtres",
+        "clear": "Effacer",
+        "showFilters": "Afficher les filtres",
+        "hideFilters": "Masquer les filtres",
+        "status": {
+          "label": "Statut",
+          "all": "Tous les statuts"
+        },
+        "client": {
+          "label": "Client",
+          "all": "Tous les clients",
+          "placeholder": "Sélectionner un client"
+        },
+        "amount": {
+          "label": "Montant (€)",
+          "all": "Tous les montants",
+          "min": "Min",
+          "max": "Max",
+          "0-500": "0€ - 500€",
+          "500-1000": "500€ - 1 000€",
+          "1000-5000": "1 000€ - 5 000€",
+          "5000+": "5 000€+"
+        },
+        "period": {
+          "label": "Période",
+          "all": "Toutes les périodes",
+          "today": "Aujourd'hui",
+          "thisWeek": "Cette semaine",
+          "thisMonth": "Ce mois",
+          "thisQuarter": "Ce trimestre",
+          "thisYear": "Cette année",
+          "from": "Du",
+          "to": "Au"
+        },
+        "chips": {
+          "status": "Statut",
+          "client": "Client",
+          "period": "Période",
+          "amount": "Montant",
+          "removeStatus": "Supprimer le filtre de statut",
+          "removeClient": "Supprimer le filtre de client",
+          "removePeriod": "Supprimer le filtre de période",
+          "removeAmount": "Supprimer le filtre de montant"
+        }
+      },
+      "table": {
+        "searchPlaceholder": "Rechercher par numéro, client, description ou statut...",
+        "clearSearch": "Effacer",
+        "view": {
+          "label": "Vue",
+          "table": "Tableau",
+          "cards": "Cartes"
+        },
+        "invoicesCount": "{{count}} facture",
+        "invoicesCount_plural": "{{count}} factures",
+        "headers": {
+          "invoiceNumber": "N° Facture",
+          "client": "Client",
+          "amount": "Montant",
+          "status": "Statut",
+          "issueDate": "Date émission",
+          "dueDate": "Date échéance",
+          "actions": "Actions"
+        },
+        "quote": "Devis",
+        "issue": "Émission",
+        "due": "Échéance",
+        "days": "jours",
+        "actions": {
+          "viewDetails": "Voir les détails",
+          "sendInvoice": "Envoyer la facture"
+        }
+      },
+      "empty": {
+        "noInvoicesFound": "Aucune facture trouvée",
+        "description": "Commencez par créer votre première facture ou ajustez vos filtres."
+      },
+      "bulkActions": {
+        "selectedInvoices": "{{count}} facture sélectionnée",
+        "selectedInvoices_plural": "{{count}} factures sélectionnées",
+        "deselect": "Désélectionner",
+        "chooseAction": "Choisir une action...",
+        "export": "Exporter",
+        "delete": "Supprimer"
+      },
+      "messages": {
+        "markedAsPaidSuccess": "Facture marquée comme payée avec succès !",
+        "bulkMarkedAsPaidSuccess": "{{count}} facture marquée comme payée avec succès !",
+        "bulkMarkedAsPaidSuccess_plural": "{{count}} factures marquées comme payées avec succès !",
+        "exportingInvoices": "Export de {{count}} facture en cours...",
+        "exportingInvoices_plural": "Export de {{count}} factures en cours...",
+        "confirmDelete": "Êtes-vous sûr de vouloir supprimer {{count}} facture ?",
+        "confirmDelete_plural": "Êtes-vous sûr de vouloir supprimer {{count}} factures ?"
+      },
+      "errors": {
+        "updateStatusError": "Erreur lors de la mise à jour du statut",
+        "updateInvoicesError": "Erreur lors de la mise à jour des factures",
+        "error": "Erreur",
+        "selectAtLeastOneInvoice": "Veuillez sélectionner au moins une facture"
+      },
+      "modal": {
+        "title": "Détails de la facture",
+        "tabs": {
+          "details": "Détails",
+          "peppol": "Peppol"
+        },
+        "invoiceInfo": {
+          "title": "Informations de la facture",
+          "invoiceNumber": "Numéro de facture",
+          "quoteNumber": "Numéro de devis",
+          "status": "Statut",
+          "issueDate": "Date d'émission",
+          "dueDate": "Date d'échéance",
+          "paymentMethod": "Méthode de paiement"
+        },
+        "clientInfo": {
+          "title": "Informations client",
+          "name": "Nom",
+          "email": "Email"
+        },
+        "financialInfo": {
+          "title": "Informations financières",
+          "totalAmount": "Montant total (TTC)",
+          "netAmount": "Montant HT",
+          "taxAmount": "Montant TVA",
+          "discount": "Remise"
+        },
+        "description": "Description",
+        "notes": "Notes",
+        "peppolInfo": {
+          "title": "Informations Peppol",
+          "status": "Statut Peppol",
+          "clientId": "ID Peppol du client",
+          "sentDate": "Date d'envoi",
+          "deliveredDate": "Date de livraison",
+          "messageId": "Message ID",
+          "errorMessage": "Message d'erreur"
+        }
+      },
+      "common": {
+        "notAvailable": "N/A"
+      },
+      "sendModal": {
+        "title": "Envoyer la facture",
+        "client": "Client",
+        "professional": "Professionnel",
+        "individual": "Particulier",
+        "sendViaPeppol": "Envoyer via Peppol",
+        "sendViaPeppolDescription": "Envoi sécurisé via le réseau Peppol (nécessite un ID Peppol)",
+        "sendViaEmail": "Envoyer par email",
+        "sendViaEmailDescription": "Envoi de la facture par email avec PDF en pièce jointe",
+        "professionalInfo": "Les clients professionnels peuvent recevoir des factures via Peppol s'ils ont un ID Peppol configuré."
+      },
+      "sendEmailModal": {
+        "title": "Envoyer la facture par email",
+        "loading": "Chargement...",
+        "clientEmail": "Email du client",
+        "clientEmailPlaceholder": "client@exemple.com",
+        "sendCopy": "Envoyer une copie à mon email",
+        "subject": "Objet de l'email",
+        "subjectPlaceholder": "Objet de l'email",
+        "message": "Message",
+        "messagePlaceholder": "Message personnalisé...",
+        "cancel": "Annuler",
+        "send": "Envoyer",
+        "sending": "Envoi...",
+        "client": "Client",
+        "yourCompany": "Votre entreprise",
+        "yourTeam": "Votre équipe",
+        "defaultSubject": "Facture {{invoiceNumber}} - {{companyName}}",
+        "defaultMessage": "Bonjour,\n\nVeuillez trouver ci-joint notre facture {{invoiceNumber}}.\n\nCordialement,\n{{companyName}}",
+        "emailText": "Facture {{invoiceNumber}} - Montant: {{amount}}",
+        "preview": {
+          "invoice": "Facture",
+          "client": "Client",
+          "amount": "Montant"
+        },
+        "emailHtml": {
+          "invoice": "Facture",
+          "hello": "Bonjour",
+          "defaultMessage": "Veuillez trouver ci-joint notre facture {{invoiceNumber}}.",
+          "invoiceNumber": "Numéro de facture",
+          "date": "Date",
+          "dueDate": "Date d'échéance",
+          "amount": "Montant",
+          "regards": "Cordialement"
+        },
+        "errors": {
+          "loadDataError": "Erreur lors du chargement des données",
+          "clientEmailRequired": "Veuillez saisir l'adresse email du client",
+          "subjectRequired": "Veuillez saisir l'objet de l'email",
+          "updateError": "Email envoyé mais erreur lors de la mise à jour",
+          "sendError": "Erreur lors de l'envoi de l'email"
+        }
+      },
+      "sendPeppolModal": {
+        "title": "Envoyer via Peppol",
+        "invoice": "Facture",
+        "client": "Client",
+        "clientPeppolId": "ID Peppol du client",
+        "notDefined": "Non défini",
+        "edit": "Modifier",
+        "cancel": "Annuler",
+        "send": "Envoyer",
+        "sending": "Envoi en cours...",
+        "configRequired": {
+          "title": "Configuration Peppol requise",
+          "description": "Vous devez configurer votre connexion Peppol avant de pouvoir envoyer des factures.",
+          "button": "Configurer Peppol"
+        },
+        "peppolDisabled": {
+          "title": "Peppol désactivé",
+          "description": "La fonctionnalité Peppol est actuellement désactivée. Veuillez l'activer dans les paramètres Peppol pour envoyer des factures.",
+          "button": "Activer Peppol"
+        },
+        "errors": {
+          "configNotFound": "Configuration Peppol non trouvée. Veuillez configurer Peppol avant d'envoyer des factures.",
+          "loadDataError": "Erreur lors du chargement des données",
+          "clientPeppolIdRequired": "Veuillez sélectionner un ID Peppol pour le client",
+          "configMissing": "Configuration Peppol manquante. Veuillez configurer Peppol avant d'envoyer des factures.",
+          "peppolDisabled": "La fonctionnalité Peppol est actuellement désactivée. Veuillez l'activer dans les paramètres Peppol pour envoyer des factures.",
+          "updateError": "Facture envoyée mais erreur lors de la mise à jour",
+          "sendError": "Erreur lors de l'envoi"
+        }
       }
     }
 }

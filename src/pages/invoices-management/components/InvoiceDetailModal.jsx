@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
 const InvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState('details');
 
   if (!isOpen || !invoice) return null;
@@ -15,23 +17,23 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
   const showPeppolTab = isProfessional && invoice.peppolEnabled;
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('fr-FR', {
+    return new Intl.NumberFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US', {
       style: 'currency',
       currency: 'EUR'
     }).format(amount || 0);
   };
 
   const formatDate = (date) => {
-    if (!date) return 'N/A';
-    return new Intl.DateTimeFormat('fr-FR').format(new Date(date));
+    if (!date) return t('invoicesManagement.common.notAvailable');
+    return new Intl.DateTimeFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US').format(new Date(date));
   };
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      paid: { label: 'Payée', color: 'bg-success text-success-foreground' },
-      unpaid: { label: 'Non payée', color: 'bg-warning text-warning-foreground' },
-      overdue: { label: 'En retard', color: 'bg-error text-error-foreground' },
-      cancelled: { label: 'Annulée', color: 'bg-muted text-muted-foreground' }
+      paid: { label: t('invoicesManagement.status.paid'), color: 'bg-success text-success-foreground' },
+      unpaid: { label: t('invoicesManagement.status.unpaid'), color: 'bg-warning text-warning-foreground' },
+      overdue: { label: t('invoicesManagement.status.overdue'), color: 'bg-error text-error-foreground' },
+      cancelled: { label: t('invoicesManagement.status.cancelled'), color: 'bg-muted text-muted-foreground' }
     };
     const config = statusConfig[status] || statusConfig.unpaid;
     return (
@@ -43,11 +45,11 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
 
   const getPeppolStatusBadge = (status) => {
     const statusConfig = {
-      not_sent: { label: 'Non envoyée', color: 'bg-muted text-muted-foreground' },
-      sending: { label: 'Envoi en cours', color: 'bg-warning text-warning-foreground' },
-      sent: { label: 'Envoyée', color: 'bg-primary text-primary-foreground' },
-      delivered: { label: 'Livrée', color: 'bg-success text-success-foreground' },
-      failed: { label: 'Échouée', color: 'bg-error text-error-foreground' }
+      not_sent: { label: t('invoicesManagement.peppolStatus.notSent'), color: 'bg-muted text-muted-foreground' },
+      sending: { label: t('invoicesManagement.peppolStatus.sending'), color: 'bg-warning text-warning-foreground' },
+      sent: { label: t('invoicesManagement.peppolStatus.sent'), color: 'bg-primary text-primary-foreground' },
+      delivered: { label: t('invoicesManagement.peppolStatus.delivered'), color: 'bg-success text-success-foreground' },
+      failed: { label: t('invoicesManagement.peppolStatus.failed'), color: 'bg-error text-error-foreground' }
     };
     const config = statusConfig[status] || statusConfig.not_sent;
     return (
@@ -68,7 +70,7 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                 <Icon name="FileText" size={20} color="var(--color-primary)" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-foreground">Détails de la facture</h2>
+                <h2 className="text-xl font-semibold text-foreground">{t('invoicesManagement.modal.title')}</h2>
                 <p className="text-sm text-muted-foreground">{invoice.number}</p>
               </div>
             </div>
@@ -90,7 +92,7 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
-              Détails
+              {t('invoicesManagement.modal.tabs.details')}
             </button>
             {showPeppolTab && (
               <button
@@ -101,7 +103,7 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                     : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               >
-                Peppol
+                {t('invoicesManagement.modal.tabs.peppol')}
               </button>
             )}
           </div>
@@ -112,71 +114,71 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
               <div className="space-y-6">
                 {/* Invoice Information */}
                 <div>
-                  <h3 className="text-lg font-semibold text-foreground mb-4">Informations de la facture</h3>
+                  <h3 className="text-lg font-semibold text-foreground mb-4">{t('invoicesManagement.modal.invoiceInfo.title')}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Numéro de facture</label>
+                      <label className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.modal.invoiceInfo.invoiceNumber')}</label>
                       <p className="text-sm text-foreground mt-1">{invoice.number}</p>
                     </div>
                     {invoice.quoteNumber && (
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Numéro de devis</label>
+                        <label className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.modal.invoiceInfo.quoteNumber')}</label>
                         <p className="text-sm text-foreground mt-1">{invoice.quoteNumber}</p>
                       </div>
                     )}
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Statut</label>
+                      <label className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.modal.invoiceInfo.status')}</label>
                       <div className="mt-1">{getStatusBadge(invoice.status)}</div>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Date d'émission</label>
+                      <label className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.modal.invoiceInfo.issueDate')}</label>
                       <p className="text-sm text-foreground mt-1">{formatDate(invoice.issueDate)}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Date d'échéance</label>
+                      <label className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.modal.invoiceInfo.dueDate')}</label>
                       <p className="text-sm text-foreground mt-1">{formatDate(invoice.dueDate)}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Méthode de paiement</label>
-                      <p className="text-sm text-foreground mt-1">{invoice.paymentMethod || 'N/A'}</p>
+                      <label className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.modal.invoiceInfo.paymentMethod')}</label>
+                      <p className="text-sm text-foreground mt-1">{invoice.paymentMethod || t('invoicesManagement.common.notAvailable')}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Client Information */}
                 <div>
-                  <h3 className="text-lg font-semibold text-foreground mb-4">Informations client</h3>
+                  <h3 className="text-lg font-semibold text-foreground mb-4">{t('invoicesManagement.modal.clientInfo.title')}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Nom</label>
+                      <label className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.modal.clientInfo.name')}</label>
                       <p className="text-sm text-foreground mt-1">{invoice.clientName}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Email</label>
-                      <p className="text-sm text-foreground mt-1">{invoice.clientEmail || 'N/A'}</p>
+                      <label className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.modal.clientInfo.email')}</label>
+                      <p className="text-sm text-foreground mt-1">{invoice.clientEmail || t('invoicesManagement.common.notAvailable')}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Financial Information */}
                 <div>
-                  <h3 className="text-lg font-semibold text-foreground mb-4">Informations financières</h3>
+                  <h3 className="text-lg font-semibold text-foreground mb-4">{t('invoicesManagement.modal.financialInfo.title')}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Montant total (TTC)</label>
+                      <label className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.modal.financialInfo.totalAmount')}</label>
                       <p className="text-lg font-bold text-foreground mt-1">{formatCurrency(invoice.amount)}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Montant HT</label>
+                      <label className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.modal.financialInfo.netAmount')}</label>
                       <p className="text-lg font-semibold text-foreground mt-1">{formatCurrency(invoice.netAmount)}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Montant TVA</label>
+                      <label className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.modal.financialInfo.taxAmount')}</label>
                       <p className="text-lg font-semibold text-foreground mt-1">{formatCurrency(invoice.taxAmount)}</p>
                     </div>
                     {invoice.discountAmount > 0 && (
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Remise</label>
+                        <label className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.modal.financialInfo.discount')}</label>
                         <p className="text-lg font-semibold text-foreground mt-1">{formatCurrency(invoice.discountAmount)}</p>
                       </div>
                     )}
@@ -186,7 +188,7 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                 {/* Description */}
                 {invoice.description && (
                   <div>
-                    <h3 className="text-lg font-semibold text-foreground mb-4">Description</h3>
+                    <h3 className="text-lg font-semibold text-foreground mb-4">{t('invoicesManagement.modal.description')}</h3>
                     <p className="text-sm text-foreground bg-muted/30 p-4 rounded-lg">{invoice.description}</p>
                   </div>
                 )}
@@ -194,7 +196,7 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                 {/* Notes */}
                 {invoice.notes && (
                   <div>
-                    <h3 className="text-lg font-semibold text-foreground mb-4">Notes</h3>
+                    <h3 className="text-lg font-semibold text-foreground mb-4">{t('invoicesManagement.modal.notes')}</h3>
                     <p className="text-sm text-foreground bg-muted/30 p-4 rounded-lg">{invoice.notes}</p>
                   </div>
                 )}
@@ -204,40 +206,40 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
             {activeTab === 'peppol' && showPeppolTab && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-foreground mb-4">Informations Peppol</h3>
+                  <h3 className="text-lg font-semibold text-foreground mb-4">{t('invoicesManagement.modal.peppolInfo.title')}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Statut Peppol</label>
+                      <label className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.modal.peppolInfo.status')}</label>
                       <div className="mt-1">{getPeppolStatusBadge(invoice.peppolStatus)}</div>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">ID Peppol du client</label>
+                      <label className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.modal.peppolInfo.clientId')}</label>
                       <p className="text-sm text-foreground mt-1 flex items-center">
                         <Icon name="Globe" size={14} className="mr-1 text-blue-600" />
-                        {invoice.receiverPeppolId || 'N/A'}
+                        {invoice.receiverPeppolId || t('invoicesManagement.common.notAvailable')}
                       </p>
                     </div>
                     {invoice.peppolSentAt && (
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Date d'envoi</label>
+                        <label className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.modal.peppolInfo.sentDate')}</label>
                         <p className="text-sm text-foreground mt-1">{formatDate(invoice.peppolSentAt)}</p>
                       </div>
                     )}
                     {invoice.peppolDeliveredAt && (
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Date de livraison</label>
+                        <label className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.modal.peppolInfo.deliveredDate')}</label>
                         <p className="text-sm text-foreground mt-1">{formatDate(invoice.peppolDeliveredAt)}</p>
                       </div>
                     )}
                     {invoice.peppolMessageId && (
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Message ID</label>
+                        <label className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.modal.peppolInfo.messageId')}</label>
                         <p className="text-sm text-foreground mt-1 font-mono">{invoice.peppolMessageId}</p>
                       </div>
                     )}
                     {invoice.peppolErrorMessage && (
                       <div className="md:col-span-2">
-                        <label className="text-sm font-medium text-muted-foreground">Message d'erreur</label>
+                        <label className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.modal.peppolInfo.errorMessage')}</label>
                         <p className="text-sm text-error mt-1 bg-error/10 p-3 rounded-lg">{invoice.peppolErrorMessage}</p>
                       </div>
                     )}

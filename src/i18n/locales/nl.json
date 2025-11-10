@@ -2704,6 +2704,25 @@
       "generatedBy": "Gegenereerd door",
       "pdfError": "Fout bij exporteren PDF",
       "excelError": "Fout bij exporteren Excel"
+    },
+    "metricsProgress": {
+      "title": "Realtime Metrieken",
+      "subtitle": "Voortgang vs doelen",
+      "edit": "Bewerken",
+      "cancel": "Annuleren",
+      "save": "Opslaan",
+      "monthlyProgress": "Maandelijkse voortgang",
+      "revenueObjective": "Omzetdoel",
+      "clientObjective": "Klantdoel",
+      "projectObjective": "Projectdoel",
+      "amountPlaceholder": "Bedrag (€)",
+      "numberPlaceholder": "Aantal",
+      "overallPerformance": "Algehele prestaties",
+      "trend": "Trend",
+      "positive": "Positief",
+      "errors": {
+        "saveError": "Fout bij het opslaan van doelen"
+      }
     }
   },
   "quoteCreation": {
@@ -2836,7 +2855,7 @@
         "airConditioning": "Airconditioning",
         "other": "Overig"
       },
-      "deadline": "Taak deadline",
+      "deadline": "Offerte deadline",
       "description": "Projectbeschrijving",
       "aiAnalysis": "AI analyseert uw context",
       "descriptionPlaceholder": "Beschrijf het project in detail...",
@@ -3027,6 +3046,9 @@
       "bankAccount": "Bankrekening",
       "bankName": "Banknaam",
       "iban": "IBAN",
+      "accountName": "Rekeningnaam",
+      "accountNamePlaceholder": "Naam van de rekeninghouder",      
+      "bankNamePlaceholder": "Banknaam",
       "bic": "BIC/SWIFT",
       "logo": "Bedrijfslogo",
       "save": "Opslaan",
@@ -3636,6 +3658,264 @@
         "cancel": "Annuleren",
         "update": "Bijwerken",
         "create": "Klant Aanmaken"
+      }
+    },
+    "invoicesManagement": {
+      "title": "Facturenbeheer",
+      "subtitle": "Beheer uw facturen, volg betalingen en analyseer uw prestaties",
+      "refresh": "Vernieuwen",
+      "refreshing": "Vernieuwen...",
+      "loading": "Facturen laden...",
+      "unknownClient": "Onbekende klant",
+      "paymentMethod": {
+        "toBeDefined": "Nog te bepalen"
+      },
+      "summary": {
+        "totalRevenue": "Totaal Omzet",
+        "paidRevenue": "Betaald Bedrag",
+        "outstandingAmount": "Openstaand Bedrag",
+        "overdueInvoices": "Achterstallige Facturen",
+        "thisMonth": "deze maand",
+        "ofTotal": "van totaal"
+      },
+      "status": {
+        "paid": "Betaald",
+        "unpaid": "Niet betaald",
+        "overdue": "Achterstallig",
+        "cancelled": "Geannuleerd"
+      },
+      "peppolStatus": {
+        "notSent": "Niet verzonden",
+        "sending": "Verzenden",
+        "sent": "Verzonden",
+        "delivered": "Afgeleverd",
+        "failed": "Mislukt"
+      },
+      "filter": {
+        "title": "Filters",
+        "clear": "Wissen",
+        "showFilters": "Filters tonen",
+        "hideFilters": "Filters verbergen",
+        "status": {
+          "label": "Status",
+          "all": "Alle Statussen"
+        },
+        "client": {
+          "label": "Klant",
+          "all": "Alle Klanten",
+          "placeholder": "Selecteer een klant"
+        },
+        "amount": {
+          "label": "Bedrag (€)",
+          "all": "Alle Bedragen",
+          "min": "Min",
+          "max": "Max",
+          "0-500": "0€ - 500€",
+          "500-1000": "500€ - 1.000€",
+          "1000-5000": "1.000€ - 5.000€",
+          "5000+": "5.000€+"
+        },
+        "period": {
+          "label": "Periode",
+          "all": "Alle Perioden",
+          "today": "Vandaag",
+          "thisWeek": "Deze week",
+          "thisMonth": "Deze maand",
+          "thisQuarter": "Dit kwartaal",
+          "thisYear": "Dit jaar",
+          "from": "Van",
+          "to": "Tot"
+        },
+        "chips": {
+          "status": "Status",
+          "client": "Klant",
+          "period": "Periode",
+          "amount": "Bedrag",
+          "removeStatus": "Statusfilter verwijderen",
+          "removeClient": "Klantfilter verwijderen",
+          "removePeriod": "Periodfilter verwijderen",
+          "removeAmount": "Bedragfilter verwijderen"
+        }
+      },
+      "table": {
+        "searchPlaceholder": "Zoeken op nummer, klant, beschrijving of status...",
+        "clearSearch": "Wissen",
+        "view": {
+          "label": "Weergave",
+          "table": "Tabel",
+          "cards": "Kaarten"
+        },
+        "invoicesCount": "{{count}} factuur",
+        "invoicesCount_plural": "{{count}} facturen",
+        "headers": {
+          "invoiceNumber": "Factuurnr.",
+          "client": "Klant",
+          "amount": "Bedrag",
+          "status": "Status",
+          "issueDate": "Uitgiftedatum",
+          "dueDate": "Vervaldatum",
+          "actions": "Acties"
+        },
+        "quote": "Offerte",
+        "issue": "Uitgifte",
+        "due": "Verval",
+        "days": "dagen",
+        "actions": {
+          "viewDetails": "Details bekijken",
+          "sendInvoice": "Factuur verzenden"
+        }
+      },
+      "empty": {
+        "noInvoicesFound": "Geen facturen gevonden",
+        "description": "Begin met het aanmaken van uw eerste factuur of pas uw filters aan."
+      },
+      "bulkActions": {
+        "selectedInvoices": "{{count}} factuur geselecteerd",
+        "selectedInvoices_plural": "{{count}} facturen geselecteerd",
+        "deselect": "Deselecteren",
+        "chooseAction": "Kies een actie...",
+        "export": "Exporteren",
+        "delete": "Verwijderen"
+      },
+      "messages": {
+        "markedAsPaidSuccess": "Factuur succesvol als betaald gemarkeerd!",
+        "bulkMarkedAsPaidSuccess": "{{count}} factuur succesvol als betaald gemarkeerd!",
+        "bulkMarkedAsPaidSuccess_plural": "{{count}} facturen succesvol als betaald gemarkeerd!",
+        "exportingInvoices": "{{count}} factuur exporteren...",
+        "exportingInvoices_plural": "{{count}} facturen exporteren...",
+        "confirmDelete": "Weet u zeker dat u {{count}} factuur wilt verwijderen?",
+        "confirmDelete_plural": "Weet u zeker dat u {{count}} facturen wilt verwijderen?"
+      },
+      "errors": {
+        "updateStatusError": "Fout bij het bijwerken van de status",
+        "updateInvoicesError": "Fout bij het bijwerken van de facturen",
+        "error": "Fout",
+        "selectAtLeastOneInvoice": "Selecteer ten minste één factuur"
+      },
+      "modal": {
+        "title": "Factuurdetails",
+        "tabs": {
+          "details": "Details",
+          "peppol": "Peppol"
+        },
+        "invoiceInfo": {
+          "title": "Factuurinformatie",
+          "invoiceNumber": "Factuurnummer",
+          "quoteNumber": "Offertenummer",
+          "status": "Status",
+          "issueDate": "Uitgiftedatum",
+          "dueDate": "Vervaldatum",
+          "paymentMethod": "Betalingsmethode"
+        },
+        "clientInfo": {
+          "title": "Klantinformatie",
+          "name": "Naam",
+          "email": "E-mail"
+        },
+        "financialInfo": {
+          "title": "Financiële Informatie",
+          "totalAmount": "Totaalbedrag (incl. BTW)",
+          "netAmount": "Netto Bedrag",
+          "taxAmount": "BTW Bedrag",
+          "discount": "Korting"
+        },
+        "description": "Beschrijving",
+        "notes": "Notities",
+        "peppolInfo": {
+          "title": "Peppol Informatie",
+          "status": "Peppol Status",
+          "clientId": "Klant Peppol ID",
+          "sentDate": "Verzenddatum",
+          "deliveredDate": "Afleverdatum",
+          "messageId": "Bericht ID",
+          "errorMessage": "Foutmelding"
+        }
+      },
+      "common": {
+        "notAvailable": "N/A"
+      },
+      "sendModal": {
+        "title": "Factuur Verzenden",
+        "client": "Klant",
+        "professional": "Professioneel",
+        "individual": "Particulier",
+        "sendViaPeppol": "Verzenden via Peppol",
+        "sendViaPeppolDescription": "Veilig verzenden via Peppol-netwerk (vereist Peppol ID)",
+        "sendViaEmail": "Verzenden via E-mail",
+        "sendViaEmailDescription": "Factuur verzenden via e-mail met PDF-bijlage",
+        "professionalInfo": "Professionele klanten kunnen facturen ontvangen via Peppol als ze een geconfigureerde Peppol ID hebben."
+      },
+      "sendEmailModal": {
+        "title": "Factuur Verzenden via E-mail",
+        "loading": "Laden...",
+        "clientEmail": "Klant E-mail",
+        "clientEmailPlaceholder": "klant@voorbeeld.com",
+        "sendCopy": "Stuur een kopie naar mijn e-mail",
+        "subject": "E-mail Onderwerp",
+        "subjectPlaceholder": "E-mail onderwerp",
+        "message": "Bericht",
+        "messagePlaceholder": "Aangepast bericht...",
+        "cancel": "Annuleren",
+        "send": "Verzenden",
+        "sending": "Verzenden...",
+        "client": "Klant",
+        "yourCompany": "Uw bedrijf",
+        "yourTeam": "Uw team",
+        "defaultSubject": "Factuur {{invoiceNumber}} - {{companyName}}",
+        "defaultMessage": "Hallo,\n\nHierbij vindt u onze factuur {{invoiceNumber}}.\n\nMet vriendelijke groet,\n{{companyName}}",
+        "emailText": "Factuur {{invoiceNumber}} - Bedrag: {{amount}}",
+        "preview": {
+          "invoice": "Factuur",
+          "client": "Klant",
+          "amount": "Bedrag"
+        },
+        "emailHtml": {
+          "invoice": "Factuur",
+          "hello": "Hallo",
+          "defaultMessage": "Hierbij vindt u onze factuur {{invoiceNumber}}.",
+          "invoiceNumber": "Factuurnummer",
+          "date": "Datum",
+          "dueDate": "Vervaldatum",
+          "amount": "Bedrag",
+          "regards": "Met vriendelijke groet"
+        },
+        "errors": {
+          "loadDataError": "Fout bij het laden van gegevens",
+          "clientEmailRequired": "Voer het e-mailadres van de klant in",
+          "subjectRequired": "Voer het e-mailonderwerp in",
+          "updateError": "E-mail verzonden maar fout bij bijwerken",
+          "sendError": "Fout bij het verzenden van e-mail"
+        }
+      },
+      "sendPeppolModal": {
+        "title": "Verzenden via Peppol",
+        "invoice": "Factuur",
+        "client": "Klant",
+        "clientPeppolId": "Klant Peppol ID",
+        "notDefined": "Niet gedefinieerd",
+        "edit": "Bewerken",
+        "cancel": "Annuleren",
+        "send": "Verzenden",
+        "sending": "Verzenden...",
+        "configRequired": {
+          "title": "Peppol Configuratie Vereist",
+          "description": "U moet uw Peppol-verbinding configureren voordat u facturen kunt verzenden.",
+          "button": "Peppol Configureren"
+        },
+        "peppolDisabled": {
+          "title": "Peppol Uitgeschakeld",
+          "description": "Peppol-functionaliteit is momenteel uitgeschakeld. Schakel deze in de Peppol-instellingen in om facturen te verzenden.",
+          "button": "Peppol Inschakelen"
+        },
+        "errors": {
+          "configNotFound": "Peppol-configuratie niet gevonden. Configureer Peppol voordat u facturen verzendt.",
+          "loadDataError": "Fout bij het laden van gegevens",
+          "clientPeppolIdRequired": "Selecteer een Peppol ID voor de klant",
+          "configMissing": "Peppol-configuratie ontbreekt. Configureer Peppol voordat u facturen verzendt.",
+          "peppolDisabled": "Peppol-functionaliteit is momenteel uitgeschakeld. Schakel deze in de Peppol-instellingen in om facturen te verzenden.",
+          "updateError": "Factuur verzonden maar fout bij bijwerken",
+          "sendError": "Fout bij verzenden"
+        }
       }
     }
 }

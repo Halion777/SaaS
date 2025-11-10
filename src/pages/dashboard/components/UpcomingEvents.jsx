@@ -270,7 +270,7 @@ const UpcomingEvents = ({ loading: parentLoading = false }) => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate('/follow-up-management')}
+          onClick={() => navigate('/quotes-follow-up')}
         >
           {t('dashboard.upcomingEvents.viewAll')}
         </Button>

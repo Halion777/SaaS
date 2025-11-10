@@ -23,6 +23,8 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
     email: '',
     website: '',
     iban: '',
+    accountName: '',
+    bankName: '',
     logo: null,
     signature: null,
     ...initialData
@@ -177,6 +179,8 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
             email: '',
             website: '',
             iban: '',
+            accountName: '',
+            bankName: '',
             logo: null,
             signature: null,
             vatNumberFromPeppol: isPeppolConnected && peppolVATNumber ? true : false
@@ -239,7 +243,9 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
           phone: info.phone,
           email: info.email,
           website: info.website,
-          iban: info.iban || ''
+          iban: info.iban || '',
+          accountName: info.accountName || '',
+          bankName: info.bankName || ''
         };
         localStorage.setItem(`company-info-${user.id}`, JSON.stringify(companyInfoToSave));
         
@@ -814,9 +820,35 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
               placeholder="BE68539007547034"
               maxLength={34}
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              {t('quoteCreation.companyInfo.ibanHelp', 'International Bank Account Number (optionnel, recommandé pour les paiements par virement)')}
-            </p>
+           
+          </div>
+
+          {/* Account Name */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              {t('quoteCreation.companyInfo.accountName', 'Account Name')}
+            </label>
+            <Input
+              type="text"
+              value={companyInfo.accountName || ''}
+              onChange={(e) => handleInputChange('accountName', e.target.value)}
+              placeholder={t('quoteCreation.companyInfo.accountNamePlaceholder', 'Account holder name')}
+            />
+            
+          </div>
+
+          {/* Bank Name */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              {t('quoteCreation.companyInfo.bankName', 'Bank Name')}
+            </label>
+            <Input
+              type="text"
+              value={companyInfo.bankName || ''}
+              onChange={(e) => handleInputChange('bankName', e.target.value)}
+              placeholder={t('quoteCreation.companyInfo.bankNamePlaceholder', 'Bank name')}
+            />
+           
           </div>
 
           {/* Company Signature */}

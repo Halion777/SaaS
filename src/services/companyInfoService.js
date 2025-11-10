@@ -198,6 +198,8 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
       email: companyInfo.email || '',
       website: companyInfo.website || '',
       iban: companyInfo.iban || null,
+      account_name: companyInfo.accountName || null,
+      bank_name: companyInfo.bankName || null,
       logo_path: logoPath || existingProfile?.logo_path || null,
       logo_filename: logoFilename,
       logo_size: logoSize,
@@ -395,6 +397,8 @@ export const loadCompanyInfo = async (userId) => {
       email: data.email,
       website: data.website,
       iban: data.iban || null,
+      accountName: data.account_name || null,
+      bankName: data.bank_name || null,
       logo: logoData,
       signature: signatureData
     };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import PeppolService, { generatePEPPOLXML } from '../../../services/peppolService';
@@ -9,6 +10,7 @@ import { supabase } from '../../../services/supabaseClient';
 import { useAuth } from '../../../context/AuthContext';
 
 const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -39,10 +41,10 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
         
         // Check if Peppol is disabled
         if (settings.data.peppolDisabled) {
-          setError('Peppol functionality is currently disabled. Please enable it in Peppol settings to send invoices.');
+          setError(t('invoicesManagement.sendPeppolModal.errors.peppolDisabled'));
         }
       } else {
-        setError('Configuration Peppol non trouvée. Veuillez configurer Peppol avant d\'envoyer des factures.');
+        setError(t('invoicesManagement.sendPeppolModal.errors.configNotFound'));
       }
 
       // Load company info (fallback for address, city, postal code, IBAN)
@@ -60,7 +62,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
       }
     } catch (err) {
       console.error('Error loading data:', err);
-      setError('Erreur lors du chargement des données');
+      setError(t('invoicesManagement.sendPeppolModal.errors.loadDataError'));
     } finally {
       setIsLoading(false);
     }
@@ -68,18 +70,18 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
 
   const handleSend = async () => {
     if (!clientPeppolId) {
-      setError('Veuillez sélectionner un ID Peppol pour le client');
+      setError(t('invoicesManagement.sendPeppolModal.errors.clientPeppolIdRequired'));
       return;
     }
 
     if (!peppolSettings) {
-      setError('Configuration Peppol manquante. Veuillez configurer Peppol avant d\'envoyer des factures.');
+      setError(t('invoicesManagement.sendPeppolModal.errors.configMissing'));
       return;
     }
 
     // Check if Peppol is disabled
     if (peppolSettings.peppolDisabled) {
-      setError('Peppol functionality is currently disabled. Please enable it in Peppol settings to send invoices.');
+      setError(t('invoicesManagement.sendPeppolModal.errors.peppolDisabled'));
       return;
     }
 
@@ -278,7 +280,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
 
         if (updateError) {
           console.error('Error updating invoice:', updateError);
-          setError('Facture envoyée mais erreur lors de la mise à jour: ' + updateError.message);
+          setError(t('invoicesManagement.sendPeppolModal.errors.updateError') + ': ' + updateError.message);
         } else {
           if (onSuccess) {
             onSuccess();
@@ -286,11 +288,11 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
           onClose();
         }
       } else {
-        setError(result.error || 'Erreur lors de l\'envoi');
+        setError(result.error || t('invoicesManagement.sendPeppolModal.errors.sendError'));
       }
     } catch (err) {
       console.error('Error sending invoice via Peppol:', err);
-      setError(err.message || 'Erreur lors de l\'envoi via Peppol');
+      setError(err.message || t('invoicesManagement.sendPeppolModal.errors.sendError'));
 
       // Update invoice with failed status
       try {
@@ -299,7 +301,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
           .update({
             peppol_enabled: true,
             peppol_status: 'failed',
-            peppol_error_message: err.message || 'Erreur lors de l\'envoi'
+            peppol_error_message: err.message || t('invoicesManagement.sendPeppolModal.errors.sendError')
           })
           .eq('id', invoice.id);
       } catch (updateErr) {
@@ -326,8 +328,8 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
                 <Icon name="Send" size={20} color="var(--color-primary)" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-foreground">Envoyer via Peppol</h2>
-                <p className="text-sm text-muted-foreground">Facture {invoice?.number}</p>
+                <h2 className="text-xl font-semibold text-foreground">{t('invoicesManagement.sendPeppolModal.title')}</h2>
+                <p className="text-sm text-muted-foreground">{t('invoicesManagement.sendPeppolModal.invoice')} {invoice?.number}</p>
               </div>
             </div>
             <button
@@ -349,10 +351,10 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
                   <Icon name="AlertTriangle" size={20} className="text-warning flex-shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <h3 className="text-sm font-semibold text-foreground mb-1">
-                      Configuration Peppol requise
+                      {t('invoicesManagement.sendPeppolModal.configRequired.title')}
                     </h3>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Vous devez configurer votre connexion Peppol avant de pouvoir envoyer des factures.
+                      {t('invoicesManagement.sendPeppolModal.configRequired.description')}
                     </p>
                     <Button
                       onClick={() => {
@@ -362,7 +364,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
                       variant="default"
                       className="w-full"
                     >
-                      Configurer Peppol
+                      {t('invoicesManagement.sendPeppolModal.configRequired.button')}
                     </Button>
                   </div>
                 </div>
@@ -375,10 +377,10 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
                   <Icon name="AlertCircle" size={20} className="text-error flex-shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <h3 className="text-sm font-semibold text-foreground mb-1">
-                      Peppol désactivé
+                      {t('invoicesManagement.sendPeppolModal.peppolDisabled.title')}
                     </h3>
                     <p className="text-sm text-muted-foreground mb-3">
-                      La fonctionnalité Peppol est actuellement désactivée. Veuillez l'activer dans les paramètres Peppol pour envoyer des factures.
+                      {t('invoicesManagement.sendPeppolModal.peppolDisabled.description')}
                     </p>
                     <Button
                       onClick={() => {
@@ -388,7 +390,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
                       variant="default"
                       className="w-full"
                     >
-                      Activer Peppol
+                      {t('invoicesManagement.sendPeppolModal.peppolDisabled.button')}
                     </Button>
                   </div>
                 </div>
@@ -399,7 +401,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
               {/* Client Info */}
               <div>
                 <label className="text-sm font-medium text-foreground mb-2 block">
-                  Client
+                  {t('invoicesManagement.sendPeppolModal.client')}
                 </label>
                 <p className="text-sm text-muted-foreground">{invoice?.clientName}</p>
               </div>
@@ -407,14 +409,14 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
               {/* Peppol ID Selection */}
               <div>
                 <label className="text-sm font-medium text-foreground mb-2 block">
-                  ID Peppol du client <span className="text-red-500">*</span>
+                  {t('invoicesManagement.sendPeppolModal.clientPeppolId')} <span className="text-red-500">*</span>
                 </label>
                 {!showDropdown ? (
                   // If client has Peppol ID from client table, show it directly with option to change
                   <div className="space-y-2">
                     <div className="w-full px-3 py-2 border border-border rounded-lg bg-muted/30 text-foreground flex items-center justify-between">
                       <div>
-                        <span className="text-sm font-medium">{clientPeppolId || 'Non défini'}</span>
+                        <span className="text-sm font-medium">{clientPeppolId || t('invoicesManagement.sendPeppolModal.notDefined')}</span>
                     
                       </div>
                       <button
@@ -422,7 +424,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
                         onClick={() => setShowDropdown(true)}
                         className="text-xs text-primary hover:underline ml-2"
                       >
-                        Modifier
+                        {t('invoicesManagement.sendPeppolModal.edit')}
                       </button>
                     </div>
                   </div>
@@ -441,7 +443,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
                       onClick={() => setShowDropdown(false)}
                       className="text-xs text-muted-foreground hover:text-foreground"
                     >
-                      Annuler
+                      {t('invoicesManagement.sendPeppolModal.cancel')}
                     </button>
                   </div>
                 )}
@@ -464,7 +466,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
                   onClick={onClose}
                   disabled={isSending}
                 >
-                  Annuler
+                  {t('invoicesManagement.sendPeppolModal.cancel')}
                 </Button>
                 <Button
                   onClick={handleSend}
@@ -472,7 +474,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
                   iconName={isSending ? "Loader2" : "Send"}
                   iconPosition="left"
                 >
-                  {isSending ? 'Envoi en cours...' : 'Envoyer'}
+                  {isSending ? t('invoicesManagement.sendPeppolModal.sending') : t('invoicesManagement.sendPeppolModal.send')}
                 </Button>
               </div>
             </div>

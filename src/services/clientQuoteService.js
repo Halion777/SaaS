@@ -310,7 +310,7 @@ class ClientQuoteService {
           client_name: clientData.client_name || 'Madame, Monsieur',
           quote_number: quote.quote_number,
           quote_amount: `${quote.final_amount || quote.total_amount}€`,
-          quote_link: quote.share_token ? `${window.location.origin}/quote/${quote.share_token}` : '#',
+          quote_link: quote.share_token ? `${window.location.origin}/quote-share/${quote.share_token}` : '#',
           company_name: quote.company_profiles?.company_name || 'Notre équipe'
         };
 
@@ -345,7 +345,7 @@ class ClientQuoteService {
               client_name: clientData.client_name || 'Madame, Monsieur',
               quote_number: quote.quote_number,
               quote_amount: `${quote.final_amount || quote.total_amount}€`,
-              quote_link: quote.share_token ? `${window.location.origin}/quote/${quote.share_token}` : '#',
+              quote_link: quote.share_token ? `${window.location.origin}/quote-share/${quote.share_token}` : '#',
               company_name: quote.company_profiles?.company_name || 'Notre équipe'
             }
           }

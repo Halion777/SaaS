@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import MainSidebar from '../../components/ui/MainSidebar';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
@@ -14,6 +15,7 @@ import InvoiceService from '../../services/invoiceService';
 import { useAuth } from '../../context/AuthContext';
 
 const InvoicesManagement = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [invoices, setInvoices] = useState([]);
   const [filteredInvoices, setFilteredInvoices] = useState([]);
@@ -123,7 +125,7 @@ const InvoicesManagement = () => {
           id: invoice.id,
           number: invoice.invoice_number,
           quoteNumber: invoice.quote_number,
-          clientName: invoice.client?.name || 'Client inconnu',
+          clientName: invoice.client?.name || t('invoicesManagement.unknownClient'),
           clientEmail: invoice.client?.email || '',
           client: invoice.client, // Keep full client object
           quote: invoice.quote, // Keep quote data for line items
@@ -134,7 +136,7 @@ const InvoicesManagement = () => {
           status: invoice.status,
           issueDate: invoice.issue_date,
           dueDate: invoice.due_date,
-          paymentMethod: invoice.payment_method || 'À définir',
+          paymentMethod: invoice.payment_method || t('invoicesManagement.paymentMethod.toBeDefined'),
           title: invoice.title,
           description: invoice.description,
           notes: invoice.notes,
@@ -298,11 +300,11 @@ const InvoicesManagement = () => {
           prev.map(inv => inv.id === invoiceId ? { ...inv, status: newStatus } : inv)
         );
       } else {
-        alert('Erreur lors de la mise à jour du statut: ' + result.error);
+        alert(t('invoicesManagement.errors.updateStatusError') + ': ' + result.error);
       }
     } catch (error) {
       console.error('Error updating status:', error);
-      alert('Erreur lors de la mise à jour du statut');
+      alert(t('invoicesManagement.errors.updateStatusError'));
     }
   };
 
@@ -319,13 +321,13 @@ const InvoicesManagement = () => {
           inv.id === invoice.id ? { ...inv, status: 'paid' } : inv
         ));
         
-        alert('Facture marquée comme payée avec succès !');
+        alert(t('invoicesManagement.messages.markedAsPaidSuccess'));
       } else {
-        alert(`Erreur: ${result.error}`);
+        alert(t('invoicesManagement.errors.error') + ': ' + result.error);
       }
     } catch (error) {
       console.error('Error marking invoice as paid:', error);
-      alert('Erreur lors de la mise à jour du statut');
+      alert(t('invoicesManagement.errors.updateStatusError'));
     }
   };
 
@@ -350,25 +352,25 @@ const InvoicesManagement = () => {
       setFilteredInvoices(updatedInvoices);
       setSelectedInvoices([]);
       
-      alert(`${selectedInvoices.length} facture(s) marquée(s) comme payée(s) avec succès !`);
+      alert(t('invoicesManagement.messages.bulkMarkedAsPaidSuccess', { count: selectedInvoices.length }));
     } catch (error) {
       console.error('Error marking invoices as paid:', error);
-      alert('Erreur lors de la mise à jour des factures');
+      alert(t('invoicesManagement.errors.updateInvoicesError'));
     }
   };
 
   const handleBulkAction = async (action) => {
     if (selectedInvoices.length === 0) {
-      alert('Veuillez sélectionner au moins une facture');
+      alert(t('invoicesManagement.errors.selectAtLeastOneInvoice'));
       return;
     }
 
     switch (action) {
       case 'export':
-        alert(`Export de ${selectedInvoices.length} facture(s) en cours...`);
+        alert(t('invoicesManagement.messages.exportingInvoices', { count: selectedInvoices.length }));
         break;
       case 'delete':
-        if (confirm(`Êtes-vous sûr de vouloir supprimer ${selectedInvoices.length} facture(s) ?`)) {
+        if (confirm(t('invoicesManagement.messages.confirmDelete', { count: selectedInvoices.length }))) {
           const updatedInvoices = invoices.filter(invoice =>
             !selectedInvoices.includes(invoice.id)
           );
@@ -402,10 +404,10 @@ const InvoicesManagement = () => {
             <div>
                 <div className="flex items-center">
                   <Icon name="FileText" size={24} className="text-primary mr-3" />
-                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des factures</h1>
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">{t('invoicesManagement.title')}</h1>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                Gérez vos factures, suivez les paiements et analysez vos performances
+                {t('invoicesManagement.subtitle')}
               </p>
             </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
@@ -417,7 +419,7 @@ const InvoicesManagement = () => {
                   className="text-xs sm:text-sm"
                   disabled={isLoading}
                 >
-                  {isLoading ? 'Actualisation...' : 'Actualiser'}
+                  {isLoading ? t('invoicesManagement.refreshing') : t('invoicesManagement.refresh')}
                 </Button>
               </div>
           </div>
@@ -441,7 +443,7 @@ const InvoicesManagement = () => {
                   <div className="flex items-center space-x-2">
                     <Icon name="CheckSquare" size={20} color="var(--color-primary)" />
                     <span className="font-medium text-primary">
-                      {selectedInvoices.length} facture{selectedInvoices.length > 1 ? 's' : ''} sélectionnée{selectedInvoices.length > 1 ? 's' : ''}
+                      {t('invoicesManagement.bulkActions.selectedInvoices', { count: selectedInvoices.length })}
                     </span>
                   </div>
                   
@@ -453,7 +455,7 @@ const InvoicesManagement = () => {
                     iconPosition="left"
                     className="text-muted-foreground hover:text-foreground"
                   >
-                    Désélectionner
+                    {t('invoicesManagement.bulkActions.deselect')}
                   </Button>
                 </div>
 
@@ -461,13 +463,13 @@ const InvoicesManagement = () => {
                   <div className="flex-1 sm:flex-none sm:w-64">
                     <Select
                       options={[
-                        { value: '', label: 'Choisir une action...' },
-                        { value: 'export', label: 'Exporter' },
-                        { value: 'delete', label: 'Supprimer' }
+                        { value: '', label: t('invoicesManagement.bulkActions.chooseAction') },
+                        { value: 'export', label: t('invoicesManagement.bulkActions.export') },
+                        { value: 'delete', label: t('invoicesManagement.bulkActions.delete') }
                       ]}
                       value=""
                       onChange={(value) => value && handleBulkAction(value)}
-                      placeholder="Choisir une action..."
+                      placeholder={t('invoicesManagement.bulkActions.chooseAction')}
                     />
                   </div>
                 </div>
@@ -482,7 +484,7 @@ const InvoicesManagement = () => {
                   iconName="Download"
                   iconPosition="left"
                 >
-                  Exporter
+                  {t('invoicesManagement.bulkActions.export')}
                 </Button>
                 
                 <Button
@@ -492,7 +494,7 @@ const InvoicesManagement = () => {
                   iconName="Trash2"
                   iconPosition="left"
                 >
-                  Supprimer
+                  {t('invoicesManagement.bulkActions.delete')}
                 </Button>
               </div>
             </div>
@@ -501,16 +503,16 @@ const InvoicesManagement = () => {
           {/* Data Table */}
           {isLoading ? (
             <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
-              <TableLoader message="Chargement des factures..." />
+              <TableLoader message={t('invoicesManagement.loading')} />
             </div>
           ) : (
-            <InvoicesDataTable
-              invoices={filteredInvoices}
-              onInvoiceAction={handleInvoiceAction}
-              selectedInvoices={selectedInvoices}
-              onSelectionChange={setSelectedInvoices}
-              filters={filters}
-              onFiltersChange={handleFiltersChange}
+          <InvoicesDataTable
+            invoices={filteredInvoices}
+            onInvoiceAction={handleInvoiceAction}
+            selectedInvoices={selectedInvoices}
+            onSelectionChange={setSelectedInvoices}
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
               onStatusUpdate={handleStatusUpdate}
             />
           )}

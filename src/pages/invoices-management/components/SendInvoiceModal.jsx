@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import SendPeppolModal from './SendPeppolModal';
 import SendEmailModal from './SendEmailModal';
 
 const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [sendMethod, setSendMethod] = useState(null); // 'peppol' or 'email'
   
@@ -81,7 +83,7 @@ const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
       <div className="bg-card border border-border rounded-lg shadow-xl max-w-md w-full">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-xl font-bold text-foreground">Envoyer la facture</h2>
+          <h2 className="text-xl font-bold text-foreground">{t('invoicesManagement.sendModal.title')}</h2>
           <button
             onClick={handleClose}
             className="text-muted-foreground hover:text-foreground transition-colors"
@@ -97,14 +99,14 @@ const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
             <div className="flex items-center space-x-2 mb-2">
               <Icon name="User" size={16} className="text-muted-foreground" />
               <span className="text-sm font-medium text-foreground">
-                {invoice.client?.name || 'Client'}
+                {invoice.client?.name || t('invoicesManagement.sendModal.client')}
               </span>
               <span className={`text-xs px-2 py-0.5 rounded-full ${
                 isProfessional 
                   ? 'bg-green-100 text-green-800' 
                   : 'bg-blue-100 text-blue-800'
               }`}>
-                {isProfessional ? 'Professionnel' : 'Particulier'}
+                {isProfessional ? t('invoicesManagement.sendModal.professional') : t('invoicesManagement.sendModal.individual')}
               </span>
             </div>
           </div>
@@ -121,9 +123,9 @@ const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
                     <Icon name="Network" size={20} className="text-primary" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-sm font-semibold text-foreground">Envoyer via Peppol</h3>
+                    <h3 className="text-sm font-semibold text-foreground">{t('invoicesManagement.sendModal.sendViaPeppol')}</h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Envoi sécurisé via le réseau Peppol (nécessite un ID Peppol)
+                      {t('invoicesManagement.sendModal.sendViaPeppolDescription')}
                     </p>
                   </div>
                   <Icon name="ChevronRight" size={16} className="text-muted-foreground" />
@@ -140,9 +142,9 @@ const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
                   <Icon name="Mail" size={20} className="text-blue-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-foreground">Envoyer par email</h3>
+                  <h3 className="text-sm font-semibold text-foreground">{t('invoicesManagement.sendModal.sendViaEmail')}</h3>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Envoi de la facture par email avec PDF en pièce jointe
+                    {t('invoicesManagement.sendModal.sendViaEmailDescription')}
                   </p>
                 </div>
                 <Icon name="ChevronRight" size={16} className="text-muted-foreground" />
@@ -156,7 +158,7 @@ const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
               <div className="flex items-start space-x-2">
                 <Icon name="Info" size={16} className="text-blue-600 flex-shrink-0 mt-0.5" />
                 <p className="text-xs text-blue-800">
-                  Les clients professionnels peuvent recevoir des factures via Peppol s'ils ont un ID Peppol configuré.
+                  {t('invoicesManagement.sendModal.professionalInfo')}
                 </p>
               </div>
             </div>

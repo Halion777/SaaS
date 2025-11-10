@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
@@ -6,6 +7,7 @@ import { Checkbox } from '../../../components/ui/Checkbox';
 import Select from '../../../components/ui/Select';
 
 const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSelectionChange, filters, onFiltersChange, onStatusUpdate }) => {
+  const { t, i18n } = useTranslation();
   const [sortConfig, setSortConfig] = useState({ key: 'issueDate', direction: 'desc' });
   const [viewMode, setViewMode] = useState(() => {
     // Default to card view on mobile/tablet, table view on desktop
@@ -27,29 +29,29 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
   }, [viewMode]);
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('fr-FR', {
+    return new Intl.NumberFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US', {
       style: 'currency',
       currency: 'EUR'
     }).format(amount);
   };
 
   const formatDate = (date) => {
-    return new Intl.DateTimeFormat('fr-FR').format(new Date(date));
+    return new Intl.DateTimeFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US').format(new Date(date));
   };
 
   const statusOptions = [
-    { value: 'paid', label: 'Payée' },
-    { value: 'unpaid', label: 'Non payée' },
-    { value: 'overdue', label: 'En retard' },
-    { value: 'cancelled', label: 'Annulée' }
+    { value: 'paid', label: t('invoicesManagement.status.paid') },
+    { value: 'unpaid', label: t('invoicesManagement.status.unpaid') },
+    { value: 'overdue', label: t('invoicesManagement.status.overdue') },
+    { value: 'cancelled', label: t('invoicesManagement.status.cancelled') }
   ];
 
   const getStatusBadge = (status, invoice = null) => {
     const statusConfig = {
-      paid: { label: 'Payée', color: 'bg-success text-success-foreground' },
-      unpaid: { label: 'Non payée', color: 'bg-warning text-warning-foreground' },
-      overdue: { label: 'En retard', color: 'bg-error text-error-foreground' },
-      cancelled: { label: 'Annulée', color: 'bg-muted text-muted-foreground' }
+      paid: { label: t('invoicesManagement.status.paid'), color: 'bg-success text-success-foreground' },
+      unpaid: { label: t('invoicesManagement.status.unpaid'), color: 'bg-warning text-warning-foreground' },
+      overdue: { label: t('invoicesManagement.status.overdue'), color: 'bg-error text-error-foreground' },
+      cancelled: { label: t('invoicesManagement.status.cancelled'), color: 'bg-muted text-muted-foreground' }
     };
 
     const config = statusConfig[status] || statusConfig.unpaid;
@@ -83,11 +85,11 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
 
   const getPeppolStatusBadge = (status) => {
     const statusConfig = {
-      not_sent: { label: 'Non envoyée', color: 'bg-muted text-muted-foreground', icon: 'X' },
-      sending: { label: 'Envoi en cours', color: 'bg-warning text-warning-foreground', icon: 'Loader2' },
-      sent: { label: 'Envoyée', color: 'bg-primary text-primary-foreground', icon: 'Send' },
-      delivered: { label: 'Livrée', color: 'bg-success text-success-foreground', icon: 'CheckCircle' },
-      failed: { label: 'Échouée', color: 'bg-error text-error-foreground', icon: 'AlertCircle' }
+      not_sent: { label: t('invoicesManagement.peppolStatus.notSent'), color: 'bg-muted text-muted-foreground', icon: 'X' },
+      sending: { label: t('invoicesManagement.peppolStatus.sending'), color: 'bg-warning text-warning-foreground', icon: 'Loader2' },
+      sent: { label: t('invoicesManagement.peppolStatus.sent'), color: 'bg-primary text-primary-foreground', icon: 'Send' },
+      delivered: { label: t('invoicesManagement.peppolStatus.delivered'), color: 'bg-success text-success-foreground', icon: 'CheckCircle' },
+      failed: { label: t('invoicesManagement.peppolStatus.failed'), color: 'bg-error text-error-foreground', icon: 'AlertCircle' }
     };
     const config = statusConfig[status] || statusConfig.not_sent;
     return (
@@ -163,7 +165,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                 <div>
                   <div className="text-sm font-medium text-foreground">{invoice.number}</div>
                   {invoice.quoteNumber && (
-                    <div className="text-xs text-muted-foreground">Devis: {invoice.quoteNumber}</div>
+                    <div className="text-xs text-muted-foreground">{t('invoicesManagement.table.quote')}: {invoice.quoteNumber}</div>
                   )}
                 </div>
               </div>
@@ -197,20 +199,20 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                   }
                   return null;
                 })()}
-                {daysOverdue && (
-                  <span className="text-xs text-error">+{daysOverdue} jours</span>
-                )}
+                      {daysOverdue && (
+                        <span className="text-xs text-error">+{daysOverdue} {t('invoicesManagement.table.days')}</span>
+                      )}
               </div>
             </div>
 
             {/* Dates */}
             <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-3">
               <div>
-                <div className="font-medium">Émission:</div>
+                <div className="font-medium">{t('invoicesManagement.table.issue')}:</div>
                 <div>{formatDate(invoice.issueDate)}</div>
               </div>
               <div>
-                <div className="font-medium">Échéance:</div>
+                <div className="font-medium">{t('invoicesManagement.table.due')}:</div>
                 <div className={`${invoice.status === 'overdue' ? 'text-error font-medium' : ''}`}>
                   {formatDate(invoice.dueDate)}
                 </div>
@@ -225,7 +227,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                 iconName="Eye"
                 onClick={() => onInvoiceAction('view', invoice)}
                 className="text-xs"
-                title="Voir les détails"
+                title={t('invoicesManagement.table.actions.viewDetails')}
               />
               <Button
                 variant="ghost"
@@ -233,7 +235,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                 iconName="Send"
                 onClick={() => onInvoiceAction('send', invoice)}
                 className="text-xs text-primary hover:text-primary/80"
-                title="Envoyer la facture"
+                title={t('invoicesManagement.table.actions.sendInvoice')}
               />
             </div>
           </div>
@@ -251,7 +253,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
             <Icon name="Search" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Rechercher par numéro, client, description ou statut..."
+              placeholder={t('invoicesManagement.table.searchPlaceholder')}
               value={filters?.search || ''}
               onChange={(e) => onFiltersChange?.({ ...filters, search: e.target.value })}
               className="pl-9 w-full"
@@ -266,7 +268,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
             >
               <span className="flex items-center">
                 <Icon name="X" size={14} className="mr-1" />
-                Effacer
+                {t('invoicesManagement.table.clearSearch')}
               </span>
             </Button>
             )}
@@ -276,7 +278,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
       {/* View Toggle */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center space-x-2">
-          <span className="text-sm font-medium text-muted-foreground">Vue:</span>
+          <span className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.table.view.label')}:</span>
           <div className="flex bg-muted rounded-lg p-1">
             <button
               onClick={() => setViewMode('table')}
@@ -287,7 +289,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
               }`}
             >
               <Icon name="Table" size={14} className="mr-1" />
-              Tableau
+              {t('invoicesManagement.table.view.table')}
             </button>
             <button
               onClick={() => setViewMode('card')}
@@ -298,12 +300,12 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
               }`}
             >
               <Icon name="Grid" size={14} className="mr-1" />
-              Cartes
+              {t('invoicesManagement.table.view.cards')}
             </button>
           </div>
         </div>
         <div className="text-xs text-muted-foreground">
-          {invoices.length} facture(s)
+          {t('invoicesManagement.table.invoicesCount', { count: invoices.length })}
         </div>
       </div>
 
@@ -311,8 +313,8 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
       {invoices.length === 0 ? (
         <div className="text-center py-12">
           <Icon name="FileText" size={48} color="var(--color-muted-foreground)" className="mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">Aucune facture trouvée</h3>
-          <p className="text-muted-foreground">Commencez par créer votre première facture ou ajustez vos filtres.</p>
+          <h3 className="text-lg font-medium text-foreground mb-2">{t('invoicesManagement.empty.noInvoicesFound')}</h3>
+          <p className="text-muted-foreground">{t('invoicesManagement.empty.description')}</p>
         </div>
       ) : viewMode === 'card' ? (
         renderCardView()
@@ -327,16 +329,16 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                   onChange={(e) => handleSelectAll(e.target.checked)}
                 />
               </th>
-              <SortableHeader label="N° Facture" sortKey="number" />
-              <SortableHeader label="Client" sortKey="clientName" />
-              <SortableHeader label="Montant" sortKey="amount" />
+              <SortableHeader label={t('invoicesManagement.table.headers.invoiceNumber')} sortKey="number" />
+              <SortableHeader label={t('invoicesManagement.table.headers.client')} sortKey="clientName" />
+              <SortableHeader label={t('invoicesManagement.table.headers.amount')} sortKey="amount" />
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Statut
+                {t('invoicesManagement.table.headers.status')}
               </th>
-              <SortableHeader label="Date émission" sortKey="issueDate" />
-              <SortableHeader label="Date échéance" sortKey="dueDate" />
+              <SortableHeader label={t('invoicesManagement.table.headers.issueDate')} sortKey="issueDate" />
+              <SortableHeader label={t('invoicesManagement.table.headers.dueDate')} sortKey="dueDate" />
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Actions
+                {t('invoicesManagement.table.headers.actions')}
               </th>
             </tr>
           </thead>
@@ -354,7 +356,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-foreground">{invoice.number}</div>
                     {invoice.quoteNumber && (
-                      <div className="text-xs text-muted-foreground">Devis: {invoice.quoteNumber}</div>
+                      <div className="text-xs text-muted-foreground">{t('invoicesManagement.table.quote')}: {invoice.quoteNumber}</div>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -380,7 +382,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                         return null;
                       })()}
                       {daysOverdue && (
-                        <span className="text-xs text-error">+{daysOverdue} jours</span>
+                        <span className="text-xs text-error">+{daysOverdue} {t('invoicesManagement.table.days')}</span>
                       )}
                     </div>
                   </td>
@@ -399,14 +401,14 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                         size="sm"
                         iconName="Eye"
                         onClick={() => onInvoiceAction('view', invoice)}
-                        title="Voir les détails"
+                        title={t('invoicesManagement.table.actions.viewDetails')}
                       />
                       <Button
                         variant="ghost"
                         size="sm"
                         iconName="Send"
                         onClick={() => onInvoiceAction('send', invoice)}
-                        title="Envoyer la facture"
+                        title={t('invoicesManagement.table.actions.sendInvoice')}
                         className="text-primary hover:text-primary/80"
                       />
                     </div>

@@ -1,20 +1,22 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Select from '../../../components/ui/Select';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 
 const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
+  const { t } = useTranslation();
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [amountRange, setAmountRange] = useState({ min: '', max: '' });
   const [isExpanded, setIsExpanded] = useState(false);
 
   const statusOptions = [
-    { value: '', label: 'Tous les statuts' },
-    { value: 'unpaid', label: 'Non payée' },
-    { value: 'paid', label: 'Payée' },
-    { value: 'overdue', label: 'En retard' },
-    { value: 'cancelled', label: 'Annulée' }
+    { value: '', label: t('invoicesManagement.filter.status.all') },
+    { value: 'unpaid', label: t('invoicesManagement.status.unpaid') },
+    { value: 'paid', label: t('invoicesManagement.status.paid') },
+    { value: 'overdue', label: t('invoicesManagement.status.overdue') },
+    { value: 'cancelled', label: t('invoicesManagement.status.cancelled') }
   ];
 
   // Generate client options from actual invoices data
@@ -22,13 +24,13 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
     const uniqueClients = new Map();
     
     // Add default option
-    uniqueClients.set('', { value: '', label: 'Tous les clients' });
+    uniqueClients.set('', { value: '', label: t('invoicesManagement.filter.client.all') });
     
     // Extract unique clients from invoices
     invoices.forEach(invoice => {
       if (invoice.client && invoice.client.id) {
         const clientId = invoice.client.id.toString();
-        const clientName = invoice.client.name || invoice.clientName || 'Client inconnu';
+        const clientName = invoice.client.name || invoice.clientName || t('invoicesManagement.unknownClient');
         
         if (!uniqueClients.has(clientId)) {
           uniqueClients.set(clientId, { value: clientId, label: clientName });
@@ -40,20 +42,20 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
   }, [invoices]);
 
   const dateRangeOptions = [
-    { value: '', label: 'Toutes les périodes' },
-    { value: 'today', label: "Aujourd'hui" },
-    { value: 'week', label: 'Cette semaine' },
-    { value: 'month', label: 'Ce mois' },
-    { value: 'quarter', label: 'Ce trimestre' },
-    { value: 'year', label: 'Cette année' }
+    { value: '', label: t('invoicesManagement.filter.period.all') },
+    { value: 'today', label: t('invoicesManagement.filter.period.today') },
+    { value: 'week', label: t('invoicesManagement.filter.period.thisWeek') },
+    { value: 'month', label: t('invoicesManagement.filter.period.thisMonth') },
+    { value: 'quarter', label: t('invoicesManagement.filter.period.thisQuarter') },
+    { value: 'year', label: t('invoicesManagement.filter.period.thisYear') }
   ];
 
   const amountRangeOptions = [
-    { value: '', label: 'Tous les montants' },
-    { value: '0-500', label: '0€ - 500€' },
-    { value: '500-1000', label: '500€ - 1 000€' },
-    { value: '1000-5000', label: '1 000€ - 5 000€' },
-    { value: '5000+', label: '5 000€+' }
+    { value: '', label: t('invoicesManagement.filter.amount.all') },
+    { value: '0-500', label: t('invoicesManagement.filter.amount.0-500') },
+    { value: '500-1000', label: t('invoicesManagement.filter.amount.500-1000') },
+    { value: '1000-5000', label: t('invoicesManagement.filter.amount.1000-5000') },
+    { value: '5000+', label: t('invoicesManagement.filter.amount.5000+') }
   ];
 
   const handleDateRangeChange = (field, value) => {
@@ -99,7 +101,7 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
       <div className="flex items-center justify-between p-3 md:p-4">
         <div className="flex items-center space-x-2">
           <Icon name="Filter" size={18} className="text-muted-foreground" />
-          <h3 className="text-base font-medium text-foreground">Filtres</h3>
+          <h3 className="text-base font-medium text-foreground">{t('invoicesManagement.filter.title')}</h3>
           {activeFiltersCount > 0 && (
             <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
               {activeFiltersCount}
@@ -116,7 +118,7 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
             >
               <span className="flex items-center">
                 <Icon name="X" size={14} className="mr-1" />
-                Effacer
+                {t('invoicesManagement.filter.clear')}
               </span>
             </Button>
           )}
@@ -125,7 +127,7 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
             size="icon"
             onClick={() => setIsExpanded(!isExpanded)}
             className="md:hidden h-8 w-8"
-            aria-label={isExpanded ? "Masquer les filtres" : "Afficher les filtres"}
+            aria-label={isExpanded ? t('invoicesManagement.filter.hideFilters') : t('invoicesManagement.filter.showFilters')}
           >
             <Icon name={isExpanded ? "ChevronUp" : "ChevronDown"} size={16} />
           </Button>
@@ -136,34 +138,34 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
       <div className="hidden md:block p-4 space-y-4 border-t border-border">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Select
-            label="Statut"
+            label={t('invoicesManagement.filter.status.label')}
             options={statusOptions}
             value={filters.status || ''}
             onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
-            placeholder="Tous les statuts"
+            placeholder={t('invoicesManagement.filter.status.all')}
           />
 
           <Select
-            label="Client"
+            label={t('invoicesManagement.filter.client.label')}
             options={clientOptions}
             value={filters.client || ''}
             onChange={(e) => onFiltersChange({ ...filters, client: e.target.value })}
-            placeholder="Sélectionner un client"
+            placeholder={t('invoicesManagement.filter.client.placeholder')}
             searchable
           />
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Montant (€)</label>
+            <label className="text-sm font-medium text-foreground">{t('invoicesManagement.filter.amount.label')}</label>
             <div className="grid grid-cols-2 gap-2">
               <Input
                 type="number"
-                placeholder="Min"
+                placeholder={t('invoicesManagement.filter.amount.min')}
                 value={amountRange.min}
                 onChange={(e) => handleAmountRangeChange('min', e.target.value)}
               />
               <Input
                 type="number"
-                placeholder="Max"
+                placeholder={t('invoicesManagement.filter.amount.max')}
                 value={amountRange.max}
                 onChange={(e) => handleAmountRangeChange('max', e.target.value)}
               />
@@ -171,11 +173,11 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Période</label>
+            <label className="text-sm font-medium text-foreground">{t('invoicesManagement.filter.period.label')}</label>
             <div className="grid grid-cols-2 gap-2 relative">
               <Input
                 type="date"
-                placeholder="Du"
+                placeholder={t('invoicesManagement.filter.period.from')}
                 value={dateRange.start}
                 onChange={(e) => handleDateRangeChange('start', e.target.value)}
                 className="relative z-10"
@@ -183,7 +185,7 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
               />
               <Input
                 type="date"
-                placeholder="Au"
+                placeholder={t('invoicesManagement.filter.period.to')}
                 value={dateRange.end}
                 onChange={(e) => handleDateRangeChange('end', e.target.value)}
                 className="relative z-10"
@@ -198,11 +200,11 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
           <div className="flex flex-wrap gap-2 pt-3 border-t border-border">
             {filters.status && (
               <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
-                <span>Statut: {statusOptions.find(opt => opt.value === filters.status)?.label}</span>
+                <span>{t('invoicesManagement.filter.chips.status')}: {statusOptions.find(opt => opt.value === filters.status)?.label}</span>
                 <button
                   onClick={() => onFiltersChange({ ...filters, status: '' })}
                   className="hover:bg-primary/20 rounded-full p-0.5"
-                  aria-label="Supprimer le filtre de statut"
+                  aria-label={t('invoicesManagement.filter.chips.removeStatus')}
                 >
                   <Icon name="X" size={12} />
                 </button>
@@ -211,11 +213,11 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
             
             {filters.client && (
               <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
-                <span>Client: {clientOptions.find(opt => opt.value === filters.client)?.label}</span>
+                <span>{t('invoicesManagement.filter.chips.client')}: {clientOptions.find(opt => opt.value === filters.client)?.label}</span>
                 <button
                   onClick={() => onFiltersChange({ ...filters, client: '' })}
                   className="hover:bg-primary/20 rounded-full p-0.5"
-                  aria-label="Supprimer le filtre de client"
+                  aria-label={t('invoicesManagement.filter.chips.removeClient')}
                 >
                   <Icon name="X" size={12} />
                 </button>
@@ -225,7 +227,7 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
             {(dateRange.start || dateRange.end) && (
               <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
                 <span>
-                  Période: {dateRange.start || '...'} - {dateRange.end || '...'}
+                  {t('invoicesManagement.filter.chips.period')}: {dateRange.start || '...'} - {dateRange.end || '...'}
                 </span>
                 <button
                   onClick={() => {
@@ -233,7 +235,7 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
                     onFiltersChange({ ...filters, dateRange: { start: '', end: '' } });
                   }}
                   className="hover:bg-primary/20 rounded-full p-0.5"
-                  aria-label="Supprimer le filtre de période"
+                  aria-label={t('invoicesManagement.filter.chips.removePeriod')}
                 >
                   <Icon name="X" size={12} />
                 </button>
@@ -243,7 +245,7 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
             {(amountRange.min || amountRange.max) && (
               <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
                 <span>
-                  Montant: {amountRange.min || '0'}€ - {amountRange.max || '∞'}€
+                  {t('invoicesManagement.filter.chips.amount')}: {amountRange.min || '0'}€ - {amountRange.max || '∞'}€
                 </span>
                 <button
                   onClick={() => {
@@ -251,7 +253,7 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
                     onFiltersChange({ ...filters, amountRange: { min: '', max: '' } });
                   }}
                   className="hover:bg-primary/20 rounded-full p-0.5"
-                  aria-label="Supprimer le filtre de montant"
+                  aria-label={t('invoicesManagement.filter.chips.removeAmount')}
                 >
                   <Icon name="X" size={12} />
                 </button>
@@ -266,33 +268,33 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
         <div className="md:hidden p-3 space-y-4 border-t border-border">
           <div className="space-y-3">
             <Select
-              label="Statut"
+              label={t('invoicesManagement.filter.status.label')}
               options={statusOptions}
               value={filters.status || ''}
               onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
-              placeholder="Tous les statuts"
+              placeholder={t('invoicesManagement.filter.status.all')}
             />
 
             <Select
-              label="Client"
+              label={t('invoicesManagement.filter.client.label')}
               options={clientOptions}
               value={filters.client || ''}
               onChange={(e) => onFiltersChange({ ...filters, client: e.target.value })}
-              placeholder="Tous les clients"
+              placeholder={t('invoicesManagement.filter.client.all')}
             />
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Montant (€)</label>
+              <label className="text-sm font-medium text-foreground">{t('invoicesManagement.filter.amount.label')}</label>
               <div className="grid grid-cols-2 gap-2">
                 <Input
                   type="number"
-                  placeholder="Min"
+                  placeholder={t('invoicesManagement.filter.amount.min')}
                   value={amountRange.min}
                   onChange={(e) => handleAmountRangeChange('min', e.target.value)}
                 />
                 <Input
                   type="number"
-                  placeholder="Max"
+                  placeholder={t('invoicesManagement.filter.amount.max')}
                   value={amountRange.max}
                   onChange={(e) => handleAmountRangeChange('max', e.target.value)}
                 />
@@ -300,11 +302,11 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Période</label>
+              <label className="text-sm font-medium text-foreground">{t('invoicesManagement.filter.period.label')}</label>
               <div className="grid grid-cols-2 gap-2 relative">
                 <Input
                   type="date"
-                  placeholder="Du"
+                  placeholder={t('invoicesManagement.filter.period.from')}
                   value={dateRange.start}
                   onChange={(e) => handleDateRangeChange('start', e.target.value)}
                   className="relative z-10"
@@ -312,7 +314,7 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
                 />
                 <Input
                   type="date"
-                  placeholder="Au"
+                  placeholder={t('invoicesManagement.filter.period.to')}
                   value={dateRange.end}
                   onChange={(e) => handleDateRangeChange('end', e.target.value)}
                   className="relative z-10"

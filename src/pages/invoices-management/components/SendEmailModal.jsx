@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
@@ -10,6 +11,7 @@ import { generateInvoicePDF } from '../../../services/pdfService';
 import { supabase } from '../../../services/supabaseClient';
 
 const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -39,8 +41,14 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
 
       // Auto-fill email data
       const clientEmail = invoice.client?.email || invoice.clientEmail || '';
-      const defaultSubject = `Facture ${invoice.number || invoice.invoice_number || ''} - ${company?.name || 'Votre entreprise'}`;
-      const defaultMessage = `Bonjour,\n\nVeuillez trouver ci-joint notre facture ${invoice.number || invoice.invoice_number || ''}.\n\nCordialement,\n${company?.name || 'Votre équipe'}`;
+      const defaultSubject = t('invoicesManagement.sendEmailModal.defaultSubject', {
+        invoiceNumber: invoice.number || invoice.invoice_number || '',
+        companyName: company?.name || t('invoicesManagement.sendEmailModal.yourCompany')
+      });
+      const defaultMessage = t('invoicesManagement.sendEmailModal.defaultMessage', {
+        invoiceNumber: invoice.number || invoice.invoice_number || '',
+        companyName: company?.name || t('invoicesManagement.sendEmailModal.yourTeam')
+      });
 
       setEmailData({
         clientEmail,
@@ -50,7 +58,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
       });
     } catch (err) {
       console.error('Error loading data:', err);
-      setError('Erreur lors du chargement des données');
+      setError(t('invoicesManagement.sendEmailModal.errors.loadDataError'));
     } finally {
       setIsLoading(false);
     }
@@ -58,12 +66,12 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
 
   const handleSend = async () => {
     if (!emailData.clientEmail) {
-      setError('Veuillez saisir l\'adresse email du client');
+      setError(t('invoicesManagement.sendEmailModal.errors.clientEmailRequired'));
       return;
     }
 
     if (!emailData.subject) {
-      setError('Veuillez saisir l\'objet de l\'email');
+      setError(t('invoicesManagement.sendEmailModal.errors.subjectRequired'));
       return;
     }
 
@@ -72,16 +80,16 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
 
     try {
       // Create and show the processing overlay
-      const overlay = createProcessingOverlay('Envoi de la facture...', 'invoice-email-overlay');
+      const overlay = createProcessingOverlay(t('invoicesManagement.sendEmailModal.sending'), 'invoice-email-overlay');
       overlay.show();
 
       // Prepare email HTML content
       const invoiceNumber = invoice.number || invoice.invoice_number || '';
       const invoiceAmount = invoice.final_amount || invoice.amount || 0;
-      const invoiceDate = invoice.issue_date ? new Date(invoice.issue_date).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR');
-      const dueDate = invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('fr-FR') : '';
-      const clientName = invoice.client?.name || invoice.clientName || 'Client';
-      const companyName = companyInfo?.name || 'Votre entreprise';
+      const invoiceDate = invoice.issue_date ? new Date(invoice.issue_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US') : new Date().toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US');
+      const dueDate = invoice.due_date ? new Date(invoice.due_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US') : '';
+      const clientName = invoice.client?.name || invoice.clientName || t('invoicesManagement.sendEmailModal.client');
+      const companyName = companyInfo?.name || t('invoicesManagement.sendEmailModal.yourCompany');
       
       // Generate invoice PDF
       const invoiceData = {
@@ -125,16 +133,16 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
       // Generate email HTML
       const emailHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #333; margin-bottom: 20px;">Facture ${invoiceNumber}</h2>
-          <p>Bonjour ${clientName},</p>
-          <p>${emailData.message || `Veuillez trouver ci-joint notre facture ${invoiceNumber}.`}</p>
+          <h2 style="color: #333; margin-bottom: 20px;">${t('invoicesManagement.sendEmailModal.emailHtml.invoice')} ${invoiceNumber}</h2>
+          <p>${t('invoicesManagement.sendEmailModal.emailHtml.hello')} ${clientName},</p>
+          <p>${emailData.message || t('invoicesManagement.sendEmailModal.emailHtml.defaultMessage', { invoiceNumber })}</p>
           <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <p style="margin: 5px 0;"><strong>Numéro de facture:</strong> ${invoiceNumber}</p>
-            <p style="margin: 5px 0;"><strong>Date:</strong> ${invoiceDate}</p>
-            ${dueDate ? `<p style="margin: 5px 0;"><strong>Date d'échéance:</strong> ${dueDate}</p>` : ''}
-            <p style="margin: 5px 0;"><strong>Montant:</strong> ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(invoiceAmount)}</p>
+            <p style="margin: 5px 0;"><strong>${t('invoicesManagement.sendEmailModal.emailHtml.invoiceNumber')}:</strong> ${invoiceNumber}</p>
+            <p style="margin: 5px 0;"><strong>${t('invoicesManagement.sendEmailModal.emailHtml.date')}:</strong> ${invoiceDate}</p>
+            ${dueDate ? `<p style="margin: 5px 0;"><strong>${t('invoicesManagement.sendEmailModal.emailHtml.dueDate')}:</strong> ${dueDate}</p>` : ''}
+            <p style="margin: 5px 0;"><strong>${t('invoicesManagement.sendEmailModal.emailHtml.amount')}:</strong> ${new Intl.NumberFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US', { style: 'currency', currency: 'EUR' }).format(invoiceAmount)}</p>
           </div>
-          <p>Cordialement,<br>${companyName}</p>
+          <p>${t('invoicesManagement.sendEmailModal.emailHtml.regards')},<br>${companyName}</p>
         </div>
       `;
 
@@ -143,7 +151,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
         client_email: emailData.clientEmail,
         subject: emailData.subject,
         html: emailHtml,
-        text: emailData.message || `Facture ${invoiceNumber} - Montant: ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(invoiceAmount)}`,
+        text: emailData.message || t('invoicesManagement.sendEmailModal.emailText', { invoiceNumber, amount: new Intl.NumberFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US', { style: 'currency', currency: 'EUR' }).format(invoiceAmount) }),
         attachments: [{
           filename: `facture-${invoiceNumber}.pdf`,
           content: pdfBase64
@@ -156,7 +164,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
           client_email: user.email,
           subject: `[Copie] ${emailData.subject}`,
           html: emailHtml,
-          text: emailData.message || `Facture ${invoiceNumber} - Montant: ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(invoiceAmount)}`,
+          text: emailData.message || t('invoicesManagement.sendEmailModal.emailText', { invoiceNumber, amount: new Intl.NumberFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US', { style: 'currency', currency: 'EUR' }).format(invoiceAmount) }),
           attachments: [{
             filename: `facture-${invoiceNumber}.pdf`,
             content: pdfBase64,
@@ -178,7 +186,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
 
         if (updateError) {
           console.error('Error updating invoice:', updateError);
-          setError('Email envoyé mais erreur lors de la mise à jour: ' + updateError.message);
+          setError(t('invoicesManagement.sendEmailModal.errors.updateError') + ': ' + updateError.message);
         } else {
           overlay.hide();
           if (onSuccess) {
@@ -188,11 +196,11 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
         }
       } else {
         overlay.hide();
-        setError(result.error || 'Erreur lors de l\'envoi de l\'email');
+        setError(result.error || t('invoicesManagement.sendEmailModal.errors.sendError'));
       }
     } catch (err) {
       console.error('Error sending invoice via email:', err);
-      setError(err.message || 'Erreur lors de l\'envoi de l\'email');
+      setError(err.message || t('invoicesManagement.sendEmailModal.errors.sendError'));
     } finally {
       setIsSending(false);
     }
@@ -205,7 +213,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
       <div className="bg-card border border-border rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-xl font-bold text-foreground">Envoyer la facture par email</h2>
+          <h2 className="text-xl font-bold text-foreground">{t('invoicesManagement.sendEmailModal.title')}</h2>
           <button
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground transition-colors"
@@ -220,7 +228,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
           {isLoading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Chargement...</p>
+              <p className="text-muted-foreground">{t('invoicesManagement.sendEmailModal.loading')}</p>
             </div>
           ) : (
             <>
@@ -237,13 +245,13 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
               {/* Client Email */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Email du client *
+                  {t('invoicesManagement.sendEmailModal.clientEmail')} *
                 </label>
                 <Input
                   type="email"
                   value={emailData.clientEmail}
                   onChange={(e) => setEmailData(prev => ({ ...prev, clientEmail: e.target.value }))}
-                  placeholder="client@example.com"
+                  placeholder={t('invoicesManagement.sendEmailModal.clientEmailPlaceholder')}
                   className="w-full"
                   disabled={isSending}
                 />
@@ -252,7 +260,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
               {/* Send Copy Toggle */}
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium text-foreground">
-                  Envoyer une copie à mon email
+                  {t('invoicesManagement.sendEmailModal.sendCopy')}
                 </label>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -269,13 +277,13 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
               {/* Email Subject */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Objet de l'email *
+                  {t('invoicesManagement.sendEmailModal.subject')} *
                 </label>
                 <Input
                   type="text"
                   value={emailData.subject}
                   onChange={(e) => setEmailData(prev => ({ ...prev, subject: e.target.value }))}
-                  placeholder="Objet de l'email"
+                  placeholder={t('invoicesManagement.sendEmailModal.subjectPlaceholder')}
                   className="w-full"
                   disabled={isSending}
                 />
@@ -284,14 +292,14 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
               {/* Email Message */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Message
+                  {t('invoicesManagement.sendEmailModal.message')}
                 </label>
                 <textarea
                   value={emailData.message}
                   onChange={(e) => setEmailData(prev => ({ ...prev, message: e.target.value }))}
                   rows={4}
                   className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  placeholder="Message personnalisé..."
+                  placeholder={t('invoicesManagement.sendEmailModal.messagePlaceholder')}
                   disabled={isSending}
                 />
               </div>
@@ -299,9 +307,9 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
               {/* Invoice Info Preview */}
               <div className="bg-muted/30 border border-border rounded-lg p-4">
                 <div className="text-sm text-muted-foreground space-y-1">
-                  <p>Facture: {invoice.number || invoice.invoice_number || 'N/A'}</p>
-                  <p>Client: {invoice.client?.name || invoice.clientName || 'N/A'}</p>
-                  <p>Montant: {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(invoice.final_amount || invoice.amount || 0)}</p>
+                  <p>{t('invoicesManagement.sendEmailModal.preview.invoice')}: {invoice.number || invoice.invoice_number || t('invoicesManagement.common.notAvailable')}</p>
+                  <p>{t('invoicesManagement.sendEmailModal.preview.client')}: {invoice.client?.name || invoice.clientName || t('invoicesManagement.common.notAvailable')}</p>
+                  <p>{t('invoicesManagement.sendEmailModal.preview.amount')}: {new Intl.NumberFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US', { style: 'currency', currency: 'EUR' }).format(invoice.final_amount || invoice.amount || 0)}</p>
                 </div>
               </div>
             </>
@@ -315,14 +323,14 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
             onClick={onClose}
             disabled={isSending}
           >
-            Annuler
+            {t('invoicesManagement.sendEmailModal.cancel')}
           </Button>
           <Button
             onClick={handleSend}
             disabled={isSending || isLoading || !emailData.clientEmail || !emailData.subject}
             iconName={isSending ? "Loader2" : "Send"}
           >
-            {isSending ? 'Envoi...' : 'Envoyer'}
+            {isSending ? t('invoicesManagement.sendEmailModal.sending') : t('invoicesManagement.sendEmailModal.send')}
           </Button>
         </div>
       </div>

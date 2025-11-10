@@ -391,6 +391,18 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber) => {
         </div>
       </div>
       
+      <!-- Payment Information -->
+      ${(companyInfo?.iban || companyInfo?.accountName || companyInfo?.bankName) ? `
+      <div style="margin-bottom: 50px; padding: 20px; background-color: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+        <h3 style="margin: 0 0 15px 0; font-size: 16px; color: ${primaryColor}; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">INFORMATIONS DE PAIEMENT</h3>
+        <div style="color: ${secondaryColor}; font-size: 14px; line-height: 1.8;">
+          ${companyInfo?.iban ? `<p style="margin: 0 0 8px 0;"><strong>IBAN:</strong> ${escapeHtml(companyInfo.iban)}</p>` : ''}
+          ${companyInfo?.accountName ? `<p style="margin: 0 0 8px 0;"><strong>Nom du compte:</strong> ${escapeHtml(companyInfo.accountName)}</p>` : ''}
+          ${companyInfo?.bankName ? `<p style="margin: 0 0 8px 0;"><strong>Banque:</strong> ${escapeHtml(companyInfo.bankName)}</p>` : ''}
+        </div>
+      </div>
+      ` : ''}
+      
       <!-- Invoice Lines Table -->
       <div style="margin-bottom: 50px;">
         <h3 style="margin: 0 0 20px 0; font-size: 16px; color: ${primaryColor}; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">DÉTAIL DES PRESTATIONS</h3>

@@ -673,7 +673,7 @@ const PublicQuoteShareViewer = () => {
               <h4 className="text-sm sm:text-base font-semibold text-gray-800">{t('quoteShare.signatures.companySignature')}</h4>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 sm:p-4 min-h-20 sm:min-h-24 flex items-center justify-center">
                 {signatureUrl ? (
-                  <img src={signatureUrl} alt="Signature entreprise" className="max-w-full max-h-16 sm:max-h-20 object-contain" />
+                  <img src={signatureUrl} alt={t('quoteShare.signatures.companySignature')} className="max-w-full max-h-16 sm:max-h-20 object-contain" />
                 ) : (
                   <div className="text-center text-gray-400">
                     <Icon name="PenTool" size={20} className="sm:w-6 sm:h-6 mx-auto mb-1" />
@@ -692,19 +692,22 @@ const PublicQuoteShareViewer = () => {
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 sm:p-4 min-h-20 sm:min-h-24 flex items-center justify-center">
                 {clientSignature ? (
                   <img 
-                    src={clientSignature.signature_data ? 
-                      `data:image/png;base64,${clientSignature.signature_data}` : 
-                      clientSignature.signature_file_path ? 
-                        getPublicUrl('signatures', clientSignature.signature_file_path) : 
-                        null
+                    src={
+                      clientSignature.signature_data ? 
+                        (clientSignature.signature_data.startsWith('http') || clientSignature.signature_data.startsWith('data:')) ?
+                          clientSignature.signature_data : // Already a URL or data URI
+                          `data:image/png;base64,${clientSignature.signature_data}` : // Base64 data
+                        clientSignature.signature_file_path ? 
+                          getPublicUrl('signatures', clientSignature.signature_file_path) : 
+                          null
                     } 
-                    alt="Signature client" 
+                    alt={t('quoteShare.signatures.clientSignature')} 
                     className="max-w-full max-h-20 object-contain" 
                   />
                 ) : quoteStatus === 'accepted' ? (
                   <div className="text-center text-green-600">
                     <Icon name="CheckCircle" size={24} className="mx-auto mb-1" />
-                    <p className="text-xs font-medium">Devis accepté</p>
+                    <p className="text-xs font-medium">{t('quoteShare.signatures.quoteAccepted')}</p>
                   </div>
                 ) : (
                   <div className="text-center text-gray-400">

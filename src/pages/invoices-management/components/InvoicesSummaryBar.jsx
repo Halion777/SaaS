@@ -1,9 +1,12 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 
 const InvoicesSummaryBar = ({ summaryData, isLoading = false }) => {
+  const { t, i18n } = useTranslation();
+  
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('fr-FR', {
+    return new Intl.NumberFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US', {
       style: 'currency',
       currency: 'EUR'
     }).format(amount);
@@ -15,16 +18,16 @@ const InvoicesSummaryBar = ({ summaryData, isLoading = false }) => {
 
   const summaryItems = [
     {
-      label: 'Chiffre d\'affaires total',
+      label: t('invoicesManagement.summary.totalRevenue'),
       value: isLoading ? '...' : formatCurrency(summaryData.totalRevenue || 0),
       icon: 'TrendingUp',
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
       trend: summaryData.revenueGrowth,
-      trendLabel: 'ce mois'
+      trendLabel: t('invoicesManagement.summary.thisMonth')
     },
     {
-      label: 'Montant encaissé',
+      label: t('invoicesManagement.summary.paidRevenue'),
       value: isLoading ? '...' : formatCurrency(summaryData.paidRevenue || 0),
       icon: 'CheckCircle',
       color: 'text-green-600',
@@ -32,14 +35,14 @@ const InvoicesSummaryBar = ({ summaryData, isLoading = false }) => {
       percentage: summaryData.totalRevenue > 0 ? (summaryData.paidRevenue / summaryData.totalRevenue) * 100 : 0
     },
     {
-      label: 'Montant en attente',
+      label: t('invoicesManagement.summary.outstandingAmount'),
       value: isLoading ? '...' : formatCurrency(summaryData.outstandingAmount || 0),
       icon: 'Clock',
       color: 'text-orange-600',
       bgColor: 'bg-orange-50'
     },
     {
-      label: 'Factures en retard',
+      label: t('invoicesManagement.summary.overdueInvoices'),
       value: isLoading ? '...' : summaryData.overdueCount || 0,
       icon: 'AlertTriangle',
       color: 'text-red-600',
@@ -79,7 +82,7 @@ const InvoicesSummaryBar = ({ summaryData, isLoading = false }) => {
               {item.percentage !== undefined && (
                 <div className="flex items-center mt-1">
                   <span className="text-xs text-muted-foreground">
-                    {formatPercentage(item.percentage)} du total
+                    {formatPercentage(item.percentage)} {t('invoicesManagement.summary.ofTotal')}
                   </span>
                 </div>
               )}
