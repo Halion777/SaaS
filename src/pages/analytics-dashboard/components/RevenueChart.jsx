@@ -1,10 +1,14 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Icon from '../../../components/AppIcon';
 
 const RevenueChart = ({ data, isLoading = false }) => {
+  const { t, i18n } = useTranslation();
+  
   const formatCurrency = (value) => {
-    return new Intl.NumberFormat('fr-FR', {
+    const locale = i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR';
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: 'EUR',
       minimumFractionDigits: 0
@@ -35,18 +39,18 @@ const RevenueChart = ({ data, isLoading = false }) => {
             <Icon name="TrendingUp" size={18} className="sm:w-5 sm:h-5" color="rgb(59 130 246)" />
           </div>
           <div>
-            <h3 className="text-base sm:text-lg font-semibold text-foreground">Prévisions de revenus</h3>
-            <p className="text-xs sm:text-sm text-muted-foreground">Analyse et prédictions IA</p>
+            <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('analyticsDashboard.charts.revenue.title')}</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground">{t('analyticsDashboard.charts.revenue.subtitle')}</p>
           </div>
         </div>
         <div className="flex items-center space-x-3 sm:space-x-4 text-xs sm:text-sm">
           <div className="flex items-center space-x-1 sm:space-x-2">
             <div className="w-2 h-2 sm:w-3 sm:h-3 bg-blue-500 rounded-full"></div>
-            <span className="text-muted-foreground">Réalisé</span>
+            <span className="text-muted-foreground">{t('analyticsDashboard.charts.revenue.actual')}</span>
           </div>
           <div className="flex items-center space-x-1 sm:space-x-2">
             <div className="w-2 h-2 sm:w-3 sm:h-3 bg-emerald-500 rounded-full"></div>
-            <span className="text-muted-foreground">Prévision</span>
+            <span className="text-muted-foreground">{t('analyticsDashboard.charts.revenue.forecast')}</span>
           </div>
         </div>
       </div>
@@ -91,7 +95,7 @@ const RevenueChart = ({ data, isLoading = false }) => {
 
       <div className="mt-3 sm:mt-4 grid grid-cols-2 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t border-border">
         <div className="text-center">
-          <p className="text-xs sm:text-sm text-muted-foreground">Croissance mensuelle</p>
+          <p className="text-xs sm:text-sm text-muted-foreground">{t('analyticsDashboard.charts.revenue.monthlyGrowth')}</p>
           <p className="text-sm sm:text-lg font-semibold text-emerald-600">
             {isLoading ? '...' : (() => {
               const validData = data.filter(d => d.revenue !== null && d.revenue !== undefined);
@@ -105,7 +109,7 @@ const RevenueChart = ({ data, isLoading = false }) => {
           </p>
         </div>
         <div className="text-center">
-          <p className="text-xs sm:text-sm text-muted-foreground">Revenu total</p>
+          <p className="text-xs sm:text-sm text-muted-foreground">{t('analyticsDashboard.charts.revenue.totalRevenue')}</p>
           <p className="text-sm sm:text-lg font-semibold text-blue-600">
             {isLoading ? '...' : formatCurrency(data.reduce((sum, item) => sum + (item.revenue || 0), 0))}
           </p>

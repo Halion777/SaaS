@@ -29,7 +29,7 @@ const FollowUpManagement = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
-  const [viewMode, setViewMode] = useState('card'); // 'table' or 'card'
+  const [viewMode, setViewMode] = useState('table'); // 'table' or 'card'
   const [activeFilter, setActiveFilter] = useState('quotes');
   const [filters, setFilters] = useState({
     type: 'all',

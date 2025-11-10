@@ -408,16 +408,16 @@ const ClientManagement = () => {
   const getCountryLabel = (countryCode) => {
     if (!countryCode) return '';
     const countries = {
-      'FR': 'France',
-      'BE': 'Belgique',
-      'CH': 'Suisse',
-      'CA': 'Canada',
-      'US': 'États-Unis',
-      'GB': 'Royaume-Uni',
-      'DE': 'Allemagne',
-      'IT': 'Italie',
-      'ES': 'Espagne',
-      'NL': 'Pays-Bas'
+      'FR': t('clientManagement.countries.FR'),
+      'BE': t('clientManagement.countries.BE'),
+      'CH': t('clientManagement.countries.CH'),
+      'CA': t('clientManagement.countries.CA'),
+      'US': t('clientManagement.countries.US'),
+      'GB': t('clientManagement.countries.GB'),
+      'DE': t('clientManagement.countries.DE'),
+      'IT': t('clientManagement.countries.IT'),
+      'ES': t('clientManagement.countries.ES'),
+      'NL': t('clientManagement.countries.NL')
     };
     return countries[countryCode] || countryCode;
   };
@@ -425,11 +425,11 @@ const ClientManagement = () => {
   const getCompanySizeLabel = (size) => {
     if (!size) return '';
     const sizes = {
-      '1-10': '1-10 employés',
-      '11-50': '11-50 employés',
-      '51-200': '51-200 employés',
-      '201-500': '201-500 employés',
-      '500+': '500+ employés'
+      '1-10': t('clientManagement.companySizes.1-10'),
+      '11-50': t('clientManagement.companySizes.11-50'),
+      '51-200': t('clientManagement.companySizes.51-200'),
+      '201-500': t('clientManagement.companySizes.201-500'),
+      '500+': t('clientManagement.companySizes.500+')
     };
     return sizes[size] || size;
   };
@@ -455,10 +455,10 @@ const ClientManagement = () => {
               <div>
                 <div className="flex items-center">
                   <Icon name="Users" size={24} className="text-primary mr-3" />
-                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des Clients</h1>
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">{t('clientManagement.title')}</h1>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Gérez vos clients et suivez leurs informations
+                  {t('clientManagement.subtitle')}
                 </p>
               </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
@@ -467,7 +467,7 @@ const ClientManagement = () => {
                   onClick={handleRefresh}
                   iconName="RefreshCw"
                 >
-                  Actualiser
+                  {t('clientManagement.refresh')}
                 </Button>
                 <Button
                   onClick={() => {
@@ -476,7 +476,7 @@ const ClientManagement = () => {
                   }}
                   iconName="Plus"
                 >
-                  Nouveau Client
+                  {t('clientManagement.newClient')}
                 </Button>
               </div>
             </div>
@@ -496,7 +496,7 @@ const ClientManagement = () => {
           <div className="bg-card border border-border rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-muted-foreground">Total Clients</p>
+                <p className="text-xs font-medium text-muted-foreground">{t('clientManagement.stats.totalClients')}</p>
                 <p className="text-xl font-bold text-foreground">
                   {isLoading ? '...' : clients.length}
                 </p>
@@ -510,7 +510,7 @@ const ClientManagement = () => {
           <div className="bg-card border border-border rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-muted-foreground">Particulier</p>
+                <p className="text-xs font-medium text-muted-foreground">{t('clientManagement.stats.individual')}</p>
                 <p className="text-xl font-bold text-foreground">
                   {isLoading ? '...' : clients.filter(c => c.type === 'particulier').length}
                 </p>
@@ -524,7 +524,7 @@ const ClientManagement = () => {
           <div className="bg-card border border-border rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-muted-foreground">Professionnel</p>
+                <p className="text-xs font-medium text-muted-foreground">{t('clientManagement.stats.professional')}</p>
                 <p className="text-xl font-bold text-foreground">
                   {isLoading ? '...' : clients.filter(c => c.type === 'professionnel').length}
                 </p>
@@ -538,7 +538,7 @@ const ClientManagement = () => {
           <div className="bg-card border border-border rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-muted-foreground">CA Total</p>
+                <p className="text-xs font-medium text-muted-foreground">{t('clientManagement.stats.totalRevenue')}</p>
                 <p className="text-xl font-bold text-foreground">
                   {isLoading ? '...' : `${clients.reduce((sum, client) => sum + (client.totalRevenue || 0), 0).toLocaleString()}€`}
                 </p>
@@ -555,7 +555,7 @@ const ClientManagement = () => {
           <div className="bg-card border border-border rounded-lg p-4">
             <div className="flex items-center mb-3">
               <Icon name="Crown" size={20} className="text-yellow-500 mr-2" />
-              <h3 className="text-lg font-semibold text-foreground">Top Clients</h3>
+              <h3 className="text-lg font-semibold text-foreground">{t('clientManagement.topClients.title')}</h3>
             </div>
             <div className="space-y-3">
               {clients.length > 0 ? (
@@ -570,7 +570,7 @@ const ClientManagement = () => {
                   </div>
                 ))
               ) : (
-                <p className="text-xs text-muted-foreground">Aucun client trouvé</p>
+                <p className="text-xs text-muted-foreground">{t('clientManagement.topClients.noClients')}</p>
               )}
             </div>
           </div>
@@ -579,11 +579,11 @@ const ClientManagement = () => {
           <div className="bg-card border border-border rounded-lg p-4">
             <div className="flex items-center mb-3">
               <Icon name="TrendingUp" size={20} className="text-blue-500 mr-2" />
-              <h3 className="text-lg font-semibold text-foreground">Aperçu Financier</h3>
+              <h3 className="text-lg font-semibold text-foreground">{t('clientManagement.financialOverview.title')}</h3>
             </div>
             <div className="space-y-3">
               <div>
-                <p className="text-xs text-muted-foreground">CA Total</p>
+                <p className="text-xs text-muted-foreground">{t('clientManagement.financialOverview.totalRevenue')}</p>
                 <p className="text-xl font-bold text-foreground">
                   {clients.reduce((sum, client) => sum + (client.totalRevenue || 0), 0).toLocaleString()}€
                 </p>
@@ -602,7 +602,7 @@ const ClientManagement = () => {
                 ></div>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Objectif</span>
+                <span className="text-muted-foreground">{t('clientManagement.financialOverview.target')}</span>
                 <span className="font-medium text-foreground">100,000€</span>
               </div>
             </div>
@@ -612,7 +612,7 @@ const ClientManagement = () => {
           <div className="bg-card border border-border rounded-lg p-4">
             <div className="flex items-center mb-3">
               <Icon name="Zap" size={20} className="text-yellow-500 mr-2" />
-              <h3 className="text-lg font-semibold text-foreground">Actions Rapides</h3>
+              <h3 className="text-lg font-semibold text-foreground">{t('clientManagement.quickActions.title')}</h3>
             </div>
             <div className="space-y-2">
               <Button 
@@ -622,7 +622,7 @@ const ClientManagement = () => {
                 onClick={handleExportCSV}
               >
                 <Icon name="Download" size={14} className="mr-2" />
-                Exporter la liste clients
+                {t('clientManagement.quickActions.exportClients')}
               </Button>
             </div>
           </div>
@@ -636,7 +636,7 @@ const ClientManagement = () => {
             <Icon name="Search" size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Rechercher un client..."
+              placeholder={t('clientManagement.search.placeholder')}
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -656,7 +656,7 @@ const ClientManagement = () => {
         {/* View Toggle */}
         <div className="flex items-center justify-between p-4 border-b border-border bg-card rounded-lg mb-6">
           <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium text-muted-foreground">Vue:</span>
+            <span className="text-sm font-medium text-muted-foreground">{t('clientManagement.view.label')}:</span>
             <div className="flex bg-muted rounded-lg p-1">
               <button
                 onClick={() => setViewMode('table')}
@@ -667,7 +667,7 @@ const ClientManagement = () => {
                 }`}
               >
                 <Icon name="Table" size={14} className="mr-1" />
-                Tableau
+                {t('clientManagement.view.table')}
               </button>
               <button
                 onClick={() => setViewMode('card')}
@@ -678,28 +678,28 @@ const ClientManagement = () => {
                 }`}
               >
                 <Icon name="Grid" size={14} className="mr-1" />
-                Cartes
+                {t('clientManagement.view.cards')}
               </button>
             </div>
           </div>
           <div className="text-xs text-muted-foreground">
-            {filteredClients.length} client(s)
+            {t('clientManagement.view.clientsCount', { count: filteredClients.length })}
           </div>
         </div>
 
         {/* Clients Display */}
         {isLoading ? (
           <div className="w-full">
-            <TableLoader message="Chargement des clients..." />
+            <TableLoader message={t('clientManagement.loading')} />
           </div>
         ) : filteredClients.length === 0 ? (
           <div className="text-center py-12">
             <Icon name="Users" size={48} className="mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium text-foreground mb-2">Aucun client trouvé</h3>
+            <h3 className="text-lg font-medium text-foreground mb-2">{t('clientManagement.empty.noClientsFound')}</h3>
             <p className="text-muted-foreground mb-4">
               {searchTerm || Object.values(filters).some(f => f !== 'all')
-                ? 'Essayez de modifier vos critères de recherche'
-                : 'Commencez par ajouter votre premier client'
+                ? t('clientManagement.empty.tryModifyingSearch')
+                : t('clientManagement.empty.addFirstClient')
               }
             </p>
             {!searchTerm && Object.values(filters).every(f => f === 'all') && (
@@ -710,7 +710,7 @@ const ClientManagement = () => {
                 }}
                 iconName="Plus"
               >
-                Ajouter un client
+                {t('clientManagement.empty.addClient')}
               </Button>
             )}
           </div>
@@ -723,28 +723,28 @@ const ClientManagement = () => {
                     <thead className="bg-muted/50">
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Client
+                          {t('clientManagement.table.headers.client')}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Type
+                          {t('clientManagement.table.headers.type')}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Contact
+                          {t('clientManagement.table.headers.contact')}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Peppol
+                          {t('clientManagement.table.headers.peppol')}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Projets
+                          {t('clientManagement.table.headers.projects')}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          CA Total
+                          {t('clientManagement.table.headers.totalRevenue')}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Statut
+                          {t('clientManagement.table.headers.status')}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Actions
+                          {t('clientManagement.table.headers.actions')}
                         </th>
                       </tr>
                     </thead>
@@ -761,7 +761,7 @@ const ClientManagement = () => {
                               <div className="ml-3">
                                 <div className="text-sm font-medium text-foreground">{client.name}</div>
                                 {client.contactPerson && (
-                                  <div className="text-sm text-muted-foreground">Contact: {client.contactPerson}</div>
+                                  <div className="text-sm text-muted-foreground">{t('clientManagement.table.contact')}: {client.contactPerson}</div>
                                 )}
                               </div>
                             </div>
@@ -772,7 +772,7 @@ const ClientManagement = () => {
                                 ? 'bg-green-100 text-green-800' 
                                 : 'bg-blue-100 text-blue-800'
                             }`}>
-                              {client.type === 'professionnel' ? 'Professionnel' : 'Particulier'}
+                              {client.type === 'professionnel' ? t('clientManagement.types.professional') : t('clientManagement.types.individual')}
                             </span>
                           </td>
                           <td className="px-4 py-4">
@@ -783,10 +783,10 @@ const ClientManagement = () => {
                             <div className="text-sm text-foreground">
                               {client.peppolConfigured ? (
                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                  Configuré
+                                  {t('clientManagement.peppol.configured')}
                                 </span>
                               ) : (
-                                <span className="text-muted-foreground">Non configuré</span>
+                                <span className="text-muted-foreground">{t('clientManagement.peppol.notConfigured')}</span>
                               )}
                             </div>
                           </td>
@@ -802,7 +802,7 @@ const ClientManagement = () => {
                           </td>
                           <td className="px-4 py-4">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(client.isActive)}`}>
-                              {client.isActive ? 'Actif' : 'Inactif'}
+                              {client.isActive ? t('clientManagement.status.active') : t('clientManagement.status.inactive')}
                             </span>
                           </td>
                           <td className="px-4 py-4">
@@ -812,7 +812,7 @@ const ClientManagement = () => {
                                 size="sm"
                                 onClick={() => handleClientSelect(client)}
                                 className="h-8 w-8 p-0"
-                                title="Voir/Modifier"
+                                title={t('clientManagement.table.actions.edit')}
                               >
                                 <Icon name="Edit" size={16} />
                               </Button>
@@ -821,7 +821,7 @@ const ClientManagement = () => {
                                 size="sm"
                                 onClick={() => handleClientDelete(client.id)}
                                 className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                                title="Supprimer"
+                                title={t('clientManagement.table.actions.delete')}
                               >
                                 <Icon name="Trash2" size={16} />
                               </Button>

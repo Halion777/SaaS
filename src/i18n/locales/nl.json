@@ -1743,6 +1743,19 @@
       "failed": "Mislukt",
       "expired": "Verlopen",
       "ready_for_dispatch": "Klaar voor verzending"
+    },
+    "draft": {
+      "autoSavedDraft": "Automatisch Opgeslagen Concept",
+      "unsentDraft": "(niet verzonden concept)",
+      "draftInProgress": "Concept in uitvoering",
+      "unknownClient": "Onbekende klant"
+    },
+    "tracking": {
+      "notOpened": "Niet geopend",
+      "viewedNoAction": "Bekeken zonder actie",
+      "accepted": "Geaccepteerd",
+      "rejected": "Afgewezen",
+      "expired": "Verlopen"
     }
   },
   "followUpManagement": {
@@ -1901,11 +1914,11 @@
         "label": "Einddatum"
       },
       "chips": {
-        "price": "Prijs: {value}",
+        "price": "Prijs: {{value}}",
         "period": "Periode: {value}",
-        "startDate": "Start: {value}",
-        "endDate": "Einde: {value}",
-        "removeFilter": "{filter} filter verwijderen"
+        "startDate": "Start: {{value}}",
+        "endDate": "Einde: {{value}}",
+        "removeFilter": "{{filter}} filter verwijderen"
       }
     },
     "title": "Leadsbeheer",
@@ -2564,6 +2577,135 @@
       }
     }
   },
+  "analyticsDashboard": {
+    "header": {
+      "title": "Gedetailleerde Analyses",
+      "subtitle": "Verken uw gegevens in detail voor strategische beslissingen"
+    },
+    "tabs": {
+      "overview": {
+        "label": "Overzicht",
+        "short": "Overzicht"
+      },
+      "segments": {
+        "label": "Klantsegmenten",
+        "short": "Segmenten"
+      }
+    },
+    "kpis": {
+      "totalQuotesSent": {
+        "title": "Totaal verzonden offertes",
+        "description": "offertes deze maand"
+      },
+      "acceptedQuotes": {
+        "title": "Geaccepteerde offertes",
+        "description": "conversiepercentage"
+      },
+      "monthlyRevenue": {
+        "title": "Maandelijks inkomen",
+        "description": "vs vorige maand"
+      },
+      "paymentStatus": {
+        "title": "Betalingsstatus",
+        "description": "op tijd betaald"
+      }
+    },
+    "detailedAnalytics": {
+      "paymentStatus": {
+        "title": "Betalingsstatus",
+        "paid": "Betaald",
+        "pending": "In behandeling",
+        "overdue": "Achterstallig"
+      },
+      "clientActivity": {
+        "title": "Klantactiviteit",
+        "newClients": "Nieuwe klanten",
+        "returningClients": "Terugkerende klanten",
+        "inactiveClients": "Inactieve klanten"
+      },
+      "invoiceStatistics": {
+        "title": "Factuurstatistieken",
+        "totalRevenue": "Totaal inkomen",
+        "averageInvoice": "Gemiddelde factuur",
+        "totalInvoices": "Totaal facturen"
+      },
+      "quoteOverview": {
+        "title": "Offerteoverzicht",
+        "totalQuotes": "Totaal offertes",
+        "acceptedQuotes": "Geaccepteerde offertes",
+        "rejectedQuotes": "Afgewezen offertes",
+        "pendingQuotes": "Offertes in behandeling"
+      }
+    },
+    "charts": {
+      "revenue": {
+        "title": "Inkomstenprognose",
+        "subtitle": "AI-analyse en voorspellingen",
+        "actual": "Gerealiseerd",
+        "forecast": "Prognose",
+        "monthlyGrowth": "Maandelijkse groei",
+        "totalRevenue": "Totaal inkomen"
+      },
+      "conversion": {
+        "title": "Conversiepercentage",
+        "subtitle": "Per servicetype",
+        "globalAverage": "Globale gemiddelde",
+        "rate": "Percentage",
+        "quotes": "Offertes"
+      },
+      "clientSegments": {
+        "title": "Klantsegmenten",
+        "subtitle": "Verdeling per markt",
+        "professional": "Professioneel",
+        "individual": "Particulier",
+        "noData": "Geen gegevens",
+        "share": "Aandeel",
+        "revenue": "Inkomsten",
+        "totalSegments": "Totaal segmenten"
+      }
+    },
+    "categories": {
+      "plumbing": "Loodgieterij",
+      "electrical": "Elektriciteit",
+      "carpentry": "Timmerman",
+      "painting": "Schilderen",
+      "masonry": "Metselwerk",
+      "tiling": "Tegelen",
+      "roofing": "Dakwerk",
+      "heating": "Verwarming",
+      "renovation": "Renovatie",
+      "cleaning": "Schoonmaken",
+      "solar": "Zonne-energie",
+      "gardening": "Tuinieren",
+      "locksmith": "Sleutelmaker",
+      "glazing": "Glaswerk",
+      "insulation": "Isolatie",
+      "airConditioning": "Airconditioning",
+      "other": "Anders"
+    },
+    "export": {
+      "date": "Datum",
+      "kpis": "Belangrijkste Prestatie-indicatoren",
+      "status": "Status",
+      "count": "Aantal",
+      "type": "Type",
+      "metric": "Metriek",
+      "value": "Waarde",
+      "month": "Maand",
+      "revenue": "Inkomen",
+      "category": "Categorie",
+      "segment": "Segment",
+      "percentage": "Percentage",
+      "title": "Titel",
+      "change": "Wijziging",
+      "description": "Beschrijving",
+      "revenueByMonth": "Inkomsten per Maand",
+      "conversionByCategory": "Conversiepercentage per Categorie",
+      "generatedBy": "Gegenereerd door",
+      "pdfError": "Fout bij exporteren PDF",
+      "excelError": "Fout bij exporteren Excel"
+    }
+  },
   "quoteCreation": {
     "title": "Offerte maken",
     "editTitle": "Offerte bewerken",
@@ -2577,7 +2719,9 @@
     "navigation": {
       "back": "Terug",
       "next": "Volgende",
+      "nextStep": "Volgende stap",
       "previous": "Vorige",
+      "previousStep": "Vorige stap",
       "saveAsDraft": "Opslaan als concept",
       "saving": "Opslaan...",
       "send": "Versturen",
@@ -2736,6 +2880,34 @@
         "hours": "Uren",
         "days": "Dagen"
       },
+      "durationUnits": {
+        "minutes": "Minuten",
+        "hours": "Uren",
+        "days": "Dagen",
+        "1Day": "1 dag",
+        "daysPlural": "{{count}} dagen"
+      },
+      "durationOptions": {
+        "30Minutes": "30 minuten",
+        "1Hour": "1 uur",
+        "2Hours": "2 uren",
+        "4Hours": "4 uren",
+        "1Day": "1 dag",
+        "2Days": "2 dagen",
+        "3Days": "3 dagen",
+        "1Week": "1 week"
+      },
+      "units": {
+        "piece": "Stuk",
+        "meter": "Meter",
+        "squareMeter": "Vierkante meter",
+        "kilogram": "Kilogram",
+        "liter": "Liter",
+        "box": "Doos",
+        "bag": "Zak"
+      },
+      "materialsCount": "{{count}} materiaal",
+      "materialsCount_plural": "{{count}} materialen",
       "unitPrice": "Eenheidsprijs",
       "unitPriceEuro": "Eenheidsprijs (€)",
       "pricePlaceholder": "0.00",
@@ -3139,5 +3311,331 @@
       "allRightsReserved": "Alle rechten voorbehouden.",
       "rightsReserved": "Alle rechten voorbehouden."
     }
-  }
+  },
+  "peppol": {
+    "header": {
+      "title": "Peppol Netwerk",
+      "subtitle": "Facturen verzonden en ontvangen via het Peppol netwerk",
+      "connected": "Verbonden",
+      "configurationRequired": "Configuratie vereist"
+    },
+    "stats": {
+      "sentInvoices": "Verzonden facturen",
+      "receivedInvoices": "Ontvangen facturen",
+      "totalSent": "Totaal verzonden",
+      "totalReceived": "Totaal ontvangen"
+    },
+    "tabs": {
+      "setup": "Configuratie",
+      "sentInvoices": "Verzonden facturen",
+      "receivedInvoices": "Ontvangen facturen"
+    },
+    "status": {
+      "delivered": "Afgeleverd",
+      "received": "Ontvangen",
+      "processed": "Verwerkt",
+      "pending": "In behandeling",
+      "failed": "Mislukt",
+      "unknown": "Onbekend"
+    },
+    "messages": {
+      "settingsSaved": "Instellingen succesvol opgeslagen!",
+      "alreadyRegistered": "Deze deelnemer is al geregistreerd in Digiteal. Uw instellingen zijn succesvol opgeslagen.",
+      "saveError": "Fout bij het opslaan van instellingen"
+    },
+    "loading": {
+      "configuration": "Configuratie laden...",
+      "invoices": "Facturen laden..."
+    },
+    "setup": {
+      "title": "Peppol Integratie",
+      "subtitle": "Configureer uw Peppol verbinding om elektronische facturen te verzenden en te ontvangen.",
+      "info": "Peppol (Pan-European Public Procurement On-Line) maakt veilige elektronische documentuitwisseling mogelijk. U heeft een geldig Peppol ID nodig om facturen via het netwerk te verzenden en te ontvangen.",
+      "companyInfo": {
+        "title": "Bedrijfsinformatie",
+        "participantName": "Deelnemersnaam",
+        "participantNamePlaceholder": "MijnBedrijf",
+        "peppolId": "Peppol ID",
+        "peppolIdPlaceholder": "bijv. 0208:0630675588",
+        "peppolIdFormat": "Formaat: LANDCODE:BTW_NUMMER"
+      },
+      "contactPerson": {
+        "title": "Contactpersoon (Verplicht)",
+        "firstName": "Voornaam",
+        "firstNamePlaceholder": "Jan",
+        "lastName": "Achternaam",
+        "lastNamePlaceholder": "Jansen",
+        "email": "E-mail",
+        "emailPlaceholder": "jan.jansen@digiteal.eu",
+        "language": "Taal (bijv. nl-NL)",
+        "phoneNumber": "Telefoonnummer (Optioneel)",
+        "phoneNumberPlaceholder": "+321234567",
+        "countryCode": "Landcode",
+        "countryCodePlaceholder": "Zoek land (bijv. BE, België)",
+        "noCountriesFound": "Geen landen gevonden"
+      },
+      "configuration": {
+        "title": "Peppol Configuratie",
+        "sandboxMode": "Sandbox Modus (voor testen)",
+        "sandboxModeDescription": "Schakel sandbox modus in om Peppol integratie te testen zonder echte facturen te verzenden",
+        "sandboxModeEnabled": "Sandbox modus ingeschakeld",
+        "sandboxModeDisabled": "Sandbox modus uitgeschakeld"
+      },
+      "registered": {
+        "title": "Peppol Deelnemer Geregistreerd",
+        "subtitle": "Deelnemer is actief in het Peppol netwerk",
+        "participantName": "Deelnemersnaam",
+        "contactPerson": "Contactpersoon",
+        "email": "E-mail",
+        "language": "Taal",
+        "peppolEnabled": "Peppol Ingeschakeld",
+        "peppolDisabled": "Peppol Uitgeschakeld",
+        "peppolEnabledDescription": "Peppol functionaliteit is actief. U kunt facturen verzenden en ontvangen via het Peppol netwerk.",
+        "peppolDisabledDescription": "Peppol functionaliteit is uitgeschakeld. Historische gegevens worden bewaard, maar u kunt geen nieuwe Peppol documenten verzenden of ontvangen.",
+        "failedToEnable": "Inschakelen mislukt",
+        "failedToDisable": "Uitschakelen mislukt"
+      },
+      "help": {
+        "title": "Heeft u geen Peppol ID?",
+        "description": "U moet zich registreren bij een Peppol Access Point provider. Neem contact op met uw lokale autoriteit of een gecertificeerde Peppol provider om te beginnen."
+      }
+    },
+    "buttons": {
+      "test": "Integratie testen",
+      "testing": "Integratie testen...",
+      "registerAndSave": "Registreren en opslaan",
+      "updateAndSave": "Bijwerken en opslaan",
+      "registering": "Deelnemer registreren...",
+      "updating": "Instellingen bijwerken..."
+    },
+    "filters": {
+      "title": "Filters",
+      "search": "Zoeken",
+      "searchPlaceholderSent": "Factuurnummer, ontvanger, Peppol ID...",
+      "searchPlaceholderReceived": "Factuurnummer, afzender, Peppol ID...",
+      "status": "Status",
+      "allStatuses": "Alle statussen",
+      "dateRange": "Periode",
+      "allDates": "Alle datums",
+      "today": "Vandaag",
+      "last7Days": "Laatste 7 dagen",
+      "last30Days": "Laatste 30 dagen",
+      "last3Months": "Laatste 3 maanden",
+      "amountRange": "Bedrag",
+      "allAmounts": "Alle bedragen",
+      "lessThan1000": "Minder dan €1.000",
+      "between1000And5000": "€1.000 - €5.000",
+      "moreThan5000": "Meer dan €5.000",
+      "clear": "Wissen",
+      "show": "Filters tonen",
+      "hide": "Filters verbergen",
+      "activeFilters": "{{count}} actief filter",
+      "activeFilters_plural": "{{count}} actieve filters",
+      "invoicesFound": "{{count}} factuur gevonden",
+      "invoicesFound_plural": "{{count}} facturen gevonden"
+    },
+    "invoices": {
+      "invoiceNumber": "Factuurnummer",
+      "recipient": "Ontvanger",
+      "sender": "Afzender",
+      "peppolId": "Peppol ID",
+      "amount": "Bedrag",
+      "date": "Datum",
+      "status": "Status",
+      "email": "E-mail",
+      "view": "Weergave",
+      "tableView": "Tabel",
+      "cardView": "Kaarten",
+      "sentCount": "{{count}} factuur verzonden",
+      "sentCount_plural": "{{count}} facturen verzonden",
+      "receivedCount": "{{count}} factuur ontvangen",
+      "receivedCount_plural": "{{count}} facturen ontvangen",
+      "noSentInvoices": "Geen facturen verzonden",
+      "noReceivedInvoices": "Geen facturen ontvangen",
+      "noInvoicesFound": "Geen facturen gevonden",
+      "noSentInvoicesDescription": "U heeft nog geen facturen via Peppol verzonden.",
+      "noReceivedInvoicesDescription": "U heeft nog geen facturen via Peppol ontvangen.",
+      "noInvoicesFoundDescription": "Geen facturen komen overeen met de zoekcriteria."
+    },
+    "common": {
+      "notAvailable": "N/A"
+    }
+  },
+  "clientManagement": {
+      "title": "Klantenbeheer",
+      "subtitle": "Beheer uw klanten en volg hun informatie",
+      "refresh": "Vernieuwen",
+      "newClient": "Nieuwe Klant",
+      "loading": "Klanten laden...",
+      "stats": {
+        "totalClients": "Totaal Klanten",
+        "individual": "Particulier",
+        "professional": "Professioneel",
+        "totalRevenue": "Totaal Omzet"
+      },
+      "topClients": {
+        "title": "Top Klanten",
+        "noClients": "Geen klanten gevonden"
+      },
+      "financialOverview": {
+        "title": "Financieel Overzicht",
+        "totalRevenue": "Totaal Omzet",
+        "target": "Doel"
+      },
+      "quickActions": {
+        "title": "Snelle Acties",
+        "exportClients": "Exporteer klantenlijst"
+      },
+      "search": {
+        "placeholder": "Zoek naar een klant..."
+      },
+      "view": {
+        "label": "Weergave",
+        "table": "Tabel",
+        "cards": "Kaarten",
+        "clientsCount": "{{count}} klant",
+        "clientsCount_plural": "{{count}} klanten"
+      },
+      "empty": {
+        "noClientsFound": "Geen klanten gevonden",
+        "tryModifyingSearch": "Probeer uw zoekcriteria aan te passen",
+        "addFirstClient": "Begin met het toevoegen van uw eerste klant",
+        "addClient": "Klant toevoegen"
+      },
+      "table": {
+        "headers": {
+          "client": "Klant",
+          "type": "Type",
+          "contact": "Contact",
+          "peppol": "Peppol",
+          "projects": "Projecten",
+          "totalRevenue": "Totaal Omzet",
+          "status": "Status",
+          "actions": "Acties"
+        },
+        "contact": "Contact",
+        "actions": {
+          "edit": "Bekijken/Bewerken",
+          "delete": "Verwijderen"
+        }
+      },
+      "types": {
+        "individual": "Particulier",
+        "professional": "Professioneel"
+      },
+      "status": {
+        "active": "Actief",
+        "inactive": "Inactief"
+      },
+      "peppol": {
+        "configured": "Geconfigureerd",
+        "notConfigured": "Niet geconfigureerd"
+      },
+      "countries": {
+        "BE": "België",
+        "FR": "Frankrijk",
+        "CH": "Zwitserland",
+        "LU": "Luxemburg",
+        "CA": "Canada",
+        "US": "Verenigde Staten",
+        "DE": "Duitsland",
+        "IT": "Italië",
+        "ES": "Spanje",
+        "NL": "Nederland",
+        "GB": "Verenigd Koninkrijk",
+        "OTHER": "Ander"
+      },
+      "companySizes": {
+        "TPE": "TPE (1-9 werknemers)",
+        "PME": "PME (10-249 werknemers)",
+        "ETI": "ETI (250-4999 werknemers)",
+        "GE": "Groot Bedrijf (5000+ werknemers)",
+        "1-10": "1-10 werknemers",
+        "11-50": "11-50 werknemers",
+        "51-200": "51-200 werknemers",
+        "201-500": "201-500 werknemers",
+        "500+": "500+ werknemers"
+      },
+      "preferences": {
+        "email": "E-mail",
+        "phone": "Telefoon",
+        "sms": "SMS",
+        "mail": "Post"
+      },
+      "card": {
+        "contact": "Contact",
+        "size": "Grootte",
+        "registrationNumber": "Registratienummer",
+        "revenue": "Omzet",
+        "projects": "Projecten"
+      },
+      "filter": {
+        "title": "Filters",
+        "clear": "Wissen",
+        "showFilters": "Filters tonen",
+        "hideFilters": "Filters verbergen",
+        "clientsFound": "{{count}} klant gevonden",
+        "clientsFound_plural": "{{count}} klanten gevonden",
+        "activeFilters": "{{count}} actief filter",
+        "activeFilters_plural": "{{count}} actieve filters",
+        "type": {
+          "label": "Klanttype",
+          "all": "Alle Types"
+        },
+        "status": {
+          "label": "Status",
+          "all": "Alle Statussen"
+        },
+        "location": {
+          "label": "Regio",
+          "all": "Alle Regio's"
+        },
+        "chips": {
+          "type": "Type",
+          "status": "Status",
+          "location": "Regio",
+          "removeType": "Typefilter verwijderen",
+          "removeStatus": "Statusfilter verwijderen",
+          "removeLocation": "Regiofilter verwijderen"
+        }
+      },
+      "modal": {
+        "newClient": "Nieuwe Klant",
+        "editClient": "Klant Bewerken",
+        "clientType": "Klanttype",
+        "clientStatus": "Klantstatus",
+        "fullName": "Volledige Naam",
+        "fullNamePlaceholder": "Voornaam en achternaam",
+        "email": "E-mail",
+        "emailPlaceholder": "email@voorbeeld.com",
+        "phone": "Telefoon",
+        "phonePlaceholder": "04 12 34 56 78",
+        "address": "Adres",
+        "addressPlaceholder": "Volledig adres",
+        "companyName": "Bedrijfsnaam",
+        "companyNamePlaceholder": "Bedrijfsnaam",
+        "city": "Stad",
+        "cityPlaceholder": "Brussel",
+        "country": "Land",
+        "countryPlaceholder": "Selecteer land",
+        "postalCode": "Postcode",
+        "postalCodePlaceholder": "1000",
+        "professionalInfo": "Professionele Informatie",
+        "contactPerson": "Contactpersoon",
+        "contactPersonPlaceholder": "Naam van contactpersoon",
+        "companySize": "Bedrijfsgrootte",
+        "companySizePlaceholder": "Selecteer grootte",
+        "vatNumber": "BTW-nummer",
+        "vatNumberPlaceholder": "BTW- of registratienummer",
+        "peppolConfig": "PEPPOL Configuratie",
+        "enablePeppol": "PEPPOL inschakelen voor deze klant",
+        "peppolId": "Klant Peppol ID",
+        "peppolIdPlaceholder": "Formaat: 0000:IDENTIFIER",
+        "invalidPeppolId": "Het Peppol ID-formaat is niet geldig. Gebruik het formaat: 0208:123456789",
+        "communicationPreferences": "Communicatievoorkeuren",
+        "cancel": "Annuleren",
+        "update": "Bijwerken",
+        "create": "Klant Aanmaken"
+      }
+    }
 }

@@ -1,7 +1,9 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 
 const DetailedAnalyticsPanel = ({ data, isLoading = false }) => {
+  const { t, i18n } = useTranslation();
   const renderSection = (title, items) => (
     <div className="bg-card border border-border rounded-lg p-4 space-y-4">
       <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">{title}</h3>
@@ -35,7 +37,10 @@ const DetailedAnalyticsPanel = ({ data, isLoading = false }) => {
               </p>
               <p className="text-base font-semibold text-foreground">
                 {isLoading ? '...' : (typeof value === 'number' 
-                  ? `${key.includes('Revenue') || key.includes('Invoice') ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(value) : value}${key.includes('Clients') ? '%' : ''}` 
+                  ? `${key.includes('Revenue') || key.includes('Invoice') ? (() => {
+                      const locale = i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR';
+                      return new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(value);
+                    })() : value}${key.includes('Clients') ? '%' : ''}` 
                   : value)}
               </p>
             </div>
@@ -47,10 +52,10 @@ const DetailedAnalyticsPanel = ({ data, isLoading = false }) => {
 
   return (
     <div className="space-y-6">
-      {renderSection('Statut des paiements', data.paymentStatus)}
-      {renderSection('Activité clients', data.clientActivity)}
-      {renderSection('Statistiques factures', data.invoiceStatistics)}
-      {renderSection('Vue d\'ensemble des devis', data.quoteOverview)}
+      {renderSection(t('analyticsDashboard.detailedAnalytics.paymentStatus.title'), data.paymentStatus)}
+      {renderSection(t('analyticsDashboard.detailedAnalytics.clientActivity.title'), data.clientActivity)}
+      {renderSection(t('analyticsDashboard.detailedAnalytics.invoiceStatistics.title'), data.invoiceStatistics)}
+      {renderSection(t('analyticsDashboard.detailedAnalytics.quoteOverview.title'), data.quoteOverview)}
     </div>
   );
 };

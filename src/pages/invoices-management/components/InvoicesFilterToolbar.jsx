@@ -172,18 +172,22 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Période</label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 relative">
               <Input
                 type="date"
                 placeholder="Du"
                 value={dateRange.start}
                 onChange={(e) => handleDateRangeChange('start', e.target.value)}
+                className="relative z-10"
+                style={{ position: 'relative', zIndex: 10 }}
               />
               <Input
                 type="date"
                 placeholder="Au"
                 value={dateRange.end}
                 onChange={(e) => handleDateRangeChange('end', e.target.value)}
+                className="relative z-10"
+                style={{ position: 'relative', zIndex: 10 }}
               />
             </div>
           </div>
@@ -297,18 +301,22 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [] }) => {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Période</label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 relative">
                 <Input
                   type="date"
                   placeholder="Du"
                   value={dateRange.start}
                   onChange={(e) => handleDateRangeChange('start', e.target.value)}
+                  className="relative z-10"
+                  style={{ position: 'relative', zIndex: 10 }}
                 />
                 <Input
                   type="date"
                   placeholder="Au"
                   value={dateRange.end}
                   onChange={(e) => handleDateRangeChange('end', e.target.value)}
+                  className="relative z-10"
+                  style={{ position: 'relative', zIndex: 10 }}
                 />
               </div>
             </div>

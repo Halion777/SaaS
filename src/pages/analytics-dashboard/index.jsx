@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import MainSidebar from '../../components/ui/MainSidebar';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
@@ -20,6 +21,7 @@ import { ExpenseInvoicesService } from '../../services/expenseInvoicesService';
 import { getAnalyticsObjectives } from '../../services/authService';
 
 const AnalyticsDashboard = () => {
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
@@ -198,7 +200,8 @@ const AnalyticsDashboard = () => {
       : (paymentRate > 0 ? 100 : 0);
 
     const formatCurrency = (amount) => {
-      return new Intl.NumberFormat('fr-FR', {
+      const locale = i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR';
+      return new Intl.NumberFormat(locale, {
         style: 'currency',
         currency: 'EUR',
         minimumFractionDigits: 0
@@ -207,43 +210,43 @@ const AnalyticsDashboard = () => {
 
     return [
       {
-        title: 'Total devis envoyés',
+        title: t('analyticsDashboard.kpis.totalQuotesSent.title'),
         value: quotesThisMonth.toString(),
         change: `${quotesGrowth >= 0 ? '+' : ''}${quotesGrowth}%`,
         trend: quotesGrowth >= 0 ? 'up' : 'down',
         icon: 'FileText',
         color: 'blue',
-        description: 'devis ce mois-ci'
+        description: t('analyticsDashboard.kpis.totalQuotesSent.description')
       },
       {
-        title: 'Devis acceptés',
+        title: t('analyticsDashboard.kpis.acceptedQuotes.title'),
         value: acceptedQuotesThisMonth.toString(),
         change: `${acceptedGrowth >= 0 ? '+' : ''}${acceptedGrowth}%`,
         trend: acceptedGrowth >= 0 ? 'up' : 'down',
         icon: 'CheckCircle',
         color: 'emerald',
-        description: 'taux de conversion'
+        description: t('analyticsDashboard.kpis.acceptedQuotes.description')
       },
       {
-        title: 'Revenu mensuel',
+        title: t('analyticsDashboard.kpis.monthlyRevenue.title'),
         value: formatCurrency(monthlyRevenue),
         change: `${revenueGrowth >= 0 ? '+' : ''}${revenueGrowth}%`,
         trend: revenueGrowth >= 0 ? 'up' : 'down',
         icon: 'Euro',
         color: 'orange',
-        description: 'vs mois précédent'
+        description: t('analyticsDashboard.kpis.monthlyRevenue.description')
       },
       {
-        title: 'Statut des paiements',
+        title: t('analyticsDashboard.kpis.paymentStatus.title'),
         value: `${paymentRate}%`,
         change: `${paymentRateGrowth >= 0 ? '+' : ''}${paymentRateGrowth}%`,
         trend: paymentRateGrowth >= 0 ? 'up' : 'down',
         icon: 'CreditCard',
         color: 'purple',
-        description: 'payés à temps'
+        description: t('analyticsDashboard.kpis.paymentStatus.description')
       }
     ];
-  }, [analyticsData]);
+  }, [analyticsData, t, i18n.language]);
 
   // Calculate detailed analytics data
   const detailedAnalyticsData = useMemo(() => {
@@ -306,7 +309,8 @@ const AnalyticsDashboard = () => {
     const months = [];
     for (let i = 5; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthKey = date.toLocaleDateString('fr-FR', { month: 'short' });
+      const locale = i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR';
+      const monthKey = date.toLocaleDateString(locale, { month: 'short' });
       const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
       const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
       
@@ -320,9 +324,42 @@ const AnalyticsDashboard = () => {
       months.push({
         month: monthKey,
         revenue: revenue,
-        forecast: null // No forecast for now
+        forecast: null // Will be calculated after all months are collected
       });
     }
+    
+    // Calculate forecast based on trend (simple moving average with growth projection)
+    // For future months, use the average growth rate from past months
+    const validRevenues = months.filter(m => m.revenue > 0).map(m => m.revenue);
+    if (validRevenues.length >= 2) {
+      // Calculate average growth rate
+      let totalGrowth = 0;
+      let growthCount = 0;
+      for (let i = 1; i < validRevenues.length; i++) {
+        if (validRevenues[i - 1] > 0) {
+          const growth = ((validRevenues[i] - validRevenues[i - 1]) / validRevenues[i - 1]) * 100;
+          totalGrowth += growth;
+          growthCount++;
+        }
+      }
+      const avgGrowthRate = growthCount > 0 ? totalGrowth / growthCount : 0;
+      
+      // Apply forecast: for past months with no revenue, use 0. For future months, project based on last month's revenue
+      const lastRevenue = months[months.length - 1].revenue;
+      months.forEach((month, index) => {
+        if (month.revenue === 0 && index < months.length - 1) {
+          // Past month with no revenue - forecast is 0
+          month.forecast = 0;
+        } else if (index === months.length - 1 && lastRevenue > 0) {
+          // Last month - forecast next month's revenue based on growth rate
+          month.forecast = lastRevenue * (1 + avgGrowthRate / 100);
+        } else if (month.revenue > 0) {
+          // Month with actual revenue - forecast is same as revenue (for visualization)
+          month.forecast = month.revenue;
+        }
+      });
+    }
+    
     return months;
   }, [analyticsData]);
 
@@ -330,23 +367,23 @@ const AnalyticsDashboard = () => {
   const conversionData = useMemo(() => {
     // Category mapping for display
     const categoryLabels = {
-      'plumbing': 'Plomberie',
-      'electrical': 'Électricité',
-      'carpentry': 'Menuiserie',
-      'painting': 'Peinture',
-      'masonry': 'Maçonnerie',
-      'tiling': 'Carrelage',
-      'roofing': 'Toiture',
-      'heating': 'Chauffage',
-      'renovation': 'Rénovation',
-      'cleaning': 'Nettoyage',
-      'solar': 'Solaire',
-      'gardening': 'Jardinage',
-      'locksmith': 'Serrurerie',
-      'glazing': 'Vitrerie',
-      'insulation': 'Isolation',
-      'airConditioning': 'Climatisation',
-      'other': 'Autre'
+      'plumbing': t('analyticsDashboard.categories.plumbing'),
+      'electrical': t('analyticsDashboard.categories.electrical'),
+      'carpentry': t('analyticsDashboard.categories.carpentry'),
+      'painting': t('analyticsDashboard.categories.painting'),
+      'masonry': t('analyticsDashboard.categories.masonry'),
+      'tiling': t('analyticsDashboard.categories.tiling'),
+      'roofing': t('analyticsDashboard.categories.roofing'),
+      'heating': t('analyticsDashboard.categories.heating'),
+      'renovation': t('analyticsDashboard.categories.renovation'),
+      'cleaning': t('analyticsDashboard.categories.cleaning'),
+      'solar': t('analyticsDashboard.categories.solar'),
+      'gardening': t('analyticsDashboard.categories.gardening'),
+      'locksmith': t('analyticsDashboard.categories.locksmith'),
+      'glazing': t('analyticsDashboard.categories.glazing'),
+      'insulation': t('analyticsDashboard.categories.insulation'),
+      'airConditioning': t('analyticsDashboard.categories.airConditioning'),
+      'other': t('analyticsDashboard.categories.other')
     };
 
     // Group quotes by category
@@ -381,7 +418,7 @@ const AnalyticsDashboard = () => {
       .slice(0, 4); // Top 4 categories
     
     // Return empty array with at least one item if no data
-    return result.length > 0 ? result : [{ name: 'Aucune donnée', rate: 0, count: 0 }];
+    return result.length > 0 ? result : [{ name: t('analyticsDashboard.charts.clientSegments.noData'), rate: 0, count: 0 }];
   }, [analyticsData]);
 
   // Calculate client segment data
@@ -399,19 +436,19 @@ const AnalyticsDashboard = () => {
 
     const segments = [
       {
-        name: 'Professionnel',
+        name: t('analyticsDashboard.charts.clientSegments.professional'),
         value: totalClients > 0 ? Math.round((professionalClients.length / totalClients) * 100) : 0,
         revenue: professionalRevenue
       },
       {
-        name: 'Particulier',
+        name: t('analyticsDashboard.charts.clientSegments.individual'),
         value: totalClients > 0 ? Math.round((individualClients.length / totalClients) * 100) : 0,
         revenue: individualRevenue
       }
     ].filter(segment => segment.value > 0 || segment.revenue > 0);
     
     // Return at least one segment if no data
-    return segments.length > 0 ? segments : [{ name: 'Aucune donnée', value: 100, revenue: 0 }];
+    return segments.length > 0 ? segments : [{ name: t('analyticsDashboard.charts.clientSegments.noData'), value: 100, revenue: 0 }];
   }, [analyticsData]);
 
   // Calculate current metrics progress
@@ -470,7 +507,7 @@ const AnalyticsDashboard = () => {
       clientTarget: Math.min(clientTarget, 100),
       projectsTarget: Math.min(projectsTarget, 100)
     };
-  }, [analyticsData, userObjectives]);
+  }, [analyticsData, userObjectives, t, i18n.language]);
 
   const renderTabContent = () => {
     switch(activeTab) {
@@ -585,10 +622,10 @@ const AnalyticsDashboard = () => {
               <div>
                 <div className="flex items-center">
                   <Icon name="BarChart3" size={24} className="text-primary mr-3" />
-                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Analyses Détaillées</h1>
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">{t('analyticsDashboard.header.title')}</h1>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Explorez vos données en profondeur pour des décisions stratégiques
+                  {t('analyticsDashboard.header.subtitle')}
                 </p>
               </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
@@ -623,8 +660,8 @@ const AnalyticsDashboard = () => {
               >
                 <span className="flex items-center">
                   <Icon name="PieChart" size={16} className="mr-2" />
-                  <span className="hidden sm:inline">Vue d'ensemble</span>
-                  <span className="sm:hidden">Vue</span>
+                  <span className="hidden sm:inline">{t('analyticsDashboard.tabs.overview.label')}</span>
+                  <span className="sm:hidden">{t('analyticsDashboard.tabs.overview.short')}</span>
                 </span>
               </button>
               <button
@@ -637,8 +674,8 @@ const AnalyticsDashboard = () => {
               >
                 <span className="flex items-center">
                   <Icon name="Users" size={16} className="mr-2" />
-                  <span className="hidden sm:inline">Segments clients</span>
-                  <span className="sm:hidden">Segments</span>
+                  <span className="hidden sm:inline">{t('analyticsDashboard.tabs.segments.label')}</span>
+                  <span className="sm:hidden">{t('analyticsDashboard.tabs.segments.short')}</span>
                 </span>
               </button>
             </div>

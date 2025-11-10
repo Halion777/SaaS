@@ -32,7 +32,7 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
     quotes.forEach(quote => {
       if (quote.client && quote.client.id) {
         const clientId = quote.client.id.toString();
-        const clientName = quote.client.name || quote.clientName || 'Client inconnu';
+        const clientName = quote.client.name || quote.clientName || t('quotesManagement.draft.unknownClient');
         
         if (!uniqueClients.has(clientId)) {
           uniqueClients.set(clientId, { value: clientId, label: clientName });
@@ -126,24 +126,6 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
           />
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">{t('quotesManagement.filter.period.label')}</label>
-            <div className="grid grid-cols-2 gap-2">
-              <Input
-                type="date"
-                placeholder={t('quotesManagement.filter.period.from')}
-                value={dateRange.start}
-                onChange={(e) => handleDateRangeChange('start', e.target.value)}
-              />
-              <Input
-                type="date"
-                placeholder={t('quotesManagement.filter.period.to')}
-                value={dateRange.end}
-                onChange={(e) => handleDateRangeChange('end', e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">{t('quotesManagement.filter.amount.label')}</label>
             <div className="grid grid-cols-2 gap-2">
               <Input
@@ -157,6 +139,28 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
                 placeholder={t('quotesManagement.filter.amount.max')}
                 value={amountRange.max}
                 onChange={(e) => handleAmountRangeChange('max', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">{t('quotesManagement.filter.period.label')}</label>
+            <div className="grid grid-cols-2 gap-2 relative" style={{ zIndex: 10 }}>
+              <Input
+                type="date"
+                placeholder={t('quotesManagement.filter.period.from')}
+                value={dateRange.start}
+                onChange={(e) => handleDateRangeChange('start', e.target.value)}
+                className="relative"
+                style={{ position: 'relative', zIndex: 10 }}
+              />
+              <Input
+                type="date"
+                placeholder={t('quotesManagement.filter.period.to')}
+                value={dateRange.end}
+                onChange={(e) => handleDateRangeChange('end', e.target.value)}
+                className="relative"
+                style={{ position: 'relative', zIndex: 10 }}
               />
             </div>
           </div>
@@ -254,24 +258,6 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
 
           <div className="grid grid-cols-1 gap-3">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">{t('quotesManagement.filter.period.label')}</label>
-              <div className="grid grid-cols-2 gap-2">
-                <Input
-                  type="date"
-                  placeholder={t('quotesManagement.filter.period.from')}
-                  value={dateRange.start}
-                  onChange={(e) => handleDateRangeChange('start', e.target.value)}
-                />
-                <Input
-                  type="date"
-                  placeholder={t('quotesManagement.filter.period.to')}
-                  value={dateRange.end}
-                  onChange={(e) => handleDateRangeChange('end', e.target.value)}
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">{t('quotesManagement.filter.amount.label')}</label>
               <div className="grid grid-cols-2 gap-2">
                 <Input
@@ -285,6 +271,28 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
                   placeholder={t('quotesManagement.filter.amount.max')}
                   value={amountRange.max}
                   onChange={(e) => handleAmountRangeChange('max', e.target.value)}
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">{t('quotesManagement.filter.period.label')}</label>
+              <div className="grid grid-cols-2 gap-2 relative" style={{ zIndex: 10 }}>
+                <Input
+                  type="date"
+                  placeholder={t('quotesManagement.filter.period.from')}
+                  value={dateRange.start}
+                  onChange={(e) => handleDateRangeChange('start', e.target.value)}
+                  className="relative"
+                  style={{ position: 'relative', zIndex: 10 }}
+                />
+                <Input
+                  type="date"
+                  placeholder={t('quotesManagement.filter.period.to')}
+                  value={dateRange.end}
+                  onChange={(e) => handleDateRangeChange('end', e.target.value)}
+                  className="relative"
+                  style={{ position: 'relative', zIndex: 10 }}
                 />
               </div>
             </div>

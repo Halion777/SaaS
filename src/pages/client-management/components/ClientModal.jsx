@@ -4,8 +4,10 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Icon from '../../../components/AppIcon';
+import { useTranslation } from 'react-i18next';
 
 const ClientModal = ({ client, onSave, onClose }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: '',
     type: 'particulier',
@@ -25,37 +27,37 @@ const ClientModal = ({ client, onSave, onClose }) => {
   });
 
   const typeOptions = [
-    { value: 'particulier', label: 'Particulier' },
-    { value: 'professionnel', label: 'Professionnel' }
+    { value: 'particulier', label: t('clientManagement.types.individual') },
+    { value: 'professionnel', label: t('clientManagement.types.professional') }
   ];
 
   const companySizeOptions = [
-    { value: 'TPE', label: 'TPE (1-9 salariés)' },
-    { value: 'PME', label: 'PME (10-249 salariés)' },
-    { value: 'ETI', label: 'ETI (250-4999 salariés)' },
-    { value: 'GE', label: 'Grande Entreprise (5000+ salariés)' }
+    { value: 'TPE', label: t('clientManagement.companySizes.TPE') },
+    { value: 'PME', label: t('clientManagement.companySizes.PME') },
+    { value: 'ETI', label: t('clientManagement.companySizes.ETI') },
+    { value: 'GE', label: t('clientManagement.companySizes.GE') }
   ];
 
   const countryOptions = [
-    { value: 'BE', label: 'Belgique' },
-    { value: 'FR', label: 'France' },
-    { value: 'CH', label: 'Suisse' },
-    { value: 'LU', label: 'Luxembourg' },
-    { value: 'CA', label: 'Canada' },
-    { value: 'US', label: 'États-Unis' },
-    { value: 'DE', label: 'Allemagne' },
-    { value: 'IT', label: 'Italie' },
-    { value: 'ES', label: 'Espagne' },
-    { value: 'NL', label: 'Pays-Bas' },
-    { value: 'GB', label: 'Royaume-Uni' },
-    { value: 'OTHER', label: 'Autre' }
+    { value: 'BE', label: t('clientManagement.countries.BE') },
+    { value: 'FR', label: t('clientManagement.countries.FR') },
+    { value: 'CH', label: t('clientManagement.countries.CH') },
+    { value: 'LU', label: t('clientManagement.countries.LU') },
+    { value: 'CA', label: t('clientManagement.countries.CA') },
+    { value: 'US', label: t('clientManagement.countries.US') },
+    { value: 'DE', label: t('clientManagement.countries.DE') },
+    { value: 'IT', label: t('clientManagement.countries.IT') },
+    { value: 'ES', label: t('clientManagement.countries.ES') },
+    { value: 'NL', label: t('clientManagement.countries.NL') },
+    { value: 'GB', label: t('clientManagement.countries.GB') },
+    { value: 'OTHER', label: t('clientManagement.countries.OTHER') }
   ];
 
   const preferenceOptions = [
-    { value: 'email', label: 'Email' },
-    { value: 'phone', label: 'Téléphone' },
-    { value: 'sms', label: 'SMS' },
-    { value: 'mail', label: 'Courrier' }
+    { value: 'email', label: t('clientManagement.preferences.email') },
+    { value: 'phone', label: t('clientManagement.preferences.phone') },
+    { value: 'sms', label: t('clientManagement.preferences.sms') },
+    { value: 'mail', label: t('clientManagement.preferences.mail') }
   ];
 
   useEffect(() => {
@@ -105,7 +107,7 @@ const ClientModal = ({ client, onSave, onClose }) => {
     // Validate Peppol ID if enabled
     if (formData.enablePeppol && formData.peppolId.trim()) {
       if (!validatePeppolId(formData.peppolId.trim())) {
-        alert('Le format du Peppol ID n\'est pas valide. Utilisez le format: 0208:123456789');
+        alert(t('clientManagement.modal.invalidPeppolId'));
         return;
       }
     }
@@ -127,7 +129,7 @@ const ClientModal = ({ client, onSave, onClose }) => {
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-foreground">
-              {client ? 'Modifier le Client' : 'Nouveau Client'}
+              {client ? t('clientManagement.modal.editClient') : t('clientManagement.modal.newClient')}
             </h2>
             <Button
               variant="ghost"
@@ -141,7 +143,7 @@ const ClientModal = ({ client, onSave, onClose }) => {
             {/* Client Type Selection */}
             <div className="space-y-3">
               <label className="block text-sm font-medium text-foreground">
-                Type de client *
+                {t('clientManagement.modal.clientType')} *
               </label>
               <div className="grid grid-cols-2 gap-3">
                 {typeOptions.map((option) => (
@@ -170,7 +172,7 @@ const ClientModal = ({ client, onSave, onClose }) => {
             {client && (
               <div className="space-y-3">
                 <label className="block text-sm font-medium text-foreground">
-                  Statut du client *
+                  {t('clientManagement.modal.clientStatus')} *
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <div
@@ -186,7 +188,7 @@ const ClientModal = ({ client, onSave, onClose }) => {
                         size={16} 
                         color={formData.isActive === true ? 'var(--color-primary)' : 'var(--color-muted-foreground)'} 
                       />
-                      <span className="text-sm font-medium">Actif</span>
+                      <span className="text-sm font-medium">{t('clientManagement.status.active')}</span>
                     </div>
                   </div>
                   <div
@@ -202,7 +204,7 @@ const ClientModal = ({ client, onSave, onClose }) => {
                         size={16} 
                         color={formData.isActive === false ? 'var(--color-primary)' : 'var(--color-muted-foreground)'} 
                     />
-                    <span className="text-sm font-medium">Inactif</span>
+                    <span className="text-sm font-medium">{t('clientManagement.status.inactive')}</span>
                     </div>
                   </div>
                 </div>
@@ -214,18 +216,18 @@ const ClientModal = ({ client, onSave, onClose }) => {
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label="Nom complet"
+                    label={t('clientManagement.modal.fullName')}
                     type="text"
-                    placeholder="Nom et prénom"
+                    placeholder={t('clientManagement.modal.fullNamePlaceholder')}
                     value={formData.name}
                     onChange={(e) => handleChange('name', e.target.value)}
                     required
                   />
                   
                   <Input
-                    label="Email"
+                    label={t('clientManagement.modal.email')}
                     type="email"
-                    placeholder="email@exemple.com"
+                    placeholder={t('clientManagement.modal.emailPlaceholder')}
                     value={formData.email}
                     onChange={(e) => handleChange('email', e.target.value)}
                     required
@@ -234,18 +236,18 @@ const ClientModal = ({ client, onSave, onClose }) => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label="Téléphone"
+                    label={t('clientManagement.modal.phone')}
                     type="tel"
-                    placeholder="04 12 34 56 78"
+                    placeholder={t('clientManagement.modal.phonePlaceholder')}
                     value={formData.phone}
                     onChange={(e) => handleChange('phone', e.target.value)}
                     required
                   />
                   
                   <Input
-                    label="Adresse"
+                    label={t('clientManagement.modal.address')}
                     type="text"
-                    placeholder="Adresse complète"
+                    placeholder={t('clientManagement.modal.addressPlaceholder')}
                     value={formData.address}
                     onChange={(e) => handleChange('address', e.target.value)}
                   />
@@ -258,18 +260,18 @@ const ClientModal = ({ client, onSave, onClose }) => {
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label="Raison sociale"
+                    label={t('clientManagement.modal.companyName')}
                     type="text"
-                    placeholder="Nom de l'entreprise"
+                    placeholder={t('clientManagement.modal.companyNamePlaceholder')}
                     value={formData.name}
                     onChange={(e) => handleChange('name', e.target.value)}
                     required
                   />
                   
                   <Input
-                    label="Email"
+                    label={t('clientManagement.modal.email')}
                     type="email"
-                    placeholder="email@exemple.com"
+                    placeholder={t('clientManagement.modal.emailPlaceholder')}
                     value={formData.email}
                     onChange={(e) => handleChange('email', e.target.value)}
                     required
@@ -278,18 +280,18 @@ const ClientModal = ({ client, onSave, onClose }) => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label="Téléphone"
+                    label={t('clientManagement.modal.phone')}
                     type="tel"
-                    placeholder="04 12 34 56 78"
+                    placeholder={t('clientManagement.modal.phonePlaceholder')}
                     value={formData.phone}
                     onChange={(e) => handleChange('phone', e.target.value)}
                     required
                   />
                   
                   <Input
-                    label="Adresse"
+                    label={t('clientManagement.modal.address')}
                     type="text"
-                    placeholder="Adresse complète"
+                    placeholder={t('clientManagement.modal.addressPlaceholder')}
                     value={formData.address}
                     onChange={(e) => handleChange('address', e.target.value)}
                   />
@@ -298,64 +300,64 @@ const ClientModal = ({ client, onSave, onClose }) => {
                 {/* Location fields - moved here after telephone and address */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label="Ville"
+                    label={t('clientManagement.modal.city')}
                     type="text"
                     value={formData.city}
                     onChange={(e) => handleChange('city', e.target.value)}
-                    placeholder="Bruxelles"
+                    placeholder={t('clientManagement.modal.cityPlaceholder')}
                   />
                   
                   <Select
-                    label="Pays"
+                    label={t('clientManagement.modal.country')}
                     options={countryOptions}
                     value={formData.country}
                     onChange={(e) => handleChange('country', e.target.value)}
-                    placeholder="Sélectionner le pays"
+                    placeholder={t('clientManagement.modal.countryPlaceholder')}
                   />
                   
                   <Input
-                    label="Code postal"
+                    label={t('clientManagement.modal.postalCode')}
                     type="text"
                     value={formData.postalCode}
                     onChange={(e) => handleChange('postalCode', e.target.value)}
-                    placeholder="1000"
+                    placeholder={t('clientManagement.modal.postalCodePlaceholder')}
                   />
                 </div>
 
                 {/* Professional-specific fields */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-foreground">Informations professionnelles</h3>
+                  <h3 className="text-lg font-semibold text-foreground">{t('clientManagement.modal.professionalInfo')}</h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
-                      label="Personne de contact"
+                      label={t('clientManagement.modal.contactPerson')}
                       type="text"
                       value={formData.contactPerson}
                       onChange={(e) => handleChange('contactPerson', e.target.value)}
-                      placeholder="Nom de la personne de contact"
+                      placeholder={t('clientManagement.modal.contactPersonPlaceholder')}
                     />
                     
                     <Select
-                      label="Taille de l'entreprise"
+                      label={t('clientManagement.modal.companySize')}
                       options={companySizeOptions}
                       value={formData.companySize}
                       onChange={(e) => handleChange('companySize', e.target.value)}
-                      placeholder="Sélectionner la taille"
+                      placeholder={t('clientManagement.modal.companySizePlaceholder')}
                     />
                     
                     <Input
-                      label="Numéro de TVA"
+                      label={t('clientManagement.modal.vatNumber')}
                       type="text"
                       value={formData.regNumber}
                       onChange={(e) => handleChange('regNumber', e.target.value)}
-                      placeholder="Numéro de TVA ou d'enregistrement"
+                      placeholder={t('clientManagement.modal.vatNumberPlaceholder')}
                     />
                   </div>
                 </div>
                 
                 {/* PEPPOL Configuration - only for professional clients */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-foreground">Configuration PEPPOL</h3>
+                  <h3 className="text-lg font-semibold text-foreground">{t('clientManagement.modal.peppolConfig')}</h3>
                   
                   <div className="flex items-center space-x-2">
                     <input
@@ -366,17 +368,17 @@ const ClientModal = ({ client, onSave, onClose }) => {
                       className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
                     />
                     <label htmlFor="enablePeppol" className="text-sm font-medium text-foreground">
-                      Activer PEPPOL pour ce client
+                      {t('clientManagement.modal.enablePeppol')}
                     </label>
                   </div>
                   
                   {formData.enablePeppol && (
                     <Input
-                      label="Peppol ID du client"
+                      label={t('clientManagement.modal.peppolId')}
                       type="text"
                       value={formData.peppolId}
                       onChange={(e) => handleChange('peppolId', e.target.value)}
-                      placeholder="Format: 0000:IDENTIFIANT"
+                      placeholder={t('clientManagement.modal.peppolIdPlaceholder')}
                     />
                   )}
                 </div>
@@ -386,7 +388,7 @@ const ClientModal = ({ client, onSave, onClose }) => {
             {/* Communication Preferences */}
             <div className="space-y-3">
               <label className="block text-sm font-medium text-foreground">
-                Préférences de communication
+                {t('clientManagement.modal.communicationPreferences')}
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {preferenceOptions.map((preference) => (
@@ -413,13 +415,13 @@ const ClientModal = ({ client, onSave, onClose }) => {
                 variant="outline"
                 onClick={onClose}
               >
-                Annuler
+                {t('clientManagement.modal.cancel')}
               </Button>
               <Button
                 type="submit"
                 disabled={!isFormValid}
               >
-                {client ? 'Mettre à jour' : 'Créer le client'}
+                {client ? t('clientManagement.modal.update') : t('clientManagement.modal.create')}
               </Button>
             </div>
           </form>

@@ -195,8 +195,54 @@ const LeadsManagementPage = () => {
     }
   };
 
-  const handleSettingChange = (field, value) => {
-    setSettings(prev => ({ ...prev, [field]: value }));
+  // Helper function to save settings to database
+  const saveSettingsToDatabase = async (settingsToSave) => {
+    if (!user) return;
+    
+    setSaving(true);
+    try {
+      // Convert regionsServed from flat structure to nested structure
+      const regionsServed = {};
+      Object.keys(settingsToSave.countriesServed).forEach(countryCode => {
+        if (settingsToSave.countriesServed[countryCode]) {
+          regionsServed[countryCode] = [];
+          Object.keys(settingsToSave.regionsServed).forEach(key => {
+            if (key.startsWith(`${countryCode}-`)) {
+              const region = key.replace(`${countryCode}-`, '');
+              if (settingsToSave.regionsServed[key]) {
+                regionsServed[countryCode].push(region);
+              }
+            }
+          });
+        }
+      });
+
+      const { success, error } = await LeadManagementService.updateArtisanPreferences(user.id, {
+        receive_leads: settingsToSave.receiveLeads,
+        countries_served: settingsToSave.countriesServed,
+        regions_served: regionsServed,
+        work_categories: settingsToSave.workCategories,
+        other_work_category: settingsToSave.otherWorkCategory
+      });
+      
+      if (!success) {
+        console.error('Error saving settings:', error);
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSettingChange = async (field, value) => {
+    const newSettings = { ...settings, [field]: value };
+    setSettings(newSettings);
+    
+    // Auto-save to database
+    if (user) {
+      await saveSettingsToDatabase(newSettings);
+    }
   };
 
   const handleFiltersChange = (newFilters) => {
@@ -268,53 +314,24 @@ const LeadsManagementPage = () => {
     setFilteredLeads(filtered);
   }, [filters, leads]);
 
-  const handleCategoryToggle = (category) => {
-    setSettings(prev => ({
-      ...prev,
+  const handleCategoryToggle = async (category) => {
+    const newSettings = {
+      ...settings,
       workCategories: {
-        ...prev.workCategories,
-        [category]: !prev.workCategories[category]
+        ...settings.workCategories,
+        [category]: !settings.workCategories[category]
       }
-    }));
+    };
+    setSettings(newSettings);
+    
+    // Auto-save to database
+    if (user) {
+      await saveSettingsToDatabase(newSettings);
+    }
   };
 
   const handleSaveSettings = async () => {
-    if (!user) return;
-    
-    setSaving(true);
-    try {
-      // Convert regionsServed from flat structure to nested structure
-      const regionsServed = {};
-      Object.keys(settings.countriesServed).forEach(countryCode => {
-        if (settings.countriesServed[countryCode]) {
-          regionsServed[countryCode] = [];
-          Object.keys(settings.regionsServed).forEach(key => {
-            if (key.startsWith(`${countryCode}-`)) {
-              const region = key.replace(`${countryCode}-`, '');
-              if (settings.regionsServed[key]) {
-                regionsServed[countryCode].push(region);
-              }
-            }
-          });
-        }
-      });
-
-      const { success, error } = await LeadManagementService.updateArtisanPreferences(user.id, {
-        receive_leads: settings.receiveLeads,
-        countries_served: settings.countriesServed,
-        regions_served: regionsServed,
-        work_categories: settings.workCategories,
-        other_work_category: settings.otherWorkCategory
-      });
-      
-      if (!success) {
-        console.error('Error saving settings:', error);
-      }
-    } catch (error) {
-      console.error('Error saving settings:', error);
-    } finally {
-      setSaving(false);
-    }
+    await saveSettingsToDatabase(settings);
   };
 
   const handleQuoteLead = (leadId) => {
@@ -612,34 +629,43 @@ const LeadsManagementPage = () => {
         </div>
       </div>
 
-      {/* Countries Served */}
-      <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
-        <h3 className="text-sm sm:text-base font-medium text-foreground mb-4">{t('leadsManagement.settingsTab.countriesServed.title')}</h3>
-        <p className="text-xs sm:text-sm text-muted-foreground mb-4">{t('leadsManagement.settingsTab.countriesServed.description')}</p>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {getCountryOptions().map((country) => (
-            <div key={country.value} className="flex items-center justify-between">
-              <span className="text-sm text-foreground">{country.label}</span>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={settings.countriesServed[country.value]}
-                  onChange={() => handleSettingChange('countriesServed', {
-                    ...settings.countriesServed,
-                    [country.value]: !settings.countriesServed[country.value]
-                  })}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-              </label>
-            </div>
-          ))}
+      {/* Countries Served - Only show when receiveLeads is ON */}
+      {settings.receiveLeads && (
+        <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+          <h3 className="text-sm sm:text-base font-medium text-foreground mb-4">{t('leadsManagement.settingsTab.countriesServed.title')}</h3>
+          <p className="text-xs sm:text-sm text-muted-foreground mb-4">{t('leadsManagement.settingsTab.countriesServed.description')}</p>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {getCountryOptions().map((country) => (
+              <div key={country.value} className="flex items-center justify-between">
+                <span className="text-sm text-foreground">{country.label}</span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.countriesServed[country.value]}
+                    onChange={async () => {
+                      const newCountriesServed = {
+                        ...settings.countriesServed,
+                        [country.value]: !settings.countriesServed[country.value]
+                      };
+                      const newSettings = { ...settings, countriesServed: newCountriesServed };
+                      setSettings(newSettings);
+                      if (user) {
+                        await saveSettingsToDatabase(newSettings);
+                      }
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Regions Served */}
-      {Object.keys(settings.countriesServed).filter(country => settings.countriesServed[country]).length > 0 && (
+      {/* Regions Served - Only show when receiveLeads is ON */}
+      {settings.receiveLeads && Object.keys(settings.countriesServed).filter(country => settings.countriesServed[country]).length > 0 && (
         <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
           <h3 className="text-sm sm:text-base font-medium text-foreground mb-4">{t('leadsManagement.settingsTab.regionsServed.title')}</h3>
           <p className="text-xs sm:text-sm text-muted-foreground mb-4">{t('leadsManagement.settingsTab.regionsServed.description')}</p>
@@ -655,10 +681,17 @@ const LeadsManagementPage = () => {
                       <input
                         type="checkbox"
                         checked={settings.regionsServed[`${countryCode}-${region.value}`] || false}
-                        onChange={() => handleSettingChange('regionsServed', {
-                          ...settings.regionsServed,
-                          [`${countryCode}-${region.value}`]: !settings.regionsServed[`${countryCode}-${region.value}`]
-                        })}
+                        onChange={async () => {
+                          const newRegionsServed = {
+                            ...settings.regionsServed,
+                            [`${countryCode}-${region.value}`]: !settings.regionsServed[`${countryCode}-${region.value}`]
+                          };
+                          const newSettings = { ...settings, regionsServed: newRegionsServed };
+                          setSettings(newSettings);
+                          if (user) {
+                            await saveSettingsToDatabase(newSettings);
+                          }
+                        }}
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -671,8 +704,9 @@ const LeadsManagementPage = () => {
         </div>
       )}
 
-      {/* Work Categories */}
-      <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+      {/* Work Categories - Only show when receiveLeads is ON */}
+      {settings.receiveLeads && (
+        <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
         <h3 className="text-sm sm:text-base font-medium text-foreground mb-4">{t('leadsManagement.settingsTab.workCategories.title')}</h3>
         <p className="text-xs sm:text-sm text-muted-foreground mb-4">{t('leadsManagement.settingsTab.workCategories.description')}</p>
         
@@ -908,19 +942,26 @@ const LeadsManagementPage = () => {
           </div>
         </div>
         
-        {/* Conditional input for "Autres" category */}
-        {settings.workCategories.other && (
-          <div className="mt-4">
-            <Input
-              label={t('leadsManagement.settingsTab.workCategories.other')}
-              type="text"
-              value={settings.otherWorkCategory}
-              onChange={(e) => handleSettingChange('otherWorkCategory', e.target.value)}
-              placeholder={t('leadsManagement.settingsTab.workCategories.otherPlaceholder')}
-            />
-          </div>
-        )}
-      </div>
+          {/* Conditional input for "Autres" category */}
+          {settings.workCategories.other && (
+            <div className="mt-4">
+              <Input
+                label={t('leadsManagement.settingsTab.workCategories.other')}
+                type="text"
+                value={settings.otherWorkCategory}
+                onChange={async (e) => {
+                  const newSettings = { ...settings, otherWorkCategory: e.target.value };
+                  setSettings(newSettings);
+                  if (user) {
+                    await saveSettingsToDatabase(newSettings);
+                  }
+                }}
+                placeholder={t('leadsManagement.settingsTab.workCategories.otherPlaceholder')}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Save Button */}
       <div className="flex justify-end">

@@ -1532,8 +1532,8 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
           size="sm"
           className="w-full sm:w-auto"
         >
-          <span className="hidden sm:inline">{t('quoteCreation.navigation.nextStep', 'Étape suivante')}</span>
-          <span className="sm:hidden">{t('quoteCreation.navigation.next', 'Suivant')}</span>
+          <span className="hidden sm:inline">{t('quoteCreation.navigation.nextStep')}</span>
+          <span className="sm:hidden">{t('quoteCreation.navigation.next')}</span>
         </Button>
         
         {/* Help text when button is disabled due to lead_id */}

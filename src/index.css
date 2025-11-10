@@ -147,4 +147,21 @@
 
 .react-signature-canvas canvas {
   border-radius: 0.5rem;
+}
+
+/* Date input styling to prevent hiding when sidebar is open */
+input[type="date"] {
+  position: relative;
+  z-index: 10;
+}
+
+/* Ensure date picker containers don't clip content */
+.relative input[type="date"] {
+  position: relative;
+  z-index: 10;
+}
+
+/* Prevent overflow clipping on filter containers with date inputs */
+div:has(input[type="date"]) {
+  overflow: visible;
 } 

@@ -761,31 +761,31 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
   };
 
   const durationOptions = [
-    { value: '0.5', label: '30 minutes' },
-    { value: '1', label: '1 heure' },
-    { value: '2', label: '2 heures' },
-    { value: '4', label: '4 heures' },
-    { value: '8', label: '1 jour' },
-    { value: '16', label: '2 jours' },
-    { value: '24', label: '3 jours' },
-    { value: '40', label: '1 semaine' },
-    { value: 'custom', label: t('quoteCreation.taskDefinition.customDuration', 'Durée personnalisée') }
+    { value: '0.5', label: t('quoteCreation.taskDefinition.durationOptions.30Minutes') },
+    { value: '1', label: t('quoteCreation.taskDefinition.durationOptions.1Hour') },
+    { value: '2', label: t('quoteCreation.taskDefinition.durationOptions.2Hours') },
+    { value: '4', label: t('quoteCreation.taskDefinition.durationOptions.4Hours') },
+    { value: '8', label: t('quoteCreation.taskDefinition.durationOptions.1Day') },
+    { value: '16', label: t('quoteCreation.taskDefinition.durationOptions.2Days') },
+    { value: '24', label: t('quoteCreation.taskDefinition.durationOptions.3Days') },
+    { value: '40', label: t('quoteCreation.taskDefinition.durationOptions.1Week') },
+    { value: 'custom', label: t('quoteCreation.taskDefinition.customDuration') }
   ];
 
   const unitOptions = [
-    { value: 'pièce', label: 'Pièce' },
-    { value: 'm', label: 'Mètre' },
-    { value: 'm²', label: 'Mètre carré' },
-    { value: 'kg', label: 'Kilogramme' },
-    { value: 'l', label: 'Litre' },
-    { value: 'boîte', label: 'Boîte' },
-    { value: 'sac', label: 'Sac' }
+    { value: 'pièce', label: t('quoteCreation.taskDefinition.units.piece') },
+    { value: 'm', label: t('quoteCreation.taskDefinition.units.meter') },
+    { value: 'm²', label: t('quoteCreation.taskDefinition.units.squareMeter') },
+    { value: 'kg', label: t('quoteCreation.taskDefinition.units.kilogram') },
+    { value: 'l', label: t('quoteCreation.taskDefinition.units.liter') },
+    { value: 'boîte', label: t('quoteCreation.taskDefinition.units.box') },
+    { value: 'sac', label: t('quoteCreation.taskDefinition.units.bag') }
   ];
 
   const durationUnitOptions = [
-    { value: 'minutes', label: 'Minutes' },
-    { value: 'hours', label: 'Heures' },
-    { value: 'days', label: 'Jours' }
+    { value: 'minutes', label: t('quoteCreation.taskDefinition.durationUnits.minutes') },
+    { value: 'hours', label: t('quoteCreation.taskDefinition.durationUnits.hours') },
+    { value: 'days', label: t('quoteCreation.taskDefinition.durationUnits.days') }
   ];
 
   // AI suggestions state
@@ -1363,9 +1363,9 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         }
       case 'days':
         if (value === 1) {
-          return '1 jour';
+          return t('quoteCreation.taskDefinition.durationUnits.1Day', '1 day');
         } else {
-          return `${value} jours`;
+          return t('quoteCreation.taskDefinition.durationUnits.daysPlural', '{{count}} days', { count: value });
         }
       default:
         return `${value}min`;
@@ -1655,7 +1655,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                   {t('quoteCreation.taskDefinition.materials')}
                   {currentTask.materials.length > 0 && (
                     <span className="ml-2 px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
-                      {currentTask.materials.length} matériau{currentTask.materials.length > 1 ? 'x' : ''}
+                      {t('quoteCreation.taskDefinition.materialsCount', { count: currentTask.materials.length })}
                     </span>
                   )}
                 </h4>
@@ -1888,7 +1888,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
           iconName="ArrowLeft"
           iconPosition="left"
         >
-          {t('quoteCreation.navigation.previousStep', 'Étape précédente')}
+          {t('quoteCreation.navigation.previousStep')}
         </Button>
         <Button
           onClick={onNext}
@@ -1896,7 +1896,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
           iconName="ArrowRight"
           iconPosition="right"
         >
-          {t('quoteCreation.navigation.nextStep', 'Étape suivante')}
+          {t('quoteCreation.navigation.nextStep')}
         </Button>
       </div>
     </div>

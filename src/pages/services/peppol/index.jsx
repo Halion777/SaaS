@@ -12,7 +12,7 @@ import { supabase } from '../../../services/supabaseClient';
 import { COUNTRY_CODES, searchCountries } from '../../../utils/countryCodes';
 
 const PeppolNetworkPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
@@ -195,6 +195,7 @@ const PeppolNetworkPage = () => {
 
       // Load sent invoices (from invoices table where peppol_enabled = true)
       // Only show invoices for professional clients (client_type = 'company')
+      // Only show paid invoices (status = 'paid')
       const { data: sentInvoicesData, error: sentError } = await supabase
         .from('invoices')
         .select(`
@@ -205,6 +206,7 @@ const PeppolNetworkPage = () => {
           final_amount,
           issue_date,
           due_date,
+          status,
           peppol_status,
           peppol_message_id,
           peppol_sent_at,
@@ -219,6 +221,7 @@ const PeppolNetworkPage = () => {
         `)
         .eq('user_id', user.id)
         .eq('peppol_enabled', true)
+        .eq('status', 'paid')
         .order('peppol_sent_at', { ascending: false });
 
       // Load received invoices (from expense_invoices table where peppol_enabled = true)
@@ -249,8 +252,9 @@ const PeppolNetworkPage = () => {
 
       // Transform sent invoices to match expected format
       // Filter to only include invoices for professional clients (client_type = 'company')
+      // And only paid invoices (status = 'paid')
       const sent = (sentInvoicesData || [])
-        .filter(inv => inv.clients?.client_type === 'company') // Only professional clients
+        .filter(inv => inv.clients?.client_type === 'company' && inv.status === 'paid') // Only professional clients and paid invoices
         .map(inv => ({
           id: inv.id,
           invoice_number: inv.invoice_number,
@@ -423,15 +427,15 @@ const PeppolNetworkPage = () => {
   const getStatusText = (status) => {
     switch (status) {
       case 'delivered':
-        return 'Livré';
+        return t('peppol.status.delivered');
       case 'received':
-        return 'Reçu';
+        return t('peppol.status.received');
       case 'processed':
-        return 'Traité';
+        return t('peppol.status.processed');
       case 'pending':
-        return 'En attente';
+        return t('peppol.status.pending');
       default:
-        return 'Inconnu';
+        return t('peppol.status.unknown');
     }
   };
 
@@ -453,23 +457,23 @@ const PeppolNetworkPage = () => {
           isConfigured: result.data?.isConfigured || true,
           ...result.data 
         }));
-        setSuccessMessage(result.message || 'Paramètres enregistrés avec succès !');
+        setSuccessMessage(result.message || t('peppol.messages.settingsSaved'));
         // Clear success message after 5 seconds
         setTimeout(() => setSuccessMessage(null), 5000);
       } else {
         // Check if participant is already registered
         if (result.alreadyRegistered) {
-          setSuccessMessage('Ce participant est déjà enregistré dans Digiteal. Vos paramètres ont été enregistrés avec succès.');
+          setSuccessMessage(t('peppol.messages.alreadyRegistered'));
           // Clear success message after 5 seconds
           setTimeout(() => setSuccessMessage(null), 5000);
         } else {
-          setErrorMessage(result.error || 'Erreur lors de l\'enregistrement des paramètres.');
+          setErrorMessage(result.error || t('peppol.messages.saveError'));
           // Clear error message after 5 seconds
           setTimeout(() => setErrorMessage(null), 5000);
         }
       }
     } catch (error) {
-      setErrorMessage('Erreur lors de l\'enregistrement des paramètres : ' + error.message);
+      setErrorMessage(t('peppol.messages.saveError') + ': ' + error.message);
       // Clear error message after 5 seconds
       setTimeout(() => setErrorMessage(null), 5000);
     } finally {
@@ -611,12 +615,12 @@ const PeppolNetworkPage = () => {
       <table className="w-full min-w-[800px]">
         <thead className="bg-muted/50">
           <tr>
-            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">N° Facture</th>
-            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">Destinataire</th>
-            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">Peppol ID</th>
-            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">Montant</th>
-            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">Date</th>
-            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">Statut</th>
+            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">{t('peppol.invoices.invoiceNumber')}</th>
+            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">{t('peppol.invoices.recipient')}</th>
+            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">{t('peppol.invoices.peppolId')}</th>
+            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">{t('peppol.invoices.amount')}</th>
+            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">{t('peppol.invoices.date')}</th>
+            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">{t('peppol.invoices.status')}</th>
           </tr>
         </thead>
         <tbody>
@@ -631,10 +635,10 @@ const PeppolNetworkPage = () => {
               </td>
               <td className="p-4 text-sm text-muted-foreground font-mono">{invoice.peppolId}</td>
               <td className="p-4 font-medium">
-                {invoice.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                {invoice.amount.toLocaleString(i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR' })}
               </td>
               <td className="p-4 text-sm text-muted-foreground">
-                {new Date(invoice.date).toLocaleDateString('fr-FR')}
+                {new Date(invoice.date).toLocaleDateString(i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR')}
               </td>
               <td className="p-4">
                 <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getStatusColor(invoice.status)}`}>
@@ -670,11 +674,11 @@ const PeppolNetworkPage = () => {
             
             <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-2 sm:mb-3">
               <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Email</p>
+                <p className="text-xs text-muted-foreground mb-0.5">{t('peppol.invoices.email')}</p>
                 <p className="text-xs text-foreground truncate">{invoice.recipientEmail}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Montant</p>
+                <p className="text-xs text-muted-foreground mb-0.5">{t('peppol.invoices.amount')}</p>
                 <p className="text-xs font-medium text-foreground">{invoice.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</p>
               </div>
             </div>
@@ -685,7 +689,7 @@ const PeppolNetworkPage = () => {
                 <span className="text-xs text-muted-foreground font-mono truncate">{invoice.peppolId}</span>
               </div>
               <div className="text-xs text-muted-foreground flex-shrink-0">
-                {new Date(invoice.date).toLocaleDateString('fr-FR')}
+                {new Date(invoice.date).toLocaleDateString(i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR')}
               </div>
             </div>
           </div>
@@ -699,12 +703,12 @@ const PeppolNetworkPage = () => {
       <table className="w-full">
         <thead className="bg-muted/50">
           <tr>
-            <th className="text-left p-4 font-medium">N° Facture</th>
-            <th className="text-left p-4 font-medium">Expéditeur</th>
-            <th className="text-left p-4 font-medium">Peppol ID</th>
-            <th className="text-left p-4 font-medium">Montant</th>
-            <th className="text-left p-4 font-medium">Date</th>
-            <th className="text-left p-4 font-medium">Statut</th>
+            <th className="text-left p-4 font-medium">{t('peppol.invoices.invoiceNumber')}</th>
+            <th className="text-left p-4 font-medium">{t('peppol.invoices.sender')}</th>
+            <th className="text-left p-4 font-medium">{t('peppol.invoices.peppolId')}</th>
+            <th className="text-left p-4 font-medium">{t('peppol.invoices.amount')}</th>
+            <th className="text-left p-4 font-medium">{t('peppol.invoices.date')}</th>
+            <th className="text-left p-4 font-medium">{t('peppol.invoices.status')}</th>
           </tr>
         </thead>
         <tbody>
@@ -719,10 +723,10 @@ const PeppolNetworkPage = () => {
               </td>
               <td className="p-4 text-sm text-muted-foreground font-mono">{invoice.peppolId}</td>
               <td className="p-4 font-medium">
-                {invoice.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                {invoice.amount.toLocaleString(i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR' })}
               </td>
               <td className="p-4 text-sm text-muted-foreground">
-                {new Date(invoice.date).toLocaleDateString('fr-FR')}
+                {new Date(invoice.date).toLocaleDateString(i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR')}
               </td>
               <td className="p-4">
                 <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getStatusColor(invoice.status)}`}>
@@ -758,11 +762,11 @@ const PeppolNetworkPage = () => {
             
             <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-2 sm:mb-3">
               <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Email</p>
+                <p className="text-xs text-muted-foreground mb-0.5">{t('peppol.invoices.email')}</p>
                 <p className="text-xs text-foreground truncate">{invoice.senderEmail}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Montant</p>
+                <p className="text-xs text-muted-foreground mb-0.5">{t('peppol.invoices.amount')}</p>
                 <p className="text-xs font-medium text-foreground">{invoice.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</p>
               </div>
             </div>
@@ -773,7 +777,7 @@ const PeppolNetworkPage = () => {
                 <span className="text-xs text-muted-foreground font-mono truncate">{invoice.peppolId}</span>
               </div>
               <div className="text-xs text-muted-foreground flex-shrink-0">
-                {new Date(invoice.date).toLocaleDateString('fr-FR')}
+                {new Date(invoice.date).toLocaleDateString(i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR')}
               </div>
             </div>
           </div>
@@ -799,22 +803,22 @@ const PeppolNetworkPage = () => {
             <div>
                 <div className="flex items-center">
                   <Icon name="Network" size={24} className="text-primary mr-3" />
-                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Réseau Peppol</h1>
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">{t('peppol.header.title')}</h1>
                   {peppolSettings.isConfigured && (
                     <div className="ml-3 flex items-center space-x-2">
                       <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                      <span className="text-xs text-muted-foreground">Connecté</span>
+                      <span className="text-xs text-muted-foreground">{t('peppol.header.connected')}</span>
                     </div>
                   )}
                   {!peppolSettings.isConfigured && peppolSettings.peppolId && (
                     <div className="ml-3 flex items-center space-x-2">
                       <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                      <span className="text-xs text-muted-foreground">Configuration requise</span>
+                      <span className="text-xs text-muted-foreground">{t('peppol.header.configurationRequired')}</span>
                     </div>
                   )}
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                Factures envoyées et reçues via le réseau Peppol
+                {t('peppol.header.subtitle')}
               </p>
             </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
@@ -828,7 +832,7 @@ const PeppolNetworkPage = () => {
             <div className="bg-card border border-border rounded-lg p-3 sm:p-4 lg:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Factures envoyées</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{t('peppol.stats.sentInvoices')}</p>
                   <p className="text-lg sm:text-xl lg:text-2xl font-bold">
                     {loading ? '...' : peppolStats.totalSent}
                   </p>
@@ -841,7 +845,7 @@ const PeppolNetworkPage = () => {
             <div className="bg-card border border-border rounded-lg p-3 sm:p-4 lg:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Factures reçues</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{t('peppol.stats.receivedInvoices')}</p>
                   <p className="text-lg sm:text-xl lg:text-2xl font-bold">
                     {loading ? '...' : peppolStats.totalReceived}
                   </p>
@@ -854,9 +858,9 @@ const PeppolNetworkPage = () => {
             <div className="bg-card border border-border rounded-lg p-3 sm:p-4 lg:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Total envoyé</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{t('peppol.stats.totalSent')}</p>
                   <p className="text-lg sm:text-xl lg:text-2xl font-bold">
-                    {loading ? '...' : peppolStats.totalSentAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                    {loading ? '...' : peppolStats.totalSentAmount.toLocaleString(i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR' })}
                   </p>
                 </div>
                 <div className="bg-warning/10 p-2 sm:p-3 rounded-lg">
@@ -867,9 +871,9 @@ const PeppolNetworkPage = () => {
             <div className="bg-card border border-border rounded-lg p-3 sm:p-4 lg:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Total reçu</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{t('peppol.stats.totalReceived')}</p>
                   <p className="text-lg sm:text-xl lg:text-2xl font-bold">
-                    {loading ? '...' : peppolStats.totalReceivedAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                    {loading ? '...' : peppolStats.totalReceivedAmount.toLocaleString(i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR' })}
                   </p>
                 </div>
                 <div className="bg-info/10 p-2 sm:p-3 rounded-lg">
@@ -890,7 +894,7 @@ const PeppolNetworkPage = () => {
                 }`}
                 onClick={() => setActiveTab('setup')}
               >
-                Configuration
+                {t('peppol.tabs.setup')}
               </button>
               <button
                 className={`pb-2 px-1 text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${
@@ -900,7 +904,7 @@ const PeppolNetworkPage = () => {
                 }`}
                 onClick={() => setActiveTab('sent')}
               >
-                Factures envoyées ({peppolStats.totalSent})
+                {t('peppol.tabs.sentInvoices')} ({peppolStats.totalSent})
               </button>
               <button
                 className={`pb-2 px-1 text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${
@@ -910,7 +914,7 @@ const PeppolNetworkPage = () => {
                 }`}
                 onClick={() => setActiveTab('received')}
               >
-                Factures reçues ({peppolStats.totalReceived})
+                {t('peppol.tabs.receivedInvoices')} ({peppolStats.totalReceived})
               </button>
             </div>
           </div>
@@ -921,7 +925,7 @@ const PeppolNetworkPage = () => {
               <div className="w-full">
                 {loading ? (
                   <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
-                    <TableLoader message="Chargement de la configuration..." />
+                    <TableLoader message={t('peppol.loading.configuration')} />
                   </div>
                 ) : (
                 /* Peppol Integration Setup */
@@ -969,9 +973,9 @@ const PeppolNetworkPage = () => {
                         <Icon name="Link" size={20} className="sm:w-6 sm:h-6 text-primary" />
                       </div>
                       <div>
-                        <h2 className="text-lg sm:text-xl font-semibold text-foreground">Peppol Integration</h2>
+                        <h2 className="text-lg sm:text-xl font-semibold text-foreground">{t('peppol.setup.title')}</h2>
                         <p className="text-xs sm:text-sm text-muted-foreground">
-                          Configure your Peppol connection to send and receive electronic invoices.
+                          {t('peppol.setup.subtitle')}
                         </p>
                       </div>
                     </div>
@@ -984,8 +988,7 @@ const PeppolNetworkPage = () => {
                       <Icon name="Info" size={16} className="sm:w-5 sm:h-5 text-muted-foreground mt-0.5" />
                       <div>
                         <p className="text-xs sm:text-sm text-foreground">
-                          Peppol (Pan-European Public Procurement On-Line) enables secure electronic document exchange. 
-                          You need a valid Peppol ID to send and receive invoices through the network.
+                          {t('peppol.setup.info')}
                         </p>
                       </div>
                     </div>
@@ -997,34 +1000,34 @@ const PeppolNetworkPage = () => {
                   <div className="space-y-4 sm:space-y-6">
                     {/* Company Information */}
                     <div className="space-y-4">
-                      <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">Company Information</h3>
+                      <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">{t('peppol.setup.companyInfo.title')}</h3>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
-                            Participant Name *
+                            {t('peppol.setup.companyInfo.participantName')} *
                           </label>
                           <Input
                             value={peppolSettings.name}
                             onChange={(e) => handleInputChange('name', e.target.value)}
-                            placeholder="MyCompany"
+                            placeholder={t('peppol.setup.companyInfo.participantNamePlaceholder')}
                             required
                           />
                         </div>
                         
                         <div>
                           <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
-                            Peppol ID *
+                            {t('peppol.setup.companyInfo.peppolId')} *
                           </label>
                           <Input
                             value={peppolSettings.peppolId}
                             onChange={(e) => handleInputChange('peppolId', e.target.value)}
-                            placeholder="e.g., 0208:0630675588"
+                            placeholder={t('peppol.setup.companyInfo.peppolIdPlaceholder')}
                             className="font-mono"
                             required
                           />
                           <p className="text-xs text-muted-foreground mt-1">
-                            Format: COUNTRY_CODE:VAT_NUMBER
+                            {t('peppol.setup.companyInfo.peppolIdFormat')}
                           </p>
                         </div>
                         </div>
@@ -1033,29 +1036,29 @@ const PeppolNetworkPage = () => {
 
                     {/* Contact Person Information */}
                     <div className="space-y-4">
-                      <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">Contact Person (Required)</h3>
+                      <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">{t('peppol.setup.contactPerson.title')}</h3>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
-                            First Name *
+                            {t('peppol.setup.contactPerson.firstName')} *
                           </label>
                           <Input
                             value={peppolSettings.firstName || ''}
                             onChange={(e) => handleInputChange('firstName', e.target.value)}
-                            placeholder="John"
+                            placeholder={t('peppol.setup.contactPerson.firstNamePlaceholder')}
                             required
                           />
                         </div>
                         
                         <div>
                           <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
-                            Last Name *
+                            {t('peppol.setup.contactPerson.lastName')} *
                           </label>
                           <Input
                             value={peppolSettings.lastName || ''}
                             onChange={(e) => handleInputChange('lastName', e.target.value)}
-                            placeholder="Doe"
+                            placeholder={t('peppol.setup.contactPerson.lastNamePlaceholder')}
                             required
                           />
                         </div>
@@ -1064,20 +1067,20 @@ const PeppolNetworkPage = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
-                            Email *
+                            {t('peppol.setup.contactPerson.email')} *
                           </label>
                           <Input
                             type="email"
                             value={peppolSettings.email || ''}
                             onChange={(e) => handleInputChange('email', e.target.value)}
-                            placeholder="john.doe@digiteal.eu"
+                            placeholder={t('peppol.setup.contactPerson.emailPlaceholder')}
                             required
                           />
                         </div>
                         
                         <div>
                           <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
-                            Language (e.g., en-US) *
+                            {t('peppol.setup.contactPerson.language')} *
                           </label>
                           <Input
                             type="text"
@@ -1092,18 +1095,18 @@ const PeppolNetworkPage = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
-                            Phone Number (Optional)
+                            {t('peppol.setup.contactPerson.phoneNumber')}
                           </label>
                           <Input
                             value={peppolSettings.phoneNumber || ''}
                             onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                            placeholder="+321234567"
+                            placeholder={t('peppol.setup.contactPerson.phoneNumberPlaceholder')}
                           />
                         </div>
                         
                         <div className="relative country-dropdown-container">
                           <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
-                            Country Code
+                            {t('peppol.setup.contactPerson.countryCode')}
                           </label>
                           <div className="relative">
                           <Input
@@ -1114,7 +1117,7 @@ const PeppolNetworkPage = () => {
                                 setShowCountryDropdown(true);
                               }}
                               onFocus={() => setShowCountryDropdown(true)}
-                              placeholder="Search country (e.g., BE, Belgium)"
+                              placeholder={t('peppol.setup.contactPerson.countryCodePlaceholder')}
                               iconName="Search"
                             />
                             
@@ -1141,7 +1144,7 @@ const PeppolNetworkPage = () => {
                         </div>
                                 ) : (
                                   <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                                    No countries found
+                                    {t('peppol.setup.contactPerson.noCountriesFound')}
                                   </div>
                                 )}
                               </div>
@@ -1153,16 +1156,16 @@ const PeppolNetworkPage = () => {
 
                     {/* Peppol Configuration */}
                     <div className="space-y-4">
-                      <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">Peppol Configuration</h3>
+                      <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">{t('peppol.setup.configuration.title')}</h3>
                       
                     {/* Sandbox Mode Toggle */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-muted/20 rounded-lg gap-3 sm:gap-0">
                       <div>
                         <label className="text-xs sm:text-sm font-medium text-foreground">
-                          Sandbox Mode (for testing)
+                          {t('peppol.setup.configuration.sandboxMode')}
                         </label>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Enable sandbox mode to test Peppol integration without sending real invoices
+                          {t('peppol.setup.configuration.sandboxModeDescription')}
                         </p>
                       </div>
                       <button
@@ -1170,7 +1173,7 @@ const PeppolNetworkPage = () => {
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                           peppolSettings.sandboxMode ? 'bg-blue-600' : 'bg-gray-300'
                         }`}
-                        aria-label={peppolSettings.sandboxMode ? 'Sandbox mode enabled' : 'Sandbox mode disabled'}
+                        aria-label={peppolSettings.sandboxMode ? t('peppol.setup.configuration.sandboxModeEnabled') : t('peppol.setup.configuration.sandboxModeDisabled')}
                       >
                         <span
                           className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${
@@ -1192,9 +1195,9 @@ const PeppolNetworkPage = () => {
                           <div className="flex items-center space-x-3">
                             <Icon name="CheckCircle" size={24} className="text-green-600 flex-shrink-0" />
                             <div className="text-left">
-                              <h3 className="text-base font-semibold text-green-900">Peppol Participant Registered</h3>
+                              <h3 className="text-base font-semibold text-green-900">{t('peppol.setup.registered.title')}</h3>
                               <p className="text-sm text-green-700 mt-0.5">
-                                Participant is active in the Peppol network
+                                {t('peppol.setup.registered.subtitle')}
                               </p>
                             </div>
                           </div>
@@ -1215,23 +1218,23 @@ const PeppolNetworkPage = () => {
                         <div className="space-y-4">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div className="bg-card border border-border rounded-lg p-3">
-                              <label className="text-xs text-muted-foreground">Participant Name</label>
-                              <p className="text-sm font-medium text-foreground mt-1">{peppolSettings.name || 'N/A'}</p>
+                              <label className="text-xs text-muted-foreground">{t('peppol.setup.registered.participantName')}</label>
+                              <p className="text-sm font-medium text-foreground mt-1">{peppolSettings.name || t('peppol.common.notAvailable')}</p>
                             </div>
                             
                             <div className="bg-card border border-border rounded-lg p-3">
-                              <label className="text-xs text-muted-foreground">Contact Person</label>
+                              <label className="text-xs text-muted-foreground">{t('peppol.setup.registered.contactPerson')}</label>
                               <p className="text-sm font-medium text-foreground mt-1">{peppolSettings.firstName} {peppolSettings.lastName}</p>
                             </div>
                             
                             <div className="bg-card border border-border rounded-lg p-3">
-                              <label className="text-xs text-muted-foreground">Email</label>
-                              <p className="text-sm font-medium text-foreground mt-1 break-all">{peppolSettings.email || 'N/A'}</p>
+                              <label className="text-xs text-muted-foreground">{t('peppol.setup.registered.email')}</label>
+                              <p className="text-sm font-medium text-foreground mt-1 break-all">{peppolSettings.email || t('peppol.common.notAvailable')}</p>
                             </div>
                             
                             <div className="bg-card border border-border rounded-lg p-3">
-                              <label className="text-xs text-muted-foreground">Language</label>
-                              <p className="text-sm font-medium text-foreground mt-1">{peppolSettings.language || 'N/A'}</p>
+                              <label className="text-xs text-muted-foreground">{t('peppol.setup.registered.language')}</label>
+                              <p className="text-sm font-medium text-foreground mt-1">{peppolSettings.language || t('peppol.common.notAvailable')}</p>
                             </div>
                           </div>
                           
@@ -1240,12 +1243,12 @@ const PeppolNetworkPage = () => {
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
                                 <h4 className="text-sm font-semibold text-foreground mb-1">
-                                  {peppolSettings.peppolDisabled ? 'Peppol Disabled' : 'Peppol Enabled'}
+                                  {peppolSettings.peppolDisabled ? t('peppol.setup.registered.peppolDisabled') : t('peppol.setup.registered.peppolEnabled')}
                                 </h4>
                                 <p className="text-xs text-muted-foreground">
                                   {peppolSettings.peppolDisabled 
-                                    ? 'Peppol functionality is disabled. Historical data is preserved, but you cannot send or receive new Peppol documents.'
-                                    : 'Peppol functionality is active. You can send and receive invoices via Peppol network.'}
+                                    ? t('peppol.setup.registered.peppolDisabledDescription')
+                                    : t('peppol.setup.registered.peppolEnabledDescription')}
                                 </p>
                               </div>
                               <label className="relative inline-flex items-center cursor-pointer ml-4">
@@ -1260,7 +1263,7 @@ const PeppolNetworkPage = () => {
                                       alert(result.message);
                                       await loadPeppolSettings();
                                     } else {
-                                      alert(`Failed to ${newDisabled ? 'disable' : 'enable'} Peppol: ${result.error}`);
+                                      alert(`${newDisabled ? t('peppol.setup.registered.failedToDisable') : t('peppol.setup.registered.failedToEnable')}: ${result.error}`);
                                     }
                                   }}
                                   className="sr-only peer"
@@ -1285,7 +1288,7 @@ const PeppolNetworkPage = () => {
                       iconPosition="left"
                       className="w-full sm:w-auto"
                     >
-                      {isTesting ? 'Testing Integration...' : 'Test Integration'}
+                      {isTesting ? t('peppol.buttons.testing') : t('peppol.buttons.test')}
                     </Button>
                     <Button
                       onClick={handleSaveSettings}
@@ -1295,8 +1298,8 @@ const PeppolNetworkPage = () => {
                       className="w-full sm:min-w-[200px]"
                     >
                       {isSaving 
-                        ? (peppolSettings.isConfigured ? 'Updating Settings...' : 'Registering Participant...')
-                        : (peppolSettings.isConfigured ? 'Update & Save' : 'Register & Save')}
+                        ? (peppolSettings.isConfigured ? t('peppol.buttons.updating') : t('peppol.buttons.registering'))
+                        : (peppolSettings.isConfigured ? t('peppol.buttons.updateAndSave') : t('peppol.buttons.registerAndSave'))}
                     </Button>
                   </div>
                   )}
@@ -1308,11 +1311,10 @@ const PeppolNetworkPage = () => {
                       <Icon name="Info" size={16} className="sm:w-5 sm:h-5 text-muted-foreground mt-0.5" />
                       <div>
                         <p className="text-xs sm:text-sm text-foreground font-medium mb-1">
-                          Don't have a Peppol ID?
+                          {t('peppol.setup.help.title')}
                         </p>
                         <p className="text-xs sm:text-sm text-muted-foreground">
-                          You need to register with a Peppol Access Point provider. Contact your local authority 
-                          or a certified Peppol provider to get started.
+                          {t('peppol.setup.help.description')}
                         </p>
                       </div>
                     </div>
@@ -1331,7 +1333,7 @@ const PeppolNetworkPage = () => {
                   <div className="flex items-center justify-between p-3 md:p-4">
                     <div className="flex items-center space-x-2">
                       <Icon name="Filter" size={18} className="text-muted-foreground" />
-                      <h3 className="text-base font-medium text-foreground">Filtres</h3>
+                      <h3 className="text-base font-medium text-foreground">{t('peppol.filters.title')}</h3>
                       {hasActiveFilters() && (
                         <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
                           {Object.values(filters).filter(v => v !== '').length}
@@ -1340,7 +1342,7 @@ const PeppolNetworkPage = () => {
                     </div>
                     <div className="flex items-center space-x-2">
                       <span className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
-                        {filteredSentInvoices.length} facture(s) trouvée(s)
+                        {t('peppol.filters.invoicesFound', { count: filteredSentInvoices.length })}
                       </span>
                       {hasActiveFilters() && (
                         <Button
@@ -1351,7 +1353,7 @@ const PeppolNetworkPage = () => {
                         >
                           <span className="flex items-center">
                             <Icon name="X" size={14} className="mr-1" />
-                            Effacer
+                            {t('peppol.filters.clear')}
                           </span>
                         </Button>
                       )}
@@ -1360,7 +1362,7 @@ const PeppolNetworkPage = () => {
                         size="icon"
                         onClick={() => setIsSentFiltersExpanded(!isSentFiltersExpanded)}
                         className="md:hidden h-8 w-8"
-                        aria-label={isSentFiltersExpanded ? "Masquer les filtres" : "Afficher les filtres"}
+                        aria-label={isSentFiltersExpanded ? t('peppol.filters.hide') : t('peppol.filters.show')}
                       >
                         <Icon name={isSentFiltersExpanded ? "ChevronUp" : "ChevronDown"} size={16} />
                       </Button>
@@ -1372,60 +1374,60 @@ const PeppolNetworkPage = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     {/* Search */}
                     <div>
-                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Rechercher</label>
+                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('peppol.filters.search')}</label>
                       <Input
                         value={filters.search}
                         onChange={(e) => handleFilterChange('search', e.target.value)}
-                        placeholder="N° facture, destinataire, Peppol ID..."
+                        placeholder={t('peppol.filters.searchPlaceholderSent')}
                         iconName="Search"
                       />
                     </div>
 
                     {/* Status Filter */}
                     <div>
-                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Statut</label>
+                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('peppol.filters.status')}</label>
                       <Select
                         value={filters.status}
                         onChange={(e) => handleFilterChange('status', e.target.value)}
-                        placeholder="Tous les statuts"
+                        placeholder={t('peppol.filters.allStatuses')}
                         options={[
-                          { value: '', label: 'Tous les statuts' },
-                          { value: 'delivered', label: 'Livré' },
-                          { value: 'pending', label: 'En attente' },
-                          { value: 'failed', label: 'Échoué' }
+                          { value: '', label: t('peppol.filters.allStatuses') },
+                          { value: 'delivered', label: t('peppol.status.delivered') },
+                          { value: 'pending', label: t('peppol.status.pending') },
+                          { value: 'failed', label: t('peppol.status.failed') }
                         ]}
                       />
                     </div>
 
                     {/* Date Range */}
                     <div>
-                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Période</label>
+                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('peppol.filters.dateRange')}</label>
                       <Select
                         value={filters.dateRange}
                         onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-                        placeholder="Toutes les dates"
+                        placeholder={t('peppol.filters.allDates')}
                         options={[
-                          { value: '', label: 'Toutes les dates' },
-                          { value: 'today', label: 'Aujourd\'hui' },
-                          { value: 'week', label: '7 derniers jours' },
-                          { value: 'month', label: '30 derniers jours' },
-                          { value: 'quarter', label: '3 derniers mois' }
+                          { value: '', label: t('peppol.filters.allDates') },
+                          { value: 'today', label: t('peppol.filters.today') },
+                          { value: 'week', label: t('peppol.filters.last7Days') },
+                          { value: 'month', label: t('peppol.filters.last30Days') },
+                          { value: 'quarter', label: t('peppol.filters.last3Months') }
                         ]}
                       />
                     </div>
 
                     {/* Amount Range */}
                     <div>
-                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Montant</label>
+                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('peppol.filters.amountRange')}</label>
                       <Select
                         value={filters.amountRange}
                         onChange={(e) => handleFilterChange('amountRange', e.target.value)}
-                        placeholder="Tous les montants"
+                        placeholder={t('peppol.filters.allAmounts')}
                         options={[
-                          { value: '', label: 'Tous les montants' },
-                          { value: 'low', label: 'Moins de 1000€' },
-                          { value: 'medium', label: '1000€ - 5000€' },
-                          { value: 'high', label: 'Plus de 5000€' }
+                          { value: '', label: t('peppol.filters.allAmounts') },
+                          { value: 'low', label: t('peppol.filters.lessThan1000') },
+                          { value: 'medium', label: t('peppol.filters.between1000And5000') },
+                          { value: 'high', label: t('peppol.filters.moreThan5000') }
                         ]}
                       />
                       </div>
@@ -1503,12 +1505,12 @@ const PeppolNetworkPage = () => {
                   {!isSentFiltersExpanded && hasActiveFilters() && (
                     <div className="md:hidden p-3 border-t border-border">
                       <div className="text-sm text-muted-foreground">
-                        <span className="font-medium">{Object.values(filters).filter(v => v !== '').length} filtre{Object.values(filters).filter(v => v !== '').length > 1 ? 's' : ''} actif{Object.values(filters).filter(v => v !== '').length > 1 ? 's' : ''}</span>
+                        <span className="font-medium">{t('peppol.filters.activeFilters', { count: Object.values(filters).filter(v => v !== '').length })}</span>
                         <span className="text-xs ml-2">
-                          {filters.search && '• Recherche'}
-                          {filters.status && ' • Statut'}
-                          {filters.dateRange && ' • Période'}
-                          {filters.amountRange && ' • Montant'}
+                          {filters.search && `• ${t('peppol.filters.search')}`}
+                          {filters.status && ` • ${t('peppol.filters.status')}`}
+                          {filters.dateRange && ` • ${t('peppol.filters.dateRange')}`}
+                          {filters.amountRange && ` • ${t('peppol.filters.amountRange')}`}
                         </span>
                       </div>
                     </div>
@@ -1520,7 +1522,7 @@ const PeppolNetworkPage = () => {
                   {/* View Toggle */}
                   <div className="flex items-center justify-between p-4 border-b border-border">
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-muted-foreground">Vue:</span>
+                      <span className="text-sm font-medium text-muted-foreground">{t('peppol.invoices.view')}:</span>
                       <div className="flex bg-muted rounded-lg p-1">
                         <button
                           onClick={() => setSentViewMode('table')}
@@ -1531,7 +1533,7 @@ const PeppolNetworkPage = () => {
                           }`}
                         >
                           <Icon name="Table" size={14} className="mr-1" />
-                          Tableau
+                          {t('peppol.invoices.tableView')}
                         </button>
                         <button
                           onClick={() => setSentViewMode('card')}
@@ -1542,28 +1544,28 @@ const PeppolNetworkPage = () => {
                           }`}
                         >
                           <Icon name="Grid" size={14} className="mr-1" />
-                          Cartes
+                          {t('peppol.invoices.cardView')}
                         </button>
                       </div>
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {filteredSentInvoices.length} facture(s) envoyée(s)
+                      {t('peppol.invoices.sentCount', { count: filteredSentInvoices.length })}
                     </div>
                   </div>
 
                   {/* Content */}
                   {loadingInvoices ? (
-                    <TableLoader message="Chargement des factures..." />
+                    <TableLoader message={t('peppol.loading.invoices')} />
                   ) : filteredSentInvoices.length === 0 ? (
                     <div className="text-center py-12">
                       <Icon name="Send" size={48} className="text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-lg font-medium mb-2">
-                        {peppolStats.totalSent === 0 ? 'Aucune facture envoyée' : 'Aucune facture trouvée'}
+                        {peppolStats.totalSent === 0 ? t('peppol.invoices.noSentInvoices') : t('peppol.invoices.noInvoicesFound')}
                       </h3>
                       <p className="text-muted-foreground">
                         {peppolStats.totalSent === 0 
-                          ? 'Vous n\'avez pas encore envoyé de factures via Peppol.'
-                          : 'Aucune facture ne correspond aux critères de recherche.'
+                          ? t('peppol.invoices.noSentInvoicesDescription')
+                          : t('peppol.invoices.noInvoicesFoundDescription')
                         }
                       </p>
                     </div>
@@ -1585,7 +1587,7 @@ const PeppolNetworkPage = () => {
                   <div className="flex items-center justify-between p-3 md:p-4">
                     <div className="flex items-center space-x-2">
                       <Icon name="Filter" size={18} className="text-muted-foreground" />
-                      <h3 className="text-base font-medium text-foreground">Filtres</h3>
+                      <h3 className="text-base font-medium text-foreground">{t('peppol.filters.title')}</h3>
                       {hasActiveFilters() && (
                         <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
                           {Object.values(filters).filter(v => v !== '').length}
@@ -1594,7 +1596,7 @@ const PeppolNetworkPage = () => {
                     </div>
                     <div className="flex items-center space-x-2">
                       <span className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
-                        {filteredReceivedInvoices.length} facture(s) trouvée(s)
+                        {t('peppol.filters.invoicesFound', { count: filteredReceivedInvoices.length })}
                       </span>
                       {hasActiveFilters() && (
                         <Button
@@ -1605,7 +1607,7 @@ const PeppolNetworkPage = () => {
                         >
                           <span className="flex items-center">
                             <Icon name="X" size={14} className="mr-1" />
-                            Effacer
+                            {t('peppol.filters.clear')}
                           </span>
                         </Button>
                       )}
@@ -1614,7 +1616,7 @@ const PeppolNetworkPage = () => {
                         size="icon"
                         onClick={() => setIsReceivedFiltersExpanded(!isReceivedFiltersExpanded)}
                         className="md:hidden h-8 w-8"
-                        aria-label={isReceivedFiltersExpanded ? "Masquer les filtres" : "Afficher les filtres"}
+                        aria-label={isReceivedFiltersExpanded ? t('peppol.filters.hide') : t('peppol.filters.show')}
                       >
                         <Icon name={isReceivedFiltersExpanded ? "ChevronUp" : "ChevronDown"} size={16} />
                       </Button>
@@ -1626,60 +1628,60 @@ const PeppolNetworkPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Search */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Rechercher</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">{t('peppol.filters.search')}</label>
                       <Input
                         value={filters.search}
                         onChange={(e) => handleFilterChange('search', e.target.value)}
-                        placeholder="N° facture, expéditeur, Peppol ID..."
+                        placeholder={t('peppol.filters.searchPlaceholderReceived')}
                         iconName="Search"
                       />
                     </div>
 
                     {/* Status Filter */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Statut</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">{t('peppol.filters.status')}</label>
                       <Select
                         value={filters.status}
                         onChange={(e) => handleFilterChange('status', e.target.value)}
-                        placeholder="Tous les statuts"
+                        placeholder={t('peppol.filters.allStatuses')}
                         options={[
-                          { value: '', label: 'Tous les statuts' },
-                          { value: 'received', label: 'Reçu' },
-                          { value: 'processed', label: 'Traité' },
-                          { value: 'pending', label: 'En attente' }
+                          { value: '', label: t('peppol.filters.allStatuses') },
+                          { value: 'received', label: t('peppol.status.received') },
+                          { value: 'processed', label: t('peppol.status.processed') },
+                          { value: 'pending', label: t('peppol.status.pending') }
                         ]}
                       />
                     </div>
 
                     {/* Date Range */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Période</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">{t('peppol.filters.dateRange')}</label>
                       <Select
                         value={filters.dateRange}
                         onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-                        placeholder="Toutes les dates"
+                        placeholder={t('peppol.filters.allDates')}
                         options={[
-                          { value: '', label: 'Toutes les dates' },
-                          { value: 'today', label: 'Aujourd\'hui' },
-                          { value: 'week', label: '7 derniers jours' },
-                          { value: 'month', label: '30 derniers jours' },
-                          { value: 'quarter', label: '3 derniers mois' }
+                          { value: '', label: t('peppol.filters.allDates') },
+                          { value: 'today', label: t('peppol.filters.today') },
+                          { value: 'week', label: t('peppol.filters.last7Days') },
+                          { value: 'month', label: t('peppol.filters.last30Days') },
+                          { value: 'quarter', label: t('peppol.filters.last3Months') }
                         ]}
                       />
                     </div>
 
                     {/* Amount Range */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Montant</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">{t('peppol.filters.amountRange')}</label>
                       <Select
                         value={filters.amountRange}
                         onChange={(e) => handleFilterChange('amountRange', e.target.value)}
-                        placeholder="Tous les montants"
+                        placeholder={t('peppol.filters.allAmounts')}
                         options={[
-                          { value: '', label: 'Tous les montants' },
-                          { value: 'low', label: 'Moins de 1000€' },
-                          { value: 'medium', label: '1000€ - 5000€' },
-                          { value: 'high', label: 'Plus de 5000€' }
+                          { value: '', label: t('peppol.filters.allAmounts') },
+                          { value: 'low', label: t('peppol.filters.lessThan1000') },
+                          { value: 'medium', label: t('peppol.filters.between1000And5000') },
+                          { value: 'high', label: t('peppol.filters.moreThan5000') }
                         ]}
                       />
                       </div>
@@ -1692,60 +1694,60 @@ const PeppolNetworkPage = () => {
                       <div className="space-y-3">
                         {/* Search */}
                         <div>
-                          <label className="block text-sm font-medium text-foreground mb-2">Rechercher</label>
+                          <label className="block text-sm font-medium text-foreground mb-2">{t('peppol.filters.search')}</label>
                           <Input
                             value={filters.search}
                             onChange={(e) => handleFilterChange('search', e.target.value)}
-                            placeholder="N° facture, expéditeur, Peppol ID..."
+                            placeholder={t('peppol.filters.searchPlaceholderReceived')}
                             iconName="Search"
                           />
                     </div>
 
                         {/* Status Filter */}
                         <div>
-                          <label className="block text-sm font-medium text-foreground mb-2">Statut</label>
+                          <label className="block text-sm font-medium text-foreground mb-2">{t('peppol.filters.status')}</label>
                           <Select
                             value={filters.status}
                             onChange={(e) => handleFilterChange('status', e.target.value)}
-                            placeholder="Tous les statuts"
+                            placeholder={t('peppol.filters.allStatuses')}
                             options={[
-                              { value: '', label: 'Tous les statuts' },
-                              { value: 'received', label: 'Reçu' },
-                              { value: 'processed', label: 'Traité' },
-                              { value: 'pending', label: 'En attente' }
+                              { value: '', label: t('peppol.filters.allStatuses') },
+                              { value: 'received', label: t('peppol.status.received') },
+                              { value: 'processed', label: t('peppol.status.processed') },
+                              { value: 'pending', label: t('peppol.status.pending') }
                             ]}
                           />
                     </div>
 
                         {/* Date Range */}
                         <div>
-                          <label className="block text-sm font-medium text-foreground mb-2">Période</label>
+                          <label className="block text-sm font-medium text-foreground mb-2">{t('peppol.filters.dateRange')}</label>
                           <Select
                             value={filters.dateRange}
                             onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-                            placeholder="Toutes les dates"
+                            placeholder={t('peppol.filters.allDates')}
                             options={[
-                              { value: '', label: 'Toutes les dates' },
-                              { value: 'today', label: 'Aujourd\'hui' },
-                              { value: 'week', label: '7 derniers jours' },
-                              { value: 'month', label: '30 derniers jours' },
-                              { value: 'quarter', label: '3 derniers mois' }
+                              { value: '', label: t('peppol.filters.allDates') },
+                              { value: 'today', label: t('peppol.filters.today') },
+                              { value: 'week', label: t('peppol.filters.last7Days') },
+                              { value: 'month', label: t('peppol.filters.last30Days') },
+                              { value: 'quarter', label: t('peppol.filters.last3Months') }
                             ]}
                           />
                   </div>
 
                         {/* Amount Range */}
                         <div>
-                          <label className="block text-sm font-medium text-foreground mb-2">Montant</label>
+                          <label className="block text-sm font-medium text-foreground mb-2">{t('peppol.filters.amountRange')}</label>
                           <Select
                             value={filters.amountRange}
                             onChange={(e) => handleFilterChange('amountRange', e.target.value)}
-                            placeholder="Tous les montants"
+                            placeholder={t('peppol.filters.allAmounts')}
                             options={[
-                              { value: '', label: 'Tous les montants' },
-                              { value: 'low', label: 'Moins de 1000€' },
-                              { value: 'medium', label: '1000€ - 5000€' },
-                              { value: 'high', label: 'Plus de 5000€' }
+                              { value: '', label: t('peppol.filters.allAmounts') },
+                              { value: 'low', label: t('peppol.filters.lessThan1000') },
+                              { value: 'medium', label: t('peppol.filters.between1000And5000') },
+                              { value: 'high', label: t('peppol.filters.moreThan5000') }
                             ]}
                           />
                         </div>
@@ -1757,12 +1759,12 @@ const PeppolNetworkPage = () => {
                   {!isReceivedFiltersExpanded && hasActiveFilters() && (
                     <div className="md:hidden p-3 border-t border-border">
                       <div className="text-sm text-muted-foreground">
-                        <span className="font-medium">{Object.values(filters).filter(v => v !== '').length} filtre{Object.values(filters).filter(v => v !== '').length > 1 ? 's' : ''} actif{Object.values(filters).filter(v => v !== '').length > 1 ? 's' : ''}</span>
+                        <span className="font-medium">{t('peppol.filters.activeFilters', { count: Object.values(filters).filter(v => v !== '').length })}</span>
                         <span className="text-xs ml-2">
-                          {filters.search && '• Recherche'}
-                          {filters.status && ' • Statut'}
-                          {filters.dateRange && ' • Période'}
-                          {filters.amountRange && ' • Montant'}
+                          {filters.search && `• ${t('peppol.filters.search')}`}
+                          {filters.status && ` • ${t('peppol.filters.status')}`}
+                          {filters.dateRange && ` • ${t('peppol.filters.dateRange')}`}
+                          {filters.amountRange && ` • ${t('peppol.filters.amountRange')}`}
                         </span>
                       </div>
                     </div>
@@ -1774,7 +1776,7 @@ const PeppolNetworkPage = () => {
                   {/* View Toggle */}
                   <div className="flex items-center justify-between p-4 border-b border-border">
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-muted-foreground">Vue:</span>
+                      <span className="text-sm font-medium text-muted-foreground">{t('peppol.invoices.view')}:</span>
                       <div className="flex bg-muted rounded-lg p-1">
                         <button
                           onClick={() => setReceivedViewMode('table')}
@@ -1785,7 +1787,7 @@ const PeppolNetworkPage = () => {
                           }`}
                         >
                           <Icon name="Table" size={14} className="mr-1" />
-                          Tableau
+                          {t('peppol.invoices.tableView')}
                         </button>
                         <button
                           onClick={() => setReceivedViewMode('card')}
@@ -1796,28 +1798,28 @@ const PeppolNetworkPage = () => {
                           }`}
                         >
                           <Icon name="Grid" size={14} className="mr-1" />
-                          Cartes
+                          {t('peppol.invoices.cardView')}
                         </button>
                       </div>
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {filteredReceivedInvoices.length} facture(s) reçue(s)
+                      {t('peppol.invoices.receivedCount', { count: filteredReceivedInvoices.length })}
                     </div>
                   </div>
 
                   {/* Content */}
                   {loadingInvoices ? (
-                    <TableLoader message="Chargement des factures..." />
+                    <TableLoader message={t('peppol.loading.invoices')} />
                   ) : filteredReceivedInvoices.length === 0 ? (
                     <div className="text-center py-12">
                       <Icon name="Download" size={48} className="text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-lg font-medium mb-2">
-                        {peppolStats.totalReceived === 0 ? 'Aucune facture reçue' : 'Aucune facture trouvée'}
+                        {peppolStats.totalReceived === 0 ? t('peppol.invoices.noReceivedInvoices') : t('peppol.invoices.noInvoicesFound')}
                       </h3>
                       <p className="text-muted-foreground">
                         {peppolStats.totalReceived === 0 
-                          ? 'Vous n\'avez pas encore reçu de factures via Peppol.'
-                          : 'Aucune facture ne correspond aux critères de recherche.'
+                          ? t('peppol.invoices.noReceivedInvoicesDescription')
+                          : t('peppol.invoices.noInvoicesFoundDescription')
                         }
                       </p>
                     </div>

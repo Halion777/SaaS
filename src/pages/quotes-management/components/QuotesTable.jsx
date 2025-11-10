@@ -63,6 +63,8 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
     // Enhanced status with tracking information
     const statusConfig = {
       draft: { label: t('quotesManagement.filter.status.draft'), className: 'bg-gray-100 text-gray-800' },
+      'auto-saved': { label: t('quotesManagement.draft.autoSavedDraft'), className: 'bg-gray-100 text-gray-800' },
+      'Auto-Sauvegardé': { label: t('quotesManagement.draft.autoSavedDraft'), className: 'bg-gray-100 text-gray-800' },
       sent: { label: t('quotesManagement.filter.status.sent'), className: 'bg-blue-100 text-blue-800' },
       viewed: { label: t('quotesManagement.filter.status.viewed'), className: 'bg-orange-100 text-orange-800' },
       accepted: { label: t('quotesManagement.filter.status.accepted'), className: 'bg-green-100 text-green-800' },
@@ -84,27 +86,27 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
           <div className="flex flex-col gap-1">
             {trackingData.relanceStatus === 'not_viewed' && (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                📧 Non ouvert
+                📧 {t('quotesManagement.tracking.notOpened')}
               </span>
             )}
             {trackingData.relanceStatus === 'viewed_no_action' && (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
-                👁️ Vue sans action
+                👁️ {t('quotesManagement.tracking.viewedNoAction')}
               </span>
             )}
             {trackingData.relanceStatus === 'accepted' && (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                ✅ Accepté
+                ✅ {t('quotesManagement.tracking.accepted')}
               </span>
             )}
             {trackingData.relanceStatus === 'rejected' && (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                ❌ Rejeté
+                ❌ {t('quotesManagement.tracking.rejected')}
               </span>
             )}
             {trackingData.relanceStatus === 'expired' && (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
-                ⏰ Expiré
+                ⏰ {t('quotesManagement.tracking.expired')}
               </span>
             )}
           </div>
@@ -245,7 +247,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                   <span 
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-center ${quote.followUpStatusColor || 'bg-gray-100 text-gray-700'}`}
                   >
-                    {quote.followUpStatusLabel || 'Aucune'}
+                    {quote.followUpStatusLabel || t('quotesManagement.followUpStatus.none')}
                   </span>
                   {/* Per request: hide step number and time details in reminder column */}
                 </div>

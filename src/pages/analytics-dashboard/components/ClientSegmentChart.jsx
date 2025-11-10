@@ -1,12 +1,15 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import Icon from '../../../components/AppIcon';
 
 const ClientSegmentChart = ({ data, isLoading = false }) => {
+  const { t, i18n } = useTranslation();
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B'];
 
   const formatCurrency = (value) => {
-    return new Intl.NumberFormat('fr-FR', {
+    const locale = i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR';
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: 'EUR',
       minimumFractionDigits: 0
@@ -20,10 +23,10 @@ const ClientSegmentChart = ({ data, isLoading = false }) => {
         <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
           <p className="font-medium text-foreground mb-2">{data.name}</p>
           <p className="text-sm text-blue-600">
-            Part: {data.value}%
+            {t('analyticsDashboard.charts.clientSegments.share')}: {data.value}%
           </p>
           <p className="text-sm text-muted-foreground">
-            Revenus: {formatCurrency(data.revenue)}
+            {t('analyticsDashboard.charts.clientSegments.revenue')}: {formatCurrency(data.revenue)}
           </p>
         </div>
       );
@@ -60,8 +63,8 @@ const ClientSegmentChart = ({ data, isLoading = false }) => {
             <Icon name="Users" size={20} color="rgb(34 197 94)" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Segments clients</h3>
-            <p className="text-sm text-muted-foreground">Répartition par marché</p>
+            <h3 className="text-lg font-semibold text-foreground">{t('analyticsDashboard.charts.clientSegments.title')}</h3>
+            <p className="text-sm text-muted-foreground">{t('analyticsDashboard.charts.clientSegments.subtitle')}</p>
           </div>
         </div>
       </div>
@@ -108,7 +111,7 @@ const ClientSegmentChart = ({ data, isLoading = false }) => {
 
       <div className="mt-4 pt-4 border-t border-border">
         <div className="flex justify-between items-center">
-          <span className="text-sm text-muted-foreground">Total segments</span>
+          <span className="text-sm text-muted-foreground">{t('analyticsDashboard.charts.clientSegments.totalSegments')}</span>
           <span className="text-lg font-bold text-foreground">
             {isLoading ? '...' : formatCurrency(data.reduce((sum, item) => sum + item.revenue, 0))}
           </span>

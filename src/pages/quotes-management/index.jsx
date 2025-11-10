@@ -197,6 +197,9 @@ const QuotesManagement = () => {
     const loadQuotes = async () => {
       if (!user || !currentProfile) return;
       
+      // Reset follow-ups loaded ref when quotes are reloaded
+      followUpsLoadedRef.current = false;
+      
       try {
         setLoading(true);
         setError(null);
@@ -229,16 +232,16 @@ const QuotesManagement = () => {
               const d = draft.draft_data;
               const placeholder = {
                 id: `draft-${draft.id}`,
-                number: '(brouillon non envoyé)',
-                clientName: d.selectedClient?.client?.name || d.selectedClient?.label || d.selectedClient?.name || 'Client inconnu',
+                number: t('quotesManagement.draft.unsentDraft'),
+                clientName: d.selectedClient?.client?.name || d.selectedClient?.label || d.selectedClient?.name || t('quotesManagement.draft.unknownClient'),
                 amount: calculateDraftAmount(d),
                 amountFormatted: formatCurrency(calculateDraftAmount(d)),
-                status: 'Auto-Sauvegardé',
-                statusLabel: 'Brouillon Auto-Sauvegardé',
+                status: 'auto-saved',
+                statusLabel: t('quotesManagement.draft.autoSavedDraft'),
                 isDraftPlaceholder: true,
                 createdAt: draft.last_saved,
                 createdAtFormatted: formatDate(draft.last_saved),
-                description: d.projectInfo?.description || 'Brouillon en cours',
+                description: d.projectInfo?.description || t('quotesManagement.draft.draftInProgress'),
                               client: d.selectedClient?.client || d.selectedClient || null,
                 tasks: d.tasks || [],
               materials: d.materials || [],
@@ -268,16 +271,16 @@ const QuotesManagement = () => {
             const d = draft.draft_data || {};
             additionalDrafts.push({
               id: `draft-${draft.id}`,
-              number: draft.quote_number || '(brouillon non envoyé)',
-              clientName: d.selectedClient?.client?.name || d.selectedClient?.label || d.selectedClient?.name || 'Client inconnu',
+              number: draft.quote_number || t('quotesManagement.draft.unsentDraft'),
+              clientName: d.selectedClient?.client?.name || d.selectedClient?.label || d.selectedClient?.name || t('quotesManagement.draft.unknownClient'),
               amount: calculateDraftAmount(d),
               amountFormatted: formatCurrency(calculateDraftAmount(d)),
-              status: 'Auto-Sauvegardé',
-              statusLabel: 'Brouillon Auto-Sauvegardé',
+              status: 'auto-saved',
+              statusLabel: t('quotesManagement.draft.autoSavedDraft'),
               isDraftPlaceholder: true,
               createdAt: draft.last_saved,
               createdAtFormatted: formatDate(draft.last_saved),
-              description: d.projectInfo?.description || 'Brouillon en cours',
+              description: d.projectInfo?.description || t('quotesManagement.draft.draftInProgress'),
               client: d.selectedClient?.client || d.selectedClient || null,
               tasks: d.tasks || [],
               materials: d.materials || [],
@@ -331,7 +334,7 @@ const QuotesManagement = () => {
             return {
               id: quote.id,
               number: quote.quote_number,
-              clientName: quote.client?.name || 'Client inconnu',
+              clientName: quote.client?.name || t('quotesManagement.draft.unknownClient'),
               amount: finalAmount,
               amountFormatted: formatCurrency(finalAmount),
               status: quote.status,
@@ -461,7 +464,10 @@ const QuotesManagement = () => {
   // Load follow-ups for quotes
   useEffect(() => {
     const loadFollowUps = async () => {
-      if (!user || !currentProfile || quotes.length === 0 || followUpsLoadedRef.current) return;
+      if (!user || !currentProfile || quotes.length === 0) return;
+      
+      // Skip if already loaded (but allow reload on refresh)
+      if (followUpsLoadedRef.current && Object.keys(followUps).length > 0) return;
       
       try {
         setFollowUpLoading(true);
@@ -1058,8 +1064,8 @@ const QuotesManagement = () => {
   };
 
   const getStatusLabel = (status) => {
-    if (status === 'Auto-Sauvegardé') {
-      return 'Brouillon Auto-Sauvegardé';
+    if (status === 'auto-saved' || status === 'Auto-Sauvegardé') {
+      return t('quotesManagement.draft.autoSavedDraft');
     }
     return t(`quotesManagement.filter.status.${status}`) || status;
   };
@@ -1106,6 +1112,8 @@ const QuotesManagement = () => {
 
   // Action handlers
   const handleRefresh = async () => {
+    // Reset follow-ups loaded ref to allow reloading
+    followUpsLoadedRef.current = false;
     // Refresh quotes data
     window.location.reload();
   };
