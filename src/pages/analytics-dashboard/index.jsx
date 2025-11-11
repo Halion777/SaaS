@@ -214,8 +214,8 @@ const AnalyticsDashboard = () => {
         value: quotesThisMonth.toString(),
         change: `${quotesGrowth >= 0 ? '+' : ''}${quotesGrowth}%`,
         trend: quotesGrowth >= 0 ? 'up' : 'down',
-        icon: 'FileText',
-        color: 'blue',
+      icon: 'FileText',
+      color: 'blue',
         description: t('analyticsDashboard.kpis.totalQuotesSent.description')
       },
       {
@@ -223,8 +223,8 @@ const AnalyticsDashboard = () => {
         value: acceptedQuotesThisMonth.toString(),
         change: `${acceptedGrowth >= 0 ? '+' : ''}${acceptedGrowth}%`,
         trend: acceptedGrowth >= 0 ? 'up' : 'down',
-        icon: 'CheckCircle',
-        color: 'emerald',
+      icon: 'CheckCircle',
+      color: 'emerald',
         description: t('analyticsDashboard.kpis.acceptedQuotes.description')
       },
       {
@@ -232,8 +232,8 @@ const AnalyticsDashboard = () => {
         value: formatCurrency(monthlyRevenue),
         change: `${revenueGrowth >= 0 ? '+' : ''}${revenueGrowth}%`,
         trend: revenueGrowth >= 0 ? 'up' : 'down',
-        icon: 'Euro',
-        color: 'orange',
+      icon: 'Euro',
+      color: 'orange',
         description: t('analyticsDashboard.kpis.monthlyRevenue.description')
       },
       {
@@ -241,8 +241,8 @@ const AnalyticsDashboard = () => {
         value: `${paymentRate}%`,
         change: `${paymentRateGrowth >= 0 ? '+' : ''}${paymentRateGrowth}%`,
         trend: paymentRateGrowth >= 0 ? 'up' : 'down',
-        icon: 'CreditCard',
-        color: 'purple',
+      icon: 'CreditCard',
+      color: 'purple',
         description: t('analyticsDashboard.kpis.paymentStatus.description')
       }
     ];
@@ -277,12 +277,12 @@ const AnalyticsDashboard = () => {
     const pendingQuotes = analyticsData.quotes.filter(q => q.status === 'sent' || q.status === 'viewed' || q.status === 'draft').length;
 
     return {
-      paymentStatus: {
+    paymentStatus: {
         paid: paidInvoices,
         pending: pendingInvoices,
         overdue: overdueInvoices
-      },
-      clientActivity: {
+    },
+    clientActivity: {
         newClients: newClientsThisMonth,
         returningClients: returningClients,
         inactiveClients: inactiveClients
@@ -293,8 +293,8 @@ const AnalyticsDashboard = () => {
           ? Math.round(analyticsData.invoices.reduce((sum, inv) => sum + (parseFloat(inv.final_amount) || 0), 0) / analyticsData.invoices.length)
           : 0,
         totalInvoices: analyticsData.invoices.length
-      },
-      quoteOverview: {
+    },
+    quoteOverview: {
         totalQuotes: totalQuotes,
         acceptedQuotes: acceptedQuotes,
         rejectedQuotes: rejectedQuotes,

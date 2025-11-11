@@ -17,7 +17,7 @@ const Customization = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
-  const [activeTab, setActiveTab] = useState('services'); // 'services', 'banner', 'company', 'media'
+  const [activeTab, setActiveTab] = useState('services'); // 'services', 'banner', 'company', 'media', 'pricing'
   const [selectedLanguage, setSelectedLanguage] = useState('fr'); // Language for banner settings
   const [serviceSettings, setServiceSettings] = useState({
     creditInsurance: true,
@@ -89,6 +89,9 @@ const Customization = () => {
   // Refs for debouncing auto-save
   const mediaSaveTimeoutRef = useRef(null);
   const companySaveTimeoutRef = useRef(null);
+  const bannerSaveTimeoutRef = useRef(null);
+  const serviceSaveTimeoutRef = useRef(null);
+  const pricingSaveTimeoutRef = useRef(null);
 
   // Refs for file inputs
   const homeHeroImageRef = useRef(null);
@@ -126,6 +129,22 @@ const Customization = () => {
       buttonText: '',
       buttonLink: '',
       image: ''
+    }
+  });
+  const [pricingSettings, setPricingSettings] = useState({
+    starter: {
+      name: 'Starter Plan',
+      description: 'Perfect for beginners',
+      monthly: 29.99,
+      yearly: 24.99,
+      popular: false
+    },
+    pro: {
+      name: 'Pro Plan',
+      description: 'Complete solution with AI',
+      monthly: 49.99,
+      yearly: 41.66,
+      popular: true
     }
   });
 
@@ -240,6 +259,21 @@ const Customization = () => {
         });
       }
 
+      // Load pricing settings
+      const { data: pricingData, error: pricingError } = await supabase
+        .from('app_settings')
+        .select('*')
+        .eq('setting_key', 'pricing_settings')
+        .maybeSingle();
+
+      if (pricingError && pricingError.code !== 'PGRST116') {
+        console.error('❌ Error loading pricing settings:', pricingError);
+      } else if (pricingData && pricingData.setting_value) {
+        setPricingSettings(pricingData.setting_value);
+      } else {
+        // Keep default values
+      }
+
       // Load media settings
       const { data: mediaData, error: mediaError } = await supabase
         .from('app_settings')
@@ -331,10 +365,11 @@ const Customization = () => {
   };
 
   const handleToggle = (service) => {
-    setServiceSettings(prev => ({
-      ...prev,
-      [service]: !prev[service]
-    }));
+    const updated = {
+      ...serviceSettings,
+      [service]: !serviceSettings[service]
+    };
+    handleServiceSettingsChange(updated);
   };
 
   // Handle file upload
@@ -694,6 +729,128 @@ const Customization = () => {
     // Set new timeout for auto-save (1 second delay)
     mediaSaveTimeoutRef.current = setTimeout(() => {
       saveMediaSettings(updatedSettings);
+    }, 1000);
+  };
+
+  // Save only sponsored banner settings (helper function for auto-save)
+  const saveBannerSettings = async (updatedSettings) => {
+    try {
+      const { error: bannerError } = await supabase
+        .from('app_settings')
+        .upsert({
+          setting_key: 'sponsored_banner',
+          setting_value: updatedSettings,
+          description: 'Sponsored banner configuration for dashboard',
+          updated_at: new Date().toISOString(),
+          updated_by: user.id
+        }, {
+          onConflict: 'setting_key'
+        });
+
+      if (bannerError) {
+        console.error('❌ Error saving banner settings:', bannerError);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('❌ Error saving banner settings:', error);
+      return false;
+    }
+  };
+
+  // Debounced auto-save for sponsored banner settings
+  const handleBannerSettingsChange = (updatedSettings) => {
+    setSponsoredBannerSettings(updatedSettings);
+    
+    // Clear existing timeout
+    if (bannerSaveTimeoutRef.current) {
+      clearTimeout(bannerSaveTimeoutRef.current);
+    }
+    
+    // Set new timeout for auto-save (1 second delay)
+    bannerSaveTimeoutRef.current = setTimeout(() => {
+      saveBannerSettings(updatedSettings);
+    }, 1000);
+  };
+
+  // Save only service visibility settings (helper function for auto-save)
+  const saveServiceSettings = async (updatedSettings) => {
+    try {
+      const { error: serviceError } = await supabase
+        .from('app_settings')
+        .upsert({
+          setting_key: 'service_visibility',
+          setting_value: updatedSettings,
+          updated_at: new Date().toISOString(),
+          updated_by: user.id
+        }, {
+          onConflict: 'setting_key'
+        });
+
+      if (serviceError) {
+        console.error('❌ Error saving service settings:', serviceError);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('❌ Error saving service settings:', error);
+      return false;
+    }
+  };
+
+  // Debounced auto-save for service visibility settings
+  const handleServiceSettingsChange = (updatedSettings) => {
+    setServiceSettings(updatedSettings);
+    
+    // Clear existing timeout
+    if (serviceSaveTimeoutRef.current) {
+      clearTimeout(serviceSaveTimeoutRef.current);
+    }
+    
+    // Set new timeout for auto-save (1 second delay)
+    serviceSaveTimeoutRef.current = setTimeout(() => {
+      saveServiceSettings(updatedSettings);
+    }, 1000);
+  };
+
+  // Save only pricing settings (helper function for auto-save)
+  const savePricingSettings = async (updatedSettings) => {
+    try {
+      const { error: pricingError } = await supabase
+        .from('app_settings')
+        .upsert({
+          setting_key: 'pricing_settings',
+          setting_value: updatedSettings,
+          description: 'Pricing plans configuration (monthly/yearly)',
+          updated_at: new Date().toISOString(),
+          updated_by: user.id
+        }, {
+          onConflict: 'setting_key'
+        });
+
+      if (pricingError) {
+        console.error('❌ Error saving pricing settings:', pricingError);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('❌ Error saving pricing settings:', error);
+      return false;
+    }
+  };
+
+  // Debounced auto-save for pricing settings
+  const handlePricingSettingsChange = (updatedSettings) => {
+    setPricingSettings(updatedSettings);
+    
+    // Clear existing timeout
+    if (pricingSaveTimeoutRef.current) {
+      clearTimeout(pricingSaveTimeoutRef.current);
+    }
+    
+    // Set new timeout for auto-save (1 second delay)
+    pricingSaveTimeoutRef.current = setTimeout(() => {
+      savePricingSettings(updatedSettings);
     }, 1000);
   };
 
@@ -1099,6 +1256,18 @@ const Customization = () => {
                       <span>Media</span>
                     </div>
                   </button>
+                  <button
+                    onClick={() => setActiveTab('pricing')}
+                    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'pricing'
+                        ? 'text-primary border-b-2 border-primary bg-primary/5'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                      }`}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <Icon name="DollarSign" size={16} />
+                      <span>Pricing</span>
+                    </div>
+                  </button>
                 </div>
               </div>
 
@@ -1272,7 +1441,7 @@ const Customization = () => {
                           type="checkbox"
                           className="sr-only peer"
                           checked={sponsoredBannerSettings.enabled}
-                          onChange={(e) => setSponsoredBannerSettings({ ...sponsoredBannerSettings, enabled: e.target.checked })}
+                          onChange={(e) => handleBannerSettingsChange({ ...sponsoredBannerSettings, enabled: e.target.checked })}
                         />
                         <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                       </label>
@@ -1284,7 +1453,7 @@ const Customization = () => {
                       <input
                         type="text"
                         value={sponsoredBannerSettings[selectedLanguage]?.title || ''}
-                        onChange={(e) => setSponsoredBannerSettings({
+                        onChange={(e) => handleBannerSettingsChange({
                           ...sponsoredBannerSettings,
                           [selectedLanguage]: {
                             ...sponsoredBannerSettings[selectedLanguage],
@@ -1301,7 +1470,7 @@ const Customization = () => {
                       <label className="block text-sm font-medium text-foreground mb-2">Description ({languages.find(l => l.code === selectedLanguage)?.flag})</label>
                       <textarea
                         value={sponsoredBannerSettings[selectedLanguage]?.description || ''}
-                        onChange={(e) => setSponsoredBannerSettings({
+                        onChange={(e) => handleBannerSettingsChange({
                           ...sponsoredBannerSettings,
                           [selectedLanguage]: {
                             ...sponsoredBannerSettings[selectedLanguage],
@@ -1320,7 +1489,7 @@ const Customization = () => {
                       <input
                         type="text"
                         value={sponsoredBannerSettings[selectedLanguage]?.discount || ''}
-                        onChange={(e) => setSponsoredBannerSettings({
+                        onChange={(e) => handleBannerSettingsChange({
                           ...sponsoredBannerSettings,
                           [selectedLanguage]: {
                             ...sponsoredBannerSettings[selectedLanguage],
@@ -1338,7 +1507,7 @@ const Customization = () => {
                       <input
                         type="text"
                         value={sponsoredBannerSettings[selectedLanguage]?.buttonText || ''}
-                        onChange={(e) => setSponsoredBannerSettings({
+                        onChange={(e) => handleBannerSettingsChange({
                           ...sponsoredBannerSettings,
                           [selectedLanguage]: {
                             ...sponsoredBannerSettings[selectedLanguage],
@@ -1356,7 +1525,7 @@ const Customization = () => {
                       <input
                         type="text"
                         value={sponsoredBannerSettings[selectedLanguage]?.buttonLink || ''}
-                        onChange={(e) => setSponsoredBannerSettings({
+                        onChange={(e) => handleBannerSettingsChange({
                           ...sponsoredBannerSettings,
                           [selectedLanguage]: {
                             ...sponsoredBannerSettings[selectedLanguage],
@@ -1375,7 +1544,7 @@ const Customization = () => {
                       <input
                         type="url"
                         value={sponsoredBannerSettings[selectedLanguage]?.image || ''}
-                        onChange={(e) => setSponsoredBannerSettings({
+                        onChange={(e) => handleBannerSettingsChange({
                           ...sponsoredBannerSettings,
                           [selectedLanguage]: {
                             ...sponsoredBannerSettings[selectedLanguage],
@@ -1390,12 +1559,15 @@ const Customization = () => {
 
                     {/* Preview */}
                     {sponsoredBannerSettings.enabled && (
-                      <div className="mt-6 p-4 bg-muted/30 rounded-lg border border-border">
-                        <h4 className="text-sm font-semibold text-foreground mb-3">Preview ({languages.find(l => l.code === selectedLanguage)?.name})</h4>
-                        <div className="bg-gradient-to-r from-blue-700/90 to-blue-800/90 border border-blue-600/30 rounded-lg p-4 text-white">
+                      <div className="mt-6 p-4 sm:p-6 bg-muted/30 rounded-lg border border-border">
+                        <h4 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                          <Icon name="Eye" size={16} className="text-primary" />
+                          Preview ({languages.find(l => l.code === selectedLanguage)?.name})
+                        </h4>
+                        <div className="bg-gradient-to-r from-blue-700/90 to-blue-800/90 border border-blue-600/30 rounded-lg p-4 sm:p-6 text-white shadow-lg">
                           <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
                             {sponsoredBannerSettings[selectedLanguage]?.image && (
-                              <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+                              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden flex-shrink-0 border-2 border-white/20">
                                 <img
                                   src={sponsoredBannerSettings[selectedLanguage].image}
                                   alt="Banner preview"
@@ -1658,7 +1830,7 @@ const Customization = () => {
 
               {/* Media Management Tab */}
               {activeTab === 'media' && (
-              <div className="space-y-6">
+                <div className="space-y-6">
                 <div className="bg-card border border-border rounded-lg p-6">
                   <div className="flex items-center justify-between mb-6">
                     <div>
@@ -1773,11 +1945,11 @@ const Customization = () => {
                           placeholder="Or paste URL here..."
                         />
                         {mediaSettings.home?.heroImage?.[selectedMediaLanguage] && (
-                          <div className="mt-2 rounded-lg overflow-hidden border border-border">
+                          <div className="mt-2 rounded-lg overflow-hidden border border-border bg-muted/20 p-2">
                             <img
                               src={mediaSettings.home.heroImage[selectedMediaLanguage]}
                               alt="Hero preview"
-                              className="w-full h-40 object-cover"
+                              className="w-full h-auto max-h-64 sm:max-h-80 object-contain rounded-md"
                               onError={(e) => {
                                 e.target.style.display = 'none';
                               }}
@@ -1851,11 +2023,11 @@ const Customization = () => {
                           placeholder="Or paste URL here..."
                         />
                         {mediaSettings.home?.desktopImage?.[selectedMediaLanguage] && (
-                          <div className="mt-2 rounded-lg overflow-hidden border border-border">
+                          <div className="mt-2 rounded-lg overflow-hidden border border-border bg-muted/20 p-2">
                             <img
                               src={mediaSettings.home.desktopImage[selectedMediaLanguage]}
                               alt="Desktop preview"
-                              className="w-full h-40 object-cover"
+                              className="w-full h-auto max-h-64 sm:max-h-80 object-contain rounded-md"
                               onError={(e) => {
                                 e.target.style.display = 'none';
                               }}
@@ -1929,11 +2101,11 @@ const Customization = () => {
                           placeholder="Or paste URL here..."
                         />
                         {mediaSettings.home?.mobileImage?.[selectedMediaLanguage] && (
-                          <div className="mt-2 rounded-lg overflow-hidden border border-border">
+                          <div className="mt-2 rounded-lg overflow-hidden border border-border bg-muted/20 p-2">
                             <img
                               src={mediaSettings.home.mobileImage[selectedMediaLanguage]}
                               alt="Mobile preview"
-                              className="w-full h-40 object-cover"
+                              className="w-full h-auto max-h-64 sm:max-h-80 object-contain rounded-md"
                               onError={(e) => {
                                 e.target.style.display = 'none';
                               }}
@@ -2005,11 +2177,11 @@ const Customization = () => {
                         )}
                       </div>
                       {mediaSettings.home?.demoVideo?.[selectedMediaLanguage] && (
-                        <div className="mt-2">
+                        <div className="mt-2 rounded-lg overflow-hidden border border-border bg-muted/20 p-2">
                           <video
                             src={mediaSettings.home.demoVideo[selectedMediaLanguage]}
                             controls
-                            className="max-w-xs max-h-32 border border-border rounded"
+                            className="w-full h-auto max-h-64 sm:max-h-80 rounded-md"
                             onError={(e) => {
                               e.target.style.display = 'none';
                             }}
@@ -2092,11 +2264,11 @@ const Customization = () => {
                           placeholder="Or paste URL here..."
                         />
                         {mediaSettings.about?.heroImage && (
-                          <div className="mt-2 rounded-lg overflow-hidden border border-border">
+                          <div className="mt-2 rounded-lg overflow-hidden border border-border bg-muted/20 p-2">
                             <img
                               src={mediaSettings.about.heroImage}
                               alt="Hero preview"
-                              className="w-full h-40 object-cover"
+                              className="w-full h-auto max-h-64 sm:max-h-80 object-contain rounded-md"
                               onError={(e) => {
                                 e.target.style.display = 'none';
                               }}
@@ -2164,11 +2336,11 @@ const Customization = () => {
                           placeholder="Or paste URL here..."
                         />
                         {mediaSettings.about?.ourStoryLeft && (
-                          <div className="mt-2 rounded-lg overflow-hidden border border-border">
+                          <div className="mt-2 rounded-lg overflow-hidden border border-border bg-muted/20 p-2">
                             <img
                               src={mediaSettings.about.ourStoryLeft}
                               alt="Our Story Left preview"
-                              className="w-full h-40 object-cover"
+                              className="w-full h-auto max-h-64 sm:max-h-80 object-contain rounded-md"
                               onError={(e) => {
                                 e.target.style.display = 'none';
                               }}
@@ -2236,11 +2408,11 @@ const Customization = () => {
                           placeholder="Or paste URL here..."
                         />
                         {mediaSettings.about?.ourStoryRight && (
-                          <div className="mt-2 rounded-lg overflow-hidden border border-border">
+                          <div className="mt-2 rounded-lg overflow-hidden border border-border bg-muted/20 p-2">
                             <img
                               src={mediaSettings.about.ourStoryRight}
                               alt="Our Story Right preview"
-                              className="w-full h-40 object-cover"
+                              className="w-full h-auto max-h-64 sm:max-h-80 object-contain rounded-md"
                               onError={(e) => {
                                 e.target.style.display = 'none';
                               }}
@@ -2308,11 +2480,11 @@ const Customization = () => {
                           placeholder="Or paste URL here..."
                         />
                         {mediaSettings.about?.ourFounder && (
-                          <div className="mt-2 rounded-lg overflow-hidden border border-border">
+                          <div className="mt-2 rounded-lg overflow-hidden border border-border bg-muted/20 p-2">
                             <img
                               src={mediaSettings.about.ourFounder}
                               alt="Our Founder preview"
-                              className="w-full h-40 object-cover"
+                              className="w-full h-auto max-h-64 sm:max-h-80 object-contain rounded-md"
                               onError={(e) => {
                                 e.target.style.display = 'none';
                               }}
@@ -2325,36 +2497,267 @@ const Customization = () => {
                   </div>
                 </div>
                 </div>
-
-                {/* Save Button */}
-                <div className="mt-6 flex justify-end gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={loadSettings}
-                    disabled={saving}
-                  >
-                    <Icon name="RotateCcw" size={16} className="mr-2" />
-                    Reset Changes
-                  </Button>
-                  <Button
-                    onClick={handleSave}
-                    disabled={saving}
-                  >
-                    {saving ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Icon name="Save" size={16} className="mr-2" />
-                        Save Changes
-                      </>
-                    )}
-                  </Button>
                 </div>
-              </div>
               )}
+
+              {/* Pricing Tab */}
+              {activeTab === 'pricing' && (
+                <div className="space-y-6">
+                  <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h2 className="text-xl font-bold text-foreground flex items-center gap-3">
+                          <Icon name="DollarSign" size={24} className="text-primary" />
+                          Pricing Management
+                        </h2>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Configure pricing plans for monthly and yearly subscriptions. These prices will be displayed on pricing page, subscription page, and registration step.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      {/* Starter Plan */}
+                      <div className="bg-muted/30 rounded-lg p-6 border border-border">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                            <Icon name="Package" size={20} className="text-primary" />
+                            Starter Plan
+                          </h3>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={pricingSettings.starter?.popular || false}
+                              onChange={(e) => handlePricingSettingsChange({
+                                ...pricingSettings,
+                                starter: {
+                                  ...pricingSettings.starter,
+                                  popular: e.target.checked
+                                }
+                              })}
+                            />
+                            <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            <span className="ml-3 text-sm text-muted-foreground">Mark as Popular</span>
+                          </label>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <div className="bg-card rounded-lg p-4 border border-border">
+                            <label className="block text-sm font-semibold text-foreground mb-2">Plan Name</label>
+                            <input
+                              type="text"
+                              value={pricingSettings.starter?.name || ''}
+                              onChange={(e) => handlePricingSettingsChange({
+                                ...pricingSettings,
+                                starter: {
+                                  ...pricingSettings.starter,
+                                  name: e.target.value
+                                }
+                              })}
+                              className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                              placeholder="Starter Plan"
+                            />
+                          </div>
+                          <div className="bg-card rounded-lg p-4 border border-border">
+                            <label className="block text-sm font-semibold text-foreground mb-2">Description</label>
+                            <input
+                              type="text"
+                              value={pricingSettings.starter?.description || ''}
+                              onChange={(e) => handlePricingSettingsChange({
+                                ...pricingSettings,
+                                starter: {
+                                  ...pricingSettings.starter,
+                                  description: e.target.value
+                                }
+                              })}
+                              className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                              placeholder="Perfect for beginners"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="bg-card rounded-lg p-4 border border-border">
+                            <label className="block text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                              <Icon name="Calendar" size={16} className="text-primary" />
+                              Monthly Price (€)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={pricingSettings.starter?.monthly || ''}
+                              onChange={(e) => handlePricingSettingsChange({
+                                ...pricingSettings,
+                                starter: {
+                                  ...pricingSettings.starter,
+                                  monthly: parseFloat(e.target.value) || 0
+                                }
+                              })}
+                              className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                              placeholder="29.99"
+                            />
+                          </div>
+                          <div className="bg-card rounded-lg p-4 border border-border">
+                            <label className="block text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                              <Icon name="Calendar" size={16} className="text-primary" />
+                              Yearly Price (€/month)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={pricingSettings.starter?.yearly || ''}
+                              onChange={(e) => handlePricingSettingsChange({
+                                ...pricingSettings,
+                                starter: {
+                                  ...pricingSettings.starter,
+                                  yearly: parseFloat(e.target.value) || 0
+                                }
+                              })}
+                              className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                              placeholder="24.99"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">Price per month when billed yearly</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Pro Plan */}
+                      <div className="bg-muted/30 rounded-lg p-6 border border-border">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                            <Icon name="Zap" size={20} className="text-primary" />
+                            Pro Plan
+                          </h3>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={pricingSettings.pro?.popular || false}
+                              onChange={(e) => handlePricingSettingsChange({
+                                ...pricingSettings,
+                                pro: {
+                                  ...pricingSettings.pro,
+                                  popular: e.target.checked
+                                }
+                              })}
+                            />
+                            <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            <span className="ml-3 text-sm text-muted-foreground">Mark as Popular</span>
+                          </label>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <div className="bg-card rounded-lg p-4 border border-border">
+                            <label className="block text-sm font-semibold text-foreground mb-2">Plan Name</label>
+                            <input
+                              type="text"
+                              value={pricingSettings.pro?.name || ''}
+                              onChange={(e) => handlePricingSettingsChange({
+                                ...pricingSettings,
+                                pro: {
+                                  ...pricingSettings.pro,
+                                  name: e.target.value
+                                }
+                              })}
+                              className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                              placeholder="Pro Plan"
+                            />
+                          </div>
+                          <div className="bg-card rounded-lg p-4 border border-border">
+                            <label className="block text-sm font-semibold text-foreground mb-2">Description</label>
+                            <input
+                              type="text"
+                              value={pricingSettings.pro?.description || ''}
+                              onChange={(e) => handlePricingSettingsChange({
+                                ...pricingSettings,
+                                pro: {
+                                  ...pricingSettings.pro,
+                                  description: e.target.value
+                                }
+                              })}
+                              className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                              placeholder="Complete solution with AI"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="bg-card rounded-lg p-4 border border-border">
+                            <label className="block text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                              <Icon name="Calendar" size={16} className="text-primary" />
+                              Monthly Price (€)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={pricingSettings.pro?.monthly || ''}
+                              onChange={(e) => handlePricingSettingsChange({
+                                ...pricingSettings,
+                                pro: {
+                                  ...pricingSettings.pro,
+                                  monthly: parseFloat(e.target.value) || 0
+                                }
+                              })}
+                              className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                              placeholder="49.99"
+                            />
+                          </div>
+                          <div className="bg-card rounded-lg p-4 border border-border">
+                            <label className="block text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                              <Icon name="Calendar" size={16} className="text-primary" />
+                              Yearly Price (€/month)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={pricingSettings.pro?.yearly || ''}
+                              onChange={(e) => handlePricingSettingsChange({
+                                ...pricingSettings,
+                                pro: {
+                                  ...pricingSettings.pro,
+                                  yearly: parseFloat(e.target.value) || 0
+                                }
+                              })}
+                              className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                              placeholder="41.66"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">Price per month when billed yearly</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Save Button */}
+              <div className="mt-6 flex justify-end gap-3">
+                <Button
+                  variant="outline"
+                  onClick={loadSettings}
+                  disabled={saving}
+                >
+                  <Icon name="RotateCcw" size={16} className="mr-2" />
+                  Reset Changes
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="Save" size={16} className="mr-2" />
+                      Save Changes
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           )}
         </main>
