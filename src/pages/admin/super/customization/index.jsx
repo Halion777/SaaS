@@ -92,6 +92,7 @@ const Customization = () => {
   const bannerSaveTimeoutRef = useRef(null);
   const serviceSaveTimeoutRef = useRef(null);
   const pricingSaveTimeoutRef = useRef(null);
+  const homeServicesSaveTimeoutRef = useRef(null);
 
   // Refs for file inputs
   const homeHeroImageRef = useRef(null);
@@ -854,6 +855,47 @@ const Customization = () => {
     }, 1000);
   };
 
+  // Save only home page services visibility settings (helper function for auto-save)
+  const saveHomePageServicesVisibility = async (updatedSettings) => {
+    try {
+      const { error: homeServicesError } = await supabase
+        .from('app_settings')
+        .upsert({
+          setting_key: 'home_page_services_visibility',
+          setting_value: updatedSettings,
+          description: 'Controls visibility of Recovery & Credit Insurance section on home page',
+          updated_at: new Date().toISOString(),
+          updated_by: user.id
+        }, {
+          onConflict: 'setting_key'
+        });
+
+      if (homeServicesError) {
+        console.error('❌ Error saving home page services visibility settings:', homeServicesError);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('❌ Error saving home page services visibility settings:', error);
+      return false;
+    }
+  };
+
+  // Debounced auto-save for home page services visibility settings
+  const handleHomePageServicesVisibilityChange = (updatedSettings) => {
+    setHomePageServicesVisibility(updatedSettings);
+    
+    // Clear existing timeout
+    if (homeServicesSaveTimeoutRef.current) {
+      clearTimeout(homeServicesSaveTimeoutRef.current);
+    }
+    
+    // Set new timeout for auto-save (1 second delay)
+    homeServicesSaveTimeoutRef.current = setTimeout(() => {
+      saveHomePageServicesVisibility(updatedSettings);
+    }, 1000);
+  };
+
   // Handle delete file
   const handleDeleteFile = async (mediaType, pageType, language = null) => {
     if (!confirm('Are you sure you want to delete this file?')) return;
@@ -1350,43 +1392,13 @@ const Customization = () => {
                               type="checkbox"
                               className="sr-only peer"
                               checked={homePageServicesVisibility.enabled}
-                              onChange={(e) => setHomePageServicesVisibility({ enabled: e.target.checked })}
+                              onChange={(e) => handleHomePageServicesVisibilityChange({ enabled: e.target.checked })}
                             />
                             <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                           </label>
                         </div>
                       </div>
                     </div>
-                  </div>
-
-
-
-                  {/* Save Button */}
-                  <div className="mt-6 flex justify-end gap-3">
-                    <Button
-                      variant="outline"
-                      onClick={loadSettings}
-                      disabled={saving}
-                    >
-                      <Icon name="RotateCcw" size={16} className="mr-2" />
-                      Reset Changes
-                    </Button>
-                    <Button
-                      onClick={handleSave}
-                      disabled={saving}
-                    >
-                      {saving ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Icon name="Save" size={16} className="mr-2" />
-                          Save Changes
-                        </>
-                      )}
-                    </Button>
                   </div>
                 </div>
               )}
@@ -1595,37 +1607,10 @@ const Customization = () => {
                       </div>
                     )}
                   </div>
-
-                  {/* Save Button */}
-                  <div className="mt-6 flex justify-end gap-3">
-                    <Button
-                      variant="outline"
-                      onClick={loadSettings}
-                      disabled={saving}
-                    >
-                      <Icon name="RotateCcw" size={16} className="mr-2" />
-                      Reset Changes
-                    </Button>
-                    <Button
-                      onClick={handleSave}
-                      disabled={saving}
-                    >
-                      {saving ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Icon name="Save" size={16} className="mr-2" />
-                          Save Changes
-                        </>
-                      )}
-                    </Button>
-                  </div>
                 </div>
               )}
 
+              
               {/* Company Details Tab */}
               {activeTab === 'company' && (
                 <div className="space-y-6">
@@ -1796,34 +1781,6 @@ const Customization = () => {
                       </div>
                     </div>
                   </div>
-                </div>
-
-                  {/* Save Button */}
-                  <div className="mt-6 flex justify-end gap-3">
-                    <Button
-                      variant="outline"
-                      onClick={loadSettings}
-                      disabled={saving}
-                    >
-                      <Icon name="RotateCcw" size={16} className="mr-2" />
-                      Reset Changes
-                    </Button>
-                    <Button
-                      onClick={handleSave}
-                      disabled={saving}
-                    >
-                      {saving ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Icon name="Save" size={16} className="mr-2" />
-                          Save Changes
-                        </>
-                      )}
-                    </Button>
                   </div>
                 </div>
               )}
