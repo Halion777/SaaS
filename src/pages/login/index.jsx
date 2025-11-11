@@ -72,6 +72,24 @@ const Login = () => {
       <Helmet>
         <title>{t('meta.login.title')}</title>
         <meta name="description" content={t('meta.login.description')} />
+        <meta name="keywords" content="login, sign in, haliqo, artisan account, construction management, business login" />
+        <meta name="robots" content="index, follow" />
+        
+        {/* Open Graph */}
+        <meta property="og:title" content={t('meta.login.title')} />
+        <meta property="og:description" content={t('meta.login.description')} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={`https://haliqo.com/login`} />
+        <meta property="og:image" content="https://haliqo.com/assets/images/og-image.jpg" />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={t('meta.login.title')} />
+        <meta name="twitter:description" content={t('meta.login.description')} />
+        
+        {/* Canonical */}
+        <link rel="canonical" href="https://haliqo.com/login" />
+        
         <html lang={i18n.language} />
       </Helmet>
 

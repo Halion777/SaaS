@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  
+  <!-- Home Page -->
+  <url>
+    <loc>https://haliqo.com/</loc>
+    <lastmod>2024-01-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://haliqo.com/?lang=fr" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://haliqo.com/?lang=en" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://haliqo.com/?lang=nl" />
+  </url>
+  
+  <!-- Login Page -->
+  <url>
+    <loc>https://haliqo.com/login</loc>
+    <lastmod>2024-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://haliqo.com/login?lang=fr" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://haliqo.com/login?lang=en" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://haliqo.com/login?lang=nl" />
+  </url>
+  
+  <!-- Register Page -->
+  <url>
+    <loc>https://haliqo.com/register</loc>
+    <lastmod>2024-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://haliqo.com/register?lang=fr" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://haliqo.com/register?lang=en" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://haliqo.com/register?lang=nl" />
+  </url>
+  
+  <!-- Pricing Page -->
+  <url>
+    <loc>https://haliqo.com/pricing</loc>
+    <lastmod>2024-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://haliqo.com/pricing?lang=fr" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://haliqo.com/pricing?lang=en" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://haliqo.com/pricing?lang=nl" />
+  </url>
+  
+  <!-- About Page -->
+  <url>
+    <loc>https://haliqo.com/about</loc>
+    <lastmod>2024-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://haliqo.com/about?lang=fr" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://haliqo.com/about?lang=en" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://haliqo.com/about?lang=nl" />
+  </url>
+  
+  <!-- Contact Page -->
+  <url>
+    <loc>https://haliqo.com/contact</loc>
+    <lastmod>2024-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://haliqo.com/contact?lang=fr" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://haliqo.com/contact?lang=en" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://haliqo.com/contact?lang=nl" />
+  </url>
+  
+  <!-- Features Page -->
+  <url>
+    <loc>https://haliqo.com/features</loc>
+    <lastmod>2024-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://haliqo.com/features?lang=fr" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://haliqo.com/features?lang=en" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://haliqo.com/features?lang=nl" />
+  </url>
+  
+  <!-- Find Artisan Page -->
+  <url>
+    <loc>https://haliqo.com/find-artisan</loc>
+    <lastmod>2024-01-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://haliqo.com/find-artisan?lang=fr" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://haliqo.com/find-artisan?lang=en" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://haliqo.com/find-artisan?lang=nl" />
+  </url>
+  
+  <!-- Blog Page -->
+  <url>
+    <loc>https://haliqo.com/blog</loc>
+    <lastmod>2024-01-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://haliqo.com/blog?lang=fr" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://haliqo.com/blog?lang=en" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://haliqo.com/blog?lang=nl" />
+  </url>
+  
+  <!-- Terms Page -->
+  <url>
+    <loc>https://haliqo.com/terms</loc>
+    <lastmod>2024-01-15</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://haliqo.com/terms?lang=fr" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://haliqo.com/terms?lang=en" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://haliqo.com/terms?lang=nl" />
+  </url>
+  
+  <!-- Privacy Page -->
+  <url>
+    <loc>https://haliqo.com/privacy</loc>
+    <lastmod>2024-01-15</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://haliqo.com/privacy?lang=fr" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://haliqo.com/privacy?lang=en" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://haliqo.com/privacy?lang=nl" />
+  </url>
+  
+  <!-- Cookies Page -->
+  <url>
+    <loc>https://haliqo.com/cookies</loc>
+    <lastmod>2024-01-15</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://haliqo.com/cookies?lang=fr" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://haliqo.com/cookies?lang=en" />
+    <xhtml:link rel="alternate" hreflang="nl" href="https://haliqo.com/cookies?lang=nl" />
+  </url>
+  
+</urlset>
+

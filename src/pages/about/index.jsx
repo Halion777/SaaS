@@ -115,6 +115,24 @@ const AboutPage = () => {
       <Helmet>
         <title>{t('meta.about.title')}</title>
         <meta name="description" content={t('meta.about.description')} />
+        <meta name="keywords" content="about, haliqo, company, story, values, construction management, artisan platform" />
+        <meta name="robots" content="index, follow" />
+        
+        {/* Open Graph */}
+        <meta property="og:title" content={t('meta.about.title')} />
+        <meta property="og:description" content={t('meta.about.description')} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={`https://haliqo.com/about`} />
+        <meta property="og:image" content="https://haliqo.com/assets/images/og-image.jpg" />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={t('meta.about.title')} />
+        <meta name="twitter:description" content={t('meta.about.description')} />
+        
+        {/* Canonical */}
+        <link rel="canonical" href="https://haliqo.com/about" />
+        
         <html lang={i18n.language} />
       </Helmet>
       

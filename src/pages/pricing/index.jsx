@@ -70,6 +70,24 @@ const PricingPage = () => {
       <Helmet>
         <title>{t('meta.pricing.title')}</title>
         <meta name="description" content={t('meta.pricing.description')} />
+        <meta name="keywords" content="pricing, plans, subscription, haliqo, construction management pricing, artisan software pricing, business management cost" />
+        <meta name="robots" content="index, follow" />
+        
+        {/* Open Graph */}
+        <meta property="og:title" content={t('meta.pricing.title')} />
+        <meta property="og:description" content={t('meta.pricing.description')} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={`https://haliqo.com/pricing`} />
+        <meta property="og:image" content="https://haliqo.com/assets/images/og-image.jpg" />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={t('meta.pricing.title')} />
+        <meta name="twitter:description" content={t('meta.pricing.description')} />
+        
+        {/* Canonical */}
+        <link rel="canonical" href="https://haliqo.com/pricing" />
+        
         <html lang={i18n.language} />
       </Helmet>
       <Header />

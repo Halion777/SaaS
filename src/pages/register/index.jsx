@@ -395,6 +395,24 @@ const Register = () => {
       <Helmet>
         <title>{t('meta.register.title')}</title>
         <meta name="description" content={t('meta.register.description')} />
+        <meta name="keywords" content="register, sign up, create account, haliqo, artisan registration, construction management, business signup" />
+        <meta name="robots" content="index, follow" />
+        
+        {/* Open Graph */}
+        <meta property="og:title" content={t('meta.register.title')} />
+        <meta property="og:description" content={t('meta.register.description')} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={`https://haliqo.com/register`} />
+        <meta property="og:image" content="https://haliqo.com/assets/images/og-image.jpg" />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={t('meta.register.title')} />
+        <meta name="twitter:description" content={t('meta.register.description')} />
+        
+        {/* Canonical */}
+        <link rel="canonical" href="https://haliqo.com/register" />
+        
         <html lang={i18n.language} />
       </Helmet>
       

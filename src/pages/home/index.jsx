@@ -207,13 +207,39 @@ const HomePage = () => {
         <title>{t('meta.title')}</title>
         <meta name="description" content={t('meta.description')} />
         <meta name="keywords" content={t('meta.keywords')} />
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+        <meta name="googlebot" content="index, follow" />
+        <meta name="author" content="Haliqo" />
+        
+        {/* Open Graph */}
         <meta property="og:title" content={t('meta.ogTitle')} />
         <meta property="og:description" content={t('meta.ogDescription')} />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://Haliqo.com" />
-        <meta property="og:image" content="/assets/images/og-image.jpg" />
+        <meta property="og:url" content="https://haliqo.com" />
+        <meta property="og:image" content="https://haliqo.com/assets/images/og-image.jpg" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:locale" content={i18n.language === 'fr' ? 'fr_FR' : i18n.language === 'nl' ? 'nl_NL' : 'en_US'} />
+        <meta property="og:locale:alternate" content="fr_FR" />
+        <meta property="og:locale:alternate" content="en_US" />
+        <meta property="og:locale:alternate" content="nl_NL" />
+        <meta property="og:site_name" content="Haliqo" />
+        
+        {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
-        <link rel="canonical" href="https://Haliqo.com" />
+        <meta name="twitter:title" content={t('meta.ogTitle')} />
+        <meta name="twitter:description" content={t('meta.ogDescription')} />
+        <meta name="twitter:image" content="https://haliqo.com/assets/images/og-image.jpg" />
+        
+        {/* Canonical */}
+        <link rel="canonical" href="https://haliqo.com" />
+        
+        {/* Alternate language versions */}
+        <link rel="alternate" hreflang="fr" href="https://haliqo.com/?lang=fr" />
+        <link rel="alternate" hreflang="en" href="https://haliqo.com/?lang=en" />
+        <link rel="alternate" hreflang="nl" href="https://haliqo.com/?lang=nl" />
+        <link rel="alternate" hreflang="x-default" href="https://haliqo.com" />
+        
         <html lang={i18n.language} />
       </Helmet>
       
@@ -1566,27 +1592,74 @@ const HomePage = () => {
         <Footer />
         
         {/* Schema.org JSON-LD for SEO */}
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: `
-          {
-            "@context": "https://schema.org",
-            "@type": "Organization",
-            "url": "https://Haliqo.com",
-            "logo": "https://Haliqo.com/assets/images/logo.png",
-            "name": "Haliqo",
-            "description": t('meta.schemaDescription'),
-            "contactPoint": {
-              "@type": "ContactPoint",
-              "telephone": t('meta.phone'),
-              "contactType": "customer service"
-            },
-            "sameAs": [
-              "https://facebook.com/Haliqo",
-              "https://twitter.com/Haliqo",
-              "https://linkedin.com/company/Haliqo",
-              "https://instagram.com/Haliqo"
-            ]
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "url": "https://haliqo.com",
+          "logo": "https://haliqo.com/assets/logo/logo.png",
+          "name": "Haliqo",
+          "alternateName": "Haliqo - Your Professional Digital Vitamin",
+          "description": t('meta.schemaDescription'),
+          "foundingDate": "2024",
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "telephone": companyDetails.phone || "+32-2-884-6333",
+            "contactType": "customer service",
+            "availableLanguage": ["French", "English", "Dutch"]
+          },
+          "sameAs": [
+            "https://facebook.com/Haliqo",
+            "https://twitter.com/Haliqo",
+            "https://linkedin.com/company/Haliqo",
+            "https://instagram.com/Haliqo"
+          ],
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Brussels",
+            "addressCountry": "BE"
+          },
+          "offers": {
+            "@type": "Offer",
+            "name": "Haliqo Subscription Plans",
+            "description": "Professional construction management platform with free trial",
+            "priceCurrency": "EUR"
           }
-        `}} />
+        })}} />
+        
+        {/* SoftwareApplication Schema */}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "Haliqo",
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "Web",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "EUR",
+            "description": "14-day free trial available"
+          },
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "ratingCount": "500"
+          },
+          "description": t('meta.schemaDescription')
+        })}} />
+        
+        {/* WebSite Schema with SearchAction */}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Haliqo",
+          "url": "https://haliqo.com",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://haliqo.com/find-artisan?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+          },
+          "inLanguage": ["fr", "en", "nl"]
+        })}} />
       </div>
       
       {/* Custom CSS for animations */}

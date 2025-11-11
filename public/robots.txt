@@ -1,3 +1,35 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+Allow: /login
+Allow: /register
+Allow: /pricing
+Allow: /about
+Allow: /contact
+Allow: /features
+Allow: /find-artisan
+Allow: /blog
+Allow: /terms
+Allow: /privacy
+Allow: /cookies
+
+# Disallow admin and protected routes
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /quote-creation
+Disallow: /quotes-management
+Disallow: /invoices-management
+Disallow: /client-management
+Disallow: /analytics-dashboard
+Disallow: /services
+Disallow: /leads-management
+Disallow: /statistics
+Disallow: /subscription
+Disallow: /tasks
+Disallow: /multi-user-profiles
+Disallow: /expense-invoices
+Disallow: /quotes-follow-up
+Disallow: /invoices-follow-up
+
+# Sitemap location
+Sitemap: https://haliqo.com/sitemap.xml
