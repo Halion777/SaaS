@@ -154,6 +154,24 @@ const HomePage = () => {
     loadMediaSettings();
   }, [i18n.language]); // Reload when language changes
 
+  // Listen for language changes and reload page to ensure all images update
+  useEffect(() => {
+    const handleLanguageChange = () => {
+      // Small delay to ensure state updates, then reload
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+    };
+
+    // Listen to i18n languageChanged event
+    i18n.on('languageChanged', handleLanguageChange);
+
+    // Cleanup listener on unmount
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+    };
+  }, []);
+
   // Intersection Observer for scroll animations
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -292,6 +310,7 @@ const HomePage = () => {
                     <div className="relative bg-white rounded-2xl shadow-2xl p-4 transform rotate-3 hover:rotate-0 transition-transform duration-500">
                       {/* Desktop Image - Hidden on mobile */}
                       <img 
+                        key={`desktop-${i18n.language}`}
                         src={mediaSettings.home?.desktopImage?.[i18n.language] || mediaSettings.home?.heroImage?.[i18n.language] || '/assets/images/dashboard 1.png'}
                         alt="Haliqo Dashboard" 
                         className="hidden md:block w-full h-auto rounded-xl"
@@ -301,6 +320,7 @@ const HomePage = () => {
                       />
                       {/* Mobile Image - Hidden on desktop */}
                       <img 
+                        key={`mobile-${i18n.language}`}
                         src={mediaSettings.home?.mobileImage?.[i18n.language] || mediaSettings.home?.heroImage?.[i18n.language] || '/assets/images/dashboard 1.png'}
                         alt="Haliqo Dashboard Mobile" 
                         className="block md:hidden w-full h-auto rounded-xl"
@@ -370,6 +390,7 @@ const HomePage = () => {
                   <div className="w-full max-w-3xl mx-auto bg-black rounded-xl overflow-hidden shadow-2xl">
                     {mediaSettings.home?.demoVideo?.[i18n.language] ? (
                       <video
+                        key={`video-${i18n.language}`}
                         src={mediaSettings.home.demoVideo[i18n.language]}
                         controls
                         className="w-full aspect-video"
