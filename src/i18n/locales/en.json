@@ -54,7 +54,7 @@
   },
   "home": {
     "hero": {
-      "badge": "Haliqo - Your professional digital vitamin",
+      "badge": "Haliqo – Your Smart Digital Partner",
       "title": {
         "prefix": "The all-in-one solution for ",
         "highlight": "craftsman professionals"
@@ -386,7 +386,7 @@
       },
       "mission": {
         "title": "Our Mission",
-        "description": "Our mission is to become the digital vitamin of construction, facilitating the daily management of artisans."
+        "description": "Our mission is to become the digital Partner of construction, facilitating the daily management of artisans."
       }
     },
     "founder": {
@@ -1035,10 +1035,10 @@
     }
   },
   "meta": {
-    "title": "Haliqo - Your professional digital vitamin",
+    "title": "Haliqo – Your Smart Digital Partner",
     "description": "Haliqo simplifies the administrative management of construction professionals. Create quotes, send invoices and develop your clientele.",
     "keywords": "artisan, construction, quotes, invoices, management, electrician, plumber, painter",
-    "ogTitle": "Haliqo - Your professional digital vitamin",
+    "ogTitle": "Haliqo - Your professional digital partner",
     "ogDescription": "Simplify your administrative management and develop your clientele",
     "schemaDescription": "The all-in-one platform for construction professionals. Create quotes, send invoices, track payments and receive prospects.",
     "phone": "+33-1-23-45-67-89",

@@ -55,7 +55,7 @@
   },
   "home": {
     "hero": {
-      "badge": "Haliqo - Votre vitamine digitale professionnelle",
+      "badge": "Haliqo - Votre partenaire digital intelligent",
       "title": {
         "prefix": "La solution tout-en-un pensée pour les ",
         "highlight": "artisans de tous métiers"
@@ -387,7 +387,7 @@
       },
       "mission": {
         "title": "Notre mission",
-        "description": "Notre mission est de devenir la vitamine digitale du bâtiment, en facilitant la gestion quotidienne des artisans."
+        "description": "Notre mission est de devenir la partenaire digital intelligent du bâtiment, en facilitant la gestion quotidienne des artisans."
       }
     },
     "founder": {
@@ -1037,10 +1037,10 @@
     }
   },
   "meta": {
-    "title": "Haliqo - Votre vitamine digitale professionnelle",
+    "title": "Haliqo - Votre partenaire digital intelligent",
     "description": "Haliqo simplifie la gestion administrative des artisans de tous métiers. Créez des devis, envoyez des factures et développez votre clientèle.",
     "keywords": "artisan, métiers, devis, facture, gestion, électricien, plombier, peintre, menuisier, maçon",
-    "ogTitle": "Haliqo - Votre vitamine digitale professionnelle",
+    "ogTitle": "Haliqo - Votre partenaire digital intelligent",
     "ogDescription": "Simplifiez votre gestion administrative et développez votre clientèle",
     "schemaDescription": "La plateforme tout-en-un pour artisans de tous métiers. Créez des devis, envoyez des factures, suivez les paiements et recevez des prospects.",
     "phone": "+33-1-23-45-67-89",
