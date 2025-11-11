@@ -23,6 +23,8 @@ const HomePage = () => {
   const [mediaSettings, setMediaSettings] = useState({
     home: {
       heroImage: { fr: '', en: '', nl: '' },
+      desktopImage: { fr: '', en: '', nl: '' },
+      mobileImage: { fr: '', en: '', nl: '' },
       demoVideo: { fr: '', en: '', nl: '' }
     }
   });
@@ -115,7 +117,7 @@ const HomePage = () => {
     loadCompanyDetails();
   }, []);
 
-  // Load media settings
+  // Load media settings - reload when language changes
   useEffect(() => {
     const loadMediaSettings = async () => {
       try {
@@ -129,9 +131,18 @@ const HomePage = () => {
           console.error('Error loading media settings:', error);
         } else if (data && data.setting_value) {
           const loadedMedia = data.setting_value;
+          // Handle both old (string) and new (object) formats for backward compatibility
           setMediaSettings({
             home: {
-              heroImage: loadedMedia.home?.heroImage || { fr: '', en: '', nl: '' },
+              heroImage: typeof loadedMedia.home?.heroImage === 'object' 
+                ? loadedMedia.home.heroImage 
+                : { fr: '', en: '', nl: '' },
+              desktopImage: typeof loadedMedia.home?.desktopImage === 'object'
+                ? loadedMedia.home.desktopImage
+                : { fr: '', en: '', nl: '' },
+              mobileImage: typeof loadedMedia.home?.mobileImage === 'object'
+                ? loadedMedia.home.mobileImage
+                : { fr: '', en: '', nl: '' },
               demoVideo: loadedMedia.home?.demoVideo || { fr: '', en: '', nl: '' }
             }
           });
@@ -141,7 +152,7 @@ const HomePage = () => {
       }
     };
     loadMediaSettings();
-  }, []);
+  }, [i18n.language]); // Reload when language changes
 
   // Intersection Observer for scroll animations
   useEffect(() => {
@@ -277,12 +288,25 @@ const HomePage = () => {
                       />
                     </div>
                     
-                    {/* Main Dashboard Image */}
+                    {/* Main Dashboard Image - Language-specific */}
                     <div className="relative bg-white rounded-2xl shadow-2xl p-4 transform rotate-3 hover:rotate-0 transition-transform duration-500">
+                      {/* Desktop Image - Hidden on mobile */}
                       <img 
-                        src="/assets/images/dashboard 1.png" 
+                        src={mediaSettings.home?.desktopImage?.[i18n.language] || mediaSettings.home?.heroImage?.[i18n.language] || '/assets/images/dashboard 1.png'}
                         alt="Haliqo Dashboard" 
-                        className="w-full h-auto rounded-xl"
+                        className="hidden md:block w-full h-auto rounded-xl"
+                        onError={(e) => {
+                          e.target.src = '/assets/images/dashboard 1.png';
+                        }}
+                      />
+                      {/* Mobile Image - Hidden on desktop */}
+                      <img 
+                        src={mediaSettings.home?.mobileImage?.[i18n.language] || mediaSettings.home?.heroImage?.[i18n.language] || '/assets/images/dashboard 1.png'}
+                        alt="Haliqo Dashboard Mobile" 
+                        className="block md:hidden w-full h-auto rounded-xl"
+                        onError={(e) => {
+                          e.target.src = '/assets/images/dashboard 1.png';
+                        }}
                       />
                       
                       {/* Floating Elements */}
