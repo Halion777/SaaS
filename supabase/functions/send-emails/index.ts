@@ -226,7 +226,19 @@ serve(async (req) => {
       case 'contact_form':
         // Handle contact form submissions
         const supportEmail = emailData.support_email || fromEmail;
-        const contactSubject = emailData.subject || 'New Contact Form Submission';
+        
+        // Map subject values to readable labels
+        const subjectMap: { [key: string]: string } = {
+          'demo': 'Demo Request',
+          'question': 'Product Question',
+          'support': 'Technical Support',
+          'partnership': 'Partnership Proposal',
+          'other': 'Other'
+        };
+        
+        const subjectValue = emailData.subject || '';
+        const contactSubject = subjectMap[subjectValue] || subjectValue || 'New Contact Form Submission';
+        
         const contactHtml = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #0036ab;">New Contact Form Submission</h2>
@@ -234,7 +246,7 @@ serve(async (req) => {
               <p><strong>Name:</strong> ${emailData.firstName || ''} ${emailData.lastName || ''}</p>
               <p><strong>Email:</strong> ${emailData.email || ''}</p>
               <p><strong>Phone:</strong> ${emailData.phone || 'Not provided'}</p>
-              <p><strong>Subject:</strong> ${emailData.subject || 'N/A'}</p>
+              <p><strong>Subject:</strong> ${contactSubject}</p>
             </div>
             <div style="background-color: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0;">
               <h3 style="color: #0036ab; margin-top: 0;">Message:</h3>
@@ -251,7 +263,7 @@ New Contact Form Submission
 Name: ${emailData.firstName || ''} ${emailData.lastName || ''}
 Email: ${emailData.email || ''}
 Phone: ${emailData.phone || 'Not provided'}
-Subject: ${emailData.subject || 'N/A'}
+Subject: ${contactSubject}
 
 Message:
 ${emailData.message || ''}

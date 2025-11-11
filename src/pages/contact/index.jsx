@@ -87,12 +87,15 @@ const ContactPage = () => {
     if (!validateForm()) return;
     
     setIsSubmitting(true);
+    setIsSubmitted(false);
+    setErrors({}); // Clear previous errors
     
     try {
       const result = await contactService.submitContactForm(formData);
       
       if (result.success) {
         setIsSubmitted(true);
+        setErrors({});
         // Reset form
         setFormData({
           firstName: '',
@@ -103,11 +106,13 @@ const ContactPage = () => {
           message: ''
         });
       } else {
-        setErrors({ submit: result.error || t('contact.form.errors.submitFailed') });
+        setErrors({ submit: result.error || 'Failed to submit contact form. Please try again.' });
+        setIsSubmitted(false);
       }
     } catch (error) {
       console.error('Error submitting form:', error);
-      setErrors({ submit: error.message || t('contact.form.errors.submitFailed') });
+      setErrors({ submit: error.message || 'Failed to submit contact form. Please try again.' });
+      setIsSubmitted(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -341,8 +346,14 @@ const ContactPage = () => {
                       
                       {/* Error Message */}
                       {errors.submit && (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                          <p className="text-red-600 text-sm">{errors.submit}</p>
+                        <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4 animate-fadeIn">
+                          <div className="flex items-start gap-3">
+                            <Icon name="AlertCircle" size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                              <p className="text-red-800 font-semibold text-sm mb-1">Unable to send message</p>
+                              <p className="text-red-600 text-sm">{errors.submit}</p>
+                            </div>
+                          </div>
                         </div>
                       )}
 
