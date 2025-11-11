@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
@@ -7,6 +8,7 @@ import FileUpload from '../../../components/ui/FileUpload';
 import { OCRService } from '../../../services/ocrService';
 
 const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, onUpdateExpenseInvoice, invoiceToEdit = null }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     supplierName: '',
     supplierEmail: '',
@@ -72,33 +74,33 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
   }, [invoiceToEdit, isOpen]);
 
   const categoryOptions = [
-    { value: '', label: 'Sélectionner une catégorie' },
-    { value: 'fuel', label: 'Fuel (véhicules, machines, transport)' },
-    { value: 'it_software', label: 'IT / Services logiciels' },
-    { value: 'energy', label: 'Énergie (électricité, gaz, eau, chauffage)' },
-    { value: 'materials_supplies', label: 'Matériaux / Fournitures' },
-    { value: 'telecommunications', label: 'Télécommunications' },
-    { value: 'rent_property', label: 'Loyer & Coûts immobiliers' },
-    { value: 'professional_services', label: 'Services professionnels' },
-    { value: 'insurance', label: 'Assurance' },
-    { value: 'travel_accommodation', label: 'Voyage & Hébergement' },
-    { value: 'banking_financial', label: 'Coûts bancaires & financiers' },
-    { value: 'marketing_advertising', label: 'Marketing & Publicité' },
-    { value: 'other_professional', label: 'Autres coûts professionnels' }
+    { value: '', label: t('expenseInvoices.createModal.category.select', 'Select a category') },
+    { value: 'fuel', label: t('expenseInvoices.categories.fuel', 'Fuel') + ' (' + t('expenseInvoices.createModal.category.fuelDescription', 'vehicles, machinery, transport') + ')' },
+    { value: 'it_software', label: t('expenseInvoices.categories.itSoftware', 'IT/Software') + ' / ' + t('expenseInvoices.createModal.category.itDescription', 'Software Services') },
+    { value: 'energy', label: t('expenseInvoices.categories.energy', 'Energy') + ' (' + t('expenseInvoices.createModal.category.energyDescription', 'electricity, gas, water, heating') + ')' },
+    { value: 'materials_supplies', label: t('expenseInvoices.categories.materialsSupplies', 'Materials/Supplies') },
+    { value: 'telecommunications', label: t('expenseInvoices.categories.telecommunications', 'Telecommunications') },
+    { value: 'rent_property', label: t('expenseInvoices.categories.rentProperty', 'Rent & Property') + ' ' + t('expenseInvoices.createModal.category.rentDescription', 'Costs') },
+    { value: 'professional_services', label: t('expenseInvoices.categories.professionalServices', 'Professional Services') },
+    { value: 'insurance', label: t('expenseInvoices.categories.insurance', 'Insurance') },
+    { value: 'travel_accommodation', label: t('expenseInvoices.categories.travelAccommodation', 'Travel & Accommodation') },
+    { value: 'banking_financial', label: t('expenseInvoices.categories.bankingFinancial', 'Banking & Financial') + ' ' + t('expenseInvoices.createModal.category.bankingDescription', 'Costs') },
+    { value: 'marketing_advertising', label: t('expenseInvoices.categories.marketingAdvertising', 'Marketing & Advertising') },
+    { value: 'other_professional', label: t('expenseInvoices.categories.otherProfessional', 'Other Professional Costs') }
   ];
 
   const paymentMethodOptions = [
-    { value: '', label: 'Sélectionner une méthode' },
-    { value: 'Virement bancaire', label: 'Virement bancaire' },
-    { value: 'Chèque', label: 'Chèque' },
-    { value: 'Prélèvement', label: 'Prélèvement' },
-    { value: 'Espèces', label: 'Espèces' },
-    { value: 'Carte bancaire', label: 'Carte bancaire' }
+    { value: '', label: t('expenseInvoices.createModal.paymentMethod.select', 'Select a method') },
+    { value: 'Virement bancaire', label: t('expenseInvoices.createModal.paymentMethod.bankTransfer', 'Bank Transfer') },
+    { value: 'Chèque', label: t('expenseInvoices.createModal.paymentMethod.check', 'Check') },
+    { value: 'Prélèvement', label: t('expenseInvoices.createModal.paymentMethod.directDebit', 'Direct Debit') },
+    { value: 'Espèces', label: t('expenseInvoices.createModal.paymentMethod.cash', 'Cash') },
+    { value: 'Carte bancaire', label: t('expenseInvoices.createModal.paymentMethod.card', 'Bank Card') }
   ];
 
   const sourceOptions = [
-    { value: 'manual', label: 'Manuel (OCR)' },
-    { value: 'peppol', label: 'Peppol (automatique)' }
+    { value: 'manual', label: t('expenseInvoices.createModal.source.manual', 'Manual (OCR)') },
+    { value: 'peppol', label: t('expenseInvoices.createModal.source.peppol', 'Peppol (automatic)') }
   ];
 
   const handleInputChange = (field, value) => {
@@ -150,7 +152,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
 
   const handleOCRProcess = async (file, fileIndex) => {
     setIsOCRProcessing(true);
-    setOcrStatus('Analyse de la facture en cours...');
+    setOcrStatus(t('expenseInvoices.createModal.ocr.processing', 'Analyzing invoice...'));
     
     try {
       // Keep file in storage until user removes it
@@ -184,13 +186,13 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
           notes: extractedData.notes || extractedData.description || prev.notes || ''
         }));
 
-        setOcrStatus('Données extraites avec succès !');
+        setOcrStatus(t('expenseInvoices.createModal.ocr.success', 'Data extracted successfully!'));
         
         // Keep the file in storage - it will be removed when user clicks cross icon
       } else {
         // Extraction failed - delete file from storage and remove from UI
         setOcrStatus('error');
-        const errorMessage = result.error || 'Échec de l\'extraction des données';
+        const errorMessage = result.error || t('expenseInvoices.createModal.ocr.extractionFailed', 'Data extraction failed');
         
         // Delete file from storage if it exists (OCRService should have already deleted it, but ensure it's gone)
         const existingStoragePath = fileStoragePaths[fileIndex] || result.storagePath;
@@ -266,7 +268,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
       }
       
       // Log error (removed alert as per user request)
-      const errorMessage = error.message || 'Erreur lors du traitement du document';
+      const errorMessage = error.message || t('expenseInvoices.createModal.ocr.processingError', 'Error processing document');
       console.error('OCR processing failed:', error);
     } finally {
       setIsOCRProcessing(false);
@@ -278,7 +280,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
     e.stopPropagation();
     
     if (!formData.supplierName || !formData.amount) {
-      alert('Veuillez remplir au minimum le nom du fournisseur et le montant.');
+      alert(t('expenseInvoices.createModal.errors.requiredFields', 'Please fill in at least the supplier name and amount.'));
       return;
     }
 
@@ -340,7 +342,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
       }, 0);
     } catch (error) {
       console.error('Error creating expense invoice:', error);
-      alert('Erreur lors de la création de la facture. Veuillez réessayer.');
+      alert(t('expenseInvoices.createModal.errors.createError', 'Error creating invoice. Please try again.'));
       setIsSubmitting(false);
     }
   };
@@ -406,10 +408,10 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-foreground">
-                  {invoiceToEdit ? 'Modifier la facture' : 'Création rapide de facture'}
+                  {invoiceToEdit ? t('expenseInvoices.createModal.title.edit', 'Edit Invoice') : t('expenseInvoices.createModal.title.create', 'Quick Invoice Creation')}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  {invoiceToEdit ? 'Modifiez les informations de la facture' : 'Créez une nouvelle facture en quelques clics'}
+                  {invoiceToEdit ? t('expenseInvoices.createModal.subtitle.edit', 'Edit invoice information') : t('expenseInvoices.createModal.subtitle.create', 'Create a new invoice in a few clicks')}
                 </p>
               </div>
             </div>
@@ -430,8 +432,8 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
                   <Icon name="Scan" size={16} color="var(--color-blue-600)" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-medium text-blue-900 mb-1">Scanner automatique de facture</h4>
-                  <p className="text-sm text-blue-700">Téléchargez une facture pour extraire automatiquement les données</p>
+                  <h4 className="text-sm font-medium text-blue-900 mb-1">{t('expenseInvoices.createModal.ocr.title', 'Automatic Invoice Scanner')}</h4>
+                  <p className="text-sm text-blue-700">{t('expenseInvoices.createModal.ocr.description', 'Upload an invoice to automatically extract data')}</p>
                 </div>
               </div>
               
@@ -447,11 +449,11 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
                 {isOCRProcessing && (
                   <div className="mt-3 flex items-center space-x-2 text-sm text-blue-700">
                     <Icon name="Loader2" size={16} className="animate-spin" />
-                    <span>{ocrStatus === 'Analyse de la facture en cours...' ? ocrStatus : 'Analyse de la facture en cours...'}</span>
+                    <span>{t('expenseInvoices.createModal.ocr.processing', 'Analyzing invoice...')}</span>
                   </div>
                 )}
                 
-                {ocrStatus && !isOCRProcessing && ocrStatus.includes('succès') && (
+                {ocrStatus && !isOCRProcessing && ocrStatus !== 'error' && (
                   <div className="mt-3 flex items-center space-x-2 text-sm text-green-700">
                     <Icon name="CheckCircle" size={16} />
                     <span>{ocrStatus}</span>
@@ -461,7 +463,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
                 {ocrStatus === 'error' && !isOCRProcessing && (
                   <div className="mt-3 flex items-center space-x-2 text-sm text-red-700">
                     <Icon name="AlertCircle" size={16} />
-                    <span>Échec de l'extraction - La structure du document n'est pas supportée. Veuillez remplir manuellement.</span>
+                    <span>{t('expenseInvoices.createModal.ocr.extractionFailedMessage', 'Extraction failed - Document structure not supported. Please fill in manually.')}</span>
                   </div>
                 )}
             </div>
@@ -469,42 +471,42 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
             {/* Supplier Information */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-foreground border-b border-border pb-2">
-                Informations fournisseur
+                {t('expenseInvoices.createModal.sections.supplierInfo', 'Supplier Information')}
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Nom du fournisseur *
+                    {t('expenseInvoices.createModal.fields.supplierName', 'Supplier Name')} *
                   </label>
                   <Input
                     value={formData.supplierName}
                     onChange={(e) => handleInputChange('supplierName', e.target.value)}
-                    placeholder="Ex: Materiaux Pro"
+                    placeholder={t('expenseInvoices.createModal.placeholders.supplierName', 'Ex: Materials Pro')}
                     required
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Email du fournisseur
+                    {t('expenseInvoices.createModal.fields.supplierEmail', 'Supplier Email')}
                   </label>
                   <Input
                     type="email"
                     value={formData.supplierEmail}
                     onChange={(e) => handleInputChange('supplierEmail', e.target.value)}
-                    placeholder="contact@fournisseur.fr"
+                    placeholder={t('expenseInvoices.createModal.placeholders.supplierEmail', 'contact@supplier.com')}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Numéro TVA du fournisseur
+                    {t('expenseInvoices.createModal.fields.supplierVatNumber', 'Supplier VAT Number')}
                   </label>
                   <Input
                     value={formData.supplierVatNumber}
                     onChange={(e) => handleInputChange('supplierVatNumber', e.target.value)}
-                    placeholder="Ex: BE0123456789"
+                    placeholder={t('expenseInvoices.createModal.placeholders.supplierVatNumber', 'Ex: BE0123456789')}
                   />
                 </div>
               </div>
@@ -513,24 +515,24 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
             {/* Invoice Details */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-foreground border-b border-border pb-2">
-                Détails de la facture
+                {t('expenseInvoices.createModal.sections.invoiceDetails', 'Invoice Details')}
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Numéro de facture
+                    {t('expenseInvoices.createModal.fields.invoiceNumber', 'Invoice Number')}
                   </label>
                   <Input
                     value={formData.invoiceNumber}
                     onChange={(e) => handleInputChange('invoiceNumber', e.target.value)}
-                    placeholder="Ex: FACT-2024-001"
+                    placeholder={t('expenseInvoices.createModal.placeholders.invoiceNumber', 'Ex: INV-2024-001')}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Montant total TTC (€) *
+                    {t('expenseInvoices.createModal.fields.totalAmount', 'Total Amount incl. VAT (€)')} *
                   </label>
                   <Input
                     type="number"
@@ -570,7 +572,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Montant HT (€)
+                    {t('expenseInvoices.createModal.fields.netAmount', 'Net Amount (€)')}
                   </label>
                   <Input
                     type="number"
@@ -591,7 +593,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Montant TVA (€)
+                    {t('expenseInvoices.createModal.fields.vatAmount', 'VAT Amount (€)')}
                   </label>
                   <Input
                     type="number"
@@ -612,31 +614,31 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Catégorie
+                    {t('expenseInvoices.createModal.fields.category', 'Category')}
                   </label>
                   <Select
                     value={formData.category}
                     onValueChange={(value) => handleInputChange('category', value)}
                     options={categoryOptions}
-                    placeholder="Sélectionner une catégorie"
+                    placeholder={t('expenseInvoices.createModal.category.select', 'Select a category')}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Méthode de paiement
+                    {t('expenseInvoices.createModal.fields.paymentMethod', 'Payment Method')}
                   </label>
                   <Select
                     value={formData.paymentMethod}
                     onValueChange={(value) => handleInputChange('paymentMethod', value)}
                     options={paymentMethodOptions}
-                    placeholder="Sélectionner une méthode"
+                    placeholder={t('expenseInvoices.createModal.paymentMethod.select', 'Select a method')}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Date d'émission
+                    {t('expenseInvoices.createModal.fields.issueDate', 'Issue Date')}
                   </label>
                   <Input
                     type="date"
@@ -647,7 +649,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Date d'échéance
+                    {t('expenseInvoices.createModal.fields.dueDate', 'Due Date')}
                   </label>
                   <Input
                     type="date"
@@ -662,17 +664,17 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
             {/* Additional Information */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-foreground border-b border-border pb-2">
-                Informations supplémentaires
+                {t('expenseInvoices.createModal.sections.additionalInfo', 'Additional Information')}
               </h3>
               
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Notes
+                  {t('expenseInvoices.createModal.fields.notes', 'Notes')}
                 </label>
                 <textarea
                   value={formData.notes}
                   onChange={(e) => handleInputChange('notes', e.target.value)}
-                  placeholder="Ajoutez des notes ou commentaires sur cette facture..."
+                  placeholder={t('expenseInvoices.createModal.placeholders.notes', 'Add notes or comments about this invoice...')}
                   className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
                   rows={3}
                 />
@@ -687,7 +689,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
                 onClick={handleClose}
                 disabled={isSubmitting}
               >
-                Annuler
+                {t('expenseInvoices.createModal.buttons.cancel', 'Cancel')}
               </Button>
               <Button
                 type="submit"
@@ -695,7 +697,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
                 iconName={isSubmitting ? "Loader2" : (invoiceToEdit ? "Save" : "Plus")}
                 iconPosition="left"
               >
-                {isSubmitting ? (invoiceToEdit ? 'Modification...' : 'Création...') : (invoiceToEdit ? 'Modifier la facture' : 'Créer la facture')}
+                {isSubmitting ? (invoiceToEdit ? t('expenseInvoices.createModal.buttons.updating', 'Updating...') : t('expenseInvoices.createModal.buttons.creating', 'Creating...')) : (invoiceToEdit ? t('expenseInvoices.createModal.buttons.update', 'Update Invoice') : t('expenseInvoices.createModal.buttons.create', 'Create Invoice'))}
               </Button>
             </div>
           </form>

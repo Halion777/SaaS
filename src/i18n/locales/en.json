@@ -22,7 +22,7 @@
     }
   },
   "ui": {
-    "tagline": "Haliqo - Your professional digital vitamin",
+    "tagline": "Haliqo – Your Smart Digital Partner",
     "buttons": {
       "continue": "Continue",
       "back": "Back",
@@ -503,10 +503,14 @@
       "savings": "-20%"
     },
     "popular": "Most Popular",
-    "period": "month",
+    "period": {
+      "month": "month",
+      "year": "year"
+    },
     "taxDeduction": "Subscription deductible at 120% thanks to government support for the transition to electronic invoicing (e-invoicing).",
     "taxNote": "Excl. VAT, applicable tax",
     "savings": "Save {{amount}}€ per year",
+    "equivalentMonthly": "Equivalent to {{amount}}€/month",
     "plans": {
       "starter": {
         "name": "Starter",
@@ -1557,6 +1561,11 @@
         },
         "permissions": {
           "title": "Permissions"
+        },
+        "companyInfo": {
+          "title": "Company Information",
+          "description": "Manage your company details for quotes and invoices",
+          "edit": "Edit"
         }
       },
       "preferences": {
@@ -3863,6 +3872,325 @@
           "peppolDisabled": "Peppol functionality is currently disabled. Please enable it in Peppol settings to send invoices.",
           "updateError": "Invoice sent but error updating",
           "sendError": "Error sending"
+        }
+      }
+    },
+    "expenseInvoices": {
+      "title": "Expense Invoices",
+      "subtitle": "Manage your expense invoices, track your costs and send them to your accountant",
+      "addInvoice": "Add Invoice",
+      "loading": "Loading expense invoices...",
+      "status": {
+        "paid": "Paid",
+        "pending": "Pending",
+        "overdue": "Overdue"
+      },
+      "source": {
+        "manual": "Manual",
+        "peppol": "Peppol"
+      },
+      "categories": {
+        "fuel": "Fuel",
+        "itSoftware": "IT/Software",
+        "energy": "Energy",
+        "materialsSupplies": "Materials/Supplies",
+        "telecommunications": "Telecommunications",
+        "rentProperty": "Rent & Property",
+        "professionalServices": "Professional Services",
+        "insurance": "Insurance",
+        "travelAccommodation": "Travel & Accommodation",
+        "bankingFinancial": "Banking & Financial",
+        "marketingAdvertising": "Marketing & Advertising",
+        "otherProfessional": "Other Professional Costs"
+      },
+      "summary": {
+        "totalExpenses": "Total Expenses",
+        "paidExpenses": "Paid Expenses",
+        "outstandingAmount": "Outstanding Amount",
+        "overdueInvoices": "Overdue Invoices",
+        "vsLastMonth": "vs last month"
+      },
+      "filter": {
+        "title": "Filters",
+        "clear": "Clear",
+        "hideFilters": "Hide filters",
+        "showFilters": "Show filters",
+        "activeFilters": "{{count}} active filter(s)",
+        "status": {
+          "label": "Status",
+          "all": "All Statuses"
+        },
+        "category": {
+          "label": "Category",
+          "all": "All Categories"
+        },
+        "source": {
+          "label": "Source",
+          "all": "All Sources"
+        },
+        "amount": {
+          "label": "Amount (€)",
+          "min": "Min",
+          "max": "Max"
+        },
+        "period": {
+          "label": "Period",
+          "from": "From",
+          "to": "To"
+        },
+        "chips": {
+          "status": "Status",
+          "removeStatus": "Remove status filter",
+          "category": "Category",
+          "removeCategory": "Remove category filter",
+          "source": "Source",
+          "removeSource": "Remove source filter",
+          "period": "Period",
+          "removePeriod": "Remove period filter",
+          "amount": "Amount",
+          "removeAmount": "Remove amount filter"
+        }
+      },
+      "table": {
+        "searchPlaceholder": "Search by number, supplier, category or status...",
+        "clearSearch": "Clear",
+        "view": {
+          "label": "View",
+          "table": "Table",
+          "cards": "Cards"
+        },
+        "invoicesCount": "{{count}} invoice(s)",
+        "headers": {
+          "invoiceNumber": "Invoice #",
+          "supplier": "Supplier",
+          "source": "Source",
+          "status": "Status",
+          "amount": "Amount",
+          "issueDate": "Issue Date",
+          "dueDate": "Due Date",
+          "actions": "Actions"
+        },
+        "issue": "Issue",
+        "due": "Due",
+        "days": "days",
+        "net": "Net",
+        "vat": "VAT",
+        "received": "Received"
+      },
+      "empty": {
+        "noInvoicesFound": "No expense invoices found",
+        "description": "Start by importing your first expense invoice or adjust your filters."
+      },
+      "bulkActions": {
+        "selectedInvoices": "{{count}} invoice(s) selected",
+        "deselect": "Deselect",
+        "chooseAction": "Choose an action...",
+        "sendToAccountant": "Send to Accountant",
+        "export": "Export",
+        "delete": "Delete"
+      },
+      "messages": {
+        "confirmDelete": "Are you sure you want to delete {{count}} invoice(s)?",
+        "deletedSuccess": "{{count}} invoice(s) deleted",
+        "markedAsPaid": "Invoice marked as paid"
+      },
+      "errors": {
+        "selectAtLeastOne": "Please select at least one expense invoice",
+        "bulkActionError": "Error during bulk action",
+        "updateStatusError": "Error updating status",
+        "error": "Error: {{error}}",
+        "downloadError": "Error downloading: {{error}}",
+        "noAttachment": "No file attached to this invoice",
+        "actionError": "Error during invoice action",
+        "createError": "Error creating invoice",
+        "updateError": "Error updating invoice"
+      },
+      "export": {
+        "invoiceNumber": "Invoice Number",
+        "supplier": "Supplier",
+        "email": "Email",
+        "vat": "VAT",
+        "totalAmount": "Total Amount",
+        "netAmount": "Net Amount",
+        "vatAmount": "VAT Amount",
+        "status": "Status",
+        "category": "Category",
+        "source": "Source",
+        "issueDate": "Issue Date",
+        "dueDate": "Due Date",
+        "paymentMethod": "Payment Method",
+        "peppolId": "Peppol ID",
+        "documentType": "Document Type"
+      },
+      "modal": {
+        "title": "Invoice Details",
+        "close": "Close",
+        "tabs": {
+          "details": "Details",
+          "peppol": "Peppol Metadata"
+        },
+        "invoiceInfo": {
+          "title": "Invoice Information",
+          "invoiceNumber": "Invoice Number",
+          "status": "Status",
+          "category": "Category",
+          "source": "Source",
+          "issueDate": "Issue Date",
+          "dueDate": "Due Date",
+          "paymentMethod": "Payment Method"
+        },
+        "supplierInfo": {
+          "title": "Supplier Information",
+          "name": "Name",
+          "email": "Email",
+          "vatNumber": "VAT Number",
+          "peppolId": "Peppol ID"
+        },
+        "financialInfo": {
+          "title": "Financial Information",
+          "totalAmount": "Total Amount (incl. VAT)",
+          "netAmount": "Net Amount",
+          "vatAmount": "VAT Amount"
+        },
+        "notes": "Notes"
+      },
+      "common": {
+        "notAvailable": "N/A",
+        "yes": "Yes",
+        "no": "No"
+      },
+      "createModal": {
+        "title": {
+          "create": "Quick Invoice Creation",
+          "edit": "Edit Invoice"
+        },
+        "subtitle": {
+          "create": "Create a new invoice in a few clicks",
+          "edit": "Edit invoice information"
+        },
+        "sections": {
+          "supplierInfo": "Supplier Information",
+          "invoiceDetails": "Invoice Details",
+          "additionalInfo": "Additional Information"
+        },
+        "fields": {
+          "supplierName": "Supplier Name",
+          "supplierEmail": "Supplier Email",
+          "supplierVatNumber": "Supplier VAT Number",
+          "invoiceNumber": "Invoice Number",
+          "totalAmount": "Total Amount incl. VAT (€)",
+          "netAmount": "Net Amount (€)",
+          "vatAmount": "VAT Amount (€)",
+          "category": "Category",
+          "paymentMethod": "Payment Method",
+          "issueDate": "Issue Date",
+          "dueDate": "Due Date",
+          "notes": "Notes"
+        },
+        "placeholders": {
+          "supplierName": "Ex: Materials Pro",
+          "supplierEmail": "contact@supplier.com",
+          "supplierVatNumber": "Ex: BE0123456789",
+          "invoiceNumber": "Ex: INV-2024-001",
+          "notes": "Add notes or comments about this invoice..."
+        },
+        "category": {
+          "select": "Select a category",
+          "fuelDescription": "vehicles, machinery, transport",
+          "itDescription": "Software Services",
+          "energyDescription": "electricity, gas, water, heating",
+          "rentDescription": "Costs",
+          "bankingDescription": "Costs"
+        },
+        "paymentMethod": {
+          "select": "Select a method",
+          "bankTransfer": "Bank Transfer",
+          "check": "Check",
+          "directDebit": "Direct Debit",
+          "cash": "Cash",
+          "card": "Bank Card"
+        },
+        "source": {
+          "manual": "Manual (OCR)",
+          "peppol": "Peppol (automatic)"
+        },
+        "ocr": {
+          "title": "Automatic Invoice Scanner",
+          "description": "Upload an invoice to automatically extract data",
+          "processing": "Analyzing invoice...",
+          "success": "Data extracted successfully!",
+          "extractionFailed": "Data extraction failed",
+          "extractionFailedMessage": "Extraction failed - Document structure not supported. Please fill in manually.",
+          "processingError": "Error processing document"
+        },
+        "buttons": {
+          "cancel": "Cancel",
+          "create": "Create Invoice",
+          "update": "Update Invoice",
+          "creating": "Creating...",
+          "updating": "Updating..."
+        },
+        "errors": {
+          "requiredFields": "Please fill in at least the supplier name and amount.",
+          "createError": "Error creating invoice. Please try again."
+        }
+      },
+      "modal": {
+        "title": "Invoice Details",
+        "close": "Close",
+        "tabs": {
+          "details": "Details",
+          "peppol": "Peppol Metadata"
+        },
+        "invoiceInfo": {
+          "title": "Invoice Information",
+          "invoiceNumber": "Invoice Number",
+          "status": "Status",
+          "category": "Category",
+          "source": "Source",
+          "issueDate": "Issue Date",
+          "dueDate": "Due Date",
+          "paymentMethod": "Payment Method"
+        },
+        "supplierInfo": {
+          "title": "Supplier Information",
+          "name": "Name",
+          "email": "Email",
+          "vatNumber": "VAT Number",
+          "peppolId": "Peppol ID"
+        },
+        "financialInfo": {
+          "title": "Financial Information",
+          "totalAmount": "Total Amount (incl. VAT)",
+          "netAmount": "Net Amount",
+          "vatAmount": "VAT Amount"
+        },
+        "notes": "Notes",
+        "peppolInfo": {
+          "title": "Peppol Information",
+          "documentType": "Document Type",
+          "selfBilling": "Self-billing",
+          "creditNote": "Credit Note",
+          "receivedDate": "Receipt Date",
+          "additionalMetadata": "Additional Metadata",
+          "buyerReference": "Buyer Reference",
+          "orderReference": "Order Reference",
+          "salesOrderId": "Sales Order ID",
+          "deliveryDate": "Delivery Date",
+          "currency": "Currency",
+          "invoiceLines": "Invoice Lines",
+          "taxInformation": "Tax Information",
+          "table": {
+            "id": "ID",
+            "description": "Description",
+            "quantity": "Quantity",
+            "unitPrice": "Unit Price",
+            "amount": "Amount",
+            "category": "Category",
+            "rate": "Rate (%)",
+            "taxableAmount": "Taxable Amount",
+            "vatAmount": "VAT Amount"
+          }
         }
       }
     }

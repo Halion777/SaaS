@@ -1,11 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Icon from './AppIcon';
+import contactService from '../services/contactService';
+
 const Footer = () => {
   const { t } = useTranslation();
   const currentYear = new Date().getFullYear();
   const [expandedSections, setExpandedSections] = useState({});
+  const [companyDetails, setCompanyDetails] = useState({
+    socialLinks: {
+      facebook: '',
+      twitter: '',
+      linkedin: '',
+      instagram: ''
+    }
+  });
+
+  useEffect(() => {
+    const loadCompanyDetails = async () => {
+      const result = await contactService.getCompanyDetails();
+      if (result.success && result.data) {
+        setCompanyDetails(result.data);
+      }
+    };
+    loadCompanyDetails();
+  }, []);
   
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -31,18 +51,26 @@ const Footer = () => {
               {t('footer.description')}
             </p>
             <div className="flex space-x-4">
-              <a href="https://facebook.com/Haliqo" aria-label="Facebook" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg">
-                <Icon name="Facebook" size={20} />
-              </a>
-              <a href="https://twitter.com/Haliqo" aria-label="Twitter" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg">
-                <Icon name="Twitter" size={20} />
-              </a>
-              <a href="https://linkedin.com/company/Haliqo" aria-label="LinkedIn" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg">
-                <Icon name="Linkedin" size={20} />
-              </a>
-              <a href="https://instagram.com/Haliqo" aria-label="Instagram" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg">
-                <Icon name="Instagram" size={20} />
-              </a>
+              {companyDetails.socialLinks?.facebook && (
+                <a href={companyDetails.socialLinks.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg">
+                  <Icon name="Facebook" size={20} />
+                </a>
+              )}
+              {companyDetails.socialLinks?.twitter && (
+                <a href={companyDetails.socialLinks.twitter} target="_blank" rel="noopener noreferrer" aria-label="Twitter" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg">
+                  <Icon name="Twitter" size={20} />
+                </a>
+              )}
+              {companyDetails.socialLinks?.linkedin && (
+                <a href={companyDetails.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg">
+                  <Icon name="Linkedin" size={20} />
+                </a>
+              )}
+              {companyDetails.socialLinks?.instagram && (
+                <a href={companyDetails.socialLinks.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg">
+                  <Icon name="Instagram" size={20} />
+                </a>
+              )}
             </div>
           </div>
           

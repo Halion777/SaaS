@@ -199,18 +199,28 @@ const PricingPage = () => {
                   <div className="mb-8">
                     <div className="flex items-end">
                       <span className="text-5xl font-bold text-gray-900">
-                        {plan.price[billingCycle]}€
+                        {billingCycle === 'annual' 
+                          ? (parseFloat(plan.price.annual) * 12).toFixed(2)
+                          : plan.price[billingCycle]
+                        }€
                       </span>
-                                          <span className="text-gray-600 ml-2 mb-2">/ {t('pricing.period')}</span>
-                  </div>
-                  <p className="text-sm text-gray-500 mt-2">
-                    {t('pricing.taxNote')}
-                  </p>
-                  {billingCycle === 'annual' && (
-                    <p className="text-sm text-[#12bf23] font-medium mt-2">
-                      {t('pricing.savings', { amount: ((plan.price.monthly * 12) - (plan.price.annual * 12)).toFixed(2) })}
+                      <span className="text-gray-600 ml-2 mb-2">
+                        / {billingCycle === 'annual' ? t('pricing.period.year', 'year') : t('pricing.period.month', 'month')}
+                      </span>
+                    </div>
+                    {billingCycle === 'annual' && (
+                      <p className="text-sm text-gray-500 mt-2">
+                        {t('pricing.equivalentMonthly', 'Equivalent to {{amount}}€/month', { amount: plan.price.annual })}
+                      </p>
+                    )}
+                    <p className="text-sm text-gray-500 mt-2">
+                      {t('pricing.taxNote')}
                     </p>
-                  )}
+                    {billingCycle === 'annual' && (
+                      <p className="text-sm text-[#12bf23] font-medium mt-2">
+                        {t('pricing.savings', { amount: ((parseFloat(plan.price.monthly) * 12) - (parseFloat(plan.price.annual) * 12)).toFixed(2) })}
+                      </p>
+                    )}
                   </div>
                   
                   <div className="mb-8">

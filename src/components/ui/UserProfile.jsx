@@ -9,6 +9,7 @@ import { useMultiUser } from '../../context/MultiUserContext';
 import { useAuth } from '../../context/AuthContext';
 import emailVerificationService from '../../services/emailVerificationService';
 import { resetPassword } from '../../services/authService';
+import CompanyInfoModal from '../../pages/quote-creation/components/CompanyInfoModal';
 
 const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) => {
   const { t } = useTranslation();
@@ -39,6 +40,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
   const [isChangingEmail, setIsChangingEmail] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [changingEmail, setChangingEmail] = useState(false);
+  const [isCompanyInfoModalOpen, setIsCompanyInfoModalOpen] = useState(false);
 
   // Get multi-user context with fallback
   const multiUserContext = useMultiUser();
@@ -734,6 +736,28 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                 </div>
               </div>
             )}
+
+            {/* Company Information */}
+            <div className="flex items-center justify-between pt-4 border-t border-border">
+              <div className="flex-1">
+                <h4 className="text-sm font-medium text-foreground">{t('profile.settings.account.companyInfo.title', 'Company Information')}</h4>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {t('profile.settings.account.companyInfo.description', 'Manage your company details for quotes and invoices')}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setIsAccountSettingsOpen(false);
+                  setIsCompanyInfoModalOpen(true);
+                }}
+                iconName="Edit"
+                iconPosition="left"
+              >
+                {t('profile.settings.account.companyInfo.edit', 'Edit')}
+              </Button>
+            </div>
           </div>
   );
 
@@ -782,28 +806,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                       ))}
                   </div>
                 </div>
-                
-                {/* Show/Hide material prices in quote preview */}
-                <div className="flex items-center justify-between">
-              <div className="flex-1">
-                    <h5 className="text-sm font-medium text-foreground">Afficher les prix des matériaux</h5>
-                <p className="text-xs text-muted-foreground mt-0.5">Contrôle l'affichage des prix matériaux dans l'aperçu du devis</p>
-                  </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                  className="sr-only peer"
-                      defaultChecked={(localStorage.getItem('include-materials-prices') ?? 'true') === 'true'}
-                      onChange={(e) => {
-                        const v = e.target.checked;
-                        localStorage.setItem('include-materials-prices', String(v));
-                        window.dispatchEvent(new StorageEvent('storage', { key: 'include-materials-prices', newValue: String(v) }));
-                      }}
-                    />
-                <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-              </label>
             </div>
-          </div>
         );
   };
 
@@ -1196,6 +1199,16 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
         title="Code PIN requis"
         message="Entrez le code PIN pour accéder à ce profil"
         error={pinModal.error}
+      />
+
+      {/* Company Information Modal */}
+      <CompanyInfoModal
+        isOpen={isCompanyInfoModalOpen}
+        onClose={() => setIsCompanyInfoModalOpen(false)}
+        onSave={(companyInfo) => {
+          // Company info is saved automatically by the modal
+          setIsCompanyInfoModalOpen(false);
+        }}
       />
     </div>
   );

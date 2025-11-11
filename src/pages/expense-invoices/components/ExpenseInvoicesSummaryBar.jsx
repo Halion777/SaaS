@@ -1,9 +1,12 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 
 const ExpenseInvoicesSummaryBar = ({ summaryData, isLoading = false }) => {
+  const { t, i18n } = useTranslation();
+  
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('fr-FR', {
+    return new Intl.NumberFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US', {
       style: 'currency',
       currency: 'EUR'
     }).format(amount);
@@ -11,30 +14,30 @@ const ExpenseInvoicesSummaryBar = ({ summaryData, isLoading = false }) => {
 
   const summaryItems = [
     {
-      label: 'Total dépenses',
+      label: t('expenseInvoices.summary.totalExpenses', 'Total Expenses'),
       value: isLoading ? '...' : formatCurrency(summaryData.totalExpenses || 0),
       icon: 'Receipt',
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
       trend: summaryData.expensesGrowth,
-      trendLabel: 'vs mois dernier'
+      trendLabel: t('expenseInvoices.summary.vsLastMonth', 'vs last month')
     },
     {
-      label: 'Dépenses payées',
+      label: t('expenseInvoices.summary.paidExpenses', 'Paid Expenses'),
       value: isLoading ? '...' : formatCurrency(summaryData.paidExpenses || 0),
       icon: 'CheckCircle',
       color: 'text-green-600',
       bgColor: 'bg-green-50'
     },
     {
-      label: 'Montant en attente',
+      label: t('expenseInvoices.summary.outstandingAmount', 'Outstanding Amount'),
       value: isLoading ? '...' : formatCurrency(summaryData.outstandingAmount || 0),
       icon: 'Clock',
       color: 'text-orange-600',
       bgColor: 'bg-orange-50'
     },
     {
-      label: 'Factures en retard',
+      label: t('expenseInvoices.summary.overdueInvoices', 'Overdue Invoices'),
       value: isLoading ? '...' : summaryData.overdueCount || 0,
       icon: 'AlertTriangle',
       color: 'text-red-600',

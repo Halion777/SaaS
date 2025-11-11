@@ -6,9 +6,21 @@ import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import { supabase } from '../../services/supabaseClient';
+
 const AboutPage = () => {
   const { t, i18n } = useTranslation();
   const [isVisible, setIsVisible] = useState({});
+  const [mediaSettings, setMediaSettings] = useState({
+    about: {
+      heroImage: '',
+      ourStoryLeft: '',
+      ourStoryRight: '',
+      ourFounder: '',
+      multiPlatformDesktop: { fr: '', en: '', nl: '' },
+      multiPlatformMobile: { fr: '', en: '', nl: '' }
+    }
+  });
   
   // Refs for scroll animations
   const heroRef = useRef(null);
@@ -17,6 +29,38 @@ const AboutPage = () => {
   const founderRef = useRef(null);
   const ctaRef = useRef(null);
   
+  // Load media settings
+  useEffect(() => {
+    const loadMediaSettings = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('app_settings')
+          .select('*')
+          .eq('setting_key', 'media_settings')
+          .maybeSingle();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error loading media settings:', error);
+        } else if (data && data.setting_value) {
+          const loadedMedia = data.setting_value;
+          setMediaSettings({
+            about: {
+              heroImage: loadedMedia.about?.heroImage || '',
+              ourStoryLeft: loadedMedia.about?.ourStoryLeft || '',
+              ourStoryRight: loadedMedia.about?.ourStoryRight || '',
+              ourFounder: loadedMedia.about?.ourFounder || '',
+              multiPlatformDesktop: loadedMedia.about?.multiPlatformDesktop || { fr: '', en: '', nl: '' },
+              multiPlatformMobile: loadedMedia.about?.multiPlatformMobile || { fr: '', en: '', nl: '' }
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error loading media settings:', error);
+      }
+    };
+    loadMediaSettings();
+  }, []);
+
   // Intersection Observer for scroll animations
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -140,11 +184,22 @@ const AboutPage = () => {
                   <div className="relative">
                     {/* Main Workshop Image */}
                     <div className="relative bg-white rounded-2xl shadow-2xl p-4 transform rotate-3 hover:rotate-0 transition-transform duration-500">
-                      <img 
-                        src="/assets/images/craftsman-workshop.jpg" 
-                        alt="Atelier d'artisan Haliqo" 
-                        className="w-full h-auto rounded-xl"
-                      />
+                      {mediaSettings.about?.heroImage ? (
+                        <img 
+                          src={mediaSettings.about.heroImage} 
+                          alt="Atelier d'artisan Haliqo" 
+                          className="w-full h-auto rounded-xl"
+                          onError={(e) => {
+                            e.target.src = '/assets/images/craftsman-workshop.jpg';
+                          }}
+                        />
+                      ) : (
+                        <img 
+                          src="/assets/images/craftsman-workshop.jpg" 
+                          alt="Atelier d'artisan Haliqo" 
+                          className="w-full h-auto rounded-xl"
+                        />
+                      )}
                     </div>
                     
                                          {/* Floating Elements */}
@@ -216,11 +271,22 @@ const AboutPage = () => {
                   {/* Main image container with tilt effect */}
                   <div className="bg-white rounded-2xl p-6 shadow-2xl hover:shadow-3xl transition-all duration-500 border border-gray-200 overflow-hidden transform hover:rotate-2 hover:scale-105 group-hover:rotate-1">
                     <div className="relative overflow-hidden rounded-xl">
-                      <img 
-                        src="/assets/images/our story 2.png" 
-                        alt="L'histoire de Haliqo - Transformation digitale du bâtiment" 
-                        className="w-full h-64 sm:h-80 md:h-96 object-cover object-top rounded-xl transition-transform duration-700 group-hover:scale-110"
-                      />
+                      {mediaSettings.about?.ourStoryRight ? (
+                        <img 
+                          src={mediaSettings.about.ourStoryRight} 
+                          alt="L'histoire de Haliqo - Transformation digitale du bâtiment" 
+                          className="w-full h-64 sm:h-80 md:h-96 object-cover object-top rounded-xl transition-transform duration-700 group-hover:scale-110"
+                          onError={(e) => {
+                            e.target.src = '/assets/images/our story 2.png';
+                          }}
+                        />
+                      ) : (
+                        <img 
+                          src="/assets/images/our story 2.png" 
+                          alt="L'histoire de Haliqo - Transformation digitale du bâtiment" 
+                          className="w-full h-64 sm:h-80 md:h-96 object-cover object-top rounded-xl transition-transform duration-700 group-hover:scale-110"
+                        />
+                      )}
                       {/* Gradient overlay */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     </div>
@@ -240,11 +306,22 @@ const AboutPage = () => {
                   {/* Main image container with opposite tilt effect */}
                   <div className="bg-white rounded-2xl p-6 shadow-2xl hover:shadow-3xl transition-all duration-500 border border-gray-200 overflow-hidden transform hover:-rotate-2 hover:scale-105 group-hover:-rotate-1">
                     <div className="relative overflow-hidden rounded-xl">
-                      <img 
-                        src="/assets/images/our story.png" 
-                        alt="L'histoire de Haliqo - Transformation digitale du bâtiment" 
-                        className="w-full h-64 sm:h-80 md:h-96 object-cover rounded-xl transition-transform duration-700 group-hover:scale-110"
-                      />
+                      {mediaSettings.about?.ourStoryLeft ? (
+                        <img 
+                          src={mediaSettings.about.ourStoryLeft} 
+                          alt="L'histoire de Haliqo - Transformation digitale du bâtiment" 
+                          className="w-full h-64 sm:h-80 md:h-96 object-cover rounded-xl transition-transform duration-700 group-hover:scale-110"
+                          onError={(e) => {
+                            e.target.src = '/assets/images/our story.png';
+                          }}
+                        />
+                      ) : (
+                        <img 
+                          src="/assets/images/our story.png" 
+                          alt="L'histoire de Haliqo - Transformation digitale du bâtiment" 
+                          className="w-full h-64 sm:h-80 md:h-96 object-cover rounded-xl transition-transform duration-700 group-hover:scale-110"
+                        />
+                      )}
                       {/* Gradient overlay */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     </div>
@@ -334,11 +411,22 @@ const AboutPage = () => {
               <div className="md:col-span-1">
                     <div className="relative">
                       <div className="w-48 h-48 rounded-2xl mx-auto overflow-hidden shadow-xl">
-                  <img 
-                    src="/assets/images/CEO.jpeg" 
-                    alt="Haitam A." 
-                          className="w-full h-full object-cover"
-                  />
+                  {mediaSettings.about?.ourFounder ? (
+                    <img 
+                      src={mediaSettings.about.ourFounder} 
+                      alt="Haitam A."
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.src = '/assets/images/CEO.jpeg';
+                      }}
+                    />
+                  ) : (
+                    <img 
+                      src="/assets/images/CEO.jpeg" 
+                      alt="Haitam A."
+                      className="w-full h-full object-cover"
+                    />
+                  )}
                       </div>
                       <div className="absolute -bottom-2 -right-2 bg-[#12bf23] text-white px-3 py-1 rounded-full text-sm font-medium">
                         {t('about.founder.role')}

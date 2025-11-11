@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import MainSidebar from '../../components/ui/MainSidebar';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
@@ -12,6 +13,7 @@ import Select from '../../components/ui/Select';
 import ExpenseInvoicesService from '../../services/expenseInvoicesService';
 
 const ExpenseInvoicesManagement = () => {
+  const { t } = useTranslation();
   const [expenseInvoices, setExpenseInvoices] = useState([]);
   const [filteredExpenseInvoices, setFilteredExpenseInvoices] = useState([]);
   const [selectedExpenseInvoices, setSelectedExpenseInvoices] = useState([]);
@@ -273,7 +275,7 @@ const ExpenseInvoicesManagement = () => {
 
   const handleBulkAction = async (action) => {
     if (selectedExpenseInvoices.length === 0) {
-      alert('Veuillez sélectionner au moins une facture de dépense');
+      alert(t('expenseInvoices.errors.selectAtLeastOne', 'Please select at least one expense invoice'));
       return;
     }
 
@@ -299,12 +301,12 @@ const ExpenseInvoicesManagement = () => {
           break;
           
         case 'delete':
-          if (confirm(`Êtes-vous sûr de vouloir supprimer ${selectedExpenseInvoices.length} facture(s) ?`)) {
+          if (confirm(t('expenseInvoices.messages.confirmDelete', { count: selectedExpenseInvoices.length }, `Are you sure you want to delete ${selectedExpenseInvoices.length} invoice(s)?`))) {
             // Delete each selected invoice
             for (const invoiceId of selectedExpenseInvoices) {
               await expenseService.deleteExpenseInvoice(invoiceId);
             }
-            alert(`${selectedExpenseInvoices.length} facture(s) supprimée(s)`);
+            alert(t('expenseInvoices.messages.deletedSuccess', { count: selectedExpenseInvoices.length }, `${selectedExpenseInvoices.length} invoice(s) deleted`));
             setSelectedExpenseInvoices([]);
             // Refresh data
             const refreshResult = await expenseService.getExpenseInvoices();
@@ -317,7 +319,7 @@ const ExpenseInvoicesManagement = () => {
       }
     } catch (error) {
       console.error('Error handling bulk action:', error);
-      alert('Erreur lors de l\'action en lot');
+      alert(t('expenseInvoices.errors.bulkActionError', 'Error during bulk action'));
     }
   };
 
@@ -335,11 +337,11 @@ const ExpenseInvoicesManagement = () => {
           prev.map(inv => inv.id === invoiceId ? { ...inv, status: newStatus } : inv)
         );
       } else {
-        alert('Erreur lors de la mise à jour du statut: ' + result.error);
+        alert(t('expenseInvoices.errors.updateStatusError', 'Error updating status: {{error}}', { error: result.error }));
       }
     } catch (error) {
       console.error('Error updating status:', error);
-      alert('Erreur lors de la mise à jour du statut');
+      alert(t('expenseInvoices.errors.updateStatusError', 'Error updating status'));
     }
   };
 
@@ -369,7 +371,7 @@ const ExpenseInvoicesManagement = () => {
               setFilteredExpenseInvoices(refreshResult.data);
             }
           } else {
-            alert('Erreur: ' + sendResult.error);
+            alert(t('expenseInvoices.errors.error', 'Error: {{error}}', { error: sendResult.error }));
           }
           break;
           
@@ -379,17 +381,17 @@ const ExpenseInvoicesManagement = () => {
             if (downloadResult.success) {
               window.open(downloadResult.data, '_blank');
             } else {
-              alert('Erreur lors du téléchargement: ' + downloadResult.error);
+              alert(t('expenseInvoices.errors.downloadError', 'Error downloading: {{error}}', { error: downloadResult.error }));
             }
           } else {
-            alert('Aucun fichier joint à cette facture');
+            alert(t('expenseInvoices.errors.noAttachment', 'No file attached to this invoice'));
           }
           break;
           
         case 'markPaid':
           const markResult = await expenseService.markAsPaid(invoice.id);
           if (markResult.success) {
-            alert('Facture marquée comme payée');
+            alert(t('expenseInvoices.messages.markedAsPaid', 'Invoice marked as paid'));
             // Refresh data
             const refreshResult = await expenseService.getExpenseInvoices();
             if (refreshResult.success) {
@@ -397,13 +399,13 @@ const ExpenseInvoicesManagement = () => {
               setFilteredExpenseInvoices(refreshResult.data);
             }
           } else {
-            alert('Erreur: ' + markResult.error);
+            alert(t('expenseInvoices.errors.error', 'Error: {{error}}', { error: markResult.error }));
           }
           break;
       }
     } catch (error) {
       console.error('Error handling expense invoice action:', error);
-      alert('Erreur lors de l\'action sur la facture');
+      alert(t('expenseInvoices.errors.actionError', 'Error during invoice action'));
     }
   };
 
@@ -417,7 +419,23 @@ const ExpenseInvoicesManagement = () => {
       }
 
       const csvData = [
-        ['Numéro', 'Fournisseur', 'Email', 'TVA', 'Montant Total', 'Montant HT', 'Montant TVA', 'Statut', 'Catégorie', 'Source', 'Date émission', 'Date échéance', 'Méthode paiement', 'ID Peppol', 'Type document']
+        [
+          t('expenseInvoices.export.invoiceNumber', 'Invoice Number'),
+          t('expenseInvoices.export.supplier', 'Supplier'),
+          t('expenseInvoices.export.email', 'Email'),
+          t('expenseInvoices.export.vat', 'VAT'),
+          t('expenseInvoices.export.totalAmount', 'Total Amount'),
+          t('expenseInvoices.export.netAmount', 'Net Amount'),
+          t('expenseInvoices.export.vatAmount', 'VAT Amount'),
+          t('expenseInvoices.export.status', 'Status'),
+          t('expenseInvoices.export.category', 'Category'),
+          t('expenseInvoices.export.source', 'Source'),
+          t('expenseInvoices.export.issueDate', 'Issue Date'),
+          t('expenseInvoices.export.dueDate', 'Due Date'),
+          t('expenseInvoices.export.paymentMethod', 'Payment Method'),
+          t('expenseInvoices.export.peppolId', 'Peppol ID'),
+          t('expenseInvoices.export.documentType', 'Document Type')
+        ]
       ];
 
       invoicesToExport.forEach(invoice => {
@@ -470,11 +488,11 @@ const ExpenseInvoicesManagement = () => {
         }
       } else {
         console.error('Error creating expense invoice:', result.error);
-        alert('Erreur lors de la création de la facture: ' + result.error);
+        alert(t('expenseInvoices.errors.createError', 'Error creating invoice: {{error}}', { error: result.error }));
       }
     } catch (error) {
       console.error('Error creating expense invoice:', error);
-      alert('Erreur lors de la création de la facture');
+      alert(t('expenseInvoices.errors.createError', 'Error creating invoice'));
     }
   };
 
@@ -506,11 +524,11 @@ const ExpenseInvoicesManagement = () => {
         setInvoiceToEdit(null);
       } else {
         console.error('Error updating expense invoice:', result.error);
-        alert('Erreur lors de la mise à jour de la facture: ' + result.error);
+        alert(t('expenseInvoices.errors.updateError', 'Error updating invoice: {{error}}', { error: result.error }));
       }
     } catch (error) {
       console.error('Error updating expense invoice:', error);
-      alert('Erreur lors de la mise à jour de la facture');
+      alert(t('expenseInvoices.errors.updateError', 'Error updating invoice'));
     }
   };
 
@@ -533,10 +551,10 @@ const ExpenseInvoicesManagement = () => {
             <div>
                 <div className="flex items-center">
                   <Icon name="Receipt" size={24} className="text-primary mr-3" />
-                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Factures de dépenses</h1>
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">{t('expenseInvoices.title', 'Expense Invoices')}</h1>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                Gérez vos factures de dépenses, suivez vos coûts et envoyez-les à votre comptable
+                {t('expenseInvoices.subtitle', 'Manage your expense invoices, track your costs and send them to your accountant')}
               </p>
             </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
@@ -547,7 +565,7 @@ const ExpenseInvoicesManagement = () => {
                 onClick={() => setIsQuickCreateOpen(true)}
                   className="text-xs sm:text-sm"
               >
-                Ajouter facture
+                {t('expenseInvoices.addInvoice', 'Add Invoice')}
               </Button>
             </div>
           </div>
@@ -570,7 +588,7 @@ const ExpenseInvoicesManagement = () => {
                   <div className="flex items-center space-x-2">
                     <Icon name="CheckSquare" size={20} color="var(--color-primary)" />
                     <span className="font-medium text-primary">
-                      {selectedExpenseInvoices.length} facture{selectedExpenseInvoices.length > 1 ? 's' : ''} sélectionnée{selectedExpenseInvoices.length > 1 ? 's' : ''}
+                      {t('expenseInvoices.bulkActions.selectedInvoices', { count: selectedExpenseInvoices.length }, `${selectedExpenseInvoices.length} invoice(s) selected`)}
                     </span>
                   </div>
                   
@@ -582,7 +600,7 @@ const ExpenseInvoicesManagement = () => {
                     iconPosition="left"
                     className="text-muted-foreground hover:text-foreground"
                   >
-                    Désélectionner
+                    {t('expenseInvoices.bulkActions.deselect', 'Deselect')}
                   </Button>
                 </div>
 
@@ -590,14 +608,14 @@ const ExpenseInvoicesManagement = () => {
                   <div className="flex-1 sm:flex-none sm:w-64">
                     <Select
                       options={[
-                        { value: '', label: 'Choisir une action...' },
-                        { value: 'send_to_accountant', label: 'Envoyer au comptable' },
-                        { value: 'export', label: 'Exporter' },
-                        { value: 'delete', label: 'Supprimer' }
+                        { value: '', label: t('expenseInvoices.bulkActions.chooseAction', 'Choose an action...') },
+                        { value: 'send_to_accountant', label: t('expenseInvoices.bulkActions.sendToAccountant', 'Send to Accountant') },
+                        { value: 'export', label: t('expenseInvoices.bulkActions.export', 'Export') },
+                        { value: 'delete', label: t('expenseInvoices.bulkActions.delete', 'Delete') }
                       ]}
                       value=""
                       onChange={(value) => value && handleBulkAction(value)}
-                      placeholder="Choisir une action..."
+                      placeholder={t('expenseInvoices.bulkActions.chooseAction', 'Choose an action...')}
                     />
                   </div>
                 </div>
@@ -612,7 +630,7 @@ const ExpenseInvoicesManagement = () => {
                   iconName="Send"
                   iconPosition="left"
                 >
-                  Envoyer comptable
+                  {t('expenseInvoices.bulkActions.sendToAccountant', 'Send to Accountant')}
                 </Button>
                 
                 <Button
@@ -622,7 +640,7 @@ const ExpenseInvoicesManagement = () => {
                   iconName="Download"
                   iconPosition="left"
                 >
-                  Exporter
+                  {t('expenseInvoices.bulkActions.export', 'Export')}
                 </Button>
                 
                 <Button
@@ -632,7 +650,7 @@ const ExpenseInvoicesManagement = () => {
                   iconName="Trash2"
                   iconPosition="left"
                 >
-                  Supprimer
+                  {t('expenseInvoices.bulkActions.delete', 'Delete')}
                 </Button>
               </div>
             </div>
@@ -641,7 +659,7 @@ const ExpenseInvoicesManagement = () => {
           {/* Data Table */}
           {isLoading ? (
             <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
-              <TableLoader message="Chargement des factures de dépenses..." />
+              <TableLoader message={t('expenseInvoices.loading', 'Loading expense invoices...')} />
             </div>
           ) : (
             <ExpenseInvoicesDataTable

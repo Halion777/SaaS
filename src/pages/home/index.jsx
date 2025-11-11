@@ -8,10 +8,24 @@ import Icon from '../../components/AppIcon';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import TestimonialCarousel from '../../components/TestimonialCarousel';
+import appSettingsService from '../../services/appSettingsService';
+import contactService from '../../services/contactService';
+import { supabase } from '../../services/supabaseClient';
+
 const HomePage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [isVisible, setIsVisible] = useState({});
   const [openFAQ, setOpenFAQ] = useState(null);
+  const [showHomeServices, setShowHomeServices] = useState(false); // Default to false (hidden)
+  const [companyDetails, setCompanyDetails] = useState({
+    phone: '028846333'
+  });
+  const [mediaSettings, setMediaSettings] = useState({
+    home: {
+      heroImage: { fr: '', en: '', nl: '' },
+      demoVideo: { fr: '', en: '', nl: '' }
+    }
+  });
   
   // Refs for scroll animations
   const heroRef = useRef(null);
@@ -69,6 +83,64 @@ const HomePage = () => {
   // Scroll to top on page load
   useEffect(() => {
     window.scrollTo(0, 0);
+  }, []);
+
+  // Load home page services visibility setting
+  useEffect(() => {
+    const loadHomeServicesVisibility = async () => {
+      try {
+        const result = await appSettingsService.getSetting('home_page_services_visibility');
+        if (result.success && result.data !== null) {
+          setShowHomeServices(result.data.enabled !== false); // Default to true if setting exists but enabled is not explicitly false
+        } else {
+          // If setting doesn't exist, default to false (hidden)
+          setShowHomeServices(false);
+        }
+      } catch (error) {
+        console.error('Error loading home services visibility setting:', error);
+        setShowHomeServices(false); // Default to hidden on error
+      }
+    };
+    loadHomeServicesVisibility();
+  }, []);
+
+  // Load company details
+  useEffect(() => {
+    const loadCompanyDetails = async () => {
+      const result = await contactService.getCompanyDetails();
+      if (result.success && result.data) {
+        setCompanyDetails(result.data);
+      }
+    };
+    loadCompanyDetails();
+  }, []);
+
+  // Load media settings
+  useEffect(() => {
+    const loadMediaSettings = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('app_settings')
+          .select('*')
+          .eq('setting_key', 'media_settings')
+          .maybeSingle();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error loading media settings:', error);
+        } else if (data && data.setting_value) {
+          const loadedMedia = data.setting_value;
+          setMediaSettings({
+            home: {
+              heroImage: loadedMedia.home?.heroImage || { fr: '', en: '', nl: '' },
+              demoVideo: loadedMedia.home?.demoVideo || { fr: '', en: '', nl: '' }
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error loading media settings:', error);
+      }
+    };
+    loadMediaSettings();
   }, []);
 
   // Intersection Observer for scroll animations
@@ -272,14 +344,27 @@ const HomePage = () => {
                 <div className="absolute inset-0 bg-gradient-to-r from-[#0036ab]/5 to-[#12bf23]/5"></div>
                 <div className="relative z-10 text-center">
                   <div className="w-full max-w-3xl mx-auto bg-black rounded-xl overflow-hidden shadow-2xl">
-                    <div className="aspect-video bg-gray-800 flex items-center justify-center">
+                    {mediaSettings.home?.demoVideo?.[i18n.language] ? (
+                      <video
+                        src={mediaSettings.home.demoVideo[i18n.language]}
+                        controls
+                        className="w-full aspect-video"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextElementSibling.style.display = 'flex';
+                        }}
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    ) : null}
+                    <div className={`aspect-video bg-gray-800 flex items-center justify-center ${mediaSettings.home?.demoVideo?.[i18n.language] ? 'hidden' : ''}`}>
                       <div className="text-center">
                         <Icon name="Play" size={64} className="text-white mx-auto mb-4" />
                         <p className="text-white text-lg font-medium">{t('home.demo.video.placeholder')}</p>
                         <p className="text-gray-400 text-sm mt-2">{t('home.demo.video.clickToPlay')}</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
                 </div>
               </div>
             </div>
@@ -417,6 +502,7 @@ const HomePage = () => {
         </section>
         
         {/* Complementary Services Section */}
+        {showHomeServices && (
         <section className="py-20 bg-gray-50 relative overflow-hidden">
           {/* Background Decorative Elements */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -521,6 +607,7 @@ const HomePage = () => {
             </div>
           </div>
         </section>
+        )}
         
         {/* Dashboard & Mobile App Preview Section */}
         <section className="py-20 bg-gradient-to-br from-gray-50 to-[#0036ab]/5 relative overflow-hidden">
@@ -1415,7 +1502,7 @@ const HomePage = () => {
                         </span>
                       </button>
                     </Link>
-                    <a href="tel:+33123456789">
+                    <a href={`tel:${companyDetails.phone || '028846333'}`}>
                       <button className="bg-white text-[#0036ab] border-2 border-[#0036ab] px-8 py-4 rounded-xl font-semibold hover:bg-[#0036ab] hover:text-white transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
                         <span className="flex items-center justify-center">
                           <Icon name="Phone" size={20} className="mr-2" />

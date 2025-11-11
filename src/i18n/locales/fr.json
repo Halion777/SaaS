@@ -23,7 +23,7 @@
     }
   },
   "ui": {
-    "tagline": "Haliqo - Votre vitamine digitale professionnelle",
+    "tagline": "Haliqo – Votre partenaire digital intelligent",
     "buttons": {
       "continue": "Continuer",
       "back": "Retour",
@@ -505,9 +505,13 @@
     },
     "taxDeduction": "Abonnement déductible à 120 % grâce au soutien de l'État pour le passage à la facturation électronique (e-invoicing).",
     "popular": "Le plus populaire",
-    "period": "mois",
+    "period": {
+      "month": "mois",
+      "year": "an"
+    },
     "taxNote": "HT, TVA applicable",
     "savings": "Économisez {{amount}}€ par an",
+    "equivalentMonthly": "Équivalent à {{amount}}€/mois",
     "plans": {
       "starter": {
         "name": "Starter",
@@ -1947,6 +1951,11 @@
         },
         "permissions": {
           "title": "Permissions"
+        },
+        "companyInfo": {
+          "title": "Informations de l'entreprise",
+          "description": "Gérez les détails de votre entreprise pour les devis et factures",
+          "edit": "Modifier"
         }
       },
       "preferences": {
@@ -3929,6 +3938,325 @@
           "peppolDisabled": "La fonctionnalité Peppol est actuellement désactivée. Veuillez l'activer dans les paramètres Peppol pour envoyer des factures.",
           "updateError": "Facture envoyée mais erreur lors de la mise à jour",
           "sendError": "Erreur lors de l'envoi"
+        }
+      }
+    },
+    "expenseInvoices": {
+      "title": "Factures de dépenses",
+      "subtitle": "Gérez vos factures de dépenses, suivez vos coûts et envoyez-les à votre comptable",
+      "addInvoice": "Ajouter facture",
+      "loading": "Chargement des factures de dépenses...",
+      "status": {
+        "paid": "Payée",
+        "pending": "En attente",
+        "overdue": "En retard"
+      },
+      "source": {
+        "manual": "Manuel",
+        "peppol": "Peppol"
+      },
+      "categories": {
+        "fuel": "Fuel",
+        "itSoftware": "IT/Logiciel",
+        "energy": "Énergie",
+        "materialsSupplies": "Matériaux/Fournitures",
+        "telecommunications": "Télécommunications",
+        "rentProperty": "Loyer & Immobilier",
+        "professionalServices": "Services professionnels",
+        "insurance": "Assurance",
+        "travelAccommodation": "Voyage & Hébergement",
+        "bankingFinancial": "Bancaire & Financier",
+        "marketingAdvertising": "Marketing & Publicité",
+        "otherProfessional": "Autres coûts professionnels"
+      },
+      "summary": {
+        "totalExpenses": "Total dépenses",
+        "paidExpenses": "Dépenses payées",
+        "outstandingAmount": "Montant en attente",
+        "overdueInvoices": "Factures en retard",
+        "vsLastMonth": "vs mois dernier"
+      },
+      "filter": {
+        "title": "Filtres",
+        "clear": "Effacer",
+        "hideFilters": "Masquer les filtres",
+        "showFilters": "Afficher les filtres",
+        "activeFilters": "{{count}} filtre(s) actif(s)",
+        "status": {
+          "label": "Statut",
+          "all": "Tous les statuts"
+        },
+        "category": {
+          "label": "Catégorie",
+          "all": "Toutes les catégories"
+        },
+        "source": {
+          "label": "Source",
+          "all": "Toutes les sources"
+        },
+        "amount": {
+          "label": "Montant (€)",
+          "min": "Min",
+          "max": "Max"
+        },
+        "period": {
+          "label": "Période",
+          "from": "Du",
+          "to": "Au"
+        },
+        "chips": {
+          "status": "Statut",
+          "removeStatus": "Supprimer le filtre de statut",
+          "category": "Catégorie",
+          "removeCategory": "Supprimer le filtre de catégorie",
+          "source": "Source",
+          "removeSource": "Supprimer le filtre de source",
+          "period": "Période",
+          "removePeriod": "Supprimer le filtre de période",
+          "amount": "Montant",
+          "removeAmount": "Supprimer le filtre de montant"
+        }
+      },
+      "table": {
+        "searchPlaceholder": "Rechercher par numéro, fournisseur, catégorie ou statut...",
+        "clearSearch": "Effacer",
+        "view": {
+          "label": "Vue",
+          "table": "Tableau",
+          "cards": "Cartes"
+        },
+        "invoicesCount": "{{count}} facture(s)",
+        "headers": {
+          "invoiceNumber": "N° Facture",
+          "supplier": "Fournisseur",
+          "source": "Source",
+          "status": "Statut",
+          "amount": "Montant",
+          "issueDate": "Date émission",
+          "dueDate": "Date échéance",
+          "actions": "Actions"
+        },
+        "issue": "Émission",
+        "due": "Échéance",
+        "days": "jours",
+        "net": "Net",
+        "vat": "TVA",
+        "received": "Reçu"
+      },
+      "empty": {
+        "noInvoicesFound": "Aucune facture de dépense trouvée",
+        "description": "Commencez par importer votre première facture de dépense ou ajustez vos filtres."
+      },
+      "bulkActions": {
+        "selectedInvoices": "{{count}} facture(s) sélectionnée(s)",
+        "deselect": "Désélectionner",
+        "chooseAction": "Choisir une action...",
+        "sendToAccountant": "Envoyer au comptable",
+        "export": "Exporter",
+        "delete": "Supprimer"
+      },
+      "messages": {
+        "confirmDelete": "Êtes-vous sûr de vouloir supprimer {{count}} facture(s) ?",
+        "deletedSuccess": "{{count}} facture(s) supprimée(s)",
+        "markedAsPaid": "Facture marquée comme payée"
+      },
+      "errors": {
+        "selectAtLeastOne": "Veuillez sélectionner au moins une facture de dépense",
+        "bulkActionError": "Erreur lors de l'action en lot",
+        "updateStatusError": "Erreur lors de la mise à jour du statut",
+        "error": "Erreur : {{error}}",
+        "downloadError": "Erreur lors du téléchargement : {{error}}",
+        "noAttachment": "Aucun fichier joint à cette facture",
+        "actionError": "Erreur lors de l'action sur la facture",
+        "createError": "Erreur lors de la création de la facture",
+        "updateError": "Erreur lors de la mise à jour de la facture"
+      },
+      "export": {
+        "invoiceNumber": "Numéro",
+        "supplier": "Fournisseur",
+        "email": "Email",
+        "vat": "TVA",
+        "totalAmount": "Montant Total",
+        "netAmount": "Montant HT",
+        "vatAmount": "Montant TVA",
+        "status": "Statut",
+        "category": "Catégorie",
+        "source": "Source",
+        "issueDate": "Date émission",
+        "dueDate": "Date échéance",
+        "paymentMethod": "Méthode paiement",
+        "peppolId": "ID Peppol",
+        "documentType": "Type document"
+      },
+      "modal": {
+        "title": "Détails de la facture",
+        "close": "Fermer",
+        "tabs": {
+          "details": "Détails",
+          "peppol": "Métadonnées Peppol"
+        },
+        "invoiceInfo": {
+          "title": "Informations de la facture",
+          "invoiceNumber": "Numéro de facture",
+          "status": "Statut",
+          "category": "Catégorie",
+          "source": "Source",
+          "issueDate": "Date d'émission",
+          "dueDate": "Date d'échéance",
+          "paymentMethod": "Méthode de paiement"
+        },
+        "supplierInfo": {
+          "title": "Informations fournisseur",
+          "name": "Nom",
+          "email": "Email",
+          "vatNumber": "Numéro TVA",
+          "peppolId": "ID Peppol"
+        },
+        "financialInfo": {
+          "title": "Informations financières",
+          "totalAmount": "Montant total (TTC)",
+          "netAmount": "Montant HT",
+          "vatAmount": "Montant TVA"
+        },
+        "notes": "Notes"
+      },
+      "common": {
+        "notAvailable": "N/A",
+        "yes": "Oui",
+        "no": "Non"
+      },
+      "createModal": {
+        "title": {
+          "create": "Création rapide de facture",
+          "edit": "Modifier la facture"
+        },
+        "subtitle": {
+          "create": "Créez une nouvelle facture en quelques clics",
+          "edit": "Modifiez les informations de la facture"
+        },
+        "sections": {
+          "supplierInfo": "Informations fournisseur",
+          "invoiceDetails": "Détails de la facture",
+          "additionalInfo": "Informations supplémentaires"
+        },
+        "fields": {
+          "supplierName": "Nom du fournisseur",
+          "supplierEmail": "Email du fournisseur",
+          "supplierVatNumber": "Numéro TVA du fournisseur",
+          "invoiceNumber": "Numéro de facture",
+          "totalAmount": "Montant total TTC (€)",
+          "netAmount": "Montant HT (€)",
+          "vatAmount": "Montant TVA (€)",
+          "category": "Catégorie",
+          "paymentMethod": "Méthode de paiement",
+          "issueDate": "Date d'émission",
+          "dueDate": "Date d'échéance",
+          "notes": "Notes"
+        },
+        "placeholders": {
+          "supplierName": "Ex: Materiaux Pro",
+          "supplierEmail": "contact@fournisseur.fr",
+          "supplierVatNumber": "Ex: BE0123456789",
+          "invoiceNumber": "Ex: FACT-2024-001",
+          "notes": "Ajoutez des notes ou commentaires sur cette facture..."
+        },
+        "category": {
+          "select": "Sélectionner une catégorie",
+          "fuelDescription": "véhicules, machines, transport",
+          "itDescription": "Services logiciels",
+          "energyDescription": "électricité, gaz, eau, chauffage",
+          "rentDescription": "Coûts",
+          "bankingDescription": "Coûts"
+        },
+        "paymentMethod": {
+          "select": "Sélectionner une méthode",
+          "bankTransfer": "Virement bancaire",
+          "check": "Chèque",
+          "directDebit": "Prélèvement",
+          "cash": "Espèces",
+          "card": "Carte bancaire"
+        },
+        "source": {
+          "manual": "Manuel (OCR)",
+          "peppol": "Peppol (automatique)"
+        },
+        "ocr": {
+          "title": "Scanner automatique de facture",
+          "description": "Téléchargez une facture pour extraire automatiquement les données",
+          "processing": "Analyse de la facture en cours...",
+          "success": "Données extraites avec succès !",
+          "extractionFailed": "Échec de l'extraction des données",
+          "extractionFailedMessage": "Échec de l'extraction - La structure du document n'est pas supportée. Veuillez remplir manuellement.",
+          "processingError": "Erreur lors du traitement du document"
+        },
+        "buttons": {
+          "cancel": "Annuler",
+          "create": "Créer la facture",
+          "update": "Modifier la facture",
+          "creating": "Création...",
+          "updating": "Modification..."
+        },
+        "errors": {
+          "requiredFields": "Veuillez remplir au minimum le nom du fournisseur et le montant.",
+          "createError": "Erreur lors de la création de la facture. Veuillez réessayer."
+        }
+      },
+      "modal": {
+        "title": "Détails de la facture",
+        "close": "Fermer",
+        "tabs": {
+          "details": "Détails",
+          "peppol": "Métadonnées Peppol"
+        },
+        "invoiceInfo": {
+          "title": "Informations de la facture",
+          "invoiceNumber": "Numéro de facture",
+          "status": "Statut",
+          "category": "Catégorie",
+          "source": "Source",
+          "issueDate": "Date d'émission",
+          "dueDate": "Date d'échéance",
+          "paymentMethod": "Méthode de paiement"
+        },
+        "supplierInfo": {
+          "title": "Informations fournisseur",
+          "name": "Nom",
+          "email": "Email",
+          "vatNumber": "Numéro TVA",
+          "peppolId": "ID Peppol"
+        },
+        "financialInfo": {
+          "title": "Informations financières",
+          "totalAmount": "Montant total (TTC)",
+          "netAmount": "Montant HT",
+          "vatAmount": "Montant TVA"
+        },
+        "notes": "Notes",
+        "peppolInfo": {
+          "title": "Informations Peppol",
+          "documentType": "Type de document",
+          "selfBilling": "Auto-facturation",
+          "creditNote": "Note de crédit",
+          "receivedDate": "Date de réception",
+          "additionalMetadata": "Métadonnées supplémentaires",
+          "buyerReference": "Référence acheteur",
+          "orderReference": "Référence commande",
+          "salesOrderId": "ID commande de vente",
+          "deliveryDate": "Date de livraison",
+          "currency": "Devise",
+          "invoiceLines": "Lignes de facture",
+          "taxInformation": "Informations fiscales",
+          "table": {
+            "id": "ID",
+            "description": "Description",
+            "quantity": "Quantité",
+            "unitPrice": "Prix unitaire",
+            "amount": "Montant",
+            "category": "Catégorie",
+            "rate": "Taux (%)",
+            "taxableAmount": "Montant taxable",
+            "vatAmount": "Montant TVA"
+          }
         }
       }
     }

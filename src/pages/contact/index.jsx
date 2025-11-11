@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +8,7 @@ import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import contactService from '../../services/contactService';
 
 const ContactPage = () => {
   const { t, i18n } = useTranslation();
@@ -24,6 +25,25 @@ const ContactPage = () => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [companyDetails, setCompanyDetails] = useState({
+    email: 'support@haliqo.com',
+    phone: '028846333',
+    address: 'Brussels, Belgium',
+    addressType: 'Headquarters',
+    responseTime: 'Response within 24h',
+    hours: 'Mon-Fri, 9am-6pm'
+  });
+
+  // Load company details on mount
+  useEffect(() => {
+    const loadCompanyDetails = async () => {
+      const result = await contactService.getCompanyDetails();
+      if (result.success && result.data) {
+        setCompanyDetails(result.data);
+      }
+    };
+    loadCompanyDetails();
+  }, []);
 
   // Handle form input changes
   const handleInputChange = (e) => {
@@ -61,27 +81,36 @@ const ContactPage = () => {
   };
 
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) return;
     
     setIsSubmitting(true);
     
-    // Simulate API call with timeout
-    setTimeout(() => {
+    try {
+      const result = await contactService.submitContactForm(formData);
+      
+      if (result.success) {
+        setIsSubmitted(true);
+        // Reset form
+        setFormData({
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          subject: '',
+          message: ''
+        });
+      } else {
+        setErrors({ submit: result.error || t('contact.form.errors.submitFailed') });
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setErrors({ submit: error.message || t('contact.form.errors.submitFailed') });
+    } finally {
       setIsSubmitting(false);
-      setIsSubmitted(true);
-      // Reset form
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        subject: '',
-        message: ''
-      });
-    }, 1500);
+    }
   };
 
   // Subject options
@@ -181,8 +210,8 @@ const ContactPage = () => {
                       </div>
                       <div>
                         <h3 className="font-semibold text-foreground text-lg mb-1">{t('contact.info.email.title')}</h3>
-                        <p className="text-muted-foreground mb-1">{t('contact.info.email.address')}</p>
-                        <p className="text-sm text-muted-foreground/70">{t('contact.info.email.response')}</p>
+                        <p className="text-muted-foreground mb-1">{companyDetails.email}</p>
+                        <p className="text-sm text-muted-foreground/70">{companyDetails.responseTime}</p>
                       </div>
                     </div>
                   </div>
@@ -195,8 +224,8 @@ const ContactPage = () => {
                       </div>
                       <div>
                         <h3 className="font-semibold text-foreground text-lg mb-1">{t('contact.info.phone.title')}</h3>
-                        <p className="text-muted-foreground mb-1">{t('contact.info.phone.number')}</p>
-                        <p className="text-sm text-muted-foreground/70">{t('contact.info.phone.hours')}</p>
+                        <p className="text-muted-foreground mb-1">{companyDetails.phone}</p>
+                        <p className="text-sm text-muted-foreground/70">{companyDetails.hours}</p>
                       </div>
                     </div>
                   </div>
@@ -209,8 +238,8 @@ const ContactPage = () => {
                       </div>
                       <div>
                         <h3 className="font-semibold text-foreground text-lg mb-1">{t('contact.info.address.title')}</h3>
-                        <p className="text-muted-foreground mb-1">{t('contact.info.address.location')}</p>
-                        <p className="text-sm text-muted-foreground/70">{t('contact.info.address.type')}</p>
+                        <p className="text-muted-foreground mb-1">{companyDetails.address}</p>
+                        <p className="text-sm text-muted-foreground/70">{companyDetails.addressType}</p>
                       </div>
                     </div>
                   </div>
@@ -310,6 +339,13 @@ const ContactPage = () => {
                         )}
                       </div>
                       
+                      {/* Error Message */}
+                      {errors.submit && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                          <p className="text-red-600 text-sm">{errors.submit}</p>
+                        </div>
+                      )}
+
                       {/* Submit Button */}
                       <div className="pt-2">
                         <Button 

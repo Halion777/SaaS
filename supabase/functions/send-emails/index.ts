@@ -53,6 +53,11 @@ serve(async (req) => {
         text: emailPayload.text
       };
 
+      // Add reply-to if provided
+      if (emailPayload.replyTo) {
+        payload.reply_to = emailPayload.replyTo;
+      }
+
       // Add attachments if provided
       if (attachments && attachments.length > 0) {
         payload.attachments = attachments;
@@ -215,6 +220,53 @@ serve(async (req) => {
           subject: emailData.subject,
           html: emailData.html,
           text: emailData.text
+        });
+        break;
+
+      case 'contact_form':
+        // Handle contact form submissions
+        const supportEmail = emailData.support_email || fromEmail;
+        const contactSubject = emailData.subject || 'New Contact Form Submission';
+        const contactHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #0036ab;">New Contact Form Submission</h2>
+            <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>Name:</strong> ${emailData.firstName || ''} ${emailData.lastName || ''}</p>
+              <p><strong>Email:</strong> ${emailData.email || ''}</p>
+              <p><strong>Phone:</strong> ${emailData.phone || 'Not provided'}</p>
+              <p><strong>Subject:</strong> ${emailData.subject || 'N/A'}</p>
+            </div>
+            <div style="background-color: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0;">
+              <h3 style="color: #0036ab; margin-top: 0;">Message:</h3>
+              <p style="white-space: pre-wrap;">${emailData.message || ''}</p>
+            </div>
+            <p style="color: #666; font-size: 12px; margin-top: 20px;">
+              This email was sent from the Haliqo contact form.
+            </p>
+          </div>
+        `;
+        const contactText = `
+New Contact Form Submission
+
+Name: ${emailData.firstName || ''} ${emailData.lastName || ''}
+Email: ${emailData.email || ''}
+Phone: ${emailData.phone || 'Not provided'}
+Subject: ${emailData.subject || 'N/A'}
+
+Message:
+${emailData.message || ''}
+
+---
+This email was sent from the Haliqo contact form.
+        `;
+        
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [supportEmail],
+          replyTo: emailData.email || fromEmail,
+          subject: `[Contact Form] ${contactSubject}`,
+          html: contactHtml,
+          text: contactText
         });
         break;
         

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
@@ -6,6 +7,7 @@ import Select from '../../../components/ui/Select';
 import { Checkbox } from '../../../components/ui/Checkbox';
 
 const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, selectedExpenseInvoices, onSelectionChange, filters, onFiltersChange, onStatusUpdate }) => {
+  const { t, i18n } = useTranslation();
   const [sortConfig, setSortConfig] = useState({ key: 'issueDate', direction: 'desc' });
   const [viewMode, setViewMode] = useState(() => {
     // Default to card view on mobile/tablet, table view on desktop
@@ -27,27 +29,27 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
   }, [viewMode]);
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('fr-FR', {
+    return new Intl.NumberFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US', {
       style: 'currency',
       currency: 'EUR'
     }).format(amount);
   };
 
   const formatDate = (date) => {
-    return new Intl.DateTimeFormat('fr-FR').format(new Date(date));
+    return new Intl.DateTimeFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US').format(new Date(date));
   };
 
   const statusOptions = [
-    { value: 'paid', label: 'Payée' },
-    { value: 'pending', label: 'En attente' },
-    { value: 'overdue', label: 'En retard' }
+    { value: 'paid', label: t('expenseInvoices.status.paid', 'Paid') },
+    { value: 'pending', label: t('expenseInvoices.status.pending', 'Pending') },
+    { value: 'overdue', label: t('expenseInvoices.status.overdue', 'Overdue') }
   ];
 
   const getStatusBadge = (status, invoiceId = null) => {
     const statusConfig = {
-      paid: { label: 'Payée', color: 'bg-success text-success-foreground' },
-      pending: { label: 'En attente', color: 'bg-warning text-warning-foreground' },
-      overdue: { label: 'En retard', color: 'bg-error text-error-foreground' }
+      paid: { label: t('expenseInvoices.status.paid', 'Paid'), color: 'bg-success text-success-foreground' },
+      pending: { label: t('expenseInvoices.status.pending', 'Pending'), color: 'bg-warning text-warning-foreground' },
+      overdue: { label: t('expenseInvoices.status.overdue', 'Overdue'), color: 'bg-error text-error-foreground' }
     };
 
     const config = statusConfig[status] || statusConfig.pending;
@@ -125,14 +127,14 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
       return (
         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
           <Icon name="Globe" size={12} className="mr-1" />
-          Peppol
+          {t('expenseInvoices.source.peppol', 'Peppol')}
         </span>
       );
     } else {
       return (
         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
           <Icon name="Upload" size={12} className="mr-1" />
-          Manual
+          {t('expenseInvoices.source.manual', 'Manual')}
         </span>
       );
     }
@@ -247,7 +249,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
               <div className="flex flex-col items-end space-y-1">
                 {getStatusBadge(invoice.status, invoice.id)}
                 {daysOverdue && (
-                  <span className="text-xs text-error">+{daysOverdue} jours</span>
+                  <span className="text-xs text-error">+{daysOverdue} {t('expenseInvoices.table.days', 'days')}</span>
                 )}
               </div>
             </div>
@@ -255,11 +257,11 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
             {/* Dates */}
             <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-3">
               <div>
-                <div className="font-medium">Émission:</div>
+                <div className="font-medium">{t('expenseInvoices.table.issue', 'Issue')}:</div>
                 <div>{formatDate(invoice.issue_date)}</div>
               </div>
               <div>
-                <div className="font-medium">Échéance:</div>
+                <div className="font-medium">{t('expenseInvoices.table.due', 'Due')}:</div>
                 <div className={`${invoice.status === 'overdue' ? 'text-error font-medium' : ''}`}>
                   {formatDate(invoice.due_date)}
                 </div>
@@ -281,7 +283,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
             <Icon name="Search" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Rechercher par numéro, fournisseur, catégorie ou statut..."
+              placeholder={t('expenseInvoices.table.searchPlaceholder', 'Search by number, supplier, category or status...')}
               value={filters?.search || ''}
               onChange={(e) => onFiltersChange?.({ ...filters, search: e.target.value })}
               className="pl-9 w-full"
@@ -296,7 +298,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
             >
               <span className="flex items-center">
                 <Icon name="X" size={14} className="mr-1" />
-                Effacer
+                {t('expenseInvoices.table.clearSearch', 'Clear')}
               </span>
             </Button>
           )}
@@ -306,7 +308,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
       {/* View Toggle */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center space-x-2">
-          <span className="text-sm font-medium text-muted-foreground">Vue:</span>
+          <span className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.table.view.label', 'View')}:</span>
           <div className="flex bg-muted rounded-lg p-1">
             <button
               onClick={() => setViewMode('table')}
@@ -317,7 +319,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
               }`}
             >
               <Icon name="Table" size={14} className="mr-1" />
-              Tableau
+              {t('expenseInvoices.table.view.table', 'Table')}
             </button>
             <button
               onClick={() => setViewMode('card')}
@@ -328,12 +330,12 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
               }`}
             >
               <Icon name="Grid" size={14} className="mr-1" />
-              Cartes
+              {t('expenseInvoices.table.view.cards', 'Cards')}
             </button>
           </div>
         </div>
         <div className="text-xs text-muted-foreground">
-          {expenseInvoices.length} facture(s)
+          {t('expenseInvoices.table.invoicesCount', { count: expenseInvoices.length }, `${expenseInvoices.length} invoice(s)`)}
         </div>
       </div>
 
@@ -341,8 +343,8 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
       {expenseInvoices.length === 0 ? (
         <div className="text-center py-12">
           <Icon name="FileText" size={48} color="var(--color-muted-foreground)" className="mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">Aucune facture de dépense trouvée</h3>
-          <p className="text-muted-foreground">Commencez par importer votre première facture de dépense ou ajustez vos filtres.</p>
+          <h3 className="text-lg font-medium text-foreground mb-2">{t('expenseInvoices.empty.noInvoicesFound', 'No expense invoices found')}</h3>
+          <p className="text-muted-foreground">{t('expenseInvoices.empty.description', 'Start by importing your first expense invoice or adjust your filters.')}</p>
         </div>
       ) : viewMode === 'card' ? (
         renderCardView()
@@ -357,19 +359,19 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                   onChange={(e) => handleSelectAll(e.target.checked)}
                 />
               </th>
-              <SortableHeader label="N° Facture" sortKey="number" />
-              <SortableHeader label="Fournisseur" sortKey="supplier_name" />
+              <SortableHeader label={t('expenseInvoices.table.headers.invoiceNumber', 'Invoice #')} sortKey="number" />
+              <SortableHeader label={t('expenseInvoices.table.headers.supplier', 'Supplier')} sortKey="supplier_name" />
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Source
+                {t('expenseInvoices.table.headers.source', 'Source')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Statut
+                {t('expenseInvoices.table.headers.status', 'Status')}
               </th>
-              <SortableHeader label="Montant" sortKey="amount" />
-              <SortableHeader label="Date émission" sortKey="issueDate" />
-              <SortableHeader label="Date échéance" sortKey="dueDate" />
+              <SortableHeader label={t('expenseInvoices.table.headers.amount', 'Amount')} sortKey="amount" />
+              <SortableHeader label={t('expenseInvoices.table.headers.issueDate', 'Issue Date')} sortKey="issueDate" />
+              <SortableHeader label={t('expenseInvoices.table.headers.dueDate', 'Due Date')} sortKey="dueDate" />
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Actions
+                {t('expenseInvoices.table.headers.actions', 'Actions')}
               </th>
             </tr>
           </thead>
@@ -411,7 +413,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                       )}
                       {invoice.source === 'peppol' && invoice.peppol_received_at && (
                         <span className="text-xs text-muted-foreground">
-                          Reçu: {formatDate(invoice.peppol_received_at)}
+                          {t('expenseInvoices.table.received', 'Received')}: {formatDate(invoice.peppol_received_at)}
                         </span>
                       )}
                     </div>
@@ -420,17 +422,17 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                     <div className="flex flex-col space-y-1">
                       {getStatusBadge(invoice.status, invoice.id)}
                       {daysOverdue && (
-                        <span className="text-xs text-error">+{daysOverdue} jours</span>
+                        <span className="text-xs text-error">+{daysOverdue} {t('expenseInvoices.table.days', 'days')}</span>
                       )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-foreground">{formatCurrency(invoice.amount)}</div>
                     {invoice.net_amount && (
-                      <div className="text-xs text-muted-foreground">Net: {formatCurrency(invoice.net_amount)}</div>
+                      <div className="text-xs text-muted-foreground">{t('expenseInvoices.table.net', 'Net')}: {formatCurrency(invoice.net_amount)}</div>
                     )}
                     {invoice.vat_amount && (
-                      <div className="text-xs text-muted-foreground">VAT: {formatCurrency(invoice.vat_amount)}</div>
+                      <div className="text-xs text-muted-foreground">{t('expenseInvoices.table.vat', 'VAT')}: {formatCurrency(invoice.vat_amount)}</div>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">

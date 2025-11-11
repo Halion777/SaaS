@@ -22,7 +22,7 @@
     }
   },
   "ui": {
-    "tagline": "Haliqo - Je professionele digitale vitamine",
+    "tagline": "Haliqo - Je Slimme Digitale Partner",
     "buttons": {
       "continue": "Doorgaan",
       "back": "Terug",
@@ -503,10 +503,14 @@
       "savings": "-20%"
     },
     "popular": "Meest Populair",
-    "period": "maand",
+    "period": {
+      "month": "maand",
+      "year": "jaar"
+    },
     "taxNote": "Excl. BTW, toepasselijke belasting",
     "taxDeduction": "Abonnement aftrekbaar voor 120% dankzij overheidssteun voor de overgang naar elektronische facturering (e-invoicing).",
     "savings": "Bespaar {{amount}}€ per jaar",
+    "equivalentMonthly": "Gelijk aan {{amount}}€/maand",
     "plans": {
       "starter": {
         "name": "Starter",
@@ -1590,6 +1594,11 @@
         },
         "permissions": {
           "title": "Machtigingen"
+        },
+        "companyInfo": {
+          "title": "Bedrijfsinformatie",
+          "description": "Beheer uw bedrijfsgegevens voor offertes en facturen",
+          "edit": "Bewerken"
         }
       },
       "preferences": {
@@ -3915,6 +3924,325 @@
           "peppolDisabled": "Peppol-functionaliteit is momenteel uitgeschakeld. Schakel deze in de Peppol-instellingen in om facturen te verzenden.",
           "updateError": "Factuur verzonden maar fout bij bijwerken",
           "sendError": "Fout bij verzenden"
+        }
+      }
+    },
+    "expenseInvoices": {
+      "title": "Uitgavenfacturen",
+      "subtitle": "Beheer uw uitgavenfacturen, volg uw kosten en stuur ze naar uw accountant",
+      "addInvoice": "Factuur toevoegen",
+      "loading": "Uitgavenfacturen laden...",
+      "status": {
+        "paid": "Betaald",
+        "pending": "In behandeling",
+        "overdue": "Achterstallig"
+      },
+      "source": {
+        "manual": "Handmatig",
+        "peppol": "Peppol"
+      },
+      "categories": {
+        "fuel": "Brandstof",
+        "itSoftware": "IT/Software",
+        "energy": "Energie",
+        "materialsSupplies": "Materialen/Voorraden",
+        "telecommunications": "Telecommunicatie",
+        "rentProperty": "Huur & Vastgoed",
+        "professionalServices": "Professionele diensten",
+        "insurance": "Verzekering",
+        "travelAccommodation": "Reizen & Accommodatie",
+        "bankingFinancial": "Banking & Financieel",
+        "marketingAdvertising": "Marketing & Advertenties",
+        "otherProfessional": "Andere professionele kosten"
+      },
+      "summary": {
+        "totalExpenses": "Totale uitgaven",
+        "paidExpenses": "Betaalde uitgaven",
+        "outstandingAmount": "Openstaand bedrag",
+        "overdueInvoices": "Achterstallige facturen",
+        "vsLastMonth": "vs vorige maand"
+      },
+      "filter": {
+        "title": "Filters",
+        "clear": "Wissen",
+        "hideFilters": "Filters verbergen",
+        "showFilters": "Filters tonen",
+        "activeFilters": "{{count}} actief(e) filter(s)",
+        "status": {
+          "label": "Status",
+          "all": "Alle statussen"
+        },
+        "category": {
+          "label": "Categorie",
+          "all": "Alle categorieën"
+        },
+        "source": {
+          "label": "Bron",
+          "all": "Alle bronnen"
+        },
+        "amount": {
+          "label": "Bedrag (€)",
+          "min": "Min",
+          "max": "Max"
+        },
+        "period": {
+          "label": "Periode",
+          "from": "Van",
+          "to": "Tot"
+        },
+        "chips": {
+          "status": "Status",
+          "removeStatus": "Statusfilter verwijderen",
+          "category": "Categorie",
+          "removeCategory": "Categoriefilter verwijderen",
+          "source": "Bron",
+          "removeSource": "Bronfilter verwijderen",
+          "period": "Periode",
+          "removePeriod": "Periodefilter verwijderen",
+          "amount": "Bedrag",
+          "removeAmount": "Bedragfilter verwijderen"
+        }
+      },
+      "table": {
+        "searchPlaceholder": "Zoeken op nummer, leverancier, categorie of status...",
+        "clearSearch": "Wissen",
+        "view": {
+          "label": "Weergave",
+          "table": "Tabel",
+          "cards": "Kaarten"
+        },
+        "invoicesCount": "{{count}} factuur/facturen",
+        "headers": {
+          "invoiceNumber": "Factuurnr.",
+          "supplier": "Leverancier",
+          "source": "Bron",
+          "status": "Status",
+          "amount": "Bedrag",
+          "issueDate": "Uitgavedatum",
+          "dueDate": "Vervaldatum",
+          "actions": "Acties"
+        },
+        "issue": "Uitgave",
+        "due": "Verval",
+        "days": "dagen",
+        "net": "Netto",
+        "vat": "BTW",
+        "received": "Ontvangen"
+      },
+      "empty": {
+        "noInvoicesFound": "Geen uitgavenfacturen gevonden",
+        "description": "Begin met het importeren van uw eerste uitgavenfactuur of pas uw filters aan."
+      },
+      "bulkActions": {
+        "selectedInvoices": "{{count}} factuur/facturen geselecteerd",
+        "deselect": "Deselecteren",
+        "chooseAction": "Kies een actie...",
+        "sendToAccountant": "Verzenden naar accountant",
+        "export": "Exporteren",
+        "delete": "Verwijderen"
+      },
+      "messages": {
+        "confirmDelete": "Weet u zeker dat u {{count}} factuur/facturen wilt verwijderen?",
+        "deletedSuccess": "{{count}} factuur/facturen verwijderd",
+        "markedAsPaid": "Factuur gemarkeerd als betaald"
+      },
+      "errors": {
+        "selectAtLeastOne": "Selecteer ten minste één uitgavenfactuur",
+        "bulkActionError": "Fout tijdens bulkactie",
+        "updateStatusError": "Fout bij bijwerken van status",
+        "error": "Fout: {{error}}",
+        "downloadError": "Fout bij downloaden: {{error}}",
+        "noAttachment": "Geen bestand gekoppeld aan deze factuur",
+        "actionError": "Fout tijdens factuuractie",
+        "createError": "Fout bij aanmaken van factuur",
+        "updateError": "Fout bij bijwerken van factuur"
+      },
+      "export": {
+        "invoiceNumber": "Factuurnummer",
+        "supplier": "Leverancier",
+        "email": "E-mail",
+        "vat": "BTW",
+        "totalAmount": "Totaalbedrag",
+        "netAmount": "Netto bedrag",
+        "vatAmount": "BTW-bedrag",
+        "status": "Status",
+        "category": "Categorie",
+        "source": "Bron",
+        "issueDate": "Uitgavedatum",
+        "dueDate": "Vervaldatum",
+        "paymentMethod": "Betalingsmethode",
+        "peppolId": "Peppol ID",
+        "documentType": "Documenttype"
+      },
+      "modal": {
+        "title": "Factuurdetails",
+        "close": "Sluiten",
+        "tabs": {
+          "details": "Details",
+          "peppol": "Peppol Metadata"
+        },
+        "invoiceInfo": {
+          "title": "Factuurinformatie",
+          "invoiceNumber": "Factuurnummer",
+          "status": "Status",
+          "category": "Categorie",
+          "source": "Bron",
+          "issueDate": "Uitgavedatum",
+          "dueDate": "Vervaldatum",
+          "paymentMethod": "Betalingsmethode"
+        },
+        "supplierInfo": {
+          "title": "Leveranciersinformatie",
+          "name": "Naam",
+          "email": "E-mail",
+          "vatNumber": "BTW-nummer",
+          "peppolId": "Peppol ID"
+        },
+        "financialInfo": {
+          "title": "Financiële informatie",
+          "totalAmount": "Totaalbedrag (incl. BTW)",
+          "netAmount": "Netto bedrag",
+          "vatAmount": "BTW-bedrag"
+        },
+        "notes": "Notities"
+      },
+      "common": {
+        "notAvailable": "N/A",
+        "yes": "Ja",
+        "no": "Nee"
+      },
+      "createModal": {
+        "title": {
+          "create": "Snelle factuuraanmaak",
+          "edit": "Factuur bewerken"
+        },
+        "subtitle": {
+          "create": "Maak in een paar klikken een nieuwe factuur aan",
+          "edit": "Bewerk factuurinformatie"
+        },
+        "sections": {
+          "supplierInfo": "Leveranciersinformatie",
+          "invoiceDetails": "Factuurdetails",
+          "additionalInfo": "Aanvullende informatie"
+        },
+        "fields": {
+          "supplierName": "Leveranciersnaam",
+          "supplierEmail": "Leveranciers e-mail",
+          "supplierVatNumber": "BTW-nummer leverancier",
+          "invoiceNumber": "Factuurnummer",
+          "totalAmount": "Totaalbedrag incl. BTW (€)",
+          "netAmount": "Netto bedrag (€)",
+          "vatAmount": "BTW-bedrag (€)",
+          "category": "Categorie",
+          "paymentMethod": "Betalingsmethode",
+          "issueDate": "Uitgavedatum",
+          "dueDate": "Vervaldatum",
+          "notes": "Notities"
+        },
+        "placeholders": {
+          "supplierName": "Bijv: Materialen Pro",
+          "supplierEmail": "contact@leverancier.nl",
+          "supplierVatNumber": "Bijv: BE0123456789",
+          "invoiceNumber": "Bijv: FACT-2024-001",
+          "notes": "Voeg notities of opmerkingen over deze factuur toe..."
+        },
+        "category": {
+          "select": "Selecteer een categorie",
+          "fuelDescription": "voertuigen, machines, transport",
+          "itDescription": "Software Services",
+          "energyDescription": "elektriciteit, gas, water, verwarming",
+          "rentDescription": "Kosten",
+          "bankingDescription": "Kosten"
+        },
+        "paymentMethod": {
+          "select": "Selecteer een methode",
+          "bankTransfer": "Bankoverschrijving",
+          "check": "Cheque",
+          "directDebit": "Automatische incasso",
+          "cash": "Contant",
+          "card": "Bankpas"
+        },
+        "source": {
+          "manual": "Handmatig (OCR)",
+          "peppol": "Peppol (automatisch)"
+        },
+        "ocr": {
+          "title": "Automatische factuurscanner",
+          "description": "Upload een factuur om automatisch gegevens te extraheren",
+          "processing": "Factuur analyseren...",
+          "success": "Gegevens succesvol geëxtraheerd!",
+          "extractionFailed": "Gegevensextractie mislukt",
+          "extractionFailedMessage": "Extractie mislukt - Documentstructuur niet ondersteund. Vul handmatig in.",
+          "processingError": "Fout bij verwerken van document"
+        },
+        "buttons": {
+          "cancel": "Annuleren",
+          "create": "Factuur aanmaken",
+          "update": "Factuur bijwerken",
+          "creating": "Aanmaken...",
+          "updating": "Bijwerken..."
+        },
+        "errors": {
+          "requiredFields": "Vul ten minste de leveranciersnaam en het bedrag in.",
+          "createError": "Fout bij aanmaken van factuur. Probeer het opnieuw."
+        }
+      },
+      "modal": {
+        "title": "Factuurdetails",
+        "close": "Sluiten",
+        "tabs": {
+          "details": "Details",
+          "peppol": "Peppol Metadata"
+        },
+        "invoiceInfo": {
+          "title": "Factuurinformatie",
+          "invoiceNumber": "Factuurnummer",
+          "status": "Status",
+          "category": "Categorie",
+          "source": "Bron",
+          "issueDate": "Uitgavedatum",
+          "dueDate": "Vervaldatum",
+          "paymentMethod": "Betalingsmethode"
+        },
+        "supplierInfo": {
+          "title": "Leveranciersinformatie",
+          "name": "Naam",
+          "email": "E-mail",
+          "vatNumber": "BTW-nummer",
+          "peppolId": "Peppol ID"
+        },
+        "financialInfo": {
+          "title": "Financiële informatie",
+          "totalAmount": "Totaalbedrag (incl. BTW)",
+          "netAmount": "Netto bedrag",
+          "vatAmount": "BTW-bedrag"
+        },
+        "notes": "Notities",
+        "peppolInfo": {
+          "title": "Peppol Informatie",
+          "documentType": "Documenttype",
+          "selfBilling": "Zelffacturering",
+          "creditNote": "Creditnota",
+          "receivedDate": "Ontvangstdatum",
+          "additionalMetadata": "Aanvullende metadata",
+          "buyerReference": "Koperreferentie",
+          "orderReference": "Bestelreferentie",
+          "salesOrderId": "Verkooporder ID",
+          "deliveryDate": "Leveringsdatum",
+          "currency": "Valuta",
+          "invoiceLines": "Factuurregels",
+          "taxInformation": "Belastinginformatie",
+          "table": {
+            "id": "ID",
+            "description": "Beschrijving",
+            "quantity": "Hoeveelheid",
+            "unitPrice": "Eenheidsprijs",
+            "amount": "Bedrag",
+            "category": "Categorie",
+            "rate": "Tarief (%)",
+            "taxableAmount": "Belastbaar bedrag",
+            "vatAmount": "BTW-bedrag"
+          }
         }
       }
     }
