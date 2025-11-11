@@ -216,7 +216,7 @@ const HomePage = () => {
         <meta property="og:description" content={t('meta.ogDescription')} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://haliqo.com" />
-        <meta property="og:image" content="https://haliqo.com/assets/images/og-image.jpg" />
+        <meta property="og:image" content="https://haliqo.com/assets/images/og-image.png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:locale" content={i18n.language === 'fr' ? 'fr_FR' : i18n.language === 'nl' ? 'nl_NL' : 'en_US'} />
@@ -229,7 +229,7 @@ const HomePage = () => {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={t('meta.ogTitle')} />
         <meta name="twitter:description" content={t('meta.ogDescription')} />
-        <meta name="twitter:image" content="https://haliqo.com/assets/images/og-image.jpg" />
+        <meta name="twitter:image" content="https://haliqo.com/assets/images/og-image.png" />
         
         {/* Canonical */}
         <link rel="canonical" href="https://haliqo.com" />

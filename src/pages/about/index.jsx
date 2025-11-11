@@ -123,7 +123,7 @@ const AboutPage = () => {
         <meta property="og:description" content={t('meta.about.description')} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`https://haliqo.com/about`} />
-        <meta property="og:image" content="https://haliqo.com/assets/images/og-image.jpg" />
+        <meta property="og:image" content="https://haliqo.com/assets/images/og-image.png" />
         
         {/* Twitter */}
         <meta name="twitter:card" content="summary" />
