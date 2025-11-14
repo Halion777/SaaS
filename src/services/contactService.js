@@ -30,6 +30,10 @@ class ContactService {
         throw new Error('Missing Supabase configuration. Please check your environment variables.');
       }
 
+      // Get user language preference (default to 'fr')
+      const userLanguage = localStorage.getItem('i18nextLng') || 'fr';
+      const language = userLanguage.split('-')[0] || 'fr'; // Extract base language (e.g., 'fr' from 'fr-FR')
+      
       // Send email via edge function
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-emails`, {
         method: 'POST',
@@ -46,7 +50,8 @@ class ContactService {
             phone: formData.phone || '',
             subject: formData.subject,
             message: formData.message,
-            support_email: supportEmail
+            support_email: supportEmail,
+            language: language // Pass language for template selection
           }
         })
       });

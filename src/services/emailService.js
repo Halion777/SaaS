@@ -86,13 +86,15 @@ export class EmailService {
   /**
    * Send new lead notification email to artisan
    */
-  static async sendNewLeadNotificationEmail(leadData, artisanData) {
+  static async sendNewLeadNotificationEmail(leadData, artisanData, language = 'fr') {
     try {
       const emailData = {
         artisan_email: artisanData.email,
         project_description: leadData.project_description,
         leadData,
-        artisanData
+        artisanData,
+        language: language || 'fr',
+        user_id: artisanData.user_id || null
       };
       
       const result = await this.sendEmailViaEdgeFunction('new_lead_available', emailData);
@@ -114,13 +116,15 @@ export class EmailService {
   /**
    * Send lead assignment confirmation email to artisan
    */
-  static async sendLeadAssignmentEmail(leadData, artisanData) {
+  static async sendLeadAssignmentEmail(leadData, artisanData, language = 'fr') {
     try {
       const emailData = {
         artisan_email: artisanData.email,
         project_description: leadData.project_description,
         leadData,
-        artisanData
+        artisanData,
+        language: language || 'fr',
+        user_id: artisanData.user_id || null
       };
       
       const result = await this.sendEmailViaEdgeFunction('lead_assigned', emailData);
@@ -310,6 +314,10 @@ export class EmailService {
         custom_message: emailMessage
       };
       
+      // Get user language preference (default to 'fr')
+      const userLanguage = typeof window !== 'undefined' ? (localStorage.getItem('i18nextLng') || 'fr') : 'fr';
+      const language = userLanguage.split('-')[0] || 'fr'; // Extract base language (e.g., 'fr' from 'fr-FR')
+      
       // Send email to client - always use custom quote email for better control
       // Use the email from customEmailData if provided (updated in modal), otherwise fall back to client.email
       const recipientEmail = customEmailData?.clientEmail || client.email;
@@ -317,14 +325,14 @@ export class EmailService {
       let clientEmailResult;
       if (customEmailData) {
         // Use provided custom email data
-        clientEmailResult = await this.sendCustomQuoteEmail(variables, recipientEmail, userId, customEmailData);
+        clientEmailResult = await this.sendCustomQuoteEmail(variables, recipientEmail, userId, customEmailData, language);
       } else {
         // Use default custom email format instead of templated email
         const defaultEmailData = {
           subject: emailSubject,
           message: emailMessage
         };
-        clientEmailResult = await this.sendCustomQuoteEmail(variables, recipientEmail, userId, defaultEmailData);
+        clientEmailResult = await this.sendCustomQuoteEmail(variables, recipientEmail, userId, defaultEmailData, language);
       }
       
       // If sendCopy is enabled, also send a copy to the current user
@@ -358,11 +366,16 @@ export class EmailService {
                 custom_message: copyMessage
               };
               
+              // Get user language preference (default to 'fr')
+              const userLanguage = typeof window !== 'undefined' ? (localStorage.getItem('i18nextLng') || 'fr') : 'fr';
+              const language = userLanguage.split('-')[0] || 'fr'; // Extract base language (e.g., 'fr' from 'fr-FR')
+              
               const copyEmailResult = await this.sendCustomQuoteEmail(
                 copyVariables, 
                 customEmailData.userEmail, 
                 userId, 
-                { subject: copySubject, message: copyMessage }
+                { subject: copySubject, message: copyMessage },
+                language
               );
               
               if (copyEmailResult.success) {
@@ -390,7 +403,8 @@ export class EmailService {
                 copyVariables, 
                 customEmailData.userEmail, 
                 userId, 
-                { subject: copySubject, message: copyMessage }
+                { subject: copySubject, message: copyMessage },
+                language
               );
               
               if (copyEmailResult.success) {
@@ -419,14 +433,16 @@ export class EmailService {
   /**
    * Send custom quote email with user-defined subject and message
    */
-  static async sendCustomQuoteEmail(variables, clientEmail, userId = null, customEmailData = null) {
+  static async sendCustomQuoteEmail(variables, clientEmail, userId = null, customEmailData = null, language = 'fr') {
     try {
       const emailData = {
         to: clientEmail,
         subject: customEmailData?.subject || variables.custom_subject,
         message: customEmailData?.message || variables.custom_message,
         variables: variables,
-        userId: userId
+        userId: userId,
+        user_id: userId,
+        language: language || 'fr'
       };
       
       return await this.sendEmailViaEdgeFunction('custom_quote_sent', emailData);
@@ -640,11 +656,15 @@ export class EmailService {
         custom_message: emailMessage
       };
       
+      // Get user language preference (default to 'fr')
+      const userLanguage = typeof window !== 'undefined' ? (localStorage.getItem('i18nextLng') || 'fr') : 'fr';
+      const language = userLanguage.split('-')[0] || 'fr'; // Extract base language (e.g., 'fr' from 'fr-FR')
+      
       // Send email to client using custom quote email
       return await this.sendCustomQuoteEmail(variables, client.email, userId, {
         subject: emailSubject,
         message: emailMessage
-      });
+      }, language);
       
     } catch (error) {
       console.error('Error sending draft quote marked as sent email:', error);
@@ -655,13 +675,14 @@ export class EmailService {
   /**
    * Send credit insurance application email to info@haliqo.com
    */
-  static async sendCreditInsuranceApplicationEmail(application) {
+  static async sendCreditInsuranceApplicationEmail(application, language = 'fr') {
     try {
       const emailData = {
         to: 'info@haliqo.com',
         subject: `Nouvelle demande d'assurance crédit - ${application.companyName}`,
         application,
-        text: `Nouvelle demande d'assurance crédit reçue de ${application.companyName}`
+        text: `Nouvelle demande d'assurance crédit reçue de ${application.companyName}`,
+        language: language || 'fr'
       };
       
       const result = await this.sendEmailViaEdgeFunction('credit_insurance_application', emailData);
@@ -682,13 +703,14 @@ export class EmailService {
   /**
    * Send credit insurance confirmation email to applicant
    */
-  static async sendCreditInsuranceConfirmationEmail(application) {
+  static async sendCreditInsuranceConfirmationEmail(application, language = 'fr') {
     try {
       const emailData = {
         to: application.email,
         subject: 'Confirmation de votre demande d\'assurance crédit',
         application,
-        text: `Confirmation de votre demande d'assurance crédit pour ${application.companyName}`
+        text: `Confirmation de votre demande d'assurance crédit pour ${application.companyName}`,
+        language: language || 'fr'
       };
       
       const result = await this.sendEmailViaEdgeFunction('credit_insurance_confirmation', emailData);

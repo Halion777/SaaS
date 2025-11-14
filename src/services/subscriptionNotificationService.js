@@ -1,6 +1,70 @@
 import { supabase } from './supabaseClient';
+import AppSettingsService from './appSettingsService';
 
 export class SubscriptionNotificationService {
+  
+  /**
+   * Get pricing information from database based on plan type and billing interval
+   */
+  static async getPricingInfo(planType, billingInterval = 'monthly') {
+    try {
+      // Get pricing settings from database
+      const pricingResult = await AppSettingsService.getSetting('pricing_settings');
+      
+      if (!pricingResult.success || !pricingResult.data) {
+        console.warn('Pricing settings not found, using fallback values');
+        // Fallback to default values
+        const defaultPricing = {
+          starter: { name: 'Starter Plan', monthly: 29.99, yearly: 24.99 },
+          pro: { name: 'Pro Plan', monthly: 49.99, yearly: 41.66 }
+        };
+        const plan = defaultPricing[planType] || defaultPricing.starter;
+        return {
+          success: true,
+          data: {
+            plan_name: plan.name,
+            amount: billingInterval === 'yearly' ? plan.yearly : plan.monthly
+          }
+        };
+      }
+      
+      const pricingSettings = pricingResult.data;
+      const plan = pricingSettings[planType] || pricingSettings.starter;
+      
+      if (!plan) {
+        throw new Error(`Plan type ${planType} not found in pricing settings`);
+      }
+      
+      // Get the correct price based on billing interval
+      const amount = billingInterval === 'yearly' ? plan.yearly : plan.monthly;
+      const planName = plan.name || `${planType.charAt(0).toUpperCase() + planType.slice(1)} Plan`;
+      
+      return {
+        success: true,
+        data: {
+          plan_name: planName,
+          amount: amount,
+          description: plan.description || ''
+        }
+      };
+      
+    } catch (error) {
+      console.error('Error getting pricing info:', error);
+      // Fallback to default values
+      const defaultPricing = {
+        starter: { name: 'Starter Plan', monthly: 29.99, yearly: 24.99 },
+        pro: { name: 'Pro Plan', monthly: 49.99, yearly: 41.66 }
+      };
+      const plan = defaultPricing[planType] || defaultPricing.starter;
+      return {
+        success: true,
+        data: {
+          plan_name: plan.name,
+          amount: billingInterval === 'yearly' ? plan.yearly : plan.monthly
+        }
+      };
+    }
+  }
   
   /**
    * Send subscription notification email via Edge Function
@@ -123,15 +187,35 @@ export class SubscriptionNotificationService {
         throw new Error(`Failed to get template: ${templateResult.error}`);
       }
       
+      // Get pricing info from database for old and new plans
+      const billingInterval = subscriptionData.billing_interval || subscriptionData.interval || 'monthly';
+      
+      // Get old plan pricing (if available)
+      let oldPlanName = subscriptionData.oldPlanName || 'Plan précédent';
+      let oldAmount = subscriptionData.oldAmount;
+      if (subscriptionData.oldPlanType) {
+        const oldPricing = await this.getPricingInfo(subscriptionData.oldPlanType, subscriptionData.oldBillingInterval || billingInterval);
+        if (oldPricing.success) {
+          oldPlanName = oldPricing.data.plan_name;
+          oldAmount = oldPricing.data.amount;
+        }
+      }
+      
+      // Get new plan pricing from database
+      const planType = subscriptionData.plan_type || subscriptionData.newPlanType || 'starter';
+      const newPricing = await this.getPricingInfo(planType, billingInterval);
+      const newPlanName = newPricing.success ? newPricing.data.plan_name : (subscriptionData.newPlanName || subscriptionData.plan_name);
+      const newAmount = newPricing.success ? newPricing.data.amount : (subscriptionData.newAmount || subscriptionData.amount);
+      
       // Prepare variables
       const variables = {
         user_name: userData.full_name || userData.email,
         user_email: userData.email,
-        old_plan_name: subscriptionData.oldPlanName || 'Plan précédent',
-        new_plan_name: subscriptionData.newPlanName || subscriptionData.plan_name,
-        old_amount: subscriptionData.oldAmount ? `${subscriptionData.oldAmount}€` : 'N/A',
-        new_amount: `${subscriptionData.newAmount || subscriptionData.amount}€`,
-        billing_interval: subscriptionData.billing_interval || 'monthly',
+        old_plan_name: oldPlanName,
+        new_plan_name: newPlanName,
+        old_amount: oldAmount ? `${oldAmount}€` : 'N/A',
+        new_amount: `${newAmount}€`,
+        billing_interval: billingInterval === 'yearly' ? 'yearly' : 'monthly',
         effective_date: subscriptionData.effectiveDate || new Date().toLocaleDateString('fr-FR'),
         support_email: 'support@haliqo.com',
         company_name: 'Haliqo'
@@ -183,15 +267,35 @@ export class SubscriptionNotificationService {
         throw new Error(`Failed to get template: ${templateResult.error}`);
       }
       
+      // Get pricing info from database for old and new plans
+      const billingInterval = subscriptionData.billing_interval || subscriptionData.interval || 'monthly';
+      
+      // Get old plan pricing (if available)
+      let oldPlanName = subscriptionData.oldPlanName || 'Plan précédent';
+      let oldAmount = subscriptionData.oldAmount;
+      if (subscriptionData.oldPlanType) {
+        const oldPricing = await this.getPricingInfo(subscriptionData.oldPlanType, subscriptionData.oldBillingInterval || billingInterval);
+        if (oldPricing.success) {
+          oldPlanName = oldPricing.data.plan_name;
+          oldAmount = oldPricing.data.amount;
+        }
+      }
+      
+      // Get new plan pricing from database
+      const planType = subscriptionData.plan_type || subscriptionData.newPlanType || 'starter';
+      const newPricing = await this.getPricingInfo(planType, billingInterval);
+      const newPlanName = newPricing.success ? newPricing.data.plan_name : (subscriptionData.newPlanName || subscriptionData.plan_name);
+      const newAmount = newPricing.success ? newPricing.data.amount : (subscriptionData.newAmount || subscriptionData.amount);
+      
       // Prepare variables
       const variables = {
         user_name: userData.full_name || userData.email,
         user_email: userData.email,
-        old_plan_name: subscriptionData.oldPlanName || 'Plan précédent',
-        new_plan_name: subscriptionData.newPlanName || subscriptionData.plan_name,
-        old_amount: subscriptionData.oldAmount ? `${subscriptionData.oldAmount}€` : 'N/A',
-        new_amount: `${subscriptionData.newAmount || subscriptionData.amount}€`,
-        billing_interval: subscriptionData.billing_interval || 'monthly',
+        old_plan_name: oldPlanName,
+        new_plan_name: newPlanName,
+        old_amount: oldAmount ? `${oldAmount}€` : 'N/A',
+        new_amount: `${newAmount}€`,
+        billing_interval: billingInterval === 'yearly' ? 'yearly' : 'monthly',
         effective_date: subscriptionData.effectiveDate || new Date().toLocaleDateString('fr-FR'),
         support_email: 'support@haliqo.com',
         company_name: 'Haliqo'
@@ -243,11 +347,17 @@ export class SubscriptionNotificationService {
         throw new Error(`Failed to get template: ${templateResult.error}`);
       }
       
+      // Get pricing info from database for cancelled plan
+      const planType = subscriptionData.plan_type || 'starter';
+      const billingInterval = subscriptionData.billing_interval || subscriptionData.interval || 'monthly';
+      const planPricing = await this.getPricingInfo(planType, billingInterval);
+      const planName = planPricing.success ? planPricing.data.plan_name : (subscriptionData.plan_name || 'Plan actuel');
+      
       // Prepare variables
       const variables = {
         user_name: userData.full_name || userData.email,
         user_email: userData.email,
-        old_plan_name: subscriptionData.plan_name || 'Plan actuel',
+        old_plan_name: planName,
         effective_date: subscriptionData.effectiveDate || new Date().toLocaleDateString('fr-FR'),
         cancellation_reason: cancellationReason,
         support_email: 'support@haliqo.com',
@@ -301,13 +411,20 @@ export class SubscriptionNotificationService {
         throw new Error(`Failed to get template: ${templateResult.error}`);
       }
       
+      // Get pricing info from database
+      const planType = subscriptionData.plan_type || 'starter';
+      const billingInterval = subscriptionData.billing_interval || subscriptionData.interval || 'monthly';
+      const planPricing = await this.getPricingInfo(planType, billingInterval);
+      const planName = planPricing.success ? planPricing.data.plan_name : (subscriptionData.plan_name || subscriptionData.newPlanName);
+      const planAmount = planPricing.success ? planPricing.data.amount : (subscriptionData.amount || subscriptionData.newAmount);
+      
       // Prepare variables
       const variables = {
         user_name: userData.full_name || userData.email,
         user_email: userData.email,
-        new_plan_name: subscriptionData.plan_name || subscriptionData.newPlanName,
-        new_amount: `${subscriptionData.amount || subscriptionData.newAmount}€`,
-        billing_interval: subscriptionData.billing_interval || subscriptionData.interval,
+        new_plan_name: planName,
+        new_amount: `${planAmount}€`,
+        billing_interval: billingInterval === 'yearly' ? 'yearly' : 'monthly',
         effective_date: subscriptionData.effectiveDate || new Date().toLocaleDateString('fr-FR'),
         support_email: 'support@haliqo.com',
         company_name: 'Haliqo'
@@ -359,14 +476,21 @@ export class SubscriptionNotificationService {
         throw new Error(`Failed to get template: ${templateResult.error}`);
       }
       
+      // Get pricing info from database
+      const planType = subscriptionData.plan_type || 'starter';
+      const billingInterval = subscriptionData.billing_interval || subscriptionData.interval || 'monthly';
+      const planPricing = await this.getPricingInfo(planType, billingInterval);
+      const planName = planPricing.success ? planPricing.data.plan_name : (subscriptionData.plan_name || 'Plan d\'essai');
+      const planAmount = planPricing.success ? planPricing.data.amount : (subscriptionData.amount || 0);
+      
       // Prepare variables
       const variables = {
         user_name: userData.full_name || userData.email,
         user_email: userData.email,
-        new_plan_name: subscriptionData.plan_name || 'Plan d\'essai',
+        new_plan_name: planName,
         trial_end_date: subscriptionData.trial_end ? new Date(subscriptionData.trial_end).toLocaleDateString('fr-FR') : 'Bientôt',
-        new_amount: `${subscriptionData.amount || 0}€`,
-        billing_interval: subscriptionData.billing_interval || 'monthly',
+        new_amount: `${planAmount}€`,
+        billing_interval: billingInterval === 'yearly' ? 'yearly' : 'monthly',
         support_email: 'support@haliqo.com',
         company_name: 'Haliqo'
       };

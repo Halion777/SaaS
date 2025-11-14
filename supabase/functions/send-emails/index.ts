@@ -34,6 +34,81 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Helper function to get and render email template from database
+    const getEmailTemplate = async (templateType: string, language: string = 'fr', userId: string | null = null) => {
+      try {
+        let query = supabase
+          .from('email_templates')
+          .select('*')
+          .eq('template_type', templateType)
+          .eq('language', language)
+          .eq('is_active', true);
+        
+        if (userId) {
+          query = query.eq('user_id', userId);
+        }
+        
+        const { data: userTemplate, error: userError } = await query.maybeSingle();
+        
+        if (userTemplate) {
+          return { success: true, data: userTemplate };
+        }
+        
+        // Fallback to default template
+        const { data: defaultTemplate, error: defaultError } = await supabase
+          .from('email_templates')
+          .select('*')
+          .eq('template_type', templateType)
+          .eq('language', language)
+          .eq('is_default', true)
+          .eq('is_active', true)
+          .maybeSingle();
+        
+        if (defaultTemplate) {
+          return { success: true, data: defaultTemplate };
+        }
+        
+        // If no template found in requested language, try French as fallback
+        if (language !== 'fr') {
+          const { data: frenchTemplate, error: frenchError } = await supabase
+            .from('email_templates')
+            .select('*')
+            .eq('template_type', templateType)
+            .eq('language', 'fr')
+            .eq('is_default', true)
+            .eq('is_active', true)
+            .maybeSingle();
+          
+          if (frenchTemplate) {
+            return { success: true, data: frenchTemplate };
+          }
+        }
+        
+        return { success: false, error: 'Template not found' };
+      } catch (error: any) {
+        console.error('Error getting email template:', error);
+        return { success: false, error: error.message };
+      }
+    };
+
+    // Helper function to render template with variables
+    const renderTemplate = (template: any, variables: any) => {
+      let html = template.html_content || '';
+      let text = template.text_content || '';
+      let subject = template.subject || '';
+      
+      // Replace variables in content
+      Object.keys(variables).forEach(key => {
+        const regex = new RegExp(`{${key}}`, 'g');
+        const value = variables[key] || '';
+        html = html.replace(regex, value);
+        text = text.replace(regex, value);
+        subject = subject.replace(regex, value);
+      });
+      
+      return { subject, html, text };
+    };
+
     let emailResult;
     
     // Send email using Resend API directly (since npm:resend doesn't work in Deno)
@@ -94,34 +169,104 @@ serve(async (req) => {
         break;
         
       case 'new_lead_available':
-        // Keep: Business logic for artisans
-        emailResult = await sendEmail({
-          from: fromEmail,
-          to: [emailData.artisan_email],
-          subject: `Nouveau projet disponible - ${emailData.project_description?.substring(0, 50) || 'Projet'}...`,
-          html: generateNewLeadNotificationEmail(emailData.leadData, emailData.artisanData)
-        });
+        // Use database template
+        const leadLanguage = emailData.language || 'fr';
+        const leadTemplate = await getEmailTemplate('new_lead_available', leadLanguage, emailData.user_id || null);
+        if (leadTemplate.success) {
+          const location = emailData.leadData?.city && emailData.leadData?.zip_code 
+            ? `${emailData.leadData.city}, ${emailData.leadData.zip_code}`
+            : emailData.leadData?.city || emailData.leadData?.zip_code || 'N/A';
+          const variables = {
+            artisan_name: emailData.artisanData?.name || '',
+            artisan_company_name: emailData.artisanData?.company_name || emailData.artisanData?.name || 'Artisan',
+            project_description: emailData.project_description || emailData.leadData?.project_description || 'Projet',
+            city: emailData.leadData?.city || '',
+            zip_code: emailData.leadData?.zip_code || '',
+            location: location,
+            leads_management_url: emailData.leadData?.site_url ? `${emailData.leadData.site_url}/leads-management` : 'https://app.haliqo.com/leads-management',
+            site_url: emailData.leadData?.site_url || 'https://app.haliqo.com',
+            company_name: 'Haliqo'
+          };
+          const rendered = renderTemplate(leadTemplate.data, variables);
+          emailResult = await sendEmail({
+            from: fromEmail,
+            to: [emailData.artisan_email],
+            subject: rendered.subject,
+            html: rendered.html,
+            text: rendered.text
+          });
+        } else {
+          throw new Error(`Email template 'new_lead_available' not found in database for language '${leadLanguage}'. Please create the template in the email_templates table.`);
+        }
         break;
         
       case 'lead_assigned':
-        // Keep: Business logic for artisans
-        emailResult = await sendEmail({
-          from: fromEmail,
-          to: [emailData.artisan_email],
-          subject: `Projet assigné - ${emailData.project_description?.substring(0, 50) || 'Projet'}...`,
-          html: generateLeadAssignmentEmail(emailData.leadData, emailData.artisanData)
-        });
+        // Use database template
+        const assignedLanguage = emailData.language || 'fr';
+        const assignedTemplate = await getEmailTemplate('lead_assigned', assignedLanguage, emailData.user_id || null);
+        if (assignedTemplate.success) {
+          const location = emailData.leadData?.city && emailData.leadData?.zip_code 
+            ? `${emailData.leadData.city}, ${emailData.leadData.zip_code}`
+            : emailData.leadData?.city || emailData.leadData?.zip_code || 'N/A';
+          const variables = {
+            artisan_name: emailData.artisanData?.name || '',
+            artisan_company_name: emailData.artisanData?.company_name || emailData.artisanData?.name || 'Artisan',
+            project_description: emailData.project_description || emailData.leadData?.project_description || 'Projet',
+            client_name: emailData.leadData?.client_name || 'Client',
+            city: emailData.leadData?.city || '',
+            zip_code: emailData.leadData?.zip_code || '',
+            location: location,
+            leads_management_url: emailData.leadData?.site_url ? `${emailData.leadData.site_url}/leads-management` : 'https://app.haliqo.com/leads-management',
+            site_url: emailData.leadData?.site_url || 'https://app.haliqo.com',
+            company_name: 'Haliqo'
+          };
+          const rendered = renderTemplate(assignedTemplate.data, variables);
+          emailResult = await sendEmail({
+            from: fromEmail,
+            to: [emailData.artisan_email],
+            subject: rendered.subject,
+            html: rendered.html,
+            text: rendered.text
+          });
+        } else {
+          throw new Error(`Email template 'lead_assigned' not found in database for language '${assignedLanguage}'. Please create the template in the email_templates table.`);
+        }
         break;
         
       case 'custom_quote_sent':
-        // Handle custom quote emails with user-defined subject and message
-        emailResult = await sendEmail({
-          from: fromEmail,
-          to: [emailData.to],
-          subject: emailData.subject,
-          html: generateCustomQuoteEmail(emailData.message, emailData.variables),
-          text: emailData.message
-        });
+        // Use database template
+        const customQuoteLanguage = emailData.language || 'fr';
+        const customQuoteTemplate = await getEmailTemplate('custom_quote_sent', customQuoteLanguage, emailData.user_id || null);
+        if (customQuoteTemplate.success) {
+          // Build quote link HTML if quote_link exists
+          let quoteLinkHtml = '';
+          if (emailData.variables?.quote_link && emailData.variables.quote_link !== '#') {
+            quoteLinkHtml = `<div style="text-align: center; margin: 30px 0;">
+              <a href="${emailData.variables.quote_link}" style="background: #059669; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Voir le devis</a>
+            </div>`;
+          }
+          
+          const variables = {
+            client_name: emailData.variables?.client_name || 'Madame, Monsieur',
+            quote_number: emailData.variables?.quote_number || 'N/A',
+            quote_title: emailData.variables?.quote_title || 'Votre projet',
+            quote_amount: emailData.variables?.quote_amount || '0€',
+            valid_until: emailData.variables?.valid_until || '30 jours',
+            custom_message: emailData.message || '',
+            quote_link: quoteLinkHtml,
+            company_name: emailData.variables?.company_name || 'Notre équipe'
+          };
+          const rendered = renderTemplate(customQuoteTemplate.data, variables);
+          emailResult = await sendEmail({
+            from: fromEmail,
+            to: [emailData.to],
+            subject: emailData.subject || rendered.subject,
+            html: rendered.html,
+            text: emailData.message || rendered.text
+          });
+        } else {
+          throw new Error(`Email template 'custom_quote_sent' not found in database for language '${customQuoteLanguage}'. Please create the template in the email_templates table.`);
+        }
         break;
 
       case 'quote_followup':
@@ -147,25 +292,63 @@ serve(async (req) => {
         break;
         
       case 'credit_insurance_application':
-        // Handle credit insurance application emails
-        emailResult = await sendEmail({
-          from: fromEmail,
-          to: [emailData.to],
-          subject: emailData.subject,
-          html: generateCreditInsuranceApplicationEmail(emailData.application),
-          text: emailData.text
-        });
+        // Use database template
+        const applicationLanguage = emailData.language || 'fr';
+        const applicationTemplate = await getEmailTemplate('credit_insurance_application', applicationLanguage, null);
+        if (applicationTemplate.success) {
+          const submissionDate = new Date().toLocaleString(applicationLanguage === 'fr' ? 'fr-FR' : applicationLanguage === 'nl' ? 'nl-NL' : 'en-US');
+          const variables = {
+            application_id: emailData.application?.id || 'N/A',
+            submission_date: submissionDate,
+            company_name: emailData.application?.companyName || '',
+            contact_person: emailData.application?.contactPerson || '',
+            email: emailData.application?.email || '',
+            telephone: emailData.application?.telephone || '',
+            address: emailData.application?.address || '',
+            sector: emailData.application?.sector || '',
+            activity_description: emailData.application?.activityDescription || '',
+            annual_turnover: emailData.application?.annualTurnover || '0',
+            top_customers: emailData.application?.topCustomers || ''
+          };
+          const rendered = renderTemplate(applicationTemplate.data, variables);
+          emailResult = await sendEmail({
+            from: fromEmail,
+            to: [emailData.to],
+            subject: emailData.subject || rendered.subject,
+            html: rendered.html,
+            text: emailData.text || rendered.text
+          });
+        } else {
+          throw new Error(`Email template 'credit_insurance_application' not found in database for language '${applicationLanguage}'. Please create the template in the email_templates table.`);
+        }
         break;
         
       case 'credit_insurance_confirmation':
-        // Handle credit insurance confirmation emails to applicants
-        emailResult = await sendEmail({
-          from: fromEmail,
-          to: [emailData.to],
-          subject: emailData.subject,
-          html: generateCreditInsuranceConfirmationEmail(emailData.application),
-          text: emailData.text
-        });
+        // Use database template
+        const confirmationLanguage = emailData.language || 'fr';
+        const confirmationTemplate = await getEmailTemplate('credit_insurance_confirmation', confirmationLanguage, null);
+        if (confirmationTemplate.success) {
+          const submissionDate = new Date().toLocaleString(confirmationLanguage === 'fr' ? 'fr-FR' : confirmationLanguage === 'nl' ? 'nl-NL' : 'en-US');
+          const variables = {
+            application_id: emailData.application?.id || 'N/A',
+            submission_date: submissionDate,
+            company_name: emailData.application?.companyName || '',
+            contact_person: emailData.application?.contactPerson || '',
+            sector: emailData.application?.sector || '',
+            annual_turnover: emailData.application?.annualTurnover || '0',
+            haliqo_company_name: 'Haliqo'
+          };
+          const rendered = renderTemplate(confirmationTemplate.data, variables);
+          emailResult = await sendEmail({
+            from: fromEmail,
+            to: [emailData.to],
+            subject: emailData.subject || rendered.subject,
+            html: rendered.html,
+            text: emailData.text || rendered.text
+          });
+        } else {
+          throw new Error(`Email template 'credit_insurance_confirmation' not found in database for language '${confirmationLanguage}'. Please create the template in the email_templates table.`);
+        }
         break;
 
       case 'subscription_upgraded':
@@ -224,62 +407,51 @@ serve(async (req) => {
         break;
 
       case 'contact_form':
-        // Handle contact form submissions
-        const supportEmail = emailData.support_email || fromEmail;
-        
-        // Map subject values to readable labels
-        const subjectMap: { [key: string]: string } = {
-          'demo': 'Demo Request',
-          'question': 'Product Question',
-          'support': 'Technical Support',
-          'partnership': 'Partnership Proposal',
-          'other': 'Other'
-        };
-        
-        const subjectValue = emailData.subject || '';
-        const contactSubject = subjectMap[subjectValue] || subjectValue || 'New Contact Form Submission';
-        
-        const contactHtml = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #0036ab;">New Contact Form Submission</h2>
-            <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p><strong>Name:</strong> ${emailData.firstName || ''} ${emailData.lastName || ''}</p>
-              <p><strong>Email:</strong> ${emailData.email || ''}</p>
-              <p><strong>Phone:</strong> ${emailData.phone || 'Not provided'}</p>
-              <p><strong>Subject:</strong> ${contactSubject}</p>
-            </div>
-            <div style="background-color: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0;">
-              <h3 style="color: #0036ab; margin-top: 0;">Message:</h3>
-              <p style="white-space: pre-wrap;">${emailData.message || ''}</p>
-            </div>
-            <p style="color: #666; font-size: 12px; margin-top: 20px;">
-              This email was sent from the Haliqo contact form.
-            </p>
-          </div>
-        `;
-        const contactText = `
-New Contact Form Submission
-
-Name: ${emailData.firstName || ''} ${emailData.lastName || ''}
-Email: ${emailData.email || ''}
-Phone: ${emailData.phone || 'Not provided'}
-Subject: ${contactSubject}
-
-Message:
-${emailData.message || ''}
-
----
-This email was sent from the Haliqo contact form.
-        `;
-        
-        emailResult = await sendEmail({
-          from: fromEmail,
-          to: [supportEmail],
-          replyTo: emailData.email || fromEmail,
-          subject: `[Contact Form] ${contactSubject}`,
-          html: contactHtml,
-          text: contactText
-        });
+        // Use database template
+        const contactLanguage = emailData.language || 'fr';
+        const contactTemplate = await getEmailTemplate('contact_form', contactLanguage, null);
+        if (contactTemplate.success) {
+          // Map subject values to readable labels
+          const subjectMap: { [key: string]: { fr: string, en: string, nl: string } } = {
+            'demo': { fr: 'Demande de démo', en: 'Demo Request', nl: 'Demo aanvraag' },
+            'question': { fr: 'Question produit', en: 'Product Question', nl: 'Productvraag' },
+            'support': { fr: 'Support technique', en: 'Technical Support', nl: 'Technische ondersteuning' },
+            'partnership': { fr: 'Proposition de partenariat', en: 'Partnership Proposal', nl: 'Partnerschapsvoorstel' },
+            'other': { fr: 'Autre', en: 'Other', nl: 'Anders' }
+          };
+          
+          const subjectValue = emailData.subject || '';
+          const subjectLabels = subjectMap[subjectValue] || { fr: subjectValue, en: subjectValue, nl: subjectValue };
+          const subjectLabel = subjectLabels[contactLanguage] || subjectLabels['fr'] || subjectValue || 'Nouvelle soumission';
+          
+          const fullName = `${emailData.firstName || ''} ${emailData.lastName || ''}`.trim() || emailData.email || 'Client';
+          const submissionDate = new Date().toLocaleDateString(contactLanguage === 'fr' ? 'fr-FR' : contactLanguage === 'nl' ? 'nl-NL' : 'en-US');
+          
+          const variables = {
+            first_name: emailData.firstName || '',
+            last_name: emailData.lastName || '',
+            full_name: fullName,
+            email: emailData.email || '',
+            phone: emailData.phone || 'Non fourni',
+            subject: subjectValue,
+            subject_label: subjectLabel,
+            message: emailData.message || '',
+            company_name: 'Haliqo',
+            submission_date: submissionDate
+          };
+          const rendered = renderTemplate(contactTemplate.data, variables);
+          const supportEmail = emailData.support_email || fromEmail;
+          emailResult = await sendEmail({
+            from: fromEmail,
+            to: [supportEmail],
+            replyTo: emailData.email || fromEmail,
+            subject: rendered.subject,
+            html: rendered.html,
+            text: rendered.text
+          });
+        } else {
+          throw new Error(`Email template 'contact_form' not found in database for language '${contactLanguage}'. Please create the template in the email_templates table.`);
+        }
         break;
         
       default:
@@ -307,119 +479,7 @@ This email was sent from the Haliqo contact form.
   }
 });
 
-// Email template functions for business logic (artisan communications)
-
-function generateNewLeadNotificationEmail(leadData: any, artisanData: any) {
-  return `
-    <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Nouveau projet disponible</title>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .button { display: inline-block; background: #059669; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <h2>Bonjour ${artisanData?.company_name || artisanData?.name || 'Artisan'},</h2>
-        
-        <p>Un nouveau projet correspondant à vos compétences est disponible.</p>
-        
-        <p><strong>Description :</strong> ${leadData?.project_description || 'Projet'}</p>
-        <p><strong>Localisation :</strong> ${leadData?.city || 'N/A'}, ${leadData?.zip_code || 'N/A'}</p>
-        
-        <div style="text-align: center;">
-          <a href="${leadData?.site_url || 'https://yourdomain.com'}/leads-management" class="button">Voir le projet</a>
-        </div>
-        
-        <p>Bonne chance !<br>
-        L'équipe de votre plateforme</p>
-      </div>
-    </body>
-    </html>
-  `;
-}
-
-function generateLeadAssignmentEmail(leadData: any, artisanData: any) {
-  return `
-    <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Projet assigné avec succès</title>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .button { display: inline-block; background: #7c3aed; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <h2>Bonjour ${artisanData?.company_name || artisanData?.name || 'Artisan'},</h2>
-        
-        <p>Félicitations ! Le projet suivant vous a été assigné avec succès :</p>
-        
-        <p><strong>Description :</strong> ${leadData?.project_description || 'Projet'}</p>
-        <p><strong>Client :</strong> ${leadData?.client_name || 'Client'}</p>
-        
-        <div style="text-align: center;">
-          <a href="${leadData?.site_url || 'https://yourdomain.com'}/leads-management" class="button">Préparer le devis</a>
-        </div>
-        
-        <p>Bonne chance !<br>
-        L'équipe de votre plateforme</p>
-      </div>
-    </body>
-    </html>
-  `;
-}
-
-function generateCustomQuoteEmail(message: string, variables: any) {
-  return `
-    <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Devis ${variables?.quote_number || ''}</title>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .button { display: inline-block; background: #059669; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-        .quote-info { background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <h2>Bonjour ${variables?.client_name || 'Madame, Monsieur'},</h2>
-        
-        <div class="quote-info">
-          <p><strong>Devis :</strong> ${variables?.quote_number || 'N/A'}</p>
-          <p><strong>Projet :</strong> ${variables?.quote_title || 'Votre projet'}</p>
-          <p><strong>Montant :</strong> ${variables?.quote_amount || '0€'}</p>
-          <p><strong>Valable jusqu'au :</strong> ${variables?.valid_until || '30 jours'}</p>
-        </div>
-        
-        <div style="white-space: pre-line;">${message}</div>
-        
-        ${variables?.quote_link && variables.quote_link !== '#' ? `
-        <div style="text-align: center;">
-          <a href="${variables.quote_link}" class="button">Voir le devis</a>
-        </div>
-        ` : ''}
-        
-        <p>Cordialement,<br>
-        ${variables?.company_name || 'Notre équipe'}</p>
-      </div>
-    </body>
-    </html>
-  `;
-}
+// Helper functions for variable replacement in existing HTML templates
 
 function generateFollowUpEmail(html: string, variables: any) {
   // Replace variables in HTML content
@@ -445,156 +505,4 @@ function generateQuoteStatusEmail(html: string, variables: any) {
   return processedHtml;
 }
 
-function generateCreditInsuranceApplicationEmail(application: any) {
-  return `
-    <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Nouvelle demande d'assurance crédit</title>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #1e40af; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
-        .content { background: #f8f9fa; padding: 20px; border-radius: 0 0 8px 8px; }
-        .field { margin: 15px 0; }
-        .field-label { font-weight: bold; color: #1e40af; }
-        .field-value { margin-top: 5px; }
-        .highlight { background: #e0e7ff; padding: 15px; border-radius: 6px; margin: 20px 0; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>Nouvelle demande d'assurance crédit</h1>
-          <p>Une nouvelle demande a été soumise via le formulaire en ligne</p>
-        </div>
-        
-        <div class="content">
-          <div class="highlight">
-            <p><strong>ID de la demande:</strong> ${application.id}</p>
-            <p><strong>Date de soumission:</strong> ${new Date().toLocaleString('fr-FR')}</p>
-          </div>
-          
-          <div class="field">
-            <div class="field-label">Entreprise</div>
-            <div class="field-value">${application.companyName}</div>
-          </div>
-          
-          <div class="field">
-            <div class="field-label">Personne de contact</div>
-            <div class="field-value">${application.contactPerson}</div>
-          </div>
-          
-          <div class="field">
-            <div class="field-label">Email</div>
-            <div class="field-value">${application.email}</div>
-          </div>
-          
-          <div class="field">
-            <div class="field-label">Téléphone</div>
-            <div class="field-value">${application.telephone}</div>
-          </div>
-          
-          <div class="field">
-            <div class="field-label">Adresse</div>
-            <div class="field-value">${application.address}</div>
-          </div>
-          
-          <div class="field">
-            <div class="field-label">Secteur d'activité</div>
-            <div class="field-value">${application.sector}</div>
-          </div>
-          
-          <div class="field">
-            <div class="field-label">Description de l'activité</div>
-            <div class="field-value">${application.activityDescription}</div>
-          </div>
-          
-          <div class="field">
-            <div class="field-label">Chiffre d'affaires annuel</div>
-            <div class="field-value">${application.annualTurnover}€</div>
-          </div>
-          
-          <div class="field">
-            <div class="field-label">Principaux clients B2B</div>
-            <div class="field-value">${application.topCustomers}</div>
-          </div>
-          
-          <p style="margin-top: 30px; padding: 15px; background: #fef3c7; border-radius: 6px; border-left: 4px solid #f59e0b;">
-            <strong>Action requise:</strong> Veuillez examiner cette demande et contacter le client pour une proposition personnalisée.
-          </p>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-}
-
-function generateCreditInsuranceConfirmationEmail(application: any) {
-  return `
-    <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Confirmation de votre demande d'assurance crédit</title>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #059669; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
-        .content { background: #f8f9fa; padding: 20px; border-radius: 0 0 8px 8px; }
-        .highlight { background: #d1fae5; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #059669; }
-        .footer { margin-top: 30px; padding: 20px; background: #f3f4f6; border-radius: 6px; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>Confirmation de votre demande</h1>
-          <p>Nous avons bien reçu votre demande d'assurance crédit</p>
-        </div>
-        
-        <div class="content">
-          <p>Bonjour,</p>
-          
-          <p>Nous avons bien reçu votre demande d'assurance crédit pour l'entreprise <strong>${application.companyName}</strong>.</p>
-          
-          <div class="highlight">
-            <p><strong>Numéro de référence:</strong> ${application.id}</p>
-            <p><strong>Date de soumission:</strong> ${new Date().toLocaleString('fr-FR')}</p>
-          </div>
-          
-          <p>Notre équipe va examiner votre dossier et vous contactera dans les plus brefs délais pour vous proposer une offre personnalisée.</p>
-          
-          <p>En attendant, voici un récapitulatif de votre demande :</p>
-          
-          <ul>
-            <li><strong>Entreprise:</strong> ${application.companyName}</li>
-            <li><strong>Personne de contact:</strong> ${application.contactPerson}</li>
-            <li><strong>Secteur:</strong> ${application.sector}</li>
-            <li><strong>Chiffre d'affaires annuel:</strong> ${application.annualTurnover}€</li>
-          </ul>
-          
-          <div class="footer">
-            <p><strong>Prochaines étapes:</strong></p>
-            <ol>
-              <li>Analyse de votre dossier par nos experts</li>
-              <li>Évaluation des risques et de la solvabilité</li>
-              <li>Proposition personnalisée sous 48-72h</li>
-              <li>Signature du contrat et activation de la garantie</li>
-            </ol>
-          </div>
-          
-          <p>Merci de votre confiance.</p>
-          
-          <p>Cordialement,<br>
-          <strong>L'équipe Haliqo</strong></p>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-}
 

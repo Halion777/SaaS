@@ -41,6 +41,8 @@ const EmailTemplatesManagement = () => {
     is_default: false,
     language: 'fr'
   });
+  const [editingLanguage, setEditingLanguage] = useState('fr'); // Language for editing template
+  const [isLoadingLanguage, setIsLoadingLanguage] = useState(false); // Loading state for language switch
 
   // Handle sidebar offset for responsive layout
   React.useEffect(() => {
@@ -200,7 +202,16 @@ const EmailTemplatesManagement = () => {
       'subscription_downgraded': 'Subscription Downgraded',
       'subscription_cancelled': 'Subscription Cancelled',
       'subscription_activated': 'Subscription Activated',
-      'subscription_trial_ending': 'Trial Ending'
+      'subscription_trial_ending': 'Trial Ending',
+      'contact_form': 'Contact Form',
+      'credit_insurance_application': 'Credit Insurance Application',
+      'credit_insurance_confirmation': 'Credit Insurance Confirmation',
+      'new_lead_available': 'New Lead Available',
+      'lead_assigned': 'Lead Assigned',
+      'custom_quote_sent': 'Custom Quote Sent',
+      'invoice_overdue_reminder': 'Invoice Overdue Reminder',
+      'invoice_payment_reminder': 'Invoice Payment Reminder',
+      'overdue': 'Overdue'
     };
     return typeNames[type] || type;
   };
@@ -219,17 +230,38 @@ const EmailTemplatesManagement = () => {
       'subscription_downgraded': 'bg-amber-100 text-amber-800',
       'subscription_cancelled': 'bg-red-100 text-red-800',
       'subscription_activated': 'bg-green-100 text-green-800',
-      'subscription_trial_ending': 'bg-indigo-100 text-indigo-800'
+      'subscription_trial_ending': 'bg-indigo-100 text-indigo-800',
+      'contact_form': 'bg-cyan-100 text-cyan-800',
+      'credit_insurance_application': 'bg-blue-100 text-blue-800',
+      'credit_insurance_confirmation': 'bg-teal-100 text-teal-800',
+      'new_lead_available': 'bg-lime-100 text-lime-800',
+      'lead_assigned': 'bg-violet-100 text-violet-800',
+      'custom_quote_sent': 'bg-sky-100 text-sky-800',
+      'invoice_overdue_reminder': 'bg-rose-100 text-rose-800',
+      'invoice_payment_reminder': 'bg-yellow-100 text-yellow-800',
+      'overdue': 'bg-red-200 text-red-900'
     };
     return colors[type] || 'bg-gray-100 text-gray-800';
   };
 
   // Handle template edit
-  const handleEditTemplate = (template) => {
+  const handleEditTemplate = async (template) => {
+    // Reload templates to ensure we have the latest data
+    await loadTemplates();
+    
+    // Parse variables if needed
+    const parsedVariables = typeof template.variables === 'string' 
+      ? (template.variables ? JSON.parse(template.variables) : {})
+      : (template.variables || {});
+    
     setEditingTemplate({
       ...template,
-      variables: typeof template.variables === 'string' ? JSON.parse(template.variables) : template.variables
+      variables: parsedVariables,
+      html_content: template.html_content || '',
+      text_content: template.text_content || '',
+      subject: template.subject || ''
     });
+    setEditingLanguage(template.language || 'fr');
     setIsEditModalOpen(true);
   };
 
@@ -252,6 +284,7 @@ const EmailTemplatesManagement = () => {
       is_default: false,
       language: 'fr'
     });
+    setEditingLanguage('fr');
     setIsCreateModalOpen(true);
   };
 
@@ -260,6 +293,7 @@ const EmailTemplatesManagement = () => {
     try {
       const templateData = {
         ...editingTemplate,
+        language: editingLanguage, // Use the selected language from tabs
         variables: JSON.stringify(editingTemplate.variables)
       };
 
@@ -297,30 +331,131 @@ const EmailTemplatesManagement = () => {
         is_default: false,
         language: 'fr'
       });
+      setEditingLanguage('fr');
     } catch (error) {
       console.error('Error saving template:', error);
       alert('Error saving template. Please try again.');
     }
   };
 
-  // Delete template
-  const handleDeleteTemplate = async (templateId) => {
-    if (!confirm('Are you sure you want to delete this template?')) return;
+  // Load template for specific language when switching tabs
+  const handleLanguageSwitch = async (lang) => {
+    // Don't switch if already on this language
+    if (editingLanguage === lang) {
+      return;
+    }
 
+    if (!editingTemplate.template_type) {
+      // No template type selected yet, just switch language
+      setEditingLanguage(lang);
+      setEditingTemplate(prev => ({
+        ...prev,
+        language: lang
+      }));
+      return;
+    }
+
+    setIsLoadingLanguage(true);
+
+    // Fetch template directly from database for this type and language
     try {
-      const { error } = await supabase
+      const templateType = editingTemplate.template_type;
+      
+      // RLS is disabled, so we can query directly without any special conditions
+      // Fetch the specific template for this language
+      const { data: existingTemplate, error } = await supabase
         .from('email_templates')
-        .delete()
-        .eq('id', templateId);
+        .select('*')
+        .eq('template_type', templateType)
+        .eq('language', lang)
+        .maybeSingle();
+      
+      
+      // Also fetch all templates for this type for debugging
+      const { data: allTemplatesForType, error: listError } = await supabase
+        .from('email_templates')
+        .select('id, language, template_type, template_name')
+        .eq('template_type', templateType)
+        .order('language');
+   
+      if (listError) {
+        console.error('Error fetching template list:', listError);
+      }
 
-      if (error) throw error;
+     
 
-      await loadTemplates();
+      if (error) {
+        // PGRST116 is "no rows returned" which is fine if template doesn't exist
+        if (error.code !== 'PGRST116') {
+          console.error('Error fetching template:', error);
+          alert(`Error loading template: ${error.message}`);
+        }
+      }
+
+      if (existingTemplate) {
+        // Load existing template for this language - replace ALL fields explicitly
+        const parsedVariables = typeof existingTemplate.variables === 'string' 
+          ? (existingTemplate.variables ? JSON.parse(existingTemplate.variables) : {})
+          : (existingTemplate.variables || {});
+        
+        // Explicitly set all fields to ensure they update - use null coalescing for all fields
+        const updatedTemplate = {
+          id: existingTemplate.id,
+          template_name: existingTemplate.template_name ?? '',
+          template_type: existingTemplate.template_type ?? templateType,
+          subject: existingTemplate.subject ?? '',
+          html_content: existingTemplate.html_content ?? '',
+          text_content: existingTemplate.text_content ?? '',
+          variables: parsedVariables,
+          is_active: existingTemplate.is_active ?? true,
+          is_default: existingTemplate.is_default ?? false,
+          language: lang
+        };
+        
+       
+        
+        // Use setTimeout to ensure state update happens after current render cycle
+        setTimeout(() => {
+          setEditingTemplate(updatedTemplate);
+          setEditingLanguage(lang);
+        }, 0);
+      } else {
+        // No template exists for this language - create new empty template data
+        // Keep only the template_type, clear all content fields
+        const baseTemplateName = getTemplateTypeName(templateType);
+        const emptyTemplate = {
+          template_name: baseTemplateName,
+          template_type: templateType,
+          subject: '',
+          html_content: '',
+          text_content: '',
+          variables: {},
+          is_active: true,
+          is_default: false,
+          language: lang,
+          id: undefined // Remove ID so it creates a new template
+        };
+       
+        setTimeout(() => {
+          setEditingTemplate(emptyTemplate);
+          setEditingLanguage(lang);
+        }, 0);
+      }
     } catch (error) {
-      console.error('Error deleting template:', error);
-      alert('Error deleting template. Please try again.');
+      console.error('Error in handleLanguageSwitch:', error);
+      alert(`Error switching language: ${error.message}`);
+      // Fallback: just switch language without loading template
+      setEditingLanguage(lang);
+      setEditingTemplate(prev => ({
+        ...prev,
+        language: lang
+      }));
+    } finally {
+      setIsLoadingLanguage(false);
     }
   };
+
+  // Delete template function removed - delete functionality disabled
 
   // Toggle template active status
   const handleToggleActive = async (template) => {
@@ -419,21 +554,34 @@ const EmailTemplatesManagement = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">Type</label>
-                <Select
-                  value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value)}
-                  options={[
-                    { value: 'all', label: 'All Types' },
-                    { value: 'client_accepted', label: 'Client Accepted' },
-                    { value: 'quote_sent', label: 'Quote Sent' },
-                    { value: 'followup_viewed_no_action', label: 'Follow-up - Viewed' },
-                    { value: 'welcome_client', label: 'Welcome Client' },
-                    { value: 'general_followup', label: 'General Follow-up' },
-                    { value: 'client_rejected', label: 'Client Rejected' },
-                    { value: 'followup_not_viewed', label: 'Follow-up - Not Viewed' }
-                  ]}
-                  className="w-full"
-                />
+                    <Select
+                      value={typeFilter}
+                      onChange={(e) => setTypeFilter(e.target.value)}
+                      options={[
+                        { value: 'all', label: 'All Types' },
+                        { value: 'client_accepted', label: 'Client Accepted' },
+                        { value: 'quote_sent', label: 'Quote Sent' },
+                        { value: 'followup_viewed_no_action', label: 'Follow-up - Viewed' },
+                        { value: 'welcome_client', label: 'Welcome Client' },
+                        { value: 'general_followup', label: 'General Follow-up' },
+                        { value: 'client_rejected', label: 'Client Rejected' },
+                        { value: 'followup_not_viewed', label: 'Follow-up - Not Viewed' },
+                        { value: 'subscription_upgraded', label: 'Subscription Upgraded' },
+                        { value: 'subscription_downgraded', label: 'Subscription Downgraded' },
+                        { value: 'subscription_cancelled', label: 'Subscription Cancelled' },
+                        { value: 'subscription_activated', label: 'Subscription Activated' },
+                        { value: 'subscription_trial_ending', label: 'Trial Ending' },
+                        { value: 'contact_form', label: 'Contact Form' },
+                        { value: 'credit_insurance_application', label: 'Credit Insurance Application' },
+                        { value: 'credit_insurance_confirmation', label: 'Credit Insurance Confirmation' },
+                        { value: 'new_lead_available', label: 'New Lead Available' },
+                        { value: 'lead_assigned', label: 'Lead Assigned' },
+                        { value: 'custom_quote_sent', label: 'Custom Quote Sent' },
+                        { value: 'invoice_overdue_reminder', label: 'Invoice Overdue Reminder' },
+                        { value: 'overdue', label: 'Overdue' }
+                      ]}
+                      className="w-full"
+                    />
               </div>
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">Language</label>
@@ -589,14 +737,6 @@ const EmailTemplatesManagement = () => {
                           >
                             <Icon name="Edit" size={14} />
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteTemplate(template.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Icon name="Trash2" size={14} />
-                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -674,20 +814,11 @@ const EmailTemplatesManagement = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleToggleActive(template.id)}
+                          onClick={() => handleToggleActive(template)}
                           className="h-8 px-2"
                           title={template.is_active ? 'Deactivate' : 'Activate'}
                         >
                           <Icon name={template.is_active ? "EyeOff" : "Eye"} size={14} />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteTemplate(template.id)}
-                          className="h-8 px-2 text-red-600 hover:text-red-700"
-                          title="Delete"
-                        >
-                          <Icon name="Trash2" size={14} />
                         </Button>
                       </div>
                     </div>
@@ -770,7 +901,8 @@ const EmailTemplatesManagement = () => {
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">Template Name</label>
                     <Input
-                      value={editingTemplate.template_name}
+                      key={`name-${editingLanguage}-${editingTemplate.template_type}`}
+                      value={editingTemplate.template_name || ''}
                       onChange={(e) => setEditingTemplate({...editingTemplate, template_name: e.target.value})}
                       placeholder="Enter template name"
                     />
@@ -792,7 +924,15 @@ const EmailTemplatesManagement = () => {
                         { value: 'subscription_downgraded', label: 'Subscription Downgraded' },
                         { value: 'subscription_cancelled', label: 'Subscription Cancelled' },
                         { value: 'subscription_activated', label: 'Subscription Activated' },
-                        { value: 'subscription_trial_ending', label: 'Trial Ending' }
+                        { value: 'subscription_trial_ending', label: 'Trial Ending' },
+                        { value: 'contact_form', label: 'Contact Form' },
+                        { value: 'credit_insurance_application', label: 'Credit Insurance Application' },
+                        { value: 'credit_insurance_confirmation', label: 'Credit Insurance Confirmation' },
+                        { value: 'new_lead_available', label: 'New Lead Available' },
+                        { value: 'lead_assigned', label: 'Lead Assigned' },
+                        { value: 'custom_quote_sent', label: 'Custom Quote Sent' },
+                        { value: 'invoice_overdue_reminder', label: 'Invoice Overdue Reminder' },
+                        
                       ]}
                     />
                   </div>
@@ -801,7 +941,8 @@ const EmailTemplatesManagement = () => {
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">Subject</label>
                   <Input
-                    value={editingTemplate.subject}
+                    key={`subject-${editingLanguage}-${editingTemplate.template_type}`}
+                    value={editingTemplate.subject || ''}
                     onChange={(e) => setEditingTemplate({...editingTemplate, subject: e.target.value})}
                     placeholder="Enter email subject"
                   />
@@ -810,7 +951,8 @@ const EmailTemplatesManagement = () => {
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">HTML Content</label>
                   <textarea
-                    value={editingTemplate.html_content}
+                    key={`html-${editingLanguage}-${editingTemplate.template_type}`}
+                    value={editingTemplate.html_content || ''}
                     onChange={(e) => setEditingTemplate({...editingTemplate, html_content: e.target.value})}
                     placeholder="Enter HTML content"
                     className="w-full h-64 p-3 border border-border rounded-lg bg-background text-foreground"
@@ -820,46 +962,58 @@ const EmailTemplatesManagement = () => {
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">Text Content</label>
                   <textarea
-                    value={editingTemplate.text_content}
+                    key={`text-${editingLanguage}-${editingTemplate.template_type}`}
+                    value={editingTemplate.text_content || ''}
                     onChange={(e) => setEditingTemplate({...editingTemplate, text_content: e.target.value})}
                     placeholder="Enter text content"
                     className="w-full h-32 p-3 border border-border rounded-lg bg-background text-foreground"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Language</label>
-                    <Select
-                      value={editingTemplate.language}
-                      onChange={(e) => setEditingTemplate({...editingTemplate, language: e.target.value})}
-                      options={[
-                        { value: 'fr', label: 'French' },
-                        { value: 'en', label: 'English' },
-                        { value: 'nl', label: 'Dutch' }
-                      ]}
+                {/* Language Selection Tabs */}
+                <div className="mb-6 p-4 bg-muted/30 rounded-lg border border-border">
+                  <label className="block text-sm font-medium text-foreground mb-3">Select Language</label>
+                  <div className="flex gap-2">
+                    {[
+                      { code: 'fr', name: 'French', flag: '🇫🇷' },
+                      { code: 'en', name: 'English', flag: '🇬🇧' },
+                      { code: 'nl', name: 'Dutch', flag: '🇳🇱' }
+                    ].map((lang) => (
+                      <button
+                        key={lang.code}
+                        type="button"
+                        onClick={() => handleLanguageSwitch(lang.code)}
+                        disabled={isLoadingLanguage}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                          editingLanguage === lang.code
+                            ? 'bg-primary text-white border-primary'
+                            : 'bg-card text-foreground border-border hover:border-primary/50'
+                        } ${isLoadingLanguage ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                      >
+                        <span className="text-lg">{lang.flag}</span>
+                        <span className="text-sm font-medium">{lang.name}</span>
+                        {isLoadingLanguage && editingLanguage === lang.code && (
+                          <span className="ml-2 text-xs">Loading...</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Editing template for {editingLanguage === 'fr' ? 'French' : editingLanguage === 'en' ? 'English' : 'Dutch'}
+                    {isLoadingLanguage && ' (Loading...)'}
+                  </p>
+                </div>
+
+                <div className="flex items-center">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={editingTemplate.is_active}
+                      onChange={(e) => setEditingTemplate({...editingTemplate, is_active: e.target.checked})}
+                      className="mr-2"
                     />
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={editingTemplate.is_active}
-                        onChange={(e) => setEditingTemplate({...editingTemplate, is_active: e.target.checked})}
-                        className="mr-2"
-                      />
-                      <span className="text-sm text-foreground">Active</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={editingTemplate.is_default}
-                        onChange={(e) => setEditingTemplate({...editingTemplate, is_default: e.target.checked})}
-                        className="mr-2"
-                      />
-                      <span className="text-sm text-foreground">Default</span>
-                    </label>
-                  </div>
+                    <span className="text-sm text-foreground">Active</span>
+                  </label>
                 </div>
               </div>
             </div>
