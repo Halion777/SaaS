@@ -213,7 +213,13 @@ const QuoteCreation = () => {
 
         setSelectedClient(d.selectedClient || null);
 
-        setProjectInfo(d.projectInfo || { categories: [], customCategory: '', deadline: '', description: '' });
+        // Restore projectInfo with quote number from draft (check both draft_data and quote_number column)
+        const draftQuoteNumber = data.quote_number || d.projectInfo?.quoteNumber;
+        const restoredProjectInfo = {
+          ...(d.projectInfo || { categories: [], customCategory: '', deadline: '', description: '' }),
+          quoteNumber: draftQuoteNumber || d.projectInfo?.quoteNumber
+        };
+        setProjectInfo(restoredProjectInfo);
 
         setTasks(d.tasks || []);
 
@@ -245,20 +251,23 @@ const QuoteCreation = () => {
 
         // Use quote number for draft key if available
         const quoteNumber = d.projectInfo?.quoteNumber;
+        const fallbackKey = `quote-draft-${user.id}-${currentProfile?.id || 'default'}`;
+        const fallbackRowIdKey = `quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`;
+        
         if (quoteNumber) {
           const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
           const draftRowIdKey = getDraftRowIdKeyByQuoteNumber(quoteNumber);
 
           // Persist as current draft for continuity
-
           try { localStorage.setItem(draftKey, JSON.stringify(d)); } catch { }
           // Bind this editing session to the backend draft row id so autosave updates the same row
-
           try { localStorage.setItem(draftRowIdKey, data.id); } catch { }
+          // Also store in fallback key for consistency
+          try { localStorage.setItem(fallbackRowIdKey, data.id); } catch { }
         } else {
           // Fallback to user-based keys
-          try { localStorage.setItem(`quote-draft-${user.id}-${currentProfile?.id || 'default'}`, JSON.stringify(d)); } catch { }
-          try { localStorage.setItem(`quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`, data.id); } catch { }
+          try { localStorage.setItem(fallbackKey, JSON.stringify(d)); } catch { }
+          try { localStorage.setItem(fallbackRowIdKey, data.id); } catch { }
         }
       } catch (err) {
 
@@ -1048,39 +1057,117 @@ const QuoteCreation = () => {
 
 
 
-        // Also save to backend draft table for cross-device and quotes-management visibility
+        // If editing an existing quote (draft or final status), update the quote directly
+        // Otherwise, save to backend draft table for cross-device and quotes-management visibility
 
         try {
 
           if (user?.id) {
 
-            // Use quote number for unique draft identification if available
-            const quoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
-            const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
-            const draftRowIdKey = getDraftRowIdKeyByQuoteNumber(quoteNumber);
+            // Check if we're editing an existing quote
+            if (isEditing && editingQuoteId) {
+              // Update the existing quote directly instead of creating a draft
+              const totalAmount = tasks.reduce((sum, task) => {
+                const taskMaterialsTotal = task.materials.reduce((matSum, mat) =>
+                  matSum + (mat.price * parseFloat(mat.quantity || 1)), 0);
+                return sum + (task.price || 0) + taskMaterialsTotal;
+              }, 0);
 
-            const existingRowId = localStorage.getItem(draftRowIdKey);
-            const { data: saved, error: draftErr } = await saveQuoteDraft({
+              const depositAmount = financialConfig?.advanceConfig?.enabled 
+                ? parseFloat(financialConfig.advanceConfig.amount || 0)
+                : 0;
 
-              id: existingRowId || undefined,
+              const quoteUpdateData = {
+                title: projectInfo.description || 'Nouveau devis',
+                description: projectInfo.description || '',
+                project_categories: projectInfo.categories || [],
+                custom_category: projectInfo.customCategory || '',
+                deadline: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : null,
+                total_amount: totalAmount,
+                tax_amount: financialConfig?.vatConfig?.display ? (totalAmount * (financialConfig.vatConfig.rate || 20) / 100) : 0,
+                discount_amount: 0,
+                final_amount: totalAmount + (financialConfig?.vatConfig?.display ? (totalAmount * (financialConfig.vatConfig.rate || 20) / 100) : 0),
+                advance_payment_amount: depositAmount,
+                vat_config: financialConfig?.vatConfig || null,
+                marketing_banner: financialConfig?.marketingBannerConfig || null,
+                valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                terms_conditions: financialConfig?.defaultConditions?.text || '',
+                quote_number: projectInfo.quoteNumber, // Preserve quote number
+                tasks: tasks.map((task, index) => ({
+                  name: task.description || task.name || '',
+                  description: task.description || task.name || '',
+                  quantity: task.quantity || 1,
+                  unit: task.unit || 'piece',
+                  unit_price: task.price || task.unit_price || 0,
+                  total_price: (task.price || task.unit_price || 0) * (task.quantity || 1),
+                  duration: task.duration || 0,
+                  duration_unit: task.durationUnit || 'minutes',
+                  pricing_type: task.pricingType || 'flat',
+                  hourly_rate: task.hourlyRate || 0,
+                  order_index: index,
+                  materials: task.materials || []
+                })),
+                files: files.map((file, index) => ({
+                  file_name: file.name || file.file_name || '',
+                  file_path: file.path || file.file_path || file.url || '',
+                  file_size: file.size || file.file_size || 0,
+                  mime_type: file.type || file.mime_type || '',
+                  file_category: 'attachment',
+                  order_index: index
+                }))
+              };
 
-              user_id: user.id,
+              // Update the quote in the backend
+              const { error: updateError } = await updateQuote(editingQuoteId, quoteUpdateData);
+              
+              if (updateError) {
+                console.warn('Auto-save: Error updating quote:', updateError);
+              } else {
+                console.log('Auto-save: Quote updated successfully');
+              }
+            } else {
+              // Not editing an existing quote - save to draft table
+              // Use quote number for unique draft identification if available
+              const quoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
+              const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
+              const draftRowIdKey = getDraftRowIdKeyByQuoteNumber(quoteNumber);
 
-              profile_id: currentProfile?.id || null,
+              const existingRowId = localStorage.getItem(draftRowIdKey);
+              
+              // Also check fallback user-based key if quote number is not available
+              const fallbackRowIdKey = `quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`;
+              const fallbackRowId = !quoteNumber ? localStorage.getItem(fallbackRowIdKey) : null;
+              
+              // Use existing row ID if available (from quote number key or fallback key)
+              const rowIdToUse = existingRowId || fallbackRowId;
+              
+              const { data: saved, error: draftErr } = await saveQuoteDraft({
 
-              draft_data: quoteData,
-              // Add quote number to draft data for better identification
-              quote_number: quoteNumber || null
-            });
+                id: rowIdToUse || undefined,
 
-            if (!draftErr && saved?.id && !existingRowId) {
+                user_id: user.id,
 
-              localStorage.setItem(draftRowIdKey, saved.id);
+                profile_id: currentProfile?.id || null,
+
+                draft_data: quoteData,
+                // Add quote number to draft data for better identification
+                quote_number: quoteNumber || null
+              });
+
+              // Store the row ID in both keys for future reference
+              if (!draftErr && saved?.id) {
+                if (quoteNumber) {
+                  localStorage.setItem(draftRowIdKey, saved.id);
+                }
+                // Also store in fallback key for cases where quote number isn't set yet
+                if (!rowIdToUse) {
+                  localStorage.setItem(fallbackRowIdKey, saved.id);
+                }
+              }
+
+              // Client signature is only saved to localStorage during auto-save
+              // It will be saved to quote_signatures table when explicitly saving or sending the quote
             }
-
-
-            // Client signature is only saved to localStorage during auto-save
-            // It will be saved to quote_signatures table when explicitly saving or sending the quote
           }
 
         } catch (e) {
@@ -1123,7 +1210,7 @@ const QuoteCreation = () => {
 
     };
 
-  }, [selectedClient, projectInfo, tasks, files, currentStep, companyInfo, financialConfig, user?.id, currentProfile?.id]);
+  }, [selectedClient, projectInfo, tasks, files, currentStep, companyInfo, financialConfig, user?.id, currentProfile?.id, isEditing, editingQuoteId]);
 
 
 
@@ -1452,7 +1539,7 @@ const QuoteCreation = () => {
 
 
 
-  const handleNext = () => {
+  const handleNext = async () => {
     // Prevent moving to next step if files are uploading
     if (isFileUploading) {
       return;
@@ -1495,11 +1582,46 @@ const QuoteCreation = () => {
       localStorage.setItem(draftKey, JSON.stringify(quoteData));
       setLastSaved(savedTime);
 
+      // Save to backend draft table on navigation (if not editing an existing quote)
+      if (user?.id && !isEditing && !editingQuoteId) {
+        try {
+          const draftRowIdKey = getDraftRowIdKeyByQuoteNumber(quoteNumber);
+          const existingRowId = localStorage.getItem(draftRowIdKey);
+          
+          // Also check fallback user-based key if quote number is not available
+          const fallbackRowIdKey = `quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`;
+          const fallbackRowId = !quoteNumber ? localStorage.getItem(fallbackRowIdKey) : null;
+          
+          // Use existing row ID if available (from quote number key or fallback key)
+          const rowIdToUse = existingRowId || fallbackRowId;
+          
+          const { data: saved, error: draftErr } = await saveQuoteDraft({
+            id: rowIdToUse || undefined,
+            user_id: user.id,
+            profile_id: currentProfile?.id || null,
+            draft_data: quoteData,
+            quote_number: quoteNumber || null
+          });
 
+          // Store the row ID in both keys for future reference
+          if (!draftErr && saved?.id) {
+            if (quoteNumber) {
+              localStorage.setItem(draftRowIdKey, saved.id);
+            }
+            // Also store in fallback key for cases where quote number isn't set yet
+            if (!rowIdToUse) {
+              localStorage.setItem(fallbackRowIdKey, saved.id);
+            }
+          }
+        } catch (e) {
+          console.warn('Draft save on navigation failed:', e?.message || e);
+        }
+      }
 
-      // If moving to step 4 (preview), generate quote number
+      // If moving to step 4 (preview), generate quote number only if it doesn't exist
+      // Don't generate if we're editing or if a quote number already exists (e.g., from a resumed draft)
 
-      if (currentStep === 3) {
+      if (currentStep === 3 && !isEditing && !editingQuoteId && !projectInfo.quoteNumber) {
 
         generateQuoteNumberForPreview();
 
@@ -1515,7 +1637,7 @@ const QuoteCreation = () => {
 
 
 
-  const handlePrevious = () => {
+  const handlePrevious = async () => {
 
     if (currentStep > 1) {
 
@@ -1564,6 +1686,42 @@ const QuoteCreation = () => {
       const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
       localStorage.setItem(draftKey, JSON.stringify(quoteData));
       setLastSaved(savedTime);
+
+      // Save to backend draft table on navigation (if not editing an existing quote)
+      if (user?.id && !isEditing && !editingQuoteId) {
+        try {
+          const draftRowIdKey = getDraftRowIdKeyByQuoteNumber(quoteNumber);
+          const existingRowId = localStorage.getItem(draftRowIdKey);
+          
+          // Also check fallback user-based key if quote number is not available
+          const fallbackRowIdKey = `quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`;
+          const fallbackRowId = !quoteNumber ? localStorage.getItem(fallbackRowIdKey) : null;
+          
+          // Use existing row ID if available (from quote number key or fallback key)
+          const rowIdToUse = existingRowId || fallbackRowId;
+          
+          const { data: saved, error: draftErr } = await saveQuoteDraft({
+            id: rowIdToUse || undefined,
+            user_id: user.id,
+            profile_id: currentProfile?.id || null,
+            draft_data: quoteData,
+            quote_number: quoteNumber || null
+          });
+
+          // Store the row ID in both keys for future reference
+          if (!draftErr && saved?.id) {
+            if (quoteNumber) {
+              localStorage.setItem(draftRowIdKey, saved.id);
+            }
+            // Also store in fallback key for cases where quote number isn't set yet
+            if (!rowIdToUse) {
+              localStorage.setItem(fallbackRowIdKey, saved.id);
+            }
+          }
+        } catch (e) {
+          console.warn('Draft save on navigation failed:', e?.message || e);
+        }
+      }
 
 
 
@@ -1628,8 +1786,10 @@ const QuoteCreation = () => {
       setIsSaving(true);
 
 
-      // Manual save to backend draft table with complete data
-      if (user?.id) {
+      // Manual save: If editing an existing quote, skip draft table and update quote directly
+      // Otherwise, save to draft table
+      if (user?.id && !isEditing && !editingQuoteId) {
+        // Only save to draft table if we're NOT editing an existing quote
         // Force a complete auto-save with all signature data before proceeding
         const savedTime = new Date().toISOString();
         const completeDraftData = {
@@ -1818,12 +1978,14 @@ const QuoteCreation = () => {
 
       }
 
-
+      // Check if we're editing a draft (has quote number but not a saved quote yet)
+      // In this case, we still need to create a quote in the quotes table and clean up the draft
+      // So we continue with the quote creation flow below
 
       // Create new quote (existing logic)
 
-      // Check for pre-generated quote number first
-      let finalQuoteNumber = localStorage.getItem('pre_generated_quote_number');
+      // Check for pre-generated quote number first, or use existing quote number from draft
+      let finalQuoteNumber = localStorage.getItem('pre_generated_quote_number') || projectInfo.quoteNumber;
 
       if (!finalQuoteNumber) {
         // Generate quote number using the service
@@ -2765,8 +2927,8 @@ const QuoteCreation = () => {
 
       // Create new quote (existing logic)
 
-      // Check for pre-generated quote number first
-      let finalQuoteNumber = localStorage.getItem('pre_generated_quote_number');
+      // Check for pre-generated quote number first, or use existing quote number from draft
+      let finalQuoteNumber = localStorage.getItem('pre_generated_quote_number') || projectInfo.quoteNumber;
 
       if (!finalQuoteNumber) {
         // Generate quote number using the service
@@ -3703,7 +3865,7 @@ const QuoteCreation = () => {
 
 
 
-  const handleStepChange = (newStep) => {
+  const handleStepChange = async (newStep) => {
 
     // Validation functions matching the component validation logic
 
@@ -3818,6 +3980,42 @@ const QuoteCreation = () => {
       localStorage.setItem(draftKey, JSON.stringify(quoteData));
       setLastSaved(savedTime);
 
+      // Save to backend draft table on navigation (if not editing an existing quote)
+      if (user?.id && !isEditing && !editingQuoteId) {
+        try {
+          const draftRowIdKey = getDraftRowIdKeyByQuoteNumber(quoteNumber);
+          const existingRowId = localStorage.getItem(draftRowIdKey);
+          
+          // Also check fallback user-based key if quote number is not available
+          const fallbackRowIdKey = `quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`;
+          const fallbackRowId = !quoteNumber ? localStorage.getItem(fallbackRowIdKey) : null;
+          
+          // Use existing row ID if available (from quote number key or fallback key)
+          const rowIdToUse = existingRowId || fallbackRowId;
+          
+          const { data: saved, error: draftErr } = await saveQuoteDraft({
+            id: rowIdToUse || undefined,
+            user_id: user.id,
+            profile_id: currentProfile?.id || null,
+            draft_data: quoteData,
+            quote_number: quoteNumber || null
+          });
+
+          // Store the row ID in both keys for future reference
+          if (!draftErr && saved?.id) {
+            if (quoteNumber) {
+              localStorage.setItem(draftRowIdKey, saved.id);
+            }
+            // Also store in fallback key for cases where quote number isn't set yet
+            if (!rowIdToUse) {
+              localStorage.setItem(fallbackRowIdKey, saved.id);
+            }
+          }
+        } catch (e) {
+          console.warn('Draft save on step change failed:', e?.message || e);
+        }
+      }
+
 
 
       setCurrentStep(newStep);
@@ -3875,6 +4073,15 @@ const QuoteCreation = () => {
   const generateQuoteNumberForPreview = async () => {
 
     try {
+      // Don't generate quote number if we're editing an existing quote
+      if (isEditing || editingQuoteId) {
+        return;
+      }
+
+      // Don't generate if we already have a quote number (e.g., from a resumed draft)
+      if (projectInfo.quoteNumber) {
+        return;
+      }
 
       // First check if we already have a pre-generated number from client selection
       const preGeneratedNumber = localStorage.getItem('pre_generated_quote_number');
@@ -4230,9 +4437,8 @@ const QuoteCreation = () => {
 
       case 4:
 
-        // Ensure quote number exists for preview
-
-        if (!projectInfo.quoteNumber && user?.id) {
+        // Ensure quote number exists for preview (only for new quotes, not when editing)
+        if (!projectInfo.quoteNumber && user?.id && !isEditing && !editingQuoteId) {
 
           // Check for pre-generated quote number first
           const preGeneratedNumber = localStorage.getItem('pre_generated_quote_number');
@@ -4243,7 +4449,7 @@ const QuoteCreation = () => {
             }));
             localStorage.removeItem('pre_generated_quote_number');
           } else {
-            // Generate quote number if it doesn't exist
+            // Generate quote number if it doesn't exist (only for new quotes)
 
             setTimeout(() => generateQuoteNumberForPreview(), 100);
 

@@ -45,7 +45,7 @@ const QuotesManagement = () => {
   const [stats, setStats] = useState({
     total: 0,
     drafts: 0,
-    sent: 0,
+    converted: 0,
     viewed: 0,
     accepted: 0,
     rejected: 0,
@@ -221,18 +221,76 @@ const QuotesManagement = () => {
         // Fetch quotes (after expiration check)
         const { data: quotesData, error: quotesError } = await fetchQuotes(user.id);
         
-        // If none in quotes yet, try showing a draft placeholder
-        if (!quotesData || quotesData.length === 0) {
-          try {
-            const { data: draft, error: draftError } = await loadQuoteDraft(user.id, currentProfile?.id || null);
-            if (draftError) {
-              console.log('QuotesManagement: loadQuoteDraft error', draftError);
+        // Process auto-saved drafts:
+        // 1. Display drafts that are NOT expired and NOT for quotes in final states
+        // 2. Delete drafts that are expired or for quotes in final states
+        // Note: Process drafts even if there are no quotes yet, so all valid drafts are shown
+        const additionalDrafts = [];
+        const draftsToDelete = []; // Track drafts that should be deleted
+        try {
+          const { data: drafts } = await listQuoteDrafts(user.id, currentProfile?.id || null);
+          
+          // Create a map of quote numbers to their statuses for quick lookup
+          const quoteStatusMap = {};
+          (quotesData || []).forEach(quote => {
+            if (quote.quote_number) {
+              quoteStatusMap[quote.quote_number] = quote.status;
             }
-            if (draft?.draft_data) {
-              const d = draft.draft_data;
-              const placeholder = {
+          });
+          
+          // Check if a draft is expired based on valid_until date
+          const isDraftExpired = (validUntilDate) => {
+            if (!validUntilDate) return false;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            let validUntil;
+            if (typeof validUntilDate === 'string') {
+              if (validUntilDate.includes('T')) {
+                validUntil = new Date(validUntilDate);
+              } else {
+                const [year, month, day] = validUntilDate.split('-').map(Number);
+                validUntil = new Date(year, month - 1, day);
+              }
+            } else {
+              validUntil = new Date(validUntilDate);
+            }
+            validUntil.setHours(0, 0, 0, 0);
+            return validUntil < today;
+          };
+          
+          (drafts || []).forEach(draft => {
+            const d = draft.draft_data || {};
+            const draftQuoteNumber = draft.quote_number;
+            const validUntil = d.projectInfo?.deadline || null;
+            
+            let shouldExclude = false;
+            let shouldDelete = false;
+            
+            // 1. Check if there's a corresponding quote with final status
+            if (draftQuoteNumber && quoteStatusMap[draftQuoteNumber]) {
+              const quoteStatus = quoteStatusMap[draftQuoteNumber];
+              if (['sent', 'accepted', 'rejected', 'expired'].includes(quoteStatus)) {
+                shouldExclude = true;
+                shouldDelete = true; // Delete draft if quote is in final state
+              }
+            }
+            
+            // 2. Check if draft has passed valid_until date
+            if (!shouldExclude && validUntil && isDraftExpired(validUntil)) {
+              shouldExclude = true;
+              shouldDelete = true; // Delete expired drafts
+            }
+            
+            // Track drafts to delete
+            if (shouldDelete) {
+              draftsToDelete.push(draft.id);
+            }
+            
+            // Only add draft if it should be displayed (not excluded)
+            if (!shouldExclude) {
+              additionalDrafts.push({
                 id: `draft-${draft.id}`,
-                number: t('quotesManagement.draft.unsentDraft'),
+                number: draftQuoteNumber || t('quotesManagement.draft.unsentDraft'),
                 clientName: d.selectedClient?.client?.name || d.selectedClient?.label || d.selectedClient?.name || t('quotesManagement.draft.unknownClient'),
                 amount: calculateDraftAmount(d),
                 amountFormatted: formatCurrency(calculateDraftAmount(d)),
@@ -242,62 +300,61 @@ const QuotesManagement = () => {
                 createdAt: draft.last_saved,
                 createdAtFormatted: formatDate(draft.last_saved),
                 description: d.projectInfo?.description || t('quotesManagement.draft.draftInProgress'),
-                              client: d.selectedClient?.client || d.selectedClient || null,
+                client: d.selectedClient?.client || d.selectedClient || null,
                 tasks: d.tasks || [],
-              materials: d.materials || [],
+                materials: d.materials || [],
                 files: d.files || [],
-                deadline: d.projectInfo?.deadline || null,
-                deadlineFormatted: d.projectInfo?.deadline ? formatDate(d.projectInfo.deadline) : '',
-                validUntil: d.projectInfo?.deadline || null,
-                validUntilFormatted: d.projectInfo?.deadline ? formatDate(d.projectInfo.deadline) : '',
-              };
-              setQuotes([placeholder]);
-              setFilteredQuotes([placeholder]);
-              setStats({ total: 1, drafts: 1, sent: 0, viewed: 0, accepted: 0, rejected: 0, expired: 0, averageAmount: 0 });
-              return;
+                deadline: validUntil || null,
+                deadlineFormatted: validUntil ? formatDate(validUntil) : '',
+                validUntil: validUntil || null,
+                validUntilFormatted: validUntil ? formatDate(validUntil) : '',
+              });
             }
-          } catch (e) { console.log('QuotesManagement: loadQuoteDraft exception', e); }
-          setQuotes([]);
-          setFilteredQuotes([]);
-          setStats({ total: 0, signed: 0, pending: 0, averageScore: 0 });
-          return;
-        }
-
-        // Additionally merge ALL backend drafts so they appear as placeholders
-        const additionalDrafts = [];
-        try {
-          const { data: drafts } = await listQuoteDrafts(user.id, currentProfile?.id || null);
-          (drafts || []).forEach(draft => {
-            const d = draft.draft_data || {};
-            additionalDrafts.push({
-              id: `draft-${draft.id}`,
-              number: draft.quote_number || t('quotesManagement.draft.unsentDraft'),
-              clientName: d.selectedClient?.client?.name || d.selectedClient?.label || d.selectedClient?.name || t('quotesManagement.draft.unknownClient'),
-              amount: calculateDraftAmount(d),
-              amountFormatted: formatCurrency(calculateDraftAmount(d)),
-              status: 'auto-saved',
-              statusLabel: t('quotesManagement.draft.autoSavedDraft'),
-              isDraftPlaceholder: true,
-              createdAt: draft.last_saved,
-              createdAtFormatted: formatDate(draft.last_saved),
-              description: d.projectInfo?.description || t('quotesManagement.draft.draftInProgress'),
-              client: d.selectedClient?.client || d.selectedClient || null,
-              tasks: d.tasks || [],
-              materials: d.materials || [],
-              files: d.files || [],
-              deadline: d.projectInfo?.deadline || null,
-              deadlineFormatted: d.projectInfo?.deadline ? formatDate(d.projectInfo.deadline) : '',
-              validUntil: d.projectInfo?.deadline || null,
-              validUntilFormatted: d.projectInfo?.deadline ? formatDate(d.projectInfo.deadline) : '',
-            });
           });
-        } catch (_) {}
-        // Local drafts list removed for a simpler flow
+          
+          // Delete drafts that shouldn't exist
+          if (draftsToDelete.length > 0) {
+            // Delete in background (don't wait for it)
+            Promise.all(
+              draftsToDelete.map(draftId => 
+                deleteQuoteDraftById(draftId).catch(err => 
+                  console.warn(`Failed to delete draft ${draftId}:`, err)
+                )
+              )
+            ).catch(err => console.warn('Error deleting drafts:', err));
+          }
+        } catch (draftError) {
+          console.warn('Error processing drafts:', draftError);
+        }
         
         // Only set error for actual errors, not for empty data
         if (quotesError) {
           console.error('Error fetching quotes:', quotesError);
           setError('Erreur lors du chargement des devis');
+          // Still show drafts even if quotes fetch failed
+          if (additionalDrafts.length > 0) {
+            const sortedDrafts = additionalDrafts.sort((a, b) => {
+              const dateA = new Date(a.createdAt || 0);
+              const dateB = new Date(b.createdAt || 0);
+              return dateB - dateA; // Most recent first
+            });
+            setQuotes(sortedDrafts);
+            setFilteredQuotes(sortedDrafts);
+            setStats({ 
+              total: sortedDrafts.length, 
+              drafts: sortedDrafts.filter(q => q.status === 'auto-saved' || q.status === 'draft').length, 
+              converted: 0, 
+              viewed: 0, 
+              accepted: 0, 
+              rejected: 0, 
+              expired: 0, 
+              averageAmount: 0 
+            });
+          } else {
+            setQuotes([]);
+            setFilteredQuotes([]);
+            setStats({ total: 0, drafts: 0, converted: 0, viewed: 0, accepted: 0, rejected: 0, expired: 0, averageAmount: 0 });
+          }
           return;
         }
         
@@ -358,7 +415,7 @@ const QuotesManagement = () => {
             };
           });
         
-        // Sort quotes by priority
+        // Sort quotes by priority (include valid auto-saved drafts)
         const merged = [...transformedQuotes, ...additionalDrafts];
         const sortedQuotes = merged.sort((a, b) => getQuotePriority(a) - getQuotePriority(b));
         
@@ -421,20 +478,22 @@ const QuotesManagement = () => {
         }
         
         // Calculate stats (actual data)
-        const total = sortedQuotes.length;
-        const drafts = sortedQuotes.filter(q => q.status === 'draft').length;
-        const sent = sortedQuotes.filter(q => q.status === 'sent').length;
-        const viewed = sortedQuotes.filter(q => q.status === 'viewed').length;
-        const accepted = sortedQuotes.filter(q => q.status === 'accepted').length;
-        const rejected = sortedQuotes.filter(q => q.status === 'rejected').length;
-        const expired = sortedQuotes.filter(q => q.status === 'expired').length;
-        const amounts = sortedQuotes.map(q => parseFloat(q.amount) || 0);
+        // Exclude auto-saved drafts from stats - only count real quotes
+        const realQuotes = sortedQuotes.filter(q => !q.isDraftPlaceholder);
+        const total = realQuotes.length;
+        const drafts = realQuotes.filter(q => q.status === 'draft').length;
+        const converted = realQuotes.filter(q => q.status === 'converted_to_invoice').length;
+        const viewed = realQuotes.filter(q => q.status === 'viewed').length;
+        const accepted = realQuotes.filter(q => q.status === 'accepted').length;
+        const rejected = realQuotes.filter(q => q.status === 'rejected').length;
+        const expired = realQuotes.filter(q => q.status === 'expired').length;
+        const amounts = realQuotes.map(q => parseFloat(q.amount) || 0);
         const averageAmount = total > 0 ? (amounts.reduce((acc, v) => acc + v, 0) / total) : 0;
         
         setStats({ 
           total, 
           drafts, 
-          sent, 
+          converted, 
           viewed,
           accepted,
           rejected,
@@ -451,7 +510,7 @@ const QuotesManagement = () => {
           // If it's just no data, set empty state
           setQuotes([]);
           setFilteredQuotes([]);
-          setStats({ total: 0, drafts: 0, sent: 0, viewed: 0, accepted: 0, rejected: 0, expired: 0, averageAmount: 0 });
+          setStats({ total: 0, drafts: 0, converted: 0, viewed: 0, accepted: 0, rejected: 0, expired: 0, averageAmount: 0 });
         }
       } finally {
         setLoading(false);
@@ -1443,13 +1502,13 @@ const QuotesManagement = () => {
             <div className="bg-card border border-border rounded-lg p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">{t('quotesManagement.stats.sent')}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{t('quotesManagement.stats.converted')}</p>
                   <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">
-                    {loading ? '...' : stats.sent}
+                    {loading ? '...' : stats.converted}
                   </p>
                 </div>
-                <div className="bg-amber-100 rounded-full p-2 sm:p-2.5">
-                  <Icon name="Clock" size={16} className="sm:w-5 sm:h-5 text-amber-600" />
+                <div className="bg-green-100 rounded-full p-2 sm:p-2.5">
+                  <Icon name="FileCheck" size={16} className="sm:w-5 sm:h-5 text-green-600" />
                 </div>
               </div>
             </div>

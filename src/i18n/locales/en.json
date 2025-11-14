@@ -1670,7 +1670,7 @@
     "stats": {
       "totalQuotes": "Total quotes",
       "drafts": "Drafts",
-      "sent": "Sent",
+      "converted": "Converted",
       "averageAmount": "Average amount"
     },
     "filter": {
@@ -1911,6 +1911,29 @@
       "viewed_no_action": "Viewed without action",
       "general": "General",
       "manual": "Manual"
+    }
+  },
+  "invoiceFollowUp": {
+    "title": "Invoice Follow-ups",
+    "subtitle": "Follow up on your unpaid invoices",
+    "kpi": {
+      "invoices": "Invoices"
+    },
+    "type": {
+      "approachingDeadline": "Approaching deadline",
+      "overdue": "Overdue"
+    },
+    "tableHeaders": {
+      "invoice": "Invoice",
+      "dueDate": "Due Date"
+    },
+    "cardView": {
+      "invoiceNumber": "Invoice: {{number}}",
+      "dueDate": "Due Date: {{date}}"
+    },
+    "empty": {
+      "title": "No follow-up needed",
+      "noScheduled": "No follow-up scheduled"
     }
   },
   "leadsManagement": {
@@ -3289,6 +3312,9 @@
       "companyName": "Your Company",
       "allRightsReserved": "All rights reserved.",
       "rightsReserved": "All rights reserved."
+    },
+    "viewOnly": {
+      "message": "View-only mode - This quote was sent to you as a copy"
     }
   },
   "peppol": {

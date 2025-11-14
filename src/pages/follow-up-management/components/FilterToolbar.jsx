@@ -4,15 +4,22 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import { useTranslation } from 'react-i18next';
 
-const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
+const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0, isInvoiceFollowUp = false }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const { t } = useTranslation();
 
-  const typeOptions = [
-    { value: 'all', label: t('followUpManagement.filter.type.all') },
-    { value: 'email_not_opened', label: t('followUpManagement.followUpType.email_not_opened') },
-    { value: 'viewed_no_action', label: t('followUpManagement.followUpType.viewed_no_action') }
-  ];
+  // Different type options for quotes vs invoices
+  const typeOptions = isInvoiceFollowUp
+    ? [
+        { value: 'all', label: t('followUpManagement.filter.type.all') },
+        { value: 'approaching_deadline', label: t('invoiceFollowUp.type.approachingDeadline') },
+        { value: 'overdue', label: t('invoiceFollowUp.type.overdue') }
+      ]
+    : [
+        { value: 'all', label: t('followUpManagement.filter.type.all') },
+        { value: 'email_not_opened', label: t('followUpManagement.followUpType.email_not_opened') },
+        { value: 'viewed_no_action', label: t('followUpManagement.followUpType.viewed_no_action') }
+      ];
 
   const priorityOptions = [
     { value: 'all', label: t('followUpManagement.filter.priority.all') },

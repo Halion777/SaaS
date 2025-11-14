@@ -311,17 +311,20 @@ export class EmailService {
       };
       
       // Send email to client - always use custom quote email for better control
+      // Use the email from customEmailData if provided (updated in modal), otherwise fall back to client.email
+      const recipientEmail = customEmailData?.clientEmail || client.email;
+      
       let clientEmailResult;
       if (customEmailData) {
         // Use provided custom email data
-        clientEmailResult = await this.sendCustomQuoteEmail(variables, client.email, userId, customEmailData);
+        clientEmailResult = await this.sendCustomQuoteEmail(variables, recipientEmail, userId, customEmailData);
       } else {
         // Use default custom email format instead of templated email
         const defaultEmailData = {
           subject: emailSubject,
           message: emailMessage
         };
-        clientEmailResult = await this.sendCustomQuoteEmail(variables, client.email, userId, defaultEmailData);
+        clientEmailResult = await this.sendCustomQuoteEmail(variables, recipientEmail, userId, defaultEmailData);
       }
       
       // If sendCopy is enabled, also send a copy to the current user
@@ -334,28 +337,67 @@ export class EmailService {
           // For now, we'll need the user's email to be passed in the customEmailData
           // This is a limitation of the current architecture
           if (customEmailData.userEmail) {
-            // Send copy to user with modified subject to indicate it's a copy
-            const copySubject = `[COPIE] ${emailSubject}`;
-            const copyMessage = `Ceci est une copie du devis envoyé à ${client.email}.\n\n${emailMessage}`;
+            // Generate a secure view-only token for the copy email
+            const { generateViewOnlyToken } = await import('./shareService');
+            const viewOnlyTokenResult = await generateViewOnlyToken(quote.id);
             
-            const copyVariables = {
-              ...variables,
-              custom_subject: copySubject,
-              custom_message: copyMessage
-            };
-            
-            // Send copy to user
-            const copyEmailResult = await this.sendCustomQuoteEmail(
-              copyVariables, 
-              customEmailData.userEmail, 
-              userId, 
-              { subject: copySubject, message: copyMessage }
-            );
-            
-            if (copyEmailResult.success) {
-              console.log('Copy email sent successfully to user:', customEmailData.userEmail);
+            if (!viewOnlyTokenResult.success) {
+              console.warn('Failed to generate view-only token for copy email:', viewOnlyTokenResult.error);
+              // Fallback: use regular token with viewonly parameter (less secure but better than nothing)
+              const copyQuoteLink = variables.quote_link.includes('?') 
+                ? `${variables.quote_link}&viewonly=true`
+                : `${variables.quote_link}?viewonly=true`;
+              
+              const copySubject = `[COPIE] ${emailSubject}`;
+              const copyMessage = `Ceci est une copie du devis envoyé à ${recipientEmail}.\n\n${emailMessage}`;
+              
+              const copyVariables = {
+                ...variables,
+                quote_link: copyQuoteLink,
+                custom_subject: copySubject,
+                custom_message: copyMessage
+              };
+              
+              const copyEmailResult = await this.sendCustomQuoteEmail(
+                copyVariables, 
+                customEmailData.userEmail, 
+                userId, 
+                { subject: copySubject, message: copyMessage }
+              );
+              
+              if (copyEmailResult.success) {
+                console.log('Copy email sent successfully to user (fallback mode):', customEmailData.userEmail);
+              } else {
+                console.warn('Failed to send copy email to user:', copyEmailResult.error);
+              }
             } else {
-              console.warn('Failed to send copy email to user:', copyEmailResult.error);
+              // Use secure view-only token (separate from regular share token)
+              const viewOnlyToken = viewOnlyTokenResult.token;
+              const copyQuoteLink = `${BASE_URL}/quote-share/${viewOnlyToken}`;
+              
+              const copySubject = `[COPIE] ${emailSubject}`;
+              const copyMessage = `Ceci est une copie du devis envoyé à ${recipientEmail}.\n\n${emailMessage}`;
+              
+              const copyVariables = {
+                ...variables,
+                quote_link: copyQuoteLink, // Use secure view-only token link
+                custom_subject: copySubject,
+                custom_message: copyMessage
+              };
+              
+              // Send copy to user
+              const copyEmailResult = await this.sendCustomQuoteEmail(
+                copyVariables, 
+                customEmailData.userEmail, 
+                userId, 
+                { subject: copySubject, message: copyMessage }
+              );
+              
+              if (copyEmailResult.success) {
+                console.log('Copy email sent successfully to user with secure view-only token:', customEmailData.userEmail);
+              } else {
+                console.warn('Failed to send copy email to user:', copyEmailResult.error);
+              }
             }
           } else {
             console.warn('sendCopy is enabled but no userEmail provided in customEmailData');

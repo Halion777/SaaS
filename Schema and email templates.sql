@@ -830,8 +830,6 @@ create index IF not exists idx_quote_access_logs_quote_id on public.quote_access
 create index IF not exists idx_quote_access_logs_share_token on public.quote_access_logs using btree (share_token) TABLESPACE pg_default;
 
 create index IF not exists idx_quote_access_logs_accessed_at on public.quote_access_logs using btree (accessed_at) TABLESPACE pg_default;
-
-
 create table public.quote_events (
   id uuid not null default gen_random_uuid (),
   quote_id uuid not null,
@@ -875,7 +873,6 @@ create index IF not exists idx_quote_events_timestamp on public.quote_events usi
 
 create index IF not exists idx_quote_events_share_token on public.quote_events using btree (share_token) TABLESPACE pg_default;
 
-
 create table public.quote_follow_ups (
   id uuid not null default gen_random_uuid (),
   quote_id uuid not null,
@@ -906,7 +903,6 @@ create index IF not exists idx_quote_follow_ups_quote_id on public.quote_follow_
 create index IF not exists idx_quote_follow_ups_user_id on public.quote_follow_ups using btree (user_id) TABLESPACE pg_default;
 
 create index IF not exists idx_quote_follow_ups_scheduled_at on public.quote_follow_ups using btree (scheduled_at) TABLESPACE pg_default;
-
 create table public.quote_shares (
   id uuid not null default gen_random_uuid (),
   quote_id uuid not null,
@@ -924,8 +920,6 @@ create table public.quote_shares (
 create index IF not exists idx_quote_shares_quote_id on public.quote_shares using btree (quote_id) TABLESPACE pg_default;
 
 create index IF not exists idx_quote_shares_share_token on public.quote_shares using btree (share_token) TABLESPACE pg_default;
-
-
 create table public.quotes (
   id uuid not null default gen_random_uuid (),
   user_id uuid not null,
@@ -954,8 +948,8 @@ create table public.quotes (
   sent_at timestamp with time zone null,
   rejection_reason text null,
   constraint quotes_pkey primary key (id),
-  constraint quotes_quote_number_key unique (quote_number),
   constraint quotes_share_token_key unique (share_token),
+  constraint quotes_user_quote_number_key unique (user_id, quote_number),
   constraint quotes_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE,
   constraint quotes_profile_id_fkey foreign KEY (profile_id) references user_profiles (id) on delete CASCADE,
   constraint quotes_company_profile_id_fkey foreign KEY (company_profile_id) references company_profiles (id) on delete set null,
@@ -987,4 +981,5 @@ create index IF not exists idx_quotes_created_at on public.quotes using btree (c
 create index IF not exists idx_quotes_is_public on public.quotes using btree (is_public) TABLESPACE pg_default;
 
 create index IF not exists idx_quotes_project_categories_gin on public.quotes using gin (project_categories) TABLESPACE pg_default;
+
 

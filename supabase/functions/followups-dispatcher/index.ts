@@ -231,19 +231,46 @@ async function processFollowUp(admin: any, followUp: any) {
 
       // Update follow-up status and increment attempts
       const newAttempts = (followUp.attempts || 0) + 1;
-      console.log(`Incrementing attempts for follow-up ${followUp.id}: ${followUp.attempts || 0} → ${newAttempts}/${followUp.max_attempts || 3}`);
+      const maxAttempts = followUp.max_attempts || 3;
+      console.log(`Incrementing attempts for follow-up ${followUp.id}: ${followUp.attempts || 0} → ${newAttempts}/${maxAttempts}`);
       
-      const { error: updateError } = await admin
-        .from('quote_follow_ups')
-        .update({ 
-          status: 'sent', 
-          attempts: newAttempts,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', followUp.id)
-
-      if (updateError) {
-        console.error('Error updating follow-up status:', updateError);
+      // Check if we need to reschedule for next attempt within same stage
+      if (newAttempts < maxAttempts) {
+        // Reschedule for next attempt (1 day delay between attempts)
+        const nextScheduledAt = new Date();
+        nextScheduledAt.setDate(nextScheduledAt.getDate() + 1); // 1 day delay
+        
+        const { error: updateError } = await admin
+          .from('quote_follow_ups')
+          .update({ 
+            status: 'scheduled',  // Change back to scheduled for next attempt
+            attempts: newAttempts,
+            scheduled_at: nextScheduledAt.toISOString(), // Reschedule
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', followUp.id);
+        
+        if (updateError) {
+          console.error('Error updating follow-up status:', updateError);
+        } else {
+          console.log(`✅ Rescheduled follow-up ${followUp.id} for next attempt (${newAttempts + 1}/${maxAttempts}) on ${nextScheduledAt.toISOString()}`);
+        }
+      } else {
+        // Max attempts reached, mark as sent - scheduler will handle stage progression on next run
+        const { error: updateError } = await admin
+          .from('quote_follow_ups')
+          .update({ 
+            status: 'sent',  // Keep as sent, scheduler will progress stage
+            attempts: newAttempts,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', followUp.id);
+        
+        if (updateError) {
+          console.error('Error updating follow-up status:', updateError);
+        } else {
+          console.log(`✅ Follow-up ${followUp.id} reached max attempts (${newAttempts}/${maxAttempts}), will progress to next stage on scheduler run`);
+        }
       }
 
       // ========================================

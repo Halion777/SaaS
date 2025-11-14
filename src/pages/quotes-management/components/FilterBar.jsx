@@ -19,6 +19,7 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
     { value: 'accepted', label: t('quotesManagement.filter.status.accepted') },
     { value: 'rejected', label: t('quotesManagement.filter.status.rejected') },
     { value: 'expired', label: t('quotesManagement.filter.status.expired') },
+    { value: 'converted_to_invoice', label: t('quotesManagement.filter.status.converted') },
   ];
 
   // Generate client options from actual quotes data

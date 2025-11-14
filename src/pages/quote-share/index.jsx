@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getQuoteByShareToken } from '../../services/shareService';
 import { getPublicUrl } from '../../services/storageService';
@@ -15,9 +15,11 @@ const currency = (n) => new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 
 const PublicQuoteShareViewer = () => {
   const { t } = useTranslation();
   const { token } = useParams();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [quote, setQuote] = useState(null);
+  const [isViewOnly, setIsViewOnly] = useState(false); // Will be set from backend response
   const [logoUrl, setLogoUrl] = useState(null);
   const [signatureUrl, setSignatureUrl] = useState(null);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -38,10 +40,15 @@ const PublicQuoteShareViewer = () => {
         }
         const q = res.data;
         setQuote(q);
+        
+        // Set view-only mode from backend response (secure - cannot be bypassed by removing URL parameter)
+        const viewOnly = res.isViewOnly || false;
+        setIsViewOnly(viewOnly);
 
         // Track quote view for analytics
+        // IMPORTANT: Pass isViewOnly flag to prevent status updates for copy emails
         try {
-          await ClientQuoteService.trackQuoteView(q.id, token);
+          await ClientQuoteService.trackQuoteView(q.id, token, viewOnly);
         } catch (trackingError) {
           console.error('Error tracking quote view:', trackingError);
         }
@@ -271,7 +278,7 @@ const PublicQuoteShareViewer = () => {
             </div>
             
             {/* Action Buttons - Mobile */}
-            {(quoteStatus === 'sent' || quoteStatus === 'viewed') && (
+            {(quoteStatus === 'sent' || quoteStatus === 'viewed') && !isViewOnly && (
               <div className="flex flex-col space-y-3">
                 <Button
                   onClick={() => setShowRejectModal(true)}
@@ -295,6 +302,14 @@ const PublicQuoteShareViewer = () => {
                 </Button>
               </div>
             )}
+            {/* View Only Message - Mobile */}
+            {isViewOnly && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                <p className="text-sm text-blue-700 font-medium">
+                  {t('quoteShare.viewOnly.message', 'Mode consultation uniquement - Ce devis vous a été envoyé en copie')}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Desktop Layout - Horizontal with Better Spacing */}
@@ -314,7 +329,7 @@ const PublicQuoteShareViewer = () => {
             </div>
 
             {/* Right Side - Action Buttons */}
-            {(quoteStatus === 'sent' || quoteStatus === 'viewed') && (
+            {(quoteStatus === 'sent' || quoteStatus === 'viewed') && !isViewOnly && (
               <div className="flex items-center space-x-4">
                 <Button
                   onClick={() => setShowRejectModal(true)}
@@ -336,6 +351,14 @@ const PublicQuoteShareViewer = () => {
                   <Icon name="CheckCircle" size={20} className="mr-2" />
                   {actionLoading ? t('quoteShare.actions.processing') : clientSignature ? t('quoteShare.actions.confirmAcceptance') : t('quoteShare.actions.accept')}
                 </Button>
+              </div>
+            )}
+            {/* View Only Message - Desktop */}
+            {isViewOnly && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg px-6 py-3">
+                <p className="text-sm text-blue-700 font-medium">
+                  {t('quoteShare.viewOnly.message', 'Mode consultation uniquement - Ce devis vous a été envoyé en copie')}
+                </p>
               </div>
             )}
           </div>

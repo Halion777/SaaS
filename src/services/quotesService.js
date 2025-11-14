@@ -1628,6 +1628,15 @@ export async function convertQuoteToInvoice(quote, userId) {
       // Don't fail the whole operation if quote update fails
     }
 
+    // Trigger follow-up creation for the new invoice
+    try {
+      const { default: InvoiceFollowUpService } = await import('./invoiceFollowUpService');
+      await InvoiceFollowUpService.triggerFollowUpCreation(invoice.id);
+    } catch (followUpError) {
+      console.warn('Warning: Failed to trigger follow-up creation for invoice:', followUpError);
+      // Don't fail the whole operation if follow-up trigger fails
+    }
+
     return {
       success: true,
       data: invoice,

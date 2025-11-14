@@ -6,6 +6,36 @@ class ClientQuoteService {
    */
   static async acceptQuote(quoteId, shareToken, signatureData, quoteData = null) {
     try {
+      // SECURITY: Check if this is a view-only token - block accept action
+      const { data: quoteCheck, error: viewOnlyCheckError } = await supabase
+        .from('quotes')
+        .select('id, share_token, view_only_token')
+        .eq('id', quoteId)
+        .single();
+      
+      if (viewOnlyCheckError) {
+        return { 
+          success: false, 
+          error: 'Quote not found or invalid token.' 
+        };
+      }
+      
+      // Verify token is valid for this quote
+      if (quoteCheck.share_token !== shareToken && quoteCheck.view_only_token !== shareToken) {
+        return { 
+          success: false, 
+          error: 'Invalid token for this quote.' 
+        };
+      }
+      
+      // Block if it's a view-only token
+      if (quoteCheck.view_only_token === shareToken) {
+        return { 
+          success: false, 
+          error: 'This quote is in view-only mode. Accept/reject actions are not allowed.' 
+        };
+      }
+
       // Get client data from quote if not provided
       let clientEmail, clientName;
       
@@ -29,16 +59,16 @@ class ClientQuoteService {
       }
 
       // Check if signature already exists
-      const { data: existingSignature, error: checkError } = await supabase
+      const { data: existingSignature, error: signatureCheckError } = await supabase
         .from('quote_signatures')
         .select('id, signature_file_path')
         .eq('quote_id', quoteId)
         .eq('signature_type', 'client')
         .maybeSingle();
 
-      if (checkError) {
-        console.error('Error checking existing signature:', checkError);
-        throw checkError;
+      if (signatureCheckError) {
+        console.error('Error checking existing signature:', signatureCheckError);
+        throw signatureCheckError;
       }
 
       let signaturePath, signatureRecordId;
@@ -180,6 +210,36 @@ class ClientQuoteService {
    */
   static async rejectQuote(quoteId, shareToken, rejectionReason) {
     try {
+      // SECURITY: Check if this is a view-only token - block reject action
+      const { data: quoteCheck, error: viewOnlyCheckError } = await supabase
+        .from('quotes')
+        .select('id, share_token, view_only_token')
+        .eq('id', quoteId)
+        .single();
+      
+      if (viewOnlyCheckError) {
+        return { 
+          success: false, 
+          error: 'Quote not found or invalid token.' 
+        };
+      }
+      
+      // Verify token is valid for this quote
+      if (quoteCheck.share_token !== shareToken && quoteCheck.view_only_token !== shareToken) {
+        return { 
+          success: false, 
+          error: 'Invalid token for this quote.' 
+        };
+      }
+      
+      // Block if it's a view-only token
+      if (quoteCheck.view_only_token === shareToken) {
+        return { 
+          success: false, 
+          error: 'This quote is in view-only mode. Accept/reject actions are not allowed.' 
+        };
+      }
+
       // Get client data for email
       const { data: quote, error: quoteError } = await supabase
         .from('quotes')
@@ -604,7 +664,7 @@ class ClientQuoteService {
   /**
    * Smart tracking: Only log meaningful quote interactions, not every page load
    */
-  static async trackQuoteView(quoteId, shareToken) {
+  static async trackQuoteView(quoteId, shareToken, isViewOnly = false) {
     try {
       // Check if we've already logged a 'viewed' action for this quote
       const { data: existingLogs, error: checkError } = await supabase
@@ -647,25 +707,32 @@ class ClientQuoteService {
         }
       }
 
-      // Update quote status to 'viewed' via Edge Function
-      try {
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/followups-scheduler`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-          },
-          body: JSON.stringify({
-            action: 'mark_quote_viewed',
-            quote_id: quoteId
-          })
-        });
+      // IMPORTANT: Only update quote status to 'viewed' if this is NOT a view-only token
+      // View-only tokens are used for copy emails sent to the sender - they should not change the quote status
+      if (!isViewOnly) {
+        // Update quote status to 'viewed' via Edge Function
+        try {
+          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/followups-scheduler`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+            },
+            body: JSON.stringify({
+              action: 'mark_quote_viewed',
+              quote_id: quoteId
+            })
+          });
 
-        const result = await response.json();
-       
-      } catch (statusError) {
-        console.warn('Error updating quote status to viewed:', statusError);
-        // Don't fail the main tracking operation if status update fails
+          const result = await response.json();
+         
+        } catch (statusError) {
+          console.warn('Error updating quote status to viewed:', statusError);
+          // Don't fail the main tracking operation if status update fails
+        }
+      } else {
+        // View-only access - don't update status, just log for analytics
+        console.log('View-only access detected - skipping status update');
       }
 
       // Ensure quote_shares record exists and update access count

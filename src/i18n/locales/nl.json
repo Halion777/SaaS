@@ -1653,7 +1653,7 @@
     "stats": {
       "totalQuotes": "Totaal offertes",
       "drafts": "Concepten",
-      "sent": "Verzonden",
+      "converted": "Omgezet",
       "averageAmount": "Gemiddeld bedrag"
     },
     "filter": {
@@ -1894,6 +1894,29 @@
       "viewed_no_action": "Bekeken zonder actie",
       "general": "Algemeen",
       "manual": "Handmatig"
+    }
+  },
+  "invoiceFollowUp": {
+    "title": "Factuurherinneringen",
+    "subtitle": "Herinner uw onbetaalde facturen",
+    "kpi": {
+      "invoices": "Facturen"
+    },
+    "type": {
+      "approachingDeadline": "Vervaldatum nadert",
+      "overdue": "Achterstallig"
+    },
+    "tableHeaders": {
+      "invoice": "Factuur",
+      "dueDate": "Vervaldatum"
+    },
+    "cardView": {
+      "invoiceNumber": "Factuur: {{number}}",
+      "dueDate": "Vervaldatum: {{date}}"
+    },
+    "empty": {
+      "title": "Geen herinnering nodig",
+      "noScheduled": "Geen herinnering gepland"
     }
   },
   "leadsManagement": {
@@ -3341,6 +3364,9 @@
       "companyName": "Uw Bedrijf",
       "allRightsReserved": "Alle rechten voorbehouden.",
       "rightsReserved": "Alle rechten voorbehouden."
+    },
+    "viewOnly": {
+      "message": "Alleen-lezen modus - Deze offerte is naar u verzonden als kopie"
     }
   },
   "peppol": {

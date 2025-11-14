@@ -1484,7 +1484,7 @@
     "stats": {
       "totalQuotes": "Total devis",
       "drafts": "Brouillons",
-      "sent": "Envoyés",
+      "converted": "Convertis",
       "averageAmount": "Montant moyen"
     },
     "filter": {
@@ -1726,6 +1726,29 @@
       "viewed_no_action": "Vue sans action",
       "general": "Général",
       "manual": "Manuel"
+    }
+  },
+  "invoiceFollowUp": {
+    "title": "Relances factures",
+    "subtitle": "Relancez vos factures non payées",
+    "kpi": {
+      "invoices": "Factures"
+    },
+    "type": {
+      "approachingDeadline": "Échéance approchante",
+      "overdue": "En retard"
+    },
+    "tableHeaders": {
+      "invoice": "Facture",
+      "dueDate": "Date d'échéance"
+    },
+    "cardView": {
+      "invoiceNumber": "Facture: {{number}}",
+      "dueDate": "Échéance: {{date}}"
+    },
+    "empty": {
+      "title": "Aucune relance nécessaire",
+      "noScheduled": "Aucune relance programmée"
     }
   },
   "leadsManagement": {
@@ -3354,6 +3377,9 @@
       "companyName": "Votre Entreprise",
       "allRightsReserved": "Tous droits réservés.",
       "rightsReserved": "Tous droits réservés."
+    },
+    "viewOnly": {
+      "message": "Mode consultation uniquement - Ce devis vous a été envoyé en copie"
     }
   },
   "peppol": {

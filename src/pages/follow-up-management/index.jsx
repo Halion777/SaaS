@@ -177,8 +177,21 @@ const FollowUpManagement = () => {
           return null; // Don't show these in follow-up list
         }
         
-        // Expiration is now handled by edge functions - backend status is authoritative
-        // No need to check valid_until date on frontend
+        // Check if quote is expired based on valid_until date
+        if (quote.validUntil) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const validUntilDate = new Date(quote.validUntil);
+          validUntilDate.setHours(0, 0, 0, 0);
+          if (validUntilDate < today) {
+            return null; // Quote has expired, don't show in follow-up list
+          }
+        }
+        
+        // Hide follow-ups that don't need follow-up (all stages completed or stopped)
+        if (followUp.status === 'all_stages_completed' || followUp.status === 'stopped') {
+          return null; // Don't show these in follow-up list
+        }
         
         const nextFollowUp = followUp.scheduled_at || followUp.created_at;
           
@@ -364,8 +377,21 @@ const FollowUpManagement = () => {
           return null; // Don't show these in follow-up list
         }
         
-        // Expiration is now handled by edge functions - backend status is authoritative
-        // No need to check valid_until date on frontend
+        // Check if quote is expired based on valid_until date
+        if (quote.validUntil) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const validUntilDate = new Date(quote.validUntil);
+          validUntilDate.setHours(0, 0, 0, 0);
+          if (validUntilDate < today) {
+            return null; // Quote has expired, don't show in follow-up list
+          }
+        }
+        
+        // Hide follow-ups that don't need follow-up (all stages completed or stopped)
+        if (followUp.status === 'all_stages_completed' || followUp.status === 'stopped') {
+          return null; // Don't show these in follow-up list
+        }
         
         const nextFollowUp = followUp.scheduled_at || followUp.created_at;
         

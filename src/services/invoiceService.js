@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import InvoiceFollowUpService from './invoiceFollowUpService';
 
 export class InvoiceService {
   
@@ -60,6 +61,13 @@ export class InvoiceService {
    */
   static async updateInvoiceStatus(invoiceId, status, notes = '') {
     try {
+      // Get current invoice status before updating
+      const { data: currentInvoice } = await supabase
+        .from('invoices')
+        .select('status, user_id')
+        .eq('id', invoiceId)
+        .single();
+
       const updateData = {
         status,
         notes: notes || undefined,
@@ -69,6 +77,13 @@ export class InvoiceService {
       // If status is 'paid', set paid_at timestamp
       if (status === 'paid') {
         updateData.paid_at = new Date().toISOString();
+        // Stop all follow-ups when invoice is paid
+        await InvoiceFollowUpService.stopFollowUpsForInvoice(invoiceId);
+      }
+
+      // If status is 'cancelled', stop all follow-ups
+      if (status === 'cancelled') {
+        await InvoiceFollowUpService.stopFollowUpsForInvoice(invoiceId);
       }
 
       const { data, error } = await supabase
@@ -80,6 +95,15 @@ export class InvoiceService {
 
       if (error) {
         throw new Error(`Failed to update invoice status: ${error.message}`);
+      }
+
+      // Trigger follow-up creation if status changed to unpaid/overdue
+      if ((status === 'unpaid' || status === 'overdue') && 
+          currentInvoice && 
+          currentInvoice.status !== 'unpaid' && 
+          currentInvoice.status !== 'overdue') {
+        // Invoice status changed to unpaid/overdue, trigger follow-up creation
+        await InvoiceFollowUpService.triggerFollowUpCreation(invoiceId);
       }
 
       return {
