@@ -51,10 +51,14 @@ serve(async (req) => {
 
     console.log('Creating billing portal for customer:', user.stripe_customer_id)
 
+    // Get billing portal configuration ID from environment variable, with fallback
+    // @ts-ignore
+    const portalConfigurationId = Deno.env.get('STRIPE_BILLING_PORTAL_CONFIG_ID') || 'bpc_1SLPbeE7PWeGNoP4HixyoKue'
+
     const session = await stripe.billingPortal.sessions.create({
       customer: user.stripe_customer_id,
       return_url: returnUrl,
-      configuration: 'bpc_1SLPbeE7PWeGNoP4HixyoKue', // Your Stripe billing portal configuration
+      configuration: portalConfigurationId,
     })
 
     console.log('Billing portal session created successfully')
