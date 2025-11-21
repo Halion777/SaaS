@@ -2018,56 +2018,7 @@
       }
     }
   },
-  "multiUserProfile": {
-    "premiumFeature": {
-      "title": "Meerdere Profielen",
-      "description": "Deze functie is alleen beschikbaar voor Premium-accounts.",
-      "upgradeButton": "Upgraden naar Premium"
-    },
-    "currentUser": {
-      "adminDescription": "Beheerder - Kan alle profielen beheren",
-      "userDescription": "Gebruiker - Beperkte toegang"
-    },
-    "addProfileButton": "Een profiel toevoegen",
-    "switchProfileNotice": "Om van profiel te wisselen, gebruik de dropdown in de zijbalk.",
-    "currentProfileLabel": "Huidig Profiel",
-    "editProfileTooltip": "Bewerken",
-    "deleteProfileTooltip": "Verwijderen",
-    "roles": {
-      "admin": "Beheerder",
-      "manager": "Manager",
-      "accountant": "Accountant",
-      "sales": "Verkoop",
-      "viewer": "Waarnemer",
-      "default": "Gebruiker"
-    },
-    "permissions": {
-      "quotes": "Offertebeheer",
-      "invoices": "Factuurbeheer",
-      "clients": "Klantenbeheer",
-      "analytics": "Analytics",
-      "settings": "Instellingen",
-      "users": "Gebruikersbeheer"
-    },
-    "alerts": {
-      "adminOnly": "Alleen beheerders kunnen profielen beheren.",
-      "profileNotFound": "Profiel niet gevonden.",
-      "deletePermissionDenied": "U heeft geen toestemming om dit profiel te verwijderen.",
-      "confirmDelete": "Weet u zeker dat u het profiel \"{{name}}\" wilt verwijderen?"
-    },
-    "modal": {
-      "editProfileTitle": "Profiel bewerken",
-      "addProfileTitle": "Een profiel toevoegen",
-      "fullNameLabel": "Volledige naam",
-      "fullNamePlaceholder": "Naam van de gebruiker",
-      "roleLabel": "Rol",
-      "rolePlaceholder": "Selecteer een rol",
-      "roleAdminNote": "Alleen beheerders kunnen rollen wijzigen",
-      "permissionsLabel": "Machtigingen",
-      "permissionsAdminNote": "Alleen beheerders kunnen machtigingen wijzigen",
-      "addButton": "Toevoegen"
-    }
-  },
+
   "dashboard": {
     "header": {
       "title": "Snel Overzicht",
@@ -2484,6 +2435,7 @@
     "recentQuotes": {
       "title": "Recente Offertes",
       "viewAllQuotes": "Bekijk Alle Offertes",
+      "noQuotes": "Geen offertes gevonden",
       "statuses": {
         "signed": {
           "label": "Ondertekend",
@@ -4273,5 +4225,150 @@
           }
         }
       }
+    },
+  "multiUserProfiles": {
+    "title": "Gebruikersprofielbeheer",
+    "subtitle": "Beheer uw teamprofielen en hun machtigingen",
+    "loading": "Profielen laden...",
+    "addProfile": "Profiel toevoegen",
+    "premiumAccount": {
+      "title": "Premium Account",
+      "description": "U kunt maximaal {{max}} gebruikersprofielen aanmaken",
+      "profilesCreated": "Profielen Aangemaakt"
+    },
+    "currentProfile": {
+      "title": "Mijn Huidige Profiel",
+      "role": "Rol:",
+      "status": "Status:",
+      "active": "Actief",
+      "switchHint": "Om van profiel te wisselen, gebruik het dropdown menu in de zijbalk."
+    },
+    "noProfile": {
+      "title": "Geen Profiel Beschikbaar",
+      "description": "U heeft nog geen profiel geconfigureerd. Neem contact op met uw beheerder om een profiel met de juiste machtigingen te krijgen."
+    },
+    "noProfilesConfigured": {
+      "title": "Geen Profielen Geconfigureerd",
+      "description": "Er is nog geen profiel aangemaakt voor uw account. Alleen beheerders kunnen profielen aanmaken.",
+      "createFirst": "Eerste Profiel Aanmaken"
+    },
+    "permissions": "Machtigingen",
+    "changeAvatar": "Avatar Wijzigen",
+    "selectImage": "Kies een Afbeelding",
+    "imageDescription": "Sleep en zet neer of klik om te selecteren",
+    "modals": {
+      "addProfile": {
+        "title": "Profiel Toevoegen",
+        "subtitle": "Maak een nieuw profiel aan met aangepaste machtigingen",
+        "basicInfo": "Basisinformatie",
+        "profileName": "Profielnaam",
+        "email": "E-mail",
+        "pin": "PIN Code (optioneel)",
+        "pinPlaceholder": "1234 (minimaal 4 cijfers)",
+        "pinHintSingle": "Laat leeg om standaard PIN (1234) te gebruiken",
+        "pinHintMultiple": "PIN vereist voor alle profielen (inclusief admin) wanneer meerdere profielen bestaan. Laat leeg om standaard PIN (1234) te gebruiken.",
+        "roleTemplate": "Rol Sjabloon",
+        "roleTemplateDescription": "Selecteer een vooraf gedefinieerd sjabloon of pas machtigingen aan",
+        "detailedPermissions": "Gedetailleerde Machtigingen",
+        "detailedPermissionsDescription": "Pas machtigingen aan voor elke module",
+        "permissionsSummary": "Machtigingen Overzicht",
+        "selectPermission": "Selecteer een machtiging",
+        "createProfile": "Profiel Aanmaken",
+        "cancel": "Annuleren"
+      },
+      "editProfile": {
+        "title": "Profiel Bewerken",
+        "subtitle": "Wijzig profielinformatie en machtigingen",
+        "updateProfile": "Profiel Bijwerken",
+        "changesApplied": "Wijzigingen worden direct toegepast"
+      }
+    },
+    "modules": {
+      "dashboard": {
+        "label": "Dashboard",
+        "description": "Toegang tot hoofd dashboard"
+      },
+      "analytics": {
+        "label": "Analytics",
+        "description": "Toegang tot rapporten en analyses"
+      },
+      "peppolAccessPoint": {
+        "label": "PEPPOL Toegangspunt",
+        "description": "Toegang tot PEPPOL diensten"
+      },
+      "leadsManagement": {
+        "label": "Leads Beheer",
+        "description": "Prospect en kansbeheer"
+      },
+      "quoteCreation": {
+        "label": "Offerte Aanmaken",
+        "description": "Nieuwe offertes aanmaken"
+      },
+      "quotesManagement": {
+        "label": "Offertes Beheer",
+        "description": "Offertes beheren en volgen"
+      },
+      "quotesFollowUp": {
+        "label": "Offerte Opvolging",
+        "description": "Opvolging en herinneringen voor offertes"
+      },
+      "invoicesFollowUp": {
+        "label": "Factuur Opvolging",
+        "description": "Opvolging en herinneringen voor facturen"
+      },
+      "clientInvoices": {
+        "label": "Klantfacturen",
+        "description": "Klantfactuurbeheer"
+      },
+      "supplierInvoices": {
+        "label": "Leveranciersfacturen",
+        "description": "Leveranciersfactuurbeheer"
+      },
+      "clientManagement": {
+        "label": "Klantbeheer",
+        "description": "Klantdatabasebeheer"
+      },
+      "creditInsurance": {
+        "label": "Kredietverzekering",
+        "description": "Kredietverzekeringsdiensten"
+      },
+      "recovery": {
+        "label": "Incasso",
+        "description": "Incassodiensten"
+      }
+    },
+    "roles": {
+      "admin": {
+        "name": "Beheerder",
+        "description": "Volledige toegang tot alle functies"
+      },
+      "manager": {
+        "name": "Manager",
+        "description": "Teambeheer en documentgoedkeuring"
+      },
+      "accountant": {
+        "name": "Accountant",
+        "description": "Financieel beheer en facturering"
+      },
+      "sales": {
+        "name": "Verkoop",
+        "description": "Verkoopbeheer en klantrelaties"
+      },
+      "viewer": {
+        "name": "Viewer",
+        "description": "Alleen-lezen toegang tot gegevens"
+      }
+    },
+    "messages": {
+      "profileSwitched": "Profiel gewisseld naar {{name}}",
+      "profileSwitchError": "Fout bij wisselen van profiel",
+      "profileUpdated": "Profiel succesvol bijgewerkt",
+      "profileUpdateError": "Fout bij bijwerken van profiel",
+      "profileDeleted": "Profiel succesvol verwijderd",
+      "profileDeleteError": "Fout bij verwijderen van profiel",
+      "deleteConfirm": "Weet u zeker dat u dit profiel wilt verwijderen?",
+      "avatarUpdated": "Avatar succesvol bijgewerkt",
+      "avatarUpdateError": "Fout bij uploaden van avatar"
     }
+  }
 }

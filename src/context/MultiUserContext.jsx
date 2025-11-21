@@ -44,10 +44,22 @@ export const MultiUserProvider = ({ children }) => {
   const initializeMultiUser = useCallback(async () => {
     if (!user || initialized) return;
     
+    setLoading(true);
     try {
+      // Get user profile to check subscription status
+      const userProfileData = await multiUserService.getUserProfile(user.id);
+      setUserProfile(userProfileData);
+      
+      // Get subscription limits based on actual subscription
+      const limits = await multiUserService.getSubscriptionLimits(user.id);
+      setSubscriptionLimits(limits);
+      
+      // Check premium status based on subscription
+      const isUserPremium = await multiUserService.isPremiumAccount(user.id);
+      setIsPremium(isUserPremium);
+      
       // Get all profiles for this user
       const profiles = await multiUserService.getProfiles(user.id);
-      
       setCompanyProfiles(profiles);
       
       // Get the current active profile
@@ -55,35 +67,18 @@ export const MultiUserProvider = ({ children }) => {
       
       if (currentProfile) {
         setCurrentProfile(currentProfile);
-        setPermissions(currentProfile.permissions || []);
-        
-        // Set premium status based on role or profile count
-        const isUserPremium = currentProfile.role === 'admin' || profiles.length > 1;
-        setIsPremium(isUserPremium);
-        
-        // Set subscription limits (reasonable defaults)
-        setSubscriptionLimits({
-          maxProfiles: 10,
-          maxUsers: 50,
-          maxStorage: '10GB'
-        });
+        setPermissions(currentProfile.permissions || {});
       } else {
         // No active profile - user needs to select one
         setCurrentProfile(null);
-        setPermissions([]);
-        
-        // Set default values
-        setIsPremium(false);
-        setSubscriptionLimits({
-          maxProfiles: 1,
-          maxUsers: 1,
-          maxStorage: '1GB'
-        });
+        setPermissions({});
       }
       
+      setLoading(false);
       setInitialized(true);
     } catch (error) {
       console.error('Error initializing multi-user system:', error);
+      setLoading(false);
       setInitialized(true);
     }
   }, [user, initialized]);
@@ -254,7 +249,7 @@ export const MultiUserProvider = ({ children }) => {
     if (module === 'peppolAccessPoint') {
       // Check if user is a business user (not solo/individual)
       const businessSizes = ['small', 'medium', 'large'];
-      const isBusiness = businessSizes.includes(user?.business_size);
+      const isBusiness = businessSizes.includes(userProfile?.business_size);
       
       if (!isBusiness) {
         return false; // Individual users cannot access Peppol
@@ -270,14 +265,29 @@ export const MultiUserProvider = ({ children }) => {
     let permissions = currentProfile.permissions;
     
     if (Array.isArray(permissions)) {
-      // Array format (from database) - simple check if module is in array
+      // Array format (legacy) - simple check if module is in array
+      // If module is in array, it means full_access
       return permissions.includes(module);
     } else if (typeof permissions === 'object' && permissions !== null) {
-      // Object format (fallback for old data)
+      // Object format (current) - check permission level
       const modulePermission = permissions[module];
-      if (modulePermission) {
-        return modulePermission !== 'none';
+      
+      if (!modulePermission || modulePermission === 'no_access') {
+        return false;
       }
+      
+      // If requiredPermission is 'view' or 'view_only', allow both view_only and full_access
+      if (requiredPermission === 'view' || requiredPermission === 'view_only') {
+        return modulePermission === 'view_only' || modulePermission === 'full_access';
+      }
+      
+      // If requiredPermission is 'full_access', only allow full_access
+      if (requiredPermission === 'full_access') {
+        return modulePermission === 'full_access';
+      }
+      
+      // Default: check if permission exists and is not 'no_access'
+      return modulePermission !== 'no_access';
     }
     
     return false;

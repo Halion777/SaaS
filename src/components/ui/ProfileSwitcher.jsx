@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useMultiUser } from '../../context/MultiUserContext';
 import Icon from '../AppIcon';
 import Button from './Button';
+import PinModal from './PinModal';
 
 const ProfileSwitcher = ({ className = '' }) => {
   const { 
@@ -15,14 +16,85 @@ const ProfileSwitcher = ({ className = '' }) => {
   } = useMultiUser();
   
   const [isOpen, setIsOpen] = useState(false);
+  const [pinModal, setPinModal] = useState({
+    isOpen: false,
+    targetProfileId: null,
+    targetProfileName: '',
+    error: '',
+    isLoading: false
+  });
 
   const handleProfileSwitch = async (profileId) => {
     try {
-      await switchProfile(profileId);
-      setIsOpen(false);
+      // Check if profile has PIN protection
+      const targetProfile = companyProfiles.find(p => p.id === profileId);
+      const hasPin = targetProfile?.pin && targetProfile.pin.trim() !== '';
+      
+      if (hasPin) {
+        // Show PIN modal for protected profile
+        setPinModal({
+          isOpen: true,
+          targetProfileId: profileId,
+          targetProfileName: targetProfile.name,
+          error: '',
+          isLoading: false
+        });
+        return;
+      }
+      
+      // No PIN required, switch directly
+      await performProfileSwitch(profileId);
     } catch (error) {
       console.error('Error switching profile:', error);
     }
+  };
+
+  const performProfileSwitch = async (profileId) => {
+    try {
+      await switchProfile(profileId);
+      setIsOpen(false);
+      setPinModal({
+        isOpen: false,
+        targetProfileId: null,
+        targetProfileName: '',
+        error: '',
+        isLoading: false
+      });
+    } catch (error) {
+      console.error('Error performing profile switch:', error);
+      setPinModal(prev => ({
+        ...prev,
+        error: 'Erreur lors du changement de profil',
+        isLoading: false
+      }));
+    }
+  };
+
+  const handlePinConfirm = async (pin) => {
+    const targetProfile = companyProfiles.find(p => p.id === pinModal.targetProfileId);
+    
+    if (pin !== targetProfile?.pin) {
+      setPinModal(prev => ({
+        ...prev,
+        error: 'Code PIN incorrect',
+        isLoading: false
+      }));
+      throw new Error('Incorrect PIN');
+    }
+    
+    // PIN is correct, perform the switch
+    setPinModal(prev => ({ ...prev, isLoading: true }));
+    await performProfileSwitch(pinModal.targetProfileId);
+  };
+
+  const handlePinModalClose = () => {
+    setPinModal({
+      isOpen: false,
+      targetProfileId: null,
+      targetProfileName: '',
+      error: '',
+      isLoading: false
+    });
   };
 
   if (!isPremium || !currentProfile) {
@@ -114,6 +186,18 @@ const ProfileSwitcher = ({ className = '' }) => {
           onClick={() => setIsOpen(false)}
         />
       )}
+
+      {/* PIN Modal */}
+      <PinModal
+        isOpen={pinModal.isOpen}
+        onClose={handlePinModalClose}
+        onConfirm={handlePinConfirm}
+        profileName={pinModal.targetProfileName}
+        title="Code PIN requis"
+        message="Entrez le code PIN pour accéder à ce profil"
+        error={pinModal.error}
+        isLoading={pinModal.isLoading}
+      />
     </div>
   );
 };

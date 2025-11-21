@@ -52,68 +52,68 @@ const MultiUserProfilesPage = () => {
   // Access control configuration - simplified to match sidebar structure
   const accessPermissions = {
     dashboard: {
-      label: 'Tableau de bord',
-      description: 'Accès au tableau de bord principal',
+      label: t('multiUserProfiles.modules.dashboard.label'),
+      description: t('multiUserProfiles.modules.dashboard.description'),
       permissions: ['no_access', 'view_only', 'full_access']
     },
     analytics: {
-      label: 'Analytics',
-      description: 'Accès aux rapports et analyses',
+      label: t('multiUserProfiles.modules.analytics.label'),
+      description: t('multiUserProfiles.modules.analytics.description'),
       permissions: ['no_access', 'view_only', 'full_access']
     },
     peppolAccessPoint: {
-      label: 'Point d\'accès PEPPOL',
-      description: 'Accès aux services PEPPOL',
+      label: t('multiUserProfiles.modules.peppolAccessPoint.label'),
+      description: t('multiUserProfiles.modules.peppolAccessPoint.description'),
       permissions: ['no_access', 'view_only', 'full_access']
     },
     leadsManagement: {
-      label: 'Gestion des Leads',
-      description: 'Gestion des prospects et opportunités',
+      label: t('multiUserProfiles.modules.leadsManagement.label'),
+      description: t('multiUserProfiles.modules.leadsManagement.description'),
       permissions: ['no_access', 'view_only', 'full_access']
     },
     quoteCreation: {
-      label: 'Créer un devis',
-      description: 'Création de nouveaux devis',
+      label: t('multiUserProfiles.modules.quoteCreation.label'),
+      description: t('multiUserProfiles.modules.quoteCreation.description'),
       permissions: ['no_access', 'view_only', 'full_access']
     },
     quotesManagement: {
-      label: 'Gestion des devis',
-      description: 'Gestion et suivi des devis',
+      label: t('multiUserProfiles.modules.quotesManagement.label'),
+      description: t('multiUserProfiles.modules.quotesManagement.description'),
       permissions: ['no_access', 'view_only', 'full_access']
     },
     quotesFollowUp: {
-      label: 'Relances devis',
-      description: 'Suivi et relances des devis',
+      label: t('multiUserProfiles.modules.quotesFollowUp.label'),
+      description: t('multiUserProfiles.modules.quotesFollowUp.description'),
       permissions: ['no_access', 'view_only', 'full_access']
     },
     invoicesFollowUp: {
-      label: 'Relances factures',
-      description: 'Suivi et relances des factures',
+      label: t('multiUserProfiles.modules.invoicesFollowUp.label'),
+      description: t('multiUserProfiles.modules.invoicesFollowUp.description'),
       permissions: ['no_access', 'view_only', 'full_access']
     },
     clientInvoices: {
-      label: 'Factures clients',
-      description: 'Gestion des factures clients',
+      label: t('multiUserProfiles.modules.clientInvoices.label'),
+      description: t('multiUserProfiles.modules.clientInvoices.description'),
       permissions: ['no_access', 'view_only', 'full_access']
     },
     supplierInvoices: {
-      label: 'Factures fournisseurs',
-      description: 'Gestion des factures fournisseurs',
+      label: t('multiUserProfiles.modules.supplierInvoices.label'),
+      description: t('multiUserProfiles.modules.supplierInvoices.description'),
       permissions: ['no_access', 'view_only', 'full_access']
     },
     clientManagement: {
-      label: 'Gestion clients',
-      description: 'Gestion de la base de données clients',
+      label: t('multiUserProfiles.modules.clientManagement.label'),
+      description: t('multiUserProfiles.modules.clientManagement.description'),
       permissions: ['no_access', 'view_only', 'full_access']
     },
     creditInsurance: {
-      label: 'Assurance crédit',
-      description: 'Services d\'assurance crédit',
+      label: t('multiUserProfiles.modules.creditInsurance.label'),
+      description: t('multiUserProfiles.modules.creditInsurance.description'),
       permissions: ['no_access', 'view_only', 'full_access']
     },
     recovery: {
-      label: 'Recouvrement',
-      description: 'Services de recouvrement',
+      label: t('multiUserProfiles.modules.recovery.label'),
+      description: t('multiUserProfiles.modules.recovery.description'),
       permissions: ['no_access', 'view_only', 'full_access']
     }
   };
@@ -121,8 +121,8 @@ const MultiUserProfilesPage = () => {
   // Predefined role templates - updated with new permission structure
   const roleTemplates = {
     admin: {
-      name: 'Administrateur',
-      description: 'Accès complet à toutes les fonctionnalités',
+      name: t('multiUserProfiles.roles.admin.name'),
+      description: t('multiUserProfiles.roles.admin.description'),
       role: 'admin',
       permissions: {
         dashboard: 'full_access',
@@ -141,8 +141,8 @@ const MultiUserProfilesPage = () => {
       }
     },
     manager: {
-      name: 'Gestionnaire',
-      description: 'Gestion des équipes et approbation des documents',
+      name: t('multiUserProfiles.roles.manager.name'),
+      description: t('multiUserProfiles.roles.manager.description'),
       role: 'manager',
       permissions: {
         dashboard: 'full_access',
@@ -161,8 +161,8 @@ const MultiUserProfilesPage = () => {
       }
     },
     accountant: {
-      name: 'Comptable',
-      description: 'Gestion financière et facturation',
+      name: t('multiUserProfiles.roles.accountant.name'),
+      description: t('multiUserProfiles.roles.accountant.description'),
       role: 'accountant',
       permissions: {
         dashboard: 'view_only',
@@ -181,8 +181,8 @@ const MultiUserProfilesPage = () => {
       }
     },
     sales: {
-      name: 'Commercial',
-      description: 'Gestion des ventes et relations clients',
+      name: t('multiUserProfiles.roles.sales.name'),
+      description: t('multiUserProfiles.roles.sales.description'),
       role: 'sales',
       permissions: {
         dashboard: 'view_only',
@@ -201,8 +201,8 @@ const MultiUserProfilesPage = () => {
       }
     },
     viewer: {
-      name: 'Lecteur',
-      description: 'Accès en lecture seule aux données',
+      name: t('multiUserProfiles.roles.viewer.name'),
+      description: t('multiUserProfiles.roles.viewer.description'),
       role: 'viewer',
       permissions: {
         dashboard: 'view_only',
@@ -327,7 +327,7 @@ const MultiUserProfilesPage = () => {
   const performProfileSwitch = async (profileId) => {
     try {
       await switchProfile(profileId);
-      alert(`Profil changé vers ${currentProfile?.name}`);
+      alert(t('multiUserProfiles.messages.profileSwitched', { name: currentProfile?.name }));
     } catch (error) {
       console.error('Error performing profile switch:', error);
       alert('Erreur lors du changement de profil');
@@ -526,22 +526,22 @@ const MultiUserProfilesPage = () => {
           recovery: 'no_access'
         }
       });
-      alert('Profil modifié avec succès');
+      alert(t('multiUserProfiles.messages.profileUpdated'));
     } catch (error) {
       console.error('Error updating profile:', error);
-      alert('Erreur lors de la modification du profil');
+      alert(t('multiUserProfiles.messages.profileUpdateError'));
     }
   };
 
   const handleDeleteProfile = async (profileId) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce profil ?')) return;
+    if (!confirm(t('multiUserProfiles.messages.deleteConfirm'))) return;
     
     try {
       await deleteProfile(profileId);
-      alert('Profil supprimé avec succès');
+      alert(t('multiUserProfiles.messages.profileDeleted'));
     } catch (error) {
       console.error('Error deleting profile:', error);
-      alert('Erreur lors de la suppression du profil');
+      alert(t('multiUserProfiles.messages.profileDeleteError'));
     }
   };
 
@@ -553,10 +553,10 @@ const MultiUserProfilesPage = () => {
     try {
       setUploadingAvatar(true);
       await uploadAndUpdateAvatar(profileId, file);
-      alert('Avatar mis à jour avec succès');
+      alert(t('multiUserProfiles.messages.avatarUpdated'));
     } catch (error) {
       console.error('Error uploading avatar:', error);
-      alert('Erreur lors du téléchargement de l\'avatar');
+      alert(t('multiUserProfiles.messages.avatarUpdateError'));
     } finally {
       setUploadingAvatar(false);
     }
@@ -650,7 +650,7 @@ const MultiUserProfilesPage = () => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <Icon name="Loader" size={48} className="animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Chargement des profils...</p>
+          <p className="text-muted-foreground">{t('multiUserProfiles.loading')}</p>
         </div>
       </div>
     );
@@ -676,17 +676,17 @@ const MultiUserProfilesPage = () => {
               <div>
                 <div className="flex items-center">
                   <Icon name="Users" size={24} className="text-primary mr-3" />
-                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gestion des profils utilisateurs</h1>
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">{t('multiUserProfiles.title')}</h1>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Gérez les profils de votre équipe et leurs permissions
+                  {t('multiUserProfiles.subtitle')}
                 </p>
               </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
                 {isPremium && isAdmin() && companyProfiles.length < subscriptionLimits.maxProfiles && (
                   <Button onClick={() => setShowAddProfileModal(true)}>
                     <Icon name="Plus" size={16} className="mr-2" />
-                    Ajouter un profil
+                    {t('multiUserProfiles.addProfile')}
                   </Button>
                 )}
               </div>
@@ -698,14 +698,14 @@ const MultiUserProfilesPage = () => {
             <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-6 mb-8 shadow-md">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-semibold mb-2 text-white">Compte Premium</h3>
+                  <h3 className="text-xl font-semibold mb-2 text-white">{t('multiUserProfiles.premiumAccount.title')}</h3>
                   <p className="opacity-90">
-                    Vous pouvez créer jusqu'à {subscriptionLimits.maxProfiles} profils utilisateurs
+                    {t('multiUserProfiles.premiumAccount.description', { max: subscriptionLimits.maxProfiles })}
                   </p>
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold">{companyProfiles.length}/{subscriptionLimits.maxProfiles}</div>
-                  <div className="text-sm opacity-90">Profils créés</div>
+                  <div className="text-sm opacity-90">{t('multiUserProfiles.premiumAccount.profilesCreated')}</div>
                 </div>
               </div>
             </div>
@@ -714,7 +714,7 @@ const MultiUserProfilesPage = () => {
           {/* Current User Profile */}
           {currentProfile ? (
             <div className="bg-card border border-border rounded-lg p-6 mb-6">
-              <h3 className="text-lg font-semibold mb-4">Mon profil actuel</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('multiUserProfiles.currentProfile.title')}</h3>
               <div className="space-y-3">
                 <div>
                   <h4 className="font-medium text-foreground">{currentProfile.name}</h4>
@@ -723,26 +723,26 @@ const MultiUserProfilesPage = () => {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">
-                    <strong>Rôle:</strong> {getRoleLabel(currentProfile.role)}
+                    <strong>{t('multiUserProfiles.currentProfile.role')}</strong> {getRoleLabel(currentProfile.role)}
                   </p>
                   {currentProfile.is_active && (
                     <p className="text-xs text-green-600">
-                      <strong>Statut:</strong> Actif
+                      <strong>{t('multiUserProfiles.currentProfile.status')}</strong> {t('multiUserProfiles.currentProfile.active')}
                     </p>
                   )}
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mt-4">
-                Pour changer de profil, utilisez le menu déroulant dans la barre latérale.
+                {t('multiUserProfiles.currentProfile.switchHint')}
               </p>
             </div>
           ) : (
             <div className="bg-card border border-border rounded-lg p-6 mb-6">
-              <h3 className="text-lg font-semibold mb-4">Aucun profil disponible</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('multiUserProfiles.noProfile.title')}</h3>
               <div className="space-y-3">
                 <div>
                   <p className="text-sm text-muted-foreground">
-                    Vous n'avez pas encore de profil configuré. Contactez votre administrateur pour obtenir un profil avec les permissions appropriées.
+                    {t('multiUserProfiles.noProfile.description')}
                   </p>
                 </div>
               </div>
@@ -798,7 +798,7 @@ const MultiUserProfilesPage = () => {
                     
                     {/* Permissions Section */}
                     <div className="space-y-2">
-                      <h5 className="text-xs font-medium text-foreground">Permissions</h5>
+                      <h5 className="text-xs font-medium text-foreground">{t('multiUserProfiles.permissions')}</h5>
                       
                       {/* All Permissions with Scrollbar */}
                       <div className="max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
@@ -854,7 +854,7 @@ const MultiUserProfilesPage = () => {
                     
                     {profile.is_active && (
                       <span className="inline-block px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                        Actif
+                        {t('multiUserProfiles.currentProfile.active')}
                       </span>
                     )}
                   </div>
@@ -863,7 +863,7 @@ const MultiUserProfilesPage = () => {
                   {profile.id === currentProfile?.id && (
                     <div className="mt-4 pt-4 border-t border-border">
                       <label className="block text-sm font-medium text-foreground mb-3">
-                        Changer l'avatar
+                        {t('multiUserProfiles.changeAvatar')}
                       </label>
                       <FileUpload
                         accept="image/*"
@@ -871,8 +871,8 @@ const MultiUserProfilesPage = () => {
                         onFileSelect={(file) => handleAvatarUpload(profile.id, file)}
                         disabled={uploadingAvatar}
                         loading={uploadingAvatar}
-                        label="Choisir une image"
-                        description="Glissez-déposez ou cliquez pour sélectionner"
+                        label={t('multiUserProfiles.selectImage')}
+                        description={t('multiUserProfiles.imageDescription')}
                         id={`avatar-upload-${profile.id}`}
                       />
                     </div>
@@ -884,9 +884,9 @@ const MultiUserProfilesPage = () => {
                 <div className="mb-4">
                   <Icon name="Users" size={48} className="mx-auto text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Aucun profil configuré</h3>
+                <h3 className="text-lg font-semibold mb-2">{t('multiUserProfiles.noProfilesConfigured.title')}</h3>
                 <p className="text-muted-foreground mb-4">
-                  Aucun profil n'a été créé pour votre compte. Seuls les administrateurs peuvent créer des profils.
+                  {t('multiUserProfiles.noProfilesConfigured.description')}
                 </p>
                 {isAdmin() && (
                   <Button
@@ -895,7 +895,7 @@ const MultiUserProfilesPage = () => {
                     iconName="Plus"
                     iconPosition="left"
                   >
-                    Créer le premier profil
+                    {t('multiUserProfiles.noProfilesConfigured.createFirst')}
                   </Button>
                 )}
               </div>
@@ -914,9 +914,9 @@ const MultiUserProfilesPage = () => {
                       <Icon name="UserPlus" size={20} className="text-primary" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-semibold text-foreground">Ajouter un profil</h2>
+                      <h2 className="text-xl font-semibold text-foreground">{t('multiUserProfiles.modals.addProfile.title')}</h2>
                       <p className="text-sm text-muted-foreground">
-                        Créez un nouveau profil avec des permissions personnalisées
+                        {t('multiUserProfiles.modals.addProfile.subtitle')}
                       </p>
                     </div>
                   </div>
@@ -936,26 +936,26 @@ const MultiUserProfilesPage = () => {
                       <div>
                         <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
                           <Icon name="User" size={18} className="mr-2 text-primary" />
-                          Informations de base
+                          {t('multiUserProfiles.modals.addProfile.basicInfo')}
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-2">
                             <label className="text-sm font-medium leading-none text-foreground">
-                              Nom du profil <span className="text-destructive">*</span>
+                              {t('multiUserProfiles.modals.addProfile.profileName')} <span className="text-destructive">*</span>
                             </label>
                             <input
                               type="text"
                               value={profileForm.name}
                               onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
                               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                              placeholder="Entrez le nom du profil"
+                              placeholder={t('multiUserProfiles.modals.addProfile.profileName')}
                               required
                             />
                           </div>
 
                           <div className="space-y-2">
                             <label className="text-sm font-medium leading-none text-foreground">
-                              Email <span className="text-destructive">*</span>
+                              {t('multiUserProfiles.modals.addProfile.email')} <span className="text-destructive">*</span>
                             </label>
                             <input
                               type="email"
@@ -969,21 +969,21 @@ const MultiUserProfilesPage = () => {
 
                           <div className="space-y-2">
                             <label className="text-sm font-medium leading-none text-foreground">
-                              Code PIN (optionnel)
+                              {t('multiUserProfiles.modals.addProfile.pin')}
                             </label>
                             <input
                               type="password"
                               value={profileForm.pin}
                               onChange={(e) => setProfileForm({ ...profileForm, pin: e.target.value })}
                               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                              placeholder="1234 (4 chiffres minimum)"
+                              placeholder={t('multiUserProfiles.modals.addProfile.pinPlaceholder')}
                               minLength="4"
                               maxLength="8"
                             />
                             <p className="text-xs text-muted-foreground">
                               {companyProfiles.length > 0 
-                                ? "PIN requis pour tous les profils (y compris admin) quand plusieurs profils existent. Laissez vide pour utiliser le code PIN par défaut (1234)."
-                                : "Laissez vide pour utiliser le code PIN par défaut (1234)"
+                                ? t('multiUserProfiles.modals.addProfile.pinHintMultiple')
+                                : t('multiUserProfiles.modals.addProfile.pinHintSingle')
                               }
                             </p>
                           </div>
@@ -996,10 +996,10 @@ const MultiUserProfilesPage = () => {
                     <div>
                       <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
                         <Icon name="Shield" size={18} className="mr-2 text-primary" />
-                        Modèle de rôle
+                        {t('multiUserProfiles.modals.addProfile.roleTemplate')}
                       </h3>
                       <p className="text-sm text-muted-foreground mb-4">
-                        Sélectionnez un modèle prédéfini ou personnalisez les permissions
+                        {t('multiUserProfiles.modals.addProfile.roleTemplateDescription')}
                       </p>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {Object.entries(roleTemplates).map(([key, template]) => (
@@ -1037,10 +1037,10 @@ const MultiUserProfilesPage = () => {
                     <div>
                       <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
                         <Icon name="Settings" size={18} className="mr-2 text-primary" />
-                        Permissions détaillées
+                        {t('multiUserProfiles.modals.addProfile.detailedPermissions')}
                       </h3>
                       <p className="text-sm text-muted-foreground mb-4">
-                        Personnalisez les permissions pour chaque module
+                        {t('multiUserProfiles.modals.addProfile.detailedPermissionsDescription')}
                       </p>
                       <div className="space-y-4">
                         {Object.entries(accessPermissions).map(([moduleKey, module]) => (
@@ -1083,7 +1083,7 @@ const MultiUserProfilesPage = () => {
                     <div>
                       <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
                         <Icon name="CheckCircle" size={18} className="mr-2 text-primary" />
-                        Résumé des permissions
+                        {t('multiUserProfiles.modals.addProfile.permissionsSummary')}
                       </h3>
                       <div className="bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-lg p-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1107,23 +1107,21 @@ const MultiUserProfilesPage = () => {
 
                   {/* Form Actions */}
                   <div className="flex items-center justify-between pt-6 border-t border-border">
-                    <div className="flex items-center space-x-4">
-                      <p className="text-sm text-muted-foreground">
-                        Sélectionnez un modèle de rôle ou personnalisez les permissions
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setShowAddProfileModal(false)}
-                      >
-                        Annuler
-                      </Button>
-                      <Button type="submit" className="min-w-[120px]">
-                        Créer le profil
-                      </Button>
-                    </div>
+                      <div className="flex items-center space-x-4">
+                        
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setShowAddProfileModal(false)}
+                        >
+                          {t('multiUserProfiles.modals.addProfile.cancel')}
+                        </Button>
+                        <Button type="submit" className="min-w-[120px]">
+                          {t('multiUserProfiles.modals.addProfile.createProfile')}
+                        </Button>
+                      </div>
                   </div>
 
                   </form>
@@ -1132,9 +1130,7 @@ const MultiUserProfilesPage = () => {
                 {/* Footer */}
                 <div className="flex items-center justify-between p-6 border-t border-border bg-muted/20">
                   <div className="flex items-center space-x-4">
-                    <p className="text-sm text-muted-foreground">
-                      Tous les champs marqués d'un * sont obligatoires
-                    </p>
+                   
                   </div>
                 </div>
               </div>
@@ -1152,9 +1148,9 @@ const MultiUserProfilesPage = () => {
                       <Icon name="UserEdit" size={20} className="text-primary" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-semibold text-foreground">Modifier le profil</h2>
+                      <h2 className="text-xl font-semibold text-foreground">{t('multiUserProfiles.modals.editProfile.title')}</h2>
                       <p className="text-sm text-muted-foreground">
-                        Modifiez les informations et permissions du profil
+                        {t('multiUserProfiles.modals.editProfile.subtitle')}
                       </p>
                     </div>
                   </div>
@@ -1346,9 +1342,7 @@ const MultiUserProfilesPage = () => {
                     {/* Form Actions */}
                     <div className="flex items-center justify-between pt-6 border-t border-border">
                       <div className="flex items-center space-x-4">
-                        <p className="text-sm text-muted-foreground">
-                          Sélectionnez un modèle de rôle ou personnalisez les permissions
-                        </p>
+                        
                       </div>
                       <div className="flex items-center space-x-3">
                         <Button
@@ -1359,7 +1353,7 @@ const MultiUserProfilesPage = () => {
                           Annuler
                         </Button>
                         <Button type="submit" className="min-w-[120px]">
-                          Modifier le profil
+                          {t('multiUserProfiles.modals.editProfile.updateProfile')}
                         </Button>
                       </div>
                     </div>
@@ -1370,15 +1364,12 @@ const MultiUserProfilesPage = () => {
                 {/* Footer */}
                 <div className="flex items-center justify-between p-6 border-t border-border bg-muted/20">
                   <div className="flex items-center space-x-4">
-                    <p className="text-sm text-muted-foreground">
-                      Tous les champs marqués d'un * sont obligatoires
-                    </p>
+                    
+
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Icon name="Info" size={16} className="text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">
-                      Les modifications seront appliquées immédiatement
-                    </span>
+                   
+                  
                   </div>
                 </div>
               </div>

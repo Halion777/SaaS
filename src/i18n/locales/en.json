@@ -1612,56 +1612,7 @@
     "invoice": "invoice",
     "invoice_plural": "invoices"
   },
-  "multiUserProfile": {
-    "premiumFeature": {
-      "title": "Multiple Profiles",
-      "description": "This feature is only available for Premium accounts.",
-      "upgradeButton": "Upgrade to Premium"
-    },
-    "currentUser": {
-      "adminDescription": "Administrator - Can manage all profiles",
-      "userDescription": "User - Limited access"
-    },
-    "addProfileButton": "Add a profile",
-    "switchProfileNotice": "To switch profiles, use the dropdown in the sidebar.",
-    "currentProfileLabel": "Current Profile",
-    "editProfileTooltip": "Edit",
-    "deleteProfileTooltip": "Delete",
-    "roles": {
-      "admin": "Administrator",
-      "manager": "Manager",
-      "accountant": "Accountant",
-      "sales": "Sales",
-      "viewer": "Viewer",
-      "default": "User"
-    },
-    "permissions": {
-      "quotes": "Quote Management",
-      "invoices": "Invoice Management",
-      "clients": "Client Management",
-      "analytics": "Analytics",
-      "settings": "Settings",
-      "users": "User Management"
-    },
-    "alerts": {
-      "adminOnly": "Only administrators can manage profiles.",
-      "profileNotFound": "Profile not found.",
-      "deletePermissionDenied": "You do not have permission to delete this profile.",
-      "confirmDelete": "Are you sure you want to delete the profile \"{{name}}\"?"
-    },
-    "modal": {
-      "editProfileTitle": "Edit Profile",
-      "addProfileTitle": "Add a Profile",
-      "fullNameLabel": "Full Name",
-      "fullNamePlaceholder": "User's name",
-      "roleLabel": "Role",
-      "rolePlaceholder": "Select a role",
-      "roleAdminNote": "Only administrators can modify roles",
-      "permissionsLabel": "Permissions",
-      "permissionsAdminNote": "Only administrators can modify permissions",
-      "addButton": "Add"
-    }
-  },
+
   "quotesManagement": {
     "title": "Quotes Management",
     "subtitle": "Manage and optimize your quotes with artificial intelligence",
@@ -2122,6 +2073,7 @@
           "title": "AI Performance",
           "description": "Track AI-driven improvements and gains"
         },
+
         "peppolWidget": {
           "title": "Peppol Network",
           "description": "Electronic invoice exchange status"
@@ -2433,6 +2385,7 @@
     "recentQuotes": {
       "title": "Recent Quotes",
       "viewAllQuotes": "View All Quotes",
+      "noQuotes": "No quotes found",
       "statuses": {
         "signed": {
           "label": "Signed",
@@ -4221,6 +4174,151 @@
           }
         }
       }
+    },
+  "multiUserProfiles": {
+    "title": "User Profile Management",
+    "subtitle": "Manage your team profiles and their permissions",
+    "loading": "Loading profiles...",
+    "addProfile": "Add Profile",
+    "premiumAccount": {
+      "title": "Premium Account",
+      "description": "You can create up to {{max}} user profiles",
+      "profilesCreated": "Profiles Created"
+    },
+    "currentProfile": {
+      "title": "My Current Profile",
+      "role": "Role:",
+      "status": "Status:",
+      "active": "Active",
+      "switchHint": "To switch profiles, use the dropdown menu in the sidebar."
+    },
+    "noProfile": {
+      "title": "No Profile Available",
+      "description": "You don't have a profile configured yet. Contact your administrator to get a profile with appropriate permissions."
+    },
+    "noProfilesConfigured": {
+      "title": "No Profiles Configured",
+      "description": "No profile has been created for your account. Only administrators can create profiles.",
+      "createFirst": "Create First Profile"
+    },
+    "permissions": "Permissions",
+    "changeAvatar": "Change Avatar",
+    "selectImage": "Choose an Image",
+    "imageDescription": "Drag and drop or click to select",
+    "modals": {
+      "addProfile": {
+        "title": "Add Profile",
+        "subtitle": "Create a new profile with custom permissions",
+        "basicInfo": "Basic Information",
+        "profileName": "Profile Name",
+        "email": "Email",
+        "pin": "PIN Code (optional)",
+        "pinPlaceholder": "1234 (minimum 4 digits)",
+        "pinHintSingle": "Leave empty to use default PIN (1234)",
+        "pinHintMultiple": "PIN required for all profiles (including admin) when multiple profiles exist. Leave empty to use default PIN (1234).",
+        "roleTemplate": "Role Template",
+        "roleTemplateDescription": "Select a predefined template or customize permissions",
+        "detailedPermissions": "Detailed Permissions",
+        "detailedPermissionsDescription": "Customize permissions for each module",
+        "permissionsSummary": "Permissions Summary",
+        "selectPermission": "Select a permission",
+        "createProfile": "Create Profile",
+        "cancel": "Cancel"
+      },
+      "editProfile": {
+        "title": "Edit Profile",
+        "subtitle": "Modify profile information and permissions",
+        "updateProfile": "Update Profile",
+        "changesApplied": "Changes will be applied immediately"
+      }
+    },
+    "modules": {
+      "dashboard": {
+        "label": "Dashboard",
+        "description": "Access to main dashboard"
+      },
+      "analytics": {
+        "label": "Analytics",
+        "description": "Access to reports and analytics"
+      },
+      "peppolAccessPoint": {
+        "label": "PEPPOL Access Point",
+        "description": "Access to PEPPOL services"
+      },
+      "leadsManagement": {
+        "label": "Leads Management",
+        "description": "Prospect and opportunity management"
+      },
+      "quoteCreation": {
+        "label": "Create Quote",
+        "description": "Create new quotes"
+      },
+      "quotesManagement": {
+        "label": "Quotes Management",
+        "description": "Manage and track quotes"
+      },
+      "quotesFollowUp": {
+        "label": "Quote Follow-ups",
+        "description": "Follow-up and reminders for quotes"
+      },
+      "invoicesFollowUp": {
+        "label": "Invoice Follow-ups",
+        "description": "Follow-up and reminders for invoices"
+      },
+      "clientInvoices": {
+        "label": "Client Invoices",
+        "description": "Client invoice management"
+      },
+      "supplierInvoices": {
+        "label": "Supplier Invoices",
+        "description": "Supplier invoice management"
+      },
+      "clientManagement": {
+        "label": "Client Management",
+        "description": "Client database management"
+      },
+      "creditInsurance": {
+        "label": "Credit Insurance",
+        "description": "Credit insurance services"
+      },
+      "recovery": {
+        "label": "Recovery",
+        "description": "Recovery services"
+      }
+    },
+    "roles": {
+      "admin": {
+        "name": "Administrator",
+        "description": "Full access to all features"
+      },
+      "manager": {
+        "name": "Manager",
+        "description": "Team management and document approval"
+      },
+      "accountant": {
+        "name": "Accountant",
+        "description": "Financial management and invoicing"
+      },
+      "sales": {
+        "name": "Sales",
+        "description": "Sales management and client relationships"
+      },
+      "viewer": {
+        "name": "Viewer",
+        "description": "Read-only access to data"
+      }
+    },
+    "messages": {
+      "profileSwitched": "Profile switched to {{name}}",
+      "profileSwitchError": "Error switching profile",
+      "profileUpdated": "Profile updated successfully",
+      "profileUpdateError": "Error updating profile",
+      "profileDeleted": "Profile deleted successfully",
+      "profileDeleteError": "Error deleting profile",
+      "deleteConfirm": "Are you sure you want to delete this profile?",
+      "avatarUpdated": "Avatar updated successfully",
+      "avatarUpdateError": "Error uploading avatar"
     }
+  }
 } 
 

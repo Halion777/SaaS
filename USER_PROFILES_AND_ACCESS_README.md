@@ -4,6 +4,16 @@
 
 The system uses a multi-user profile system where each user account can have multiple profiles with different roles and permissions. Access to features is controlled by both subscription plan and profile permissions. This allows teams to share a single account while maintaining granular access control per team member.
 
+**Implementation Status:**
+- ✅ Core profile system implemented and functional
+- ✅ Permission checking logic implemented (`MultiUserContext.hasPermission()`)
+- ✅ Profile management UI with translations (FR, EN, NL)
+- ✅ Profile switching with PIN protection
+- ✅ Subscription limit enforcement
+- ⚠️ **Access control enforcement in UI pending** (see `PROFILE_ACCESS_CONTROL_IMPLEMENTATION_PLAN.md`)
+
+**Note:** The permission system is fully implemented but not yet enforced in sidebar navigation, pages, and widgets. See implementation plan for complete access control rollout.
+
 ---
 
 ## User Account Structure
@@ -246,7 +256,8 @@ Feature Access
    - Is user on Pro plan? → Can have multiple profiles (up to 10)
    - Is user on Starter plan? → Limited to 1 profile
    - Check subscription status (`trial`/`active`/`past_due`/`cancelled`)
-   - Premium status determined by: `subscription_status === 'active' || subscription_status === 'trial' || selected_plan === 'pro'`
+   - Premium status determined by: `isPremiumAccount()` - Only Pro plan with active/trial subscription
+   - `getSubscriptionLimits()` returns correct limits based on plan type and subscription status
 
 2. **Profile Check:**
    - Get current active profile (only one can be active at a time)
@@ -428,14 +439,17 @@ Indexes:
 - `deleteProfile(userId, profileId)` - Delete profile (admin only, cannot delete own)
 - `switchProfile(userId, profileId)` - Switch active profile (deactivates all, activates target)
 - `getProfileById(userId, profileId)` - Get specific profile by ID
-- `hasPermission(userId, permission)` - Check if user has specific permission
+- `hasPermission(userId, module, requiredPermission = 'view')` - Check if user has specific permission for a module
 - `getUserRole(userId)` - Get current profile's role
-- `isPremiumAccount(userId)` - Check if account is premium (Pro plan)
+- `isPremiumAccount(userId)` - Check if account is premium (Pro plan with active/trial subscription)
 - `getSubscriptionLimits(userId)` - Get subscription limits (max profiles, storage, features)
+  - Returns limits based on plan type and subscription status
+  - Starter: 1 profile, 10GB storage
+  - Pro: 10 profiles, 100GB storage
 - `uploadAvatar(userId, file)` - Upload avatar to Supabase storage
 - `deleteAvatar(avatarUrl)` - Delete avatar from storage
 - `updateProfileAvatar(userId, profileId, avatarUrl)` - Update profile avatar (with cleanup)
-- `createInitialProfile(userId, userData)` - Create initial admin profile (uses array format for permissions)
+- `createInitialProfile(userId, userData)` - Create initial admin profile (uses object format for permissions)
 - `cleanupUserAvatars(userId)` - Clean up all avatars for user
 
 **Permission Handling:**
@@ -443,6 +457,8 @@ Indexes:
 - Converts array format to object format when storing
 - Object format: `{ "module": "permission_level" }`
 - Array format: `["module1", "module2"]` (converted to object with `full_access`)
+- `addProfile()` checks subscription limits before creating profile
+- `hasPermission()` updated to accept `module` and `requiredPermission` parameters
 
 #### `src/services/registrationService.js`
 **Purpose:** Handles user registration and initial profile creation
@@ -462,11 +478,17 @@ Indexes:
 **State:**
 - `currentProfile` - Currently active profile
 - `companyProfiles` - All profiles for current user
-- `isPremium` - Premium status (Pro plan)
-- `subscriptionLimits` - Subscription limits object
+- `isPremium` - Premium status (Pro plan with active/trial subscription)
+- `subscriptionLimits` - Subscription limits object (fetched from service)
 - `loading` - Loading state
-- `permissions` - Current profile's permissions
-- `userProfile` - User account data
+- `permissions` - Current profile's permissions (object format)
+- `userProfile` - User account data (fetched from service)
+
+**Initialization:**
+- Fetches user profile and subscription status on mount
+- Gets subscription limits based on actual plan
+- Loads all profiles and determines active profile
+- Sets permissions state from current profile
 
 **Functions:**
 - `switchProfile(profileId)` - Switch to different profile
@@ -479,7 +501,11 @@ Indexes:
 - `getCompanyProfiles()` - Refresh profiles list
 
 **Permission Checks:**
-- `hasPermission(module, requiredPermission)` - Check module permission
+- `hasPermission(module, requiredPermission = 'view')` - Check module permission
+  - Returns `true` if profile has required permission level or higher
+  - Admin role always returns `true` (bypass)
+  - Supports `'view'`, `'view_only'`, and `'full_access'` as requiredPermission
+  - Handles both array (legacy) and object (current) permission formats
 - `getUserRole()` - Get current role
 - `isAdmin()` - Check if admin role
 - `canManageUsers()` - Check client management permission
@@ -496,8 +522,10 @@ Indexes:
 
 **Special Handling:**
 - PEPPOL access checks `business_size` (must be 'small', 'medium', or 'large', not 'solo')
-- Admin role always returns `true` for permission checks
+- Admin role always returns `true` for permission checks (bypasses all checks)
 - Handles both array and object permission formats
+- Permission levels: `no_access` < `view_only` < `full_access`
+- `hasPermission()` supports granular permission level checking
 
 ### Pages
 
@@ -514,11 +542,20 @@ Indexes:
 - Role templates with predefined permissions
 - Permission customization per module
 - Subscription limit enforcement (max profiles)
+- **Full translation support** (French, English, Dutch)
+- All UI strings use i18n translation keys
 
 **Role Templates:**
 - Predefined templates for: admin, manager, accountant, sales, viewer
 - Each template has default permissions
 - Users can customize permissions after selecting template
+- Templates use translations for labels and descriptions
+
+**Translation Keys:**
+- All module labels and descriptions: `multiUserProfiles.modules.*`
+- All role names and descriptions: `multiUserProfiles.roles.*`
+- All UI messages: `multiUserProfiles.messages.*`
+- Modal content: `multiUserProfiles.modals.*`
 
 #### `src/pages/subscription/index.jsx`
 **Purpose:** Subscription management page
@@ -538,15 +575,18 @@ Indexes:
 - Profile switcher integration
 - Shows current active profile
 - Displays profile avatar
-- Access control based on profile permissions
+- **⚠️ Access control filtering not yet implemented** - All navigation items currently shown regardless of permissions
+- **TODO:** Filter navigation items based on `hasPermission()` checks
 
 #### `src/components/ui/ProfileSwitcher.jsx`
 **Purpose:** Component for switching between profiles
 
 **Features:**
 - List of available profiles
-- PIN verification for protected profiles
+- PIN verification for protected profiles (integrated with PinModal)
 - Visual indication of active profile
+- Automatically prompts for PIN if target profile has PIN set
+- Handles PIN validation errors
 
 #### `src/components/ui/MultiUserProfile.jsx`
 **Purpose:** Profile display component
@@ -570,16 +610,19 @@ Indexes:
 1. **Profile Creation:**
    - First profile is created automatically during registration
    - Always created as `admin` role with all `full_access` permissions
-   - Uses object format for permissions in registration service
-   - Uses array format in `createInitialProfile` (converted to object by service)
+   - Uses object format for permissions in both registration service and `createInitialProfile`
    - Additional profiles can only be created on Pro plan
    - New profiles are created with `is_active: false`
+   - Subscription limits checked before profile creation (throws error if limit reached)
+   - Profile creation converts array permissions to object format automatically
 
 2. **Subscription Limits:**
    - Starter: 1 profile max (enforced in UI and backend)
    - Pro: 10 profiles max (enforced in UI and backend)
    - Limits checked in `getSubscriptionLimits()` function
-   - Premium status: `subscription_status === 'active' || subscription_status === 'trial' || selected_plan === 'pro'`
+   - Premium status: Only Pro plan with active/trial subscription (`isPremiumAccount()`)
+   - `getSubscriptionLimits()` returns correct limits based on plan and subscription status
+   - Profile creation enforces limits before allowing new profiles
 
 3. **Permission Inheritance:**
    - Permissions are per-profile, not per-user
@@ -594,6 +637,9 @@ Indexes:
    - Admin role bypasses permission checks
    - PEPPOL access also checks `business_size` (must be business, not solo)
    - Permission checks in `MultiUserContext.hasPermission()`
+   - **⚠️ Current Status:** Permission system implemented but not enforced in UI
+   - **Missing:** Sidebar filtering, page-level checks, widget-level checks, route protection
+   - **See:** `PROFILE_ACCESS_CONTROL_IMPLEMENTATION_PLAN.md` for complete implementation guide
 
 5. **Active Profile Management:**
    - Only one profile can be active at a time
@@ -658,8 +704,11 @@ Indexes:
 2. System checks subscription: ✅ Pro plan allows access
 3. System gets current active profile: Sales profile
 4. System checks profile permissions: `quotesManagement: "view_only"`
-5. System grants access but limits to view-only (no create/edit/delete buttons)
-6. If user switches to Admin profile, same check grants `full_access`
+5. **Current:** System grants access but limits to view-only (no create/edit/delete buttons)
+6. **TODO:** Sidebar should hide item if `no_access`, page should redirect if no permission
+7. If user switches to Admin profile, same check grants `full_access` (admin bypass)
+
+**Note:** Permission checking logic is implemented but UI enforcement is pending. See implementation plan.
 
 ---
 
@@ -674,6 +723,68 @@ Indexes:
 - **Active Profile** = Only one active at a time, determines current permissions
 - **Admin Role** = Bypasses permission checks, can manage other profiles
 - **Profile Switching** = Deactivates all, activates target, updates permissions in real-time
+
+---
+
+## Translation Support
+
+**Status:** ✅ Fully implemented for profile management page
+
+**Translation Files:**
+- `src/i18n/locales/fr.json` - French translations
+- `src/i18n/locales/en.json` - English translations
+- `src/i18n/locales/nl.json` - Dutch translations
+
+**Translation Keys Structure:**
+```
+multiUserProfiles
+├── title, subtitle, loading, addProfile
+├── premiumAccount (title, description, profilesCreated)
+├── currentProfile (title, role, status, active, switchHint)
+├── noProfile (title, description)
+├── noProfilesConfigured (title, description, createFirst)
+├── permissions, changeAvatar, selectImage, imageDescription
+├── modals
+│   ├── addProfile (all form labels and hints)
+│   └── editProfile (title, subtitle, updateProfile, changesApplied)
+├── modules (all 13 modules with label and description)
+├── roles (all 5 roles with name and description)
+└── messages (all success/error messages)
+```
+
+**Reference:** `src/pages/multi-user-profiles/index.jsx` uses `t('multiUserProfiles.*')` for all strings
+
+---
+
+## Access Control Implementation Status
+
+**Current State:**
+- ✅ Permission checking logic: Fully implemented and tested
+- ✅ Profile management: Complete with translations
+- ✅ Profile switching: Working with PIN protection
+- ⚠️ **UI Enforcement: Not yet implemented**
+
+**What's Missing:**
+1. **Sidebar Navigation:** All items shown regardless of permissions
+2. **Page Access:** No permission checks before rendering pages
+3. **Widget Visibility:** Dashboard widgets shown to all users
+4. **Action Buttons:** Create/edit/delete buttons not disabled for `view_only` users
+5. **Route Protection:** No route guards checking permissions
+
+**Implementation Plan:**
+See `PROFILE_ACCESS_CONTROL_IMPLEMENTATION_PLAN.md` for:
+- Step-by-step implementation guide
+- Code examples for each component
+- File references and line numbers
+- Testing checklist
+- Quick reference guide
+
+**Priority Order:**
+1. Sidebar filtering (highest visibility impact)
+2. Route protection (security foundation)
+3. Page-level checks (user experience)
+4. Widget-level checks (dashboard)
+5. Action-level checks (button states)
 
 ---
 
@@ -704,6 +815,8 @@ Indexes:
 - Array format: `["dashboard", "analytics", "leadsManagement"]` 
 - Converts to: `{ "dashboard": "full_access", "analytics": "full_access", "leadsManagement": "full_access", ... }`
 - All other modules set to `"no_access"`
+- Conversion happens in `addProfile()` and `updateProfile()` functions
+- `createInitialProfile()` now uses object format directly (updated)
 
 ### Profile Activation Logic
 
@@ -729,35 +842,122 @@ if (limits.maxProfiles <= currentProfileCount) {
 
 ### Permission Check Implementation
 
+**Location:** `src/context/MultiUserContext.jsx` (lines 243-294)
+
 ```javascript
 hasPermission(module, requiredPermission = 'view') {
   // Admin bypass
   if (currentProfile.role === 'admin') return true;
   
+  // Special handling for PEPPOL - check business_size
+  if (module === 'peppolAccessPoint') {
+    const businessSizes = ['small', 'medium', 'large'];
+    const isBusiness = businessSizes.includes(userProfile?.business_size);
+    if (!isBusiness) return false;
+  }
+  
   // Get permissions (handle both formats)
   let permissions = currentProfile.permissions;
   
-  // Array format (legacy)
+  // Array format (legacy) - if module in array, means full_access
   if (Array.isArray(permissions)) {
     return permissions.includes(module);
   }
   
-  // Object format (current)
-  if (typeof permissions === 'object') {
+  // Object format (current) - check permission level
+  if (typeof permissions === 'object' && permissions !== null) {
     const modulePermission = permissions[module];
-    if (!modulePermission) return false;
-    if (modulePermission === 'no_access') return false;
-    if (modulePermission === 'view_only' && requiredPermission === 'full_access') return false;
-    return true;
+    
+    if (!modulePermission || modulePermission === 'no_access') {
+      return false;
+    }
+    
+    // If requiredPermission is 'view' or 'view_only', allow both view_only and full_access
+    if (requiredPermission === 'view' || requiredPermission === 'view_only') {
+      return modulePermission === 'view_only' || modulePermission === 'full_access';
+    }
+    
+    // If requiredPermission is 'full_access', only allow full_access
+    if (requiredPermission === 'full_access') {
+      return modulePermission === 'full_access';
+    }
+    
+    // Default: check if permission exists and is not 'no_access'
+    return modulePermission !== 'no_access';
   }
   
   return false;
 }
 ```
 
+**Service Layer:** `src/services/multiUserService.js` (lines 375-421)
+- Same logic as context, but async function
+- Signature: `hasPermission(userId, module, requiredPermission = 'view')`
+
 ---
 
-## Future Enhancements (Not Yet Implemented)
+## Recent Updates & Fixes
+
+### Permission System Improvements
+1. **`hasPermission()` Function Signature:**
+   - Updated to accept `module` and `requiredPermission` parameters
+   - Supports granular permission level checking (`'view'`, `'view_only'`, `'full_access'`)
+   - Improved logic for handling permission hierarchies
+   - **Files:** `src/context/MultiUserContext.jsx`, `src/services/multiUserService.js`
+
+2. **Subscription Limits Logic:**
+   - Fixed `getSubscriptionLimits()` to return correct limits based on plan
+   - Fixed `isPremiumAccount()` to only return true for Pro plan with active/trial subscription
+   - Added limit checking in `addProfile()` before profile creation
+   - **Files:** `src/services/multiUserService.js`
+
+3. **Profile Initialization:**
+   - `createInitialProfile()` now uses object format for permissions (not array)
+   - `MultiUserContext.initializeMultiUser()` fetches user profile and subscription limits
+   - Ensures accurate `isPremium` and `subscriptionLimits` state
+   - **Files:** `src/services/multiUserService.js`, `src/context/MultiUserContext.jsx`
+
+4. **ProfileSwitcher PIN Integration:**
+   - Integrated PIN verification in profile switching flow
+   - Automatically opens PinModal if target profile has PIN
+   - Handles PIN validation errors gracefully
+   - **Files:** `src/components/ui/ProfileSwitcher.jsx`, `src/pages/multi-user-profiles/index.jsx`
+
+## Implementation Status & Next Steps
+
+### ✅ Completed
+
+1. **Core Profile System:**
+   - Profile CRUD operations
+   - Profile switching with PIN protection
+   - Avatar management
+   - Subscription limit enforcement
+   - Permission checking logic
+
+2. **UI Implementation:**
+   - Profile management page (`/multi-user-profiles`)
+   - Profile switcher component
+   - PIN modal for secure switching
+   - Full translation support (FR, EN, NL)
+
+3. **Service Layer:**
+   - Permission format conversion (array ↔ object)
+   - Subscription status checking
+   - Profile activation logic
+   - Avatar cleanup
+
+### ⚠️ Pending Implementation
+
+**Access Control Enforcement:**
+- Sidebar navigation filtering (hide items with `no_access`)
+- Page-level permission checks (redirect if no access)
+- Widget-level permission checks (conditional rendering)
+- Route protection (ProtectedRoute component)
+- Action button state management (disable for `view_only`)
+
+**Reference:** See `PROFILE_ACCESS_CONTROL_IMPLEMENTATION_PLAN.md` for detailed implementation guide with code examples and file references.
+
+### Future Enhancements (Not Yet Implemented)
 
 - Profile activity logging
 - Profile-based data filtering (quotes/invoices per profile)
@@ -766,3 +966,4 @@ hasPermission(module, requiredPermission = 'view') {
 - Profile templates/roles customization by super admin
 - Profile expiration dates
 - Profile access time restrictions
+- Real-time permission updates across all open tabs

@@ -45,6 +45,14 @@ class MultiUserService {
   // Add a new profile
   async addProfile(userId, profileData) {
     try {
+      // Check subscription limits before creating profile
+      const limits = await this.getSubscriptionLimits(userId);
+      const currentProfiles = await this.getCompanyProfiles(userId);
+      
+      if (currentProfiles.length >= limits.maxProfiles) {
+        throw new Error(`Limite de profils atteinte. Maximum: ${limits.maxProfiles} profil(s) pour votre plan.`);
+      }
+      
       // Store permissions as object format for better granular control
       let permissionsToStore = {};
       
@@ -95,7 +103,7 @@ class MultiUserService {
       if (error) throw error;
       return data;
     } catch (error) {
-      
+      console.error('Error adding profile:', error);
       throw error;
     }
   }
@@ -364,22 +372,45 @@ class MultiUserService {
   }
 
   // Check if user has a specific permission
-  async hasPermission(userId, permission) {
+  async hasPermission(userId, module, requiredPermission = 'view') {
     try {
       const currentProfile = await this.getCurrentProfile(userId);
       if (!currentProfile) {
         return false;
       }
 
+      // Admin has all permissions
+      if (currentProfile.role === 'admin') {
+        return true;
+      }
+
       // Handle both array and object formats for permissions
       let permissions = currentProfile.permissions;
       
       if (Array.isArray(permissions)) {
-        // Array format (from database)
-        return permissions.includes(permission);
+        // Array format (legacy) - simple check if module is in array
+        // If module is in array, it means full_access
+        return permissions.includes(module);
       } else if (typeof permissions === 'object' && permissions !== null) {
-        // Object format (fallback for old data)
-        return permissions[permission] && permissions[permission] !== 'none';
+        // Object format (current) - check permission level
+        const modulePermission = permissions[module];
+        
+        if (!modulePermission || modulePermission === 'no_access') {
+          return false;
+        }
+        
+        // If requiredPermission is 'view' or 'view_only', allow both view_only and full_access
+        if (requiredPermission === 'view' || requiredPermission === 'view_only') {
+          return modulePermission === 'view_only' || modulePermission === 'full_access';
+        }
+        
+        // If requiredPermission is 'full_access', only allow full_access
+        if (requiredPermission === 'full_access') {
+          return modulePermission === 'full_access';
+        }
+        
+        // Default: check if permission exists and is not 'no_access'
+        return modulePermission !== 'no_access';
       }
       
       return false;
@@ -401,12 +432,13 @@ class MultiUserService {
   }
 
   // Check if account is Premium (for multi-user features)
+  // Premium means Pro plan with active/trial subscription status
   async isPremiumAccount(userId) {
     try {
       const userProfile = await this.getUserProfile(userId);
-      return userProfile.subscription_status === 'active' || 
-             userProfile.subscription_status === 'trial' ||
-             userProfile.selected_plan === 'pro';
+      const isActive = userProfile.subscription_status === 'active' || 
+                       userProfile.subscription_status === 'trial';
+      return isActive && userProfile.selected_plan === 'pro';
     } catch (error) {
       console.error('Error checking premium status:', error);
       return false;
@@ -417,15 +449,20 @@ class MultiUserService {
   async getSubscriptionLimits(userId) {
     try {
       const userProfile = await this.getUserProfile(userId);
-      const isPremium = await this.isPremiumAccount(userId);
       
-      if (isPremium) {
+      // Check if subscription is active (trial or active status)
+      const isActive = userProfile.subscription_status === 'active' || 
+                       userProfile.subscription_status === 'trial';
+      
+      // Determine limits based on plan type
+      if (userProfile.selected_plan === 'pro' && isActive) {
         return {
           maxProfiles: 10,
           maxStorage: '100GB',
           features: ['multi-user', 'advanced-analytics', 'priority-support']
         };
       } else {
+        // Starter plan or inactive subscription
         return {
           maxProfiles: 1,
           maxStorage: '10GB',
@@ -553,28 +590,28 @@ class MultiUserService {
       }
 
       // Create admin profile for the user using provided data with full permissions
-      // Use array format for permissions as expected by the database
+      // Use object format for permissions (as per README specification)
       const profileData = {
         user_id: userId,
         name: userData.full_name || userData.email?.split('@')[0] || 'Admin',
         email: userData.email,
         role: 'admin',
         avatar: null, // No avatar needed initially, user can update later
-        permissions: [
-          'dashboard',
-          'analytics',
-          'peppolAccessPoint',
-          'leadsManagement',
-          'quoteCreation',
-          'quotesManagement',
-          'quotesFollowUp',
-          'invoicesFollowUp',
-          'clientInvoices',
-          'supplierInvoices',
-          'clientManagement',
-          'creditInsurance',
-          'recovery'
-        ],
+        permissions: {
+          dashboard: 'full_access',
+          analytics: 'full_access',
+          peppolAccessPoint: 'full_access',
+          leadsManagement: 'full_access',
+          quoteCreation: 'full_access',
+          quotesManagement: 'full_access',
+          quotesFollowUp: 'full_access',
+          invoicesFollowUp: 'full_access',
+          clientInvoices: 'full_access',
+          supplierInvoices: 'full_access',
+          clientManagement: 'full_access',
+          creditInsurance: 'full_access',
+          recovery: 'full_access'
+        },
         is_active: true
       };
       

@@ -2026,56 +2026,7 @@
     "invoice": "facture",
     "invoice_plural": "factures"
   },
-  "multiUserProfile": {
-    "premiumFeature": {
-      "title": "Profils multiples",
-      "description": "Cette fonctionnalité est disponible uniquement pour les comptes Premium.",
-      "upgradeButton": "Passer à Premium"
-    },
-    "currentUser": {
-      "adminDescription": "Administrateur - Peut gérer tous les profils",
-      "userDescription": "Utilisateur - Accès limité"
-    },
-    "addProfileButton": "Ajouter un profil",
-    "switchProfileNotice": "Pour changer de profil, utilisez le menu déroulant dans la barre latérale.",
-    "currentProfileLabel": "Profil actuel",
-    "editProfileTooltip": "Modifier",
-    "deleteProfileTooltip": "Supprimer",
-    "roles": {
-      "admin": "Administrateur",
-      "manager": "Gestionnaire",
-      "accountant": "Comptable",
-      "sales": "Commercial",
-      "viewer": "Lecteur",
-      "default": "Utilisateur"
-    },
-    "permissions": {
-      "quotes": "Gestion des devis",
-      "invoices": "Gestion des factures",
-      "clients": "Gestion des clients",
-      "analytics": "Analytics",
-      "settings": "Paramètres",
-      "users": "Gestion des utilisateurs"
-    },
-    "alerts": {
-      "adminOnly": "Seuls les administrateurs peuvent gérer les profils.",
-      "profileNotFound": "Profil non trouvé.",
-      "deletePermissionDenied": "Vous n'avez pas les permissions pour supprimer ce profil.",
-      "confirmDelete": "Êtes-vous sûr de vouloir supprimer le profil \"{{name}}\" ?"
-    },
-    "modal": {
-      "editProfileTitle": "Modifier le profil",
-      "addProfileTitle": "Ajouter un profil",
-      "fullNameLabel": "Nom complet",
-      "fullNamePlaceholder": "Nom de l'utilisateur",
-      "roleLabel": "Rôle",
-      "rolePlaceholder": "Sélectionner un rôle",
-      "roleAdminNote": "Seuls les administrateurs peuvent modifier les rôles",
-      "permissionsLabel": "Permissions",
-      "permissionsAdminNote": "Seuls les administrateurs peuvent modifier les permissions",
-      "addButton": "Ajouter"
-    }
-  },
+
   "dashboard": {
     "header": {
       "title": "Aperçu Rapide",
@@ -2497,6 +2448,7 @@
     "recentQuotes": {
       "title": "Devis récents",
       "viewAllQuotes": "Voir tous les devis",
+      "noQuotes": "Aucun devis trouvé",
       "statuses": {
         "signed": {
           "label": "Signé",
@@ -4287,5 +4239,150 @@
           }
         }
       }
+    },
+  "multiUserProfiles": {
+    "title": "Gestion des profils utilisateurs",
+    "subtitle": "Gérez les profils de votre équipe et leurs permissions",
+    "loading": "Chargement des profils...",
+    "addProfile": "Ajouter un profil",
+    "premiumAccount": {
+      "title": "Compte Premium",
+      "description": "Vous pouvez créer jusqu'à {{max}} profils utilisateurs",
+      "profilesCreated": "Profils créés"
+    },
+    "currentProfile": {
+      "title": "Mon profil actuel",
+      "role": "Rôle:",
+      "status": "Statut:",
+      "active": "Actif",
+      "switchHint": "Pour changer de profil, utilisez le menu déroulant dans la barre latérale."
+    },
+    "noProfile": {
+      "title": "Aucun profil disponible",
+      "description": "Vous n'avez pas encore de profil configuré. Contactez votre administrateur pour obtenir un profil avec les permissions appropriées."
+    },
+    "noProfilesConfigured": {
+      "title": "Aucun profil configuré",
+      "description": "Aucun profil n'a été créé pour votre compte. Seuls les administrateurs peuvent créer des profils.",
+      "createFirst": "Créer le premier profil"
+    },
+    "permissions": "Permissions",
+    "changeAvatar": "Changer l'avatar",
+    "selectImage": "Choisir une image",
+    "imageDescription": "Glissez-déposez ou cliquez pour sélectionner",
+    "modals": {
+      "addProfile": {
+        "title": "Ajouter un profil",
+        "subtitle": "Créez un nouveau profil avec des permissions personnalisées",
+        "basicInfo": "Informations de base",
+        "profileName": "Nom du profil",
+        "email": "Email",
+        "pin": "Code PIN (optionnel)",
+        "pinPlaceholder": "1234 (4 chiffres minimum)",
+        "pinHintSingle": "Laissez vide pour utiliser le code PIN par défaut (1234)",
+        "pinHintMultiple": "PIN requis pour tous les profils (y compris admin) quand plusieurs profils existent. Laissez vide pour utiliser le code PIN par défaut (1234).",
+        "roleTemplate": "Modèle de rôle",
+        "roleTemplateDescription": "Sélectionnez un modèle prédéfini ou personnalisez les permissions",
+        "detailedPermissions": "Permissions détaillées",
+        "detailedPermissionsDescription": "Personnalisez les permissions pour chaque module",
+        "permissionsSummary": "Résumé des permissions",
+        "selectPermission": "Sélectionner une permission",
+        "createProfile": "Créer le profil",
+        "cancel": "Annuler"
+      },
+      "editProfile": {
+        "title": "Modifier le profil",
+        "subtitle": "Modifiez les informations et permissions du profil",
+        "updateProfile": "Modifier le profil",
+        "changesApplied": "Les modifications seront appliquées immédiatement"
+      }
+    },
+    "modules": {
+      "dashboard": {
+        "label": "Tableau de bord",
+        "description": "Accès au tableau de bord principal"
+      },
+      "analytics": {
+        "label": "Analytics",
+        "description": "Accès aux rapports et analyses"
+      },
+      "peppolAccessPoint": {
+        "label": "Point d'accès PEPPOL",
+        "description": "Accès aux services PEPPOL"
+      },
+      "leadsManagement": {
+        "label": "Gestion des Leads",
+        "description": "Gestion des prospects et opportunités"
+      },
+      "quoteCreation": {
+        "label": "Créer un devis",
+        "description": "Création de nouveaux devis"
+      },
+      "quotesManagement": {
+        "label": "Gestion des devis",
+        "description": "Gestion et suivi des devis"
+      },
+      "quotesFollowUp": {
+        "label": "Relances devis",
+        "description": "Suivi et relances des devis"
+      },
+      "invoicesFollowUp": {
+        "label": "Relances factures",
+        "description": "Suivi et relances des factures"
+      },
+      "clientInvoices": {
+        "label": "Factures clients",
+        "description": "Gestion des factures clients"
+      },
+      "supplierInvoices": {
+        "label": "Factures fournisseurs",
+        "description": "Gestion des factures fournisseurs"
+      },
+      "clientManagement": {
+        "label": "Gestion clients",
+        "description": "Gestion de la base de données clients"
+      },
+      "creditInsurance": {
+        "label": "Assurance crédit",
+        "description": "Services d'assurance crédit"
+      },
+      "recovery": {
+        "label": "Recouvrement",
+        "description": "Services de recouvrement"
+      }
+    },
+    "roles": {
+      "admin": {
+        "name": "Administrateur",
+        "description": "Accès complet à toutes les fonctionnalités"
+      },
+      "manager": {
+        "name": "Gestionnaire",
+        "description": "Gestion des équipes et approbation des documents"
+      },
+      "accountant": {
+        "name": "Comptable",
+        "description": "Gestion financière et facturation"
+      },
+      "sales": {
+        "name": "Commercial",
+        "description": "Gestion des ventes et relations clients"
+      },
+      "viewer": {
+        "name": "Lecteur",
+        "description": "Accès en lecture seule aux données"
+      }
+    },
+    "messages": {
+      "profileSwitched": "Profil changé vers {{name}}",
+      "profileSwitchError": "Erreur lors du changement de profil",
+      "profileUpdated": "Profil modifié avec succès",
+      "profileUpdateError": "Erreur lors de la modification du profil",
+      "profileDeleted": "Profil supprimé avec succès",
+      "profileDeleteError": "Erreur lors de la suppression du profil",
+      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer ce profil ?",
+      "avatarUpdated": "Avatar mis à jour avec succès",
+      "avatarUpdateError": "Erreur lors du téléchargement de l'avatar"
     }
+  }
 }
