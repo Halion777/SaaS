@@ -2,7 +2,9 @@
 
 ## Overview
 
-The system uses a multi-user profile system where each user account can have multiple profiles with different roles and permissions. Access to features is controlled by both subscription plan and profile permissions. This allows teams to share a single account while maintaining granular access control per team member.
+The system uses a multi-user profile system where each user account can have multiple profiles with different roles and permissions. **All actions are performed by the parent user account** - profiles are **ONLY for access control** to determine which features/modules each profile can access. This allows teams to share a single account while maintaining granular access control per team member.
+
+**Important:** Profiles are NOT separate user accounts. They are permission containers that control what features are accessible. All data, actions, and operations belong to the parent user account.
 
 **Implementation Status:**
 - ✅ Core profile system implemented and functional
@@ -682,10 +684,12 @@ Indexes:
 - Subscription status: `trial` (14 days) → `active` or `cancelled`
 
 ### Scenario 3: Multi-User Team (Pro Plan)
-- Admin profile: Full access to everything, can manage other profiles
-- Sales profile: Full access to leads, quotes, clients; view-only for invoices; no access to supplier invoices, credit insurance, recovery
-- Accountant profile: Full access to invoices, analytics, financials; view-only for quotes and leads
-- Viewer profile: Read-only access to most data; no access to sensitive features
+- **Parent user account:** Owns all data (quotes, invoices, clients, etc.)
+- **Admin profile:** Full access to everything, can manage other profiles
+- **Sales profile:** Full access to leads, quotes, clients; view-only for invoices; no access to supplier invoices, credit insurance, recovery
+- **Accountant profile:** Full access to invoices, analytics, financials; view-only for quotes and leads
+- **Viewer profile:** Read-only access to most data; no access to sensitive features
+- **Important:** All profiles see the SAME data (quotes, invoices, clients) - profiles only control which features are accessible
 - Each profile has its own permissions and can be switched
 - PIN can be set for additional security on sensitive profiles
 
@@ -698,6 +702,7 @@ Indexes:
 6. System activates Sales profile
 7. UI updates to show only features allowed by Sales permissions
 8. `last_active` timestamp updated for Sales profile
+9. **Important:** All data remains the same - only accessible features change
 
 ### Scenario 5: Permission Check Flow
 1. User (Pro plan, active subscription) tries to access "Quotes Management"
@@ -714,8 +719,8 @@ Indexes:
 
 ## Summary
 
-- **User Account** = Subscription plan + billing + user metadata
-- **User Profile** = Role + permissions + access control
+- **User Account** = Subscription plan + billing + user metadata + **owns all data**
+- **User Profile** = Role + permissions + access control (**ONLY for access control, not separate accounts**)
 - **Starter Plan** = 1 profile max, limited features (15 quotes/invoices per month)
 - **Pro Plan** = Up to 10 profiles, all features (unlimited quotes/invoices)
 - **Access Control** = Subscription plan limits + Profile permissions
@@ -723,6 +728,8 @@ Indexes:
 - **Active Profile** = Only one active at a time, determines current permissions
 - **Admin Role** = Bypasses permission checks, can manage other profiles
 - **Profile Switching** = Deactivates all, activates target, updates permissions in real-time
+- **Data Ownership** = All data (quotes, invoices, clients) belongs to parent user account, shared across all profiles
+- **Profile Purpose** = Profiles are permission containers only - they control feature access, not data ownership
 
 ---
 
@@ -957,13 +964,23 @@ hasPermission(module, requiredPermission = 'view') {
 
 **Reference:** See `PROFILE_ACCESS_CONTROL_IMPLEMENTATION_PLAN.md` for detailed implementation guide with code examples and file references.
 
-### Future Enhancements (Not Yet Implemented)
+### What Profiles Are NOT For
 
-- Profile activity logging
-- Profile-based data filtering (quotes/invoices per profile)
-- Profile-specific settings and preferences
-- Bulk profile operations
-- Profile templates/roles customization by super admin
-- Profile expiration dates
-- Profile access time restrictions
-- Real-time permission updates across all open tabs
+**Profiles are ONLY for access control. They are NOT:**
+- ❌ Separate user accounts (all actions belong to parent user)
+- ❌ Profile-specific data storage (all data belongs to parent user)
+- ❌ Profile-specific settings or preferences
+- ❌ Profile activity logging or tracking
+- ❌ Profile expiration dates or time restrictions
+- ❌ Profile-based data filtering (quotes/invoices are shared across all profiles)
+- ❌ Bulk profile operations
+- ❌ Profile customization by super admin beyond role templates
+
+**Profiles ARE:**
+- ✅ Permission containers that control feature access
+- ✅ Role-based access control (admin, manager, accountant, sales, viewer)
+- ✅ Module-level permission control (13 feature modules)
+- ✅ PIN-protected profile switching for security
+- ✅ Visual identity (avatar, name) for team member recognition
+
+**All data and actions belong to the parent user account. Profiles only determine what features are visible and accessible.**

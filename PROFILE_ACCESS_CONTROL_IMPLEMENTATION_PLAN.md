@@ -406,6 +406,10 @@ if (isAdmin() || hasPermission('module', 'full_access')) {
 - Permission format supports both array (legacy) and object (current)
 - Profile switching updates permissions immediately
 - Subscription plan determines max profiles, not feature access
+- **Important:** Profiles are ONLY for access control - all data belongs to parent user account
+- Profiles are NOT separate user accounts - they are permission containers
+- All actions (create, edit, delete) are performed by the parent user account
+- Profiles only determine which features are visible and accessible
 
 **Reference:** `USER_PROFILES_AND_ACCESS_README.md` (complete documentation)
 
