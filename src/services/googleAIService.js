@@ -232,6 +232,7 @@ export function canMakeRequest() {
   return requestCount < FREE_TIER_LIMIT;
 }
 
+// Google AI Service Status
 /**
  * Increment request counter
  */
