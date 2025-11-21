@@ -614,7 +614,6 @@ export async function trackUserLogin(userId) {
       return { data: null, error };
     }
 
-    console.log('User login tracked successfully:', data);
     return { data, error: null };
   } catch (error) {
     console.error('Unexpected error tracking login:', error);
