@@ -15,10 +15,12 @@ export async function fetchClients() {
     }
 
     // Fetch clients, quotes, and invoices in parallel
+    // IMPORTANT: Explicitly filter clients by user_id to ensure only user's clients are returned
     const [clientsResult, quotesResult, invoicesResult] = await Promise.all([
       supabase
         .from('clients')
         .select('*')
+        .eq('user_id', user.id)  // Explicitly filter by user_id
         .order('name', { ascending: true }),
       supabase
         .from('quotes')
@@ -93,6 +95,14 @@ export async function fetchClients() {
  */
 export async function fetchClientById(id) {
   try {
+    // Get current user ID to ensure we only fetch user's own clients
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      console.error('Error getting current user:', userError);
+      return { error: { message: 'User not authenticated', details: userError?.message } };
+    }
+    
     const { data, error } = await supabase
       .from('clients')
       .select(`
@@ -101,6 +111,7 @@ export async function fetchClientById(id) {
         invoices:invoices(id, invoice_number, status, final_amount, created_at)
       `)
       .eq('id', id)
+      .eq('user_id', user.id)  // Explicitly filter by user_id
       .single();
     
     if (error) {
@@ -241,27 +252,68 @@ export async function updateClient(id, clientData) {
  */
 export async function deleteClient(id) {
   try {
-    // Check if client has quotes or invoices
-    const { data: relatedData, error: checkError } = await supabase
-      .from('clients')
-      .select(`
-        quotes:quotes(count),
-        invoices:invoices(count)
-      `)
-      .eq('id', id)
-      .single();
+    // Check if client has quotes or invoices by querying for actual records
+    const [quotesResult, invoicesResult] = await Promise.all([
+      supabase
+        .from('quotes')
+        .select('id')
+        .eq('client_id', id)
+        .limit(1),
+      supabase
+        .from('invoices')
+        .select('id')
+        .eq('client_id', id)
+        .limit(1)
+    ]);
     
-    if (checkError) return { error: checkError };
+    // Check for errors
+    if (quotesResult.error) {
+      console.error('Error checking quotes:', quotesResult.error);
+      return { error: quotesResult.error };
+    }
     
-    const hasQuotes = relatedData.quotes.length > 0;
-    const hasInvoices = relatedData.invoices.length > 0;
+    if (invoicesResult.error) {
+      console.error('Error checking invoices:', invoicesResult.error);
+      return { error: invoicesResult.error };
+    }
+    
+    const hasQuotes = quotesResult.data && quotesResult.data.length > 0;
+    const hasInvoices = invoicesResult.data && invoicesResult.data.length > 0;
     
     if (hasQuotes || hasInvoices) {
+      // Get counts for better error message
+      let quotesCount = 0;
+      let invoicesCount = 0;
+      
+      if (hasQuotes) {
+        const { count } = await supabase
+          .from('quotes')
+          .select('*', { count: 'exact', head: true })
+          .eq('client_id', id);
+        quotesCount = count || 0;
+      }
+      
+      if (hasInvoices) {
+        const { count } = await supabase
+          .from('invoices')
+          .select('*', { count: 'exact', head: true })
+          .eq('client_id', id);
+        invoicesCount = count || 0;
+      }
+      
+      let message = 'Cannot delete client with associated ';
+      const parts = [];
+      if (hasQuotes) parts.push(`${quotesCount} quote(s)`);
+      if (hasInvoices) parts.push(`${invoicesCount} invoice(s)`);
+      message += parts.join(' and ');
+      
       return { 
         error: { 
-          message: 'Cannot delete client with associated quotes or invoices' 
+          message: message
         },
-        hasRelatedData: true
+        hasRelatedData: true,
+        quotesCount,
+        invoicesCount
       };
     }
     
@@ -290,9 +342,18 @@ export async function deleteClient(id) {
  */
 export async function searchClients(query) {
   try {
+    // Get current user ID to ensure we only search user's own clients
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      console.error('Error getting current user:', userError);
+      return { error: { message: 'User not authenticated', details: userError?.message } };
+    }
+    
     const { data, error } = await supabase
       .from('clients')
       .select('*')
+      .eq('user_id', user.id)  // Explicitly filter by user_id
       .or(`name.ilike.%${query}%,email.ilike.%${query}%,contact_person.ilike.%${query}%`)
       .order('name', { ascending: true });
     
@@ -314,10 +375,19 @@ export async function searchClients(query) {
  */
 export async function getClientStatistics() {
   try {
+    // Get current user ID to ensure we only get user's own client statistics
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      console.error('Error getting current user:', userError);
+      return { error: { message: 'User not authenticated', details: userError?.message } };
+    }
+    
     // Get total clients count
     const { count: totalCount, error: countError } = await supabase
       .from('clients')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id);  // Explicitly filter by user_id
     
     if (countError) return { error: countError };
     
@@ -325,6 +395,7 @@ export async function getClientStatistics() {
     const { count: activeCount, error: activeError } = await supabase
       .from('clients')
       .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)  // Explicitly filter by user_id
       .eq('is_active', true);
     
     if (activeError) return { error: activeError };
@@ -337,6 +408,7 @@ export async function getClientStatistics() {
     const { count: newClientsCount, error: newError } = await supabase
       .from('clients')
       .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)  // Explicitly filter by user_id
       .gte('created_at', firstDayOfMonth.toISOString());
     
     if (newError) return { error: newError };
@@ -344,18 +416,29 @@ export async function getClientStatistics() {
     // Get clients by type
     const { data: typeStats, error: typeError } = await supabase
       .from('clients')
-      .select('client_type, count')
       .select('client_type')
-      .group('client_type');
+      .eq('user_id', user.id);  // Explicitly filter by user_id
     
     if (typeError) return { error: typeError };
+    
+    // Group by type manually since Supabase doesn't support group by easily
+    const groupedStats = (typeStats || []).reduce((acc, client) => {
+      const type = client.client_type || 'individual';
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    }, {});
+    
+    const typeStatsArray = Object.entries(groupedStats).map(([type, count]) => ({
+      client_type: type,
+      count
+    }));
     
     return { 
       data: {
         totalCount,
         activeCount,
         newClientsCount,
-        typeStats: typeStats || []
+        typeStats: typeStatsArray
       },
       error: null
     };
@@ -399,9 +482,18 @@ export async function toggleClientStatus(id, isActive) {
  */
 export async function getClientsByLocation(location) {
   try {
+    // Get current user ID to ensure we only get user's own clients
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      console.error('Error getting current user:', userError);
+      return { error: { message: 'User not authenticated', details: userError?.message } };
+    }
+    
     const { data, error } = await supabase
       .from('clients')
       .select('*')
+      .eq('user_id', user.id)  // Explicitly filter by user_id
       .or(`city.ilike.%${location}%,country.ilike.%${location}%`)
       .order('name', { ascending: true });
     

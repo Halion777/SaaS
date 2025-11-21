@@ -22,9 +22,10 @@ const MainSidebar = () => {
     followUps: false
   });
   const [serviceVisibility, setServiceVisibility] = useState({
-    creditInsurance: true,
-    recovery: true
+    creditInsurance: false,
+    recovery: false
   });
+  const [isServiceVisibilityLoaded, setIsServiceVisibilityLoaded] = useState(false);
   const [overdueExpenseInvoicesCount, setOverdueExpenseInvoicesCount] = useState(0);
   const [overdueClientInvoicesCount, setOverdueClientInvoicesCount] = useState(0);
   const location = useLocation();
@@ -138,10 +139,23 @@ const MainSidebar = () => {
 
         if (data && data.setting_value) {
           setServiceVisibility(data.setting_value);
+        } else {
+          // If no setting exists, default to showing services
+          setServiceVisibility({
+            creditInsurance: true,
+            recovery: true
+          });
         }
       } catch (error) {
         console.error('Error loading service visibility:', error);
         // Use default settings if there's an error
+        setServiceVisibility({
+          creditInsurance: true,
+          recovery: true
+        });
+      } finally {
+        // Mark as loaded to prevent flash of hidden services
+        setIsServiceVisibilityLoaded(true);
       }
     };
 
@@ -359,14 +373,15 @@ const MainSidebar = () => {
       isCollapsible: true,
       isExpanded: expandedSections.services,
       items: [
-        ...(serviceVisibility.creditInsurance ? [{
+        // Only show services if visibility is loaded and service is enabled
+        ...(isServiceVisibilityLoaded && serviceVisibility.creditInsurance ? [{
           id: 'assurance-credit',
           label: t('sidebar.categories.services.items.creditInsurance'),
           path: '/services/assurance',
           icon: 'Shield',
           notifications: 0
         }] : []),
-        ...(serviceVisibility.recovery ? [{
+        ...(isServiceVisibilityLoaded && serviceVisibility.recovery ? [{
           id: 'recouvrement',
           label: t('sidebar.categories.services.items.recovery'),
           path: '/services/recouvrement',
@@ -376,9 +391,14 @@ const MainSidebar = () => {
       ]
     }
   ].filter(category => {
-    // Hide the services category if all services are hidden
-    if (category.id === 'services' && category.items.length === 0) {
-      return false;
+    // Hide the services category if visibility not loaded yet, or if all services are hidden
+    if (category.id === 'services') {
+      if (!isServiceVisibilityLoaded) {
+        return false; // Hide until loaded to prevent flash
+      }
+      if (category.items.length === 0) {
+        return false; // Hide if no services are enabled
+      }
     }
     return true;
   });
