@@ -463,7 +463,17 @@ Follow-ups are automatically stopped when:
 
 ## Email Templates
 
-### Template Types
+### Language Preference Integration ✅
+
+**All quote follow-up emails now use client language preferences:**
+
+- ✅ Templates are filtered by `client.language_preference` from database
+- ✅ Language priority: Client language → French → Any active template
+- ✅ Scheduler fetches client language when creating follow-ups
+- ✅ Dispatcher captures client language for logging
+- ✅ Manual follow-ups use client language preference
+
+**Template Types**
 
 1. **`followup_not_viewed`**
    - Used for quotes with status 'sent' (client hasn't opened)
@@ -499,6 +509,25 @@ Templates support the following variables:
 **Replacement happens in**:
 - `followups-scheduler` when creating follow-up records
 - `followups-dispatcher` when sending emails
+
+### Template Selection & Language Preference
+
+**Language Priority:**
+1. `client.language_preference` from `clients` table (default: 'fr')
+2. Fallback to French template if client language not found
+3. Fallback to any active template if French not found
+
+**Implementation Details:**
+- ✅ `createInitialFollowUpForSentQuote()` - Fetches client language for `followup_not_viewed` template
+- ✅ `createIntelligentFollowUpForQuote()` - Fetches client language for `followup_viewed_no_action` or `followup_not_viewed` templates
+- ✅ `createDelayedViewFollowUp()` - Fetches client language for `followup_viewed_no_action` template
+- ✅ `progressFollowUpStages()` - Fetches client language for `general_followup` template (stages 2 and 3)
+- ✅ `processFollowUp()` (dispatcher) - Captures client language for logging
+
+**All templates support multi-language:**
+- French (fr) - Default
+- English (en)
+- Dutch (nl)
 
 ---
 
@@ -940,6 +969,14 @@ The Quotes Follow-Up System is a comprehensive automated email reminder system w
 - Recent activity detection to avoid spam
 - Automatic cleanup for finalized quotes
 - Manual follow-up support without affecting automation
+- **✅ Language Preference Integration** - All follow-up emails use client's language preference from database
+
+**Language Support:**
+- ✅ Scheduler fetches `client.language_preference` when creating all follow-ups
+- ✅ Templates filtered by client language (fr, en, nl)
+- ✅ Falls back to French if client language template not found
+- ✅ Falls back to any active template if French not found
+- ✅ All template types support multi-language: `followup_not_viewed`, `followup_viewed_no_action`, `general_followup`
 
 ---
 

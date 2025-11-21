@@ -77,15 +77,9 @@ export class InvoiceService {
       // If status is 'paid', set paid_at timestamp
       if (status === 'paid') {
         updateData.paid_at = new Date().toISOString();
-        // Stop all follow-ups when invoice is paid
-        await InvoiceFollowUpService.stopFollowUpsForInvoice(invoiceId);
       }
 
-      // If status is 'cancelled', stop all follow-ups
-      if (status === 'cancelled') {
-        await InvoiceFollowUpService.stopFollowUpsForInvoice(invoiceId);
-      }
-
+      // Update invoice status first
       const { data, error } = await supabase
         .from('invoices')
         .update(updateData)
@@ -97,14 +91,33 @@ export class InvoiceService {
         throw new Error(`Failed to update invoice status: ${error.message}`);
       }
 
-      // Trigger follow-up creation if status changed to unpaid/overdue
+      // After status is updated, stop all follow-ups if invoice is paid or cancelled
+      if (status === 'paid' || status === 'cancelled') {
+        await InvoiceFollowUpService.stopFollowUpsForInvoice(invoiceId);
+      }
+
+      // Only trigger follow-up creation if:
+      // 1. Status changed FROM paid/cancelled TO unpaid/overdue (invoice reactivated)
+      // 2. No existing follow-ups already exist for this invoice
+      // 3. Don't create if just switching between unpaid and overdue (scheduler handles this)
       if ((status === 'unpaid' || status === 'overdue') && 
           currentInvoice && 
-          currentInvoice.status !== 'unpaid' && 
-          currentInvoice.status !== 'overdue') {
-        // Invoice status changed to unpaid/overdue, trigger follow-up creation
-        await InvoiceFollowUpService.triggerFollowUpCreation(invoiceId);
+          (currentInvoice.status === 'paid' || currentInvoice.status === 'cancelled')) {
+        // Invoice was reactivated from paid/cancelled, check if follow-ups already exist
+        const { data: existingFollowUps } = await supabase
+          .from('invoice_follow_ups')
+          .select('id, status')
+          .eq('invoice_id', invoiceId)
+          .in('status', ['pending', 'scheduled', 'ready_for_dispatch'])
+          .limit(1);
+        
+        // Only create follow-up if none exist
+        if (!existingFollowUps || existingFollowUps.length === 0) {
+          await InvoiceFollowUpService.triggerFollowUpCreation(invoiceId);
+        }
       }
+      // Note: We don't create follow-ups when switching between unpaid <-> overdue
+      // The scheduler will handle follow-up creation and progression automatically
 
       return {
         success: true,

@@ -69,8 +69,8 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       if (stored !== 'true') {
         // Update localStorage and state if not already set
         updateClientAddedFromLead(true);
+        }
       }
-    }
   }, [leadId, selectedClient]);
   const [newClient, setNewClient] = useState({
     name: '',
@@ -230,6 +230,64 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
 
     loadClients();
   }, [clientsRefreshTrigger]);
+
+  // Ensure selected client is in existingClients array (for lead quotes after refresh)
+  useEffect(() => {
+    if (selectedClient && (selectedClient.value || selectedClient.id)) {
+      // Get the client ID to check
+      const clientId = selectedClient.id || selectedClient.value;
+      
+      if (!clientId) return;
+      
+      // Check if selected client is already in the array
+      const isInArray = existingClients.some(c => 
+        c.value === clientId || 
+        c.id === clientId ||
+        (c.client && c.client.id === clientId)
+      );
+      
+      if (!isInArray) {
+        // Client is selected but not in the array (e.g., restored from localStorage after refresh)
+        // Add it to the array so it appears in the dropdown
+        const clientObj = selectedClient.client || selectedClient;
+        // Extract name from label if it has icon prefix (e.g., "👤 John" -> "John")
+        let clientName = selectedClient.name || clientObj?.name || '';
+        if (!clientName && selectedClient.label) {
+          // Remove icon prefix from label if present
+          clientName = selectedClient.label.replace(/^[👤🏢]\s*/, '');
+        }
+        const clientType = selectedClient.type || clientObj?.type || 'particulier';
+        const nameIcon = clientType === 'professionnel' ? '🏢' : '👤';
+        
+        const clientToAdd = {
+          value: clientId,
+          label: `${nameIcon} ${clientName}`,
+          description: `${selectedClient.email || clientObj?.email || ''} ${selectedClient.phone || clientObj?.phone ? '📞 ' + (selectedClient.phone || clientObj?.phone) : ''}`.trim(),
+          type: clientType,
+          client: clientObj,
+          address: selectedClient.address || clientObj?.address,
+          city: selectedClient.city || clientObj?.city,
+          postalCode: selectedClient.postalCode || clientObj?.postalCode || clientObj?.postal_code,
+          country: selectedClient.country || clientObj?.country || 'BE',
+          email: selectedClient.email || clientObj?.email,
+          phone: selectedClient.phone || clientObj?.phone,
+          id: clientId
+        };
+        
+        // Add to the beginning of the array so it's visible
+        setExistingClients(prev => {
+          // Check again to avoid duplicates
+          const alreadyExists = prev.some(c => 
+            c.value === clientToAdd.value || 
+            c.id === clientToAdd.id ||
+            (c.client && c.client.id === clientToAdd.id)
+          );
+          if (alreadyExists) return prev;
+          return [clientToAdd, ...prev];
+        });
+      }
+    }
+  }, [selectedClient, existingClients]);
 
   // Cleanup recording state on unmount
   useEffect(() => {
@@ -1417,9 +1475,9 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                   {isCreatingClient ? t('quoteCreation.clientSelection.creating', 'Création...') : t('quoteCreation.clientSelection.addClient', 'Ajouter le client')}
                 </Button>
               ) : (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-50 text-green-700 border border-green-200 inline-flex items-center gap-1">
-                  <Icon name="CheckCircle" size={12} className="text-green-600" /> {t('quoteCreation.clientSelection.selected', 'Sélectionné')}
-                </span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-50 text-green-700 border border-green-200 inline-flex items-center gap-1">
+                <Icon name="CheckCircle" size={12} className="text-green-600" /> {t('quoteCreation.clientSelection.selected', 'Sélectionné')}
+              </span>
               )}
             </div>
           </div>

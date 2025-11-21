@@ -1857,11 +1857,12 @@
       "client": "Klant",
       "quote": "Offerte",
       "title": "Titel",
-      "followUpDate": "Herinneringsdatum",
+      "followUpDate": "Geplande datum",
       "validUntil": "Geldig tot",
       "amount": "Bedrag",
       "priority": "Prioriteit",
       "followUpType": "Herinneringstype",
+      "status": "Status",
       "actions": "Acties",
       "stage": "Stadium"
     },
@@ -1904,7 +1905,7 @@
       "invoices": "Facturen"
     },
     "type": {
-      "approachingDeadline": "Vervaldatum nadert",
+      "approachingDeadline": "Vervalt binnenkort",
       "overdue": "Achterstallig"
     },
     "tableHeaders": {

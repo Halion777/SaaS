@@ -1688,11 +1688,12 @@
       "client": "Client",
       "quote": "Devis",
       "title": "Titre",
-      "followUpDate": "Date relance",
+      "followUpDate": "Date relance programmée",
       "validUntil": "Valide jusqu'au",
       "amount": "Montant",
       "priority": "Priorité",
       "followUpType": "Type Relance",
+      "status": "Statut",
       "actions": "Actions",
       "stage": "Étape"
     },
@@ -1736,7 +1737,7 @@
       "invoices": "Factures"
     },
     "type": {
-      "approachingDeadline": "Échéance approchante",
+      "approachingDeadline": "À échéance",
       "overdue": "En retard"
     },
     "tableHeaders": {

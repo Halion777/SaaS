@@ -160,12 +160,40 @@ const InvoicesFollowUp = () => {
             return null;
           }
           
+          // Note: Status filtering is handled in filteredFollowUps filter function
+          // We don't filter by status here to allow status filter to work
+          
           const nextFollowUp = followUp.scheduled_at || followUp.created_at;
           
-          // Determine follow-up type based on stage
+          // Determine follow-up type:
+          // 1. First check meta.follow_up_type from database (most accurate)
+          // 2. If not available, check if invoice is actually overdue (due_date < today)
+          // 3. Default to approaching_deadline if invoice is not yet overdue
           let followUpType = 'approaching_deadline';
-          if (followUp.stage > 0) {
-            followUpType = 'overdue';
+          
+          if (followUp.meta?.follow_up_type) {
+            // Use the type stored in database
+            followUpType = followUp.meta.follow_up_type;
+          } else {
+            // Fallback: Check if invoice is actually overdue
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const dueDate = new Date(invoice.dueDate);
+            dueDate.setHours(0, 0, 0, 0);
+            
+            if (dueDate < today) {
+              // Invoice is past due date = overdue
+              followUpType = 'overdue';
+            } else {
+              // Invoice is not yet due = approaching deadline
+              followUpType = 'approaching_deadline';
+            }
+          }
+          
+          // Only show approaching_deadline or overdue follow-ups
+          // Filter out any other types
+          if (followUpType !== 'approaching_deadline' && followUpType !== 'overdue') {
+            return null;
           }
           
           // Calculate priority
@@ -313,11 +341,40 @@ const InvoicesFollowUp = () => {
           return null;
         }
         
+        // Note: Status filtering is handled in filteredFollowUps filter function
+        // We don't filter by status here to allow status filter to work
+        
         const nextFollowUp = followUp.scheduled_at || followUp.created_at;
         
+        // Determine follow-up type:
+        // 1. First check meta.follow_up_type from database (most accurate)
+        // 2. If not available, check if invoice is actually overdue (due_date < today)
+        // 3. Default to approaching_deadline if invoice is not yet overdue
         let followUpType = 'approaching_deadline';
-        if (followUp.stage > 0) {
-          followUpType = 'overdue';
+        
+        if (followUp.meta?.follow_up_type) {
+          // Use the type stored in database
+          followUpType = followUp.meta.follow_up_type;
+        } else {
+          // Fallback: Check if invoice is actually overdue
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const dueDate = new Date(invoice.dueDate);
+          dueDate.setHours(0, 0, 0, 0);
+          
+          if (dueDate < today) {
+            // Invoice is past due date = overdue
+            followUpType = 'overdue';
+          } else {
+            // Invoice is not yet due = approaching deadline
+            followUpType = 'approaching_deadline';
+          }
+        }
+        
+        // Only show approaching_deadline or overdue follow-ups
+        // Filter out any other types
+        if (followUpType !== 'approaching_deadline' && followUpType !== 'overdue') {
+          return null;
         }
         
         const calculatedPriority = (() => {
@@ -419,8 +476,22 @@ const InvoicesFollowUp = () => {
     // Only show invoice follow-ups
     if (followUp.type !== 'invoice') return false;
     
-    // Filter by follow-up type
-    if (filters.type !== 'all' && followUp.followUpType !== filters.type) return false;
+    // Filter by follow-up type (only approaching_deadline or overdue)
+    // But allow all types when status filter is set to show stopped/completed
+    if (filters.status === 'all') {
+      // Default behavior: only show approaching_deadline and overdue
+      if (followUp.followUpType !== 'approaching_deadline' && followUp.followUpType !== 'overdue') {
+        return false;
+      }
+      // Also filter out stopped/completed when status is 'all' (default view)
+      const excludedStatuses = ['stopped', 'all_stages_completed', 'stage_0_completed', 'stage_1_completed', 'stage_2_completed', 'stage_3_completed', 'failed'];
+      if (excludedStatuses.includes(followUp.status)) {
+        return false;
+      }
+    } else {
+      // When a specific status is selected, respect the type filter if set
+      if (filters.type !== 'all' && followUp.followUpType !== filters.type) return false;
+    }
     
     // Filter by priority
     if (filters.priority !== 'all' && followUp.priority !== filters.priority) return false;
@@ -570,6 +641,7 @@ const InvoicesFollowUp = () => {
               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.tableHeaders.amount')}</th>
               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.tableHeaders.priority')}</th>
               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.tableHeaders.followUpType')}</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.tableHeaders.status')}</th>
               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.tableHeaders.actions')}</th>
             </tr>
           </thead>
@@ -607,7 +679,7 @@ const InvoicesFollowUp = () => {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <span className="text-xs sm:text-sm text-muted-foreground">
+                  <span className="text-xs sm:text-sm text-muted-foreground" title={followUp.scheduledAt ? t('invoiceFollowUp.tooltip.scheduledDate') : ''}>
                     {followUp.scheduledAt ? new Date(followUp.scheduledAt).toLocaleDateString() : t('followUpManagement.cardView.notScheduled')}
                   </span>
                 </td>
@@ -624,6 +696,11 @@ const InvoicesFollowUp = () => {
                 <td className="px-4 py-3">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getFollowUpTypeColor(followUp.followUpType)}`}>
                     {getFollowUpTypeLabel(followUp.followUpType)}
+                  </span>
+                </td>
+                <td className="px-4 py-3">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getStatusColor(followUp.status)}`}>
+                    {getStatusLabel(followUp.status)}
                   </span>
                 </td>
                 <td className="px-4 py-3">
@@ -670,7 +747,7 @@ const InvoicesFollowUp = () => {
                   {getPriorityLabel(followUp.priority)}
                 </span>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getStatusColor(followUp.status)}`}>
-                  {getStageCompletionLabel(followUp.status, followUp.stage)}
+                  {getStatusLabel(followUp.status)}
                 </span>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getFollowUpTypeColor(followUp.followUpType)}`}>
                   {getFollowUpTypeLabel(followUp.followUpType)}

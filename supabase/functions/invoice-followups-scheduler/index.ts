@@ -44,6 +44,28 @@ serve(async (req) => {
         });
       }
       
+      // Check if follow-ups already exist for this invoice
+      const { data: existingFollowUps, error: checkError } = await admin
+        .from('invoice_follow_ups')
+        .select('id, status, meta')
+        .eq('invoice_id', invoice_id)
+        .in('status', ['pending', 'scheduled', 'ready_for_dispatch', 'sent'])
+        .limit(1);
+      
+      if (checkError) {
+        console.warn('Error checking existing follow-ups:', checkError);
+      }
+      
+      // If follow-ups already exist, don't create new ones
+      if (existingFollowUps && existingFollowUps.length > 0) {
+        return new Response(JSON.stringify({ 
+          ok: true, 
+          message: `Follow-ups already exist for invoice ${invoice.invoice_number}`,
+          invoice_id: invoice.id,
+          existing: true
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
+      }
+      
       // Use hardcoded default rules
       const globalRules = {
         max_stages: 3,
@@ -208,22 +230,41 @@ serve(async (req) => {
 
 /**
  * Create initial follow-up for invoice
+ * IMPORTANT: This function checks for existing follow-ups first to prevent duplicates.
+ * If a follow-up exists, it will be updated/transitioned (e.g., approaching → overdue) instead of creating a new one.
  */
 async function createInitialFollowUpForInvoice(admin: any, invoice: any, rules: any) {
+  // First, check if ANY follow-up already exists for this invoice
+  const { data: existingFollowUps, error: checkError } = await admin
+    .from('invoice_follow_ups')
+    .select('id, stage, status, meta')
+    .eq('invoice_id', invoice.id)
+    .in('status', ['pending', 'scheduled', 'ready_for_dispatch', 'sent'])
+    .limit(1);
+  
+  if (checkError) {
+    console.warn('Error checking existing follow-ups:', checkError);
+  }
+  
+  // If follow-up exists, let the appropriate function (approaching/overdue) handle the update
+  // This ensures proper transition (e.g., approaching → overdue when invoice becomes overdue)
   const today = new Date();
   const dueDate = new Date(invoice.due_date);
   const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   
   if (daysUntilDue > rules.approaching_deadline_days) {
     // Too early, schedule for approaching deadline
+    // createApproachingDeadlineFollowUp will check for existing and skip if found
     const scheduledDate = new Date(dueDate);
     scheduledDate.setDate(scheduledDate.getDate() - rules.approaching_deadline_days);
     await createApproachingDeadlineFollowUp(admin, invoice, rules, scheduledDate);
   } else if (daysUntilDue > 0) {
     // Approaching deadline, create now
+    // createApproachingDeadlineFollowUp will check for existing and skip if found
     await createApproachingDeadlineFollowUp(admin, invoice, rules);
   } else {
-    // Overdue, create overdue follow-up
+    // Overdue - createOverdueFollowUp will UPDATE existing follow-up if found
+    // This allows proper transition from approaching → overdue
     await createOverdueFollowUp(admin, invoice, rules);
   }
 }
@@ -248,22 +289,37 @@ async function createApproachingDeadlineFollowUp(admin: any, invoice: any, rules
     // Get client's language preference (default to 'fr')
     const clientLanguage = (client.language_preference || 'fr').split('-')[0] || 'fr';
     
-    // Check if follow-up already exists for this invoice
-    const { data: existingFollowUp, error: checkError } = await admin
+    // Check if ANY follow-up already exists for this invoice
+    // If an overdue follow-up exists, don't create approaching (invoice is already overdue)
+    // If an approaching follow-up exists, don't create duplicate
+    const { data: existingFollowUps, error: checkError } = await admin
       .from('invoice_follow_ups')
-      .select('id, stage, status')
+      .select('id, stage, status, meta')
       .eq('invoice_id', invoice.id)
-      .eq('meta->>follow_up_type', 'approaching_deadline')
-      .in('status', ['pending', 'scheduled'])
-      .maybeSingle();
+      .in('status', ['pending', 'scheduled', 'ready_for_dispatch', 'sent'])
+      .limit(1);
     
     if (checkError) {
       console.warn('Error checking existing follow-up:', checkError);
       return;
     }
     
-    if (existingFollowUp) {
-      // Follow-up already exists
+    if (existingFollowUps && existingFollowUps.length > 0) {
+      const existing = existingFollowUps[0];
+      const followUpType = existing.meta?.follow_up_type;
+      
+      // If overdue follow-up exists, don't create approaching (invoice is already overdue)
+      if (followUpType === 'overdue') {
+        return;
+      }
+      
+      // If approaching follow-up exists, don't create duplicate
+      // Note: If invoice becomes overdue, createOverdueFollowUp will update this one
+      if (followUpType === 'approaching_deadline') {
+        return;
+      }
+      
+      // Any other type of follow-up exists, don't create duplicate
       return;
     }
     
@@ -404,21 +460,25 @@ async function createOverdueFollowUp(admin: any, invoice: any, rules: any) {
     // Get client's language preference (default to 'fr')
     const clientLanguage = (client.language_preference || 'fr').split('-')[0] || 'fr';
     
-    // Check for existing overdue follow-up
-    const { data: existingFollowUp, error: checkError } = await admin
+    // Check for ANY existing follow-up for this invoice (not just overdue type)
+    // This prevents duplicate follow-ups when status changes
+    const { data: existingFollowUps, error: checkError } = await admin
       .from('invoice_follow_ups')
-      .select('id, stage, status, attempts, max_attempts')
+      .select('id, stage, status, attempts, max_attempts, meta')
       .eq('invoice_id', invoice.id)
-      .eq('meta->>follow_up_type', 'overdue')
-      .in('status', ['pending', 'scheduled', 'sent'])
+      .in('status', ['pending', 'scheduled', 'ready_for_dispatch', 'sent'])
       .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(1);
     
     if (checkError) {
       console.warn('Error checking existing follow-up:', checkError);
       return;
     }
+    
+    // If any follow-up exists, update it instead of creating new one
+    const existingFollowUp = existingFollowUps && existingFollowUps.length > 0 
+      ? existingFollowUps[0] 
+      : null;
     
     // Calculate days overdue
     const today = new Date();

@@ -1,4 +1,6 @@
 import { supabase } from './supabaseClient';
+import { generateInvoicePDF } from './pdfService';
+import { loadCompanyInfo } from './companyInfoService';
 
 /**
  * Invoice Follow-Up Service
@@ -219,10 +221,39 @@ export class InvoiceFollowUpService {
    */
   static async triggerManualFollowUp(invoiceId) {
     try {
-      // First, get the invoice details
+      // First, get the invoice details with all necessary data for PDF generation
       const { data: invoice, error: invoiceError } = await supabase
         .from('invoices')
-        .select('id, user_id, client_id, invoice_number, title, status, due_date, final_amount')
+        .select(`
+          id, 
+          user_id, 
+          client_id, 
+          invoice_number, 
+          title, 
+          status, 
+          due_date, 
+          issue_date,
+          final_amount,
+          amount,
+          net_amount,
+          tax_amount,
+          discount_amount,
+          description,
+          notes,
+          quote_id,
+          quote:quotes(
+            id,
+            quote_tasks(
+              id,
+              name,
+              description,
+              quantity,
+              unit,
+              unit_price,
+              total_price
+            )
+          )
+        `)
         .eq('id', invoiceId)
         .single();
 
@@ -248,6 +279,66 @@ export class InvoiceFollowUpService {
 
       // Get client's language preference (default to 'fr')
       const clientLanguage = (client.language_preference || 'fr').split('-')[0] || 'fr';
+
+      // Get full client data for PDF generation
+      const { data: fullClient, error: fullClientError } = await supabase
+        .from('clients')
+        .select('name, email, phone, address, city, postal_code, country')
+        .eq('id', invoice.client_id)
+        .single();
+
+      // Get company info for PDF generation
+      const { data: { user } } = await supabase.auth.getUser();
+      let companyInfo = null;
+      if (user?.id) {
+        try {
+          companyInfo = await loadCompanyInfo(user.id);
+        } catch (error) {
+          console.warn('Error loading company info for PDF:', error);
+        }
+      }
+
+      // Prepare invoice data for PDF generation
+      const invoiceDataForPDF = {
+        companyInfo: companyInfo || {},
+        client: fullClient || {
+          name: client.name,
+          email: client.email
+        },
+        invoice: {
+          issue_date: invoice.issue_date,
+          due_date: invoice.due_date,
+          amount: invoice.amount,
+          net_amount: invoice.net_amount,
+          tax_amount: invoice.tax_amount,
+          discount_amount: invoice.discount_amount,
+          final_amount: invoice.final_amount,
+          description: invoice.description,
+          title: invoice.title,
+          notes: invoice.notes
+        },
+        quote: invoice.quote || null
+      };
+
+      // Generate PDF blob
+      let pdfBase64 = null;
+      try {
+        const pdfBlob = await generateInvoicePDF(invoiceDataForPDF, invoice.invoice_number);
+        
+        // Convert PDF blob to base64 for email attachment
+        pdfBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64String = reader.result.split(',')[1]; // Remove data:application/pdf;base64, prefix
+            resolve(base64String);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(pdfBlob);
+        });
+      } catch (pdfError) {
+        console.error('Error generating PDF for follow-up:', pdfError);
+        // Continue without PDF attachment if generation fails
+      }
 
       // Get template filtered by client language (use overdue template for manual follow-ups)
       let { data: template, error: templateError } = await supabase
@@ -279,11 +370,11 @@ export class InvoiceFollowUpService {
       // If still no template, try any active template
       if (templateError || !template) {
         const { data: anyTemplate, error: anyError } = await supabase
-          .from('email_templates')
-          .select('id, subject, html_content, text_content')
-          .eq('template_type', 'invoice_overdue_reminder')
-          .eq('is_active', true)
-          .maybeSingle();
+        .from('email_templates')
+        .select('id, subject, html_content, text_content')
+        .eq('template_type', 'invoice_overdue_reminder')
+        .eq('is_active', true)
+        .maybeSingle();
         
         if (!anyError && anyTemplate) {
           template = anyTemplate;
@@ -299,28 +390,47 @@ export class InvoiceFollowUpService {
       const today = new Date();
       const dueDate = new Date(invoice.due_date);
       const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+      const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-      // Replace template variables
+      // Get company name for email
+      const companyName = companyInfo?.name || 'Votre entreprise';
+
+      // Format dates and amounts based on client language
+      const dateLocale = clientLanguage === 'fr' ? 'fr-FR' : clientLanguage === 'nl' ? 'nl-NL' : 'en-US';
+      const invoiceDate = invoice.issue_date ? new Date(invoice.issue_date).toLocaleDateString(dateLocale) : new Date().toLocaleDateString(dateLocale);
+      const formattedDueDate = dueDate.toLocaleDateString(dateLocale);
+      const invoiceAmount = parseFloat(invoice.final_amount || invoice.amount || 0);
+      const formattedAmount = new Intl.NumberFormat(dateLocale, { style: 'currency', currency: 'EUR' }).format(invoiceAmount);
+
+      // Replace template variables - use database template directly
       const subject = template.subject
-        .replace('{invoice_number}', invoice.invoice_number)
-        .replace('{client_name}', client.name || 'Madame, Monsieur')
-        .replace('{days_overdue}', daysOverdue > 0 ? daysOverdue.toString() : '0');
+        .replace(/{invoice_number}/g, invoice.invoice_number)
+        .replace(/{client_name}/g, client.name || 'Madame, Monsieur')
+        .replace(/{days_overdue}/g, daysOverdue > 0 ? daysOverdue.toString() : '0')
+        .replace(/{days_until_due}/g, daysUntilDue > 0 ? daysUntilDue.toString() : '0')
+        .replace(/{company_name}/g, companyName);
 
       const text = template.text_content
-        .replace('{invoice_number}', invoice.invoice_number)
-        .replace('{client_name}', client.name || 'Madame, Monsieur')
-        .replace('{invoice_amount}', invoice.final_amount?.toString() || '0')
-        .replace('{days_overdue}', daysOverdue > 0 ? daysOverdue.toString() : '0')
-        .replace('{due_date}', dueDate.toLocaleDateString('fr-FR'))
-        .replace('{invoice_link}', `${window.location.origin}/invoice/${invoice.id}`);
+        .replace(/{invoice_number}/g, invoice.invoice_number)
+        .replace(/{client_name}/g, client.name || 'Madame, Monsieur')
+        .replace(/{invoice_amount}/g, formattedAmount)
+        .replace(/{issue_date}/g, invoiceDate)
+        .replace(/{due_date}/g, formattedDueDate)
+        .replace(/{days_overdue}/g, daysOverdue > 0 ? daysOverdue.toString() : '0')
+        .replace(/{days_until_due}/g, daysUntilDue > 0 ? daysUntilDue.toString() : '0')
+        .replace(/{invoice_link}/g, `${window.location.origin}/invoice/${invoice.id}`)
+        .replace(/{company_name}/g, companyName);
 
       const html = template.html_content
         .replace(/{invoice_number}/g, invoice.invoice_number)
         .replace(/{client_name}/g, client.name || 'Madame, Monsieur')
-        .replace(/{invoice_amount}/g, invoice.final_amount?.toString() || '0')
+        .replace(/{invoice_amount}/g, formattedAmount)
+        .replace(/{issue_date}/g, invoiceDate)
+        .replace(/{due_date}/g, formattedDueDate)
         .replace(/{days_overdue}/g, daysOverdue > 0 ? daysOverdue.toString() : '0')
-        .replace(/{due_date}/g, dueDate.toLocaleDateString('fr-FR'))
-        .replace(/{invoice_link}/g, `${window.location.origin}/invoice/${invoice.id}`);
+        .replace(/{days_until_due}/g, daysUntilDue > 0 ? daysUntilDue.toString() : '0')
+        .replace(/{invoice_link}/g, `${window.location.origin}/invoice/${invoice.id}`)
+        .replace(/{company_name}/g, companyName);
 
       // Send email via send-emails edge function
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -333,10 +443,17 @@ export class InvoiceFollowUpService {
           'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
-          to: client.email,
+          emailType: 'templated_email',
+          emailData: {
+            client_email: client.email,
           subject: subject,
           html: html,
-          text: text
+            text: text,
+            attachments: pdfBase64 ? [{
+              filename: `facture-${invoice.invoice_number}.pdf`,
+              content: pdfBase64
+            }] : undefined
+          }
         })
       });
 

@@ -133,49 +133,49 @@ CREATE TABLE public.email_templates (
 The system supports the following email template types:
 
 #### Quote-Related Templates
-| Template Type | Description | Variables |
-|--------------|-------------|-----------|
-| `quote_sent` | Quote sent to client | `{client_name}`, `{quote_number}`, `{quote_title}`, `{quote_amount}`, `{quote_link}`, `{valid_until}`, `{company_name}` |
-| `custom_quote_sent` | Custom quote with user message | Same as `quote_sent` + `{custom_message}` |
-| `client_accepted` | Quote accepted by client | `{client_name}`, `{quote_number}`, `{quote_amount}`, `{company_name}` |
-| `client_rejected` | Quote rejected by client | Same as `client_accepted` |
-| `followup_not_viewed` | Follow-up for unopened quotes | `{client_name}`, `{quote_number}`, `{quote_link}`, `{company_name}` |
-| `followup_viewed_no_action` | Follow-up for viewed but no action | Same as `followup_not_viewed` |
-| `general_followup` | General follow-up reminder | Same as `followup_not_viewed` |
-| `welcome_client` | Welcome email for new clients | `{client_name}`, `{company_name}`, `{login_url}` |
+| Template Type | Description | Variables | Language Support |
+|--------------|-------------|-----------|------------------|
+| `quote_sent` | Quote sent to client | `{client_name}`, `{quote_number}`, `{quote_title}`, `{quote_amount}`, `{quote_link}`, `{valid_until}`, `{company_name}` | ✅ Uses client language preference |
+| `custom_quote_sent` | Custom quote with user message | Same as `quote_sent` + `{custom_message}` | ✅ Uses client language preference |
+| `client_accepted` | Quote accepted by client | `{client_name}`, `{quote_number}`, `{quote_amount}`, `{company_name}` | ✅ Uses client language preference |
+| `client_rejected` | Quote rejected by client | Same as `client_accepted` | ✅ Uses client language preference |
+| `followup_not_viewed` | Follow-up for unopened quotes | `{client_name}`, `{quote_number}`, `{quote_link}`, `{company_name}` | ✅ Uses client language preference |
+| `followup_viewed_no_action` | Follow-up for viewed but no action | Same as `followup_not_viewed` | ✅ Uses client language preference |
+| `general_followup` | General follow-up reminder | Same as `followup_not_viewed` | ✅ Uses client language preference |
+| `welcome_client` | Welcome email for new clients | `{client_name}`, `{company_name}`, `{login_url}` | ✅ Uses client language preference |
 
 #### Subscription Templates
-| Template Type | Description | Variables |
-|--------------|-------------|-----------|
-| `subscription_upgraded` | Subscription upgrade notification | `{user_name}`, `{old_plan_name}`, `{new_plan_name}`, `{price}`, `{billing_cycle}`, `{company_name}` |
-| `subscription_downgraded` | Subscription downgrade notification | Same as `subscription_upgraded` |
-| `subscription_cancelled` | Subscription cancellation notification | `{user_name}`, `{plan_name}`, `{company_name}` |
-| `subscription_activated` | Subscription activation notification | `{user_name}`, `{plan_name}`, `{price}`, `{company_name}` |
-| `subscription_trial_ending` | Trial ending reminder | `{user_name}`, `{plan_name}`, `{trial_end_date}`, `{company_name}` |
+| Template Type | Description | Variables | Language Support |
+|--------------|-------------|-----------|------------------|
+| `subscription_upgraded` | Subscription upgrade notification | `{user_name}`, `{old_plan_name}`, `{new_plan_name}`, `{price}`, `{billing_cycle}`, `{company_name}` | ✅ Uses user language preference |
+| `subscription_downgraded` | Subscription downgrade notification | Same as `subscription_upgraded` | ✅ Uses user language preference |
+| `subscription_cancelled` | Subscription cancellation notification | `{user_name}`, `{plan_name}`, `{company_name}` | ✅ Uses user language preference |
+| `subscription_activated` | Subscription activation notification | `{user_name}`, `{plan_name}`, `{price}`, `{company_name}` | ✅ Uses user language preference |
+| `subscription_trial_ending` | Trial ending reminder | `{user_name}`, `{plan_name}`, `{trial_end_date}`, `{company_name}` | ✅ Uses user language preference |
 
 #### Lead Management Templates
-| Template Type | Description | Variables |
-|--------------|-------------|-----------|
-| `new_lead_available` | New project available notification | `{artisan_name}`, `{artisan_company_name}`, `{project_description}`, `{city}`, `{zip_code}`, `{location}`, `{leads_management_url}`, `{site_url}`, `{company_name}` |
-| `lead_assigned` | Project assigned confirmation | Same as `new_lead_available` + `{client_name}` |
+| Template Type | Description | Variables | Language Support |
+|--------------|-------------|-----------|------------------|
+| `new_lead_available` | New project available notification | `{artisan_name}`, `{artisan_company_name}`, `{project_description}`, `{city}`, `{zip_code}`, `{location}`, `{leads_management_url}`, `{site_url}`, `{company_name}` | ✅ Uses artisan/user language preference |
+| `lead_assigned` | Project assigned confirmation | Same as `new_lead_available` + `{client_name}` | ✅ Uses artisan/user language preference |
 
 #### Contact & Support Templates
-| Template Type | Description | Variables |
-|--------------|-------------|-----------|
-| `contact_form` | Contact form submission notification | `{first_name}`, `{last_name}`, `{full_name}`, `{email}`, `{phone}`, `{subject}`, `{subject_label}`, `{message}`, `{company_name}`, `{submission_date}` |
+| Template Type | Description | Variables | Language Support |
+|--------------|-------------|-----------|------------------|
+| `contact_form` | Contact form submission notification | `{first_name}`, `{last_name}`, `{full_name}`, `{email}`, `{phone}`, `{subject}`, `{subject_label}`, `{message}`, `{company_name}`, `{submission_date}` | ✅ Uses browser/i18n language |
 
 #### Credit Insurance Templates
-| Template Type | Description | Variables |
-|--------------|-------------|-----------|
-| `credit_insurance_application` | Application submission (internal) | `{application_id}`, `{submission_date}`, `{company_name}`, `{contact_person}`, `{email}`, `{telephone}`, `{address}`, `{sector}`, `{activity_description}`, `{annual_turnover}`, `{top_customers}` |
-| `credit_insurance_confirmation` | Application confirmation (client) | `{application_id}`, `{submission_date}`, `{company_name}`, `{contact_person}`, `{sector}`, `{annual_turnover}`, `{haliqo_company_name}` |
+| Template Type | Description | Variables | Language Support |
+|--------------|-------------|-----------|------------------|
+| `credit_insurance_application` | Application submission (internal) | `{application_id}`, `{submission_date}`, `{company_name}`, `{contact_person}`, `{email}`, `{telephone}`, `{address}`, `{sector}`, `{activity_description}`, `{annual_turnover}`, `{top_customers}` | ✅ Uses language parameter (default: 'fr') |
+| `credit_insurance_confirmation` | Application confirmation (client) | `{application_id}`, `{submission_date}`, `{company_name}`, `{contact_person}`, `{sector}`, `{annual_turnover}`, `{haliqo_company_name}` | ✅ Uses language parameter (default: 'fr') |
 
 #### Invoice Templates
-| Template Type | Description | Variables |
-|--------------|-------------|-----------|
-| `invoice_overdue_reminder` | Overdue invoice reminder | `{client_name}`, `{invoice_number}`, `{invoice_amount}`, `{days_overdue}`, `{due_date}`, `{company_name}` |
-| `invoice_payment_reminder` | Payment due soon reminder | Same as `invoice_overdue_reminder` |
-| `overdue` | General overdue notification | Same as `invoice_overdue_reminder` |
+| Template Type | Description | Variables | Language Support |
+|--------------|-------------|-----------|------------------|
+| `invoice_overdue_reminder` | Overdue invoice reminder | `{client_name}`, `{invoice_number}`, `{invoice_amount}`, `{days_overdue}`, `{due_date}`, `{company_name}` | ✅ Uses client language preference |
+| `invoice_payment_reminder` | Payment due soon reminder | Same as `invoice_overdue_reminder` | ✅ Uses client language preference |
+| `overdue` | General overdue notification | Same as `invoice_overdue_reminder` | ✅ Uses client language preference |
 
 ---
 
@@ -186,10 +186,16 @@ The system supports the following email template types:
 When an email needs to be sent, the system follows this priority order:
 
 1. **User-specific template** (if `user_id` is provided and template exists)
-2. **Default template** for requested language
+2. **Default template** for requested language (from `client.language_preference` or `user.language_preference`)
 3. **Any active template** for requested language
 4. **French default template** (fallback if requested language not found)
-5. **Error** - If no template found, throws error with clear message
+5. **Any active template** (final fallback)
+6. **Error** - If no template found, throws error with clear message
+
+**Language Source:**
+- **Client emails**: Uses `client.language_preference` from `clients` table
+- **User emails**: Uses `user.language_preference` from `users` table
+- **Contact form**: Uses browser/i18n language
 
 ### Variable Replacement
 
@@ -230,11 +236,28 @@ Templates use variables in the format `{variable_name}` that are replaced with a
 
 ### Language Selection
 
-1. **User Language**: Detected from `localStorage.getItem('i18nextLng')`
-2. **Template Selection**: 
-   - First tries to find template in user's language
-   - Falls back to French if not found
-   - Throws error if no template exists
+**Language Priority System:**
+
+1. **For Client Emails** (quotes, invoices, follow-ups):
+   - Primary: `client.language_preference` (from database)
+   - Fallback: French template
+   - Final fallback: Any active template
+
+2. **For User/Artisan Emails** (subscriptions, copy emails):
+   - Primary: `user.language_preference` (from database)
+   - Fallback: `localStorage.getItem('language')` or `localStorage.getItem('i18nextLng')`
+   - Final fallback: French template
+
+3. **For Contact Form**:
+   - Primary: Language from i18n (`i18n.language`)
+   - Fallback: `localStorage.getItem('language')` or `localStorage.getItem('i18nextLng')`
+   - Final fallback: French template
+
+**Template Selection Logic:**
+- First tries to find template in requested language
+- Falls back to French if requested language not found
+- Falls back to any active template if French not found
+- Throws error if no template exists
 
 ---
 
@@ -248,11 +271,12 @@ Templates use variables in the format `{variable_name}` that are replaced with a
 2. Frontend calls: EmailService.sendQuoteSentEmail(quoteId)
    ↓
 3. emailService.js:
-   - Gets user language from localStorage (e.g., 'en')
+   - Fetches client data including client.language_preference (e.g., 'en')
    - Fetches quote data from database
    - Prepares variables (client_name, quote_number, etc.)
+   - Uses client.language_preference for client email
    - Calls Edge Function: sendEmailViaEdgeFunction('templated_email', {
-       language: 'en',
+       language: 'en',  // From client.language_preference
        template_type: 'quote_sent',
        client_email: 'client@example.com',
        variables: { ... }
@@ -290,14 +314,17 @@ Templates use variables in the format `{variable_name}` that are replaced with a
 ### Example 3: Follow-up Email (Scheduled)
 
 ```
-1. Follow-up Scheduler Edge Function (runs hourly):
+1. Follow-up Scheduler Edge Function (runs daily at 9 AM):
    - Checks quotes that need follow-ups
+   - Fetches client.language_preference from database
+   - Fetches template filtered by client language
    - Creates follow-up records in quote_follow_ups table
+     (with template content already rendered)
    ↓
 2. Follow-up Dispatcher Edge Function (runs every 15 minutes):
    - Finds follow-ups ready to send (scheduled_at <= now)
-   - Fetches template from email_templates
-   - Renders template with quote data
+   - Uses template content already stored in follow-up record
+   - Replaces dynamic variables (days_since_sent, etc.)
    - Calls send-emails edge function
    - Updates follow-up status to 'sent'
 ```
@@ -495,15 +522,19 @@ const getTemplateTypeName = (type) => {
 ## Key Files Reference
 
 ### Service Files
-- `src/services/emailService.js` - Main email service
-- `src/services/subscriptionNotificationService.js` - Subscription emails
-- `src/services/contactService.js` - Contact form emails
-- `src/services/leadManagementService.js` - Lead management emails
+- `src/services/emailService.js` - Main email service (uses client/user language preferences)
+- `src/services/subscriptionNotificationService.js` - Subscription emails (uses user language preference)
+- `src/services/contactService.js` - Contact form emails (uses browser/i18n language)
+- `src/services/leadManagementService.js` - Lead management emails (uses artisan/user language)
+- `src/services/invoiceFollowUpService.js` - Invoice follow-up service (uses client language)
+- `src/services/clientsService.js` - Client service (saves/loads language preference)
 
 ### Edge Functions
-- `supabase/functions/send-emails/index.ts` - Email sending & template fetching
-- `supabase/functions/followups-dispatcher/index.ts` - Quote follow-ups
-- `supabase/functions/invoice-followups-dispatcher/index.ts` - Invoice follow-ups
+- `supabase/functions/send-emails/index.ts` - Email sending & template fetching (with language filtering)
+- `supabase/functions/followups-scheduler/index.ts` - Quote follow-up scheduling (uses client language)
+- `supabase/functions/followups-dispatcher/index.ts` - Quote follow-up dispatching
+- `supabase/functions/invoice-followups-scheduler/index.ts` - Invoice follow-up scheduling (uses client language)
+- `supabase/functions/invoice-followups-dispatcher/index.ts` - Invoice follow-up dispatching
 
 ### Database
 - `email_templates` table - Template storage
@@ -540,11 +571,12 @@ const getTemplateTypeName = (type) => {
 - `{submission_date}` - Date of submission
 
 ### Template Priority
-1. User-specific (if `user_id` provided)
-2. Default template for language
-3. Any active template for language
-4. French default (fallback)
-5. Error if not found
+1. User-specific template (if `user_id` provided and template exists)
+2. Default template for requested language (from `client.language_preference` or `user.language_preference`)
+3. Any active template for requested language
+4. French default template (fallback if requested language not found)
+5. Any active template (final fallback)
+6. Error if no template found
 
 ### Language Codes
 - `fr` - French (default)

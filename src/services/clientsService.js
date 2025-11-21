@@ -98,7 +98,7 @@ export async function fetchClientById(id) {
       .select(`
         *,
         quotes:quotes(id, quote_number, status, total_amount, created_at),
-        invoices:invoices(id, invoice_number, status, total_amount, created_at)
+        invoices:invoices(id, invoice_number, status, final_amount, created_at)
       `)
       .eq('id', id)
       .single();

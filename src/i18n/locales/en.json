@@ -1874,11 +1874,12 @@
       "client": "Client",
       "quote": "Quote",
       "title": "Title",
-      "followUpDate": "Follow-up Date",
+      "followUpDate": "Scheduled Date",
       "validUntil": "Valid until",
       "amount": "Amount",
       "priority": "Priority",
       "followUpType": "Follow-up Type",
+      "status": "Status",
       "actions": "Actions",
       "stage": "Stage"
     },
@@ -1921,7 +1922,7 @@
       "invoices": "Invoices"
     },
     "type": {
-      "approachingDeadline": "Approaching deadline",
+      "approachingDeadline": "Due Soon",
       "overdue": "Overdue"
     },
     "tableHeaders": {

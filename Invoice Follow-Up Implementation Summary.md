@@ -348,8 +348,19 @@ Used for overdue invoice follow-ups (after due date).
 
 Templates are selected based on:
 - `template_type` in `email_templates` table
-- Language preference (FR, EN, NL)
+- **Client language preference** (`client.language_preference` from database)
 - `is_active = true`
+
+**Language Priority:**
+1. Client's `language_preference` from `clients` table (default: 'fr')
+2. Fallback to French template if client language not found
+3. Fallback to any active template if French not found
+
+**Implementation:**
+- ✅ Scheduler fetches client language when creating follow-ups
+- ✅ Templates filtered by client language preference
+- ✅ Dispatcher captures client language for logging
+- ✅ Manual follow-ups use client language preference
 
 ---
 
@@ -561,5 +572,13 @@ The Invoice Follow-Up System provides automated payment reminders for invoices w
 - **Automatic cleanup** when invoices are paid/cancelled
 - **Manual follow-up support** from UI
 - **Comprehensive event tracking** for audit and analytics
+- **✅ Language Preference Integration** - All follow-up emails use client's language preference from database
+
+**Language Support:**
+- ✅ Scheduler fetches `client.language_preference` when creating follow-ups
+- ✅ Templates filtered by client language (fr, en, nl)
+- ✅ Falls back to French if client language template not found
+- ✅ Falls back to any active template if French not found
+- ✅ Manual follow-ups also use client language preference
 
 The system is fully integrated with frontend services and runs automatically via cron jobs, requiring minimal manual intervention.

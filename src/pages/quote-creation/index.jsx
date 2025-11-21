@@ -398,10 +398,11 @@ const QuoteCreation = () => {
 
           if (!clientError && clientData) {
             // Format the client for selection (matching the format used in ClientSelection)
+            const nameIcon = clientData.type === 'professionnel' ? '🏢' : '👤';
             const formattedClient = {
               value: clientData.id,
-              label: clientData.name,
-              description: `${clientData.email}${clientData.phone ? ' • ' + clientData.phone : ''}`,
+              label: `${nameIcon} ${clientData.name}`,
+              description: `${clientData.email || ''} ${clientData.phone ? '📞 ' + clientData.phone : ''}`.trim(),
               type: clientData.type || 'particulier',
               client: clientData,
               address: clientData.address,
@@ -410,7 +411,8 @@ const QuoteCreation = () => {
               country: clientData.country || 'BE',
               email: clientData.email,
               phone: clientData.phone,
-              id: clientData.id
+              id: clientData.id,
+              name: clientData.name // Keep name for compatibility
             };
 
             setSelectedClient(formattedClient);
