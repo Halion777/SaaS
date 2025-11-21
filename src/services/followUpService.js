@@ -24,6 +24,9 @@ export async function upsertUserFollowUpRules(userId, rules) {
   return data;
 }
 
+
+
+
 export async function listScheduledFollowUps({ status = 'pending', limit = 100 } = {}) {
   let query = supabase
     .from('quote_follow_ups')
