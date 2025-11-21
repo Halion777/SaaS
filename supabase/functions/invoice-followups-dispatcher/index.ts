@@ -142,7 +142,7 @@ async function processFollowUp(admin: any, followUp: any) {
 
     const { data: clientData, error: cErr } = await admin
       .from('clients')
-      .select('email, name')
+      .select('email, name, language_preference')
       .eq('id', invoice.client_id)
       .single()
 
@@ -152,6 +152,9 @@ async function processFollowUp(admin: any, followUp: any) {
     }
     
     client = clientData;
+    
+    // Get client's language preference (default to 'fr')
+    const clientLanguage = (clientData.language_preference || 'fr').split('-')[0] || 'fr';
 
     // ========================================
     // 2. PREPARE EMAIL CONTENT

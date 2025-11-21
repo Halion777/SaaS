@@ -147,7 +147,7 @@ async function processFollowUp(admin: any, followUp: any) {
 
     const { data: client, error: cErr } = await admin
       .from('clients')
-      .select('email, name')
+      .select('email, name, language_preference')
       .eq('id', quote.client_id)
       .single()
     if (cErr || !client?.email) {
@@ -158,6 +158,10 @@ async function processFollowUp(admin: any, followUp: any) {
       }).eq('id', followUp.id)
       return { success: false, error: 'Missing client email' };
     }
+    
+    // Get client's language preference (default to 'fr')
+    // Note: Templates are already stored in follow-up record, but we capture language for logging
+    const clientLanguage = (client.language_preference || 'fr').split('-')[0] || 'fr';
 
     // ========================================
     // 2. PREPARE EMAIL CONTENT WITH VARIABLE REPLACEMENT

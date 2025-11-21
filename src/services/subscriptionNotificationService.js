@@ -100,12 +100,45 @@ export class SubscriptionNotificationService {
   /**
    * Get subscription email template by type
    */
-  static async getSubscriptionEmailTemplate(templateType, userId = null) {
+  static async getSubscriptionEmailTemplate(templateType, userId = null, language = null) {
     try {
+      // Get user's language preference if userId provided
+      let userLanguage = language || 'fr';
+      if (userId && !language) {
+        try {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('language_preference')
+            .eq('id', userId)
+            .maybeSingle();
+          
+          if (userData?.language_preference) {
+            userLanguage = userData.language_preference.split('-')[0] || 'fr';
+          } else if (typeof window !== 'undefined') {
+            const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
+            userLanguage = storedLang.split('-')[0] || 'fr';
+          }
+        } catch (error) {
+          console.warn('Error fetching user language preference:', error);
+          // Fallback to localStorage
+          if (typeof window !== 'undefined') {
+            const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
+            userLanguage = storedLang.split('-')[0] || 'fr';
+          }
+        }
+      } else if (!language && typeof window !== 'undefined') {
+        const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
+        userLanguage = storedLang.split('-')[0] || 'fr';
+      }
+      
+      // Ensure language is base code (e.g., 'fr' from 'fr-FR')
+      const baseLanguage = userLanguage.split('-')[0] || 'fr';
+      
       let query = supabase
         .from('email_templates')
         .select('*')
         .eq('template_type', templateType)
+        .eq('language', baseLanguage)
         .eq('is_active', true);
       
       if (userId) {
@@ -119,20 +152,49 @@ export class SubscriptionNotificationService {
         return { success: true, data: userTemplate };
       }
       
-      // Fallback to default template
+      // Fallback to default template for the language
       const { data: defaultTemplate, error: defaultError } = await supabase
         .from('email_templates')
         .select('*')
         .eq('template_type', templateType)
+        .eq('language', baseLanguage)
         .eq('is_default', true)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
       
-      if (defaultError) {
-        throw defaultError;
+      if (defaultTemplate) {
+        return { success: true, data: defaultTemplate };
       }
       
-      return { success: true, data: defaultTemplate };
+      // If no template found in requested language, try French as fallback
+      if (baseLanguage !== 'fr') {
+        const { data: frenchTemplate, error: frenchError } = await supabase
+          .from('email_templates')
+          .select('*')
+          .eq('template_type', templateType)
+          .eq('language', 'fr')
+          .eq('is_default', true)
+          .eq('is_active', true)
+          .maybeSingle();
+        
+        if (frenchTemplate) {
+          return { success: true, data: frenchTemplate };
+        }
+      }
+      
+      // If still no template found, try any active template for the type
+      const { data: anyTemplate, error: anyError } = await supabase
+        .from('email_templates')
+        .select('*')
+        .eq('template_type', templateType)
+        .eq('is_active', true)
+        .maybeSingle();
+      
+      if (anyTemplate) {
+        return { success: true, data: anyTemplate };
+      }
+      
+      throw new Error(`No email template found for type '${templateType}' and language '${baseLanguage}'`);
       
     } catch (error) {
       console.error('Error getting subscription email template:', error);
@@ -175,14 +237,51 @@ export class SubscriptionNotificationService {
   }
 
   /**
+   * Get user's language preference
+   */
+  static async getUserLanguagePreference(userId) {
+    try {
+      if (userId) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('language_preference')
+          .eq('id', userId)
+          .maybeSingle();
+        
+        if (userData?.language_preference) {
+          return userData.language_preference.split('-')[0] || 'fr';
+        }
+      }
+      
+      // Fallback to localStorage
+      if (typeof window !== 'undefined') {
+        const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
+        return storedLang.split('-')[0] || 'fr';
+      }
+      
+      return 'fr';
+    } catch (error) {
+      console.warn('Error fetching user language preference:', error);
+      if (typeof window !== 'undefined') {
+        const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
+        return storedLang.split('-')[0] || 'fr';
+      }
+      return 'fr';
+    }
+  }
+
+  /**
    * Send subscription upgrade notification
    */
   static async sendSubscriptionUpgradeNotification(subscriptionData, userData) {
     try {
       const templateType = 'subscription_upgraded';
       
+      // Get user's language preference
+      const userLanguage = await this.getUserLanguagePreference(userData.id);
+      
       // Get the appropriate template
-      const templateResult = await this.getSubscriptionEmailTemplate(templateType, userData.id);
+      const templateResult = await this.getSubscriptionEmailTemplate(templateType, userData.id, userLanguage);
       if (!templateResult.success) {
         throw new Error(`Failed to get template: ${templateResult.error}`);
       }
@@ -235,7 +334,8 @@ export class SubscriptionNotificationService {
         text: renderResult.data.text,
         template_type: templateType,
         variables,
-        subscription_data: subscriptionData
+        subscription_data: subscriptionData,
+        language: userLanguage
       };
       
       const result = await this.sendSubscriptionNotificationEmail('subscription_upgraded', emailData);
@@ -261,8 +361,11 @@ export class SubscriptionNotificationService {
     try {
       const templateType = 'subscription_downgraded';
       
+      // Get user's language preference
+      const userLanguage = await this.getUserLanguagePreference(userData.id);
+      
       // Get the appropriate template
-      const templateResult = await this.getSubscriptionEmailTemplate(templateType, userData.id);
+      const templateResult = await this.getSubscriptionEmailTemplate(templateType, userData.id, userLanguage);
       if (!templateResult.success) {
         throw new Error(`Failed to get template: ${templateResult.error}`);
       }
@@ -315,7 +418,8 @@ export class SubscriptionNotificationService {
         text: renderResult.data.text,
         template_type: templateType,
         variables,
-        subscription_data: subscriptionData
+        subscription_data: subscriptionData,
+        language: userLanguage
       };
       
       const result = await this.sendSubscriptionNotificationEmail('subscription_downgraded', emailData);
@@ -341,8 +445,11 @@ export class SubscriptionNotificationService {
     try {
       const templateType = 'subscription_cancelled';
       
+      // Get user's language preference
+      const userLanguage = await this.getUserLanguagePreference(userData.id);
+      
       // Get the appropriate template
-      const templateResult = await this.getSubscriptionEmailTemplate(templateType, userData.id);
+      const templateResult = await this.getSubscriptionEmailTemplate(templateType, userData.id, userLanguage);
       if (!templateResult.success) {
         throw new Error(`Failed to get template: ${templateResult.error}`);
       }
@@ -379,7 +486,8 @@ export class SubscriptionNotificationService {
         template_type: templateType,
         variables,
         subscription_data: subscriptionData,
-        cancellation_reason: cancellationReason
+        cancellation_reason: cancellationReason,
+        language: userLanguage
       };
       
       const result = await this.sendSubscriptionNotificationEmail('subscription_cancelled', emailData);
@@ -405,8 +513,11 @@ export class SubscriptionNotificationService {
     try {
       const templateType = 'subscription_activated';
       
+      // Get user's language preference
+      const userLanguage = await this.getUserLanguagePreference(userData.id);
+      
       // Get the appropriate template
-      const templateResult = await this.getSubscriptionEmailTemplate(templateType, userData.id);
+      const templateResult = await this.getSubscriptionEmailTemplate(templateType, userData.id, userLanguage);
       if (!templateResult.success) {
         throw new Error(`Failed to get template: ${templateResult.error}`);
       }
@@ -444,7 +555,8 @@ export class SubscriptionNotificationService {
         text: renderResult.data.text,
         template_type: templateType,
         variables,
-        subscription_data: subscriptionData
+        subscription_data: subscriptionData,
+        language: userLanguage
       };
       
       const result = await this.sendSubscriptionNotificationEmail('subscription_activated', emailData);
@@ -470,8 +582,11 @@ export class SubscriptionNotificationService {
     try {
       const templateType = 'subscription_trial_ending';
       
+      // Get user's language preference
+      const userLanguage = await this.getUserLanguagePreference(userData.id);
+      
       // Get the appropriate template
-      const templateResult = await this.getSubscriptionEmailTemplate(templateType, userData.id);
+      const templateResult = await this.getSubscriptionEmailTemplate(templateType, userData.id, userLanguage);
       if (!templateResult.success) {
         throw new Error(`Failed to get template: ${templateResult.error}`);
       }
@@ -509,7 +624,8 @@ export class SubscriptionNotificationService {
         text: renderResult.data.text,
         template_type: templateType,
         variables,
-        subscription_data: subscriptionData
+        subscription_data: subscriptionData,
+        language: userLanguage
       };
       
       const result = await this.sendSubscriptionNotificationEmail('subscription_trial_ending', emailData);

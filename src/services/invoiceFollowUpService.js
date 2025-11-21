@@ -235,10 +235,10 @@ export class InvoiceFollowUpService {
         throw new Error('Cannot send follow-up for paid or cancelled invoice');
       }
 
-      // Get client details
+      // Get client details including language preference
       const { data: client, error: clientError } = await supabase
         .from('clients')
-        .select('email, name')
+        .select('email, name, language_preference')
         .eq('id', invoice.client_id)
         .single();
 
@@ -246,13 +246,50 @@ export class InvoiceFollowUpService {
         throw new Error('Client not found or no email address');
       }
 
-      // Get template (use overdue template for manual follow-ups)
-      const { data: template, error: templateError } = await supabase
+      // Get client's language preference (default to 'fr')
+      const clientLanguage = (client.language_preference || 'fr').split('-')[0] || 'fr';
+
+      // Get template filtered by client language (use overdue template for manual follow-ups)
+      let { data: template, error: templateError } = await supabase
         .from('email_templates')
         .select('id, subject, html_content, text_content')
         .eq('template_type', 'invoice_overdue_reminder')
+        .eq('language', clientLanguage)
         .eq('is_active', true)
         .maybeSingle();
+      
+      // If template not found in client language, try French as fallback
+      if (templateError || !template) {
+        if (clientLanguage !== 'fr') {
+          const { data: frenchTemplate, error: frenchError } = await supabase
+            .from('email_templates')
+            .select('id, subject, html_content, text_content')
+            .eq('template_type', 'invoice_overdue_reminder')
+            .eq('language', 'fr')
+            .eq('is_active', true)
+            .maybeSingle();
+          
+          if (!frenchError && frenchTemplate) {
+            template = frenchTemplate;
+            templateError = null;
+          }
+        }
+      }
+      
+      // If still no template, try any active template
+      if (templateError || !template) {
+        const { data: anyTemplate, error: anyError } = await supabase
+          .from('email_templates')
+          .select('id, subject, html_content, text_content')
+          .eq('template_type', 'invoice_overdue_reminder')
+          .eq('is_active', true)
+          .maybeSingle();
+        
+        if (!anyError && anyTemplate) {
+          template = anyTemplate;
+          templateError = null;
+        }
+      }
 
       if (templateError || !template) {
         throw new Error('Email template not found');

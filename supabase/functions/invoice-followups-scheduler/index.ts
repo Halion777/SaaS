@@ -233,10 +233,10 @@ async function createInitialFollowUpForInvoice(admin: any, invoice: any, rules: 
  */
 async function createApproachingDeadlineFollowUp(admin: any, invoice: any, rules: any, scheduledDate?: Date) {
   try {
-    // Get client details
+    // Get client details including language preference
     const { data: client, error: clientError } = await admin
       .from('clients')
-      .select('name, email')
+      .select('name, email, language_preference')
       .eq('id', invoice.client_id)
       .single();
     
@@ -244,6 +244,9 @@ async function createApproachingDeadlineFollowUp(admin: any, invoice: any, rules
       console.warn('Could not get client details for invoice', invoice.id);
       return;
     }
+    
+    // Get client's language preference (default to 'fr')
+    const clientLanguage = (client.language_preference || 'fr').split('-')[0] || 'fr';
     
     // Check if follow-up already exists for this invoice
     const { data: existingFollowUp, error: checkError } = await admin
@@ -271,16 +274,50 @@ async function createApproachingDeadlineFollowUp(admin: any, invoice: any, rules
       scheduledDate.setDate(scheduledDate.getDate() - rules.approaching_deadline_days);
     }
     
-    // Get template
-    const { data: template, error: templateError } = await admin
+    // Get template filtered by client language
+    let { data: template, error: templateError } = await admin
       .from('email_templates')
       .select('id, subject, html_content, text_content')
       .eq('template_type', rules.approaching_template)
+      .eq('language', clientLanguage)
       .eq('is_active', true)
       .maybeSingle();
     
+    // If template not found in client language, try French as fallback
     if (templateError || !template) {
-      console.error(`Template ${rules.approaching_template} not found:`, templateError);
+      if (clientLanguage !== 'fr') {
+        const { data: frenchTemplate, error: frenchError } = await admin
+          .from('email_templates')
+          .select('id, subject, html_content, text_content')
+          .eq('template_type', rules.approaching_template)
+          .eq('language', 'fr')
+          .eq('is_active', true)
+          .maybeSingle();
+        
+        if (!frenchError && frenchTemplate) {
+          template = frenchTemplate;
+          templateError = null;
+        }
+      }
+    }
+    
+    // If still no template, try any active template
+    if (templateError || !template) {
+      const { data: anyTemplate, error: anyError } = await admin
+        .from('email_templates')
+        .select('id, subject, html_content, text_content')
+        .eq('template_type', rules.approaching_template)
+        .eq('is_active', true)
+        .maybeSingle();
+      
+      if (!anyError && anyTemplate) {
+        template = anyTemplate;
+        templateError = null;
+      }
+    }
+    
+    if (templateError || !template) {
+      console.error(`Template ${rules.approaching_template} not found for language ${clientLanguage}:`, templateError);
       return;
     }
     
@@ -352,10 +389,10 @@ async function createApproachingDeadlineFollowUp(admin: any, invoice: any, rules
  */
 async function createOverdueFollowUp(admin: any, invoice: any, rules: any) {
   try {
-    // Get client details
+    // Get client details including language preference
     const { data: client, error: clientError } = await admin
       .from('clients')
-      .select('name, email')
+      .select('name, email, language_preference')
       .eq('id', invoice.client_id)
       .single();
     
@@ -363,6 +400,9 @@ async function createOverdueFollowUp(admin: any, invoice: any, rules: any) {
       console.warn('Could not get client details for invoice', invoice.id);
       return;
     }
+    
+    // Get client's language preference (default to 'fr')
+    const clientLanguage = (client.language_preference || 'fr').split('-')[0] || 'fr';
     
     // Check for existing overdue follow-up
     const { data: existingFollowUp, error: checkError } = await admin
@@ -409,16 +449,50 @@ async function createOverdueFollowUp(admin: any, invoice: any, rules: any) {
       stage = 1;
     }
     
-    // Get template
-    const { data: template, error: templateError } = await admin
+    // Get template filtered by client language
+    let { data: template, error: templateError } = await admin
       .from('email_templates')
       .select('id, subject, html_content, text_content')
       .eq('template_type', rules.overdue_template)
+      .eq('language', clientLanguage)
       .eq('is_active', true)
       .maybeSingle();
     
+    // If template not found in client language, try French as fallback
     if (templateError || !template) {
-      console.error(`Template ${rules.overdue_template} not found:`, templateError);
+      if (clientLanguage !== 'fr') {
+        const { data: frenchTemplate, error: frenchError } = await admin
+          .from('email_templates')
+          .select('id, subject, html_content, text_content')
+          .eq('template_type', rules.overdue_template)
+          .eq('language', 'fr')
+          .eq('is_active', true)
+          .maybeSingle();
+        
+        if (!frenchError && frenchTemplate) {
+          template = frenchTemplate;
+          templateError = null;
+        }
+      }
+    }
+    
+    // If still no template, try any active template
+    if (templateError || !template) {
+      const { data: anyTemplate, error: anyError } = await admin
+        .from('email_templates')
+        .select('id, subject, html_content, text_content')
+        .eq('template_type', rules.overdue_template)
+        .eq('is_active', true)
+        .maybeSingle();
+      
+      if (!anyError && anyTemplate) {
+        template = anyTemplate;
+        templateError = null;
+      }
+    }
+    
+    if (templateError || !template) {
+      console.error(`Template ${rules.overdue_template} not found for language ${clientLanguage}:`, templateError);
       return;
     }
     

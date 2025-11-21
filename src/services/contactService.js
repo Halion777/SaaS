@@ -8,9 +8,10 @@ class ContactService {
   /**
    * Submit contact form
    * @param {object} formData - Contact form data
+   * @param {string} language - Optional language code (defaults to 'fr')
    * @returns {Promise<{success: boolean, error?: string}>}
    */
-  async submitContactForm(formData) {
+  async submitContactForm(formData, language = null) {
     try {
       // Get support email from app settings
       const { data: companyData, error: companyError } = await supabase
@@ -31,8 +32,15 @@ class ContactService {
       }
 
       // Get user language preference (default to 'fr')
-      const userLanguage = localStorage.getItem('i18nextLng') || 'fr';
-      const language = userLanguage.split('-')[0] || 'fr'; // Extract base language (e.g., 'fr' from 'fr-FR')
+      // Use provided language, or try multiple possible keys for language storage
+      let userLanguage = language;
+      if (!userLanguage && typeof window !== 'undefined') {
+        userLanguage = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
+      }
+      if (!userLanguage) {
+        userLanguage = 'fr';
+      }
+      const finalLanguage = userLanguage.split('-')[0] || 'fr'; // Extract base language (e.g., 'fr' from 'fr-FR')
       
       // Send email via edge function
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-emails`, {
@@ -44,14 +52,14 @@ class ContactService {
         body: JSON.stringify({
           emailType: 'contact_form',
           emailData: {
-            firstName: formData.firstName,
-            lastName: formData.lastName,
+            firstName: formData.firstName || '',
+            lastName: formData.lastName || '',
             email: formData.email,
             phone: formData.phone || '',
             subject: formData.subject,
             message: formData.message,
             support_email: supportEmail,
-            language: language // Pass language for template selection
+            language: finalLanguage // Pass language for template selection
           }
         })
       });
@@ -60,37 +68,55 @@ class ContactService {
       let result;
       const contentType = response.headers.get('content-type');
       
+      
       if (contentType && contentType.includes('application/json')) {
         result = await response.json();
       } else {
         const text = await response.text();
-        result = text ? JSON.parse(text) : {};
+        
+        try {
+          result = text ? JSON.parse(text) : {};
+        } catch (parseError) {
+          
+          result = { error: text || 'Unknown error' };
+        }
       }
-
+      
+    
       // Check if the response indicates an error
       if (!response.ok) {
         const errorMessage = result.error || result.message || `Server error: ${response.status}`;
+        console.error('Contact form error response:', errorMessage);
         throw new Error(errorMessage);
       }
 
       // Check if result indicates failure
       if (result.success === false) {
-        throw new Error(result.error || 'Failed to send email');
+        const errorMsg = result.error || 'Failed to send email';
+        console.error('Contact form failed:', errorMsg);
+        throw new Error(errorMsg);
       }
 
       return { success: true, data: result };
     } catch (error) {
-      console.error('Error submitting contact form:', error);
+      
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        formData: formData
+      });
       
       // Provide user-friendly error messages
       let errorMessage = error.message || 'Failed to submit contact form';
       
-      if (error.message.includes('fetch')) {
+      if (error.message.includes('fetch') || error.message.includes('NetworkError')) {
         errorMessage = 'Network error. Please check your internet connection and try again.';
       } else if (error.message.includes('Missing Supabase')) {
         errorMessage = 'Configuration error. Please contact support.';
       } else if (error.message.includes('Email service not configured')) {
         errorMessage = 'Email service is not configured. Please contact the administrator.';
+      } else if (error.message.includes('Template not found') || error.message.includes('template')) {
+        errorMessage = 'Email template not found. Please contact the administrator.';
       }
       
       return { success: false, error: errorMessage };
@@ -134,7 +160,8 @@ class ContactService {
         data: data?.setting_value || defaultDetails
       };
     } catch (error) {
-      console.error('Error loading company details:', error);
+      
+      
       return {
         success: false,
         error: error.message,

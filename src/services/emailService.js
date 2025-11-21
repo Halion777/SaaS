@@ -155,12 +155,16 @@ export class EmailService {
   /**
    * Get email template by type
    */
-  static async getEmailTemplate(templateType, userId = null) {
+  static async getEmailTemplate(templateType, userId = null, language = 'fr') {
     try {
+      // Ensure language is base code (e.g., 'fr' from 'fr-FR')
+      const baseLanguage = (language || 'fr').split('-')[0] || 'fr';
+      
       let query = supabase
         .from('email_templates')
         .select('*')
         .eq('template_type', templateType)
+        .eq('language', baseLanguage)
         .eq('is_active', true);
       
       if (userId) {
@@ -174,20 +178,49 @@ export class EmailService {
         return { success: true, data: userTemplate };
       }
       
-      // Fallback to default template
+      // Fallback to default template for the language
       const { data: defaultTemplate, error: defaultError } = await supabase
         .from('email_templates')
         .select('*')
         .eq('template_type', templateType)
+        .eq('language', baseLanguage)
         .eq('is_default', true)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
       
-      if (defaultError) {
-        throw defaultError;
+      if (defaultTemplate) {
+        return { success: true, data: defaultTemplate };
       }
       
-      return { success: true, data: defaultTemplate };
+      // If no template found in requested language, try French as fallback
+      if (baseLanguage !== 'fr') {
+        const { data: frenchTemplate, error: frenchError } = await supabase
+          .from('email_templates')
+          .select('*')
+          .eq('template_type', templateType)
+          .eq('language', 'fr')
+          .eq('is_default', true)
+          .eq('is_active', true)
+          .maybeSingle();
+        
+        if (frenchTemplate) {
+          return { success: true, data: frenchTemplate };
+        }
+      }
+      
+      // If still no template found, try any active template for the type
+      const { data: anyTemplate, error: anyError } = await supabase
+        .from('email_templates')
+        .select('*')
+        .eq('template_type', templateType)
+        .eq('is_active', true)
+        .maybeSingle();
+      
+      if (anyTemplate) {
+        return { success: true, data: anyTemplate };
+      }
+      
+      throw new Error(`No email template found for type '${templateType}' and language '${baseLanguage}'`);
       
     } catch (error) {
       console.error('Error getting email template:', error);
@@ -232,10 +265,21 @@ export class EmailService {
   /**
    * Send email using template system
    */
-  static async sendTemplatedEmail(templateType, variables, clientEmail, userId = null) {
+  static async sendTemplatedEmail(templateType, variables, clientEmail, userId = null, language = null) {
     try {
+      // Get language preference (default to 'fr')
+      // Priority: provided language > localStorage > 'fr'
+      let finalLanguage = language;
+      if (!finalLanguage && typeof window !== 'undefined') {
+        const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
+        finalLanguage = storedLang.split('-')[0] || 'fr';
+      }
+      if (!finalLanguage) {
+        finalLanguage = 'fr';
+      }
+      
       // Get the appropriate template
-      const templateResult = await this.getEmailTemplate(templateType, userId);
+      const templateResult = await this.getEmailTemplate(templateType, userId, finalLanguage);
       if (!templateResult.success) {
         throw new Error(`Failed to get template: ${templateResult.error}`);
       }
@@ -253,7 +297,8 @@ export class EmailService {
         html: renderResult.data.html,
         text: renderResult.data.text,
         template_type: templateType,
-        variables
+        variables,
+        language: finalLanguage
       };
       
       const result = await this.sendEmailViaEdgeFunction('templated_email', emailData);
@@ -314,9 +359,9 @@ export class EmailService {
         custom_message: emailMessage
       };
       
-      // Get user language preference (default to 'fr')
-      const userLanguage = typeof window !== 'undefined' ? (localStorage.getItem('i18nextLng') || 'fr') : 'fr';
-      const language = userLanguage.split('-')[0] || 'fr'; // Extract base language (e.g., 'fr' from 'fr-FR')
+      // Get client's language preference (default to 'fr')
+      // Priority: client.language_preference > client.languagePreference > 'fr'
+      const clientLanguage = (client.language_preference || client.languagePreference || 'fr').split('-')[0] || 'fr';
       
       // Send email to client - always use custom quote email for better control
       // Use the email from customEmailData if provided (updated in modal), otherwise fall back to client.email
@@ -325,14 +370,14 @@ export class EmailService {
       let clientEmailResult;
       if (customEmailData) {
         // Use provided custom email data
-        clientEmailResult = await this.sendCustomQuoteEmail(variables, recipientEmail, userId, customEmailData, language);
+        clientEmailResult = await this.sendCustomQuoteEmail(variables, recipientEmail, userId, customEmailData, clientLanguage);
       } else {
         // Use default custom email format instead of templated email
         const defaultEmailData = {
           subject: emailSubject,
           message: emailMessage
         };
-        clientEmailResult = await this.sendCustomQuoteEmail(variables, recipientEmail, userId, defaultEmailData, language);
+        clientEmailResult = await this.sendCustomQuoteEmail(variables, recipientEmail, userId, defaultEmailData, clientLanguage);
       }
       
       // If sendCopy is enabled, also send a copy to the current user
@@ -366,16 +411,42 @@ export class EmailService {
                 custom_message: copyMessage
               };
               
-              // Get user language preference (default to 'fr')
-              const userLanguage = typeof window !== 'undefined' ? (localStorage.getItem('i18nextLng') || 'fr') : 'fr';
-              const language = userLanguage.split('-')[0] || 'fr'; // Extract base language (e.g., 'fr' from 'fr-FR')
+              // Get user's language preference for copy email (default to 'fr')
+              // Priority: user's database language_preference > localStorage > 'fr'
+              let userLanguage = 'fr';
+              if (userId) {
+                try {
+                  const { data: userData } = await supabase
+                    .from('users')
+                    .select('language_preference')
+                    .eq('id', userId)
+                    .maybeSingle();
+                  
+                  if (userData?.language_preference) {
+                    userLanguage = userData.language_preference.split('-')[0] || 'fr';
+                  } else if (typeof window !== 'undefined') {
+                    const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
+                    userLanguage = storedLang.split('-')[0] || 'fr';
+                  }
+                } catch (error) {
+                  console.warn('Error fetching user language preference:', error);
+                  // Fallback to localStorage
+                  if (typeof window !== 'undefined') {
+                    const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
+                    userLanguage = storedLang.split('-')[0] || 'fr';
+                  }
+                }
+              } else if (typeof window !== 'undefined') {
+                const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
+                userLanguage = storedLang.split('-')[0] || 'fr';
+              }
               
               const copyEmailResult = await this.sendCustomQuoteEmail(
                 copyVariables, 
                 customEmailData.userEmail, 
                 userId, 
                 { subject: copySubject, message: copyMessage },
-                language
+                userLanguage
               );
               
               if (copyEmailResult.success) {
@@ -398,13 +469,43 @@ export class EmailService {
                 custom_message: copyMessage
               };
               
+              // Get user's language preference for copy email (default to 'fr')
+              // Priority: user's database language_preference > localStorage > 'fr'
+              let userLanguage = 'fr';
+              if (userId) {
+                try {
+                  const { data: userData } = await supabase
+                    .from('users')
+                    .select('language_preference')
+                    .eq('id', userId)
+                    .maybeSingle();
+                  
+                  if (userData?.language_preference) {
+                    userLanguage = userData.language_preference.split('-')[0] || 'fr';
+                  } else if (typeof window !== 'undefined') {
+                    const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
+                    userLanguage = storedLang.split('-')[0] || 'fr';
+                  }
+                } catch (error) {
+                  console.warn('Error fetching user language preference:', error);
+                  // Fallback to localStorage
+                  if (typeof window !== 'undefined') {
+                    const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
+                    userLanguage = storedLang.split('-')[0] || 'fr';
+                  }
+                }
+              } else if (typeof window !== 'undefined') {
+                const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
+                userLanguage = storedLang.split('-')[0] || 'fr';
+              }
+              
               // Send copy to user
               const copyEmailResult = await this.sendCustomQuoteEmail(
                 copyVariables, 
                 customEmailData.userEmail, 
                 userId, 
                 { subject: copySubject, message: copyMessage },
-                language
+                userLanguage
               );
               
               if (copyEmailResult.success) {
@@ -489,7 +590,11 @@ export class EmailService {
         company_name: companyProfile?.company_name || 'Notre entreprise'
       };
       
-      return await this.sendTemplatedEmail(followUpType, variables, client.email, userId);
+      // Get client's language preference (default to 'fr')
+      // Priority: client.language_preference > client.languagePreference > 'fr'
+      const clientLanguage = (client.language_preference || client.languagePreference || 'fr').split('-')[0] || 'fr';
+      
+      return await this.sendTemplatedEmail(followUpType, variables, client.email, userId, clientLanguage);
       
     } catch (error) {
       console.error('Error sending follow-up email:', error);
@@ -531,7 +636,11 @@ export class EmailService {
         company_name: companyProfile?.company_name || 'Notre entreprise'
       };
       
-      return await this.sendTemplatedEmail('client_accepted', variables, client.email, userId);
+      // Get client's language preference (default to 'fr')
+      // Priority: client.language_preference > client.languagePreference > 'fr'
+      const clientLanguage = (client.language_preference || client.languagePreference || 'fr').split('-')[0] || 'fr';
+      
+      return await this.sendTemplatedEmail('client_accepted', variables, client.email, userId, clientLanguage);
       
     } catch (error) {
       console.error('Error sending client accepted email:', error);
@@ -555,7 +664,11 @@ export class EmailService {
         company_name: companyProfile?.company_name || 'Notre entreprise'
       };
       
-      return await this.sendTemplatedEmail('client_rejected', variables, client.email, userId);
+      // Get client's language preference (default to 'fr')
+      // Priority: client.language_preference > client.languagePreference > 'fr'
+      const clientLanguage = (client.language_preference || client.languagePreference || 'fr').split('-')[0] || 'fr';
+      
+      return await this.sendTemplatedEmail('client_rejected', variables, client.email, userId, clientLanguage);
       
     } catch (error) {
       console.error('Error sending client rejected email:', error);
@@ -578,7 +691,11 @@ export class EmailService {
         company_name: companyProfile?.company_name || 'Notre entreprise'
       };
       
-      return await this.sendTemplatedEmail('welcome_client', variables, clientData.email, userId);
+      // Get client's language preference (default to 'fr')
+      // Priority: clientData.language_preference > clientData.languagePreference > 'fr'
+      const clientLanguage = (clientData.language_preference || clientData.languagePreference || 'fr').split('-')[0] || 'fr';
+      
+      return await this.sendTemplatedEmail('welcome_client', variables, clientData.email, userId, clientLanguage);
       
     } catch (error) {
       console.error('Error sending welcome email:', error);
@@ -656,15 +773,15 @@ export class EmailService {
         custom_message: emailMessage
       };
       
-      // Get user language preference (default to 'fr')
-      const userLanguage = typeof window !== 'undefined' ? (localStorage.getItem('i18nextLng') || 'fr') : 'fr';
-      const language = userLanguage.split('-')[0] || 'fr'; // Extract base language (e.g., 'fr' from 'fr-FR')
+      // Get client's language preference (default to 'fr')
+      // Priority: client.language_preference > client.languagePreference > 'fr'
+      const clientLanguage = (client.language_preference || client.languagePreference || 'fr').split('-')[0] || 'fr';
       
       // Send email to client using custom quote email
       return await this.sendCustomQuoteEmail(variables, client.email, userId, {
         subject: emailSubject,
         message: emailMessage
-      }, language);
+      }, clientLanguage);
       
     } catch (error) {
       console.error('Error sending draft quote marked as sent email:', error);

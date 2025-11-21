@@ -86,7 +86,8 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
     regNumber: '',
     peppolId: '',
     enablePeppol: false,
-    preferences: []
+    preferences: [],
+    languagePreference: 'fr'
   });
 
   const [existingClients, setExistingClients] = useState([]);
@@ -146,7 +147,8 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         regNumber: '',
         peppolId: '',
         enablePeppol: false,
-        preferences: preferences
+        preferences: preferences,
+        languagePreference: selectedClient.languagePreference || selectedClient.language_preference || 'fr'
       });
     }
   }, [leadId, selectedClient]);
@@ -569,7 +571,8 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         regNumber: '',
         peppolId: '',
         enablePeppol: false,
-        preferences: []
+        preferences: [],
+        languagePreference: 'fr'
       });
         setClientType('particulier');
         
@@ -614,7 +617,8 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         regNumber: '',
         peppolId: '',
         enablePeppol: false,
-        preferences: selectedClient.communicationPreferences ? Object.keys(selectedClient.communicationPreferences).filter(key => selectedClient.communicationPreferences[key]) : []
+        preferences: selectedClient.communicationPreferences ? Object.keys(selectedClient.communicationPreferences).filter(key => selectedClient.communicationPreferences[key]) : [],
+        languagePreference: selectedClient.languagePreference || selectedClient.language_preference || 'fr'
       });
       
       if (error) {
@@ -1102,6 +1106,25 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                     onChange={(e) => handleInputChange('address', e.target.value)}
                   />
                 </div>
+                
+                {/* Language Preference */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-foreground">
+                    {t('quoteCreation.clientSelection.languagePreference', 'Préférence de langue')}
+                  </label>
+                  <Select
+                    value={newClient.languagePreference || 'fr'}
+                    onChange={(e) => handleInputChange('languagePreference', e.target.value)}
+                    options={[
+                      { value: 'fr', label: '🇫🇷 Français' },
+                      { value: 'en', label: '🇬🇧 English' },
+                      { value: 'nl', label: '🇳🇱 Nederlands' }
+                    ]}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t('quoteCreation.clientSelection.languagePreferenceHelp', 'Les emails seront envoyés dans cette langue')}
+                  </p>
+                </div>
               </div>
             )}
 
@@ -1172,6 +1195,25 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                     value={newClient.postalCode}
                     onChange={(e) => handleInputChange('postalCode', e.target.value)}
                   />
+                </div>
+                
+                {/* Language Preference */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-foreground">
+                    {t('quoteCreation.clientSelection.languagePreference', 'Préférence de langue')}
+                  </label>
+                  <Select
+                    value={newClient.languagePreference || 'fr'}
+                    onChange={(e) => handleInputChange('languagePreference', e.target.value)}
+                    options={[
+                      { value: 'fr', label: '🇫🇷 Français' },
+                      { value: 'en', label: '🇬🇧 English' },
+                      { value: 'nl', label: '🇳🇱 Nederlands' }
+                    ]}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t('quoteCreation.clientSelection.languagePreferenceHelp', 'Les emails seront envoyés dans cette langue')}
+                  </p>
                 </div>
 
                 {/* Professional-specific fields */}
@@ -1290,7 +1332,8 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                       enablePeppol: false,
                       preferences: Object.entries(leadClientData.communicationPreferences || {})
                         .filter(([_, value]) => value === true)
-                        .map(([key, _]) => key)
+                        .map(([key, _]) => key),
+                      languagePreference: leadClientData.languagePreference || leadClientData.language_preference || (leadClientData.communicationPreferences?.language_preference) || 'fr'
                     });
                   } else {
                     // Reset to empty values for non-lead cases
@@ -1308,7 +1351,8 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                     regNumber: '', 
                     peppolId: '', 
                     enablePeppol: false, 
-                    preferences: [] 
+                    preferences: [],
+                    languagePreference: 'fr'
                   });
                   }
                   setClientType('particulier');

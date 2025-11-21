@@ -153,12 +153,31 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
         </div>
       `;
 
+      // Get client's language preference
+      let clientLanguage = 'fr';
+      if (invoice.client?.id) {
+        try {
+          const { data: clientData } = await supabase
+            .from('clients')
+            .select('language_preference')
+            .eq('id', invoice.client.id)
+            .maybeSingle();
+          
+          if (clientData?.language_preference) {
+            clientLanguage = clientData.language_preference.split('-')[0] || 'fr';
+          }
+        } catch (error) {
+          console.warn('Error fetching client language preference:', error);
+        }
+      }
+      
       // Send email to client via Resend using EmailService with PDF attachment
       const result = await EmailService.sendEmailViaEdgeFunction('templated_email', {
         client_email: emailData.clientEmail,
         subject: emailData.subject,
         html: emailHtml,
-        text: emailData.message || t('invoicesManagement.sendEmailModal.emailText', { invoiceNumber, amount: new Intl.NumberFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US', { style: 'currency', currency: 'EUR' }).format(invoiceAmount) }),
+        text: emailData.message || t('invoicesManagement.sendEmailModal.emailText', { invoiceNumber, amount: new Intl.NumberFormat(clientLanguage === 'fr' ? 'fr-FR' : clientLanguage === 'nl' ? 'nl-NL' : 'en-US', { style: 'currency', currency: 'EUR' }).format(invoiceAmount) }),
+        language: clientLanguage,
         attachments: [{
           filename: `facture-${invoiceNumber}.pdf`,
           content: pdfBase64
@@ -167,11 +186,37 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
 
       // If sendCopy is enabled, send a copy to the user with PDF attachment
       if (emailData.sendCopy && user?.email && result.success) {
+        // Get user's language preference for copy email
+        let userLanguage = 'fr';
+        if (user?.id) {
+          try {
+            const { data: userData } = await supabase
+              .from('users')
+              .select('language_preference')
+              .eq('id', user.id)
+              .maybeSingle();
+            
+            if (userData?.language_preference) {
+              userLanguage = userData.language_preference.split('-')[0] || 'fr';
+            } else if (typeof window !== 'undefined') {
+              const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
+              userLanguage = storedLang.split('-')[0] || 'fr';
+            }
+          } catch (error) {
+            console.warn('Error fetching user language preference:', error);
+            if (typeof window !== 'undefined') {
+              const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
+              userLanguage = storedLang.split('-')[0] || 'fr';
+            }
+          }
+        }
+        
         await EmailService.sendEmailViaEdgeFunction('templated_email', {
           client_email: user.email,
           subject: `[Copie] ${emailData.subject}`,
           html: emailHtml,
-          text: emailData.message || t('invoicesManagement.sendEmailModal.emailText', { invoiceNumber, amount: new Intl.NumberFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US', { style: 'currency', currency: 'EUR' }).format(invoiceAmount) }),
+          text: emailData.message || t('invoicesManagement.sendEmailModal.emailText', { invoiceNumber, amount: new Intl.NumberFormat(userLanguage === 'fr' ? 'fr-FR' : userLanguage === 'nl' ? 'nl-NL' : 'en-US', { style: 'currency', currency: 'EUR' }).format(invoiceAmount) }),
+          language: userLanguage,
           attachments: [{
             filename: `facture-${invoiceNumber}.pdf`,
             content: pdfBase64,

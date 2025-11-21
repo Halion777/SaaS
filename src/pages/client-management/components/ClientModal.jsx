@@ -23,7 +23,8 @@ const ClientModal = ({ client, onSave, onClose }) => {
     regNumber: '',
     preferences: [],
     peppolId: '',
-    enablePeppol: false
+    enablePeppol: false,
+    languagePreference: 'fr'
   });
 
   const typeOptions = [
@@ -77,7 +78,8 @@ const ClientModal = ({ client, onSave, onClose }) => {
         regNumber: client.regNumber || '',
         preferences: client.preferences || [],
         peppolId: client.peppolId || '',
-        enablePeppol: client.enablePeppol || false
+        enablePeppol: client.enablePeppol || false,
+        languagePreference: client.languagePreference || client.language_preference || 'fr'
       });
     }
   }, [client]);
@@ -252,6 +254,25 @@ const ClientModal = ({ client, onSave, onClose }) => {
                     onChange={(e) => handleChange('address', e.target.value)}
                   />
                 </div>
+                
+                {/* Language Preference */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-foreground">
+                    {t('clientManagement.modal.languagePreference', 'Préférence de langue')}
+                  </label>
+                  <Select
+                    value={formData.languagePreference || 'fr'}
+                    onChange={(e) => handleChange('languagePreference', e.target.value)}
+                    options={[
+                      { value: 'fr', label: '🇫🇷 Français' },
+                      { value: 'en', label: '🇬🇧 English' },
+                      { value: 'nl', label: '🇳🇱 Nederlands' }
+                    ]}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t('clientManagement.modal.languagePreferenceHelp', 'Les emails seront envoyés dans cette langue')}
+                  </p>
+                </div>
               </div>
             )}
 
@@ -322,6 +343,25 @@ const ClientModal = ({ client, onSave, onClose }) => {
                     onChange={(e) => handleChange('postalCode', e.target.value)}
                     placeholder={t('clientManagement.modal.postalCodePlaceholder')}
                   />
+                </div>
+                
+                {/* Language Preference */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-foreground">
+                    {t('clientManagement.modal.languagePreference', 'Préférence de langue')}
+                  </label>
+                  <Select
+                    value={formData.languagePreference || 'fr'}
+                    onChange={(e) => handleChange('languagePreference', e.target.value)}
+                    options={[
+                      { value: 'fr', label: '🇫🇷 Français' },
+                      { value: 'en', label: '🇬🇧 English' },
+                      { value: 'nl', label: '🇳🇱 Nederlands' }
+                    ]}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t('clientManagement.modal.languagePreferenceHelp', 'Les emails seront envoyés dans cette langue')}
+                  </p>
                 </div>
 
                 {/* Professional-specific fields */}

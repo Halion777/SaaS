@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import Select from '../../components/ui/Select';
 import Icon from '../../components/AppIcon';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
@@ -40,6 +41,7 @@ const FindArtisanPage = () => {
       phone: false,
       sms: false
     },
+    languagePreference: 'fr', // Default to French
     projectImages: [], // Store File objects for preview
     uploadedFilePaths: [] // Store uploaded file paths for submission
   });
@@ -278,6 +280,7 @@ const FindArtisanPage = () => {
             phone: false,
             sms: false
           },
+          languagePreference: 'fr',
           projectImages: [],
           uploadedFilePaths: []
         });
@@ -1022,6 +1025,25 @@ const FindArtisanPage = () => {
                           </label>
                         </div>
                       </div>
+                    </div>
+
+                    {/* Language Preference */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-foreground">
+                        {t('findArtisan.form.languagePreference', 'Préférence de langue')}
+                      </label>
+                      <Select
+                        value={formData.languagePreference || 'fr'}
+                        onChange={(e) => handleInputChange('languagePreference', e.target.value)}
+                        options={[
+                          { value: 'fr', label: '🇫🇷 Français' },
+                          { value: 'en', label: '🇬🇧 English' },
+                          { value: 'nl', label: '🇳🇱 Nederlands' }
+                        ]}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {t('findArtisan.form.languagePreferenceHelp', 'Nous communiquerons avec vous dans cette langue')}
+                      </p>
                     </div>
 
                     {/* Submit Button */}

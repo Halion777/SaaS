@@ -12,29 +12,37 @@ export class LeadManagementService {
    */
   static async createLeadRequest(leadData) {
     try {
+      // Handle empty date strings - convert to null
+      const completionDate = leadData.completionDate && leadData.completionDate.trim() !== '' 
+        ? leadData.completionDate 
+        : null;
+      
       const { data, error } = await supabase
         .from('lead_requests')
         .insert({
           project_categories: leadData.categories,
           custom_category: leadData.customCategory || null,
           project_description: leadData.description,
-          price_range: leadData.priceRange,
-          completion_date: leadData.completionDate,
+          price_range: leadData.priceRange || null,
+          completion_date: completionDate,
           
           // Location details
-          street_number: leadData.streetNumber,
-          full_address: leadData.fullAddress,
+          street_number: leadData.streetNumber || null,
+          full_address: leadData.fullAddress || null,
           city: 'N/A', // Default value since city field was removed from form
-          zip_code: leadData.zipCode,
+          zip_code: leadData.zipCode || null,
           country: leadData.country || 'BE',
-          region: leadData.region,
+          region: leadData.region || null,
           
           // Client information
           client_name: leadData.fullName,
           client_email: leadData.email,
-          client_phone: leadData.phone,
-          client_address: leadData.clientAddress,
-          communication_preferences: leadData.communicationPreferences,
+          client_phone: leadData.phone || null,
+          client_address: leadData.clientAddress || null,
+          communication_preferences: {
+            ...leadData.communicationPreferences,
+            language_preference: leadData.languagePreference || 'fr'
+          },
           
           // Project files
           project_images: leadData.projectImages || [],
@@ -60,9 +68,11 @@ export class LeadManagementService {
       
       // Send welcome email to client using new template system
       try {
+        const clientLanguage = leadData.languagePreference || leadData.communicationPreferences?.language_preference || 'fr';
         await EmailService.sendWelcomeEmail({
           name: leadData.fullName,
-          email: leadData.email
+          email: leadData.email,
+          language_preference: clientLanguage
         }, null, null); // No userId needed for non-authenticated clients
       } catch (emailError) {
         console.error('Failed to send welcome email:', emailError);

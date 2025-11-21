@@ -1082,11 +1082,50 @@ const PeppolNetworkPage = () => {
                           <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
                             {t('peppol.setup.contactPerson.language')} *
                           </label>
-                          <Input
-                            type="text"
+                          <Select
                             value={peppolSettings.language || 'en-US'}
                             onChange={(e) => handleInputChange('language', e.target.value)}
-                            placeholder="en-US"
+                            options={[
+                              { value: 'fr-FR', label: 'Français - France (fr-FR)' },
+                              { value: 'fr-BE', label: 'Français - Belgique (fr-BE)' },
+                              { value: 'fr-CA', label: 'Français - Canada (fr-CA)' },
+                              { value: 'nl-NL', label: 'Nederlands - Nederland (nl-NL)' },
+                              { value: 'nl-BE', label: 'Nederlands - België (nl-BE)' },
+                              { value: 'en-US', label: 'English - United States (en-US)' },
+                              { value: 'en-GB', label: 'English - United Kingdom (en-GB)' },
+                              { value: 'de-DE', label: 'Deutsch - Deutschland (de-DE)' },
+                              { value: 'de-AT', label: 'Deutsch - Österreich (de-AT)' },
+                              { value: 'de-CH', label: 'Deutsch - Schweiz (de-CH)' },
+                              { value: 'es-ES', label: 'Español - España (es-ES)' },
+                              { value: 'it-IT', label: 'Italiano - Italia (it-IT)' },
+                              { value: 'pt-PT', label: 'Português - Portugal (pt-PT)' },
+                              { value: 'pt-BR', label: 'Português - Brasil (pt-BR)' },
+                              { value: 'pl-PL', label: 'Polski - Polska (pl-PL)' },
+                              { value: 'cs-CZ', label: 'Čeština - Česká republika (cs-CZ)' },
+                              { value: 'sk-SK', label: 'Slovenčina - Slovensko (sk-SK)' },
+                              { value: 'hu-HU', label: 'Magyar - Magyarország (hu-HU)' },
+                              { value: 'ro-RO', label: 'Română - România (ro-RO)' },
+                              { value: 'bg-BG', label: 'Български - България (bg-BG)' },
+                              { value: 'hr-HR', label: 'Hrvatski - Hrvatska (hr-HR)' },
+                              { value: 'sl-SI', label: 'Slovenščina - Slovenija (sl-SI)' },
+                              { value: 'et-EE', label: 'Eesti - Eesti (et-EE)' },
+                              { value: 'lv-LV', label: 'Latviešu - Latvija (lv-LV)' },
+                              { value: 'lt-LT', label: 'Lietuvių - Lietuva (lt-LT)' },
+                              { value: 'fi-FI', label: 'Suomi - Suomi (fi-FI)' },
+                              { value: 'sv-SE', label: 'Svenska - Sverige (sv-SE)' },
+                              { value: 'da-DK', label: 'Dansk - Danmark (da-DK)' },
+                              { value: 'no-NO', label: 'Norsk - Norge (no-NO)' },
+                              { value: 'el-GR', label: 'Ελληνικά - Ελλάδα (el-GR)' },
+                              { value: 'ru-RU', label: 'Русский - Россия (ru-RU)' },
+                              { value: 'uk-UA', label: 'Українська - Україна (uk-UA)' },
+                              { value: 'tr-TR', label: 'Türkçe - Türkiye (tr-TR)' },
+                              { value: 'ja-JP', label: '日本語 - 日本 (ja-JP)' },
+                              { value: 'ko-KR', label: '한국어 - 대한민국 (ko-KR)' },
+                              { value: 'zh-CN', label: '中文 - 中国 (zh-CN)' },
+                              { value: 'zh-TW', label: '中文 - 台灣 (zh-TW)' },
+                              { value: 'ar-SA', label: 'العربية - السعودية (ar-SA)' },
+                              { value: 'he-IL', label: 'עברית - ישראל (he-IL)' }
+                            ]}
                             required
                           />
                       </div>

@@ -70,6 +70,7 @@ export async function fetchClients() {
         peppolId: client.peppol_id,
         enablePeppol: client.peppol_enabled,
         preferences: client.communication_preferences || [],
+        languagePreference: client.language_preference || 'fr',
         city: client.city,
         postalCode: client.postal_code,
         projectsCount: quotesByClient[client.id] || 0,
@@ -162,6 +163,7 @@ export async function createClient(clientData) {
       peppol_id: clientData.peppolId,
       peppol_enabled: clientData.enablePeppol,
       communication_preferences: clientData.preferences || [],
+      language_preference: clientData.languagePreference || 'fr',
       is_active: true
     };
 
@@ -209,6 +211,7 @@ export async function updateClient(id, clientData) {
       peppol_id: clientData.peppolId,
       peppol_enabled: clientData.enablePeppol,
       communication_preferences: clientData.preferences || [],
+      language_preference: clientData.languagePreference || 'fr',
       is_active: clientData.isActive !== undefined ? clientData.isActive : true
     };
 

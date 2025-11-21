@@ -518,10 +518,10 @@ async function checkIfQuoteNeedsFollowUp(admin: any, quote: any, rules: any): Pr
  */
 async function createIntelligentFollowUp(admin: any, quote: any, rules: any) {
   try {
-    // Get client details
+    // Get client details including language preference
     const { data: client, error: clientError } = await admin
       .from('clients')
-      .select('name, email')
+      .select('name, email, language_preference')
       .eq('id', quote.client_id)
       .single();
     
@@ -622,16 +622,37 @@ async function createIntelligentFollowUp(admin: any, quote: any, rules: any) {
       priority = calculatePriority('sent', stage, hasRecentActivity);
     }
     
-    // Get template from email_templates - prioritize French, fallback to any active
+    // Get client's language preference (client should already be fetched above)
+    const clientLanguage = (client?.language_preference || 'fr').split('-')[0] || 'fr';
+    
+    // Get template from email_templates filtered by client language
     let { data: template, error: templateError } = await admin
       .from('email_templates')
       .select('subject, html_content, text_content')
       .eq('template_type', templateType)
+      .eq('language', clientLanguage)
       .eq('is_active', true)
-      .eq('language', 'fr')
       .maybeSingle();
     
-    // If French template not found, try to get any active template
+    // If template not found in client language, try French as fallback
+    if (templateError || !template) {
+      if (clientLanguage !== 'fr') {
+        const { data: frenchTemplate, error: frenchError } = await admin
+          .from('email_templates')
+          .select('subject, html_content, text_content')
+          .eq('template_type', templateType)
+          .eq('language', 'fr')
+          .eq('is_active', true)
+          .maybeSingle();
+        
+        if (!frenchError && frenchTemplate) {
+          template = frenchTemplate;
+          templateError = null;
+        }
+      }
+    }
+    
+    // If still no template, try any active template
     if (templateError || !template) {
       const { data: fallbackTemplate, error: fallbackError } = await admin
         .from('email_templates')
@@ -759,10 +780,10 @@ async function processQuoteStatusUpdates(admin: any, rules: any) {
 // In followups-scheduler/index.ts
 async function createDelayedViewFollowUp(admin: any, quote: any) {
   try {
-    // Get client details
+    // Get client details including language preference
     const { data: client, error: clientError } = await admin
       .from('clients')
-      .select('name, email')
+      .select('name, email, language_preference')
       .eq('id', quote.client_id)
       .single();
     
@@ -770,6 +791,9 @@ async function createDelayedViewFollowUp(admin: any, quote: any) {
       console.warn('Could not get client details for quote', quote.id);
       return;
     }
+    
+    // Get client's language preference (default to 'fr')
+    const clientLanguage = (client.language_preference || 'fr').split('-')[0] || 'fr';
     
     // Find existing follow-up for this quote
     const { data: existingFollowUp, error: checkError } = await admin
@@ -785,16 +809,34 @@ async function createDelayedViewFollowUp(admin: any, quote: any) {
       return;
     }
     
-    // Get template for viewed no action follow-up - prioritize French, fallback to any active
+    // Get template for viewed no action follow-up filtered by client language
     let { data: template, error: templateError } = await admin
       .from('email_templates')
       .select('subject, html_content, text_content')
       .eq('template_type', 'followup_viewed_no_action')
+      .eq('language', clientLanguage)
       .eq('is_active', true)
-      .eq('language', 'fr')
       .maybeSingle();
     
-    // If French template not found, try to get any active template
+    // If template not found in client language, try French as fallback
+    if (templateError || !template) {
+      if (clientLanguage !== 'fr') {
+        const { data: frenchTemplate, error: frenchError } = await admin
+          .from('email_templates')
+          .select('subject, html_content, text_content')
+          .eq('template_type', 'followup_viewed_no_action')
+          .eq('language', 'fr')
+          .eq('is_active', true)
+          .maybeSingle();
+        
+        if (!frenchError && frenchTemplate) {
+          template = frenchTemplate;
+          templateError = null;
+        }
+      }
+    }
+    
+    // If still no template, try any active template
     if (templateError || !template) {
       const { data: fallbackTemplate, error: fallbackError } = await admin
         .from('email_templates')
@@ -1026,16 +1068,50 @@ async function progressFollowUpStages(admin: any, rules: any) {
           let templateHtml = followUp.template_html;
           
           if (nextStage > 1) {
-            // Fetch general_followup template for stages 2+
+            // Get client's language preference for general_followup template
+            let clientLanguage = 'fr';
+            try {
+              const { data: clientData } = await admin
+                .from('clients')
+                .select('language_preference')
+                .eq('id', quote.client_id)
+                .maybeSingle();
+              
+              if (clientData?.language_preference) {
+                clientLanguage = clientData.language_preference.split('-')[0] || 'fr';
+              }
+            } catch (error) {
+              console.warn('Error fetching client language preference:', error);
+            }
+            
+            // Fetch general_followup template for stages 2+ filtered by client language
             let { data: generalTemplate, error: generalTemplateError } = await admin
               .from('email_templates')
               .select('subject, html_content, text_content')
               .eq('template_type', 'general_followup')
+              .eq('language', clientLanguage)
               .eq('is_active', true)
-              .eq('language', 'fr')
               .maybeSingle();
             
-            // If French template not found, try to get any active template
+            // If template not found in client language, try French as fallback
+            if (generalTemplateError || !generalTemplate) {
+              if (clientLanguage !== 'fr') {
+                const { data: frenchTemplate, error: frenchError } = await admin
+                  .from('email_templates')
+                  .select('subject, html_content, text_content')
+                  .eq('template_type', 'general_followup')
+                  .eq('language', 'fr')
+                  .eq('is_active', true)
+                  .maybeSingle();
+                
+                if (!frenchError && frenchTemplate) {
+                  generalTemplate = frenchTemplate;
+                  generalTemplateError = null;
+                }
+              }
+            }
+            
+            // If still no template, try any active template
             if (generalTemplateError || !generalTemplate) {
               const { data: fallbackTemplate, error: fallbackError } = await admin
                 .from('email_templates')
@@ -1176,10 +1252,10 @@ async function processNewlySentQuotes(admin: any, rules: any) {
  */
 async function createInitialFollowUpForSentQuote(admin: any, quote: any, rules: any) {
   try {
-    // Get client details
+    // Get client details including language preference
     const { data: client, error: clientError } = await admin
       .from('clients')
-      .select('name, email')
+      .select('name, email, language_preference')
       .eq('id', quote.client_id)
       .single();
     
@@ -1188,16 +1264,37 @@ async function createInitialFollowUpForSentQuote(admin: any, quote: any, rules: 
       return;
     }
     
-    // Get template for initial follow-up - prioritize French, fallback to any active
+    // Get client's language preference (default to 'fr')
+    const clientLanguage = (client.language_preference || 'fr').split('-')[0] || 'fr';
+    
+    // Get template for initial follow-up filtered by client language
     let { data: template, error: templateError } = await admin
       .from('email_templates')
       .select('subject, html_content, text_content')
       .eq('template_type', 'followup_not_viewed')
+      .eq('language', clientLanguage)
       .eq('is_active', true)
-      .eq('language', 'fr')
       .maybeSingle();
     
-    // If French template not found, try to get any active template
+    // If template not found in client language, try French as fallback
+    if (templateError || !template) {
+      if (clientLanguage !== 'fr') {
+        const { data: frenchTemplate, error: frenchError } = await admin
+          .from('email_templates')
+          .select('subject, html_content, text_content')
+          .eq('template_type', 'followup_not_viewed')
+          .eq('language', 'fr')
+          .eq('is_active', true)
+          .maybeSingle();
+        
+        if (!frenchError && frenchTemplate) {
+          template = frenchTemplate;
+          templateError = null;
+        }
+      }
+    }
+    
+    // If still no template, try any active template
     if (templateError || !template) {
       const { data: fallbackTemplate, error: fallbackError } = await admin
         .from('email_templates')

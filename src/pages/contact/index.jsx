@@ -64,8 +64,10 @@ const ContactPage = () => {
   // Validate form
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.firstName) newErrors.firstName = t('contact.form.errors.firstNameRequired');
-    if (!formData.lastName) newErrors.lastName = t('contact.form.errors.lastNameRequired');
+    if (!formData.firstName || formData.firstName.trim() === '') {
+      newErrors.firstName = t('contact.form.errors.firstNameRequired');
+    }
+    // lastName is optional - no validation needed
     
     if (!formData.email) {
       newErrors.email = t('contact.form.errors.emailRequired');
@@ -74,7 +76,9 @@ const ContactPage = () => {
     }
     
     if (!formData.subject) newErrors.subject = t('contact.form.errors.subjectRequired');
-    if (!formData.message) newErrors.message = t('contact.form.errors.messageRequired');
+    if (!formData.message || formData.message.trim() === '') {
+      newErrors.message = t('contact.form.errors.messageRequired');
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -91,7 +95,14 @@ const ContactPage = () => {
     setErrors({}); // Clear previous errors
     
     try {
-      const result = await contactService.submitContactForm(formData);
+      // Get current language from i18n (default to 'fr')
+      const currentLanguage = i18n.language || localStorage.getItem('language') || 'fr';
+      console.log('Submitting contact form with language:', currentLanguage);
+      console.log('Form data:', formData);
+      
+      const result = await contactService.submitContactForm(formData, currentLanguage);
+      
+      console.log('Contact form submission result:', result);
       
       if (result.success) {
         setIsSubmitted(true);
@@ -106,11 +117,13 @@ const ContactPage = () => {
           message: ''
         });
       } else {
+        console.error('Contact form submission failed:', result.error);
         setErrors({ submit: result.error || 'Failed to submit contact form. Please try again.' });
         setIsSubmitted(false);
       }
     } catch (error) {
       console.error('Error submitting form:', error);
+      console.error('Error stack:', error.stack);
       setErrors({ submit: error.message || 'Failed to submit contact form. Please try again.' });
       setIsSubmitted(false);
     } finally {
