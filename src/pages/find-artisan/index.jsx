@@ -303,6 +303,7 @@ const FindArtisanPage = () => {
   };
 
   const priceRanges = [
+    { value: 'unknown', label: t('findArtisan.priceRanges.dontKnow') },
     { value: '0-500', label: t('findArtisan.priceRanges.range1') },
     { value: '500-1000', label: t('findArtisan.priceRanges.range2') },
     { value: '1000-2500', label: t('findArtisan.priceRanges.range3') },

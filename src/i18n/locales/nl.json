@@ -649,7 +649,8 @@
       "range5": "5,000–7,000€",
       "range6": "7,000–10,000€",
       "range7": "10,000–20,000€",
-      "range8": "20,000+€"
+      "range8": "20,000+€",
+      "dontKnow": "Ik weet het niet"
     },
     "form": {
       "title": "Beschrijf je project",
@@ -666,7 +667,7 @@
       "zipCodePlaceholder": "Ex: 1000",
       "description": "Projectbeschrijving",
       "descriptionPlaceholder": "Beschrijf je werk in detail: aard, afmetingen, gewenste materialen...",
-      "priceRange": "Prijsbereik",
+      "priceRange": "Prijs",
       "selectPriceRange": "Selecteer een bereik",
       "photos": "Projectfoto's",
       "optional": "Optioneel",
@@ -2837,7 +2838,7 @@
       "selectCountry": "Selecteer land",
       "postalCode": "Postcode",
       "postalCodePlaceholder": "1000",
-      "clickToEdit": "Klik op \"Klantgegevens bewerken\" en vervolgens \"Klant toevoegen\" om door te gaan",
+      "clickToEdit": "U kunt \"Klantgegevens bewerken\"",
       "creating": "Maken...",
       "addClient": "Klant toevoegen",
       "cancel": "Annuleren",
@@ -2911,7 +2912,7 @@
       "quoteTotal": "Offerte totaal",
       "title": "Taakdefinitie",
       "addTask": "Taak toevoegen",
-      "addMaterial": "Materiaal toevoegen",
+      "addMaterial": "Matériau toevoegen",
       "save": "Opslaan",
       "saveChanges": "Wijzigingen opslaan",
       "cancel": "Annuleren",
@@ -2967,7 +2968,7 @@
       "materialName": "Materiaalnaam",
       "materialNamePlaceholder": "Bijv: PVC-buis",
       "quantity": "Hoeveelheid",
-      "quantityPlaceholder": "1",
+      "quantityPlaceholder": "Bijv: 1",
       "unit": "Eenheid",
       "fillMaterialDetails": "Vul de naam, hoeveelheid en eenheid in om een materiaal toe te voegen",
       "labor": "Arbeid",
@@ -3133,7 +3134,7 @@
     "quoteSendModal": {
       "shareTitle": "Offerte delen",
       "sendTitle": "Offerte versturen",
-      "statusInfo": "Zodra u deze offerte heeft verzonden, verandert de status naar \"In afwachting\". ",
+      "statusInfo": "Zodra u deze offerte heeft verzonden, verandert de status naar \"Verzonden\". ",
       "client": "De klant",
       "deadlineInfo": "heeft tot",
       "defaultDeadline": "30 dagen",
@@ -3306,7 +3307,7 @@
       "total": "Totaal",
       "advancePayment": "Voorschot bij bestelling",
       "balanceOnDelivery": "Saldo bij levering",
-      "materialsNote": "* Materiaalkosten zijn inbegrepen in het totaal maar verborgen"
+      "materialsNote": "Materiaalkosten zijn inbegrepen in het totaal maar verborgen"
     },
     "additionalInfo": {
       "title": "Opmerkingen en voorwaarden",

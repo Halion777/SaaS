@@ -60,6 +60,59 @@ export async function getQuoteTrackingData(quoteId) {
 }
 
 /**
+ * Save or update financial config for a quote
+ * @param {string} quoteId - Quote ID
+ * @param {Object} financialConfig - Financial configuration object
+ * @returns {Promise<{data, error}>} Saved config or error
+ */
+export async function saveFinancialConfig(quoteId, financialConfig) {
+  try {
+    if (!quoteId) {
+      return { error: { message: 'quoteId is required' } };
+    }
+
+    // Check if financial config already exists
+    const { data: existingConfig } = await supabase
+      .from('quote_financial_configs')
+      .select('id')
+      .eq('quote_id', quoteId)
+      .maybeSingle();
+
+    const configData = {
+      quote_id: quoteId,
+      vat_config: financialConfig.vatConfig || null,
+      advance_config: financialConfig.advanceConfig || null,
+      marketing_banner: financialConfig.marketingBannerConfig || null,
+      payment_terms: financialConfig.paymentTerms || null,
+      discount_config: financialConfig.discountConfig || null,
+      show_material_prices: financialConfig.showMaterialPrices ?? false
+    };
+
+    if (existingConfig) {
+      // Update existing config
+      const { data, error } = await supabase
+        .from('quote_financial_configs')
+        .update(configData)
+        .eq('id', existingConfig.id)
+        .select()
+        .single();
+      return { data, error };
+    } else {
+      // Create new config
+      const { data, error } = await supabase
+        .from('quote_financial_configs')
+        .insert(configData)
+        .select()
+        .single();
+      return { data, error };
+    }
+  } catch (error) {
+    console.error('Error saving financial config:', error);
+    return { error };
+  }
+}
+
+/**
  * Fetch all quotes for the current user
  * @returns {Promise<{data, error}>} Quotes data or error
  */
@@ -118,6 +171,7 @@ export async function fetchQuotes(userId) {
           marketing_banner,
           payment_terms,
           discount_config,
+          show_material_prices,
           created_at
         )
       `)
@@ -242,6 +296,7 @@ export async function fetchQuoteById(id) {
           marketing_banner,
           payment_terms,
           discount_config,
+          show_material_prices,
           created_at
         )
       `)
@@ -314,24 +369,27 @@ export async function createQuote(quoteData) {
       return { error: quoteError };
     }
     
-    // Create financial config with deposit amount if provided
-    if (quoteData.advance_payment_amount > 0) {
+    // Create financial config if provided
+    if (quoteData.financialConfig || quoteData.advance_payment_amount > 0) {
       try {
+        const financialConfigData = {
+          quote_id: quote.id,
+          vat_config: quoteData.financialConfig?.vatConfig || quoteData.vat_config || null,
+          advance_config: quoteData.advance_payment_amount > 0 ? {
+            enabled: true,
+            amount: quoteData.advance_payment_amount
+          } : (quoteData.financialConfig?.advanceConfig || null),
+          marketing_banner: quoteData.financialConfig?.marketingBannerConfig || quoteData.marketing_banner || null,
+          payment_terms: quoteData.financialConfig?.paymentTerms || quoteData.payment_terms || null,
+          discount_config: quoteData.financialConfig?.discountConfig || quoteData.discount_config || null,
+          show_material_prices: quoteData.financialConfig?.showMaterialPrices ?? quoteData.financialConfig?.materialPriceDisplay ?? false
+        };
+        
         await supabase
           .from('quote_financial_configs')
-          .insert({
-            quote_id: quote.id,
-            advance_config: {
-              enabled: true,
-              amount: quoteData.advance_payment_amount
-            },
-            vat_config: quoteData.vat_config || null,
-            marketing_banner: quoteData.marketing_banner || null,
-            payment_terms: quoteData.payment_terms || null,
-            discount_config: quoteData.discount_config || null
-          });
+          .insert(financialConfigData);
       } catch (financialConfigError) {
-        console.error('Error saving deposit amount:', financialConfigError);
+        console.error('Error saving financial config:', financialConfigError);
         // Continue with quote creation even if financial config save fails
       }
     }
@@ -511,41 +569,54 @@ export async function updateQuote(id, quoteData) {
   try {
     // Update the quote
     
-    // Check if we need to create a financial_config record for the deposit amount
-    if (quoteData.advance_payment_amount > 0) {
+    // Update financial config if provided
+    if (quoteData.financialConfig || quoteData.advance_payment_amount > 0) {
       try {
+        const financialConfigData = {
+          vat_config: quoteData.financialConfig?.vatConfig || quoteData.vat_config || null,
+          advance_config: quoteData.advance_payment_amount > 0 ? {
+            enabled: true,
+            amount: quoteData.advance_payment_amount
+          } : (quoteData.financialConfig?.advanceConfig || null),
+          marketing_banner: quoteData.financialConfig?.marketingBannerConfig || quoteData.marketing_banner || null,
+          payment_terms: quoteData.financialConfig?.paymentTerms || quoteData.payment_terms || null,
+          discount_config: quoteData.financialConfig?.discountConfig || quoteData.discount_config || null,
+          show_material_prices: quoteData.financialConfig?.showMaterialPrices ?? quoteData.financialConfig?.materialPriceDisplay ?? null
+        };
+
         // First, check if a financial config already exists for this quote
         const { data: existingConfig } = await supabase
           .from('quote_financial_configs')
           .select('id')
           .eq('quote_id', id)
-          .single();
+          .maybeSingle();
         
         if (existingConfig) {
-          // Update existing financial config
-          await supabase
-            .from('quote_financial_configs')
-            .update({
-              advance_config: {
-                enabled: true,
-                amount: quoteData.advance_payment_amount
-              }
-            })
-            .eq('id', existingConfig.id);
+          // Update existing financial config (only update non-null fields)
+          const updateData = {};
+          Object.keys(financialConfigData).forEach(key => {
+            if (financialConfigData[key] !== null && financialConfigData[key] !== undefined) {
+              updateData[key] = financialConfigData[key];
+            }
+          });
+          
+          if (Object.keys(updateData).length > 0) {
+            await supabase
+              .from('quote_financial_configs')
+              .update(updateData)
+              .eq('id', existingConfig.id);
+          }
         } else {
           // Create new financial config
           await supabase
             .from('quote_financial_configs')
             .insert({
               quote_id: id,
-              advance_config: {
-                enabled: true,
-                amount: quoteData.advance_payment_amount
-              }
+              ...financialConfigData
             });
         }
       } catch (financialConfigError) {
-        console.error('Error saving deposit amount:', financialConfigError);
+        console.error('Error saving financial config:', financialConfigError);
         // Continue with quote update even if financial config save fails
       }
     }
@@ -897,20 +968,38 @@ export async function saveQuoteDraft(draftData) {
         })
         .eq('id', draftData.id)
         .select()
-        .single();
-      return { data, error };
+        .maybeSingle(); // Use maybeSingle() in case draft doesn't exist
+      
+      // If update succeeded and returned data, return it
+      if (data && !error) {
+        return { data, error };
+      }
+      // If draft doesn't exist (data is null and no error) or there's a different error,
+      // fall through to insert/upsert logic below
+      if (error && error.code !== 'PGRST116') {
+        // If it's a different error, return it
+        return { data, error };
+      }
+      // Otherwise, continue to insert/upsert logic (draft doesn't exist)
     }
     
     // Check if we have a quote number for UPSERT logic
     if (draftData.quote_number) {
       // Try to find existing draft with same quote number and user
-      const { data: existingDraft, error: findError } = await supabase
+      let query = supabase
         .from('quote_drafts')
         .select('id')
         .eq('user_id', draftData.user_id)
-        .eq('profile_id', draftData.profile_id || null)
-        .eq('quote_number', draftData.quote_number) // Direct column query - much faster!
-        .maybeSingle(); // Use maybeSingle() to avoid PGRST116 error
+        .eq('quote_number', draftData.quote_number); // Direct column query - much faster!
+      
+      // Handle profile_id null matching correctly
+      if (draftData.profile_id) {
+        query = query.eq('profile_id', draftData.profile_id);
+      } else {
+        query = query.is('profile_id', null);
+      }
+      
+      const { data: existingDraft, error: findError } = await query.maybeSingle();
       
       if (existingDraft && !findError) {
         // Update existing draft
@@ -923,7 +1012,7 @@ export async function saveQuoteDraft(draftData) {
           })
           .eq('id', existingDraft.id)
           .select()
-          .single();
+          .maybeSingle(); // Use maybeSingle() in case update fails
         return { data, error };
       }
     }
@@ -933,13 +1022,13 @@ export async function saveQuoteDraft(draftData) {
       .from('quote_drafts')
       .insert({
         user_id: draftData.user_id,
-        profile_id: draftData.profile_id,
-        quote_number: draftData.quote_number, // Use dedicated column
+        profile_id: draftData.profile_id || null,
+        quote_number: draftData.quote_number || null, // Use dedicated column
         draft_data: draftData.draft_data,
         last_saved: new Date().toISOString()
       })
       .select()
-      .single();
+      .single(); // Insert should always return exactly one row
     
     return { data, error };
   } catch (error) {

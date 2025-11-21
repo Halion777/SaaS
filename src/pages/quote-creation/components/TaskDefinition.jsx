@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import Select from '../../../components/ui/Select';
@@ -792,6 +792,9 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
   const [aiSuggestions, setAiSuggestions] = useState([]);
   const [isLoadingAISuggestions, setIsLoadingAISuggestions] = useState(false);
   const [suggestionsCacheKey, setSuggestionsCacheKey] = useState(null);
+  
+  // Ref for scrolling to input form when suggestion is clicked
+  const taskFormRef = useRef(null);
 
   // Load AI suggestions when category or description changes
   useEffect(() => {
@@ -1187,6 +1190,13 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
       hourlyRate: '',
       pricingType: 'flat'
     });
+    
+    // Scroll to input form after a short delay to ensure state is updated
+    setTimeout(() => {
+      if (taskFormRef.current) {
+        taskFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
   };
 
   const cancelEditing = () => {
@@ -1473,7 +1483,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
         
         <div className="space-y-4 sm:space-y-6">
           {/* Enhanced Task Form with Voice Integration */}
-          <div className="border border-border rounded-lg p-3 sm:p-4 bg-muted/30">
+          <div ref={taskFormRef} className="border border-border rounded-lg p-3 sm:p-4 bg-muted/30">
             <h3 className="font-medium text-foreground mb-3 sm:mb-4 flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
               <span>
                 {editingPredefinedTask ? (
@@ -1671,7 +1681,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                   <Input
                     label={t('quoteCreation.taskDefinition.quantity')}
                     type="number"
-                    placeholder={t('quoteCreation.taskDefinition.quantityPlaceholder', '1')}
+                    placeholder={t('quoteCreation.taskDefinition.quantityPlaceholder', 'Ex: 1')}
                     value={newMaterial.quantity}
                     onChange={(e) => handleMaterialChange('quantity', e.target.value)}
                   />

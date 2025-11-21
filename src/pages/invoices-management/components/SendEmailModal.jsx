@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
@@ -23,6 +23,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
     subject: '',
     message: ''
   });
+  const prevInvoiceIdRef = useRef(null);
 
   useEffect(() => {
     if (isOpen && invoice) {
@@ -50,12 +51,18 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
         companyName: company?.name || t('invoicesManagement.sendEmailModal.yourTeam')
       });
 
-      setEmailData({
-        clientEmail,
-        sendCopy: false,
-        subject: defaultSubject,
-        message: defaultMessage
-      });
+      // Only reset if this is a different invoice or first time opening
+      // Preserve sendCopy toggle state when reopening the same invoice
+      const isSameInvoice = prevInvoiceIdRef.current === invoice.id;
+      
+      setEmailData(prev => ({
+        clientEmail: isSameInvoice ? (prev.clientEmail || clientEmail) : clientEmail,
+        sendCopy: isSameInvoice ? prev.sendCopy : false, // Preserve sendCopy for same invoice
+        subject: isSameInvoice ? (prev.subject || defaultSubject) : defaultSubject,
+        message: isSameInvoice ? (prev.message || defaultMessage) : defaultMessage
+      }));
+      
+      prevInvoiceIdRef.current = invoice.id;
     } catch (err) {
       console.error('Error loading data:', err);
       setError(t('invoicesManagement.sendEmailModal.errors.loadDataError'));
@@ -302,15 +309,6 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
                   placeholder={t('invoicesManagement.sendEmailModal.messagePlaceholder')}
                   disabled={isSending}
                 />
-              </div>
-
-              {/* Invoice Info Preview */}
-              <div className="bg-muted/30 border border-border rounded-lg p-4">
-                <div className="text-sm text-muted-foreground space-y-1">
-                  <p>{t('invoicesManagement.sendEmailModal.preview.invoice')}: {invoice.number || invoice.invoice_number || t('invoicesManagement.common.notAvailable')}</p>
-                  <p>{t('invoicesManagement.sendEmailModal.preview.client')}: {invoice.client?.name || invoice.clientName || t('invoicesManagement.common.notAvailable')}</p>
-                  <p>{t('invoicesManagement.sendEmailModal.preview.amount')}: {new Intl.NumberFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US', { style: 'currency', currency: 'EUR' }).format(invoice.final_amount || invoice.amount || 0)}</p>
-                </div>
               </div>
             </>
           )}

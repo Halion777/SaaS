@@ -108,10 +108,24 @@ const StepThree = ({ formData, updateFormData, errors }) => {
                 {plan.name}
               </h3>
               <div className="flex items-baseline justify-center mb-2">
-                <span className="text-3xl font-bold text-foreground">€{plan.price[billingCycle]}</span>
-                <span className="text-muted-foreground ml-1">/{plan.period}</span>
+                <span className="text-3xl font-bold text-foreground">
+                  €{billingCycle === 'yearly' 
+                    ? (parseFloat(plan.price.yearly) * 12).toFixed(2)
+                    : plan.price[billingCycle]
+                  }
+                </span>
+                <span className="text-muted-foreground ml-1">
+                  /{billingCycle === 'yearly' ? t('registerForm.step3.perYear') : plan.period}
+                </span>
               </div>
-              <p className="text-sm text-muted-foreground">{plan.description}</p>
+              {billingCycle === 'yearly' && (
+                <p className="text-sm text-gray-500 mt-1">
+                  {t('registerForm.step3.equivalentMonthly', 'Equivalent to {{amount}}€/month', { 
+                    amount: plan.price.yearly 
+                  })}
+                </p>
+              )}
+              <p className="text-sm text-muted-foreground mt-2">{plan.description}</p>
               {billingCycle === 'yearly' && (
                 <p className="text-sm text-green-600 font-medium mt-2">
                   {t('registerForm.step3.saveAnnual', { 

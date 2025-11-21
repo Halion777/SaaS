@@ -1,699 +1,1496 @@
+create table public.app_settings (
+  id uuid not null default gen_random_uuid (),
+  setting_key character varying(255) not null,
+  setting_value jsonb not null,
+  description text null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  updated_by uuid null,
+  constraint app_settings_pkey primary key (id),
+  constraint app_settings_setting_key_key unique (setting_key)
+) TABLESPACE pg_default;
 
--- Users table (extends auth.users)
-CREATE TABLE public.users (
-  id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
-  email TEXT UNIQUE NOT NULL,
-  full_name TEXT,
-  company_name TEXT,
-  vat_number TEXT,
-  phone TEXT,
-  profession TEXT,
-  country TEXT DEFAULT 'FR',
-  business_size TEXT,
-  selected_plan TEXT DEFAULT 'pro',
-  subscription_status TEXT DEFAULT 'trial',
-  stripe_customer_id TEXT,
-  stripe_subscription_id TEXT,
-  trial_start_date TIMESTAMP WITH TIME ZONE,
-  trial_end_date TIMESTAMP WITH TIME ZONE,
-  avatar_url TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- User profiles table for multi-user functionality
-CREATE TABLE public.user_profiles (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  email TEXT,
-  role TEXT NOT NULL,
-  avatar TEXT,
-  permissions JSONB NOT NULL DEFAULT '{}'::jsonb,
-  pin TEXT,
-  is_active BOOLEAN DEFAULT false,
-  last_active TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+create index IF not exists idx_app_settings_key on public.app_settings using btree (setting_key) TABLESPACE pg_default;
 
 
+create table public.artisan_lead_preferences (
+  id uuid not null default gen_random_uuid (),
+  user_id uuid not null,
+  profile_id uuid null,
+  countries_served jsonb not null default '{}'::jsonb,
+  regions_served jsonb not null default '{}'::jsonb,
+  work_categories jsonb not null default '{}'::jsonb,
+  other_work_category text null,
+  receive_leads boolean null default false,
+  max_leads_per_day integer null default 10,
+  min_lead_value numeric(10, 2) null,
+  max_lead_value numeric(10, 2) null,
+  email_notifications boolean null default true,
+  push_notifications boolean null default false,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint artisan_lead_preferences_pkey primary key (id),
+  constraint artisan_lead_preferences_user_id_key unique (user_id),
+  constraint artisan_lead_preferences_profile_id_fkey foreign KEY (profile_id) references user_profiles (id) on delete set null,
+  constraint artisan_lead_preferences_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
 
--- Clients table for storing client information
-CREATE TABLE public.clients (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  email TEXT,
-  phone TEXT,
-  company_name TEXT,
-  vat_number TEXT,
-  address TEXT,
-  city TEXT,
-  postal_code TEXT,
-  country TEXT DEFAULT 'FR',
-  notes TEXT,
-  status TEXT DEFAULT 'active',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+create index IF not exists idx_artisan_lead_preferences_user_id on public.artisan_lead_preferences using btree (user_id) TABLESPACE pg_default;
 
-CREATE TABLE IF NOT EXISTS public.quotes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    profile_id UUID REFERENCES public.user_profiles(id) ON DELETE SET NULL,
-    company_profile_id UUID REFERENCES public.company_profiles(id) ON DELETE SET NULL,
-    client_id UUID REFERENCES public.clients(id) ON DELETE SET NULL,
-    quote_number VARCHAR(50) UNIQUE NOT NULL,
-    title TEXT,
-    description TEXT,
-    status VARCHAR(50) DEFAULT 'draft', -- draft, sent, accepted, rejected, expired
-    project_categories TEXT[] DEFAULT '{}', -- Array of project categories (plomberie, electricite, etc.)
-    custom_category TEXT, -- Custom category when "autre" is selected
-    total_amount DECIMAL(15,2) DEFAULT 0,
-    tax_amount DECIMAL(15,2) DEFAULT 0,
-    discount_amount DECIMAL(15,2) DEFAULT 0,
-    final_amount DECIMAL(15,2) DEFAULT 0,
-    valid_until DATE,
-    terms_conditions TEXT, -- Terms and conditions for the quote
-    share_token VARCHAR(100) UNIQUE,
-    is_public BOOLEAN DEFAULT false,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    start_date DATE,
-    accepted_at TIMESTAMP WITH TIME ZONE,
-    rejected_at TIMESTAMP WITH TIME ZONE,
-    sent_at TIMESTAMP WITH TIME ZONE,
-    reject_reason TEXT
-);
--- Quote tasks table for storing individual tasks within a quote
-CREATE TABLE public.quote_tasks (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  quote_id UUID REFERENCES public.quotes(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  description TEXT,
-  quantity DECIMAL(10,2) DEFAULT 1,
-  unit_price DECIMAL(10,2) DEFAULT 0,
-  total_price DECIMAL(10,2) DEFAULT 0,
-  order_index INTEGER DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+create index IF not exists idx_artisan_lead_preferences_countries on public.artisan_lead_preferences using gin (countries_served jsonb_path_ops) TABLESPACE pg_default;
 
--- Quote materials table for storing materials associated with tasks
-CREATE TABLE public.quote_materials (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  quote_task_id UUID REFERENCES public.quote_tasks(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  description TEXT,
-  quantity DECIMAL(10,2) DEFAULT 1,
-  unit TEXT DEFAULT 'piece',
-  unit_price DECIMAL(10,2) DEFAULT 0,
-  total_price DECIMAL(10,2) DEFAULT 0,
-  order_index INTEGER DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+create index IF not exists idx_artisan_lead_preferences_regions on public.artisan_lead_preferences using gin (regions_served jsonb_path_ops) TABLESPACE pg_default;
 
--- Quote files table for storing files associated with quotes
-CREATE TABLE public.quote_files (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  quote_id UUID REFERENCES public.quotes(id) ON DELETE CASCADE,
-  file_name TEXT NOT NULL,
-  file_path TEXT NOT NULL,
-  file_size INTEGER,
-  file_type TEXT,
-  uploaded_by UUID REFERENCES public.user_profiles(id) ON DELETE SET NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+create index IF not exists idx_artisan_lead_preferences_categories on public.artisan_lead_preferences using gin (work_categories jsonb_path_ops) TABLESPACE pg_default;
 
--- Quote drafts table for storing auto-saved drafts
-CREATE TABLE public.quote_drafts (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
-  profile_id UUID REFERENCES public.user_profiles(id) ON DELETE SET NULL,
-  draft_data JSONB NOT NULL DEFAULT '{}',
-  last_saved TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
 
--- Enable Row Level Security (RLS)
-ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.user_invitations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.quotes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.quote_tasks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.quote_materials ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.quote_files ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.quote_drafts ENABLE ROW LEVEL SECURITY;
 
--- Users policies
-CREATE POLICY "Users can view own profile" ON public.users
-  FOR SELECT USING (auth.uid() = id);
 
-CREATE POLICY "Users can update own profile" ON public.users
-  FOR UPDATE USING (auth.uid() = id);
-
-CREATE POLICY "Users can insert own profile" ON public.users
-  FOR INSERT WITH CHECK (auth.uid() = id);
-
--- User profiles policies
-CREATE POLICY "Users can view company profiles" ON public.user_profiles
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.users 
-      WHERE users.id = user_profiles.user_id 
-      AND users.id = auth.uid()
+create table public.blogs (
+  id uuid not null default gen_random_uuid (),
+  title text not null,
+  slug text not null,
+  excerpt text null,
+  content text not null,
+  featured_image text null,
+  category text null default 'general'::text,
+  status text null default 'draft'::text,
+  author_id uuid null,
+  published_at timestamp with time zone null,
+  meta_title text null,
+  meta_description text null,
+  tags text[] null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint blogs_pkey primary key (id),
+  constraint blogs_slug_key unique (slug),
+  constraint blogs_author_id_fkey foreign KEY (author_id) references auth.users (id) on delete set null,
+  constraint blogs_category_check check (
+    (
+      category = any (
+        array[
+          'technology'::text,
+          'business'::text,
+          'tutorials'::text,
+          'news'::text,
+          'general'::text
+        ]
+      )
     )
-  );
-
-CREATE POLICY "Users can manage company profiles" ON public.user_profiles
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM public.users 
-      WHERE users.id = user_profiles.user_id 
-      AND users.id = auth.uid()
+  ),
+  constraint blogs_status_check check (
+    (
+      status = any (
+        array[
+          'draft'::text,
+          'published'::text,
+          'archived'::text
+        ]
+      )
     )
-  );
-
--- Invitations policies
-CREATE POLICY "Users can view company invitations" ON public.user_invitations
-  FOR SELECT USING (company_id = auth.uid());
-
-CREATE POLICY "Users can manage company invitations" ON public.user_invitations
-  FOR ALL USING (company_id = auth.uid());
-
--- Clients policies
-CREATE POLICY "Users can view own clients" ON public.clients
-  FOR SELECT USING (user_id = auth.uid());
-
-CREATE POLICY "Users can manage own clients" ON public.clients
-  FOR ALL USING (user_id = auth.uid());
-
--- Quotes policies
-CREATE POLICY "Users can view own quotes" ON public.quotes
-  FOR SELECT USING (user_id = auth.uid());
-
-CREATE POLICY "Users can manage own quotes" ON public.quotes
-  FOR ALL USING (user_id = auth.uid());
-
--- Quote tasks policies
-CREATE POLICY "Users can view own quote tasks" ON public.quote_tasks
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.quotes 
-      WHERE quotes.id = quote_tasks.quote_id 
-      AND quotes.user_id = auth.uid()
-    )
-  );
-
-CREATE POLICY "Users can manage own quote tasks" ON public.quote_tasks
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM public.quotes 
-      WHERE quotes.id = quote_tasks.quote_id 
-      AND quotes.user_id = auth.uid()
-    )
-  );
-
--- Quote materials policies
-CREATE POLICY "Users can view own quote materials" ON public.quote_materials
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.quotes q
-      JOIN public.quote_tasks qt ON q.id = qt.quote_id
-      WHERE qt.id = quote_materials.quote_task_id 
-      AND q.user_id = auth.uid()
-    )
-  );
-
-CREATE POLICY "Users can manage own quote materials" ON public.quote_materials
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM public.quotes q
-      JOIN public.quote_tasks qt ON q.id = qt.quote_id
-      WHERE qt.id = quote_materials.quote_task_id 
-      AND q.user_id = auth.uid()
-    )
-  );
-
--- Quote files policies
-CREATE POLICY "Users can view own quote files" ON public.quote_files
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.quotes 
-      WHERE quotes.id = quote_files.quote_id 
-      AND quotes.user_id = auth.uid()
-    )
-  );
-
-CREATE POLICY "Users can manage own quote files" ON public.quote_files
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM public.quotes 
-      WHERE quotes.id = quote_files.quote_id 
-      AND quotes.user_id = auth.uid()
-    )
-  );
-
--- Quote drafts policies
-CREATE POLICY "Users can view own quote drafts" ON public.quote_drafts
-  FOR SELECT USING (user_id = auth.uid());
-
-CREATE POLICY "Users can manage own quote drafts" ON public.quote_drafts
-  FOR ALL USING (user_id = auth.uid());
-
--- Function to handle new user creation (ONLY creates user record, NO profile creation)
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.users (
-    id, 
-    email, 
-    full_name, 
-    company_name,
-    vat_number,
-    phone,
-    profession,
-    country,
-    business_size,
-    selected_plan,
-    avatar_url,
-    trial_start_date,
-    trial_end_date,
-    subscription_status,
-    registration_completed
   )
-  VALUES (
-    NEW.id,
-    NEW.email,
-    NEW.raw_user_meta_data->>'full_name',
-    NEW.raw_user_meta_data->>'company_name',
-    NEW.raw_user_meta_data->>'vat_number',
-    NEW.raw_user_meta_data->>'phone',
-    NEW.raw_user_meta_data->>'profession',
-    NEW.raw_user_meta_data->>'country',
-    NEW.raw_user_meta_data->>'business_size',
-    NEW.raw_user_meta_data->>'selected_plan',
-    NEW.raw_user_meta_data->>'avatar_url',
-    NOW(),
-    NOW() + INTERVAL '14 days',
-    'trial',
-    false
-  );
-  -- NO profile creation here - let our application code handle it
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+) TABLESPACE pg_default;
 
--- Trigger to automatically create user record when auth user is created (NO profile creation)
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+create index IF not exists idx_blogs_status on public.blogs using btree (status) TABLESPACE pg_default;
 
--- Function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION public.update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+create index IF not exists idx_blogs_published_at on public.blogs using btree (published_at) TABLESPACE pg_default;
 
--- Triggers to automatically update updated_at
-CREATE TRIGGER update_users_updated_at
-  BEFORE UPDATE ON public.users
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+create index IF not exists idx_blogs_category on public.blogs using btree (category) TABLESPACE pg_default;
 
-CREATE TRIGGER update_user_profiles_updated_at
-  BEFORE UPDATE ON public.user_profiles
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+create index IF not exists idx_blogs_slug on public.blogs using btree (slug) TABLESPACE pg_default;
 
-CREATE TRIGGER update_clients_updated_at
-  BEFORE UPDATE ON public.clients
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+create trigger update_blogs_updated_at BEFORE
+update on blogs for EACH row
+execute FUNCTION update_updated_at_column ();
 
-CREATE TRIGGER update_quotes_updated_at
-  BEFORE UPDATE ON public.quotes
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
-CREATE TRIGGER update_quote_tasks_updated_at
-  BEFORE UPDATE ON public.quote_tasks
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
-CREATE TRIGGER update_quote_materials_updated_at
-  BEFORE UPDATE ON public.quote_materials
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+create table public.clients (
+  id uuid not null default gen_random_uuid (),
+  user_id uuid not null,
+  name character varying(255) not null,
+  email character varying(255) null,
+  phone character varying(50) null,
+  address text null,
+  city character varying(100) null,
+  country character varying(100) null,
+  postal_code character varying(20) null,
+  client_type character varying(50) null default 'individual'::character varying,
+  contact_person character varying(255) null,
+  company_size character varying(50) null,
+  vat_number character varying(100) null,
+  peppol_id character varying(100) null,
+  peppol_enabled boolean null default false,
+  communication_preferences jsonb null default '{}'::jsonb,
+  is_active boolean null default true,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint clients_pkey primary key (id),
+  constraint clients_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
 
-CREATE TRIGGER update_quote_drafts_updated_at
-  BEFORE UPDATE ON public.quote_drafts
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+create index IF not exists idx_clients_user_id on public.clients using btree (user_id) TABLESPACE pg_default;
 
--- Function to check if user is in trial period
-CREATE OR REPLACE FUNCTION public.is_user_in_trial(user_id UUID)
-RETURNS BOOLEAN AS $$
-DECLARE
-  trial_end TIMESTAMP WITH TIME ZONE;
-BEGIN
-  SELECT trial_end_date INTO trial_end
-  FROM public.users
-  WHERE id = user_id;
-  
-  RETURN trial_end IS NOT NULL AND NOW() < trial_end;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+create index IF not exists idx_clients_email on public.clients using btree (email) TABLESPACE pg_default;
 
--- Function to get user subscription status
-CREATE OR REPLACE FUNCTION public.get_user_subscription_status(user_id UUID)
-RETURNS TEXT AS $$
-DECLARE
-  user_status TEXT;
-  trial_active BOOLEAN;
-BEGIN
-  -- Check trial status
-  SELECT is_user_in_trial(user_id) INTO trial_active;
-  
-  IF trial_active THEN
-    RETURN 'trial';
-  END IF;
-  
-  -- Check subscription status
-  SELECT subscription_status INTO user_status
-  FROM public.users
-  WHERE id = user_id;
-  
-  RETURN COALESCE(user_status, 'expired');
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+create index IF not exists idx_clients_name on public.clients using btree (name) TABLESPACE pg_default;
 
--- Function to validate permission levels
-CREATE OR REPLACE FUNCTION public.validate_permission_level(permission_value TEXT)
-RETURNS BOOLEAN AS $$
-BEGIN
-  RETURN permission_value IN ('no_access', 'view_only', 'full_access');
-END;
-$$ LANGUAGE plpgsql IMMUTABLE;
+create index IF not exists idx_clients_client_type on public.clients using btree (client_type) TABLESPACE pg_default;
 
--- Function to get permission level for a module
-CREATE OR REPLACE FUNCTION public.get_module_permission(permissions JSONB, module_key TEXT)
-RETURNS TEXT AS $$
-BEGIN
-  RETURN COALESCE(permissions->>module_key, 'no_access');
-END;
-$$ LANGUAGE plpgsql IMMUTABLE;
+create index IF not exists idx_clients_is_active on public.clients using btree (is_active) TABLESPACE pg_default;
 
--- Function to check if user has permission for a module
-CREATE OR REPLACE FUNCTION public.has_module_permission(
-  user_id UUID, 
-  module_key TEXT, 
-  required_level TEXT DEFAULT 'view_only'
-)
-RETURNS BOOLEAN AS $$
-DECLARE
-  user_permission TEXT;
-  permission_levels TEXT[] := ARRAY['no_access', 'view_only', 'full_access'];
-  user_level_index INTEGER;
-  required_level_index INTEGER;
-BEGIN
-  -- Get user's permission for the module
-  SELECT get_module_permission(permissions, module_key) INTO user_permission
-  FROM public.user_profiles
-  WHERE user_profiles.user_id = user_id AND is_active = true
-  LIMIT 1;
-  
-  -- If no active profile found, return false
-  IF user_permission IS NULL THEN
-    RETURN FALSE;
-  END IF;
-  
-  -- Get level indices
-  SELECT array_position(permission_levels, user_permission) INTO user_level_index;
-  SELECT array_position(permission_levels, required_level) INTO required_level_index;
-  
-  -- Return true if user's level is >= required level
-  RETURN user_level_index >= required_level_index;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+create index IF not exists idx_clients_created_at on public.clients using btree (created_at) TABLESPACE pg_default;
 
--- Function to generate unique quote number
-CREATE OR REPLACE FUNCTION public.generate_quote_number(user_id UUID)
-RETURNS TEXT AS $$
-DECLARE
-  year TEXT;
-  sequence_num INTEGER;
-  quote_num TEXT;
-BEGIN
-  year := EXTRACT(YEAR FROM NOW())::TEXT;
-  
-  -- Get the next sequence number for this user and year
-  SELECT COALESCE(MAX(CAST(SUBSTRING(quotes.quote_number FROM 'DEV-' || year || '-(.+)') AS INTEGER)), 0) + 1
-  INTO sequence_num
-  FROM public.quotes
-  WHERE quotes.user_id = generate_quote_number.user_id 
-    AND quotes.quote_number LIKE 'DEV-' || year || '-%';
-  
-  -- Format: DEV-YYYY-XXXXXX (6 digits)
-  quote_num := 'DEV-' || year || '-' || LPAD(sequence_num::TEXT, 6, '0');
-  
-  RETURN quote_num;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+create trigger update_clients_updated_at BEFORE
+update on clients for EACH row
+execute FUNCTION update_updated_at_column ();
 
--- Function to calculate quote totals
-CREATE OR REPLACE FUNCTION public.calculate_quote_totals(quote_id UUID)
-RETURNS VOID AS $$
-DECLARE
-  task_total DECIMAL(10,2);
-  material_total DECIMAL(10,2);
-  tax_rate DECIMAL(5,2);
-  tax_amount DECIMAL(10,2);
-BEGIN
-  -- Calculate total from tasks
-  SELECT COALESCE(SUM(total_price), 0) INTO task_total
-  FROM public.quote_tasks
-  WHERE quote_id = calculate_quote_totals.quote_id;
-  
-  -- Calculate total from materials
-  SELECT COALESCE(SUM(qm.total_price), 0) INTO material_total
-  FROM public.quote_materials qm
-  JOIN public.quote_tasks qt ON qm.quote_task_id = qt.id
-  WHERE qt.quote_id = calculate_quote_totals.quote_id;
-  
-  -- Get tax rate
-  SELECT tax_rate INTO tax_rate
-  FROM public.quotes
-  WHERE id = calculate_quote_totals.quote_id;
-  
-  -- Calculate totals
-  tax_amount := (task_total + material_total) * (tax_rate / 100);
-  
-  -- Update quote with calculated totals
-  UPDATE public.quotes
-  SET 
-    total_amount = task_total + material_total,
-    tax_amount = tax_amount,
-    total_with_tax = task_total + material_total + tax_amount,
-    updated_at = NOW()
-  WHERE id = calculate_quote_totals.quote_id;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Function to update quote expiration
-CREATE OR REPLACE FUNCTION public.update_quote_expiration(quote_id UUID)
-RETURNS VOID AS $$
-BEGIN
-  UPDATE public.quotes
-  SET 
-    expires_at = created_at + (validity_days || ' days')::INTERVAL,
-    updated_at = NOW()
-  WHERE id = update_quote_expiration.quote_id;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Function to check if quote is expired
-CREATE OR REPLACE FUNCTION public.is_quote_expired(quote_id UUID)
-RETURNS BOOLEAN AS $$
-DECLARE
-  expires_at TIMESTAMP WITH TIME ZONE;
-BEGIN
-  SELECT expires_at INTO expires_at
-  FROM public.quotes
-  WHERE id = quote_id;
-  
-  RETURN expires_at IS NOT NULL AND NOW() > expires_at;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+create table public.company_profiles (
+  id uuid not null default gen_random_uuid (),
+  user_id uuid not null,
+  profile_id uuid null,
+  company_name character varying(255) not null,
+  logo_path character varying(500) null,
+  logo_filename character varying(255) null,
+  logo_size integer null,
+  logo_mime_type character varying(100) null,
+  signature_path character varying(500) null,
+  signature_filename character varying(255) null,
+  signature_size integer null,
+  signature_mime_type character varying(100) null,
+  address text null,
+  city character varying(100) null,
+  state character varying(100) null,
+  country character varying(100) null,
+  postal_code character varying(20) null,
+  phone character varying(50) null,
+  email character varying(255) null,
+  website character varying(255) null,
+  vat_number character varying(100) null,
+  is_default boolean null default false,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  iban character varying(34) null,
+  account_name character varying(255) null,
+  bank_name character varying(255) null,
+  constraint company_profiles_pkey primary key (id),
+  constraint company_profiles_profile_id_fkey foreign KEY (profile_id) references user_profiles (id) on delete CASCADE,
+  constraint company_profiles_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
 
--- Function to auto-expire quotes when valid_until date passes
-CREATE OR REPLACE FUNCTION public.auto_expire_quotes()
-RETURNS INTEGER AS $$
-DECLARE
-    expired_count INTEGER := 0;
-BEGIN
-    UPDATE public.quotes 
-    SET status = 'expired'
-    WHERE status IN ('sent', 'draft') 
-    AND expires_at IS NOT NULL 
-    AND expires_at < CURRENT_TIMESTAMP;
-    
-    GET DIAGNOSTICS expired_count = ROW_COUNT;
-    
-    RETURN expired_count;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+create index IF not exists idx_company_profiles_user_id on public.company_profiles using btree (user_id) TABLESPACE pg_default;
 
--- Function to update quote status when client accepts/rejects
-CREATE OR REPLACE FUNCTION public.update_quote_status_on_client_action(
-    p_quote_id UUID,
-    p_new_status TEXT,
-    p_rejection_reason TEXT DEFAULT NULL
-)
-RETURNS BOOLEAN AS $$
-DECLARE
-    v_quote_exists BOOLEAN;
-    v_current_status TEXT;
-BEGIN
-    -- Check if quote exists and get current status
-    SELECT EXISTS(SELECT 1 FROM public.quotes WHERE id = p_quote_id), status
-    INTO v_quote_exists, v_current_status
-    FROM public.quotes 
-    WHERE id = p_quote_id;
-    
-    IF NOT v_quote_exists THEN
-        RETURN FALSE;
-    END IF;
-    
-    -- Only allow status changes from 'sent' to 'accepted' or 'rejected'
-    IF v_current_status != 'sent' THEN
-        RETURN FALSE;
-    END IF;
-    
-    -- Update quote status
-    UPDATE public.quotes 
-    SET 
-        status = p_new_status,
-        updated_at = NOW(),
-        CASE 
-            WHEN p_new_status = 'accepted' THEN accepted_at = NOW()
-            WHEN p_new_status = 'rejected' THEN rejected_at = NOW()
-        END
-    WHERE id = p_quote_id;
-    
-    RETURN TRUE;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+create index IF not exists idx_company_profiles_profile_id on public.company_profiles using btree (profile_id) TABLESPACE pg_default;
 
--- Indexes for better performance
-CREATE INDEX idx_users_email ON public.users(email);
-CREATE INDEX idx_users_subscription_status ON public.users(subscription_status);
-CREATE INDEX idx_users_trial_end_date ON public.users(trial_end_date);
-CREATE INDEX idx_users_stripe_customer_id ON public.users(stripe_customer_id);
-CREATE INDEX idx_users_stripe_subscription_id ON public.users(stripe_subscription_id);
-CREATE INDEX idx_user_profiles_user_id ON public.user_profiles(user_id);
-CREATE INDEX idx_user_profiles_is_active ON public.user_profiles(is_active);
-CREATE INDEX idx_user_profiles_role ON public.user_profiles(role);
-CREATE INDEX idx_user_profiles_pin ON public.user_profiles(pin);
-CREATE INDEX idx_user_invitations_company_id ON public.user_invitations(company_id);
-CREATE INDEX idx_user_invitations_status ON public.user_invitations(status);
-CREATE INDEX idx_user_invitations_expires_at ON public.user_invitations(expires_at);
+create index IF not exists idx_company_profiles_is_default on public.company_profiles using btree (is_default) TABLESPACE pg_default;
 
--- Client indexes
-CREATE INDEX idx_clients_user_id ON public.clients(user_id);
-CREATE INDEX idx_clients_email ON public.clients(email);
-CREATE INDEX idx_clients_status ON public.clients(status);
+create index IF not exists idx_company_profiles_iban on public.company_profiles using btree (iban) TABLESPACE pg_default
+where
+  (iban is not null);
 
--- Quote indexes
-CREATE INDEX idx_quotes_user_id ON public.quotes(user_id);
-CREATE INDEX idx_quotes_profile_id ON public.quotes(profile_id);
-CREATE INDEX idx_quotes_client_id ON public.quotes(client_id);
-CREATE INDEX idx_quotes_status ON public.quotes(status);
-CREATE INDEX idx_quotes_quote_number ON public.quotes(quote_number);
-CREATE INDEX idx_quotes_created_at ON public.quotes(created_at);
-CREATE INDEX idx_quotes_expires_at ON public.quotes(expires_at);
+create trigger update_company_profiles_updated_at BEFORE
+update on company_profiles for EACH row
+execute FUNCTION update_updated_at_column ();
 
--- Quote task indexes
-CREATE INDEX idx_quote_tasks_quote_id ON public.quote_tasks(quote_id);
-CREATE INDEX idx_quote_tasks_order_index ON public.quote_tasks(order_index);
 
--- Quote material indexes
-CREATE INDEX idx_quote_materials_task_id ON public.quote_materials(quote_task_id);
-CREATE INDEX idx_quote_materials_order_index ON public.quote_materials(order_index);
+create table public.credit_insurance_applications (
+  id uuid not null default gen_random_uuid (),
+  company_name character varying(255) not null,
+  contact_person character varying(255) not null,
+  email character varying(255) not null,
+  telephone character varying(50) not null,
+  address text not null,
+  sector character varying(100) not null,
+  activity_description text not null,
+  annual_turnover numeric(15, 2) not null,
+  top_customers text not null,
+  status character varying(50) null default 'pending'::character varying,
+  notes text null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint credit_insurance_applications_pkey primary key (id),
+  constraint credit_insurance_applications_status_check check (
+    (
+      (status)::text = any (
+        (
+          array[
+            'pending'::character varying,
+            'approved'::character varying,
+            'rejected'::character varying,
+            'processing'::character varying
+          ]
+        )::text[]
+      )
+    )
+  )
+) TABLESPACE pg_default;
 
--- Quote file indexes
-CREATE INDEX idx_quote_files_quote_id ON public.quote_files(quote_id);
+create index IF not exists idx_credit_insurance_applications_email on public.credit_insurance_applications using btree (email) TABLESPACE pg_default;
 
--- Quote draft indexes
-CREATE INDEX idx_quote_drafts_user_id ON public.quote_drafts(user_id);
-CREATE INDEX idx_quote_drafts_profile_id ON public.quote_drafts(profile_id);
+create index IF not exists idx_credit_insurance_applications_status on public.credit_insurance_applications using btree (status) TABLESPACE pg_default;
 
--- JSONB indexes for permissions queries
-CREATE INDEX idx_user_profiles_permissions_gin ON public.user_profiles USING GIN (permissions);
-CREATE INDEX idx_user_invitations_permissions_gin ON public.user_invitations USING GIN (permissions);
-CREATE INDEX idx_quote_drafts_draft_data_gin ON public.quote_drafts USING GIN (draft_data);
+create index IF not exists idx_credit_insurance_applications_created_at on public.credit_insurance_applications using btree (created_at) TABLESPACE pg_default;
 
--- Comments for documentation
-COMMENT ON TABLE public.users IS 'Main users table extending auth.users with business data';
-COMMENT ON TABLE public.user_profiles IS 'Multi-user profiles with granular permissions';
-COMMENT ON TABLE public.user_invitations IS 'User invitations for multi-user functionality';
-COMMENT ON TABLE public.clients IS 'Client information for quotes and projects';
-COMMENT ON TABLE public.quotes IS 'Main quotes table with project details and financial information';
-COMMENT ON TABLE public.quote_tasks IS 'Individual tasks within a quote with pricing';
-COMMENT ON TABLE public.quote_materials IS 'Materials associated with quote tasks';
-COMMENT ON TABLE public.quote_files IS 'Files attached to quotes';
-COMMENT ON TABLE public.quote_drafts IS 'Auto-saved draft data for quotes';
+create index IF not exists idx_credit_insurance_applications_sector on public.credit_insurance_applications using btree (sector) TABLESPACE pg_default;
 
-COMMENT ON COLUMN public.user_profiles.permissions IS 'JSONB object with module keys and permission levels (no_access, view_only, full_access)';
-COMMENT ON COLUMN public.user_profiles.pin IS 'PIN code for profile switching security';
-COMMENT ON COLUMN public.user_invitations.permissions IS 'JSONB object with module keys and permission levels (no_access, view_only, full_access)';
-COMMENT ON COLUMN public.quotes.project_categories IS 'Array of project categories (e.g., ["plomberie", "électricité", "autre"])';
-COMMENT ON COLUMN public.quotes.custom_category IS 'Custom category when "autre" is selected';
-COMMENT ON COLUMN public.quotes.status IS 'Quote status: draft, sent, accepted, rejected, expired';
-COMMENT ON COLUMN public.quotes.validity_days IS 'Number of days the quote is valid from creation date';
-COMMENT ON COLUMN public.quote_tasks.unit_price IS 'Price per unit (hour, piece, meter, etc.)';
-COMMENT ON COLUMN public.quote_materials.unit IS 'Unit of measurement (piece, meter, kg, etc.)';
-COMMENT ON COLUMN public.quote_drafts.draft_data IS 'JSONB object containing all draft form data';
+create trigger update_credit_insurance_applications_updated_at BEFORE
+update on credit_insurance_applications for EACH row
+execute FUNCTION update_credit_updated_at_column ();
 
--- Create a cron job function to auto-expire quotes (if using pg_cron extension)
--- SELECT cron.schedule('auto-expire-quotes', '0 2 * * *', 'SELECT public.auto_expire_quotes();');
 
--- Fix generate_quote_number function to check both quotes and quote_drafts tables
--- This prevents generating quote numbers that are already used in auto-saved drafts
 
-CREATE OR REPLACE FUNCTION public.generate_quote_number(user_id UUID)
-RETURNS TEXT AS $$
-DECLARE
-  year TEXT;
-  sequence_num INTEGER;
-  quote_num TEXT;
-  max_quote_num INTEGER;
-  max_draft_num INTEGER;
-BEGIN
-  year := EXTRACT(YEAR FROM NOW())::TEXT;
-  
-  -- Get the max sequence number from quotes table for this user and year
-  SELECT COALESCE(MAX(CAST(SUBSTRING(quotes.quote_number FROM 'DEV-' || year || '-(.+)') AS INTEGER)), 0)
-  INTO max_quote_num
-  FROM public.quotes
-  WHERE quotes.user_id = generate_quote_number.user_id 
-    AND quotes.quote_number LIKE 'DEV-' || year || '-%';
-  
-  -- Get the max sequence number from quote_drafts table for this user and year
-  SELECT COALESCE(MAX(CAST(SUBSTRING(quote_drafts.quote_number FROM 'DEV-' || year || '-(.+)') AS INTEGER)), 0)
-  INTO max_draft_num
-  FROM public.quote_drafts
-  WHERE quote_drafts.user_id = generate_quote_number.user_id 
-    AND quote_drafts.quote_number IS NOT NULL
-    AND quote_drafts.quote_number LIKE 'DEV-' || year || '-%';
-  
-  -- Use the maximum of both to ensure uniqueness, then add 1
-  sequence_num := GREATEST(max_quote_num, max_draft_num) + 1;
-  
-  -- Format: DEV-YYYY-XXXXXX (6 digits)
-  quote_num := 'DEV-' || year || '-' || LPAD(sequence_num::TEXT, 6, '0');
-  
-  RETURN quote_num;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+create table public.email_outbox (
+  id uuid not null default gen_random_uuid (),
+  quote_id uuid null,
+  user_id uuid null,
+  follow_up_id uuid null,
+  to_email character varying(255) not null,
+  subject text not null,
+  html text null,
+  text text null,
+  status character varying(50) null default 'pending'::character varying,
+  email_type character varying(100) null,
+  attempts integer null default 0,
+  sent_at timestamp with time zone null,
+  last_error text null,
+  meta jsonb null default '{}'::jsonb,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  invoice_id uuid null,
+  constraint email_outbox_pkey primary key (id),
+  constraint email_outbox_invoice_id_fkey foreign KEY (invoice_id) references invoices (id) on delete CASCADE,
+  constraint email_outbox_quote_id_fkey foreign KEY (quote_id) references quotes (id) on delete CASCADE,
+  constraint email_outbox_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE,
+  constraint email_outbox_status_check check (
+    (
+      (status)::text = any (
+        (
+          array[
+            'pending'::character varying,
+            'sending'::character varying,
+            'sent'::character varying,
+            'failed'::character varying
+          ]
+        )::text[]
+      )
+    )
+  )
+) TABLESPACE pg_default;
+
+create index IF not exists idx_email_outbox_status on public.email_outbox using btree (status) TABLESPACE pg_default;
+
+create index IF not exists idx_email_outbox_quote_id on public.email_outbox using btree (quote_id) TABLESPACE pg_default;
+
+create index IF not exists idx_email_outbox_user_id on public.email_outbox using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_email_outbox_created_at on public.email_outbox using btree (created_at) TABLESPACE pg_default;
+
+create index IF not exists idx_email_outbox_invoice_id on public.email_outbox using btree (invoice_id) TABLESPACE pg_default;
+
+
+create table public.email_template_variables (
+  id uuid not null default gen_random_uuid (),
+  variable_name character varying(100) not null,
+  description text null,
+  example_value text null,
+  is_required boolean null default false,
+  created_at timestamp with time zone null default now(),
+  constraint email_template_variables_pkey primary key (id),
+  constraint email_template_variables_variable_name_key unique (variable_name)
+) TABLESPACE pg_default;
+
+
+
+
+create table public.email_templates (
+  id uuid not null default gen_random_uuid (),
+  user_id uuid null,
+  template_type character varying(100) not null,
+  template_name character varying(255) not null,
+  subject text not null,
+  html_content text not null,
+  text_content text not null,
+  variables jsonb null default '{}'::jsonb,
+  is_active boolean null default true,
+  is_default boolean null default false,
+  language character varying(10) null default 'fr'::character varying,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint email_templates_pkey primary key (id),
+  constraint email_templates_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_email_templates_user_id on public.email_templates using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_email_templates_template_type on public.email_templates using btree (template_type) TABLESPACE pg_default;
+
+create index IF not exists idx_email_templates_is_default on public.email_templates using btree (is_default) TABLESPACE pg_default;
+
+create index IF not exists idx_email_templates_language on public.email_templates using btree (language) TABLESPACE pg_default;
+
+create index IF not exists idx_email_templates_is_active on public.email_templates using btree (is_active) TABLESPACE pg_default;
+
+
+create table public.expense_invoices (
+  id serial not null,
+  invoice_number character varying(100) not null,
+  supplier_name character varying(255) not null,
+  supplier_email character varying(255) null,
+  supplier_vat_number character varying(50) null,
+  amount numeric(10, 2) not null,
+  net_amount numeric(10, 2) null,
+  vat_amount numeric(10, 2) null,
+  status character varying(20) null default 'pending'::character varying,
+  category text null,
+  source character varying(20) null default 'manual'::character varying,
+  issue_date date not null,
+  due_date date not null,
+  payment_method character varying(100) null,
+  notes text null,
+  created_at timestamp without time zone null default CURRENT_TIMESTAMP,
+  updated_at timestamp without time zone null default CURRENT_TIMESTAMP,
+  peppol_enabled boolean null default false,
+  peppol_message_id character varying(255) null,
+  peppol_received_at timestamp without time zone null,
+  ubl_xml text null,
+  sender_peppol_id character varying(100) null,
+  peppol_metadata jsonb null default '{}'::jsonb,
+  user_id uuid null,
+  constraint expense_invoices_pkey primary key (id),
+  constraint expense_invoices_invoice_number_key unique (invoice_number),
+  constraint expense_invoices_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE,
+  constraint expense_invoices_source_check check (
+    (
+      (source)::text = any (
+        (
+          array[
+            'manual'::character varying,
+            'peppol'::character varying
+          ]
+        )::text[]
+      )
+    )
+  ),
+  constraint expense_invoices_status_check check (
+    (
+      (status)::text = any (
+        (
+          array[
+            'pending'::character varying,
+            'paid'::character varying,
+            'overdue'::character varying
+          ]
+        )::text[]
+      )
+    )
+  )
+) TABLESPACE pg_default;
+
+create index IF not exists idx_expense_invoices_status on public.expense_invoices using btree (status) TABLESPACE pg_default;
+
+create index IF not exists idx_expense_invoices_category on public.expense_invoices using btree (category) TABLESPACE pg_default;
+
+create index IF not exists idx_expense_invoices_issue_date on public.expense_invoices using btree (issue_date) TABLESPACE pg_default;
+
+create index IF not exists idx_expense_invoices_peppol_enabled on public.expense_invoices using btree (peppol_enabled) TABLESPACE pg_default;
+
+create index IF not exists idx_expense_invoices_peppol_message_id on public.expense_invoices using btree (peppol_message_id) TABLESPACE pg_default;
+
+create index IF not exists idx_expense_invoices_user_id on public.expense_invoices using btree (user_id) TABLESPACE pg_default;
+
+create trigger update_expense_invoices_updated_at BEFORE
+update on expense_invoices for EACH row
+execute FUNCTION update_updated_at_expense_column ();
+
+
+create table public.invoice_events (
+  id uuid not null default gen_random_uuid (),
+  invoice_id uuid not null,
+  user_id uuid not null,
+  type character varying(50) not null,
+  meta jsonb null default '{}'::jsonb,
+  timestamp timestamp with time zone null default now(),
+  constraint invoice_events_pkey primary key (id),
+  constraint invoice_events_invoice_id_fkey foreign KEY (invoice_id) references invoices (id) on delete CASCADE,
+  constraint invoice_events_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_invoice_events_invoice_id on public.invoice_events using btree (invoice_id) TABLESPACE pg_default;
+
+create index IF not exists idx_invoice_events_user_id on public.invoice_events using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_invoice_events_timestamp on public.invoice_events using btree ("timestamp") TABLESPACE pg_default;
+
+create index IF not exists idx_invoice_events_type on public.invoice_events using btree (type) TABLESPACE pg_default;
+
+
+
+create table public.invoice_follow_ups (
+  id uuid not null default gen_random_uuid (),
+  invoice_id uuid not null,
+  user_id uuid not null,
+  client_id uuid null,
+  stage smallint not null default 1,
+  scheduled_at timestamp with time zone not null,
+  next_attempt_at timestamp with time zone null,
+  attempts smallint not null default 0,
+  max_attempts smallint not null default 3,
+  status character varying(20) not null default 'pending'::character varying,
+  channel character varying(20) not null default 'email'::character varying,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  automated boolean not null default true,
+  template_subject text null,
+  template_text text null,
+  template_html text null,
+  meta jsonb null default '{}'::jsonb,
+  template_id uuid null,
+  template_variables jsonb null default '{}'::jsonb,
+  last_error text null,
+  last_attempt timestamp with time zone null,
+  constraint invoice_follow_ups_pkey primary key (id),
+  constraint invoice_follow_ups_client_id_fkey foreign KEY (client_id) references clients (id) on delete set null,
+  constraint invoice_follow_ups_invoice_id_fkey foreign KEY (invoice_id) references invoices (id) on delete CASCADE,
+  constraint invoice_follow_ups_template_id_fkey foreign KEY (template_id) references email_templates (id) on delete set null,
+  constraint invoice_follow_ups_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_invoice_follow_ups_invoice_id on public.invoice_follow_ups using btree (invoice_id) TABLESPACE pg_default;
+
+create index IF not exists idx_invoice_follow_ups_user_id on public.invoice_follow_ups using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_invoice_follow_ups_client_id on public.invoice_follow_ups using btree (client_id) TABLESPACE pg_default;
+
+create index IF not exists idx_invoice_follow_ups_scheduled_at on public.invoice_follow_ups using btree (scheduled_at) TABLESPACE pg_default;
+
+create index IF not exists idx_invoice_follow_ups_status on public.invoice_follow_ups using btree (status) TABLESPACE pg_default;
+
+create index IF not exists idx_invoice_follow_ups_stage on public.invoice_follow_ups using btree (stage) TABLESPACE pg_default;
+
+create index IF not exists idx_invoice_follow_ups_template_id on public.invoice_follow_ups using btree (template_id) TABLESPACE pg_default;
+
+
+
+
+create table public.invoices (
+  id uuid not null default gen_random_uuid (),
+  user_id uuid not null,
+  client_id uuid null,
+  quote_id uuid null,
+  invoice_number character varying(50) not null,
+  quote_number character varying(50) null,
+  title text null,
+  description text null,
+  status character varying(50) null default 'unpaid'::character varying,
+  amount numeric(15, 2) not null,
+  tax_amount numeric(15, 2) null default 0,
+  discount_amount numeric(15, 2) null default 0,
+  final_amount numeric(15, 2) not null,
+  issue_date date not null default CURRENT_DATE,
+  due_date date not null,
+  payment_method character varying(100) null,
+  payment_terms text null,
+  notes text null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  paid_at timestamp with time zone null,
+  converted_from_quote_at timestamp with time zone null default now(),
+  net_amount numeric(15, 2) null default 0,
+  peppol_enabled boolean null default false,
+  peppol_message_id character varying(255) null,
+  peppol_status character varying(50) null default 'not_sent'::character varying,
+  peppol_sent_at timestamp with time zone null,
+  peppol_delivered_at timestamp with time zone null,
+  peppol_error_message text null,
+  ubl_xml text null,
+  receiver_peppol_id character varying(100) null,
+  peppol_metadata jsonb null default '{}'::jsonb,
+  constraint invoices_pkey primary key (id),
+  constraint invoices_user_id_invoice_number_key unique (user_id, invoice_number),
+  constraint invoices_quote_id_fkey foreign KEY (quote_id) references quotes (id) on delete set null,
+  constraint invoices_client_id_fkey foreign KEY (client_id) references clients (id) on delete set null,
+  constraint invoices_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE,
+  constraint invoices_peppol_status_check check (
+    (
+      (peppol_status)::text = any (
+        (
+          array[
+            'not_sent'::character varying,
+            'sending'::character varying,
+            'sent'::character varying,
+            'delivered'::character varying,
+            'failed'::character varying
+          ]
+        )::text[]
+      )
+    )
+  ),
+  constraint invoices_status_check check (
+    (
+      (status)::text = any (
+        (
+          array[
+            'unpaid'::character varying,
+            'paid'::character varying,
+            'overdue'::character varying,
+            'cancelled'::character varying
+          ]
+        )::text[]
+      )
+    )
+  )
+) TABLESPACE pg_default;
+
+create index IF not exists idx_invoices_user_id on public.invoices using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_invoices_client_id on public.invoices using btree (client_id) TABLESPACE pg_default;
+
+create index IF not exists idx_invoices_quote_id on public.invoices using btree (quote_id) TABLESPACE pg_default;
+
+create index IF not exists idx_invoices_invoice_number on public.invoices using btree (invoice_number) TABLESPACE pg_default;
+
+create index IF not exists idx_invoices_status on public.invoices using btree (status) TABLESPACE pg_default;
+
+create index IF not exists idx_invoices_due_date on public.invoices using btree (due_date) TABLESPACE pg_default;
+
+create index IF not exists idx_invoices_created_at on public.invoices using btree (created_at) TABLESPACE pg_default;
+
+create index IF not exists idx_invoices_peppol_enabled on public.invoices using btree (peppol_enabled) TABLESPACE pg_default;
+
+create index IF not exists idx_invoices_peppol_status on public.invoices using btree (peppol_status) TABLESPACE pg_default;
+
+create index IF not exists idx_invoices_peppol_message_id on public.invoices using btree (peppol_message_id) TABLESPACE pg_default;
+
+create index IF not exists idx_invoices_user_id_invoice_number on public.invoices using btree (user_id, invoice_number) TABLESPACE pg_default;
+
+create index IF not exists idx_invoices_net_amount on public.invoices using btree (net_amount) TABLESPACE pg_default;
+
+create trigger update_invoices_updated_at BEFORE
+update on invoices for EACH row
+execute FUNCTION update_invoice_updated_at_column ();
+
+
+
+create table public.lead_assignments (
+  id uuid not null default gen_random_uuid (),
+  lead_id uuid not null,
+  artisan_user_id uuid not null,
+  artisan_profile_id uuid null,
+  assigned_at timestamp with time zone null default now(),
+  status character varying(50) null default 'assigned'::character varying,
+  quote_id uuid null,
+  quote_sent_at timestamp with time zone null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint lead_assignments_pkey primary key (id),
+  constraint lead_assignments_lead_id_artisan_user_id_key unique (lead_id, artisan_user_id),
+  constraint lead_assignments_artisan_profile_id_fkey foreign KEY (artisan_profile_id) references user_profiles (id) on delete set null,
+  constraint lead_assignments_artisan_user_id_fkey foreign KEY (artisan_user_id) references users (id) on delete CASCADE,
+  constraint lead_assignments_lead_id_fkey foreign KEY (lead_id) references lead_requests (id) on delete CASCADE,
+  constraint lead_assignments_quote_id_fkey foreign KEY (quote_id) references quotes (id) on delete set null
+) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_assignments_lead_id on public.lead_assignments using btree (lead_id) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_assignments_artisan_user_id on public.lead_assignments using btree (artisan_user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_assignments_status on public.lead_assignments using btree (status) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_assignments_assigned_at on public.lead_assignments using btree (assigned_at) TABLESPACE pg_default;
+
+
+create table public.lead_notifications (
+  id uuid not null default gen_random_uuid (),
+  lead_id uuid not null,
+  artisan_user_id uuid not null,
+  type character varying(50) not null,
+  channel character varying(50) null default 'email'::character varying,
+  subject text null,
+  message text null,
+  status character varying(50) null default 'pending'::character varying,
+  sent_at timestamp with time zone null,
+  delivered_at timestamp with time zone null,
+  error_message text null,
+  created_at timestamp with time zone null default now(),
+  constraint lead_notifications_pkey primary key (id),
+  constraint lead_notifications_artisan_user_id_fkey foreign KEY (artisan_user_id) references users (id) on delete CASCADE,
+  constraint lead_notifications_lead_id_fkey foreign KEY (lead_id) references lead_requests (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_notifications_lead_id on public.lead_notifications using btree (lead_id) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_notifications_artisan_user_id on public.lead_notifications using btree (artisan_user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_notifications_status on public.lead_notifications using btree (status) TABLESPACE pg_default;
+
+
+
+create table public.lead_quotes (
+  id uuid not null default gen_random_uuid (),
+  lead_id uuid not null,
+  artisan_user_id uuid not null,
+  artisan_profile_id uuid null,
+  quote_id uuid null,
+  quote_amount numeric(15, 2) null,
+  quote_currency character varying(3) null default 'EUR'::character varying,
+  status character varying(50) null default 'sent'::character varying,
+  viewed_at timestamp with time zone null,
+  responded_at timestamp with time zone null,
+  client_response text null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint lead_quotes_pkey primary key (id),
+  constraint lead_quotes_lead_id_artisan_user_id_key unique (lead_id, artisan_user_id),
+  constraint lead_quotes_artisan_profile_id_fkey foreign KEY (artisan_profile_id) references user_profiles (id) on delete set null,
+  constraint lead_quotes_artisan_user_id_fkey foreign KEY (artisan_user_id) references users (id) on delete CASCADE,
+  constraint lead_quotes_lead_id_fkey foreign KEY (lead_id) references lead_requests (id) on delete CASCADE,
+  constraint lead_quotes_quote_id_fkey foreign KEY (quote_id) references quotes (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_quotes_lead_id on public.lead_quotes using btree (lead_id) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_quotes_artisan_user_id on public.lead_quotes using btree (artisan_user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_quotes_status on public.lead_quotes using btree (status) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_quotes_created_at on public.lead_quotes using btree (created_at) TABLESPACE pg_default;
+
+create trigger trigger_update_lead_status_on_max_quotes
+after INSERT on lead_quotes for EACH row
+execute FUNCTION update_lead_status_on_max_quotes ();
+
+
+
+create table public.lead_requests (
+  id uuid not null default gen_random_uuid (),
+  project_categories text[] not null default '{}'::text[],
+  custom_category text null,
+  project_description text not null,
+  price_range character varying(50) null,
+  completion_date date null,
+  country character varying(2) not null default 'BE'::character varying,
+  region character varying(100) not null,
+  street_number character varying(50) null,
+  full_address text not null,
+  city character varying(100) null default 'N/A'::character varying,
+  zip_code character varying(20) not null,
+  client_name character varying(255) not null,
+  client_email character varying(255) not null,
+  client_phone character varying(50) not null,
+  client_address text not null,
+  communication_preferences jsonb null default '{"sms": false, "email": true, "phone": false}'::jsonb,
+  project_images text[] null default '{}'::text[],
+  status character varying(50) null default 'active'::character varying,
+  is_public boolean null default true,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  is_spam boolean null default false,
+  spam_reason text null,
+  reported_by_user_id uuid null,
+  reported_at timestamp with time zone null,
+  spam_reviewed_by uuid null,
+  spam_reviewed_at timestamp with time zone null,
+  spam_review_status character varying(50) null default 'pending'::character varying,
+  constraint lead_requests_pkey primary key (id),
+  constraint lead_requests_reported_by_user_id_fkey foreign KEY (reported_by_user_id) references users (id) on delete set null,
+  constraint lead_requests_spam_reviewed_by_fkey foreign KEY (spam_reviewed_by) references users (id) on delete set null
+) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_requests_status on public.lead_requests using btree (status) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_requests_country on public.lead_requests using btree (country) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_requests_region on public.lead_requests using btree (region) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_requests_city on public.lead_requests using btree (city) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_requests_zip_code on public.lead_requests using btree (zip_code) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_requests_created_at on public.lead_requests using btree (created_at) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_requests_categories on public.lead_requests using gin (project_categories) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_requests_location on public.lead_requests using btree (
+  country,
+  region,
+  COALESCE(city, 'N/A'::character varying)
+) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_requests_is_spam on public.lead_requests using btree (is_spam) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_requests_spam_review_status on public.lead_requests using btree (spam_review_status) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_requests_reported_by on public.lead_requests using btree (reported_by_user_id) TABLESPACE pg_default;
+
+create trigger trigger_auto_assign_lead
+after INSERT on lead_requests for EACH row
+execute FUNCTION auto_assign_lead_to_artisans ();
+
+
+
+
+create table public.lead_spam_reports (
+  id uuid not null default gen_random_uuid (),
+  lead_id uuid not null,
+  reported_by_user_id uuid not null,
+  reason text not null,
+  report_type character varying(50) null default 'spam'::character varying,
+  additional_details text null,
+  reviewed_by uuid null,
+  reviewed_at timestamp with time zone null,
+  review_status character varying(50) null default 'pending'::character varying,
+  review_notes text null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint lead_spam_reports_pkey primary key (id),
+  constraint lead_spam_reports_lead_id_reported_by_user_id_key unique (lead_id, reported_by_user_id),
+  constraint lead_spam_reports_lead_id_fkey foreign KEY (lead_id) references lead_requests (id) on delete CASCADE,
+  constraint lead_spam_reports_reported_by_user_id_fkey foreign KEY (reported_by_user_id) references users (id) on delete CASCADE,
+  constraint lead_spam_reports_reviewed_by_fkey foreign KEY (reviewed_by) references users (id) on delete set null
+) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_spam_reports_lead_id on public.lead_spam_reports using btree (lead_id) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_spam_reports_reported_by on public.lead_spam_reports using btree (reported_by_user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_spam_reports_review_status on public.lead_spam_reports using btree (review_status) TABLESPACE pg_default;
+
+create index IF not exists idx_lead_spam_reports_created_at on public.lead_spam_reports using btree (created_at) TABLESPACE pg_default;
+
+
+
+create table public.payment_records (
+  id uuid not null default gen_random_uuid (),
+  subscription_id uuid null,
+  user_id uuid not null,
+  stripe_payment_intent_id character varying(255) null,
+  stripe_invoice_id character varying(255) null,
+  amount numeric(10, 2) not null,
+  currency character varying(3) null default 'EUR'::character varying,
+  status character varying(50) not null,
+  payment_method character varying(100) null,
+  description text null,
+  paid_at timestamp with time zone null,
+  created_at timestamp with time zone null default now(),
+  constraint payment_records_pkey primary key (id),
+  constraint payment_records_stripe_payment_intent_id_key unique (stripe_payment_intent_id),
+  constraint payment_records_subscription_id_fkey foreign KEY (subscription_id) references subscriptions (id) on delete CASCADE,
+  constraint payment_records_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_payment_records_subscription_id on public.payment_records using btree (subscription_id) TABLESPACE pg_default;
+
+create index IF not exists idx_payment_records_user_id on public.payment_records using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_payment_records_stripe_payment_intent_id on public.payment_records using btree (stripe_payment_intent_id) TABLESPACE pg_default;
+
+create index IF not exists idx_payment_records_status on public.payment_records using btree (status) TABLESPACE pg_default;
+
+create index IF not exists idx_payment_records_created_at on public.payment_records using btree (created_at) TABLESPACE pg_default;
+
+
+create table public.peppol_invoices (
+  id uuid not null default gen_random_uuid (),
+  user_id uuid not null,
+  invoice_number character varying(100) not null,
+  document_type character varying(50) not null default 'INVOICE'::character varying,
+  reference_number character varying(100) null,
+  direction character varying(10) not null,
+  sender_id uuid null,
+  sender_peppol_id character varying(100) null,
+  sender_name character varying(255) null,
+  sender_vat_number character varying(50) null,
+  sender_email character varying(255) null,
+  receiver_id uuid null,
+  receiver_peppol_id character varying(100) null,
+  receiver_name character varying(255) null,
+  receiver_vat_number character varying(50) null,
+  receiver_email character varying(255) null,
+  issue_date date not null,
+  due_date date null,
+  delivery_date date null,
+  payment_terms text null,
+  buyer_reference character varying(100) null,
+  currency character varying(3) null default 'EUR'::character varying,
+  subtotal_amount numeric(15, 2) null default 0,
+  tax_amount numeric(15, 2) null default 0,
+  discount_amount numeric(15, 2) null default 0,
+  total_amount numeric(15, 2) null default 0,
+  ubl_xml text null,
+  pdf_url text null,
+  attachment_urls text[] null,
+  status character varying(50) null default 'pending'::character varying,
+  peppol_message_id character varying(255) null,
+  transmission_id character varying(255) null,
+  error_message text null,
+  retry_count integer null default 0,
+  sent_at timestamp with time zone null,
+  delivered_at timestamp with time zone null,
+  received_at timestamp with time zone null,
+  processed_at timestamp with time zone null,
+  failed_at timestamp with time zone null,
+  notes text null,
+  metadata jsonb null default '{}'::jsonb,
+  client_invoice_id uuid null,
+  supplier_invoice_id integer null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint peppol_invoices_pkey primary key (id),
+  constraint peppol_invoices_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE,
+  constraint peppol_invoices_supplier_invoice_id_fkey foreign KEY (supplier_invoice_id) references expense_invoices (id) on delete set null,
+  constraint peppol_invoices_client_invoice_id_fkey foreign KEY (client_invoice_id) references invoices (id) on delete set null,
+  constraint peppol_invoices_receiver_id_fkey foreign KEY (receiver_id) references peppol_participants (id) on delete set null,
+  constraint peppol_invoices_sender_id_fkey foreign KEY (sender_id) references peppol_participants (id) on delete set null,
+  constraint peppol_invoices_direction_check check (
+    (
+      (direction)::text = any (
+        (
+          array[
+            'outbound'::character varying,
+            'inbound'::character varying
+          ]
+        )::text[]
+      )
+    )
+  ),
+  constraint peppol_invoices_status_check check (
+    (
+      (status)::text = any (
+        (
+          array[
+            'pending'::character varying,
+            'sent'::character varying,
+            'delivered'::character varying,
+            'received'::character varying,
+            'processed'::character varying,
+            'failed'::character varying,
+            'rejected'::character varying,
+            'cancelled'::character varying
+          ]
+        )::text[]
+      )
+    )
+  )
+) TABLESPACE pg_default;
+
+create index IF not exists idx_peppol_invoices_user_id on public.peppol_invoices using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_peppol_invoices_direction on public.peppol_invoices using btree (direction) TABLESPACE pg_default;
+
+create index IF not exists idx_peppol_invoices_status on public.peppol_invoices using btree (status) TABLESPACE pg_default;
+
+create index IF not exists idx_peppol_invoices_peppol_message_id on public.peppol_invoices using btree (peppol_message_id) TABLESPACE pg_default;
+
+create index IF not exists idx_peppol_invoices_client_invoice_id on public.peppol_invoices using btree (client_invoice_id) TABLESPACE pg_default;
+
+create index IF not exists idx_peppol_invoices_supplier_invoice_id on public.peppol_invoices using btree (supplier_invoice_id) TABLESPACE pg_default;
+
+create trigger update_peppol_invoices_updated_at BEFORE
+update on peppol_invoices for EACH row
+execute FUNCTION update_updated_at_column ();
+
+
+
+create table public.peppol_participants (
+  id uuid not null default gen_random_uuid (),
+  user_id uuid not null,
+  peppol_identifier character varying(100) not null,
+  business_name character varying(255) not null,
+  vat_number character varying(50) null,
+  country_code character varying(2) not null,
+  contact_name character varying(255) null,
+  contact_email character varying(255) null,
+  contact_phone character varying(50) null,
+  street_address text null,
+  city character varying(100) null,
+  zip_code character varying(20) null,
+  country character varying(100) null,
+  supported_document_types text[] null default array[]::text[],
+  is_registered boolean null default false,
+  is_active boolean null default true,
+  last_verified timestamp with time zone null,
+  verification_status character varying(50) null default 'pending'::character varying,
+  notes text null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint peppol_participants_pkey primary key (id),
+  constraint peppol_participants_user_id_peppol_identifier_key unique (user_id, peppol_identifier),
+  constraint peppol_participants_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_peppol_participants_user_id on public.peppol_participants using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_peppol_participants_peppol_id on public.peppol_participants using btree (peppol_identifier) TABLESPACE pg_default;
+
+create trigger update_peppol_participants_updated_at BEFORE
+update on peppol_participants for EACH row
+execute FUNCTION update_updated_at_column ();
+
+
+
+create table public.peppol_settings (
+  id uuid not null default gen_random_uuid (),
+  user_id uuid not null,
+  peppol_id character varying(100) not null,
+  business_name character varying(255) not null,
+  country_code character varying(2) not null default 'BE'::character varying,
+  contact_person_name character varying(255) null,
+  contact_person_email character varying(255) null,
+  contact_person_phone character varying(50) null,
+  contact_person_language character varying(10) null default 'en-US'::character varying,
+  supported_document_types text[] null default array['INVOICE'::text, 'CREDIT_NOTE'::text],
+  limited_to_outbound_traffic boolean null default false,
+  sandbox_mode boolean null default true,
+  is_configured boolean null default false,
+  is_active boolean null default true,
+  last_tested timestamp with time zone null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  peppol_disabled boolean null default false,
+  constraint peppol_settings_pkey primary key (id),
+  constraint peppol_settings_peppol_id_key unique (peppol_id),
+  constraint peppol_settings_user_id_key unique (user_id),
+  constraint peppol_settings_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_peppol_settings_user_id on public.peppol_settings using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_peppol_settings_peppol_id on public.peppol_settings using btree (peppol_id) TABLESPACE pg_default;
+
+create index IF not exists idx_peppol_settings_disabled on public.peppol_settings using btree (peppol_disabled) TABLESPACE pg_default
+where
+  (peppol_disabled = true);
+
+create trigger update_peppol_settings_updated_at BEFORE
+update on peppol_settings for EACH row
+execute FUNCTION update_updated_at_column ();
+
+
+
+create table public.predefined_materials (
+  id uuid not null default gen_random_uuid (),
+  user_id uuid not null,
+  category character varying(100) null,
+  name character varying(255) not null,
+  description text null,
+  default_unit character varying(50) null,
+  default_price numeric(15, 2) null,
+  icon_name character varying(100) null,
+  is_active boolean null default true,
+  is_global boolean null default false,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint predefined_materials_pkey primary key (id),
+  constraint predefined_materials_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_predefined_materials_user_id on public.predefined_materials using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_predefined_materials_category on public.predefined_materials using btree (category) TABLESPACE pg_default;
+
+create index IF not exists idx_predefined_materials_is_global on public.predefined_materials using btree (is_global) TABLESPACE pg_default;
+
+create trigger update_predefined_materials_updated_at BEFORE
+update on predefined_materials for EACH row
+execute FUNCTION update_updated_at_column ();
+
+
+
+create table public.predefined_tasks (
+  id uuid not null default gen_random_uuid (),
+  user_id uuid not null,
+  category character varying(100) null,
+  title character varying(255) not null,
+  description text null,
+  default_duration numeric(10, 2) null,
+  default_price numeric(15, 2) null,
+  icon_name character varying(100) null,
+  is_active boolean null default true,
+  is_global boolean null default false,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint predefined_tasks_pkey primary key (id),
+  constraint predefined_tasks_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_predefined_tasks_user_id on public.predefined_tasks using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_predefined_tasks_category on public.predefined_tasks using btree (category) TABLESPACE pg_default;
+
+create index IF not exists idx_predefined_tasks_is_global on public.predefined_tasks using btree (is_global) TABLESPACE pg_default;
+
+create trigger update_predefined_tasks_updated_at BEFORE
+update on predefined_tasks for EACH row
+execute FUNCTION update_updated_at_column ();
+
+
+create table public.quote_access_logs (
+  id uuid not null default gen_random_uuid (),
+  quote_id uuid not null,
+  share_token character varying(100) null,
+  action character varying(100) null,
+  accessed_at timestamp with time zone null default now(),
+  constraint quote_access_logs_pkey primary key (id),
+  constraint quote_access_logs_quote_id_fkey foreign KEY (quote_id) references quotes (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_access_logs_quote_id on public.quote_access_logs using btree (quote_id) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_access_logs_share_token on public.quote_access_logs using btree (share_token) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_access_logs_accessed_at on public.quote_access_logs using btree (accessed_at) TABLESPACE pg_default;
+
+
+
+create table public.quote_drafts (
+  id uuid not null default gen_random_uuid (),
+  user_id uuid not null,
+  profile_id uuid null,
+  draft_data jsonb not null default '{}'::jsonb,
+  last_saved timestamp with time zone null default now(),
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  quote_number character varying(50) null,
+  constraint quote_drafts_pkey primary key (id),
+  constraint quote_drafts_quote_number_unique unique (user_id, profile_id, quote_number),
+  constraint quote_drafts_profile_id_fkey foreign KEY (profile_id) references user_profiles (id) on delete CASCADE,
+  constraint quote_drafts_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_drafts_user_id on public.quote_drafts using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_drafts_profile_id on public.quote_drafts using btree (profile_id) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_drafts_draft_data_gin on public.quote_drafts using gin (draft_data) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_drafts_user on public.quote_drafts using btree (user_id, profile_id, last_saved desc) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_drafts_quote_number on public.quote_drafts using btree (quote_number) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_drafts_user_profile_quote on public.quote_drafts using btree (user_id, profile_id, quote_number) TABLESPACE pg_default;
+
+create trigger update_quote_drafts_updated_at BEFORE
+update on quote_drafts for EACH row
+execute FUNCTION update_updated_at_column ();
+
+
+create table public.quote_events (
+  id uuid not null default gen_random_uuid (),
+  quote_id uuid not null,
+  user_id uuid null,
+  type character varying(50) not null,
+  meta jsonb null default '{}'::jsonb,
+  timestamp timestamp with time zone null default now(),
+  share_token character varying(100) null,
+  constraint quote_events_pkey primary key (id),
+  constraint quote_events_quote_id_fkey foreign KEY (quote_id) references quotes (id) on delete CASCADE,
+  constraint quote_events_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE,
+  constraint quote_events_user_id_check check (
+    (
+      (user_id is not null)
+      or (
+        (user_id is null)
+        and (
+          (type)::text = any (
+            (
+              array[
+                'email_sent'::character varying,
+                'system_event'::character varying,
+                'quote_created'::character varying,
+                'quote_updated'::character varying
+              ]
+            )::text[]
+          )
+        )
+      )
+    )
+  )
+) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_events_quote_id on public.quote_events using btree (quote_id) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_events_user_id on public.quote_events using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_events_type on public.quote_events using btree (type) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_events_timestamp on public.quote_events using btree ("timestamp") TABLESPACE pg_default;
+
+create index IF not exists idx_quote_events_share_token on public.quote_events using btree (share_token) TABLESPACE pg_default;
+
+
+create table public.quote_files (
+  id uuid not null default gen_random_uuid (),
+  quote_id uuid not null,
+  file_name character varying(255) not null,
+  file_path character varying(500) not null,
+  file_size integer null,
+  mime_type character varying(100) null,
+  file_category character varying(100) null,
+  uploaded_by uuid null,
+  created_at timestamp with time zone null default now(),
+  constraint quote_files_pkey primary key (id),
+  constraint quote_files_quote_id_fkey foreign KEY (quote_id) references quotes (id) on delete CASCADE,
+  constraint quote_files_uploaded_by_fkey foreign KEY (uploaded_by) references user_profiles (id) on delete set null
+) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_files_quote_id on public.quote_files using btree (quote_id) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_files_file_category on public.quote_files using btree (file_category) TABLESPACE pg_default;
+
+
+create table public.quote_financial_configs (
+  id uuid not null default gen_random_uuid (),
+  quote_id uuid not null,
+  vat_config jsonb null default '{}'::jsonb,
+  advance_config jsonb null default '{}'::jsonb,
+  marketing_banner jsonb null default '{}'::jsonb,
+  payment_terms jsonb null default '{}'::jsonb,
+  discount_config jsonb null default '{}'::jsonb,
+  show_material_prices boolean null default false,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint quote_financial_configs_pkey primary key (id),
+  constraint quote_financial_configs_quote_id_fkey foreign KEY (quote_id) references quotes (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_financial_configs_quote_id on public.quote_financial_configs using btree (quote_id) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_financial_configs_vat_config_gin on public.quote_financial_configs using gin (vat_config) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_financial_configs_discount_config_gin on public.quote_financial_configs using gin (discount_config) TABLESPACE pg_default;
+
+create trigger update_quote_financial_configs_updated_at BEFORE
+update on quote_financial_configs for EACH row
+execute FUNCTION update_updated_at_column ();
+
+
+create table public.quote_follow_ups (
+  id uuid not null default gen_random_uuid (),
+  quote_id uuid not null,
+  user_id uuid not null,
+  client_id uuid null,
+  stage smallint not null,
+  scheduled_at timestamp with time zone not null,
+  next_attempt_at timestamp with time zone null,
+  attempts smallint not null default 0,
+  max_attempts smallint not null default 3,
+  status character varying(20) not null default 'pending'::character varying,
+  channel character varying(20) not null default 'email'::character varying,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  automated boolean not null default true,
+  template_subject text null,
+  template_text text null,
+  template_html text null,
+  meta jsonb null default '{}'::jsonb,
+  constraint quote_follow_ups_pkey primary key (id),
+  constraint quote_follow_ups_client_id_fkey foreign KEY (client_id) references clients (id) on delete set null,
+  constraint quote_follow_ups_quote_id_fkey foreign KEY (quote_id) references quotes (id) on delete CASCADE,
+  constraint quote_follow_ups_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_follow_ups_quote_id on public.quote_follow_ups using btree (quote_id) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_follow_ups_user_id on public.quote_follow_ups using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_follow_ups_scheduled_at on public.quote_follow_ups using btree (scheduled_at) TABLESPACE pg_default;
+
+
+
+
+create table public.quote_materials (
+  id uuid not null default gen_random_uuid (),
+  quote_id uuid not null,
+  quote_task_id uuid null,
+  name character varying(255) not null,
+  description text null,
+  quantity numeric(10, 2) null default 1,
+  unit character varying(50) null default 'piece'::character varying,
+  unit_price numeric(15, 2) null default 0,
+  total_price numeric(15, 2) null default 0,
+  order_index integer null default 0,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint quote_materials_pkey primary key (id),
+  constraint quote_materials_quote_id_fkey foreign KEY (quote_id) references quotes (id) on delete CASCADE,
+  constraint quote_materials_quote_task_id_fkey foreign KEY (quote_task_id) references quote_tasks (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_materials_quote_id on public.quote_materials using btree (quote_id) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_materials_quote_task_id on public.quote_materials using btree (quote_task_id) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_materials_order_index on public.quote_materials using btree (order_index) TABLESPACE pg_default;
+
+create trigger update_quote_materials_updated_at BEFORE
+update on quote_materials for EACH row
+execute FUNCTION update_updated_at_column ();
+
+
+
+create table public.quote_shares (
+  id uuid not null default gen_random_uuid (),
+  quote_id uuid not null,
+  share_token character varying(100) not null,
+  access_count integer null default 0,
+  last_accessed timestamp with time zone null,
+  expires_at timestamp with time zone null,
+  is_active boolean null default true,
+  created_at timestamp with time zone null default now(),
+  constraint quote_shares_pkey primary key (id),
+  constraint quote_shares_share_token_key unique (share_token),
+  constraint quote_shares_quote_id_fkey foreign KEY (quote_id) references quotes (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_shares_quote_id on public.quote_shares using btree (quote_id) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_shares_share_token on public.quote_shares using btree (share_token) TABLESPACE pg_default;
+
+
+
+create table public.quote_signatures (
+  id uuid not null default gen_random_uuid (),
+  quote_id uuid not null,
+  signer_name character varying(255) not null,
+  signer_email character varying(255) null,
+  signature_data text null,
+  signature_mode character varying(50) null default 'draw'::character varying,
+  signature_type character varying(50) null default 'client'::character varying,
+  signature_file_path character varying(500) null,
+  signature_filename character varying(255) null,
+  signature_size integer null,
+  signature_mime_type character varying(100) null,
+  customer_comment text null,
+  signed_at timestamp with time zone null default now(),
+  created_at timestamp with time zone null default now(),
+  constraint quote_signatures_pkey primary key (id),
+  constraint quote_signatures_quote_id_fkey foreign KEY (quote_id) references quotes (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_signatures_quote_id on public.quote_signatures using btree (quote_id) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_signatures_signer_email on public.quote_signatures using btree (signer_email) TABLESPACE pg_default;
+
+
+
+create table public.quote_tasks (
+  id uuid not null default gen_random_uuid (),
+  quote_id uuid not null,
+  name character varying(255) not null,
+  description text null,
+  quantity numeric(10, 2) null default 1,
+  unit character varying(50) null default 'piece'::character varying,
+  unit_price numeric(15, 2) null default 0,
+  total_price numeric(15, 2) null default 0,
+  duration numeric(10, 2) null,
+  duration_unit character varying(20) null default 'minutes'::character varying,
+  pricing_type character varying(50) null default 'flat'::character varying,
+  hourly_rate numeric(15, 2) null,
+  order_index integer null default 0,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint quote_tasks_pkey primary key (id),
+  constraint quote_tasks_quote_id_fkey foreign KEY (quote_id) references quotes (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_tasks_quote_id on public.quote_tasks using btree (quote_id) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_tasks_order_index on public.quote_tasks using btree (order_index) TABLESPACE pg_default;
+
+create index IF not exists idx_quote_tasks_pricing_type on public.quote_tasks using btree (pricing_type) TABLESPACE pg_default;
+
+create trigger update_quote_tasks_updated_at BEFORE
+update on quote_tasks for EACH row
+execute FUNCTION update_updated_at_column ();
+
+
+create table public.quotes (
+  id uuid not null default gen_random_uuid (),
+  user_id uuid not null,
+  profile_id uuid null,
+  company_profile_id uuid null,
+  client_id uuid null,
+  quote_number character varying(50) not null,
+  title text null,
+  description text null,
+  status character varying(50) null default 'draft'::character varying,
+  project_categories text[] null default '{}'::text[],
+  custom_category text null,
+  total_amount numeric(15, 2) null default 0,
+  tax_amount numeric(15, 2) null default 0,
+  discount_amount numeric(15, 2) null default 0,
+  final_amount numeric(15, 2) null default 0,
+  valid_until date null,
+  terms_conditions text null,
+  share_token character varying(100) null,
+  is_public boolean null default false,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  start_date date null,
+  accepted_at timestamp with time zone null,
+  rejected_at timestamp with time zone null,
+  sent_at timestamp with time zone null,
+  rejection_reason text null,
+  view_only_token character varying(100) null,
+  constraint quotes_pkey primary key (id),
+  constraint quotes_view_only_token_key unique (view_only_token),
+  constraint quotes_share_token_key unique (share_token),
+  constraint quotes_user_quote_number_key unique (user_id, quote_number),
+  constraint quotes_client_id_fkey foreign KEY (client_id) references clients (id) on delete set null,
+  constraint quotes_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE,
+  constraint quotes_company_profile_id_fkey foreign KEY (company_profile_id) references company_profiles (id) on delete set null,
+  constraint quotes_profile_id_fkey foreign KEY (profile_id) references user_profiles (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_quotes_sent_at on public.quotes using btree (sent_at) TABLESPACE pg_default;
+
+create index IF not exists idx_quotes_rejection_reason on public.quotes using btree (rejection_reason) TABLESPACE pg_default;
+
+create index IF not exists idx_quotes_user_id on public.quotes using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_quotes_profile_id on public.quotes using btree (profile_id) TABLESPACE pg_default;
+
+create index IF not exists idx_quotes_company_profile_id on public.quotes using btree (company_profile_id) TABLESPACE pg_default;
+
+create index IF not exists idx_quotes_client_id on public.quotes using btree (client_id) TABLESPACE pg_default;
+
+create index IF not exists idx_quotes_quote_number on public.quotes using btree (quote_number) TABLESPACE pg_default;
+
+create index IF not exists idx_quotes_status on public.quotes using btree (status) TABLESPACE pg_default;
+
+create index IF not exists idx_quotes_share_token on public.quotes using btree (share_token) TABLESPACE pg_default;
+
+create index IF not exists idx_quotes_valid_until on public.quotes using btree (valid_until) TABLESPACE pg_default;
+
+create index IF not exists idx_quotes_created_at on public.quotes using btree (created_at) TABLESPACE pg_default;
+
+create index IF not exists idx_quotes_is_public on public.quotes using btree (is_public) TABLESPACE pg_default;
+
+create index IF not exists idx_quotes_project_categories_gin on public.quotes using gin (project_categories) TABLESPACE pg_default;
+
+create index IF not exists idx_quotes_view_only_token on public.quotes using btree (view_only_token) TABLESPACE pg_default;
+
+
+
+create table public.subscriptions (
+  id uuid not null default gen_random_uuid (),
+  user_id uuid not null,
+  stripe_subscription_id character varying(255) null,
+  stripe_customer_id character varying(255) null,
+  plan_name character varying(100) not null,
+  plan_type character varying(50) not null,
+  status character varying(50) not null default 'trialing'::character varying,
+  interval character varying(20) not null default 'monthly'::character varying,
+  amount numeric(10, 2) not null,
+  currency character varying(3) null default 'EUR'::character varying,
+  current_period_start timestamp with time zone null,
+  current_period_end timestamp with time zone null,
+  trial_start timestamp with time zone null,
+  trial_end timestamp with time zone null,
+  cancel_at_period_end boolean null default false,
+  cancelled_at timestamp with time zone null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint subscriptions_pkey primary key (id),
+  constraint subscriptions_stripe_subscription_id_key unique (stripe_subscription_id),
+  constraint subscriptions_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_subscriptions_user_id on public.subscriptions using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_subscriptions_stripe_subscription_id on public.subscriptions using btree (stripe_subscription_id) TABLESPACE pg_default;
+
+create index IF not exists idx_subscriptions_status on public.subscriptions using btree (status) TABLESPACE pg_default;
+
+create index IF not exists idx_subscriptions_created_at on public.subscriptions using btree (created_at) TABLESPACE pg_default;
+
+create trigger update_subscriptions_updated_at BEFORE
+update on subscriptions for EACH row
+execute FUNCTION update_subscription_updated_at_column ();
+
+
+
+create table public.user_profiles (
+  id uuid not null default gen_random_uuid (),
+  user_id uuid null,
+  name text not null,
+  email text null,
+  role text not null,
+  avatar text null,
+  permissions jsonb not null default '{}'::jsonb,
+  pin text null,
+  is_active boolean null default false,
+  last_active timestamp with time zone null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint user_profiles_pkey primary key (id),
+  constraint user_profiles_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_user_profiles_user_id on public.user_profiles using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_user_profiles_is_active on public.user_profiles using btree (is_active) TABLESPACE pg_default;
+
+create index IF not exists idx_user_profiles_role on public.user_profiles using btree (role) TABLESPACE pg_default;
+
+create index IF not exists idx_user_profiles_pin on public.user_profiles using btree (pin) TABLESPACE pg_default;
+
+create index IF not exists idx_user_profiles_permissions_gin on public.user_profiles using gin (permissions) TABLESPACE pg_default;
+
+
+
+create table public.users (
+  id uuid not null,
+  email text not null,
+  full_name text null,
+  company_name text null,
+  phone text null,
+  profession text null,
+  country text null default 'FR'::text,
+  business_size text null,
+  selected_plan text null default 'pro'::text,
+  subscription_status text null default 'trial'::text,
+  stripe_customer_id text null,
+  stripe_subscription_id text null,
+  trial_start_date timestamp with time zone null,
+  trial_end_date timestamp with time zone null,
+  avatar_url text null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  vat_number text null,
+  role text null default 'admin'::text,
+  last_login_at timestamp with time zone null,
+  registration_completed boolean null default false,
+  email_verified boolean null default false,
+  email_verified_at timestamp with time zone null,
+  analytics_objectives jsonb null default '{"clientTarget": null, "revenueTarget": null, "projectsTarget": null}'::jsonb,
+  constraint users_pkey primary key (id),
+  constraint users_email_key unique (email),
+  constraint users_id_fkey foreign KEY (id) references auth.users (id) on delete CASCADE,
+  constraint users_role_check check (
+    (
+      role = any (array['admin'::text, 'superadmin'::text])
+    )
+  )
+) TABLESPACE pg_default;
+
+create index IF not exists idx_users_analytics_objectives on public.users using gin (analytics_objectives) TABLESPACE pg_default;
+
+create index IF not exists idx_users_email on public.users using btree (email) TABLESPACE pg_default;
+
+create index IF not exists idx_users_subscription_status on public.users using btree (subscription_status) TABLESPACE pg_default;
+
+create index IF not exists idx_users_trial_end_date on public.users using btree (trial_end_date) TABLESPACE pg_default;
+
+create index IF not exists idx_users_stripe_customer_id on public.users using btree (stripe_customer_id) TABLESPACE pg_default;
+
+create index IF not exists idx_users_stripe_subscription_id on public.users using btree (stripe_subscription_id) TABLESPACE pg_default;
+
+create index IF not exists idx_users_vat_number on public.users using btree (vat_number) TABLESPACE pg_default;
+
+create index IF not exists idx_users_email_verified on public.users using btree (email_verified) TABLESPACE pg_default;
+
+
 

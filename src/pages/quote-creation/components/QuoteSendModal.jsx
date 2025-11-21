@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import { useAuth } from '../../../context/AuthContext';
@@ -32,21 +32,25 @@ const QuoteSendModal = ({
     subject: '',
     message: ''
   });
+  const prevStepRef = useRef(step);
 
   // Auto-fill email data when component mounts or client changes
   useEffect(() => {
-    if (selectedClient && step === 2) {
+    // Only initialize when transitioning to step 2 (not on every render)
+    if (selectedClient && step === 2 && prevStepRef.current !== 2) {
       const clientEmail = selectedClient.email || selectedClient.client?.email || '';
       const defaultSubject = `Devis ${projectInfo?.description || 'Nouveau projet'} - ${companyInfo?.name || t('quoteCreation.quoteSendModal.yourCompany')}`;
       const defaultMessage = `Bonjour,\n\nVeuillez trouver ci-joint notre devis pour votre projet.\n\nCordialement,\n${companyInfo?.name || t('quoteCreation.quoteSendModal.yourTeam')}`;
 
-      setEmailData({
+      setEmailData(prev => ({
         clientEmail,
-        sendCopy: false,
-        subject: defaultSubject,
-        message: defaultMessage
-      });
+        sendCopy: prev.sendCopy, // Always preserve existing sendCopy value
+        subject: prev.subject || defaultSubject,
+        message: prev.message || defaultMessage
+      }));
     }
+    
+    prevStepRef.current = step;
   }, [selectedClient, step, projectInfo, companyInfo, t]);
 
   const handleOptionSelect = async (method) => {
@@ -352,15 +356,6 @@ const QuoteSendModal = ({
                   disabled={isProcessing}
                 />
               </div>
-
-              {/* Quote Info Preview */}
-              <div className="bg-muted border border-border rounded-lg p-4">
-                <div className="text-sm text-muted-foreground space-y-1">
-                  <p>{t('quoteCreation.quoteSendModal.attachedQuote')}</p>
-                  <p>{t('quoteCreation.quoteSendModal.fromCompany', { companyName: companyInfo?.name || t('quoteCreation.quoteSendModal.yourCompany') })}</p>
-                  <p>{t('quoteCreation.quoteSendModal.quoteNumber', { quoteNumber })}</p>
-                </div>
-              </div>
             </div>
           )}
         </div>
@@ -393,3 +388,4 @@ const QuoteSendModal = ({
 };
 
 export default QuoteSendModal;
+

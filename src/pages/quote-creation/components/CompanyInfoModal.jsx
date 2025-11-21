@@ -811,7 +811,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
           {/* IBAN */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              {t('quoteCreation.companyInfo.iban', 'IBAN')}
+              {t('quoteCreation.companyInfo.iban', 'IBAN')} *
             </label>
             <Input
               type="text"
@@ -819,6 +819,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
               onChange={(e) => handleInputChange('iban', e.target.value)}
               placeholder="BE68539007547034"
               maxLength={34}
+              required
             />
            
           </div>
@@ -826,13 +827,14 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
           {/* Account Name */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              {t('quoteCreation.companyInfo.accountName', 'Account Name')}
+              {t('quoteCreation.companyInfo.accountName', 'Account Name')} *
             </label>
             <Input
               type="text"
               value={companyInfo.accountName || ''}
               onChange={(e) => handleInputChange('accountName', e.target.value)}
               placeholder={t('quoteCreation.companyInfo.accountNamePlaceholder', 'Account holder name')}
+              required
             />
             
           </div>
@@ -840,13 +842,14 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
           {/* Bank Name */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              {t('quoteCreation.companyInfo.bankName', 'Bank Name')}
+              {t('quoteCreation.companyInfo.bankName', 'Bank Name')} *
             </label>
             <Input
               type="text"
               value={companyInfo.bankName || ''}
               onChange={(e) => handleInputChange('bankName', e.target.value)}
               placeholder={t('quoteCreation.companyInfo.bankNamePlaceholder', 'Bank name')}
+              required
             />
            
           </div>

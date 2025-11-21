@@ -233,6 +233,11 @@ const QuoteCreation = () => {
 
         setLastSaved(d.lastSaved || new Date().toISOString());
 
+        // Restore leadId if this draft is from a lead
+        if (d.leadId) {
+          setLeadId(d.leadId);
+        }
+
 
         // Restore client signature from draft
         if (d.clientSignature && d.selectedClient?.id) {
@@ -380,6 +385,55 @@ const QuoteCreation = () => {
     try {
 
       setIsLoadingQuote(true);
+
+      // Check if client was already added for this lead
+      const storedClientId = localStorage.getItem(`lead-client-id-${leadId}`);
+      const clientAdded = localStorage.getItem(`lead-client-added-${leadId}`) === 'true';
+
+      if (clientAdded && storedClientId) {
+        // Client was already added, fetch it from database
+        try {
+          const { fetchClientById } = await import('../../services/clientsService');
+          const { data: clientData, error: clientError } = await fetchClientById(storedClientId);
+
+          if (!clientError && clientData) {
+            // Format the client for selection (matching the format used in ClientSelection)
+            const formattedClient = {
+              value: clientData.id,
+              label: clientData.name,
+              description: `${clientData.email}${clientData.phone ? ' • ' + clientData.phone : ''}`,
+              type: clientData.type || 'particulier',
+              client: clientData,
+              address: clientData.address,
+              city: clientData.city,
+              postalCode: clientData.postalCode || clientData.postal_code,
+              country: clientData.country || 'BE',
+              email: clientData.email,
+              phone: clientData.phone,
+              id: clientData.id
+            };
+
+            setSelectedClient(formattedClient);
+            
+            // Load project information from lead
+            const { data: leadData } = await LeadManagementService.getLeadDetailsForQuote(leadId);
+            if (leadData) {
+              setProjectInfo({
+                categories: leadData.project_categories || [],
+                customCategory: leadData.custom_category || '',
+                deadline: leadData.completion_date || '',
+                description: leadData.project_description || ''
+              });
+            }
+            
+            setIsLoadingQuote(false);
+            return;
+          }
+        } catch (error) {
+          console.error('Error fetching stored client:', error);
+          // Continue to load lead data if client fetch fails
+        }
+      }
 
       const { data: leadData, error } = await LeadManagementService.getLeadDetailsForQuote(leadId);
 
@@ -538,7 +592,24 @@ const QuoteCreation = () => {
 
       }
 
+      // Check if this quote is from a lead
+      if (!isDuplicating) {
+        try {
+          const { data: leadQuote, error: leadQuoteError } = await supabase
+            .from('lead_quotes')
+            .select('lead_id')
+            .eq('quote_id', quoteId)
+            .eq('artisan_user_id', user.id)
+            .single();
 
+          if (!leadQuoteError && leadQuote?.lead_id) {
+            setLeadId(leadQuote.lead_id);
+          }
+        } catch (error) {
+          console.warn('Error checking if quote is from lead:', error);
+          // Continue with quote loading even if lead check fails
+        }
+      }
 
       // Transform backend data to frontend format
 
@@ -883,7 +954,9 @@ const QuoteCreation = () => {
 
             text: quote.terms_conditions || 'Conditions générales:\n• Devis valable 30 jours\n• Acompte de 30% à la commande\n• Solde à la livraison\n• Délai de paiement: 30 jours\n• TVA comprise\n• Matériaux et main d\'œuvre garantis 1 an'
 
-          }
+          },
+
+          materialPriceDisplay: financialData.show_material_prices ?? (localStorage.getItem('include-materials-prices') ?? 'true') === 'true'
 
         };
 
@@ -1010,11 +1083,15 @@ const QuoteCreation = () => {
 
           financialConfig,
 
+          // Include leadId if this is a lead quote
+          leadId: leadId || null,
+
           // Get client signature from localStorage or from current signature state
           clientSignature: (() => {
             // First try to get from localStorage
-            if (selectedClient?.id || selectedClient?.value) {
-              const clientId = selectedClient.id || selectedClient.value;
+            // Handle different client structures (normalized, lead client, etc.)
+            const clientId = selectedClient?.id || selectedClient?.value || selectedClient?.client?.id;
+            if (clientId) {
               const key = `client-signature-${user.id}-${clientId}`;
               const storedSignature = localStorage.getItem(key);
               if (storedSignature) {
@@ -1024,7 +1101,9 @@ const QuoteCreation = () => {
                   console.warn('Failed to parse stored signature:', e);
                 }
               }
-            } else {
+            }
+            // Only warn if selectedClient exists but has no ID (not if it's null/undefined)
+            if (selectedClient && !clientId) {
               console.warn('Auto-save: no client ID available', { selectedClient });
             }
             return null;
@@ -1567,6 +1646,9 @@ const QuoteCreation = () => {
 
         financialConfig,
 
+        // Include leadId if this is a lead quote
+        leadId: leadId || null,
+
         // Include client signature when moving between steps
         clientSignature: selectedClient?.id || selectedClient?.value ?
           localStorage.getItem(`client-signature-${user.id}-${selectedClient.id || selectedClient.value}`) ?
@@ -1660,6 +1742,9 @@ const QuoteCreation = () => {
         companyInfo,
 
         financialConfig,
+
+        // Include leadId if this is a lead quote
+        leadId: leadId || null,
 
         // Include client signature when moving between steps
         // Get client signature from localStorage
@@ -1800,6 +1885,8 @@ const QuoteCreation = () => {
           currentStep,
           companyInfo,
           financialConfig,
+          // Include leadId if this is a lead quote
+          leadId: leadId || null,
           // Use signature data from the QuotePreview component if available
           clientSignature: data?.signatureData || (selectedClient?.id || selectedClient?.value ?
             localStorage.getItem(`client-signature-${user.id}-${selectedClient.id || selectedClient.value}`) ?
@@ -2144,7 +2231,11 @@ const QuoteCreation = () => {
 
       }
 
-
+      if (!createdQuote) {
+        console.error('Error creating quote: createdQuote is null or undefined');
+        setIsSaving(false);
+        return;
+      }
 
       const quoteId = createdQuote.id;
 
@@ -2208,7 +2299,9 @@ const QuoteCreation = () => {
 
               type: 'percentage'
 
-            }
+            },
+
+            show_material_prices: data.financialConfig.materialPriceDisplay ?? false
 
           };
 
@@ -3073,6 +3166,12 @@ const QuoteCreation = () => {
 
 
 
+      if (createError || !createdQuote) {
+        console.error('Error creating quote:', createError);
+        setIsSaving(false);
+        return;
+      }
+
       const quoteId = createdQuote.id;
 
 
@@ -3183,7 +3282,9 @@ const QuoteCreation = () => {
 
               type: 'percentage'
 
-            }
+            },
+
+            show_material_prices: sendData.financialConfig.materialPriceDisplay ?? false
 
           };
 
@@ -3965,6 +4066,9 @@ const QuoteCreation = () => {
 
         financialConfig,
 
+        // Include leadId if this is a lead quote
+        leadId: leadId || null,
+
         // Include client signature when changing steps
         clientSignature: selectedClient?.id || selectedClient?.value ?
           localStorage.getItem(`client-signature-${user.id}-${selectedClient.id || selectedClient.value}`) ?
@@ -4107,6 +4211,8 @@ const QuoteCreation = () => {
           currentStep: 4,
           companyInfo,
           financialConfig,
+          // Include leadId if this is a lead quote
+          leadId: leadId || null,
           clientSignature: selectedClient?.id || selectedClient?.value ?
             localStorage.getItem(`client-signature-${user.id}-${selectedClient.id || selectedClient.value}`) ?
               JSON.parse(localStorage.getItem(`client-signature-${user.id}-${selectedClient.id || selectedClient.value}`)) : null : null,
@@ -4189,6 +4295,9 @@ const QuoteCreation = () => {
         companyInfo,
 
         financialConfig,
+
+        // Include leadId if this is a lead quote
+        leadId: leadId || null,
 
         clientSignature: selectedClient?.id || selectedClient?.value ?
           localStorage.getItem(`client-signature-${user.id}-${selectedClient.id || selectedClient.value}`) ?

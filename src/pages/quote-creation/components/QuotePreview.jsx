@@ -42,25 +42,6 @@ const QuotePreview = ({
   const [isGeneratingShare, setIsGeneratingShare] = useState(false);
   const [shareLink, setShareLink] = useState(null);
   const [shareLinkInfo, setShareLinkInfo] = useState(null);
-  const [includeMaterialsPrices, setIncludeMaterialsPrices] = useState(() => {
-    try {
-      const stored = localStorage.getItem('include-materials-prices');
-      return stored ? stored === 'true' : true;
-    } catch {
-      return true;
-    }
-  });
-  // Keep in sync with Account Settings preference
-  useEffect(() => {
-    const handleStorage = (e) => {
-      if (e.key === 'include-materials-prices') {
-        setIncludeMaterialsPrices(e.newValue === 'true');
-      }
-    };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, []);
-  
   // Company Information
   const [companyInfo, setCompanyInfo] = useState(parentCompanyInfo || getDefaultCompanyInfo());
   
@@ -79,7 +60,7 @@ const QuotePreview = ({
     }
   });
 
-  // Financial Configuration
+  // Financial Configuration - must be declared before useEffects that use it
   const [financialConfig, setFinancialConfig] = useState(parentFinancialConfig || {
     vatConfig: {
       display: false,
@@ -99,6 +80,9 @@ const QuotePreview = ({
     },
     materialPriceDisplay: (localStorage.getItem('include-materials-prices') ?? 'true') === 'true'
   });
+
+  // Material price display - derived from financialConfig
+  const includeMaterialsPrices = financialConfig?.materialPriceDisplay ?? true;
 
   // Load saved company info on component mount - Database First Strategy
   // Company info is single per user and remains the same for all quotes, so we load it once

@@ -232,8 +232,10 @@ const PublicQuoteShareViewer = () => {
     );
   }
 
-  // Get materials price display setting from localStorage (like QuotePreview)
-  const includeMaterialsPrices = (localStorage.getItem('include-materials-prices') ?? 'true') === 'true';
+  // Get materials price display setting from database (quote financial config)
+  // Priority: Database > localStorage > default (true)
+  const includeMaterialsPrices = quote?.quote_financial_configs?.[0]?.show_material_prices ?? 
+    (localStorage.getItem('include-materials-prices') ?? 'true') === 'true';
   
   // Group materials by task_id and add them to tasks (like QuotePreview does)
   const tasksWithMaterials = quote.quote_tasks?.map(task => {

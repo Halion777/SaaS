@@ -113,7 +113,7 @@ export const getQuoteByShareToken = async (shareToken) => {
           id, file_name, file_path, file_size, mime_type, file_category, uploaded_by, created_at
         ),
         quote_financial_configs(
-          id, vat_config, advance_config, marketing_banner, payment_terms, discount_config, created_at
+          id, vat_config, advance_config, marketing_banner, payment_terms, discount_config, show_material_prices, created_at
         ),
         quote_signatures(
           id, signer_name, signer_email, signature_data, signature_mode, signature_type,

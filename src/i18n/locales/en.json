@@ -649,7 +649,8 @@
       "range5": "5,000–7,000€",
       "range6": "7,000–10,000€",
       "range7": "10,000–20,000€",
-      "range8": "20,000+€"
+      "range8": "20,000+€",
+      "dontKnow": "I don't know"
     },
     "form": {
       "title": "Describe your project",
@@ -666,7 +667,7 @@
       "zipCodePlaceholder": "Ex: 1000",
       "description": "Project description",
       "descriptionPlaceholder": "Describe your work in detail: nature, dimensions, desired materials...",
-      "priceRange": "Price range",
+      "priceRange": "Price",
       "selectPriceRange": "Select a range",
       "photos": "Project photos",
       "optional": "Optional",
@@ -2788,7 +2789,7 @@
       "selectCountry": "Select country",
       "postalCode": "Postal code",
       "postalCodePlaceholder": "1000",
-      "clickToEdit": "Click on \"Edit client information\" then \"Add client\" to continue",
+      "clickToEdit": "You can \"Edit client information\"",
       "creating": "Creating...",
       "addClient": "Add client",
       "cancel": "Cancel",
@@ -2911,7 +2912,7 @@
       "materialName": "Material name",
       "materialNamePlaceholder": "Ex: PVC pipe",
       "quantity": "Quantity",
-      "quantityPlaceholder": "1",
+      "quantityPlaceholder": "Ex: 1",
       "unit": "Unit",
       "fillMaterialDetails": "Fill in the name, quantity and unit to add a material",
       "labor": "Labor",
@@ -3081,7 +3082,7 @@
     "quoteSendModal": {
       "shareTitle": "Share Quote",
       "sendTitle": "Send Quote",
-      "statusInfo": "Once you have sent this quote, the status will change to \"Pending\". ",
+      "statusInfo": "Once you have sent this quote, the status will change to \"Sent\". ",
       "client": "The client",
       "deadlineInfo": "will have until",
       "defaultDeadline": "30 days",
@@ -3254,7 +3255,7 @@
       "total": "Total",
       "advancePayment": "Advance Payment",
       "balanceOnDelivery": "Balance on Delivery",
-      "materialsNote": "* Material prices are included in the total but hidden"
+      "materialsNote": "Material prices are included in the total but hidden"
     },
     "additionalInfo": {
       "title": "Notes and Conditions",
@@ -4221,3 +4222,4 @@
       }
     }
 } 
+

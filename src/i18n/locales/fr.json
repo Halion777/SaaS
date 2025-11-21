@@ -650,7 +650,8 @@
       "range5": "5,000–7,000€",
       "range6": "7,000–10,000€",
       "range7": "10,000–20,000€",
-      "range8": "20,000+€"
+      "range8": "20,000+€",
+      "dontKnow": "Je ne sais pas"
     },
     "form": {
       "title": "Décrivez votre projet",
@@ -660,14 +661,14 @@
       "streetNumber": "Numéro de rue",
       "streetNumberPlaceholder": "Ex: 123",
       "fullAddress": "Adresse complète",
-      "fullAddressPlaceholder": "Ex: Rue de la Loi",
+      "fullAddressPlaceholder": "Ex: R ue de la Loi",
       "city": "Ville",
       "cityPlaceholder": "Ex: Bruxelles",
       "zipCode": "Code postal",
       "zipCodePlaceholder": "Ex: 1000",
       "description": "Description du projet",
       "descriptionPlaceholder": "Décrivez vos travaux en détail : nature, dimensions, matériaux souhaités...",
-      "priceRange": "Fourchette de prix",
+      "priceRange": "Prix",
       "selectPriceRange": "Sélectionnez une fourchette",
       "photos": "Photos du projet",
       "optional": "Optionnel",
@@ -2849,7 +2850,7 @@
       "selectCountry": "Sélectionner le pays",
       "postalCode": "Code postal",
       "postalCodePlaceholder": "1000",
-      "clickToEdit": "Cliquez sur \"Modifier les informations client\" puis \"Ajouter le client\" pour continuer",
+      "clickToEdit": "Vous pouvez \"Modifier les informations client\"",
       "creating": "Création...",
       "addClient": "Ajouter le client",
       "cancel": "Annuler",
@@ -2923,8 +2924,8 @@
       "addedTasks": "Tâches ajoutées",
       "quoteTotal": "Total du devis",
       "title": "Définition des tâches",
-      "addTask": "Ajouter une tâche",
-      "addMaterial": "Ajouter un matériau",
+      "addTask": "Ajouter tâche",
+      "addMaterial": "Ajouter matériau",
       "save": "Sauvegarder",
       "saveChanges": "Sauvegarder les modifications",
       "cancel": "Annuler",
@@ -2980,7 +2981,7 @@
       "materialName": "Nom du matériau",
       "materialNamePlaceholder": "Ex: Tuyau PVC",
       "quantity": "Quantité",
-      "quantityPlaceholder": "1",
+      "quantityPlaceholder": "Ex: 1",
       "unit": "Unité",
       "fillMaterialDetails": "Remplissez le nom, la quantité et l'unité pour ajouter un matériau",
       "labor": "Main d'œuvre",
@@ -3145,7 +3146,7 @@
     "quoteSendModal": {
       "shareTitle": "Partager le devis",
       "sendTitle": "Envoyer le devis",
-      "statusInfo": "Une fois que vous aurez envoyé ce devis, le statut passera à \"En attente\". ",
+      "statusInfo": "Une fois que vous aurez envoyé ce devis, le statut passera à \"Envoyé\". ",
       "client": "Le client",
       "deadlineInfo": "aura jusqu'au",
       "defaultDeadline": "30 jours",
@@ -3319,7 +3320,7 @@
       "total": "Total",
       "advancePayment": "Acompte à la commande",
       "balanceOnDelivery": "Solde à la livraison",
-      "materialsNote": "* Les prix des matériaux sont inclus dans le total mais masqués"
+      "materialsNote": "Les prix des matériaux sont inclus dans le total mais masqués"
     },
     "additionalInfo": {
       "title": "Notes et conditions",

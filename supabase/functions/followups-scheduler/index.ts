@@ -622,13 +622,30 @@ async function createIntelligentFollowUp(admin: any, quote: any, rules: any) {
       priority = calculatePriority('sent', stage, hasRecentActivity);
     }
     
-    // Get template from email_templates
-    const { data: template, error: templateError } = await admin
+    // Get template from email_templates - prioritize French, fallback to any active
+    let { data: template, error: templateError } = await admin
       .from('email_templates')
       .select('subject, html_content, text_content')
       .eq('template_type', templateType)
       .eq('is_active', true)
+      .eq('language', 'fr')
       .maybeSingle();
+    
+    // If French template not found, try to get any active template
+    if (templateError || !template) {
+      const { data: fallbackTemplate, error: fallbackError } = await admin
+        .from('email_templates')
+        .select('subject, html_content, text_content')
+        .eq('template_type', templateType)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+      
+      if (!fallbackError && fallbackTemplate) {
+        template = fallbackTemplate;
+        templateError = null;
+      }
+    }
     
     if (templateError || !template) {
       console.error(`Template ${templateType} not found or error:`, templateError);
@@ -768,13 +785,30 @@ async function createDelayedViewFollowUp(admin: any, quote: any) {
       return;
     }
     
-    // Get template for viewed no action follow-up
-    const { data: template, error: templateError } = await admin
+    // Get template for viewed no action follow-up - prioritize French, fallback to any active
+    let { data: template, error: templateError } = await admin
       .from('email_templates')
       .select('subject, html_content, text_content')
       .eq('template_type', 'followup_viewed_no_action')
       .eq('is_active', true)
+      .eq('language', 'fr')
       .maybeSingle();
+    
+    // If French template not found, try to get any active template
+    if (templateError || !template) {
+      const { data: fallbackTemplate, error: fallbackError } = await admin
+        .from('email_templates')
+        .select('subject, html_content, text_content')
+        .eq('template_type', 'followup_viewed_no_action')
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+      
+      if (!fallbackError && fallbackTemplate) {
+        template = fallbackTemplate;
+        templateError = null;
+      }
+    }
     
     if (templateError || !template) {
       console.error(`Template followup_viewed_no_action not found or error:`, templateError);
@@ -986,6 +1020,48 @@ async function progressFollowUpStages(admin: any, rules: any) {
           // Calculate new priority based on next stage
           const priority = nextStage > 1 ? 'high' : 'medium';
 
+          // For stages 2 and 3, use general_followup template
+          let templateSubject = followUp.template_subject;
+          let templateText = followUp.template_text;
+          let templateHtml = followUp.template_html;
+          
+          if (nextStage > 1) {
+            // Fetch general_followup template for stages 2+
+            let { data: generalTemplate, error: generalTemplateError } = await admin
+              .from('email_templates')
+              .select('subject, html_content, text_content')
+              .eq('template_type', 'general_followup')
+              .eq('is_active', true)
+              .eq('language', 'fr')
+              .maybeSingle();
+            
+            // If French template not found, try to get any active template
+            if (generalTemplateError || !generalTemplate) {
+              const { data: fallbackTemplate, error: fallbackError } = await admin
+                .from('email_templates')
+                .select('subject, html_content, text_content')
+                .eq('template_type', 'general_followup')
+                .eq('is_active', true)
+                .limit(1)
+                .maybeSingle();
+              
+              if (!fallbackError && fallbackTemplate) {
+                generalTemplate = fallbackTemplate;
+                generalTemplateError = null;
+              }
+            }
+            
+            if (!generalTemplateError && generalTemplate) {
+              // Replace template variables
+              templateSubject = generalTemplate.subject
+                .replace('{quote_number}', quote.quote_number);
+              templateText = generalTemplate.text_content
+                .replace('{quote_number}', quote.quote_number);
+              templateHtml = generalTemplate.html_content
+                .replace('{quote_number}', quote.quote_number);
+            }
+          }
+
           // Update follow-up to next stage and mark current stage as completed
           const { error: updateError } = await admin
             .from('quote_follow_ups')
@@ -995,6 +1071,9 @@ async function progressFollowUpStages(admin: any, rules: any) {
               attempts: 0,
               scheduled_at: nextScheduledAt.toISOString(),
               updated_at: new Date().toISOString(),
+              template_subject: templateSubject,
+              template_text: templateText,
+              template_html: templateHtml,
               meta: {
                 stage_progressed: true,
                 previous_stage: followUp.stage,
@@ -1004,7 +1083,8 @@ async function progressFollowUpStages(admin: any, rules: any) {
                 stage_completion: `Completed stage ${followUp.stage} of 3`,
                 completion_type: 'stage_completion',
                 priority: priority,
-                priority_reason: `Priority set to ${priority} due to stage ${nextStage}`
+                priority_reason: `Priority set to ${priority} due to stage ${nextStage}`,
+                template_type: nextStage > 1 ? 'general_followup' : followUp.meta?.template_type
               }
             })
             .eq('id', followUp.id);
@@ -1108,13 +1188,30 @@ async function createInitialFollowUpForSentQuote(admin: any, quote: any, rules: 
       return;
     }
     
-    // Get template for initial follow-up
-    const { data: template, error: templateError } = await admin
+    // Get template for initial follow-up - prioritize French, fallback to any active
+    let { data: template, error: templateError } = await admin
       .from('email_templates')
       .select('subject, html_content, text_content')
       .eq('template_type', 'followup_not_viewed')
       .eq('is_active', true)
+      .eq('language', 'fr')
       .maybeSingle();
+    
+    // If French template not found, try to get any active template
+    if (templateError || !template) {
+      const { data: fallbackTemplate, error: fallbackError } = await admin
+        .from('email_templates')
+        .select('subject, html_content, text_content')
+        .eq('template_type', 'followup_not_viewed')
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+      
+      if (!fallbackError && fallbackTemplate) {
+        template = fallbackTemplate;
+        templateError = null;
+      }
+    }
     
     if (templateError || !template) {
       console.error(`Template followup_not_viewed not found or error:`, templateError);

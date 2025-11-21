@@ -57,17 +57,21 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       setClientAddedFromLead(false);
     }
 
-    // Cleanup function to remove localStorage entry when component unmounts
-    return () => {
-      if (leadId) {
-        try {
-          localStorage.removeItem(`lead-client-added-${leadId}`);
-        } catch (error) {
-          console.error('Error removing from localStorage:', error);
-        }
-      }
-    };
+    // Don't remove localStorage entries on unmount - they should persist across refreshes
+    // The entries will be cleaned up when the quote is successfully created/sent
   }, [leadId]);
+
+  // Update clientAddedFromLead when selectedClient changes (for restored clients after refresh)
+  useEffect(() => {
+    if (leadId && selectedClient && (selectedClient.id || selectedClient.value)) {
+      // If client has an ID/value, it means it was already added (either just now or restored from DB)
+      const stored = localStorage.getItem(`lead-client-added-${leadId}`);
+      if (stored !== 'true') {
+        // Update localStorage and state if not already set
+        updateClientAddedFromLead(true);
+      }
+    }
+  }, [leadId, selectedClient]);
   const [newClient, setNewClient] = useState({
     name: '',
     type: 'particulier',
@@ -585,6 +589,79 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
     if (createSuccess) setCreateSuccess(false);
   };
 
+  // Quick add client function for lead quotes
+  const handleQuickAddClient = async () => {
+    if (!leadId || !selectedClient || !selectedClient.name || !selectedClient.email) {
+      return;
+    }
+
+    try {
+      setIsCreatingClient(true);
+      setCreateError(null);
+      
+      // Create client using pre-filled data from lead
+      const { data: createdClient, error } = await createClient({
+        name: selectedClient.name,
+        type: 'particulier',
+        email: selectedClient.email,
+        phone: selectedClient.phone || '',
+        address: selectedClient.address || '',
+        city: selectedClient.city || '',
+        country: selectedClient.country || 'BE',
+        postalCode: selectedClient.postalCode || '',
+        contactPerson: '',
+        companySize: '',
+        regNumber: '',
+        peppolId: '',
+        enablePeppol: false,
+        preferences: selectedClient.communicationPreferences ? Object.keys(selectedClient.communicationPreferences).filter(key => selectedClient.communicationPreferences[key]) : []
+      });
+      
+      if (error) {
+        console.error('Error creating client:', error);
+        setCreateError(error.message || 'Erreur lors de la création du client');
+        return;
+      }
+      
+      // Format the created client for selection
+      const clientData = {
+        value: createdClient.id,
+        label: createdClient.name,
+        description: `${createdClient.email}${createdClient.phone ? ' • ' + createdClient.phone : ''}`,
+        type: 'particulier',
+        client: createdClient,
+        address: createdClient.address,
+        city: createdClient.city,
+        postalCode: createdClient.postalCode,
+        country: createdClient.country,
+        email: createdClient.email,
+        phone: createdClient.phone
+      };
+      
+      // Select the newly created client
+      onClientSelect(clientData);
+      
+      // Mark that client has been added and store client ID
+      updateClientAddedFromLead(true);
+      if (leadId) {
+        try {
+          localStorage.setItem(`lead-client-id-${leadId}`, createdClient.id);
+        } catch (error) {
+          console.error('Error storing client ID:', error);
+        }
+      }
+      
+      // Refresh the clients list
+      setClientsRefreshTrigger(prev => prev + 1);
+      
+    } catch (error) {
+      console.error('Error creating client:', error);
+      setCreateError('Erreur lors de la création du client');
+    } finally {
+      setIsCreatingClient(false);
+    }
+  };
+
   const handlePreferenceToggle = (preference) => {
     setNewClient(prev => ({
       ...prev,
@@ -772,7 +849,9 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
     if (leadId) {
       // When lead_id is present, we need a successfully created client
       // Check for either selectedClient.id or selectedClient.value (the client ID)
-      const isClientValid = clientAddedFromLead && selectedClient && (selectedClient.id || selectedClient.value);
+      // If client has an ID/value, it's valid (either just added or restored from DB)
+      const hasClientId = selectedClient && (selectedClient.id || selectedClient.value);
+      const isClientValid = hasClientId || (clientAddedFromLead && selectedClient);
       
       // Check if project information is complete
       const isProjectValid = 
@@ -1283,11 +1362,31 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-50 text-green-700 border border-green-200 inline-flex items-center gap-1">
-                <Icon name="CheckCircle" size={12} className="text-green-600" /> {t('quoteCreation.clientSelection.selected', 'Sélectionné')}
-              </span>
+              {leadId && !clientAddedFromLead ? (
+                <Button
+                  onClick={handleQuickAddClient}
+                  disabled={isCreatingClient || !selectedClient?.name || !selectedClient?.email}
+                  iconName={isCreatingClient ? "Loader2" : "Plus"}
+                  iconPosition="left"
+                  size="sm"
+                >
+                  {isCreatingClient ? t('quoteCreation.clientSelection.creating', 'Création...') : t('quoteCreation.clientSelection.addClient', 'Ajouter le client')}
+                </Button>
+              ) : (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-50 text-green-700 border border-green-200 inline-flex items-center gap-1">
+                  <Icon name="CheckCircle" size={12} className="text-green-600" /> {t('quoteCreation.clientSelection.selected', 'Sélectionné')}
+                </span>
+              )}
             </div>
           </div>
+          {createError && leadId && !clientAddedFromLead && (
+            <div className="mt-2 p-2 bg-destructive/10 border border-destructive/20 rounded-md">
+              <div className="flex items-center space-x-2">
+                <Icon name="AlertCircle" size={14} className="text-destructive" />
+                <span className="text-xs text-destructive">{createError}</span>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
