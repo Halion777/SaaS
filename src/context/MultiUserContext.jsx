@@ -232,28 +232,6 @@ export const MultiUserProvider = ({ children }) => {
     }
   };
 
-  const inviteUser = async (email, role, permissions) => {
-    if (!user) throw new Error('User not authenticated');
-    
-    try {
-      return await multiUserService.inviteUser(user.id, email, role, permissions);
-    } catch (error) {
-      console.error('Error inviting user:', error);
-      throw error;
-    }
-  };
-
-  const getPendingInvitations = async () => {
-    if (!user) throw new Error('User not authenticated');
-    
-    try {
-      return await multiUserService.getPendingInvitations(user.id);
-    } catch (error) {
-      console.error('Error getting pending invitations:', error);
-      throw error;
-    }
-  };
-
   const getCompanyProfiles = async () => {
     if (!user) return [];
     
@@ -264,17 +242,6 @@ export const MultiUserProvider = ({ children }) => {
     } catch (error) {
       console.error('Error getting company profiles:', error);
       return [];
-    }
-  };
-
-  const cancelInvitation = async (invitationId) => {
-    if (!user) throw new Error('User not authenticated');
-    
-    try {
-      return await multiUserService.cancelInvitation(user.id, invitationId);
-    } catch (error) {
-      console.error('Error cancelling invitation:', error);
-      throw error;
     }
   };
 
@@ -401,10 +368,7 @@ export const MultiUserProvider = ({ children }) => {
     uploadAvatar,
     updateProfileAvatar,
     uploadAndUpdateAvatar,
-    inviteUser,
-    getPendingInvitations,
     getCompanyProfiles,
-    cancelInvitation,
     
     // Permission checks
     hasPermission,
@@ -439,10 +403,7 @@ export const MultiUserProvider = ({ children }) => {
     uploadAvatar,
     updateProfileAvatar,
     uploadAndUpdateAvatar,
-    inviteUser,
-    getPendingInvitations,
     getCompanyProfiles,
-    cancelInvitation,
     hasPermission,
     getUserRole,
     isAdmin,

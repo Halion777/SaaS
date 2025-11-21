@@ -337,7 +337,7 @@ Feature Access
 
 ### `users` Table
 ```sql
-- id (UUID) - Primary key, references auth.users(id)
+- id (UUID) - Primary key, references auth.users(id), ON DELETE CASCADE
 - email (TEXT) - Unique email address
 - full_name (TEXT) - User's full name
 - company_name (TEXT) - Company name (optional)
@@ -349,56 +349,63 @@ Feature Access
 - subscription_status (TEXT) - 'trial', 'active', 'past_due', 'cancelled', default 'trial'
 - stripe_customer_id (TEXT) - Stripe customer ID
 - stripe_subscription_id (TEXT) - Stripe subscription ID
-- trial_start_date (TIMESTAMP) - Trial start date
-- trial_end_date (TIMESTAMP) - Trial end date
+- trial_start_date (TIMESTAMP WITH TIME ZONE) - Trial start date
+- trial_end_date (TIMESTAMP WITH TIME ZONE) - Trial end date
 - avatar_url (TEXT) - User avatar URL
 - vat_number (TEXT) - VAT number
-- role (TEXT) - 'admin' or 'superadmin' (user account role, not profile role)
-- last_login_at (TIMESTAMP) - Last login timestamp
-- registration_completed (BOOLEAN) - Registration completion status
-- email_verified (BOOLEAN) - Email verification status
-- email_verified_at (TIMESTAMP) - Email verification timestamp
-- analytics_objectives (JSONB) - Analytics objectives and targets
-- created_at (TIMESTAMP) - Creation timestamp
-- updated_at (TIMESTAMP) - Last update timestamp
+- role (TEXT) - 'admin' or 'superadmin' (user account role, not profile role), default 'admin'
+- last_login_at (TIMESTAMP WITH TIME ZONE) - Last login timestamp
+- registration_completed (BOOLEAN) - Registration completion status, default false
+- email_verified (BOOLEAN) - Email verification status, default false
+- email_verified_at (TIMESTAMP WITH TIME ZONE) - Email verification timestamp
+- analytics_objectives (JSONB) - Analytics objectives and targets, default '{"clientTarget": null, "revenueTarget": null, "projectsTarget": null}'
+- created_at (TIMESTAMP WITH TIME ZONE) - Creation timestamp, default now()
+- updated_at (TIMESTAMP WITH TIME ZONE) - Last update timestamp, default now()
+
+Constraints:
+- users_pkey (PRIMARY KEY on id)
+- users_email_key (UNIQUE on email)
+- users_id_fkey (FOREIGN KEY to auth.users(id) ON DELETE CASCADE)
+- users_role_check (CHECK: role = 'admin' OR role = 'superadmin')
+
+Indexes:
+- idx_users_analytics_objectives (GIN index on analytics_objectives)
+- idx_users_email (btree on email)
+- idx_users_subscription_status (btree on subscription_status)
+- idx_users_trial_end_date (btree on trial_end_date)
+- idx_users_stripe_customer_id (btree on stripe_customer_id)
+- idx_users_stripe_subscription_id (btree on stripe_subscription_id)
+- idx_users_vat_number (btree on vat_number)
+- idx_users_email_verified (btree on email_verified)
 ```
 
 ### `user_profiles` Table
 ```sql
-- id (UUID) - Primary key
-- user_id (UUID) - Foreign key to users(id), ON DELETE CASCADE
+- id (UUID) - Primary key, default gen_random_uuid()
+- user_id (UUID) - Foreign key to users(id), ON DELETE CASCADE, nullable
 - name (TEXT) - Profile name (required)
-- email (TEXT) - Profile email (optional)
+- email (TEXT) - Profile email (optional, nullable)
 - role (TEXT) - Profile role: 'admin', 'manager', 'accountant', 'sales', 'viewer'
-- avatar (TEXT) - Avatar URL (stored in Supabase storage)
+- avatar (TEXT) - Avatar URL (stored in Supabase storage), nullable
 - permissions (JSONB) - Permission object, default '{}'
   Format: { "module_name": "permission_level" }
   Example: { "dashboard": "full_access", "analytics": "view_only" }
 - pin (TEXT) - PIN for profile switching (optional, nullable)
 - is_active (BOOLEAN) - Active profile flag, default false
-- last_active (TIMESTAMP) - Last active timestamp
-- created_at (TIMESTAMP) - Creation timestamp
-- updated_at (TIMESTAMP) - Last update timestamp
+- last_active (TIMESTAMP WITH TIME ZONE) - Last active timestamp, nullable
+- created_at (TIMESTAMP WITH TIME ZONE) - Creation timestamp, default now()
+- updated_at (TIMESTAMP WITH TIME ZONE) - Last update timestamp, default now()
+
+Constraints:
+- user_profiles_pkey (PRIMARY KEY on id)
+- user_profiles_user_id_fkey (FOREIGN KEY to users(id) ON DELETE CASCADE)
 
 Indexes:
-- idx_user_profiles_user_id (user_id)
-- idx_user_profiles_is_active (is_active)
-- idx_user_profiles_role (role)
-- idx_user_profiles_pin (pin)
-- idx_user_profiles_permissions_gin (permissions) - GIN index for JSONB queries
-```
-
-### `user_invitations` Table
-```sql
-- id (UUID) - Primary key
-- company_id (UUID) - Foreign key to users(id)
-- email (TEXT) - Invited user's email
-- role (TEXT) - Assigned role
-- permissions (JSONB) - Assigned permissions
-- token (TEXT) - Unique invitation token
-- status (TEXT) - 'pending', 'accepted', 'cancelled'
-- expires_at (TIMESTAMP) - Expiration date (7 days from creation)
-- created_at (TIMESTAMP) - Creation timestamp
+- idx_user_profiles_user_id (btree on user_id)
+- idx_user_profiles_is_active (btree on is_active)
+- idx_user_profiles_role (btree on role)
+- idx_user_profiles_pin (btree on pin)
+- idx_user_profiles_permissions_gin (GIN index on permissions for JSONB queries)
 ```
 
 ---
@@ -428,11 +435,7 @@ Indexes:
 - `uploadAvatar(userId, file)` - Upload avatar to Supabase storage
 - `deleteAvatar(avatarUrl)` - Delete avatar from storage
 - `updateProfileAvatar(userId, profileId, avatarUrl)` - Update profile avatar (with cleanup)
-- `inviteUser(userId, email, role, permissions)` - Create user invitation
-- `getPendingInvitations(userId)` - Get pending invitations
-- `cancelInvitation(userId, invitationId)` - Cancel invitation
 - `createInitialProfile(userId, userData)` - Create initial admin profile (uses array format for permissions)
-- `acceptInvitation(token)` - Accept invitation and create profile
 - `cleanupUserAvatars(userId)` - Clean up all avatars for user
 
 **Permission Handling:**
@@ -473,10 +476,7 @@ Indexes:
 - `uploadAvatar(file)` - Upload avatar
 - `updateProfileAvatar(profileId, avatarUrl)` - Update profile avatar
 - `uploadAndUpdateAvatar(profileId, file)` - Upload and update in one call
-- `inviteUser(email, role, permissions)` - Invite user
-- `getPendingInvitations()` - Get pending invitations
 - `getCompanyProfiles()` - Refresh profiles list
-- `cancelInvitation(invitationId)` - Cancel invitation
 
 **Permission Checks:**
 - `hasPermission(module, requiredPermission)` - Check module permission
@@ -614,12 +614,6 @@ Indexes:
    - Old avatar automatically deleted when new one is uploaded
    - Cleanup on profile deletion
    - Initials generated if no avatar
-
-8. **User Invitations:**
-   - Pro plan feature for inviting team members
-   - Invitation token expires after 7 days
-   - Status: `pending`, `accepted`, `cancelled`
-   - Accepting invitation creates new profile with specified role/permissions
 
 ---
 

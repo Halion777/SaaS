@@ -717,6 +717,7 @@ const QuotePreview = ({
               <div className={`${previewMode === 'mobile' ? 'text-left' : 'text-right'}`}>
                 <h3 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.companyHeading', 'Entreprise')}</h3>
                 <div className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
+                  {companyInfo.name && <p className="font-semibold mb-1">{companyInfo.name}</p>}
                   <p>{companyInfo.address}</p>
                   <p>{companyInfo.postalCode} {companyInfo.city}</p>
                   <p>{companyInfo.email}</p>

@@ -524,73 +524,6 @@ class MultiUserService {
     }
   }
 
-  // Invite a new user (send invitation email)
-  async inviteUser(userId, email, role, permissions) {
-    try {
-      const token = crypto.randomUUID();
-      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-
-      const { data, error } = await supabase
-        .from('user_invitations')
-        .insert({
-          company_id: userId,
-        email,
-        role,
-        permissions,
-          token,
-          expires_at: expiresAt.toISOString()
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // TODO: Send invitation email here
-      console.log('Invitation created:', data);
-      
-      return data;
-    } catch (error) {
-      console.error('Error inviting user:', error);
-      throw error;
-    }
-  }
-
-  // Get pending invitations
-  async getPendingInvitations(userId) {
-    try {
-      const { data, error } = await supabase
-        .from('user_invitations')
-        .select('*')
-        .eq('company_id', userId)
-        .eq('status', 'pending')
-        .gt('expires_at', new Date().toISOString())
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('Error getting pending invitations:', error);
-      return [];
-    }
-  }
-
-  // Cancel invitation
-  async cancelInvitation(userId, invitationId) {
-    try {
-      const { error } = await supabase
-        .from('user_invitations')
-        .update({ status: 'cancelled' })
-        .eq('id', invitationId)
-        .eq('company_id', userId);
-
-      if (error) throw error;
-      return { success: true };
-    } catch (error) {
-      console.error('Error cancelling invitation:', error);
-      throw error;
-    }
-  }
-
   // Create initial admin profile for new user
   async createInitialProfile(userId, userData) {
     try {
@@ -664,49 +597,6 @@ class MultiUserService {
       return data;
     } catch (error) {
       console.error('Error in createInitialProfile:', error);
-      throw error;
-    }
-  }
-
-  // Accept invitation (for invited users)
-  async acceptInvitation(token) {
-    try {
-      const { data: invitation, error: inviteError } = await supabase
-        .from('user_invitations')
-        .select('*')
-        .eq('token', token)
-        .eq('status', 'pending')
-        .gt('expires_at', new Date().toISOString())
-        .single();
-
-      if (inviteError || !invitation) {
-        throw new Error('Invalid or expired invitation');
-      }
-
-      // Create profile for the invited user
-      const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .insert({
-          user_id: invitation.company_id,
-          name: invitation.email.split('@')[0], // Use email prefix as name
-          email: invitation.email,
-          role: invitation.role,
-          permissions: invitation.permissions,
-          is_active: false
-        })
-        .select()
-        .single();
-
-      if (profileError) throw profileError;
-
-      // Update invitation status
-      await supabase
-        .from('user_invitations')
-        .update({ status: 'accepted' })
-        .eq('id', invitation.id);
-
-      return profile;
-    } catch (error) {
       throw error;
     }
   }

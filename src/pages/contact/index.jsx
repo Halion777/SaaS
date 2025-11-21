@@ -97,12 +97,8 @@ const ContactPage = () => {
     try {
       // Get current language from i18n (default to 'fr')
       const currentLanguage = i18n.language || localStorage.getItem('language') || 'fr';
-      console.log('Submitting contact form with language:', currentLanguage);
-      console.log('Form data:', formData);
       
       const result = await contactService.submitContactForm(formData, currentLanguage);
-      
-      console.log('Contact form submission result:', result);
       
       if (result.success) {
         setIsSubmitted(true);
