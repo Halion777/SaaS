@@ -290,28 +290,175 @@ export class ExpenseInvoicesService {
   }
 
   /**
+   * Generate CSV content from expense invoices
+   * @param {Array} invoices - Array of expense invoice objects
+   * @returns {string} CSV content
+   */
+  generateExpenseInvoiceCSV(invoices) {
+    const headers = [
+      'Invoice Number',
+      'Supplier',
+      'Email',
+      'VAT',
+      'Total Amount',
+      'Net Amount',
+      'VAT Amount',
+      'Status',
+      'Category',
+      'Source',
+      'Issue Date',
+      'Due Date',
+      'Payment Method',
+      'Peppol ID',
+      'Document Type'
+    ];
+
+    const rows = invoices.map(invoice => [
+      invoice.invoice_number || '',
+      invoice.supplier_name || '',
+      invoice.supplier_email || '',
+      invoice.supplier_vat_number || '',
+      invoice.amount || 0,
+      invoice.net_amount || 0,
+      invoice.vat_amount || 0,
+      invoice.status || '',
+      invoice.category || '',
+      invoice.source || '',
+      invoice.issue_date || '',
+      invoice.due_date || '',
+      invoice.payment_method || '',
+      invoice.sender_peppol_id || '',
+      invoice.peppol_metadata?.documentTypeLabel || ''
+    ]);
+
+    const csvContent = [
+      headers.map(h => `"${h}"`).join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    return csvContent;
+  }
+
+  /**
    * Send invoice to accountant
    */
-  async sendToAccountant(invoiceIds, accountantEmail = null) {
+  async sendToAccountant(invoiceIds, accountantEmail, userId = null) {
     try {
-      // This would integrate with your email service
-      const defaultAccountantEmail = accountantEmail || 'comptable@Haliqo.fr';
+      if (!accountantEmail || !accountantEmail.trim()) {
+        throw new Error('Accountant email is required');
+      }
+
+      // Fetch full invoice data
+      const { data: invoicesData, error: fetchError } = await supabase
+        .from(this.tableName)
+        .select('*')
+        .in('id', invoiceIds);
+
+      if (fetchError) throw fetchError;
+      if (!invoicesData || invoicesData.length === 0) {
+        throw new Error('No invoices found');
+      }
+
+      // Generate CSV content
+      const csvContent = this.generateExpenseInvoiceCSV(invoicesData);
+      const csvBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       
-      // For now, just mark as sent
-      const { error } = await supabase
+      // Convert to base64 for email attachment
+      const csvBase64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result.split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(csvBlob);
+      });
+
+      // Get company profile for email template
+      const { EmailService } = await import('./emailService');
+      const companyProfile = await EmailService.getCurrentUserCompanyProfile(userId);
+      const companyName = companyProfile?.company_name || 'Notre entreprise';
+
+      // Get email template
+      const templateResult = await EmailService.getEmailTemplate('expense_invoice_to_accountant', userId, 'fr');
+      
+      let subject, html, text;
+      if (templateResult.success && templateResult.data) {
+        const template = templateResult.data;
+        const variables = {
+          company_name: companyName,
+          invoice_count: invoiceIds.length.toString(),
+          total_amount: invoicesData.reduce((sum, inv) => sum + parseFloat(inv.amount || 0), 0).toFixed(2) + '€',
+          date: new Date().toLocaleDateString('fr-FR')
+        };
+        
+        const renderResult = EmailService.renderEmailTemplate(template, variables);
+        if (renderResult.success) {
+          subject = renderResult.data.subject;
+          html = renderResult.data.html;
+          text = renderResult.data.text;
+        }
+      }
+
+      // Fallback if no template found
+      if (!subject) {
+        subject = `Factures de dépenses à traiter - ${invoiceIds.length} facture(s)`;
+        html = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2>Bonjour,</h2>
+            <p>Veuillez trouver ci-joint ${invoiceIds.length} facture(s) de dépenses à traiter.</p>
+            <p>Montant total: ${invoicesData.reduce((sum, inv) => sum + parseFloat(inv.amount || 0), 0).toFixed(2)}€</p>
+            <p>Cordialement,<br>${companyName}</p>
+          </div>
+        `;
+        text = `Bonjour,\n\nVeuillez trouver ci-joint ${invoiceIds.length} facture(s) de dépenses à traiter.\n\nMontant total: ${invoicesData.reduce((sum, inv) => sum + parseFloat(inv.amount || 0), 0).toFixed(2)}€\n\nCordialement,\n${companyName}`;
+      }
+
+      // Send email via edge function with attachment
+      const emailData = {
+        to_email: accountantEmail.trim(),
+        subject,
+        html,
+        text,
+        attachments: [
+          {
+            filename: `factures-depenses-${new Date().toISOString().split('T')[0]}.csv`,
+            content: csvBase64,
+            type: 'text/csv',
+            disposition: 'attachment'
+          }
+        ],
+        template_type: 'expense_invoice_to_accountant',
+        meta: {
+          invoice_count: invoiceIds.length,
+          invoice_ids: invoiceIds,
+          sent_at: new Date().toISOString()
+        }
+      };
+
+      const emailResult = await EmailService.sendEmailViaEdgeFunction('expense_invoice_to_accountant', emailData);
+
+      if (!emailResult.success) {
+        throw new Error(emailResult.error || 'Failed to send email');
+      }
+
+      // Update invoices as sent
+      const { error: updateError } = await supabase
         .from(this.tableName)
         .update({ 
           updated_at: new Date().toISOString() 
         })
         .in('id', invoiceIds);
 
-      if (error) throw error;
+      if (updateError) {
+        console.warn('Failed to update invoices:', updateError);
+      }
 
       return {
         success: true,
-        message: `${invoiceIds.length} facture(s) envoyée(s) à votre comptable`,
+        message: `${invoiceIds.length} facture(s) envoyée(s) à ${accountantEmail}`,
         data: {
-          sentTo: defaultAccountantEmail,
+          sentTo: accountantEmail,
           sentAt: new Date().toISOString(),
           invoiceCount: invoiceIds.length
         }
@@ -320,7 +467,7 @@ export class ExpenseInvoicesService {
       console.error('Error sending to accountant:', error);
       return {
         success: false,
-        error: 'Erreur lors de l\'envoi au comptable'
+        error: error.message || 'Erreur lors de l\'envoi au comptable'
       };
     }
   }

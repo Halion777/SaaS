@@ -14,6 +14,7 @@ import InvoiceService from '../../services/invoiceService';
 import { useAuth } from '../../context/AuthContext';
 import { loadCompanyInfo } from '../../services/companyInfoService';
 import { generateInvoicePDF } from '../../services/pdfService';
+import SendToAccountantModal from './components/SendToAccountantModal';
 
 const InvoicesManagement = () => {
   const { t, i18n } = useTranslation();
@@ -37,6 +38,7 @@ const InvoicesManagement = () => {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isSendInvoiceModalOpen, setIsSendInvoiceModalOpen] = useState(false);
+  const [isSendToAccountantModalOpen, setIsSendToAccountantModalOpen] = useState(false);
 
   // Handle sidebar offset for responsive layout
   useEffect(() => {
@@ -340,6 +342,10 @@ const InvoicesManagement = () => {
         setSelectedInvoice(invoice);
         setIsSendInvoiceModalOpen(true);
         break;
+      case 'send_to_accountant':
+        setSelectedInvoice(invoice);
+        setIsSendToAccountantModalOpen(true);
+        break;
       case 'export':
         await handleExportInvoicePDF(invoice);
         break;
@@ -354,6 +360,37 @@ const InvoicesManagement = () => {
       default:
         console.warn('Unknown action:', action, 'Normalized:', normalizedAction);
     }
+  };
+
+  const handleSendToAccountant = async (email) => {
+    const invoiceIds = selectedInvoices.length > 0 
+      ? selectedInvoices 
+      : selectedInvoice 
+        ? [selectedInvoice.id] 
+        : [];
+    
+    if (invoiceIds.length === 0) {
+      alert(t('invoicesManagement.errors.selectAtLeastOneInvoice'));
+      return;
+    }
+
+    const sendResult = await InvoiceService.sendToAccountant(invoiceIds, email, user?.id);
+    if (sendResult.success) {
+      // Don't clear selections or refresh immediately - let modal show success state first
+      // The modal will handle closing and then we'll refresh
+      // Don't close modal - let it show success state
+    } else {
+      // Throw error so modal can display it
+      throw new Error(sendResult.error || t('invoicesManagement.errors.error', 'Error sending email'));
+    }
+  };
+
+  const handleModalClose = () => {
+    // Clear selections and refresh when modal is closed after success
+    setSelectedInvoices([]);
+    setSelectedInvoice(null);
+    setIsSendToAccountantModalOpen(false);
+    fetchInvoices();
   };
 
   const handleStatusUpdate = async (invoiceId, newStatus) => {
@@ -499,15 +536,7 @@ const InvoicesManagement = () => {
     try {
     switch (action) {
         case 'send_to_accountant':
-          const sendResult = await InvoiceService.sendToAccountant(selectedInvoices);
-          if (sendResult.success) {
-            alert(sendResult.message);
-            setSelectedInvoices([]);
-            // Refresh data
-            await fetchInvoices();
-          } else {
-            alert(t('invoicesManagement.errors.error', 'Error: {{error}}', { error: sendResult.error }));
-          }
+          setIsSendToAccountantModalOpen(true);
           break;
           
       case 'export':
@@ -691,6 +720,19 @@ const InvoicesManagement = () => {
             onSuccess={() => {
               fetchInvoices(); // Refresh invoices to show updated status
             }}
+          />
+
+          {/* Send to Accountant Modal */}
+          <SendToAccountantModal
+            invoices={selectedInvoices.length > 0 
+              ? invoices.filter(inv => selectedInvoices.includes(inv.id))
+              : selectedInvoice 
+                ? [selectedInvoice] 
+                : []}
+            isOpen={isSendToAccountantModalOpen}
+            onClose={handleModalClose}
+            onSuccess={handleSendToAccountant}
+            isExpenseInvoice={false}
           />
 
         </div>

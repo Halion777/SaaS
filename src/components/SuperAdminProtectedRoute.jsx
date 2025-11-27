@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../services/supabaseClient';
+import TableLoader from './ui/TableLoader';
 
 /**
  * SuperAdmin protected route component that redirects to login if user is not authenticated
@@ -13,6 +15,7 @@ import { supabase } from '../services/supabaseClient';
 const SuperAdminProtectedRoute = ({ children }) => {
   const { isAuthenticated, user, loading } = useAuth();
   const location = useLocation();
+  const { t } = useTranslation();
   const [userRole, setUserRole] = useState(null);
   const [roleLoading, setRoleLoading] = useState(true);
   const [roleChecked, setRoleChecked] = useState(false);
@@ -75,10 +78,10 @@ const SuperAdminProtectedRoute = ({ children }) => {
   if (loading || roleLoading || !roleChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-muted-foreground">Verifying access...</p>
-        </div>
+        <TableLoader 
+          message={t('ui.verifyingAccess', 'Verifying access...')}
+          className="h-screen"
+        />
       </div>
     );
   }

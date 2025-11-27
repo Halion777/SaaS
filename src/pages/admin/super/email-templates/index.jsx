@@ -211,6 +211,8 @@ const EmailTemplatesManagement = () => {
       'custom_quote_sent': 'Custom Quote Sent',
       'invoice_overdue_reminder': 'Invoice Overdue Reminder',
       'invoice_payment_reminder': 'Invoice Payment Reminder',
+      'invoice_to_accountant': 'Invoice to Accountant',
+      'expense_invoice_to_accountant': 'Expense Invoice to Accountant',
       'overdue': 'Overdue'
     };
     return typeNames[type] || type;
@@ -239,6 +241,8 @@ const EmailTemplatesManagement = () => {
       'custom_quote_sent': 'bg-sky-100 text-sky-800',
       'invoice_overdue_reminder': 'bg-rose-100 text-rose-800',
       'invoice_payment_reminder': 'bg-yellow-100 text-yellow-800',
+      'invoice_to_accountant': 'bg-indigo-100 text-indigo-800',
+      'expense_invoice_to_accountant': 'bg-amber-100 text-amber-800',
       'overdue': 'bg-red-200 text-red-900'
     };
     return colors[type] || 'bg-gray-100 text-gray-800';
@@ -578,6 +582,9 @@ const EmailTemplatesManagement = () => {
                         { value: 'lead_assigned', label: 'Lead Assigned' },
                         { value: 'custom_quote_sent', label: 'Custom Quote Sent' },
                         { value: 'invoice_overdue_reminder', label: 'Invoice Overdue Reminder' },
+                        { value: 'invoice_payment_reminder', label: 'Invoice Payment Reminder' },
+                        { value: 'invoice_to_accountant', label: 'Invoice to Accountant' },
+                        { value: 'expense_invoice_to_accountant', label: 'Expense Invoice to Accountant' },
                         { value: 'overdue', label: 'Overdue' }
                       ]}
                       className="w-full"
@@ -932,7 +939,9 @@ const EmailTemplatesManagement = () => {
                         { value: 'lead_assigned', label: 'Lead Assigned' },
                         { value: 'custom_quote_sent', label: 'Custom Quote Sent' },
                         { value: 'invoice_overdue_reminder', label: 'Invoice Overdue Reminder' },
-                        
+                        { value: 'invoice_payment_reminder', label: 'Invoice Payment Reminder' },
+                        { value: 'invoice_to_accountant', label: 'Invoice to Accountant' },
+                        { value: 'expense_invoice_to_accountant', label: 'Expense Invoice to Accountant' }
                       ]}
                     />
                   </div>

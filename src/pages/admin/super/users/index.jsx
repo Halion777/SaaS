@@ -127,37 +127,40 @@ const SuperAdminUsers = () => {
       setLoading(true);
       
       // Load users with their subscription and activity data
+      // Filter out superadmin users at the database level
       const { data: usersData, error } = await supabase
         .from('users')
         .select(`
           *,
           user_profiles!user_profiles_user_id_fkey(*)
         `)
+        .neq('role', 'superadmin')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       // Now using the last_login_at column from users table for accurate login tracking
-      const enrichedUsers = usersData.map(user => {
-        // Construct full_name from first_name and last_name
-        const fullName = (user.first_name && user.last_name 
-          ? `${user.first_name} ${user.last_name}`.trim()
-          : user.first_name || user.last_name || '');
-        
-        return {
-          ...user,
-          full_name: fullName, // Add constructed full_name for backward compatibility
-          // Use the last_login_at column from users table
-          last_sign_in_at: user.last_login_at,
-          // Check if user has ever logged in
-          has_logged_in: !!user.last_login_at
-        };
-      });
+      const enrichedUsers = usersData
+        .map(user => {
+          // Construct full_name from first_name and last_name
+          const fullName = (user.first_name && user.last_name 
+            ? `${user.first_name} ${user.last_name}`.trim()
+            : user.first_name || user.last_name || '');
+          
+          return {
+            ...user,
+            full_name: fullName, // Add constructed full_name for backward compatibility
+            // Use the last_login_at column from users table
+            last_sign_in_at: user.last_login_at,
+            // Check if user has ever logged in
+            has_logged_in: !!user.last_login_at
+          };
+        });
 
       setUsers(enrichedUsers);
       setFilteredUsers(enrichedUsers);
       
-      // Calculate stats
+      // Calculate stats (superadmin users already filtered out)
       const stats = {
         total: enrichedUsers.length,
         newThisMonth: enrichedUsers.filter(u => {
@@ -167,7 +170,7 @@ const SuperAdminUsers = () => {
           return createdDate >= thisMonth;
         }).length,
         withLastLogin: enrichedUsers.filter(u => u.has_logged_in).length,
-        superAdmins: enrichedUsers.filter(u => u.role === 'superadmin').length
+        superAdmins: 0 // Always 0 since superadmin users are filtered out
       };
       setUserStats(stats);
     } catch (error) {
@@ -233,6 +236,12 @@ const SuperAdminUsers = () => {
     const user = users.find(u => u.id === userId);
     if (!user) return;
 
+    // Prevent edit and delete for superadmin users
+    if (user.role === 'superadmin' && (action === 'edit' || action === 'delete')) {
+      alert('Super admin users cannot be edited or deleted.');
+      return;
+    }
+
     try {
       switch (action) {
         case 'view':
@@ -265,15 +274,30 @@ const SuperAdminUsers = () => {
   const handleBulkAction = async (action) => {
     if (selectedUsers.length === 0) return;
 
+    // Filter out superadmin users from bulk actions
+    const usersToProcess = users.filter(u => selectedUsers.includes(u.id) && u.role !== 'superadmin');
+    const superAdminCount = selectedUsers.length - usersToProcess.length;
+    
+    if (superAdminCount > 0) {
+      alert(`Cannot perform bulk action on ${superAdminCount} super admin user(s). They have been excluded.`);
+    }
+
+    if (usersToProcess.length === 0) {
+      setSelectedUsers([]);
+      return;
+    }
+
+    const userIdsToProcess = usersToProcess.map(u => u.id);
+
     try {
       switch (action) {
         // Removed bulk activate/suspend actions since we don't use active/inactive status
         case 'delete':
-          if (confirm(`Are you sure you want to delete ${selectedUsers.length} users? This action cannot be undone.`)) {
+          if (confirm(`Are you sure you want to delete ${usersToProcess.length} user(s)? This action cannot be undone.`)) {
             await supabase
               .from('users')
               .delete()
-              .in('id', selectedUsers);
+              .in('id', userIdsToProcess);
           }
           break;
       default:
@@ -387,7 +411,7 @@ const SuperAdminUsers = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
             <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
               <div className="flex items-center">
                 <div className="p-2 bg-blue-100 rounded-lg">
@@ -408,18 +432,6 @@ const SuperAdminUsers = () => {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-muted-foreground">Users with Login</p>
                   <p className="text-2xl font-bold text-foreground">{userStats.withLastLogin}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <Icon name="Shield" size={20} className="text-red-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-muted-foreground">Super Admins</p>
-                  <p className="text-2xl font-bold text-foreground">{userStats.superAdmins}</p>
                 </div>
               </div>
             </div>
@@ -540,10 +552,10 @@ const SuperAdminUsers = () => {
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       <input
                         type="checkbox"
-                        checked={selectedUsers.length === paginatedUsers.length && paginatedUsers.length > 0}
+                        checked={selectedUsers.length === paginatedUsers.filter(u => u.role !== 'superadmin').length && paginatedUsers.filter(u => u.role !== 'superadmin').length > 0}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setSelectedUsers(paginatedUsers.map(u => u.id));
+                            setSelectedUsers(paginatedUsers.filter(u => u.role !== 'superadmin').map(u => u.id));
                           } else {
                             setSelectedUsers([]);
                           }
@@ -575,6 +587,7 @@ const SuperAdminUsers = () => {
                         <input
                           type="checkbox"
                           checked={selectedUsers.includes(user.id)}
+                          disabled={user.role === 'superadmin'}
                           onChange={(e) => {
                             if (e.target.checked) {
                               setSelectedUsers([...selectedUsers, user.id]);
@@ -582,7 +595,7 @@ const SuperAdminUsers = () => {
                               setSelectedUsers(selectedUsers.filter(id => id !== user.id));
                             }
                           }}
-                          className="rounded border-gray-300"
+                          className="rounded border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
@@ -623,24 +636,28 @@ const SuperAdminUsers = () => {
                           >
                             <Icon name="Eye" size={14} />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleUserAction(user.id, 'edit')}
-                            className="h-8 px-2"
-                            title="Edit User"
-                          >
-                            <Icon name="Edit" size={14} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleUserAction(user.id, 'delete')}
-                            className="h-8 px-2 text-red-600 hover:text-red-700"
-                            title="Delete User"
-                          >
-                            <Icon name="Trash2" size={14} />
-                          </Button>
+                          {user.role !== 'superadmin' && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleUserAction(user.id, 'edit')}
+                                className="h-8 px-2"
+                                title="Edit User"
+                              >
+                                <Icon name="Edit" size={14} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleUserAction(user.id, 'delete')}
+                                className="h-8 px-2 text-red-600 hover:text-red-700"
+                                title="Delete User"
+                              >
+                                <Icon name="Trash2" size={14} />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -672,6 +689,7 @@ const SuperAdminUsers = () => {
                       <input
                         type="checkbox"
                         checked={selectedUsers.includes(user.id)}
+                        disabled={user.role === 'superadmin'}
                         onChange={(e) => {
                           if (e.target.checked) {
                             setSelectedUsers([...selectedUsers, user.id]);
@@ -679,7 +697,7 @@ const SuperAdminUsers = () => {
                             setSelectedUsers(selectedUsers.filter(id => id !== user.id));
                           }
                         }}
-                        className="rounded border-gray-300"
+                        className="rounded border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={(e) => e.stopPropagation()}
                       />
                     </div>
@@ -711,24 +729,28 @@ const SuperAdminUsers = () => {
                       >
                         <Icon name="Eye" size={14} />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleUserAction(user.id, 'edit')}
-                        className="h-8 px-2"
-                        title="Edit User"
-                      >
-                        <Icon name="Edit" size={14} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleUserAction(user.id, 'delete')}
-                        className="h-8 px-2 text-red-600 hover:text-red-700"
-                        title="Delete User"
-                      >
-                        <Icon name="Trash2" size={14} />
-                      </Button>
+                      {user.role !== 'superadmin' && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleUserAction(user.id, 'edit')}
+                            className="h-8 px-2"
+                            title="Edit User"
+                          >
+                            <Icon name="Edit" size={14} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleUserAction(user.id, 'delete')}
+                            className="h-8 px-2 text-red-600 hover:text-red-700"
+                            title="Delete User"
+                          >
+                            <Icon name="Trash2" size={14} />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -936,14 +958,16 @@ const SuperAdminUsers = () => {
                 >
                   Close
                 </Button>
-                <Button
-                  onClick={() => {
-                    setShowUserModal(false);
-                    setShowEditModal(true);
-                  }}
-                >
-                  Edit User
-                </Button>
+                {selectedUser.role !== 'superadmin' && (
+                  <Button
+                    onClick={() => {
+                      setShowUserModal(false);
+                      setShowEditModal(true);
+                    }}
+                  >
+                    Edit User
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -1056,12 +1080,18 @@ const SuperAdminUsers = () => {
                         value={selectedUser.role || 'admin'}
                         onChange={(e) => setSelectedUser({...selectedUser, role: e.target.value})}
                         placeholder="Select role"
+                        disabled={selectedUser.role === 'superadmin'}
                         options={[
                           { value: 'admin', label: 'Admin' },
                           { value: 'superadmin', label: 'Super Admin' }
                         ]}
                         className="w-full"
                       />
+                      {selectedUser.role === 'superadmin' && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Super admin role cannot be changed
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1076,6 +1106,10 @@ const SuperAdminUsers = () => {
                 </Button>
                 <Button
                   onClick={async () => {
+                    if (selectedUser.role === 'superadmin') {
+                      alert('Super admin users cannot be edited.');
+                      return;
+                    }
                     try {
                       await supabase
                         .from('users')

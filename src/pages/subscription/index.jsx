@@ -8,6 +8,7 @@ import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import MainSidebar from '../../components/ui/MainSidebar';
 import TableLoader from '../../components/ui/TableLoader';
+import ProcessingOverlay from '../../components/ui/ProcessingOverlay';
 
 const SubscriptionManagement = () => {
   const { t } = useTranslation();
@@ -15,6 +16,7 @@ const SubscriptionManagement = () => {
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState(null);
   const [isChangingPlan, setIsChangingPlan] = useState(false);
+  const [isManagingBilling, setIsManagingBilling] = useState(false);
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [billingCycle, setBillingCycle] = useState('monthly');
 
@@ -90,6 +92,9 @@ const SubscriptionManagement = () => {
     try {
       setLoading(true);
       
+      // Small delay to show loader (similar to registration flow)
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
       // Load subscription data from subscriptions table
       const { data: subscriptionData, error } = await supabase
         .from('subscriptions')
@@ -152,13 +157,18 @@ const SubscriptionManagement = () => {
   };
 
   const handleManageBilling = async () => {
+    if (isManagingBilling) return;
+    
     try {
+      setIsManagingBilling(true);
+      
       // Always use Supabase user ID - the Edge Function will look up the Stripe customer ID
       const { data, error } = await createPortalSession(user.id);
       
       if (error) {
         console.error('Error creating portal session:', error);
         alert('Error opening billing portal. Please try again.');
+        setIsManagingBilling(false);
         return;
       }
 
@@ -169,6 +179,7 @@ const SubscriptionManagement = () => {
     } catch (error) {
       console.error('Error opening billing portal:', error);
       alert('Error opening billing portal. Please try again.');
+      setIsManagingBilling(false);
     }
   };
 
@@ -201,6 +212,14 @@ const SubscriptionManagement = () => {
         <title>Subscription Management | Haliqo</title>
         <meta name="description" content="Manage your Haliqo subscription plan" />
       </Helmet>
+
+      {/* Processing Overlay - Show when managing billing */}
+      <ProcessingOverlay 
+        isVisible={isManagingBilling}
+        message={t('subscription.managingBilling', 'Opening billing portal...')}
+        id="billing-portal-overlay"
+        preventNavigation={false}
+      />
 
       <MainSidebar />
       
@@ -276,9 +295,10 @@ const SubscriptionManagement = () => {
               <Button
                 onClick={handleManageBilling}
                 className="flex items-center gap-2"
+                disabled={isManagingBilling}
               >
                 <Icon name="CreditCard" size={16} />
-                Manage Billing
+                {isManagingBilling ? 'Opening...' : 'Manage Billing'}
               </Button>
               <Button
                 variant="outline"

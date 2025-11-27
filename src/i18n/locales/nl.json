@@ -50,7 +50,9 @@
       "deleting": "Verwijderen...",
       "exporting": "Exporteren...",
       "importing": "Importeren..."
-    }
+    },
+    "loading": "Laden...",
+    "verifyingAccess": "Toegang verifiëren..."
   },
   "home": {
     "hero": {
@@ -654,6 +656,8 @@
     },
     "form": {
       "title": "Beschrijf je project",
+      "projectInfo": "Projectinformatie",
+      "locationInfo": "Locatie-informatie",
       "category": "Werkcategorie",
       "selectCategory": "Selecteer een categorie",
       "categoryError": "Selecteer een werkcategorie",
@@ -1075,6 +1079,10 @@
       "description": "Er was een probleem bij het verwerken van je betaling. Neem contact op met ondersteuning.",
       "loginButton": "Ga naar Login"
     }
+  },
+  "subscription": {
+    "loadingPlans": "Abonnementsplannen laden...",
+    "managingBilling": "Factureringsportaal openen..."
   },
   "meta": {
     "title": "Haliqo - Je Slimme Digitale Partner",
@@ -1677,7 +1685,8 @@
     "toggleButton": "Schakelen",
     "more": "meer",
     "invoice": "factuur",
-    "invoice_plural": "facturen"
+    "invoice_plural": "facturen",
+    "done": "Klaar"
   },
   "quotesManagement": {
     "title": "Offertebeheer",
@@ -4287,6 +4296,19 @@
             "vatAmount": "BTW-bedrag"
           }
         }
+      },
+      "sendToAccountant": {
+        "title": "Verzenden naar accountant",
+        "invoiceCount": "{{count}} factuur geselecteerd",
+        "invoiceCount_plural": "{{count}} facturen geselecteerd",
+        "emailLabel": "Accountant E-mail",
+        "emailPlaceholder": "accountant@voorbeeld.com",
+        "emailHelp": "Een Excel-bestand met factuurdetails wordt bijgevoegd aan de e-mail",
+        "emailRequired": "E-mail is verplicht",
+        "invalidEmail": "Ongeldig e-mailadres",
+        "sendError": "Fout bij het verzenden van e-mail",
+        "sending": "Verzenden...",
+        "send": "Verzenden"
       }
     },
   "multiUserProfiles": {

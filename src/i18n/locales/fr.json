@@ -51,7 +51,9 @@
       "deleting": "Suppression en cours...",
       "exporting": "Export en cours...",
       "importing": "Import en cours..."
-    }
+    },
+    "loading": "Chargement...",
+    "verifyingAccess": "Vérification de l'accès..."
   },
   "home": {
     "hero": {
@@ -655,6 +657,8 @@
     },
     "form": {
       "title": "Décrivez votre projet",
+      "projectInfo": "Informations sur le projet",
+      "locationInfo": "Informations de localisation",
       "category": "Catégorie de travaux",
       "selectCategory": "Sélectionnez une ou plusieurs catégories",
       "categoryError": "Veuillez sélectionner au moins une catégorie de travaux",
@@ -1070,6 +1074,10 @@
       "description": "Il y a eu un problème lors du traitement de votre paiement. Veuillez contacter le support.",
       "loginButton": "Aller à la connexion"
     }
+  },
+  "subscription": {
+    "loadingPlans": "Chargement des plans d'abonnement...",
+    "managingBilling": "Ouverture du portail de facturation..."
   },
   "meta": {
     "title": "Haliqo - Votre partenaire digital intelligent",
@@ -2058,7 +2066,8 @@
     "toggleButton": "Activer/Désactiver",
     "more": "autres",
     "invoice": "facture",
-    "invoice_plural": "factures"
+    "invoice_plural": "factures",
+    "done": "Terminé"
   },
 
   "dashboard": {
@@ -3977,6 +3986,19 @@
           "updateError": "Facture envoyée mais erreur lors de la mise à jour",
           "sendError": "Erreur lors de l'envoi"
         }
+      },
+      "sendToAccountant": {
+        "title": "Envoyer au comptable",
+        "invoiceCount": "{{count}} facture sélectionnée",
+        "invoiceCount_plural": "{{count}} factures sélectionnées",
+        "emailLabel": "Email du comptable",
+        "emailPlaceholder": "comptable@exemple.com",
+        "emailHelp": "Un fichier Excel avec les détails des factures sera joint à l'email",
+        "emailRequired": "L'email est requis",
+        "invalidEmail": "Adresse email invalide",
+        "sendError": "Erreur lors de l'envoi de l'email",
+        "sending": "Envoi...",
+        "send": "Envoyer"
       }
     },
     "expenseInvoices": {
@@ -4301,6 +4323,19 @@
             "vatAmount": "Montant TVA"
           }
         }
+      },
+      "sendToAccountant": {
+        "title": "Envoyer au comptable",
+        "invoiceCount": "{{count}} facture sélectionnée",
+        "invoiceCount_plural": "{{count}} factures sélectionnées",
+        "emailLabel": "Email du comptable",
+        "emailPlaceholder": "comptable@exemple.com",
+        "emailHelp": "Un fichier Excel avec les détails des factures sera joint à l'email",
+        "emailRequired": "L'email est requis",
+        "invalidEmail": "Adresse email invalide",
+        "sendError": "Erreur lors de l'envoi de l'email",
+        "sending": "Envoi...",
+        "send": "Envoyer"
       }
     },
   "multiUserProfiles": {

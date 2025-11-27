@@ -109,11 +109,12 @@ const SuperAdminBilling = () => {
       console.log('Loading billing data...');
       
       // Load subscriptions from subscriptions table (created by Stripe webhook)
+      // Exclude subscriptions for superadmin users
       const { data: subscriptionsData, error: subscriptionsError } = await supabase
         .from('subscriptions')
         .select(`
           *,
-          users!subscriptions_user_id_fkey(first_name, last_name, email, company_name)
+          users!subscriptions_user_id_fkey(first_name, last_name, email, company_name, role)
         `)
         .order('created_at', { ascending: false });
 
@@ -123,11 +124,12 @@ const SuperAdminBilling = () => {
       }
 
       // Load paid invoices for payment data
+      // Exclude invoices for superadmin users
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('invoices')
         .select(`
           *,
-          users!invoices_user_id_fkey(first_name, last_name, email, company_name)
+          users!invoices_user_id_fkey(first_name, last_name, email, company_name, role)
         `)
         .eq('status', 'paid')
         .order('created_at', { ascending: false });
@@ -138,12 +140,13 @@ const SuperAdminBilling = () => {
       }
 
       // Load payment records for actual payment tracking
+      // Exclude payment records for superadmin users
       const { data: paymentRecordsData, error: paymentRecordsError } = await supabase
         .from('payment_records')
         .select(`
           *,
           subscriptions!payment_records_subscription_id_fkey(
-            users!subscriptions_user_id_fkey(first_name, last_name, email, company_name)
+            users!subscriptions_user_id_fkey(first_name, last_name, email, company_name, role)
           )
         `)
         .eq('status', 'succeeded')
@@ -154,29 +157,40 @@ const SuperAdminBilling = () => {
         // Don't throw error, just log it as payment records might not exist yet
       }
 
+      // Filter out superadmin users from subscriptions, payments, and payment records
+      const filteredSubscriptions = (subscriptionsData || []).filter(sub => 
+        sub.users && sub.users.role !== 'superadmin'
+      );
+      const filteredPaymentsData = (paymentsData || []).filter(payment => 
+        payment.users && payment.users.role !== 'superadmin'
+      );
+      const filteredPaymentRecords = (paymentRecordsData || []).filter(record => 
+        record.subscriptions?.users && record.subscriptions.users.role !== 'superadmin'
+      );
+
       console.log('Billing data loaded:', {
-        subscriptions: subscriptionsData?.length || 0,
-        payments: paymentsData?.length || 0,
-        paymentRecords: paymentRecordsData?.length || 0
+        subscriptions: filteredSubscriptions.length,
+        payments: filteredPaymentsData.length,
+        paymentRecords: filteredPaymentRecords.length
       });
 
-      setSubscriptions(subscriptionsData || []);
-      setPayments(paymentRecordsData || []);
-      setFilteredPayments(paymentRecordsData || []);
+      setSubscriptions(filteredSubscriptions);
+      setPayments(filteredPaymentRecords);
+      setFilteredPayments(filteredPaymentRecords);
 
-      // Calculate revenue based on actual payment records
-      const totalRevenue = paymentRecordsData?.reduce((sum, record) => sum + (record.amount || 0), 0) || 0;
+      // Calculate revenue based on actual payment records (excluding superadmin)
+      const totalRevenue = filteredPaymentRecords?.reduce((sum, record) => sum + (record.amount || 0), 0) || 0;
       
       // Calculate monthly revenue (current month)
       const currentMonth = new Date();
       currentMonth.setDate(1);
-      const monthlyRevenue = paymentRecordsData?.filter(record => 
+      const monthlyRevenue = filteredPaymentRecords?.filter(record => 
         new Date(record.paid_at) >= currentMonth
       ).reduce((sum, record) => sum + (record.amount || 0), 0) || 0;
 
-      // Calculate subscription counts
-      const activeSubscriptions = subscriptionsData?.filter(sub => sub.status === 'active').length || 0;
-      const cancelledSubscriptions = subscriptionsData?.filter(sub => 
+      // Calculate subscription counts (excluding superadmin)
+      const activeSubscriptions = filteredSubscriptions?.filter(sub => sub.status === 'active').length || 0;
+      const cancelledSubscriptions = filteredSubscriptions?.filter(sub => 
         sub.status === 'cancelled' || sub.status === 'inactive'
       ).length || 0;
 
@@ -187,8 +201,8 @@ const SuperAdminBilling = () => {
         cancelledSubscriptions
       });
 
-      // Process chart data
-      const chartData = processChartData(paymentRecordsData, subscriptionsData);
+      // Process chart data (excluding superadmin)
+      const chartData = processChartData(filteredPaymentRecords, filteredSubscriptions);
       setChartData(chartData);
 
     } catch (error) {

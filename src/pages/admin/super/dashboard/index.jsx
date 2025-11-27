@@ -340,16 +340,32 @@ const SuperAdminDashboard = () => {
         .gte('created_at', twelveMonthsAgo.toISOString());
 
       // Single optimized query for all user data (last 12 months)
+      // Exclude superadmin users
       const { data: userData } = await supabase
         .from('users')
         .select('created_at')
+        .neq('role', 'superadmin')
         .gte('created_at', twelveMonthsAgo.toISOString());
 
+      // Get superadmin user IDs to exclude from quotes
+      const { data: superadminUsers } = await supabase
+        .from('users')
+        .select('id')
+        .eq('role', 'superadmin');
+      
+      const superadminUserIds = superadminUsers?.map(u => u.id) || [];
+
       // Single optimized query for all quote data (last 30 days)
-      const { data: quoteData } = await supabase
+      // Exclude quotes from superadmin users
+      const { data: allQuoteData } = await supabase
         .from('quotes')
-        .select('created_at')
+        .select('created_at, user_id')
         .gte('created_at', thirtyDaysAgo.toISOString());
+      
+      // Filter out quotes from superadmin users
+      const quoteData = allQuoteData?.filter(quote => 
+        !superadminUserIds.includes(quote.user_id)
+      ) || [];
 
       // Process monthly revenue data
       const monthlyRevenue = [];
@@ -453,8 +469,8 @@ const SuperAdminDashboard = () => {
           paymentDataResult,
           invoiceDataResult
         ] = await Promise.all([
-          supabase.from('users').select('*', { count: 'exact', head: true }),
-          supabase.from('users').select('*', { count: 'exact', head: true }).gte('updated_at', thirtyDaysAgo.toISOString()),
+          supabase.from('users').select('*', { count: 'exact', head: true }).neq('role', 'superadmin'),
+          supabase.from('users').select('*', { count: 'exact', head: true }).neq('role', 'superadmin').gte('updated_at', thirtyDaysAgo.toISOString()),
           supabase.from('quotes').select('*', { count: 'exact', head: true }),
           supabase.from('invoices').select('*', { count: 'exact', head: true }),
           supabase.from('lead_requests').select('*', { count: 'exact', head: true }),
@@ -602,7 +618,7 @@ const SuperAdminDashboard = () => {
       // Execute queries in parallel
       const [quotesResult, usersResult] = await Promise.all([
         supabase.from('quotes').select('user_id'),
-        supabase.from('users').select('id, first_name, last_name, email, company_name')
+        supabase.from('users').select('id, first_name, last_name, email, company_name, role').neq('role', 'superadmin')
       ]);
 
       if (quotesResult.error) {
@@ -632,10 +648,12 @@ const SuperAdminDashboard = () => {
         userMap[user.id] = user;
       });
 
-      // Get top 5 users
+      // Get top 5 users (excluding superadmin)
       const topUsersList = Object.entries(userQuoteCounts)
         .map(([userId, count]) => {
           const userData = userMap[userId];
+          // Skip superadmin users
+          if (userData?.role === 'superadmin') return null;
           return {
             id: userId,
             name: (userData?.first_name && userData?.last_name ? `${userData.first_name} ${userData.last_name}` : userData?.first_name || userData?.last_name || 'Unknown'),
@@ -644,6 +662,7 @@ const SuperAdminDashboard = () => {
             quoteCount: count
           };
         })
+        .filter(user => user !== null)
         .sort((a, b) => b.quoteCount - a.quoteCount)
         .slice(0, 5);
       
@@ -878,6 +897,9 @@ const SuperAdminDashboard = () => {
                 type="line"
                 height={300}
                 color="#10b981"
+                dataKey="users"
+                valueFormatter={(value) => new Intl.NumberFormat('en-US').format(value)}
+                valueLabel="Users"
               />
             </div>
           </div>
@@ -893,6 +915,9 @@ const SuperAdminDashboard = () => {
               type="bar"
               height={250}
               color="#8b5cf6"
+              dataKey="quotes"
+              valueFormatter={(value) => new Intl.NumberFormat('en-US').format(value)}
+              valueLabel="Quotes"
             />
           </div>
 

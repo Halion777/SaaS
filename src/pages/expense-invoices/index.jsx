@@ -13,6 +13,7 @@ import ExpenseInvoicesService from '../../services/expenseInvoicesService';
 import { loadCompanyInfo } from '../../services/companyInfoService';
 import { generateExpenseInvoicePDF } from '../../services/pdfService';
 import { useAuth } from '../../context/AuthContext';
+import SendToAccountantModal from '../invoices-management/components/SendToAccountantModal';
 
 const ExpenseInvoicesManagement = () => {
   const { t, i18n } = useTranslation();
@@ -36,6 +37,7 @@ const ExpenseInvoicesManagement = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [invoiceToEdit, setInvoiceToEdit] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSendToAccountantModalOpen, setIsSendToAccountantModalOpen] = useState(false);
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
@@ -352,16 +354,7 @@ const ExpenseInvoicesManagement = () => {
       
       switch (action) {
         case 'send_to_accountant':
-          const sendResult = await expenseService.sendToAccountant(selectedExpenseInvoices);
-          if (sendResult.success) {
-            setSelectedExpenseInvoices([]);
-            // Refresh data
-            const refreshResult = await expenseService.getExpenseInvoices();
-            if (refreshResult.success) {
-              setExpenseInvoices(refreshResult.data);
-              setFilteredExpenseInvoices(refreshResult.data);
-            }
-          }
+          setIsSendToAccountantModalOpen(true);
           break;
           
         case 'export':
@@ -436,18 +429,8 @@ const ExpenseInvoicesManagement = () => {
           break;
           
         case 'send_to_accountant':
-          const sendResult = await expenseService.sendToAccountant([invoice.id]);
-          if (sendResult.success) {
-            alert(sendResult.message);
-            // Refresh data
-            const refreshResult = await expenseService.getExpenseInvoices();
-            if (refreshResult.success) {
-              setExpenseInvoices(refreshResult.data);
-              setFilteredExpenseInvoices(refreshResult.data);
-            }
-          } else {
-            alert(t('expenseInvoices.errors.error', 'Error: {{error}}', { error: sendResult.error }));
-          }
+          setSelectedInvoice(invoice);
+          setIsSendToAccountantModalOpen(true);
           break;
           
         case 'download':
@@ -764,6 +747,54 @@ const ExpenseInvoicesManagement = () => {
           setIsDetailModalOpen(false);
           setSelectedInvoice(null);
         }}
+      />
+
+      {/* Send to Accountant Modal */}
+      <SendToAccountantModal
+        invoices={selectedExpenseInvoices.length > 0 
+          ? expenseInvoices.filter(inv => selectedExpenseInvoices.includes(inv.id))
+          : selectedInvoice 
+            ? [selectedInvoice] 
+            : []}
+        isOpen={isSendToAccountantModalOpen}
+        onClose={() => {
+          // Clear selections and refresh when modal is closed after success
+          setSelectedExpenseInvoices([]);
+          setSelectedInvoice(null);
+          setIsSendToAccountantModalOpen(false);
+          // Refresh data
+          const expenseService = new ExpenseInvoicesService();
+          expenseService.getExpenseInvoices().then(refreshResult => {
+            if (refreshResult.success) {
+              setExpenseInvoices(refreshResult.data);
+              setFilteredExpenseInvoices(refreshResult.data);
+            }
+          });
+        }}
+        onSuccess={async (email) => {
+          const expenseService = new ExpenseInvoicesService();
+          const invoiceIds = selectedExpenseInvoices.length > 0 
+            ? selectedExpenseInvoices 
+            : selectedInvoice 
+              ? [selectedInvoice.id] 
+              : [];
+          
+          if (invoiceIds.length === 0) {
+            alert(t('expenseInvoices.errors.selectAtLeastOne', 'Please select at least one expense invoice'));
+            return;
+          }
+
+          const sendResult = await expenseService.sendToAccountant(invoiceIds, email, user?.id);
+          if (sendResult.success) {
+            // Don't clear selections or refresh immediately - let modal show success state first
+            // The modal will handle closing and then we'll refresh
+            // Don't close modal - let it show success state
+          } else {
+            // Throw error so modal can display it
+            throw new Error(sendResult.error || t('expenseInvoices.errors.error', 'Error sending email'));
+          }
+        }}
+        isExpenseInvoice={true}
       />
     </div>
   );

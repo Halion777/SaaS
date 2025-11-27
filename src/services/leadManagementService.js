@@ -29,7 +29,7 @@ export class LeadManagementService {
           // Location details
           street_number: leadData.streetNumber || null,
           full_address: leadData.fullAddress || null,
-          city: 'N/A', // Default value since city field was removed from form
+          city: leadData.city || null,
           zip_code: leadData.zipCode || null,
           country: leadData.country || 'BE',
           region: leadData.region || null,

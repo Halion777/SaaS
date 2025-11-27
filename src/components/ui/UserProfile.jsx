@@ -5,6 +5,7 @@ import Icon from '../AppIcon';
 import Image from '../AppImage';
 import Button from './Button';
 import PinModal from './PinModal';
+import ProcessingOverlay from './ProcessingOverlay';
 import { useMultiUser } from '../../context/MultiUserContext';
 import { useAuth } from '../../context/AuthContext';
 import emailVerificationService from '../../services/emailVerificationService';
@@ -41,6 +42,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
   const [newEmail, setNewEmail] = useState('');
   const [changingEmail, setChangingEmail] = useState(false);
   const [isCompanyInfoModalOpen, setIsCompanyInfoModalOpen] = useState(false);
+  const [isManagingBilling, setIsManagingBilling] = useState(false);
 
   // Get multi-user context with fallback
   const multiUserContext = useMultiUser();
@@ -330,7 +332,10 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
   };
 
   const handleManageBilling = async () => {
+    if (isManagingBilling) return;
+    
     try {
+      setIsManagingBilling(true);
       const { createPortalSession } = await import('../../services/stripeService');
       // Always use Supabase user ID - the Edge Function will look up the Stripe customer ID
       const { data, error } = await createPortalSession(actualUser.id);
@@ -338,6 +343,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
       if (error) {
         console.error('Error creating portal session:', error);
         alert('Error opening billing portal. Please try again.');
+        setIsManagingBilling(false);
         return;
       }
 
@@ -347,6 +353,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
     } catch (error) {
       console.error('Error opening billing portal:', error);
       alert('Error opening billing portal. Please try again.');
+      setIsManagingBilling(false);
     }
   };
 
@@ -591,9 +598,10 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                   onClick={handleManageBilling}
                   className="flex items-center justify-center gap-1.5"
                   size="sm"
+                  disabled={isManagingBilling}
                 >
                   <Icon name="CreditCard" size={14} />
-                  <span className="text-xs">Manage</span>
+                  <span className="text-xs">{isManagingBilling ? 'Opening...' : 'Manage'}</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -1219,6 +1227,14 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
         title="Code PIN requis"
         message="Entrez le code PIN pour accéder à ce profil"
         error={pinModal.error}
+      />
+
+      {/* Processing Overlay - Show when managing billing */}
+      <ProcessingOverlay 
+        isVisible={isManagingBilling}
+        message={t('subscription.managingBilling', 'Opening billing portal...')}
+        id="billing-portal-overlay"
+        preventNavigation={false}
       />
 
       {/* Company Information Modal */}

@@ -453,6 +453,19 @@ serve(async (req) => {
           throw new Error(`Email template 'contact_form' not found in database for language '${contactLanguage}'. Please create the template in the email_templates table.`);
         }
         break;
+
+      case 'invoice_to_accountant':
+      case 'expense_invoice_to_accountant':
+        // Send invoice to accountant with attachment
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [emailData.to_email],
+          subject: emailData.subject,
+          html: emailData.html,
+          text: emailData.text,
+          attachments: emailData.attachments || undefined
+        });
+        break;
         
       default:
         throw new Error(`Unknown email type: ${emailType}`);

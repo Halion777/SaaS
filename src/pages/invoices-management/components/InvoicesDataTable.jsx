@@ -246,6 +246,14 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                 className="text-xs text-primary hover:text-primary/80"
                 title={t('invoicesManagement.table.actions.sendInvoice')}
               />
+              <Button
+                variant="ghost"
+                size="sm"
+                iconName="Mail"
+                onClick={() => onInvoiceAction('send_to_accountant', invoice)}
+                className="text-xs text-primary hover:text-primary/80"
+                title={t('invoicesManagement.table.actions.sendToAccountant', 'Send to Accountant')}
+              />
             </div>
           </div>
         );
@@ -427,6 +435,14 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                         iconName="Send"
                         onClick={() => onInvoiceAction('send', invoice)}
                         title={t('invoicesManagement.table.actions.sendInvoice')}
+                        className="text-primary hover:text-primary/80"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        iconName="Mail"
+                        onClick={() => onInvoiceAction('send_to_accountant', invoice)}
+                        title={t('invoicesManagement.table.actions.sendToAccountant', 'Send to Accountant')}
                         className="text-primary hover:text-primary/80"
                       />
                     </div>

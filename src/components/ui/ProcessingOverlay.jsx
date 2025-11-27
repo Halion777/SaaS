@@ -51,7 +51,7 @@ const ProcessingOverlay = ({ isVisible, message = null, id = "processing-overlay
   return (
     <div 
       id={id}
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[10001] flex items-center justify-center"
     >
       <div className="bg-white rounded-lg p-6 shadow-xl max-w-xs w-full text-center">
         <div className="flex flex-col items-center gap-4">
@@ -87,7 +87,7 @@ export const createProcessingOverlay = (message = null, id = "processing-overlay
   overlayElement.style.height = '100%';
   overlayElement.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
   overlayElement.style.backdropFilter = 'blur(2px)';
-  overlayElement.style.zIndex = '9999';
+  overlayElement.style.zIndex = '10001';
   overlayElement.style.display = 'flex';
   overlayElement.style.justifyContent = 'center';
   overlayElement.style.alignItems = 'center';

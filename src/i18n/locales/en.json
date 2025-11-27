@@ -50,7 +50,9 @@
       "deleting": "Deleting...",
       "exporting": "Exporting...",
       "importing": "Importing..."
-    }
+    },
+    "loading": "Loading...",
+    "verifyingAccess": "Verifying access..."
   },
   "home": {
     "hero": {
@@ -654,6 +656,8 @@
     },
     "form": {
       "title": "Describe your project",
+      "projectInfo": "Project Information",
+      "locationInfo": "Location Information",
       "category": "Work category",
       "selectCategory": "Select a category",
       "categoryError": "Please select a work category",
@@ -1068,6 +1072,10 @@
       "description": "There was an issue processing your payment. Please contact support.",
       "loginButton": "Go to Login"
     }
+  },
+  "subscription": {
+    "loadingPlans": "Loading subscription plans...",
+    "managingBilling": "Opening billing portal..."
   },
   "meta": {
     "title": "Haliqo – Your Smart Digital Partner",
@@ -1644,7 +1652,8 @@
     "toggleButton": "Toggle",
     "more": "more",
     "invoice": "invoice",
-    "invoice_plural": "invoices"
+    "invoice_plural": "invoices",
+    "done": "Done"
   },
 
   "quotesManagement": {
@@ -3918,6 +3927,19 @@
           "updateError": "Invoice sent but error updating",
           "sendError": "Error sending"
         }
+      },
+      "sendToAccountant": {
+        "title": "Send to Accountant",
+        "invoiceCount": "{{count}} invoice selected",
+        "invoiceCount_plural": "{{count}} invoices selected",
+        "emailLabel": "Accountant Email",
+        "emailPlaceholder": "accountant@example.com",
+        "emailHelp": "An Excel file with invoice details will be attached to the email",
+        "emailRequired": "Email is required",
+        "invalidEmail": "Invalid email address",
+        "sendError": "Error sending email",
+        "sending": "Sending...",
+        "send": "Send"
       }
     },
     "expenseInvoices": {
@@ -4242,6 +4264,19 @@
             "vatAmount": "VAT Amount"
           }
         }
+      },
+      "sendToAccountant": {
+        "title": "Send to Accountant",
+        "invoiceCount": "{{count}} invoice selected",
+        "invoiceCount_plural": "{{count}} invoices selected",
+        "emailLabel": "Accountant Email",
+        "emailPlaceholder": "accountant@example.com",
+        "emailHelp": "An Excel file with invoice details will be attached to the email",
+        "emailRequired": "Email is required",
+        "invalidEmail": "Invalid email address",
+        "sendError": "Error sending email",
+        "sending": "Sending...",
+        "send": "Send"
       }
     },
   "multiUserProfiles": {

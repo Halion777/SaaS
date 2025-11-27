@@ -299,3 +299,282 @@ Met vriendelijke groet,
   'nl'
 );
 
+
+
+
+
+-- Invoice to Accountant Template
+INSERT INTO public.email_templates (
+  template_type,
+  template_name,
+  subject,
+  html_content,
+  text_content,
+  variables,
+  is_active,
+  is_default,
+  language
+) VALUES (
+  'invoice_to_accountant', 'Factures au comptable', 
+ 'Factures à traiter - {invoice_count} facture(s)',
+ '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Factures à traiter</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">{invoice_count} facture(s)</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Bonjour,</h2>
+    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">Veuillez trouver ci-joint {invoice_count} facture(s) client(s) à traiter.</p>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #667eea;">
+      <p style="margin: 0; font-weight: bold; color: #333;">Montant total : {total_amount}</p>
+      <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Date : {date}</p>
+    </div>
+    <p style="color: #555; margin: 15px 0 0 0; line-height: 1.5;">Un fichier Excel contenant les détails des factures est joint à cet email.</p>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">{company_name}</p>
+  </div>
+</div>',
+ 'Factures à traiter - {invoice_count} facture(s)
+
+Bonjour,
+
+Veuillez trouver ci-joint {invoice_count} facture(s) client(s) à traiter.
+Montant total : {total_amount}
+Date : {date}
+
+Un fichier Excel contenant les détails des factures est joint à cet email.
+
+Cordialement,
+{company_name}',
+ '{"company_name": true, "invoice_count": true, "total_amount": true, "date": true}',
+ true,
+ true,
+ 'fr'
+),
+(
+  'expense_invoice_to_accountant', 'Factures de dépenses au comptable', 
+ 'Factures de dépenses à traiter - {invoice_count} facture(s)',
+ '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Factures de dépenses à traiter</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">{invoice_count} facture(s)</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Bonjour,</h2>
+    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">Veuillez trouver ci-joint {invoice_count} facture(s) de dépenses à traiter.</p>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b;">
+      <p style="margin: 0; font-weight: bold; color: #333;">Montant total : {total_amount}</p>
+      <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Date : {date}</p>
+    </div>
+    <p style="color: #555; margin: 15px 0 0 0; line-height: 1.5;">Un fichier Excel contenant les détails des factures est joint à cet email.</p>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">{company_name}</p>
+  </div>
+</div>',
+ 'Factures de dépenses à traiter - {invoice_count} facture(s)
+
+Bonjour,
+
+Veuillez trouver ci-joint {invoice_count} facture(s) de dépenses à traiter.
+Montant total : {total_amount}
+Date : {date}
+
+Un fichier Excel contenant les détails des factures est joint à cet email.
+
+Cordialement,
+{company_name}',
+ '{"company_name": true, "invoice_count": true, "total_amount": true, "date": true}',
+ true,
+ true,
+ 'fr'
+);
+
+-- Add English versions
+INSERT INTO public.email_templates (
+  template_type,
+  template_name,
+  subject,
+  html_content,
+  text_content,
+  variables,
+  is_active,
+  is_default,
+  language
+) VALUES (
+  'invoice_to_accountant', 'Invoices to Accountant', 
+ 'Invoices to Process - {invoice_count} invoice(s)',
+ '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Invoices to Process</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">{invoice_count} invoice(s)</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Hello,</h2>
+    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">Please find attached {invoice_count} client invoice(s) to process.</p>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #667eea;">
+      <p style="margin: 0; font-weight: bold; color: #333;">Total Amount: {total_amount}</p>
+      <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Date: {date}</p>
+    </div>
+    <p style="color: #555; margin: 15px 0 0 0; line-height: 1.5;">An Excel file containing the invoice details is attached to this email.</p>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">{company_name}</p>
+  </div>
+</div>',
+ 'Invoices to Process - {invoice_count} invoice(s)
+
+Hello,
+
+Please find attached {invoice_count} client invoice(s) to process.
+Total Amount: {total_amount}
+Date: {date}
+
+An Excel file containing the invoice details is attached to this email.
+
+Best regards,
+{company_name}',
+ '{"company_name": true, "invoice_count": true, "total_amount": true, "date": true}',
+ true,
+ false,
+ 'en'
+),
+(
+  'expense_invoice_to_accountant', 'Expense Invoices to Accountant', 
+ 'Expense Invoices to Process - {invoice_count} invoice(s)',
+ '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Expense Invoices to Process</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">{invoice_count} invoice(s)</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Hello,</h2>
+    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">Please find attached {invoice_count} expense invoice(s) to process.</p>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b;">
+      <p style="margin: 0; font-weight: bold; color: #333;">Total Amount: {total_amount}</p>
+      <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Date: {date}</p>
+    </div>
+    <p style="color: #555; margin: 15px 0 0 0; line-height: 1.5;">An Excel file containing the invoice details is attached to this email.</p>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">{company_name}</p>
+  </div>
+</div>',
+ 'Expense Invoices to Process - {invoice_count} invoice(s)
+
+Hello,
+
+Please find attached {invoice_count} expense invoice(s) to process.
+Total Amount: {total_amount}
+Date: {date}
+
+An Excel file containing the invoice details is attached to this email.
+
+Best regards,
+{company_name}',
+ '{"company_name": true, "invoice_count": true, "total_amount": true, "date": true}',
+ true,
+ false,
+ 'en'
+);
+
+-- Add Dutch versions
+INSERT INTO public.email_templates (
+  template_type,
+  template_name,
+  subject,
+  html_content,
+  text_content,
+  variables,
+  is_active,
+  is_default,
+  language
+) VALUES (
+  'invoice_to_accountant', 'Facturen naar accountant', 
+ 'Facturen te verwerken - {invoice_count} factuur(en)',
+ '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Facturen te verwerken</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">{invoice_count} factuur(en)</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Hallo,</h2>
+    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">Hierbij vindt u {invoice_count} klantfactuur(en) ter verwerking.</p>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #667eea;">
+      <p style="margin: 0; font-weight: bold; color: #333;">Totaalbedrag: {total_amount}</p>
+      <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Datum: {date}</p>
+    </div>
+    <p style="color: #555; margin: 15px 0 0 0; line-height: 1.5;">Een Excel-bestand met de factuurdetails is bijgevoegd aan deze e-mail.</p>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">{company_name}</p>
+  </div>
+</div>',
+ 'Facturen te verwerken - {invoice_count} factuur(en)
+
+Hallo,
+
+Hierbij vindt u {invoice_count} klantfactuur(en) ter verwerking.
+Totaalbedrag: {total_amount}
+Datum: {date}
+
+Een Excel-bestand met de factuurdetails is bijgevoegd aan deze e-mail.
+
+Met vriendelijke groet,
+{company_name}',
+ '{"company_name": true, "invoice_count": true, "total_amount": true, "date": true}',
+ true,
+ false,
+ 'nl'
+),
+(
+  'expense_invoice_to_accountant', 'Uitgavenfacturen naar accountant', 
+ 'Uitgavenfacturen te verwerken - {invoice_count} factuur(en)',
+ '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Uitgavenfacturen te verwerken</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">{invoice_count} factuur(en)</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Hallo,</h2>
+    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">Hierbij vindt u {invoice_count} uitgavenfactuur(en) ter verwerking.</p>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b;">
+      <p style="margin: 0; font-weight: bold; color: #333;">Totaalbedrag: {total_amount}</p>
+      <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Datum: {date}</p>
+    </div>
+    <p style="color: #555; margin: 15px 0 0 0; line-height: 1.5;">Een Excel-bestand met de factuurdetails is bijgevoegd aan deze e-mail.</p>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">{company_name}</p>
+  </div>
+</div>',
+ 'Uitgavenfacturen te verwerken - {invoice_count} factuur(en)
+
+Hallo,
+
+Hierbij vindt u {invoice_count} uitgavenfactuur(en) ter verwerking.
+Totaalbedrag: {total_amount}
+Datum: {date}
+
+Een Excel-bestand met de factuurdetails is bijgevoegd aan deze e-mail.
+
+Met vriendelijke groet,
+{company_name}',
+ '{"company_name": true, "invoice_count": true, "total_amount": true, "date": true}',
+ true,
+ false,
+ 'nl'
+);

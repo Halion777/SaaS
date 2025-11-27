@@ -22,7 +22,10 @@ const RevenueChart = ({
   height = 300, 
   showGrid = true,
   showTooltip = true,
-  color = '#3b82f6'
+  color = '#3b82f6',
+  dataKey = 'revenue',
+  valueFormatter = null,
+  valueLabel = null
 }) => {
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-EU', {
@@ -31,6 +34,12 @@ const RevenueChart = ({
     }).format(value);
   };
 
+  const formatNumber = (value) => {
+    return new Intl.NumberFormat('en-US').format(value);
+  };
+
+  const formatValue = valueFormatter || formatCurrency;
+
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
@@ -38,7 +47,7 @@ const RevenueChart = ({
           <p className="text-sm font-medium text-foreground">{label}</p>
           {payload.map((entry, index) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.name}: {formatCurrency(entry.value)}
+              {valueLabel || entry.name}: {formatValue(entry.value)}
             </p>
           ))}
         </div>
@@ -61,12 +70,12 @@ const RevenueChart = ({
             <YAxis 
               stroke="#6b7280"
               fontSize={12}
-              tickFormatter={formatCurrency}
+              tickFormatter={formatValue}
             />
             {showTooltip && <Tooltip content={<CustomTooltip />} />}
             <Area
               type="monotone"
-              dataKey="revenue"
+              dataKey={dataKey}
               stroke={color}
               fill={color}
               fillOpacity={0.1}
@@ -87,10 +96,10 @@ const RevenueChart = ({
             <YAxis 
               stroke="#6b7280"
               fontSize={12}
-              tickFormatter={formatCurrency}
+              tickFormatter={formatValue}
             />
             {showTooltip && <Tooltip content={<CustomTooltip />} />}
-            <Bar dataKey="revenue" fill={color} radius={[4, 4, 0, 0]} />
+            <Bar dataKey={dataKey} fill={color} radius={[4, 4, 0, 0]} />
           </BarChart>
         );
 
@@ -107,7 +116,7 @@ const RevenueChart = ({
               label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
               outerRadius={80}
               fill="#8884d8"
-              dataKey="revenue"
+              dataKey={dataKey}
             >
               {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -128,12 +137,12 @@ const RevenueChart = ({
             <YAxis 
               stroke="#6b7280"
               fontSize={12}
-              tickFormatter={formatCurrency}
+              tickFormatter={formatValue}
             />
             {showTooltip && <Tooltip content={<CustomTooltip />} />}
             <Line
               type="monotone"
-              dataKey="revenue"
+              dataKey={dataKey}
               stroke={color}
               strokeWidth={2}
               dot={{ fill: color, strokeWidth: 2, r: 4 }}

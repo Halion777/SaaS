@@ -62,20 +62,20 @@ const SuperAdminSidebar = () => {
     const path = location.pathname;
     
     // Determine which section should be expanded based on the current path
-    if (path.startsWith('/admin/super/dashboard')) {
-      setExpandedSections(prev => ({ ...prev, system: true, leads: false, users: false, billing: false, content: false, customization: false, integrations: false }));
-    } else if (path.startsWith('/admin/super/leads')) {
-      setExpandedSections(prev => ({ ...prev, system: false, leads: true, users: false, billing: false, content: false, customization: false, integrations: false }));
+    // Dashboard Analytics is now standalone, so no section needs to be expanded for it
+    // Keep the current category expanded if user is on a page within that category
+    if (path.startsWith('/admin/super/leads')) {
+      setExpandedSections(prev => ({ ...prev, leads: true }));
     } else if (path.startsWith('/admin/super/users')) {
-      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: true, billing: false, content: false, customization: false, integrations: false }));
+      setExpandedSections(prev => ({ ...prev, users: true }));
     } else if (path.startsWith('/admin/super/billing')) {
-      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: false, billing: true, content: false, customization: false, integrations: false }));
+      setExpandedSections(prev => ({ ...prev, billing: true }));
     } else if (path.startsWith('/admin/super/email-templates') || path.startsWith('/admin/super/blogs')) {
-      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: false, billing: false, content: true, customization: false, integrations: false }));
+      setExpandedSections(prev => ({ ...prev, content: true }));
     } else if (path.startsWith('/admin/super/customization')) {
-      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: false, billing: false, content: false, customization: true, integrations: false }));
+      setExpandedSections(prev => ({ ...prev, customization: true }));
     } else if (path.startsWith('/admin/super/peppol-settings')) {
-      setExpandedSections(prev => ({ ...prev, system: false, leads: false, users: false, billing: false, content: false, customization: false, integrations: true }));
+      setExpandedSections(prev => ({ ...prev, integrations: true }));
     }
   }, [location.pathname, isCollapsed, isTablet]);
 
@@ -132,23 +132,19 @@ const SuperAdminSidebar = () => {
     }
   };
 
+  // Standalone navigation items (no parent category)
+  const standaloneItems = [
+    {
+      id: 'dashboard',
+      label: 'Dashboard Analytics',
+      path: '/admin/super/dashboard',
+      icon: 'BarChart3',
+      notifications: 0
+    }
+  ];
+
   // Navigation items organized by categories with collapsible sections
   const navigationCategories = [
-    {
-      id: 'system',
-      label: 'System Management',
-      isCollapsible: true,
-      isExpanded: expandedSections.system,
-      items: [
-        {
-          id: 'dashboard',
-          label: 'Dashboard Analytics',
-          path: '/admin/super/dashboard',
-          icon: 'BarChart3',
-          notifications: 0
-        }
-      ]
-    },
     {
       id: 'leads',
       label: 'Lead Management',
@@ -248,8 +244,11 @@ const SuperAdminSidebar = () => {
     }
   ];
 
-  // Flatten navigation items for mobile view
-  const flatNavigationItems = navigationCategories.flatMap(category => category.items);
+  // Flatten navigation items for mobile view (include standalone items)
+  const flatNavigationItems = [
+    ...standaloneItems,
+    ...navigationCategories.flatMap(category => category.items)
+  ];
 
   if (isMobile) {
     return (
@@ -328,40 +327,73 @@ const SuperAdminSidebar = () => {
                 ))}
               </div>
             ) : (
-              // Expanded view - show categorized navigation
-              navigationCategories.map((category) => (
-                <div key={category.id} className="space-y-1">
-                  {/* Category Header */}
-                  <div className="px-3 py-2">
-                    <div className="flex items-center justify-between">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (category.isCollapsible) {
-                            toggleSection(category.id);
-                          }
-                        }}
-                        className={`flex items-center justify-between w-full ${
-                          category.isCollapsible ? 'cursor-pointer hover:bg-muted rounded px-2 py-1' : ''
-                        }`}
-                      >
-                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                          {category.label}
-                        </h3>
-                        {category.isCollapsible && (
-                          <Icon 
-                            name={category.isExpanded ? "ChevronDown" : "ChevronRight"} 
-                            size={12} 
-                            color="var(--color-muted-foreground)" 
-                          />
-                        )}
-                      </button>
-                    </div>
-                  </div>
+              // Expanded view - show standalone items first, then categorized navigation
+              <>
+                {/* Standalone Items */}
+                <div className="space-y-1 mb-2">
+                  {standaloneItems.map((item) => (
+                    <NavigationItem
+                      key={item.id}
+                      {...item}
+                      isActive={location.pathname === item.path}
+                      isCollapsed={isCollapsed}
+                      isMobile={false}
+                    />
+                  ))}
+                </div>
 
-                  {/* Category Items */}
-                  {(!category.isCollapsible || category.isExpanded) && (
-                    <div className="space-y-1">
+                {/* Categorized Navigation with Hover Dropdown */}
+                {navigationCategories.map((category) => {
+                  // Check if current path is within this category
+                  const isCurrentCategory = category.items.some(item => 
+                    location.pathname === item.path || location.pathname.startsWith(item.path + '/')
+                  );
+                  
+                  return (
+                  <div 
+                    key={category.id} 
+                    className="space-y-1 group transition-all duration-200 ease-in-out"
+                    onMouseEnter={() => {
+                      if (category.isCollapsible && !isCurrentCategory) {
+                        setExpandedSections(prev => ({ ...prev, [category.id]: true }));
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      if (category.isCollapsible && !isCurrentCategory) {
+                        setExpandedSections(prev => ({ ...prev, [category.id]: false }));
+                      }
+                    }}
+                  >
+                    {/* Category Header */}
+                    <div className="px-3 py-2">
+                      <div className="flex items-center justify-between">
+                        <div className={`flex items-center justify-between w-full ${
+                          category.isCollapsible ? 'cursor-default' : ''
+                        }`}>
+                          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            {category.label}
+                          </h3>
+                          {category.isCollapsible && (
+                            <div className="transition-transform duration-200 ease-in-out">
+                              <Icon 
+                                name={category.isExpanded ? "ChevronDown" : "ChevronRight"} 
+                                size={12} 
+                                color="var(--color-muted-foreground)"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Category Items - Show on hover with smooth transition */}
+                    <div 
+                      className={`space-y-1 overflow-hidden transition-all duration-200 ease-in-out ${
+                        (!category.isCollapsible || category.isExpanded) 
+                          ? 'max-h-96 opacity-100' 
+                          : 'max-h-0 opacity-0'
+                      }`}
+                    >
                       {category.items.map((item) => (
                         <NavigationItem
                           key={item.id}
@@ -372,9 +404,10 @@ const SuperAdminSidebar = () => {
                         />
                       ))}
                     </div>
-                  )}
-                </div>
-              ))
+                  </div>
+                  );
+                })}
+              </>
             )}
           </div>
         </nav>

@@ -266,6 +266,7 @@ Voir le devis : {quote_link}
  '{"client_name": true, "quote_number": true, "quote_amount": true, "quote_link": true, "company_name": true}',
  true, 'fr'),
 
+
 -- Welcome Client Template
 ('welcome_client', 'Bienvenue client', 
  'Bienvenue - Votre projet a été reçu',
@@ -981,5 +982,4 @@ create index IF not exists idx_quotes_created_at on public.quotes using btree (c
 create index IF not exists idx_quotes_is_public on public.quotes using btree (is_public) TABLESPACE pg_default;
 
 create index IF not exists idx_quotes_project_categories_gin on public.quotes using gin (project_categories) TABLESPACE pg_default;
-
 

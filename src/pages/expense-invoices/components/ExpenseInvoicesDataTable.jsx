@@ -215,6 +215,14 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                   className="text-primary hover:text-primary/80"
                   disabled={isExportingPDF}
                 />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconName="Send"
+                  onClick={() => onExpenseInvoiceAction('send_to_accountant', invoice)}
+                  title={t('expenseInvoices.table.actions.sendToAccountant', 'Send to Accountant')}
+                  className="text-primary hover:text-primary/80"
+                />
                 {invoice.source === 'manual' && (
                 <Button
                   variant="ghost"
@@ -471,6 +479,14 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                         title={t('expenseInvoices.table.actions.exportPDF', 'Export PDF')}
                         className="text-primary hover:text-primary/80"
                         disabled={isExportingPDF}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        iconName="Send"
+                        onClick={() => onExpenseInvoiceAction('send_to_accountant', invoice)}
+                        title={t('expenseInvoices.table.actions.sendToAccountant', 'Send to Accountant')}
+                        className="text-primary hover:text-primary/80"
                       />
                       {invoice.source === 'manual' && (
                       <Button
