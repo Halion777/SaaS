@@ -29,6 +29,44 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOCRProcessing, setIsOCRProcessing] = useState(false);
   const [ocrStatus, setOcrStatus] = useState('');
+
+  // Helper function to normalize amount (convert dot to comma for decimal separator, keep comma as default)
+  const normalizeAmount = (value) => {
+    if (!value || typeof value !== 'string') return value;
+    // Keep comma as decimal separator, convert dot to comma
+    // Handle European format: "1.234,56" -> "1234,56" or "60,45" -> "60,45"
+    // Handle US format: "1,234.56" -> "1234,56"
+    let normalized = value.trim();
+    
+    // If there's both comma and dot, determine which is decimal separator
+    if (normalized.includes(',') && normalized.includes('.')) {
+      // Find positions
+      const commaPos = normalized.lastIndexOf(',');
+      const dotPos = normalized.lastIndexOf('.');
+      // The one that comes last is likely the decimal separator
+      if (commaPos > dotPos) {
+        // European format: "1.234,56" -> remove dots (thousands), keep comma
+        normalized = normalized.replace(/\./g, '');
+      } else {
+        // US format: "1,234.56" -> remove commas (thousands), convert dot to comma
+        normalized = normalized.replace(/,/g, '').replace('.', ',');
+      }
+    } else if (normalized.includes('.')) {
+      // Only dot - convert to comma for decimal separator
+      normalized = normalized.replace('.', ',');
+    }
+    // Remove any remaining spaces
+    normalized = normalized.replace(/\s/g, '');
+    return normalized;
+  };
+
+  // Helper function to parse amount (handles both comma and dot, converts to number)
+  const parseAmount = (value) => {
+    if (!value || typeof value !== 'string') return 0;
+    // Convert comma to dot for parsing (JavaScript parseFloat uses dot)
+    const normalized = value.trim().replace(',', '.');
+    return parseFloat(normalized) || 0;
+  };
   const [uploadedFiles, setUploadedFiles] = useState([]);
   // Track file paths in storage for deletion
   const [fileStoragePaths, setFileStoragePaths] = useState({}); // { fileIndex: storagePath }
@@ -176,9 +214,9 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
           supplierEmail: extractedData.supplier_email || prev.supplierEmail || '',
           supplierVatNumber: extractedData.supplier_vat_number || prev.supplierVatNumber || '',
           invoiceNumber: extractedData.invoice_number || prev.invoiceNumber || '',
-          amount: extractedData.amount?.toString() || prev.amount || '',
-          netAmount: extractedData.net_amount?.toString() || prev.netAmount || '',
-          vatAmount: extractedData.vat_amount?.toString() || prev.vatAmount || '',
+          amount: extractedData.amount ? normalizeAmount(extractedData.amount.toString()) : (prev.amount || ''),
+          netAmount: extractedData.net_amount ? normalizeAmount(extractedData.net_amount.toString()) : (prev.netAmount || ''),
+          vatAmount: extractedData.vat_amount ? normalizeAmount(extractedData.vat_amount.toString()) : (prev.vatAmount || ''),
           category: extractedData.category || prev.category || '',
           issueDate: extractedData.issue_date || prev.issueDate || new Date().toISOString().split('T')[0],
           dueDate: extractedData.due_date || prev.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -295,9 +333,9 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
         supplierEmail: formData.supplierEmail,
         supplierVatNumber: formData.supplierVatNumber,
         invoiceNumber: formData.invoiceNumber,
-        amount: parseFloat(formData.amount),
-        netAmount: parseFloat(formData.netAmount) || parseFloat(formData.amount),
-        vatAmount: parseFloat(formData.vatAmount) || 0,
+        amount: parseAmount(formData.amount),
+        netAmount: parseAmount(formData.netAmount) || parseAmount(formData.amount),
+        vatAmount: parseAmount(formData.vatAmount) || 0,
         category: formData.category,
         source: formData.source,
         issueDate: formData.issueDate || new Date().toISOString().split('T')[0],
@@ -535,39 +573,55 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
                     {t('expenseInvoices.createModal.fields.totalAmount', 'Total Amount incl. VAT (€)')} *
                   </label>
                   <Input
-                    type="number"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
                     value={formData.amount}
                     onChange={(e) => {
-                      const total = parseFloat(e.target.value) || 0;
-                      const net = parseFloat(formData.netAmount) || 0;
-                      const vat = parseFloat(formData.vatAmount) || 0;
+                      let value = e.target.value;
+                      // Allow digits, comma, dot, and spaces (for formatting)
+                      value = value.replace(/[^\d,.\s]/g, '');
+                      // Allow only one decimal separator (comma or dot)
+                      const hasComma = value.includes(',');
+                      const hasDot = value.includes('.');
+                      if (hasComma && hasDot) {
+                        // Keep the last one as decimal separator
+                        const lastComma = value.lastIndexOf(',');
+                        const lastDot = value.lastIndexOf('.');
+                        if (lastComma > lastDot) {
+                          value = value.replace(/\./g, '');
+                        } else {
+                          value = value.replace(/,/g, '');
+                        }
+                      }
+                      
+                      handleInputChange('amount', value);
+                      
+                      // Calculate other fields
+                      const total = parseAmount(value);
+                      const net = parseAmount(formData.netAmount);
+                      const vat = parseAmount(formData.vatAmount);
                       
                       // Auto-calculate: if net + vat = total, keep them; otherwise recalculate
                       if (net > 0 && vat > 0 && Math.abs((net + vat) - total) < 0.01) {
                         // Keep existing values
-                        handleInputChange('amount', e.target.value);
                       } else if (net > 0) {
                         // Calculate VAT from net
                         const newVat = total - net;
-                        handleInputChange('amount', e.target.value);
                         if (newVat >= 0) {
-                          handleInputChange('vatAmount', newVat.toFixed(2));
+                          handleInputChange('vatAmount', newVat.toFixed(2).replace('.', ','));
                         }
                       } else if (vat > 0) {
                         // Calculate net from VAT
                         const newNet = total - vat;
-                        handleInputChange('amount', e.target.value);
                         if (newNet >= 0) {
-                          handleInputChange('netAmount', newNet.toFixed(2));
+                          handleInputChange('netAmount', newNet.toFixed(2).replace('.', ','));
                         }
-                      } else {
-                        handleInputChange('amount', e.target.value);
                       }
                     }}
-                    placeholder="0.00"
+                    placeholder="0,00"
                     required
                   />
+                  
                 </div>
 
                 <div>
@@ -575,19 +629,36 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
                     {t('expenseInvoices.createModal.fields.netAmount', 'Net Amount (€)')}
                   </label>
                   <Input
-                    type="number"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
                     value={formData.netAmount}
                     onChange={(e) => {
-                      const net = parseFloat(e.target.value) || 0;
-                      const total = parseFloat(formData.amount) || 0;
+                      let value = e.target.value;
+                      // Allow digits, comma, dot, and spaces
+                      value = value.replace(/[^\d,.\s]/g, '');
+                      // Allow only one decimal separator
+                      const hasComma = value.includes(',');
+                      const hasDot = value.includes('.');
+                      if (hasComma && hasDot) {
+                        const lastComma = value.lastIndexOf(',');
+                        const lastDot = value.lastIndexOf('.');
+                        if (lastComma > lastDot) {
+                          value = value.replace(/\./g, '');
+                        } else {
+                          value = value.replace(/,/g, '');
+                        }
+                      }
+                      
+                      handleInputChange('netAmount', value);
+                      
+                      const net = parseAmount(value);
+                      const total = parseAmount(formData.amount);
                       const vat = total - net;
-                      handleInputChange('netAmount', e.target.value);
                       if (vat >= 0 && total > 0) {
-                        handleInputChange('vatAmount', vat.toFixed(2));
+                        handleInputChange('vatAmount', vat.toFixed(2).replace('.', ','));
                       }
                     }}
-                    placeholder="0.00"
+                    placeholder="0,00"
                   />
                 </div>
 
@@ -596,19 +667,36 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
                     {t('expenseInvoices.createModal.fields.vatAmount', 'VAT Amount (€)')}
                   </label>
                   <Input
-                    type="number"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
                     value={formData.vatAmount}
                     onChange={(e) => {
-                      const vat = parseFloat(e.target.value) || 0;
-                      const total = parseFloat(formData.amount) || 0;
+                      let value = e.target.value;
+                      // Allow digits, comma, dot, and spaces
+                      value = value.replace(/[^\d,.\s]/g, '');
+                      // Allow only one decimal separator
+                      const hasComma = value.includes(',');
+                      const hasDot = value.includes('.');
+                      if (hasComma && hasDot) {
+                        const lastComma = value.lastIndexOf(',');
+                        const lastDot = value.lastIndexOf('.');
+                        if (lastComma > lastDot) {
+                          value = value.replace(/\./g, '');
+                        } else {
+                          value = value.replace(/,/g, '');
+                        }
+                      }
+                      
+                      handleInputChange('vatAmount', value);
+                      
+                      const vat = parseAmount(value);
+                      const total = parseAmount(formData.amount);
                       const net = total - vat;
-                      handleInputChange('vatAmount', e.target.value);
                       if (net >= 0 && total > 0) {
-                        handleInputChange('netAmount', net.toFixed(2));
+                        handleInputChange('netAmount', net.toFixed(2).replace('.', ','));
                       }
                     }}
-                    placeholder="0.00"
+                    placeholder="0,00"
                   />
                 </div>
 

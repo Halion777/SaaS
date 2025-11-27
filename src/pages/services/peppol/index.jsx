@@ -10,6 +10,8 @@ import Select from '../../../components/ui/Select';
 import PeppolService from '../../../services/peppolService';
 import { supabase } from '../../../services/supabaseClient';
 import { COUNTRY_CODES, searchCountries } from '../../../utils/countryCodes';
+import { getPeppolVATSchemeId, parsePeppolId, combinePeppolId, PEPPOL_COUNTRY_LANGUAGE_MAP } from '../../../utils/peppolSchemes';
+import { loadCompanyInfo } from '../../../services/companyInfoService';
 
 const PeppolNetworkPage = () => {
   const { t, i18n } = useTranslation();
@@ -21,14 +23,14 @@ const PeppolNetworkPage = () => {
   // All Peppol document types - automatically enabled for all users
   // Document types valid for participant registration (MLR and APPLICATION_RESPONSE are response types, not registration types)
   const ALL_DOCUMENT_TYPES = ['INVOICE', 'CREDIT_NOTE', 'SELF_BILLING_INVOICE', 'SELF_BILLING_CREDIT_NOTE', 'INVOICE_RESPONSE'];
-  
+
   const [peppolSettings, setPeppolSettings] = useState({
     peppolId: '',
-      name: '',
+    name: '',
     countryCode: 'BE',
     firstName: '',
     lastName: '',
-      email: '',
+    email: '',
     phoneNumber: '',
     language: 'en-US',
     supportedDocumentTypes: ALL_DOCUMENT_TYPES, // All document types enabled by default
@@ -37,6 +39,9 @@ const PeppolNetworkPage = () => {
     isConfigured: false,
     peppolDisabled: false
   });
+  // Split Peppol ID fields
+  const [peppolSchemeCode, setPeppolSchemeCode] = useState('');
+  const [peppolIdentifier, setPeppolIdentifier] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [userBusinessInfo, setUserBusinessInfo] = useState(null);
@@ -85,11 +90,14 @@ const PeppolNetworkPage = () => {
     return searchCountries(countrySearchQuery);
   }, [countrySearchQuery]);
 
-  // Initialize country search query with current country
+  // Auto-fill scheme code when country is set (use VAT scheme, not company scheme)
   useEffect(() => {
-    const currentCountry = COUNTRY_CODES.find(c => c.code === peppolSettings.countryCode);
-    if (currentCountry && !countrySearchQuery) {
-      setCountrySearchQuery(`${currentCountry.code} - ${currentCountry.name}`);
+    if (peppolSettings.countryCode) {
+      // Use VAT scheme ID (Format 2) instead of company scheme
+      const schemeId = getPeppolVATSchemeId(peppolSettings.countryCode);
+      if (schemeId && (!peppolSchemeCode || peppolSchemeCode !== schemeId)) {
+        setPeppolSchemeCode(schemeId);
+      }
     }
   }, [peppolSettings.countryCode]);
 
@@ -100,7 +108,7 @@ const PeppolNetworkPage = () => {
         setShowCountryDropdown(false);
       }
     };
-    
+
     if (showCountryDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => {
@@ -124,10 +132,10 @@ const PeppolNetworkPage = () => {
         setSidebarOffset(80);
       } else {
         // On desktop, respond to sidebar state
-    setSidebarOffset(isCollapsed ? 64 : 288);
+        setSidebarOffset(isCollapsed ? 64 : 288);
       }
     };
-    
+
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
       const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
@@ -150,14 +158,14 @@ const PeppolNetworkPage = () => {
     const handleStorage = () => {
       const mobile = window.innerWidth < 768;
       const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
-      
+
       if (!mobile && !tablet) {
         const savedCollapsed = localStorage.getItem('sidebar-collapsed');
         const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
         setSidebarOffset(isCollapsed ? 64 : 288);
       }
     };
-    
+
     handleResize();
     window.addEventListener('resize', handleResize);
     window.addEventListener('storage', handleStorage);
@@ -174,7 +182,63 @@ const PeppolNetworkPage = () => {
     try {
       const settingsResult = await peppolService.getPeppolSettings();
       if (settingsResult.success) {
-        setPeppolSettings(settingsResult.data);
+        // Preserve existing auto-filled values, only update if settings have values
+        setPeppolSettings(prev => {
+          const loaded = settingsResult.data;
+          return {
+            ...prev,
+            // Only update if loaded settings have values (preserve auto-filled values)
+            name: loaded.name || prev.name,
+            email: loaded.email || prev.email,
+            countryCode: loaded.countryCode || prev.countryCode,
+            phoneNumber: loaded.phoneNumber || prev.phoneNumber,
+            firstName: loaded.firstName || prev.firstName,
+            lastName: loaded.lastName || prev.lastName,
+            language: loaded.language || prev.language,
+            supportedDocumentTypes: loaded.supportedDocumentTypes || prev.supportedDocumentTypes,
+            limitedToOutboundTraffic: loaded.limitedToOutboundTraffic !== undefined ? loaded.limitedToOutboundTraffic : prev.limitedToOutboundTraffic,
+            sandboxMode: loaded.sandboxMode !== undefined ? loaded.sandboxMode : prev.sandboxMode,
+            isConfigured: loaded.isConfigured || false,
+            peppolDisabled: loaded.peppolDisabled || false
+          };
+        });
+
+        // Parse existing Peppol ID into scheme code, country code, and VAT number
+        // Format: {SCHEME_ID}:{COUNTRY_CODE}{VAT_NUMBER} (e.g., 9925:BE1231231231)
+        if (settingsResult.data.peppolId) {
+          const parsed = parsePeppolId(settingsResult.data.peppolId);
+          if (parsed.schemeCode && parsed.identifier) {
+            // Extract country code and VAT number from identifier
+            // Format: {COUNTRY_CODE}{VAT_NUMBER} (e.g., BE1231231231)
+            const identifier = parsed.identifier;
+            // Check if identifier starts with 2-letter country code
+            if (/^[A-Z]{2}\d+$/i.test(identifier)) {
+              const countryCode = identifier.substring(0, 2).toUpperCase();
+              const vatNumber = identifier.substring(2);
+
+              // Only set if not already set (preserve auto-filled values)
+              if (!peppolSchemeCode) {
+                setPeppolSchemeCode(parsed.schemeCode);
+              }
+              if (!peppolSettings.countryCode) {
+                handleInputChange('countryCode', countryCode);
+              }
+              if (!peppolIdentifier) {
+                setPeppolIdentifier(vatNumber);
+              }
+            } else {
+              // Old format or just numbers - try to extract
+              if (!peppolSchemeCode) {
+                setPeppolSchemeCode(parsed.schemeCode || '');
+              }
+              if (!peppolIdentifier) {
+                // Extract only numbers
+                const digitsOnly = parsed.identifier.replace(/\D/g, '');
+                setPeppolIdentifier(digitsOnly);
+              }
+            }
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading Peppol settings:', error);
@@ -185,7 +249,7 @@ const PeppolNetworkPage = () => {
   const loadPeppolInvoices = async () => {
     try {
       setLoadingInvoices(true);
-      
+
       // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
@@ -264,9 +328,9 @@ const PeppolNetworkPage = () => {
           total_amount: parseFloat(inv.final_amount || inv.amount || 0),
           issue_date: inv.issue_date,
           due_date: inv.due_date,
-          status: inv.peppol_status === 'delivered' ? 'delivered' : 
-                  inv.peppol_status === 'sent' ? 'pending' :
-                  inv.peppol_status === 'failed' ? 'failed' : 'pending',
+          status: inv.peppol_status === 'delivered' ? 'delivered' :
+            inv.peppol_status === 'sent' ? 'pending' :
+              inv.peppol_status === 'failed' ? 'failed' : 'pending',
           peppol_message_id: inv.peppol_message_id,
           created_at: inv.peppol_sent_at || inv.issue_date
         }));
@@ -285,14 +349,14 @@ const PeppolNetworkPage = () => {
         peppol_message_id: inv.peppol_message_id,
         created_at: inv.peppol_received_at || inv.issue_date
       }));
-      
+
       setSentInvoices(sent);
       setReceivedInvoices(received);
-      
+
       // Calculate stats
       const totalSentAmount = sent.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
       const totalReceivedAmount = received.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
-      
+
       setPeppolStats({
         totalSent: sent.length,
         totalReceived: received.length,
@@ -310,11 +374,11 @@ const PeppolNetworkPage = () => {
   useEffect(() => {
     // Prevent reloading if already initialized
     if (isInitialized) return;
-    
+
     const checkBusinessUserAndLoadSettings = async () => {
       try {
         setLoading(true);
-        
+
         // Get current user
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         if (userError || !user) {
@@ -325,7 +389,7 @@ const PeppolNetworkPage = () => {
         // Get user business information
         const { data: userData, error: userDataError } = await supabase
           .from('users')
-          .select('business_size, company_name, vat_number, full_name, email, phone, country')
+          .select('business_size, company_name, vat_number, first_name, last_name, email, phone, country')
           .eq('id', user.id)
           .single();
 
@@ -334,34 +398,92 @@ const PeppolNetworkPage = () => {
           return;
         }
 
-        setUserBusinessInfo(userData);
-        
+        // Construct full_name from first_name and last_name
+        const fullName = userData.first_name && userData.last_name
+          ? `${userData.first_name} ${userData.last_name}`.trim()
+          : userData.first_name || userData.last_name || '';
+
+        setUserBusinessInfo({ ...userData, full_name: fullName });
+
         // Check if user is a business (not solo/individual)
         const businessSizes = ['small', 'medium', 'large'];
         const isBusiness = businessSizes.includes(userData.business_size);
         setIsBusinessUser(isBusiness);
 
-        // Pre-fill Peppol settings from user data if not already configured
+        // Load company info from company_profiles table
+        let companyInfo = null;
+        try {
+          companyInfo = await loadCompanyInfo(user.id);
+        } catch (error) {
+          console.error('Error loading company info:', error);
+        }
+
+        // Pre-fill Peppol settings from company info and user data if not already configured
         if (isBusiness && !peppolSettings.isConfigured) {
+          // Use company info if available, otherwise fall back to user data
+          const companyName = companyInfo?.name || userData.company_name || fullName || '';
+          const companyEmail = companyInfo?.email || userData.email || '';
+          const companyPhone = companyInfo?.phone || userData.phone || '';
+          const companyCountry = companyInfo?.country || userData.country || 'BE';
+          const companyVatNumber = companyInfo?.vatNumber || userData.vat_number || '';
+
+          // Extract first name and last name from user data
+          // If last_name is missing or same as first_name, try to parse from full name
+          let firstName = userData.first_name || '';
+          let lastName = userData.last_name || '';
+
+          // If last_name is empty or same as first_name, try to parse from full name
+          if (!lastName || (firstName && lastName === firstName)) {
+            const nameParts = fullName.trim().split(/\s+/);
+            if (nameParts.length >= 2) {
+              firstName = nameParts[0];
+              lastName = nameParts.slice(1).join(' ');
+            } else if (nameParts.length === 1) {
+              firstName = nameParts[0];
+              lastName = '';
+            }
+          }
+
+          // Use VAT scheme ID (Format 2) for all countries including Belgium
+          const schemeId = getPeppolVATSchemeId(companyCountry);
+
+          // Auto-fill all fields, but only if they're empty (preserve existing values)
           setPeppolSettings(prev => ({
             ...prev,
-            name: userData.company_name || userData.full_name || prev.name,
-            email: userData.email || prev.email,
-            countryCode: userData.country || 'BE',
-            phoneNumber: userData.phone || prev.phoneNumber
+            name: prev.name || companyName,
+            email: prev.email || companyEmail,
+            countryCode: prev.countryCode || companyCountry,
+            phoneNumber: prev.phoneNumber || companyPhone,
+            firstName: prev.firstName || firstName,
+            lastName: prev.lastName || lastName
           }));
+
+          // Set scheme code if country is available (use VAT scheme)
+          if (companyCountry && !peppolSchemeCode && schemeId) {
+            setPeppolSchemeCode(schemeId);
+          }
+
+          // Auto-fill VAT number identifier if available (only numbers)
+          if (companyVatNumber && !peppolIdentifier) {
+            // Extract only numeric characters from VAT number
+            const digitsOnly = companyVatNumber.replace(/\D/g, '');
+            if (digitsOnly) {
+              setPeppolIdentifier(digitsOnly);
+            }
+          }
         }
 
         // Only load Peppol settings for configuration tab if user is a business
         if (isBusiness) {
+          // Load Peppol settings after auto-filling (so auto-filled values are preserved)
           await loadPeppolSettings();
           setLoadedTabs(prev => ({ ...prev, setup: true }));
-          
+
           // Load invoice data immediately to populate KPI cards and stats
           await loadPeppolInvoices();
           setLoadedTabs(prev => ({ ...prev, sent: true, received: true }));
         }
-        
+
         // Set loading to false only after we've determined the user type
         setLoading(false);
         setIsInitialized(true);
@@ -444,18 +566,23 @@ const PeppolNetworkPage = () => {
     setSuccessMessage(null);
     setErrorMessage(null);
     try {
+      // Combine scheme code, country code, and VAT number before saving
+      // Format: {SCHEME_ID}:{COUNTRY_CODE}{VAT_NUMBER} (e.g., 9925:BE1231231231)
+      const combinedPeppolId = combinePeppolIdWithCountry(peppolSchemeCode, peppolSettings.countryCode, peppolIdentifier);
+
       // Automatically set all document types before saving
       const settingsToSave = {
         ...peppolSettings,
+        peppolId: combinedPeppolId, // Ensure combined ID is used
         supportedDocumentTypes: ALL_DOCUMENT_TYPES
       };
       const result = await peppolService.savePeppolSettings(settingsToSave);
       if (result.success) {
         // Update local settings from result instead of reloading
-        setPeppolSettings(prev => ({ 
-          ...prev, 
+        setPeppolSettings(prev => ({
+          ...prev,
           isConfigured: result.data?.isConfigured || true,
-          ...result.data 
+          ...result.data
         }));
         setSuccessMessage(result.message || t('peppol.messages.settingsSaved'));
         // Clear success message after 5 seconds
@@ -484,7 +611,14 @@ const PeppolNetworkPage = () => {
   const handleTestConnection = async () => {
     setIsTesting(true);
     try {
-      const result = await peppolService.testConnection(peppolSettings);
+      // Combine scheme code, country code, and VAT number before testing
+      // Format: {SCHEME_ID}:{COUNTRY_CODE}{VAT_NUMBER} (e.g., 9925:BE1231231231)
+      const combinedPeppolId = combinePeppolIdWithCountry(peppolSchemeCode, peppolSettings.countryCode, peppolIdentifier);
+      const testSettings = {
+        ...peppolSettings,
+        peppolId: combinedPeppolId // Ensure combined ID is used
+      };
+      const result = await peppolService.testConnection(testSettings);
       if (result.success) {
         // Show detailed test results
         alert(result.message);
@@ -500,6 +634,46 @@ const PeppolNetworkPage = () => {
 
   const handleInputChange = (field, value) => {
     setPeppolSettings(prev => ({ ...prev, [field]: value }));
+
+    // When country code changes, auto-fill scheme code (use VAT scheme)
+    if (field === 'countryCode') {
+      const schemeId = getPeppolVATSchemeId(value);
+      if (schemeId) {
+        setPeppolSchemeCode(schemeId);
+        // Update combined Peppol ID when country changes
+        if (peppolIdentifier) {
+          const combined = combinePeppolIdWithCountry(schemeId, value, peppolIdentifier);
+          setPeppolSettings(prev => ({ ...prev, peppolId: combined }));
+        }
+      }
+    }
+  };
+
+  // Handle Peppol scheme code change
+  const handleSchemeCodeChange = (value) => {
+    setPeppolSchemeCode(value);
+    // Update combined Peppol ID with format: {SCHEME_ID}:{COUNTRY_CODE}{VAT_NUMBER}
+    const combined = combinePeppolIdWithCountry(value, peppolSettings.countryCode, peppolIdentifier);
+    setPeppolSettings(prev => ({ ...prev, peppolId: combined }));
+  };
+
+  // Combine scheme code, country code, and VAT number into full Peppol ID
+  // Format: {SCHEME_ID}:{COUNTRY_CODE}{VAT_NUMBER} (e.g., 9925:BE1231231231)
+  const combinePeppolIdWithCountry = (schemeCode, countryCode, vatNumber) => {
+    if (!schemeCode || !countryCode || !vatNumber) {
+      return '';
+    }
+    return `${schemeCode}:${countryCode.toUpperCase()}${vatNumber}`;
+  };
+
+  // Handle Peppol identifier change - only allow numbers
+  const handleIdentifierChange = (value) => {
+    // Remove all non-numeric characters
+    const numericOnly = value.replace(/\D/g, '');
+    setPeppolIdentifier(numericOnly);
+    // Update combined Peppol ID with format: {SCHEME_ID}:{COUNTRY_CODE}{VAT_NUMBER}
+    const combined = combinePeppolIdWithCountry(peppolSchemeCode, peppolSettings.countryCode, numericOnly);
+    setPeppolSettings(prev => ({ ...prev, peppolId: combined }));
   };
 
   // Apply filters to invoices
@@ -515,7 +689,7 @@ const PeppolNetworkPage = () => {
             isSent ? invoice.recipientEmail : invoice.senderEmail,
             invoice.peppolId
           ].join(' ').toLowerCase();
-          
+
           if (!searchFields.includes(searchTerm)) {
             return false;
           }
@@ -531,7 +705,7 @@ const PeppolNetworkPage = () => {
           const invoiceDate = new Date(invoice.date);
           const today = new Date();
           let startDate = new Date();
-          
+
           switch (filters.dateRange) {
             case 'today':
               startDate.setHours(0, 0, 0, 0);
@@ -548,7 +722,7 @@ const PeppolNetworkPage = () => {
             default:
               break;
           }
-          
+
           if (invoiceDate < startDate) {
             return false;
           }
@@ -671,7 +845,7 @@ const PeppolNetworkPage = () => {
                 {getStatusText(invoice.status)}
               </span>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-2 sm:mb-3">
               <div>
                 <p className="text-xs text-muted-foreground mb-0.5">{t('peppol.invoices.email')}</p>
@@ -759,7 +933,7 @@ const PeppolNetworkPage = () => {
                 {getStatusText(invoice.status)}
               </span>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-2 sm:mb-3">
               <div>
                 <p className="text-xs text-muted-foreground mb-0.5">{t('peppol.invoices.email')}</p>
@@ -791,7 +965,7 @@ const PeppolNetworkPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <MainSidebar />
-      
+
       <div
         className="flex-1 flex flex-col pb-20 md:pb-6"
         style={{ marginLeft: `${sidebarOffset}px` }}
@@ -800,7 +974,7 @@ const PeppolNetworkPage = () => {
           {/* Header */}
           <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-            <div>
+              <div>
                 <div className="flex items-center">
                   <Icon name="Network" size={24} className="text-primary mr-3" />
                   <h1 className="text-xl sm:text-2xl font-bold text-foreground">{t('peppol.header.title')}</h1>
@@ -818,12 +992,12 @@ const PeppolNetworkPage = () => {
                   )}
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                {t('peppol.header.subtitle')}
-              </p>
-            </div>
+                  {t('peppol.header.subtitle')}
+                </p>
+              </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
-                
-          </div>
+
+              </div>
             </div>
           </header>
 
@@ -887,31 +1061,28 @@ const PeppolNetworkPage = () => {
           <div className="border-b border-border">
             <div className="flex space-x-4 sm:space-x-8 overflow-x-auto scrollbar-hide">
               <button
-                className={`pb-2 px-1 text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${
-                  activeTab === 'setup'
-                    ? 'border-b-2 border-primary text-foreground font-medium'
-                    : 'text-muted-foreground'
-                }`}
+                className={`pb-2 px-1 text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${activeTab === 'setup'
+                  ? 'border-b-2 border-primary text-foreground font-medium'
+                  : 'text-muted-foreground'
+                  }`}
                 onClick={() => setActiveTab('setup')}
               >
                 {t('peppol.tabs.setup')}
               </button>
               <button
-                className={`pb-2 px-1 text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${
-                  activeTab === 'sent'
-                    ? 'border-b-2 border-primary text-foreground font-medium'
-                    : 'text-muted-foreground'
-                }`}
+                className={`pb-2 px-1 text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${activeTab === 'sent'
+                  ? 'border-b-2 border-primary text-foreground font-medium'
+                  : 'text-muted-foreground'
+                  }`}
                 onClick={() => setActiveTab('sent')}
               >
                 {t('peppol.tabs.sentInvoices')} ({peppolStats.totalSent})
               </button>
               <button
-                className={`pb-2 px-1 text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${
-                  activeTab === 'received'
-                    ? 'border-b-2 border-primary text-foreground font-medium'
-                    : 'text-muted-foreground'
-                }`}
+                className={`pb-2 px-1 text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${activeTab === 'received'
+                  ? 'border-b-2 border-primary text-foreground font-medium'
+                  : 'text-muted-foreground'
+                  }`}
                 onClick={() => setActiveTab('received')}
               >
                 {t('peppol.tabs.receivedInvoices')} ({peppolStats.totalReceived})
@@ -928,438 +1099,375 @@ const PeppolNetworkPage = () => {
                     <TableLoader message={t('peppol.loading.configuration')} />
                   </div>
                 ) : (
-                /* Peppol Integration Setup */
-                <div className="bg-card border border-border rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
-                  {/* Success Message */}
-                  {successMessage && (
-                    <div className="bg-success/10 border border-success/20 rounded-lg p-4">
-                      <div className="flex items-start space-x-3">
-                        <Icon name="CheckCircle" size={20} className="text-success flex-shrink-0 mt-0.5" />
-                        <div className="flex-1">
-                          <p className="text-sm text-success font-medium">{successMessage}</p>
+                  /* Peppol Integration Setup */
+                  <div className="bg-card border border-border rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
+                    {/* Success Message */}
+                    {successMessage && (
+                      <div className="bg-success/10 border border-success/20 rounded-lg p-4">
+                        <div className="flex items-start space-x-3">
+                          <Icon name="CheckCircle" size={20} className="text-success flex-shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="text-sm text-success font-medium">{successMessage}</p>
+                          </div>
+                          <button
+                            onClick={() => setSuccessMessage(null)}
+                            className="text-success hover:text-success/80 transition-colors"
+                          >
+                            <Icon name="X" size={16} />
+                          </button>
                         </div>
-                        <button
-                          onClick={() => setSuccessMessage(null)}
-                          className="text-success hover:text-success/80 transition-colors"
-                        >
-                          <Icon name="X" size={16} />
-                        </button>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Error Message */}
-                  {errorMessage && (
-                    <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-                      <div className="flex items-start space-x-3">
-                        <Icon name="AlertCircle" size={20} className="text-destructive flex-shrink-0 mt-0.5" />
-                        <div className="flex-1">
-                          <p className="text-sm text-destructive font-medium">{errorMessage}</p>
+                    {/* Error Message */}
+                    {errorMessage && (
+                      <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                        <div className="flex items-start space-x-3">
+                          <Icon name="AlertCircle" size={20} className="text-destructive flex-shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="text-sm text-destructive font-medium">{errorMessage}</p>
+                          </div>
+                          <button
+                            onClick={() => setErrorMessage(null)}
+                            className="text-destructive hover:text-destructive/80 transition-colors"
+                          >
+                            <Icon name="X" size={16} />
+                          </button>
                         </div>
-                        <button
-                          onClick={() => setErrorMessage(null)}
-                          className="text-destructive hover:text-destructive/80 transition-colors"
-                        >
-                          <Icon name="X" size={16} />
-                        </button>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Header - Only show when NOT configured */}
-                  {!peppolSettings.isConfigured && (
-                    <div className="flex items-center space-x-2 sm:space-x-3">
-                      <div className="p-2 bg-primary/10 rounded-lg">
-                        <Icon name="Link" size={20} className="sm:w-6 sm:h-6 text-primary" />
-                      </div>
-                      <div>
-                        <h2 className="text-lg sm:text-xl font-semibold text-foreground">{t('peppol.setup.title')}</h2>
-                        <p className="text-xs sm:text-sm text-muted-foreground">
-                          {t('peppol.setup.subtitle')}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Information Box - Only show when NOT configured */}
-                  {!peppolSettings.isConfigured && (
-                  <div className="bg-muted/30 border border-border rounded-lg p-3 sm:p-4">
-                    <div className="flex items-start space-x-2 sm:space-x-3">
-                      <Icon name="Info" size={16} className="sm:w-5 sm:h-5 text-muted-foreground mt-0.5" />
-                      <div>
-                        <p className="text-xs sm:text-sm text-foreground">
-                          {t('peppol.setup.info')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  )}
-
-                  {/* Form Fields */}
-                  {!peppolSettings.isConfigured ? (
-                  <div className="space-y-4 sm:space-y-6">
-                    {/* Company Information */}
-                    <div className="space-y-4">
-                      <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">{t('peppol.setup.companyInfo.title')}</h3>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Header - Only show when NOT configured */}
+                    {!peppolSettings.isConfigured && (
+                      <div className="flex items-center space-x-2 sm:space-x-3">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                          <Icon name="Link" size={20} className="sm:w-6 sm:h-6 text-primary" />
+                        </div>
                         <div>
-                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
-                            {t('peppol.setup.companyInfo.participantName')} *
-                          </label>
-                          <Input
-                            value={peppolSettings.name}
-                            onChange={(e) => handleInputChange('name', e.target.value)}
-                            placeholder={t('peppol.setup.companyInfo.participantNamePlaceholder')}
-                            required
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
-                            {t('peppol.setup.companyInfo.peppolId')} *
-                          </label>
-                          <Input
-                            value={peppolSettings.peppolId}
-                            onChange={(e) => handleInputChange('peppolId', e.target.value)}
-                            placeholder={t('peppol.setup.companyInfo.peppolIdPlaceholder')}
-                            className="font-mono"
-                            required
-                          />
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {t('peppol.setup.companyInfo.peppolIdFormat')}
+                          <h2 className="text-lg sm:text-xl font-semibold text-foreground">{t('peppol.setup.title')}</h2>
+                          <p className="text-xs sm:text-sm text-muted-foreground">
+                            {t('peppol.setup.subtitle')}
                           </p>
                         </div>
-                        </div>
-                        
-                    </div>
-
-                    {/* Contact Person Information */}
-                    <div className="space-y-4">
-                      <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">{t('peppol.setup.contactPerson.title')}</h3>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
-                            {t('peppol.setup.contactPerson.firstName')} *
-                          </label>
-                          <Input
-                            value={peppolSettings.firstName || ''}
-                            onChange={(e) => handleInputChange('firstName', e.target.value)}
-                            placeholder={t('peppol.setup.contactPerson.firstNamePlaceholder')}
-                            required
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
-                            {t('peppol.setup.contactPerson.lastName')} *
-                          </label>
-                          <Input
-                            value={peppolSettings.lastName || ''}
-                            onChange={(e) => handleInputChange('lastName', e.target.value)}
-                            placeholder={t('peppol.setup.contactPerson.lastNamePlaceholder')}
-                            required
-                          />
-                        </div>
                       </div>
+                    )}
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
-                            {t('peppol.setup.contactPerson.email')} *
-                          </label>
-                          <Input
-                            type="email"
-                            value={peppolSettings.email || ''}
-                            onChange={(e) => handleInputChange('email', e.target.value)}
-                            placeholder={t('peppol.setup.contactPerson.emailPlaceholder')}
-                            required
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
-                            {t('peppol.setup.contactPerson.language')} *
-                          </label>
-                          <Select
-                            value={peppolSettings.language || 'en-US'}
-                            onChange={(e) => handleInputChange('language', e.target.value)}
-                            options={[
-                              { value: 'fr-FR', label: 'Français - France (fr-FR)' },
-                              { value: 'fr-BE', label: 'Français - Belgique (fr-BE)' },
-                              { value: 'fr-CA', label: 'Français - Canada (fr-CA)' },
-                              { value: 'nl-NL', label: 'Nederlands - Nederland (nl-NL)' },
-                              { value: 'nl-BE', label: 'Nederlands - België (nl-BE)' },
-                              { value: 'en-US', label: 'English - United States (en-US)' },
-                              { value: 'en-GB', label: 'English - United Kingdom (en-GB)' },
-                              { value: 'de-DE', label: 'Deutsch - Deutschland (de-DE)' },
-                              { value: 'de-AT', label: 'Deutsch - Österreich (de-AT)' },
-                              { value: 'de-CH', label: 'Deutsch - Schweiz (de-CH)' },
-                              { value: 'es-ES', label: 'Español - España (es-ES)' },
-                              { value: 'it-IT', label: 'Italiano - Italia (it-IT)' },
-                              { value: 'pt-PT', label: 'Português - Portugal (pt-PT)' },
-                              { value: 'pt-BR', label: 'Português - Brasil (pt-BR)' },
-                              { value: 'pl-PL', label: 'Polski - Polska (pl-PL)' },
-                              { value: 'cs-CZ', label: 'Čeština - Česká republika (cs-CZ)' },
-                              { value: 'sk-SK', label: 'Slovenčina - Slovensko (sk-SK)' },
-                              { value: 'hu-HU', label: 'Magyar - Magyarország (hu-HU)' },
-                              { value: 'ro-RO', label: 'Română - România (ro-RO)' },
-                              { value: 'bg-BG', label: 'Български - България (bg-BG)' },
-                              { value: 'hr-HR', label: 'Hrvatski - Hrvatska (hr-HR)' },
-                              { value: 'sl-SI', label: 'Slovenščina - Slovenija (sl-SI)' },
-                              { value: 'et-EE', label: 'Eesti - Eesti (et-EE)' },
-                              { value: 'lv-LV', label: 'Latviešu - Latvija (lv-LV)' },
-                              { value: 'lt-LT', label: 'Lietuvių - Lietuva (lt-LT)' },
-                              { value: 'fi-FI', label: 'Suomi - Suomi (fi-FI)' },
-                              { value: 'sv-SE', label: 'Svenska - Sverige (sv-SE)' },
-                              { value: 'da-DK', label: 'Dansk - Danmark (da-DK)' },
-                              { value: 'no-NO', label: 'Norsk - Norge (no-NO)' },
-                              { value: 'el-GR', label: 'Ελληνικά - Ελλάδα (el-GR)' },
-                              { value: 'ru-RU', label: 'Русский - Россия (ru-RU)' },
-                              { value: 'uk-UA', label: 'Українська - Україна (uk-UA)' },
-                              { value: 'tr-TR', label: 'Türkçe - Türkiye (tr-TR)' },
-                              { value: 'ja-JP', label: '日本語 - 日本 (ja-JP)' },
-                              { value: 'ko-KR', label: '한국어 - 대한민국 (ko-KR)' },
-                              { value: 'zh-CN', label: '中文 - 中国 (zh-CN)' },
-                              { value: 'zh-TW', label: '中文 - 台灣 (zh-TW)' },
-                              { value: 'ar-SA', label: 'العربية - السعودية (ar-SA)' },
-                              { value: 'he-IL', label: 'עברית - ישראל (he-IL)' }
-                            ]}
-                            required
-                          />
-                      </div>
-                    </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
-                            {t('peppol.setup.contactPerson.phoneNumber')}
-                          </label>
-                          <Input
-                            value={peppolSettings.phoneNumber || ''}
-                            onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                            placeholder={t('peppol.setup.contactPerson.phoneNumberPlaceholder')}
-                          />
-                        </div>
-                        
-                        <div className="relative country-dropdown-container">
-                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
-                            {t('peppol.setup.contactPerson.countryCode')}
-                          </label>
-                          <div className="relative">
-                          <Input
-                              type="text"
-                              value={countrySearchQuery}
-                              onChange={(e) => {
-                                setCountrySearchQuery(e.target.value);
-                                setShowCountryDropdown(true);
-                              }}
-                              onFocus={() => setShowCountryDropdown(true)}
-                              placeholder={t('peppol.setup.contactPerson.countryCodePlaceholder')}
-                              iconName="Search"
-                            />
-                            
-                            {/* Dropdown */}
-                            {showCountryDropdown && (
-                              <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                {filteredCountries.length > 0 ? (
-                                  <div className="py-2">
-                                    {filteredCountries.map((country) => (
-                                      <button
-                                        key={country.code}
-                                        type="button"
-                                        onClick={() => {
-                                          handleInputChange('countryCode', country.code);
-                                          setCountrySearchQuery(`${country.code} - ${country.name}`);
-                                          setShowCountryDropdown(false);
-                                        }}
-                                        className="w-full px-4 py-2 text-left text-sm hover:bg-muted focus:bg-muted focus:outline-none"
-                                      >
-                                        <span className="font-mono font-semibold text-primary">{country.code}</span>
-                                        <span className="ml-2 text-muted-foreground">{country.name}</span>
-                                      </button>
-                                    ))}
-                        </div>
-                                ) : (
-                                  <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                                    {t('peppol.setup.contactPerson.noCountriesFound')}
-                                  </div>
-                                )}
+                    {/* Form Fields */}
+                    {!peppolSettings.isConfigured ? (
+                      <div className="space-y-6">
+                        {/* Company Information */}
+                        <div className="bg-card rounded-lg border border-border p-6">
+                          <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                            <Icon name="Building2" size={20} />
+                            {t('peppol.setup.companyInfo.title')}
+                          </h3>
+
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
+                                  {t('peppol.setup.companyInfo.companyName', 'Company Name')} *
+                                </label>
+                                <Input
+                                  value={peppolSettings.name}
+                                  onChange={(e) => handleInputChange('name', e.target.value)}
+                                  placeholder={t('peppol.setup.companyInfo.companyNamePlaceholder', 'MyCompany')}
+                                  required
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
+                                  {t('peppol.setup.companyInfo.country', 'Country')} *
+                                </label>
+                                <Select
+                                  value={peppolSettings.countryCode}
+                                  onChange={(e) => handleInputChange('countryCode', e.target.value)}
+                                  options={COUNTRY_CODES.map(country => ({
+                                    value: country.code,
+                                    label: `${country.code} - ${country.name}`
+                                  }))}
+                                  required
+                                />
+                              </div>
+                            </div>
+
+                            {/* Peppol ID - Split into Scheme Code and Identifier */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
+                                  {t('peppol.setup.companyInfo.peppolSchemeCode', 'Peppol Scheme Code')} *
+                                </label>
+                                <Input
+                                  value={peppolSchemeCode}
+                                  onChange={(e) => handleSchemeCodeChange(e.target.value)}
+                                  placeholder="0208"
+                                  className="font-mono"
+                                  required
+                                  maxLength={4}
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
+                                  {t('peppol.setup.companyInfo.vatNumber', 'VAT Number')} *
+                                </label>
+                                <Input
+                                  type="text"
+                                  inputMode="numeric"
+                                  value={peppolIdentifier}
+                                  onChange={(e) => handleIdentifierChange(e.target.value)}
+                                  placeholder={t('peppol.setup.companyInfo.vatNumberPlaceholder', 'e.g., 0630675588')}
+                                  className="font-mono"
+                                  required
+                                />
+                              </div>
+                            </div>
+
+                            {/* Combined Peppol ID Display (read-only) */}
+                            {peppolSchemeCode && peppolSettings.countryCode && peppolIdentifier && (
+                              <div className="bg-muted/30 border border-border rounded-lg p-3">
+                                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                                  {t('peppol.setup.companyInfo.combinedPeppolId', 'Combined Peppol ID')}
+                                </label>
+                                <p className="text-sm font-mono text-foreground">
+                                  {combinePeppolIdWithCountry(peppolSchemeCode, peppolSettings.countryCode, peppolIdentifier)}
+                                </p>
                               </div>
                             )}
                           </div>
                         </div>
-                      </div>
-                    </div>
 
-                    {/* Peppol Configuration */}
-                    <div className="space-y-4">
-                      <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">{t('peppol.setup.configuration.title')}</h3>
-                      
-                    {/* Sandbox Mode Toggle */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-muted/20 rounded-lg gap-3 sm:gap-0">
-                      <div>
-                        <label className="text-xs sm:text-sm font-medium text-foreground">
-                          {t('peppol.setup.configuration.sandboxMode')}
-                        </label>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {t('peppol.setup.configuration.sandboxModeDescription')}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleInputChange('sandboxMode', !peppolSettings.sandboxMode)}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          peppolSettings.sandboxMode ? 'bg-blue-600' : 'bg-gray-300'
-                        }`}
-                        aria-label={peppolSettings.sandboxMode ? t('peppol.setup.configuration.sandboxModeEnabled') : t('peppol.setup.configuration.sandboxModeDisabled')}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${
-                            peppolSettings.sandboxMode ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                  </div>
-                  ) : (
-                    /* Show summary view when participant is already configured */
-                    <div className="space-y-4">
-                      <button
-                        onClick={() => setShowParticipantDetails(!showParticipantDetails)}
-                        className="w-full bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-lg p-4"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <Icon name="CheckCircle" size={24} className="text-green-600 flex-shrink-0" />
-                            <div className="text-left">
-                              <h3 className="text-base font-semibold text-green-900">{t('peppol.setup.registered.title')}</h3>
-                              <p className="text-sm text-green-700 mt-0.5">
-                                {t('peppol.setup.registered.subtitle')}
-                              </p>
+                        {/* Contact Person Information */}
+                        <div className="bg-card rounded-lg border border-border p-6">
+                          <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                            <Icon name="User" size={20} />
+                            {t('peppol.setup.contactPerson.title')}
+                          </h3>
+
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
+                                  {t('peppol.setup.contactPerson.firstName')} *
+                                </label>
+                                <Input
+                                  value={peppolSettings.firstName || ''}
+                                  onChange={(e) => handleInputChange('firstName', e.target.value)}
+                                  placeholder={t('peppol.setup.contactPerson.firstNamePlaceholder')}
+                                  required
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
+                                  {t('peppol.setup.contactPerson.lastName')} *
+                                </label>
+                                <Input
+                                  value={peppolSettings.lastName || ''}
+                                  onChange={(e) => handleInputChange('lastName', e.target.value)}
+                                  placeholder={t('peppol.setup.contactPerson.lastNamePlaceholder')}
+                                  required
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
+                                  {t('peppol.setup.contactPerson.email')} *
+                                </label>
+                                <Input
+                                  type="email"
+                                  value={peppolSettings.email || ''}
+                                  onChange={(e) => handleInputChange('email', e.target.value)}
+                                  placeholder={t('peppol.setup.contactPerson.emailPlaceholder')}
+                                  required
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
+                                  {t('peppol.setup.contactPerson.language')} *
+                                </label>
+                                <Select
+                                  value={peppolSettings.language || 'en-US'}
+                                  onChange={(e) => handleInputChange('language', e.target.value)}
+                                  options={PEPPOL_COUNTRY_LANGUAGE_MAP}
+                                  required
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
+                                  {t('peppol.setup.contactPerson.phoneNumber')}
+                                </label>
+                                <Input
+                                  value={peppolSettings.phoneNumber || ''}
+                                  onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                                  placeholder={t('peppol.setup.contactPerson.phoneNumberPlaceholder')}
+                                />
+                              </div>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-3">
-                            <div className="bg-green-600 text-white px-3 py-1 rounded-full text-xs font-mono font-semibold">
-                              {peppolSettings.peppolId}
+
+                          {/* Peppol Configuration */}
+                          <div className="bg-card rounded-lg border border-border p-6 mt-6">
+                            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                              <Icon name="Settings" size={20} />
+                              {t('peppol.setup.configuration.title')}
+                            </h3>
+
+                            <div className="space-y-4">
+
+                              {/* Sandbox Mode Toggle */}
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-muted/20 rounded-lg gap-3 sm:gap-0">
+                                <div>
+                                  <label className="text-xs sm:text-sm font-medium text-foreground">
+                                    {t('peppol.setup.configuration.sandboxMode')}
+                                  </label>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {t('peppol.setup.configuration.sandboxModeDescription')}
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={() => handleInputChange('sandboxMode', !peppolSettings.sandboxMode)}
+                                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${peppolSettings.sandboxMode ? 'bg-blue-600' : 'bg-gray-300'
+                                    }`}
+                                  aria-label={peppolSettings.sandboxMode ? t('peppol.setup.configuration.sandboxModeEnabled') : t('peppol.setup.configuration.sandboxModeDisabled')}
+                                >
+                                  <span
+                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${peppolSettings.sandboxMode ? 'translate-x-6' : 'translate-x-1'
+                                      }`}
+                                  />
+                                </button>
+                              </div>
                             </div>
-                            <Icon 
-                              name={showParticipantDetails ? "ChevronUp" : "ChevronDown"} 
-                              size={20} 
-                              className="text-green-600" 
-                            />
                           </div>
+
+                          {/* Action Buttons - Only show when not configured */}
+                          {!peppolSettings.isConfigured && (
+                            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4 pt-4">
+                              <Button
+                                onClick={handleTestConnection}
+                                disabled={isTesting || !peppolSchemeCode || !peppolIdentifier || !peppolSettings.name || !peppolSettings.email || !peppolSettings.firstName || !peppolSettings.lastName}
+                                variant="outline"
+                                iconName={isTesting ? "Loader2" : "Wifi"}
+                                iconPosition="left"
+                                className="w-full sm:w-auto"
+                              >
+                                {isTesting ? t('peppol.buttons.testing') : t('peppol.buttons.test')}
+                              </Button>
+                              <Button
+                                onClick={handleSaveSettings}
+                                disabled={isSaving || !peppolSchemeCode || !peppolIdentifier || !peppolSettings.name || !peppolSettings.email || !peppolSettings.firstName || !peppolSettings.lastName}
+                                iconName={isSaving ? "Loader2" : "Save"}
+                                iconPosition="left"
+                                className="w-full sm:min-w-[200px]"
+                              >
+                                {isSaving
+                                  ? (peppolSettings.isConfigured ? t('peppol.buttons.updating') : t('peppol.buttons.registering'))
+                                  : (peppolSettings.isConfigured ? t('peppol.buttons.updateAndSave') : t('peppol.buttons.registerAndSave'))}
+                              </Button>
+                            </div>
+                          )}
                         </div>
-                      </button>
-
-                      {showParticipantDetails && (
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div className="bg-card border border-border rounded-lg p-3">
-                              <label className="text-xs text-muted-foreground">{t('peppol.setup.registered.participantName')}</label>
-                              <p className="text-sm font-medium text-foreground mt-1">{peppolSettings.name || t('peppol.common.notAvailable')}</p>
-                            </div>
-                            
-                            <div className="bg-card border border-border rounded-lg p-3">
-                              <label className="text-xs text-muted-foreground">{t('peppol.setup.registered.contactPerson')}</label>
-                              <p className="text-sm font-medium text-foreground mt-1">{peppolSettings.firstName} {peppolSettings.lastName}</p>
-                            </div>
-                            
-                            <div className="bg-card border border-border rounded-lg p-3">
-                              <label className="text-xs text-muted-foreground">{t('peppol.setup.registered.email')}</label>
-                              <p className="text-sm font-medium text-foreground mt-1 break-all">{peppolSettings.email || t('peppol.common.notAvailable')}</p>
-                            </div>
-                            
-                            <div className="bg-card border border-border rounded-lg p-3">
-                              <label className="text-xs text-muted-foreground">{t('peppol.setup.registered.language')}</label>
-                              <p className="text-sm font-medium text-foreground mt-1">{peppolSettings.language || t('peppol.common.notAvailable')}</p>
-                            </div>
-                          </div>
-                          
-                          {/* Disable/Enable Peppol Toggle */}
-                          <div className="mt-4 bg-muted/20 border border-border rounded-lg p-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <h4 className="text-sm font-semibold text-foreground mb-1">
-                                  {peppolSettings.peppolDisabled ? t('peppol.setup.registered.peppolDisabled') : t('peppol.setup.registered.peppolEnabled')}
-                                </h4>
-                                <p className="text-xs text-muted-foreground">
-                                  {peppolSettings.peppolDisabled 
-                                    ? t('peppol.setup.registered.peppolDisabledDescription')
-                                    : t('peppol.setup.registered.peppolEnabledDescription')}
+                      </div>
+                    ) : (
+                      /* Show summary view when participant is already configured */
+                      <div className="space-y-4">
+                        <button
+                          onClick={() => setShowParticipantDetails(!showParticipantDetails)}
+                          className="w-full bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-lg p-4"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <Icon name="CheckCircle" size={24} className="text-green-600 flex-shrink-0" />
+                              <div className="text-left">
+                                <h3 className="text-base font-semibold text-green-900">{t('peppol.setup.registered.title')}</h3>
+                                <p className="text-sm text-green-700 mt-0.5">
+                                  {t('peppol.setup.registered.subtitle')}
                                 </p>
                               </div>
-                              <label className="relative inline-flex items-center cursor-pointer ml-4">
-                                <input 
-                                  type="checkbox"
-                                  checked={!peppolSettings.peppolDisabled}
-                                  onChange={async (e) => {
-                                    const newDisabled = !e.target.checked;
-                                    const result = await peppolService.togglePeppolDisabled(newDisabled);
-                                    if (result.success) {
-                                      setPeppolSettings(prev => ({ ...prev, peppolDisabled: newDisabled }));
-                                      alert(result.message);
-                                      await loadPeppolSettings();
-                                    } else {
-                                      alert(`${newDisabled ? t('peppol.setup.registered.failedToDisable') : t('peppol.setup.registered.failedToEnable')}: ${result.error}`);
-                                    }
-                                  }}
-                                  className="sr-only peer"
-                                />
-                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                              </label>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <div className="bg-green-600 text-white px-3 py-1 rounded-full text-xs font-mono font-semibold">
+                                {peppolSettings.peppolId}
+                              </div>
+                              <Icon
+                                name={showParticipantDetails ? "ChevronUp" : "ChevronDown"}
+                                size={20}
+                                className="text-green-600"
+                              />
                             </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                        </button>
 
-                  {/* Action Buttons - Only show when not configured */}
-                  {!peppolSettings.isConfigured && (
-                  <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4 pt-4">
-                    <Button
-                      onClick={handleTestConnection}
-                      disabled={isTesting || !peppolSettings.peppolId || !peppolSettings.name || !peppolSettings.email || !peppolSettings.firstName || !peppolSettings.lastName}
-                      variant="outline"
-                      iconName={isTesting ? "Loader2" : "Wifi"}
-                      iconPosition="left"
-                      className="w-full sm:w-auto"
-                    >
-                      {isTesting ? t('peppol.buttons.testing') : t('peppol.buttons.test')}
-                    </Button>
-                    <Button
-                      onClick={handleSaveSettings}
-                      disabled={isSaving || !peppolSettings.peppolId || !peppolSettings.name || !peppolSettings.email || !peppolSettings.firstName || !peppolSettings.lastName}
-                      iconName={isSaving ? "Loader2" : "Save"}
-                      iconPosition="left"
-                      className="w-full sm:min-w-[200px]"
-                    >
-                      {isSaving 
-                        ? (peppolSettings.isConfigured ? t('peppol.buttons.updating') : t('peppol.buttons.registering'))
-                        : (peppolSettings.isConfigured ? t('peppol.buttons.updateAndSave') : t('peppol.buttons.registerAndSave'))}
-                    </Button>
-                  </div>
-                  )}
+                        {showParticipantDetails && (
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div className="bg-card border border-border rounded-lg p-3">
+                                <label className="text-xs text-muted-foreground">{t('peppol.setup.registered.participantName')}</label>
+                                <p className="text-sm font-medium text-foreground mt-1">{peppolSettings.name || t('peppol.common.notAvailable')}</p>
+                              </div>
 
-                  {/* Help Information - Only show when not configured */}
-                  {!peppolSettings.isConfigured && (
-                  <div className="bg-muted/30 border border-border rounded-lg p-3 sm:p-4">
-                    <div className="flex items-start space-x-2 sm:space-x-3">
-                      <Icon name="Info" size={16} className="sm:w-5 sm:h-5 text-muted-foreground mt-0.5" />
-                      <div>
-                        <p className="text-xs sm:text-sm text-foreground font-medium mb-1">
-                          {t('peppol.setup.help.title')}
-                        </p>
-                        <p className="text-xs sm:text-sm text-muted-foreground">
-                          {t('peppol.setup.help.description')}
-                        </p>
+                              <div className="bg-card border border-border rounded-lg p-3">
+                                <label className="text-xs text-muted-foreground">{t('peppol.setup.registered.contactPerson')}</label>
+                                <p className="text-sm font-medium text-foreground mt-1">{peppolSettings.firstName} {peppolSettings.lastName}</p>
+                              </div>
+
+                              <div className="bg-card border border-border rounded-lg p-3">
+                                <label className="text-xs text-muted-foreground">{t('peppol.setup.registered.email')}</label>
+                                <p className="text-sm font-medium text-foreground mt-1 break-all">{peppolSettings.email || t('peppol.common.notAvailable')}</p>
+                              </div>
+
+                              <div className="bg-card border border-border rounded-lg p-3">
+                                <label className="text-xs text-muted-foreground">{t('peppol.setup.registered.language')}</label>
+                                <p className="text-sm font-medium text-foreground mt-1">{peppolSettings.language || t('peppol.common.notAvailable')}</p>
+                              </div>
+                            </div>
+
+                            {/* Disable/Enable Peppol Toggle */}
+                            <div className="mt-4 bg-muted/20 border border-border rounded-lg p-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <h4 className="text-sm font-semibold text-foreground mb-1">
+                                    {peppolSettings.peppolDisabled ? t('peppol.setup.registered.peppolDisabled') : t('peppol.setup.registered.peppolEnabled')}
+                                  </h4>
+                                  <p className="text-xs text-muted-foreground">
+                                    {peppolSettings.peppolDisabled
+                                      ? t('peppol.setup.registered.peppolDisabledDescription')
+                                      : t('peppol.setup.registered.peppolEnabledDescription')}
+                                  </p>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer ml-4">
+                                  <input
+                                    type="checkbox"
+                                    checked={!peppolSettings.peppolDisabled}
+                                    onChange={async (e) => {
+                                      const newDisabled = !e.target.checked;
+                                      const result = await peppolService.togglePeppolDisabled(newDisabled);
+                                      if (result.success) {
+                                        setPeppolSettings(prev => ({ ...prev, peppolDisabled: newDisabled }));
+                                        alert(result.message);
+                                        await loadPeppolSettings();
+                                      } else {
+                                        alert(`${newDisabled ? t('peppol.setup.registered.failedToDisable') : t('peppol.setup.registered.failedToEnable')}: ${result.error}`);
+                                      }
+                                    }}
+                                    className="sr-only peer"
+                                  />
+                                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
+                    )}
                   </div>
-                  )}
-                </div>
                 )}
               </div>
             )}
@@ -1410,65 +1518,65 @@ const PeppolNetworkPage = () => {
 
                   {/* Desktop Filters - Always visible on md+ screens */}
                   <div className="hidden md:block p-4 space-y-4 border-t border-border">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                    {/* Search */}
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('peppol.filters.search')}</label>
-                      <Input
-                        value={filters.search}
-                        onChange={(e) => handleFilterChange('search', e.target.value)}
-                        placeholder={t('peppol.filters.searchPlaceholderSent')}
-                        iconName="Search"
-                      />
-                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                      {/* Search */}
+                      <div>
+                        <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('peppol.filters.search')}</label>
+                        <Input
+                          value={filters.search}
+                          onChange={(e) => handleFilterChange('search', e.target.value)}
+                          placeholder={t('peppol.filters.searchPlaceholderSent')}
+                          iconName="Search"
+                        />
+                      </div>
 
-                    {/* Status Filter */}
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('peppol.filters.status')}</label>
-                      <Select
-                        value={filters.status}
-                        onChange={(e) => handleFilterChange('status', e.target.value)}
-                        placeholder={t('peppol.filters.allStatuses')}
-                        options={[
-                          { value: '', label: t('peppol.filters.allStatuses') },
-                          { value: 'delivered', label: t('peppol.status.delivered') },
-                          { value: 'pending', label: t('peppol.status.pending') },
-                          { value: 'failed', label: t('peppol.status.failed') }
-                        ]}
-                      />
-                    </div>
+                      {/* Status Filter */}
+                      <div>
+                        <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('peppol.filters.status')}</label>
+                        <Select
+                          value={filters.status}
+                          onChange={(e) => handleFilterChange('status', e.target.value)}
+                          placeholder={t('peppol.filters.allStatuses')}
+                          options={[
+                            { value: '', label: t('peppol.filters.allStatuses') },
+                            { value: 'delivered', label: t('peppol.status.delivered') },
+                            { value: 'pending', label: t('peppol.status.pending') },
+                            { value: 'failed', label: t('peppol.status.failed') }
+                          ]}
+                        />
+                      </div>
 
-                    {/* Date Range */}
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('peppol.filters.dateRange')}</label>
-                      <Select
-                        value={filters.dateRange}
-                        onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-                        placeholder={t('peppol.filters.allDates')}
-                        options={[
-                          { value: '', label: t('peppol.filters.allDates') },
-                          { value: 'today', label: t('peppol.filters.today') },
-                          { value: 'week', label: t('peppol.filters.last7Days') },
-                          { value: 'month', label: t('peppol.filters.last30Days') },
-                          { value: 'quarter', label: t('peppol.filters.last3Months') }
-                        ]}
-                      />
-                    </div>
+                      {/* Date Range */}
+                      <div>
+                        <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('peppol.filters.dateRange')}</label>
+                        <Select
+                          value={filters.dateRange}
+                          onChange={(e) => handleFilterChange('dateRange', e.target.value)}
+                          placeholder={t('peppol.filters.allDates')}
+                          options={[
+                            { value: '', label: t('peppol.filters.allDates') },
+                            { value: 'today', label: t('peppol.filters.today') },
+                            { value: 'week', label: t('peppol.filters.last7Days') },
+                            { value: 'month', label: t('peppol.filters.last30Days') },
+                            { value: 'quarter', label: t('peppol.filters.last3Months') }
+                          ]}
+                        />
+                      </div>
 
-                    {/* Amount Range */}
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('peppol.filters.amountRange')}</label>
-                      <Select
-                        value={filters.amountRange}
-                        onChange={(e) => handleFilterChange('amountRange', e.target.value)}
-                        placeholder={t('peppol.filters.allAmounts')}
-                        options={[
-                          { value: '', label: t('peppol.filters.allAmounts') },
-                          { value: 'low', label: t('peppol.filters.lessThan1000') },
-                          { value: 'medium', label: t('peppol.filters.between1000And5000') },
-                          { value: 'high', label: t('peppol.filters.moreThan5000') }
-                        ]}
-                      />
+                      {/* Amount Range */}
+                      <div>
+                        <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('peppol.filters.amountRange')}</label>
+                        <Select
+                          value={filters.amountRange}
+                          onChange={(e) => handleFilterChange('amountRange', e.target.value)}
+                          placeholder={t('peppol.filters.allAmounts')}
+                          options={[
+                            { value: '', label: t('peppol.filters.allAmounts') },
+                            { value: 'low', label: t('peppol.filters.lessThan1000') },
+                            { value: 'medium', label: t('peppol.filters.between1000And5000') },
+                            { value: 'high', label: t('peppol.filters.moreThan5000') }
+                          ]}
+                        />
                       </div>
                     </div>
                   </div>
@@ -1486,7 +1594,7 @@ const PeppolNetworkPage = () => {
                             placeholder="N° facture, destinataire, Peppol ID..."
                             iconName="Search"
                           />
-                    </div>
+                        </div>
 
                         {/* Status Filter */}
                         <div>
@@ -1502,7 +1610,7 @@ const PeppolNetworkPage = () => {
                               { value: 'failed', label: 'Échoué' }
                             ]}
                           />
-                    </div>
+                        </div>
 
                         {/* Date Range */}
                         <div>
@@ -1519,7 +1627,7 @@ const PeppolNetworkPage = () => {
                               { value: 'quarter', label: '3 derniers mois' }
                             ]}
                           />
-                  </div>
+                        </div>
 
                         {/* Amount Range */}
                         <div>
@@ -1565,22 +1673,20 @@ const PeppolNetworkPage = () => {
                       <div className="flex bg-muted rounded-lg p-1">
                         <button
                           onClick={() => setSentViewMode('table')}
-                          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                            sentViewMode === 'table'
-                              ? 'bg-background text-foreground shadow-sm'
-                              : 'text-muted-foreground hover:text-foreground'
-                          }`}
+                          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${sentViewMode === 'table'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                            }`}
                         >
                           <Icon name="Table" size={14} className="mr-1" />
                           {t('peppol.invoices.tableView')}
                         </button>
                         <button
                           onClick={() => setSentViewMode('card')}
-                          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                            sentViewMode === 'card'
-                              ? 'bg-background text-foreground shadow-sm'
-                              : 'text-muted-foreground hover:text-foreground'
-                          }`}
+                          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${sentViewMode === 'card'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                            }`}
                         >
                           <Icon name="Grid" size={14} className="mr-1" />
                           {t('peppol.invoices.cardView')}
@@ -1602,7 +1708,7 @@ const PeppolNetworkPage = () => {
                         {peppolStats.totalSent === 0 ? t('peppol.invoices.noSentInvoices') : t('peppol.invoices.noInvoicesFound')}
                       </h3>
                       <p className="text-muted-foreground">
-                        {peppolStats.totalSent === 0 
+                        {peppolStats.totalSent === 0
                           ? t('peppol.invoices.noSentInvoicesDescription')
                           : t('peppol.invoices.noInvoicesFoundDescription')
                         }
@@ -1615,6 +1721,7 @@ const PeppolNetworkPage = () => {
                     </>
                   )}
                 </div>
+
               </div>
             )}
 
@@ -1664,65 +1771,65 @@ const PeppolNetworkPage = () => {
 
                   {/* Desktop Filters - Always visible on md+ screens */}
                   <div className="hidden md:block p-4 space-y-4 border-t border-border">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Search */}
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">{t('peppol.filters.search')}</label>
-                      <Input
-                        value={filters.search}
-                        onChange={(e) => handleFilterChange('search', e.target.value)}
-                        placeholder={t('peppol.filters.searchPlaceholderReceived')}
-                        iconName="Search"
-                      />
-                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {/* Search */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">{t('peppol.filters.search')}</label>
+                        <Input
+                          value={filters.search}
+                          onChange={(e) => handleFilterChange('search', e.target.value)}
+                          placeholder={t('peppol.filters.searchPlaceholderReceived')}
+                          iconName="Search"
+                        />
+                      </div>
 
-                    {/* Status Filter */}
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">{t('peppol.filters.status')}</label>
-                      <Select
-                        value={filters.status}
-                        onChange={(e) => handleFilterChange('status', e.target.value)}
-                        placeholder={t('peppol.filters.allStatuses')}
-                        options={[
-                          { value: '', label: t('peppol.filters.allStatuses') },
-                          { value: 'received', label: t('peppol.status.received') },
-                          { value: 'processed', label: t('peppol.status.processed') },
-                          { value: 'pending', label: t('peppol.status.pending') }
-                        ]}
-                      />
-                    </div>
+                      {/* Status Filter */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">{t('peppol.filters.status')}</label>
+                        <Select
+                          value={filters.status}
+                          onChange={(e) => handleFilterChange('status', e.target.value)}
+                          placeholder={t('peppol.filters.allStatuses')}
+                          options={[
+                            { value: '', label: t('peppol.filters.allStatuses') },
+                            { value: 'received', label: t('peppol.status.received') },
+                            { value: 'processed', label: t('peppol.status.processed') },
+                            { value: 'pending', label: t('peppol.status.pending') }
+                          ]}
+                        />
+                      </div>
 
-                    {/* Date Range */}
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">{t('peppol.filters.dateRange')}</label>
-                      <Select
-                        value={filters.dateRange}
-                        onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-                        placeholder={t('peppol.filters.allDates')}
-                        options={[
-                          { value: '', label: t('peppol.filters.allDates') },
-                          { value: 'today', label: t('peppol.filters.today') },
-                          { value: 'week', label: t('peppol.filters.last7Days') },
-                          { value: 'month', label: t('peppol.filters.last30Days') },
-                          { value: 'quarter', label: t('peppol.filters.last3Months') }
-                        ]}
-                      />
-                    </div>
+                      {/* Date Range */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">{t('peppol.filters.dateRange')}</label>
+                        <Select
+                          value={filters.dateRange}
+                          onChange={(e) => handleFilterChange('dateRange', e.target.value)}
+                          placeholder={t('peppol.filters.allDates')}
+                          options={[
+                            { value: '', label: t('peppol.filters.allDates') },
+                            { value: 'today', label: t('peppol.filters.today') },
+                            { value: 'week', label: t('peppol.filters.last7Days') },
+                            { value: 'month', label: t('peppol.filters.last30Days') },
+                            { value: 'quarter', label: t('peppol.filters.last3Months') }
+                          ]}
+                        />
+                      </div>
 
-                    {/* Amount Range */}
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">{t('peppol.filters.amountRange')}</label>
-                      <Select
-                        value={filters.amountRange}
-                        onChange={(e) => handleFilterChange('amountRange', e.target.value)}
-                        placeholder={t('peppol.filters.allAmounts')}
-                        options={[
-                          { value: '', label: t('peppol.filters.allAmounts') },
-                          { value: 'low', label: t('peppol.filters.lessThan1000') },
-                          { value: 'medium', label: t('peppol.filters.between1000And5000') },
-                          { value: 'high', label: t('peppol.filters.moreThan5000') }
-                        ]}
-                      />
+                      {/* Amount Range */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">{t('peppol.filters.amountRange')}</label>
+                        <Select
+                          value={filters.amountRange}
+                          onChange={(e) => handleFilterChange('amountRange', e.target.value)}
+                          placeholder={t('peppol.filters.allAmounts')}
+                          options={[
+                            { value: '', label: t('peppol.filters.allAmounts') },
+                            { value: 'low', label: t('peppol.filters.lessThan1000') },
+                            { value: 'medium', label: t('peppol.filters.between1000And5000') },
+                            { value: 'high', label: t('peppol.filters.moreThan5000') }
+                          ]}
+                        />
                       </div>
                     </div>
                   </div>
@@ -1740,7 +1847,7 @@ const PeppolNetworkPage = () => {
                             placeholder={t('peppol.filters.searchPlaceholderReceived')}
                             iconName="Search"
                           />
-                    </div>
+                        </div>
 
                         {/* Status Filter */}
                         <div>
@@ -1756,7 +1863,7 @@ const PeppolNetworkPage = () => {
                               { value: 'pending', label: t('peppol.status.pending') }
                             ]}
                           />
-                    </div>
+                        </div>
 
                         {/* Date Range */}
                         <div>
@@ -1773,7 +1880,7 @@ const PeppolNetworkPage = () => {
                               { value: 'quarter', label: t('peppol.filters.last3Months') }
                             ]}
                           />
-                  </div>
+                        </div>
 
                         {/* Amount Range */}
                         <div>
@@ -1819,22 +1926,20 @@ const PeppolNetworkPage = () => {
                       <div className="flex bg-muted rounded-lg p-1">
                         <button
                           onClick={() => setReceivedViewMode('table')}
-                          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                            receivedViewMode === 'table'
-                              ? 'bg-background text-foreground shadow-sm'
-                              : 'text-muted-foreground hover:text-foreground'
-                          }`}
+                          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${receivedViewMode === 'table'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                            }`}
                         >
                           <Icon name="Table" size={14} className="mr-1" />
                           {t('peppol.invoices.tableView')}
                         </button>
                         <button
                           onClick={() => setReceivedViewMode('card')}
-                          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                            receivedViewMode === 'card'
-                              ? 'bg-background text-foreground shadow-sm'
-                              : 'text-muted-foreground hover:text-foreground'
-                          }`}
+                          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${receivedViewMode === 'card'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                            }`}
                         >
                           <Icon name="Grid" size={14} className="mr-1" />
                           {t('peppol.invoices.cardView')}
@@ -1856,7 +1961,7 @@ const PeppolNetworkPage = () => {
                         {peppolStats.totalReceived === 0 ? t('peppol.invoices.noReceivedInvoices') : t('peppol.invoices.noInvoicesFound')}
                       </h3>
                       <p className="text-muted-foreground">
-                        {peppolStats.totalReceived === 0 
+                        {peppolStats.totalReceived === 0
                           ? t('peppol.invoices.noReceivedInvoicesDescription')
                           : t('peppol.invoices.noInvoicesFoundDescription')
                         }
@@ -1875,6 +1980,7 @@ const PeppolNetworkPage = () => {
         </main>
       </div>
     </div>
+
   );
 };
 

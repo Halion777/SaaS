@@ -9,14 +9,18 @@ import ExpenseInvoicesFilterToolbar from './components/ExpenseInvoicesFilterTool
 import ExpenseInvoicesDataTable from './components/ExpenseInvoicesDataTable';
 import QuickExpenseInvoiceCreation from './components/QuickExpenseInvoiceCreation';
 import ExpenseInvoiceDetailModal from './components/ExpenseInvoiceDetailModal';
-import Select from '../../components/ui/Select';
 import ExpenseInvoicesService from '../../services/expenseInvoicesService';
+import { loadCompanyInfo } from '../../services/companyInfoService';
+import { generateExpenseInvoicePDF } from '../../services/pdfService';
+import { useAuth } from '../../context/AuthContext';
 
 const ExpenseInvoicesManagement = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { user } = useAuth();
   const [expenseInvoices, setExpenseInvoices] = useState([]);
   const [filteredExpenseInvoices, setFilteredExpenseInvoices] = useState([]);
   const [selectedExpenseInvoices, setSelectedExpenseInvoices] = useState([]);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [filters, setFilters] = useState({
     search: '',
     status: '',
@@ -273,6 +277,70 @@ const ExpenseInvoicesManagement = () => {
     setFilteredExpenseInvoices(filtered);
   };
 
+  const handleExportExpenseInvoicePDF = async (invoice) => {
+    if (isExportingPDF) return;
+    
+    setIsExportingPDF(true);
+    try {
+      // Load company info
+      const companyInfo = await loadCompanyInfo(user?.id);
+      
+      if (!companyInfo) {
+        alert(t('expenseInvoices.errors.companyInfoNotFound', 'Company information not found'));
+        return;
+      }
+
+      // Prepare expense invoice data for PDF generation
+      const expenseInvoiceData = {
+        companyInfo,
+        supplier: {
+          name: invoice.supplier_name,
+          email: invoice.supplier_email,
+          phone: invoice.supplier_phone,
+          address: invoice.supplier_address,
+          postal_code: invoice.supplier_postal_code,
+          city: invoice.supplier_city,
+          vat_number: invoice.supplier_vat_number
+        },
+        invoice: {
+          issue_date: invoice.issue_date,
+          due_date: invoice.due_date,
+          amount: invoice.amount,
+          net_amount: invoice.net_amount,
+          vat_amount: invoice.vat_amount,
+          category: invoice.category,
+          payment_method: invoice.payment_method,
+          source: invoice.source,
+          notes: invoice.notes,
+          status: invoice.status
+        }
+      };
+
+      const invoiceNumber = invoice.invoice_number || 'EXP-INV-001';
+      
+      // Get user's preferred language
+      const userLanguage = i18n.language || localStorage.getItem('language') || 'fr';
+      
+      // Generate PDF blob
+      const pdfBlob = await generateExpenseInvoicePDF(expenseInvoiceData, invoiceNumber, userLanguage);
+      
+      // Create download link
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `expense-invoice-${invoiceNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting expense invoice PDF:', error);
+      alert(t('expenseInvoices.errors.exportError', 'Error exporting invoice PDF'));
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
+
   const handleBulkAction = async (action) => {
     if (selectedExpenseInvoices.length === 0) {
       alert(t('expenseInvoices.errors.selectAtLeastOne', 'Please select at least one expense invoice'));
@@ -297,7 +365,14 @@ const ExpenseInvoicesManagement = () => {
           break;
           
         case 'export':
-          await exportExpenseInvoices(selectedExpenseInvoices);
+          if (!isExportingPDF) {
+            setIsExportingPDF(true);
+            try {
+              await exportExpenseInvoices(selectedExpenseInvoices);
+            } finally {
+              setIsExportingPDF(false);
+            }
+          }
           break;
           
         case 'delete':
@@ -386,6 +461,10 @@ const ExpenseInvoicesManagement = () => {
           } else {
             alert(t('expenseInvoices.errors.noAttachment', 'No file attached to this invoice'));
           }
+          break;
+          
+        case 'export':
+          await handleExportExpenseInvoicePDF(invoice);
           break;
           
         case 'markPaid':
@@ -604,21 +683,6 @@ const ExpenseInvoicesManagement = () => {
                   </Button>
                 </div>
 
-                <div className="flex items-center space-x-3 w-full sm:w-auto">
-                  <div className="flex-1 sm:flex-none sm:w-64">
-                    <Select
-                      options={[
-                        { value: '', label: t('expenseInvoices.bulkActions.chooseAction', 'Choose an action...') },
-                        { value: 'send_to_accountant', label: t('expenseInvoices.bulkActions.sendToAccountant', 'Send to Accountant') },
-                        { value: 'export', label: t('expenseInvoices.bulkActions.export', 'Export') },
-                        { value: 'delete', label: t('expenseInvoices.bulkActions.delete', 'Delete') }
-                      ]}
-                      value=""
-                      onChange={(value) => value && handleBulkAction(value)}
-                      placeholder={t('expenseInvoices.bulkActions.chooseAction', 'Choose an action...')}
-                    />
-                  </div>
-                </div>
               </div>
 
               {/* Quick Action Buttons */}
@@ -639,6 +703,7 @@ const ExpenseInvoicesManagement = () => {
                   onClick={() => handleBulkAction('export')}
                   iconName="Download"
                   iconPosition="left"
+                  disabled={isExportingPDF}
                 >
                   {t('expenseInvoices.bulkActions.export', 'Export')}
                 </Button>
@@ -670,6 +735,7 @@ const ExpenseInvoicesManagement = () => {
               filters={filters}
               onFiltersChange={handleFiltersChange}
               onStatusUpdate={handleStatusUpdate}
+              isExportingPDF={isExportingPDF}
             />
           )}
 

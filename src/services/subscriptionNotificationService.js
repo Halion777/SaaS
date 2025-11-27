@@ -308,7 +308,7 @@ export class SubscriptionNotificationService {
       
       // Prepare variables
       const variables = {
-        user_name: userData.full_name || userData.email,
+        user_name: userData.full_name || (userData.first_name && userData.last_name ? `${userData.first_name} ${userData.last_name}` : null) || userData.email,
         user_email: userData.email,
         old_plan_name: oldPlanName,
         new_plan_name: newPlanName,
@@ -392,7 +392,7 @@ export class SubscriptionNotificationService {
       
       // Prepare variables
       const variables = {
-        user_name: userData.full_name || userData.email,
+        user_name: userData.full_name || (userData.first_name && userData.last_name ? `${userData.first_name} ${userData.last_name}` : null) || userData.email,
         user_email: userData.email,
         old_plan_name: oldPlanName,
         new_plan_name: newPlanName,
@@ -462,7 +462,7 @@ export class SubscriptionNotificationService {
       
       // Prepare variables
       const variables = {
-        user_name: userData.full_name || userData.email,
+        user_name: userData.full_name || (userData.first_name && userData.last_name ? `${userData.first_name} ${userData.last_name}` : null) || userData.email,
         user_email: userData.email,
         old_plan_name: planName,
         effective_date: subscriptionData.effectiveDate || new Date().toLocaleDateString('fr-FR'),
@@ -531,7 +531,7 @@ export class SubscriptionNotificationService {
       
       // Prepare variables
       const variables = {
-        user_name: userData.full_name || userData.email,
+        user_name: userData.full_name || (userData.first_name && userData.last_name ? `${userData.first_name} ${userData.last_name}` : null) || userData.email,
         user_email: userData.email,
         new_plan_name: planName,
         new_amount: `${planAmount}€`,
@@ -600,7 +600,7 @@ export class SubscriptionNotificationService {
       
       // Prepare variables
       const variables = {
-        user_name: userData.full_name || userData.email,
+        user_name: userData.full_name || (userData.first_name && userData.last_name ? `${userData.first_name} ${userData.last_name}` : null) || userData.email,
         user_email: userData.email,
         new_plan_name: planName,
         trial_end_date: subscriptionData.trial_end ? new Date(subscriptionData.trial_end).toLocaleDateString('fr-FR') : 'Bientôt',
@@ -651,7 +651,7 @@ export class SubscriptionNotificationService {
     try {
       const { data: user, error } = await supabase
         .from('users')
-        .select('id, email, full_name, phone')
+        .select('id, email, first_name, last_name, phone')
         .eq('id', userId)
         .single();
       

@@ -427,7 +427,8 @@ export async function completeRegistration(formData) {
       password: formData.password,
       options: {
         data: {
-          full_name: formData.fullName,
+          first_name: formData.firstName,
+          last_name: formData.lastName,
           company_name: formData.companyName,
           vat_number: formData.vatNumber,
           phone: formData.phone,
@@ -450,7 +451,8 @@ export async function completeRegistration(formData) {
     const registrationData = {
       userId: authData.user.id,
       email: formData.email,
-      fullName: formData.fullName,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
       companyName: formData.companyName,
       vatNumber: formData.vatNumber,
       phone: formData.phone,
@@ -458,6 +460,17 @@ export async function completeRegistration(formData) {
       country: formData.country,
       businessSize: formData.businessSize,
       selectedPlan: formData.selectedPlan,
+      companyAddress: formData.companyAddress,
+      companyCity: formData.companyCity,
+      companyPostalCode: formData.companyPostalCode,
+      companyState: formData.companyState,
+      companyCountry: formData.companyCountry,
+      companyPhone: formData.companyPhone,
+      companyEmail: formData.companyEmail,
+      companyWebsite: formData.companyWebsite,
+      companyIban: formData.companyIban,
+      companyAccountName: formData.companyAccountName,
+      companyBankName: formData.companyBankName,
       registrationComplete: false // Will be set to true after payment
     };
     
@@ -490,7 +503,8 @@ export async function createUserAfterPayment(userId, userData) {
     const userRecord = {
       id: userId,
       email: userData.email,
-      full_name: userData.fullName,
+      first_name: userData.firstName,
+      last_name: userData.lastName,
       company_name: userData.companyName,
       vat_number: userData.vatNumber,
       phone: userData.phone,
@@ -528,7 +542,9 @@ export async function createUserAfterPayment(userId, userData) {
       console.log('Creating admin profile...');
       const multiUserService = (await import('./multiUserService')).default;
       await multiUserService.createInitialProfile(userId, {
-        full_name: userData.fullName,
+        first_name: userData.firstName,
+        last_name: userData.lastName,
+        full_name: `${userData.firstName} ${userData.lastName}`,
         company_name: userData.companyName,
         email: userData.email
       });

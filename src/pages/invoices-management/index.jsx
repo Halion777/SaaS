@@ -10,16 +10,18 @@ import InvoicesDataTable from './components/InvoicesDataTable';
 import InvoiceDetailModal from './components/InvoiceDetailModal';
 import SendInvoiceModal from './components/SendInvoiceModal';
 
-import Select from '../../components/ui/Select';
 import InvoiceService from '../../services/invoiceService';
 import { useAuth } from '../../context/AuthContext';
+import { loadCompanyInfo } from '../../services/companyInfoService';
+import { generateInvoicePDF } from '../../services/pdfService';
 
 const InvoicesManagement = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [invoices, setInvoices] = useState([]);
   const [filteredInvoices, setFilteredInvoices] = useState([]);
   const [selectedInvoices, setSelectedInvoices] = useState([]);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [filters, setFilters] = useState({
     search: '',
     status: '',
@@ -258,6 +260,70 @@ const InvoicesManagement = () => {
     setFilteredInvoices(invoices);
   };
 
+  const handleExportInvoicePDF = async (invoice) => {
+    if (isExportingPDF) return;
+    
+    setIsExportingPDF(true);
+    try {
+      // Load company info
+      const companyInfo = await loadCompanyInfo(user?.id);
+      
+      if (!companyInfo) {
+        alert(t('invoicesManagement.errors.companyInfoNotFound', 'Company information not found'));
+        return;
+      }
+
+      // Prepare invoice data for PDF generation
+      const invoiceData = {
+        companyInfo,
+        client: invoice.client || {
+          name: invoice.clientName,
+          email: invoice.clientEmail,
+          phone: invoice.client?.phone,
+          address: invoice.client?.address,
+          postal_code: invoice.client?.postal_code,
+          city: invoice.client?.city,
+          country: invoice.client?.country
+        },
+        invoice: {
+          issue_date: invoice.issueDate,
+          due_date: invoice.dueDate,
+          amount: invoice.amount,
+          net_amount: invoice.netAmount,
+          tax_amount: invoice.taxAmount,
+          final_amount: invoice.amount,
+          description: invoice.description,
+          title: invoice.title,
+          notes: invoice.notes
+        },
+        quote: invoice.quote || null
+      };
+
+      const invoiceNumber = invoice.number || invoice.invoice_number || 'INV-001';
+      
+      // Get user's preferred language
+      const userLanguage = i18n.language || localStorage.getItem('language') || 'fr';
+      
+      // Generate PDF blob
+      const pdfBlob = await generateInvoicePDF(invoiceData, invoiceNumber, null, userLanguage);
+      
+      // Create download link
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice-${invoiceNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting invoice PDF:', error);
+      alert(t('invoicesManagement.errors.exportError', 'Error exporting invoice PDF'));
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
+
   const handleInvoiceAction = async (action, invoice) => {
     // Normalize action to handle any whitespace or case issues
     const normalizedAction = String(action).trim().toLowerCase();
@@ -273,6 +339,9 @@ const InvoicesManagement = () => {
       case 'send':
         setSelectedInvoice(invoice);
         setIsSendInvoiceModalOpen(true);
+        break;
+      case 'export':
+        await handleExportInvoicePDF(invoice);
         break;
       case 'edit':
         // Handle edit action
@@ -359,16 +428,99 @@ const InvoicesManagement = () => {
     }
   };
 
+  const exportClientInvoices = async (invoiceIds) => {
+    try {
+      const invoicesToExport = invoices.filter(inv => invoiceIds.includes(inv.id));
+      
+      if (invoicesToExport.length === 0) {
+        return;
+      }
+
+      const csvData = [
+        [
+          t('invoicesManagement.export.invoiceNumber', 'Invoice Number'),
+          t('invoicesManagement.export.quoteNumber', 'Quote Number'),
+          t('invoicesManagement.export.clientName', 'Client Name'),
+          t('invoicesManagement.export.clientEmail', 'Client Email'),
+          t('invoicesManagement.export.amount', 'Total Amount'),
+          t('invoicesManagement.export.netAmount', 'Net Amount'),
+          t('invoicesManagement.export.taxAmount', 'Tax Amount'),
+          t('invoicesManagement.export.discountAmount', 'Discount Amount'),
+          t('invoicesManagement.export.status', 'Status'),
+          t('invoicesManagement.export.issueDate', 'Issue Date'),
+          t('invoicesManagement.export.dueDate', 'Due Date'),
+          t('invoicesManagement.export.paymentMethod', 'Payment Method'),
+          t('invoicesManagement.export.title', 'Title'),
+          t('invoicesManagement.export.peppolStatus', 'Peppol Status')
+        ]
+      ];
+
+      invoicesToExport.forEach(invoice => {
+        const row = [
+          invoice.number || '',
+          invoice.quoteNumber || '',
+          invoice.clientName || '',
+          invoice.clientEmail || '',
+          invoice.amount || 0,
+          invoice.netAmount || 0,
+          invoice.taxAmount || 0,
+          invoice.discountAmount || 0,
+          invoice.status || '',
+          invoice.issueDate || '',
+          invoice.dueDate || '',
+          invoice.paymentMethod || '',
+          invoice.title || '',
+          invoice.peppolStatus || ''
+        ];
+        csvData.push(row);
+      });
+
+      const csvContent = csvData.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `client-invoices-export-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting invoices:', error);
+    }
+  };
+
   const handleBulkAction = async (action) => {
     if (selectedInvoices.length === 0) {
       alert(t('invoicesManagement.errors.selectAtLeastOneInvoice'));
       return;
     }
 
+    try {
     switch (action) {
+        case 'send_to_accountant':
+          const sendResult = await InvoiceService.sendToAccountant(selectedInvoices);
+          if (sendResult.success) {
+            alert(sendResult.message);
+            setSelectedInvoices([]);
+            // Refresh data
+            await fetchInvoices();
+          } else {
+            alert(t('invoicesManagement.errors.error', 'Error: {{error}}', { error: sendResult.error }));
+          }
+          break;
+          
       case 'export':
-        alert(t('invoicesManagement.messages.exportingInvoices', { count: selectedInvoices.length }));
+          if (!isExportingPDF) {
+            setIsExportingPDF(true);
+            try {
+              await exportClientInvoices(selectedInvoices);
+            } finally {
+              setIsExportingPDF(false);
+            }
+          }
         break;
+          
       case 'delete':
         if (confirm(t('invoicesManagement.messages.confirmDelete', { count: selectedInvoices.length }))) {
           const updatedInvoices = invoices.filter(invoice =>
@@ -379,6 +531,10 @@ const InvoicesManagement = () => {
           setSelectedInvoices([]);
         }
         break;
+      }
+    } catch (error) {
+      console.error('Error handling bulk action:', error);
+      alert(t('invoicesManagement.errors.bulkActionError', 'Error during bulk action'));
     }
   };
 
@@ -459,20 +615,6 @@ const InvoicesManagement = () => {
                   </Button>
                 </div>
 
-                <div className="flex items-center space-x-3 w-full sm:w-auto">
-                  <div className="flex-1 sm:flex-none sm:w-64">
-                    <Select
-                      options={[
-                        { value: '', label: t('invoicesManagement.bulkActions.chooseAction') },
-                        { value: 'export', label: t('invoicesManagement.bulkActions.export') },
-                        { value: 'delete', label: t('invoicesManagement.bulkActions.delete') }
-                      ]}
-                      value=""
-                      onChange={(value) => value && handleBulkAction(value)}
-                      placeholder={t('invoicesManagement.bulkActions.chooseAction')}
-                    />
-                  </div>
-                </div>
               </div>
 
               {/* Quick Action Buttons */}
@@ -480,9 +622,20 @@ const InvoicesManagement = () => {
                 <Button
                   variant="outline"
                   size="sm"
+                  onClick={() => handleBulkAction('send_to_accountant')}
+                  iconName="Send"
+                  iconPosition="left"
+                >
+                  {t('invoicesManagement.bulkActions.sendToAccountant', 'Send to Accountant')}
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => handleBulkAction('export')}
                   iconName="Download"
                   iconPosition="left"
+                  disabled={isExportingPDF}
                 >
                   {t('invoicesManagement.bulkActions.export')}
                 </Button>

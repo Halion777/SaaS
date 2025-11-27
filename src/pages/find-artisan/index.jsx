@@ -32,7 +32,8 @@ const FindArtisanPage = () => {
     description: '',
     priceRange: '',
     completionDate: '',
-    fullName: '',
+    firstName: '',
+    lastName: '',
     phone: '',
     email: '',
     clientAddress: '',
@@ -247,8 +248,10 @@ const FindArtisanPage = () => {
     try {
       // Prepare data for submission (use uploaded file URLs instead of File objects)
       // Only include files that are still in the uploadedFilePaths array
+      // Combine firstName and lastName into fullName for backend
       const submissionData = {
         ...formData,
+        fullName: [formData.firstName, formData.lastName].filter(Boolean).join(' ').trim(),
         projectImages: formData.uploadedFilePaths // Use uploaded URLs for submission
       };
       
@@ -271,7 +274,8 @@ const FindArtisanPage = () => {
           description: '',
           priceRange: '',
           completionDate: '',
-          fullName: '',
+          firstName: '',
+          lastName: '',
           phone: '',
           email: '',
           clientAddress: '',
@@ -749,6 +753,20 @@ const FindArtisanPage = () => {
                       )}
                     </div>
 
+                    {/* Zip Code */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        {t('findArtisan.form.zipCode')} *
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder={t('findArtisan.form.zipCodePlaceholder')}
+                        value={formData.zipCode}
+                        onChange={(e) => handleInputChange('zipCode', e.target.value)}
+                        required
+                      />
+                    </div>
+
                     {/* Street Number */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
@@ -773,20 +791,6 @@ const FindArtisanPage = () => {
                         placeholder={t('findArtisan.form.fullAddressPlaceholder')}
                         value={formData.fullAddress}
                         onChange={(e) => handleInputChange('fullAddress', e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    {/* Zip Code */}
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        {t('findArtisan.form.zipCode')} *
-                      </label>
-                      <Input
-                        type="text"
-                        placeholder={t('findArtisan.form.zipCodePlaceholder')}
-                        value={formData.zipCode}
-                        onChange={(e) => handleInputChange('zipCode', e.target.value)}
                         required
                       />
                     </div>
@@ -928,16 +932,31 @@ const FindArtisanPage = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-foreground mb-2">
-                            {t('findArtisan.form.fullName')} *
+                            {t('registerForm.step1.firstName', 'First Name')} *
                           </label>
                           <Input
                             type="text"
-                            placeholder={t('findArtisan.form.fullNamePlaceholder')}
-                            value={formData.fullName}
-                            onChange={(e) => handleInputChange('fullName', e.target.value)}
+                            placeholder={t('registerForm.step1.firstNamePlaceholder', 'John')}
+                            value={formData.firstName}
+                            onChange={(e) => handleInputChange('firstName', e.target.value)}
                             required
                           />
                         </div>
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">
+                            {t('registerForm.step1.lastName', 'Last Name')} *
+                          </label>
+                          <Input
+                            type="text"
+                            placeholder={t('registerForm.step1.lastNamePlaceholder', 'Doe')}
+                            value={formData.lastName}
+                            onChange={(e) => handleInputChange('lastName', e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-foreground mb-2">
                             {t('findArtisan.form.phone')} *

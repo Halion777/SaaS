@@ -113,7 +113,7 @@ const SuperAdminBilling = () => {
         .from('subscriptions')
         .select(`
           *,
-          users!subscriptions_user_id_fkey(full_name, email, company_name)
+          users!subscriptions_user_id_fkey(first_name, last_name, email, company_name)
         `)
         .order('created_at', { ascending: false });
 
@@ -127,7 +127,7 @@ const SuperAdminBilling = () => {
         .from('invoices')
         .select(`
           *,
-          users!invoices_user_id_fkey(full_name, email, company_name)
+          users!invoices_user_id_fkey(first_name, last_name, email, company_name)
         `)
         .eq('status', 'paid')
         .order('created_at', { ascending: false });
@@ -143,7 +143,7 @@ const SuperAdminBilling = () => {
         .select(`
           *,
           subscriptions!payment_records_subscription_id_fkey(
-            users!subscriptions_user_id_fkey(full_name, email, company_name)
+            users!subscriptions_user_id_fkey(first_name, last_name, email, company_name)
           )
         `)
         .eq('status', 'succeeded')
@@ -334,7 +334,7 @@ const SuperAdminBilling = () => {
 
   const filteredSubscriptions = subscriptions.filter(sub => {
     const matchesSearch = !searchTerm || 
-      sub.users?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ((sub.users?.first_name && sub.users?.last_name ? `${sub.users.first_name} ${sub.users.last_name}` : sub.users?.first_name || sub.users?.last_name || '').toLowerCase().includes(searchTerm.toLowerCase())) ||
       sub.users?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       sub.stripe_subscription_id?.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -637,7 +637,7 @@ const SuperAdminBilling = () => {
                         <td className="px-4 py-3">
                           <div>
                             <p className="font-medium text-foreground">
-                              {subscription.users?.full_name || 'Unknown'}
+                              {(subscription.users?.first_name && subscription.users?.last_name ? `${subscription.users.first_name} ${subscription.users.last_name}` : subscription.users?.first_name || subscription.users?.last_name || 'Unknown')}
                             </p>
                             <p className="text-sm text-muted-foreground">
                               {subscription.users?.email || 'No email'}
@@ -841,7 +841,7 @@ const SuperAdminBilling = () => {
                       <td className="px-4 py-3">
                         <div>
                           <p className="font-medium text-foreground">
-                            {payment.subscriptions?.users?.full_name || 'Unknown'}
+                            {(payment.subscriptions?.users?.first_name && payment.subscriptions?.users?.last_name ? `${payment.subscriptions.users.first_name} ${payment.subscriptions.users.last_name}` : payment.subscriptions?.users?.first_name || payment.subscriptions?.users?.last_name || 'Unknown')}
                           </p>
                           <p className="text-sm text-muted-foreground">
                             {payment.subscriptions?.users?.email || 'No email'}

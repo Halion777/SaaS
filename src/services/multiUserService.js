@@ -593,7 +593,7 @@ class MultiUserService {
       // Use object format for permissions (as per README specification)
       const profileData = {
         user_id: userId,
-        name: userData.full_name || userData.email?.split('@')[0] || 'Admin',
+        name: userData.full_name || (userData.first_name && userData.last_name ? `${userData.first_name} ${userData.last_name}` : null) || userData.email?.split('@')[0] || 'Admin',
         email: userData.email,
         role: 'admin',
         avatar: null, // No avatar needed initially, user can update later

@@ -165,7 +165,7 @@ const SubscriptionCancelModal = ({ isOpen, onClose, subscription, onUpdate }) =>
               <div>
                 <p className="text-xs text-muted-foreground">User</p>
                 <p className="text-sm font-medium text-foreground">
-                  {subscription.users?.full_name || 'Unknown'} ({subscription.users?.email || 'No email'})
+                  {(subscription.users?.first_name && subscription.users?.last_name ? `${subscription.users.first_name} ${subscription.users.last_name}` : subscription.users?.first_name || subscription.users?.last_name || 'Unknown')} ({subscription.users?.email || 'No email'})
                 </p>
               </div>
               <div>

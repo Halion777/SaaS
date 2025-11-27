@@ -1444,7 +1444,8 @@ create index IF not exists idx_user_profiles_permissions_gin on public.user_prof
 create table public.users (
   id uuid not null,
   email text not null,
-  full_name text null,
+  first_name text null,
+  last_name text null,
   company_name text null,
   phone text null,
   profession text null,

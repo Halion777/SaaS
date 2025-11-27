@@ -676,7 +676,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
           {/* VAT Number */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              {t('quoteCreation.companyInfo.vatNumber')}
+              {t('quoteCreation.companyInfo.vatNumber')} *
               {companyInfo.vatNumberFromPeppol && (
                 <span className="text-xs text-muted-foreground ml-2">
                   (from Peppol)
@@ -690,6 +690,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
             placeholder={t('quoteCreation.companyInfo.vatNumberPlaceholder', "BE0123456789")}
             disabled={companyInfo.vatNumberFromPeppol}
             className={companyInfo.vatNumberFromPeppol ? 'bg-muted/30 cursor-not-allowed' : ''}
+            required
           />
           {companyInfo.vatNumberFromPeppol && (
             <p className="text-xs text-muted-foreground mt-1">
@@ -743,13 +744,14 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
           {/* State/Province */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              Province/Région
+              Province/Région *
             </label>
             <Input
               type="text"
               value={companyInfo.state}
               onChange={(e) => handleInputChange('state', e.target.value)}
               placeholder="Bruxelles-Capitale"
+              required
             />
           </div>
 

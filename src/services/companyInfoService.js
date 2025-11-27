@@ -597,6 +597,11 @@ export const validateCompanyInfo = (companyInfo) => {
     errors.push('Le nom de l\'entreprise est requis');
   }
   
+  // VAT number is now mandatory (unless it comes from Peppol)
+  if (!companyInfo.vatNumberFromPeppol && !companyInfo.vatNumber?.trim()) {
+    errors.push('Le numéro de TVA est requis');
+  }
+  
   if (!companyInfo.address?.trim()) {
     errors.push('L\'adresse est requise');
   }
@@ -607,6 +612,11 @@ export const validateCompanyInfo = (companyInfo) => {
   
   if (!companyInfo.city?.trim()) {
     errors.push('La ville est requise');
+  }
+  
+  // State/Province is now mandatory
+  if (!companyInfo.state?.trim()) {
+    errors.push('La province/région est requise');
   }
   
   if (!companyInfo.country?.trim()) {

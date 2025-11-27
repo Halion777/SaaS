@@ -1,9 +1,8 @@
 // components/ui/Select.jsx - Shadcn style Select
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronDown, Check, Search, X } from "lucide-react";
+import { ChevronDown, Check, X } from "lucide-react";
 import { cn } from "../../utils/cn";
 // Removed Button to avoid nested <button> inside the trigger button
-import Input from "./Input";
 
 const Select = React.forwardRef(({
     className,
@@ -17,7 +16,6 @@ const Select = React.forwardRef(({
     label,
     description,
     error,
-    searchable = false,
     clearable = false,
     loading = false,
     id,
@@ -28,7 +26,8 @@ const Select = React.forwardRef(({
     ...props
 }, ref) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState("");
+    const [keyboardFilter, setKeyboardFilter] = useState("");
+    const keyboardFilterTimeoutRef = useRef(null);
     const selectRef = useRef(null);
 
     // Generate unique ID if not provided
@@ -39,6 +38,7 @@ const Select = React.forwardRef(({
         const handleClickOutside = (event) => {
             if (selectRef.current && !selectRef.current.contains(event.target)) {
                 setIsOpen(false);
+                setKeyboardFilter("");
                 onOpenChange?.(false);
             }
         };
@@ -52,39 +52,104 @@ const Select = React.forwardRef(({
         };
     }, [isOpen, onOpenChange]);
 
-    // Filter options based on search
-    const filteredOptions = searchable && searchTerm
-        ? options.filter(option =>
-            option.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (option.value && option.value.toString().toLowerCase().includes(searchTerm.toLowerCase()))
-        )
-        : options;
+    // Handle keyboard input for filtering when dropdown is open
+    useEffect(() => {
+        if (!isOpen) {
+            setKeyboardFilter("");
+            return;
+        }
+
+        const handleKeyDown = (event) => {
+            // Only handle letter keys (a-z, A-Z)
+            if (event.key.length === 1 && /[a-zA-Z]/.test(event.key)) {
+                event.preventDefault();
+                event.stopPropagation();
+                
+                // Clear existing timeout
+                if (keyboardFilterTimeoutRef.current) {
+                    clearTimeout(keyboardFilterTimeoutRef.current);
+                }
+                
+                // Add character to filter
+                const newFilter = keyboardFilter + event.key.toLowerCase();
+                setKeyboardFilter(newFilter);
+                
+                // Reset filter after 1 second of no typing
+                keyboardFilterTimeoutRef.current = setTimeout(() => {
+                    setKeyboardFilter("");
+                }, 1000);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            if (keyboardFilterTimeoutRef.current) {
+                clearTimeout(keyboardFilterTimeoutRef.current);
+            }
+        };
+    }, [isOpen, keyboardFilter]);
 
     // Get selected option(s) for display
     const getSelectedDisplay = () => {
         if (!value) return placeholder;
 
         if (multiple) {
-            const selectedOptions = options.filter(opt => value.includes(opt.value));
+            const selectedOptions = options.filter(opt => Array.isArray(value) && value.includes(opt.value));
             if (selectedOptions.length === 0) return placeholder;
-            if (selectedOptions.length === 1) return selectedOptions[0].label;
+            if (selectedOptions.length === 1) {
+                const option = selectedOptions[0];
+                return (
+                    <span className="flex items-center gap-2">
+                        {option.badgeColor && (
+                            <span className={`w-2 h-2 rounded-full ${option.badgeColor}`}></span>
+                        )}
+                        {option.label}
+                    </span>
+                );
+            }
             return `${selectedOptions.length} items selected`;
         }
 
-        const selectedOption = options.find(opt => opt.value === value);
-        return selectedOption ? selectedOption.label : placeholder;
+        // Find exact match - compare as strings to avoid type issues
+        const selectedOption = options.find(opt => String(opt.value) === String(value));
+        if (!selectedOption) return placeholder;
+        
+        return (
+            <span className="flex items-center gap-2">
+                {selectedOption.badgeColor && (
+                    <span className={`w-2 h-2 rounded-full ${selectedOption.badgeColor}`}></span>
+                )}
+                {selectedOption.label}
+            </span>
+        );
     };
 
     const handleToggle = () => {
         if (!disabled) {
             const newIsOpen = !isOpen;
             setIsOpen(newIsOpen);
+            setKeyboardFilter(""); // Reset filter when toggling
             onOpenChange?.(newIsOpen);
-            if (!newIsOpen) {
-                setSearchTerm("");
-            }
         }
     };
+
+    // Filter options based on keyboard input (country code filtering)
+    const filteredOptions = React.useMemo(() => {
+        if (!keyboardFilter) {
+            return options;
+        }
+        
+        return options.filter(option => {
+            // Extract country code from label (format: "+92 PK")
+            const labelParts = option.label.split(' ');
+            const countryCode = labelParts[1] || ''; // e.g., "PK"
+            
+            // Match country code starting with keyboard filter (e.g., "b" -> "BE", "BR")
+            const countryCodeLower = countryCode.toLowerCase();
+            return countryCodeLower.startsWith(keyboardFilter);
+        });
+    }, [keyboardFilter, options]);
 
     const handleOptionSelect = (option) => {
         if (multiple) {
@@ -121,6 +186,7 @@ const Select = React.forwardRef(({
             onChange?.(syntheticEvent);
             }
             setIsOpen(false);
+            setKeyboardFilter(""); // Reset filter when option is selected
             onOpenChange?.(false);
         }
     };
@@ -135,15 +201,12 @@ const Select = React.forwardRef(({
         }
     };
 
-    const handleSearchChange = (e) => {
-        setSearchTerm(e.target.value);
-    };
-
     const isSelected = (optionValue) => {
+        if (!value) return false;
         if (multiple) {
-            return value?.includes(optionValue) || false;
+            return Array.isArray(value) && value.includes(optionValue);
         }
-        return value === optionValue;
+        return String(value) === String(optionValue);
     };
 
     const hasValue = multiple ? value?.length > 0 : value !== undefined && value !== '';
@@ -174,12 +237,60 @@ const Select = React.forwardRef(({
                         !hasValue && "text-muted-foreground/10"
                     )}
                     onClick={handleToggle}
+                    onKeyDown={(e) => {
+                        // Allow keyboard filtering when dropdown is open
+                        if (isOpen && e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const newFilter = keyboardFilter + e.key.toLowerCase();
+                            setKeyboardFilter(newFilter);
+                            // Reset filter after 1 second
+                            if (keyboardFilterTimeoutRef.current) {
+                                clearTimeout(keyboardFilterTimeoutRef.current);
+                            }
+                            keyboardFilterTimeoutRef.current = setTimeout(() => {
+                                setKeyboardFilter("");
+                            }, 1000);
+                        } else if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleToggle();
+                        }
+                    }}
                     disabled={disabled}
                     aria-expanded={isOpen}
                     aria-haspopup="listbox"
                     {...props}
                 >
-                    <span className="truncate">{getSelectedDisplay()}</span>
+                    <span className="truncate flex items-center gap-2">
+                        {(() => {
+                            if (!value) return placeholder;
+                            
+                            if (multiple) {
+                                const selectedOptions = options.filter(opt => Array.isArray(value) && value.includes(opt.value));
+                                if (selectedOptions.length === 0) return placeholder;
+                                if (selectedOptions.length === 1) {
+                                    const option = selectedOptions[0];
+                                    return (
+                                        <>
+                                            {option.badgeColor && <span className={`w-2 h-2 rounded-full flex-shrink-0 ${option.badgeColor}`}></span>}
+                                            <span className="truncate">{option.label}</span>
+                                        </>
+                                    );
+                                }
+                                return `${selectedOptions.length} items selected`;
+                            }
+                            
+                            const selectedOption = options.find(opt => String(opt.value) === String(value));
+                            if (!selectedOption) return placeholder;
+                            
+                            return (
+                                <>
+                                    {selectedOption.badgeColor && <span className={`w-2 h-2 rounded-full flex-shrink-0 ${selectedOption.badgeColor}`}></span>}
+                                    <span className="truncate">{selectedOption.label}</span>
+                                </>
+                            );
+                        })()}
+                    </span>
 
                     <div className="flex items-center gap-1">
                         {loading && (
@@ -227,32 +338,19 @@ const Select = React.forwardRef(({
                 {/* Dropdown */}
                 {isOpen && (
                     <div className="absolute w-full mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-lg max-h-[200px] overflow-auto" style={{ zIndex: 1001 }}>
-                        {searchable && (
-                            <div className="p-2 border-b border-border">
-                                <div className="relative">
-                                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                                    <Input
-                                        placeholder="Search options..."
-                                        value={searchTerm}
-                                        onChange={handleSearchChange}
-                                        className="pl-8"
-                                    />
-                                </div>
-                            </div>
-                        )}
-
                         <div className="py-1 max-h-60 overflow-y-auto overflow-x-hidden scrollbar-hide">
                             {filteredOptions.length === 0 ? (
                                 <div className="px-3 py-2 text-sm text-muted-foreground">
-                                    {searchTerm ? 'No options found' : 'No options available'}
+                                    {keyboardFilter ? `No country codes starting with "${keyboardFilter.toUpperCase()}"` : 'No options available'}
                                 </div>
                             ) : (
                                 filteredOptions.map((option) => (
                                     <div
                                         key={option.value}
                                         className={cn(
-                                            "relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-transform duration-200 hover:scale-[1.02]",
+                                            "relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground",
                                             isSelected(option.value) && "bg-accent text-accent-foreground",
+                                            !isSelected(option.value) && "text-foreground",
                                             option.disabled && "pointer-events-none opacity-50"
                                         )}
                                         onClick={() => !option.disabled && handleOptionSelect(option)}
@@ -267,6 +365,9 @@ const Select = React.forwardRef(({
                                                     option.icon
                                                 )}
                                             </div>
+                                        )}
+                                        {option.badgeColor && (
+                                            <span className={`w-2 h-2 rounded-full mr-2 ${option.badgeColor}`}></span>
                                         )}
                                         <span className="flex-1">{option.label}</span>
                                         {multiple && isSelected(option.value) && (

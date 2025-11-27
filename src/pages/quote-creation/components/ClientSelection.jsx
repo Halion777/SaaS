@@ -74,6 +74,8 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
   }, [leadId, selectedClient]);
   const [newClient, setNewClient] = useState({
     name: '',
+    firstName: '',
+    lastName: '',
     type: 'particulier',
     email: '',
     phone: '',
@@ -133,8 +135,21 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       if (communicationPrefs.mail) preferences.push('mail');
       
       // Pre-fill the new client form with lead data
+      // Split name into firstName and lastName for individual clients
+      let firstName = '';
+      let lastName = '';
+      if (selectedClient.name) {
+        const nameParts = selectedClient.name.trim().split(' ');
+        if (nameParts.length > 0) {
+          firstName = nameParts[0];
+          lastName = nameParts.slice(1).join(' ');
+        }
+      }
+      
       setNewClient({
         name: selectedClient.name || '',
+        firstName: firstName,
+        lastName: lastName,
         type: 'particulier', // Default type
         email: selectedClient.email || '',
         phone: selectedClient.phone || '',
@@ -566,17 +581,50 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
 
   const handleNewClientSubmit = async (e) => {
     e.preventDefault();
-    if (newClient.name && newClient.email) {
+    // Validate all required fields - consistent with Client Management
+    const isIndividualValid = newClient.firstName.trim() && newClient.lastName.trim() && newClient.email.trim() && newClient.phone.trim() && newClient.address.trim();
+    const isProfessionalValid = newClient.name.trim() && newClient.email.trim() && newClient.phone.trim() && newClient.address.trim() && newClient.city.trim() && newClient.country.trim() && newClient.postalCode.trim() && newClient.contactPerson.trim() && newClient.companySize.trim() && newClient.regNumber.trim();
+    
+    if (clientType === 'particulier' && !isIndividualValid) {
+      alert(t('quoteCreation.clientSelection.validation.individualRequired', 'Veuillez remplir tous les champs obligatoires pour un client particulier'));
+      return;
+    }
+    if (clientType === 'professionnel' && !isProfessionalValid) {
+      alert(t('quoteCreation.clientSelection.validation.professionalRequired', 'Veuillez remplir tous les champs obligatoires pour un client professionnel'));
+      return;
+    }
+
+    if (newClient.email && !/\S+@\S+\.\S+/.test(newClient.email)) {
+      alert(t('errors.invalidEmail'));
+      return;
+    }
+
+    if (newClient.phone && !/^\+?[0-9]{10,15}$/.test(newClient.phone.replace(/\s/g, ''))) {
+      alert(t('errors.invalidPhone'));
+      return;
+    }
+
+    if (newClient.enablePeppol && newClient.peppolId.trim() && !validatePeppolId(newClient.peppolId.trim())) {
+      alert(t('clientManagement.modal.invalidPeppolId'));
+      return;
+    }
+    
+    if (isIndividualValid || isProfessionalValid) {
       try {
         setIsCreatingClient(true);
         setCreateError(null);
         setCreateSuccess(false);
         
+        // Prepare client data - combine firstName and lastName for individual clients
+        const clientData = { ...newClient, type: clientType };
+        if (clientType === 'particulier') {
+          // Combine firstName and lastName into name for backend
+          const fullName = [newClient.firstName, newClient.lastName].filter(Boolean).join(' ').trim();
+          clientData.name = fullName;
+        }
+        
         // Create client in the backend
-        const { data: createdClient, error } = await createClient({
-          ...newClient,
-          type: clientType
-        });
+        const { data: createdClient, error } = await createClient(clientData);
         
         if (error) {
           console.error('Error creating client:', error);
@@ -585,7 +633,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         }
         
         // Format the created client for selection
-      const clientData = {
+      const formattedClientData = {
           value: createdClient.id,
           label: clientType === 'professionnel' 
             ? `${createdClient.name}`
@@ -596,7 +644,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       };
         
         // Select the newly created client
-      onClientSelect(clientData);
+      onClientSelect(formattedClientData);
       setShowNewClientForm(false);
       
       // If this is a lead, mark that client has been added
@@ -617,6 +665,8 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         // Reset form
       setNewClient({ 
         name: '', 
+        firstName: '',
+        lastName: '',
           type: 'particulier', 
         email: '', 
         phone: '', 
@@ -1125,50 +1175,75 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
 
             {/* Individual Client Form */}
             {clientType === 'particulier' && (
+              <div className="space-y-6">
+                {/* Personal Information */}
+                <div className="bg-card rounded-lg border border-border p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Icon name="User" size={20} />
+                    {t('clientManagement.modal.personalInfo', 'Personal Information')}
+                  </h3>
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label={t('quoteCreation.clientSelection.fullName', 'Nom complet')}
+                        label={t('registerForm.step1.firstName', 'First Name')}
                     type="text"
-                    placeholder={t('quoteCreation.clientSelection.fullNamePlaceholder', 'Nom et prénom')}
-                    value={newClient.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
+                        placeholder={t('registerForm.step1.firstNamePlaceholder', 'John')}
+                        value={newClient.firstName}
+                        onChange={(e) => handleInputChange('firstName', e.target.value)}
                     required
                   />
                   
                   <Input
-                    label="Email"
+                        label={t('registerForm.step1.lastName', 'Last Name')}
+                        type="text"
+                        placeholder={t('registerForm.step1.lastNamePlaceholder', 'Doe')}
+                        value={newClient.lastName}
+                        onChange={(e) => handleInputChange('lastName', e.target.value)}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Input
+                        label={t('clientManagement.modal.email')}
                     type="email"
-                    placeholder="email@exemple.com"
+                        placeholder={t('clientManagement.modal.emailPlaceholder')}
                     value={newClient.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     required
                   />
-                </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label="Téléphone"
+                        label={t('clientManagement.modal.phone')}
                     type="tel"
-                    placeholder="04 12 34 56 78"
+                        placeholder={t('clientManagement.modal.phonePlaceholder')}
                     value={newClient.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
                     required
                   />
+                    </div>
                   
                   <Input
-                    label="Adresse"
+                      label={t('clientManagement.modal.address')}
                     type="text"
-                    placeholder="Adresse complète"
+                      placeholder={t('clientManagement.modal.addressPlaceholder', 'Street name + number (e.g., Rue de la Paix 123)')}
                     value={newClient.address}
                     onChange={(e) => handleInputChange('address', e.target.value)}
+                      required
                   />
+                  </div>
                 </div>
                 
-                {/* Language Preference */}
+                {/* Preferences */}
+                <div className="bg-card rounded-lg border border-border p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Icon name="Settings" size={20} />
+                    {t('clientManagement.modal.preferences', 'Preferences')}
+                  </h3>
+                  <div className="space-y-6">
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-foreground">
-                    {t('quoteCreation.clientSelection.languagePreference', 'Préférence de langue')}
+                        {t('clientManagement.modal.languagePreference')}
                   </label>
                   <Select
                     value={newClient.languagePreference || 'fr'}
@@ -1180,29 +1255,60 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                     ]}
                   />
                   <p className="text-xs text-muted-foreground">
-                    {t('quoteCreation.clientSelection.languagePreferenceHelp', 'Les emails seront envoyés dans cette langue')}
-                  </p>
+                        {t('clientManagement.modal.languagePreferenceHelp')}
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <label className="block text-sm font-medium text-foreground">
+                        {t('quoteCreation.clientSelection.communicationPreferences', 'Préférences de communication')}
+                      </label>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {preferenceOptions.map((preference) => (
+                          <div key={preference.value} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={`individual-${preference.value}`}
+                              checked={newClient.preferences.includes(preference.value)}
+                              onChange={(e) => handlePreferenceToggle(preference.value)}
+                              className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                            />
+                            <label htmlFor={`individual-${preference.value}`} className="text-sm text-foreground">
+                              {preference.label}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Professional Client Form */}
             {clientType === 'professionnel' && !leadId && (
+              <div className="space-y-6">
+                {/* Company Information */}
+                <div className="bg-card rounded-lg border border-border p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Icon name="Briefcase" size={20} />
+                    {t('clientManagement.modal.companyInfo', 'Company Information')}
+                  </h3>
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label={t('quoteCreation.clientSelection.companyName', 'Raison sociale')}
+                        label={t('clientManagement.modal.companyName')}
                     type="text"
-                    placeholder={t('quoteCreation.clientSelection.companyNamePlaceholder', "Nom de l'entreprise")}
+                        placeholder={t('clientManagement.modal.companyNamePlaceholder')}
                     value={newClient.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     required
                   />
                   
                   <Input
-                    label="Email"
+                        label={t('clientManagement.modal.email')}
                     type="email"
-                    placeholder="email@exemple.com"
+                        placeholder={t('clientManagement.modal.emailPlaceholder')}
                     value={newClient.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     required
@@ -1211,131 +1317,131 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label="Téléphone"
+                        label={t('clientManagement.modal.phone')}
                     type="tel"
-                    placeholder="04 12 34 56 78"
+                        placeholder={t('clientManagement.modal.phonePlaceholder')}
                     value={newClient.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
                     required
                   />
-                  
-                  <Input
-                    label="Adresse"
-                    type="text"
-                    placeholder="Adresse complète"
-                    value={newClient.address}
-                    onChange={(e) => handleInputChange('address', e.target.value)}
-                  />
+                    </div>
+                  </div>
                 </div>
 
-                {/* Location fields - moved here after telephone and address */}
+                {/* Location Information */}
+                <div className="bg-card rounded-lg border border-border p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Icon name="MapPin" size={20} />
+                    {t('clientManagement.modal.locationInfo', 'Location Information')}
+                  </h3>
+                  <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input
-                    label={t('quoteCreation.clientSelection.city', 'Ville')}
-                    type="text"
-                    placeholder={t('quoteCreation.clientSelection.cityPlaceholder', 'Bruxelles')}
-                    value={newClient.city}
-                    onChange={(e) => handleInputChange('city', e.target.value)}
-                  />
-                  
                   <Select
-                    label={t('quoteCreation.clientSelection.country', 'Pays')}
+                        label={t('clientManagement.modal.country')}
                     options={countryOptions}
                     value={newClient.country}
                     onChange={(e) => handleInputChange('country', e.target.value)}
-                    placeholder={t('quoteCreation.clientSelection.selectCountry', 'Sélectionner le pays')}
+                        placeholder={t('clientManagement.modal.countryPlaceholder')}
+                        required
                   />
                   
                   <Input
-                    label={t('quoteCreation.clientSelection.postalCode', 'Code postal')}
+                        label={t('clientManagement.modal.city')}
                     type="text"
-                    placeholder={t('quoteCreation.clientSelection.postalCodePlaceholder', '1000')}
+                        placeholder={t('clientManagement.modal.cityPlaceholder')}
+                        value={newClient.city}
+                        onChange={(e) => handleInputChange('city', e.target.value)}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Input
+                        label={t('clientManagement.modal.postalCode')}
+                        type="text"
+                        placeholder={t('clientManagement.modal.postalCodePlaceholder')}
                     value={newClient.postalCode}
                     onChange={(e) => handleInputChange('postalCode', e.target.value)}
+                        required
+                      />
+                      
+                      <div className="md:col-span-2">
+                        <Input
+                          label={t('clientManagement.modal.address')}
+                          type="text"
+                          placeholder={t('clientManagement.modal.addressPlaceholder', 'Street name + number (e.g., Rue de la Paix 123)')}
+                          value={newClient.address}
+                          onChange={(e) => handleInputChange('address', e.target.value)}
+                          required
                   />
-                </div>
-                
-                {/* Language Preference */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-foreground">
-                    {t('quoteCreation.clientSelection.languagePreference', 'Préférence de langue')}
-                  </label>
-                  <Select
-                    value={newClient.languagePreference || 'fr'}
-                    onChange={(e) => handleInputChange('languagePreference', e.target.value)}
-                    options={[
-                      { value: 'fr', label: '🇫🇷 Français' },
-                      { value: 'en', label: '🇬🇧 English' },
-                      { value: 'nl', label: '🇳🇱 Nederlands' }
-                    ]}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {t('quoteCreation.clientSelection.languagePreferenceHelp', 'Les emails seront envoyés dans cette langue')}
-                  </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Professional-specific fields */}
+                {/* Professional Details */}
+                <div className="bg-card rounded-lg border border-border p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Icon name="Building" size={20} />
+                    {t('clientManagement.modal.professionalInfo')}
+                  </h3>
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-foreground">{t('quoteCreation.clientSelection.professionalInfo', 'Informations professionnelles')}</h3>
-                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
-                      label={t('quoteCreation.clientSelection.contactPerson', 'Personne de contact')}
+                        label={t('clientManagement.modal.contactPerson')}
                       type="text"
-                      placeholder={t('quoteCreation.clientSelection.contactPersonPlaceholder', 'Nom de la personne de contact')}
+                        placeholder={t('clientManagement.modal.contactPersonPlaceholder')}
                       value={newClient.contactPerson}
                       onChange={(e) => handleInputChange('contactPerson', e.target.value)}
+                        required
                     />
                     
                     <Select
-                      label={t('quoteCreation.clientSelection.companySizeLabel', "Taille de l'entreprise")}
+                        label={t('clientManagement.modal.companySize')}
                       options={companySizeOptions}
                       value={newClient.companySize}
                       onChange={(e) => handleInputChange('companySize', e.target.value)}
-                      placeholder={t('quoteCreation.clientSelection.selectSize', 'Sélectionner la taille')}
+                        placeholder={t('clientManagement.modal.companySizePlaceholder')}
+                        required
                     />
                     
                     <Input
-                      label={t('quoteCreation.clientSelection.vatNumber', 'Numéro de TVA')}
+                        label={t('clientManagement.modal.vatNumber')}
                       type="text"
-                      placeholder={t('quoteCreation.clientSelection.vatNumberPlaceholder', "Numéro de TVA ou d'enregistrement")}
+                        placeholder={t('clientManagement.modal.vatNumberPlaceholder')}
                       value={newClient.regNumber}
                       onChange={(e) => handleInputChange('regNumber', e.target.value)}
+                        required
                     />
                   </div>
                 </div>
-
-                {/* PEPPOL Configuration - only for professional clients */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-foreground">{t('quoteCreation.clientSelection.peppolConfig', 'Configuration PEPPOL')}</h3>
-                  
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="enablePeppol"
-                      checked={newClient.enablePeppol}
-                      onChange={(e) => handleInputChange('enablePeppol', e.target.checked)}
-                      className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
-                    />
-                    <label htmlFor="enablePeppol" className="text-sm font-medium text-foreground">
-                      {t('quoteCreation.clientSelection.enablePeppol', 'Activer PEPPOL pour ce client')}
-                    </label>
                   </div>
                   
-                  {newClient.enablePeppol && (
-                    <Input
-                      label={t('quoteCreation.clientSelection.peppolId', 'Peppol ID du client')}
-                      type="text"
-                      placeholder={t('quoteCreation.clientSelection.peppolIdFormat', 'Format: 0000:IDENTIFIANT')}
-                      value={newClient.peppolId}
-                      onChange={(e) => handleInputChange('peppolId', e.target.value)}
-                    />
-                  )}
+                {/* Preferences */}
+                <div className="bg-card rounded-lg border border-border p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Icon name="Settings" size={20} />
+                    {t('clientManagement.modal.preferences', 'Preferences')}
+                  </h3>
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-foreground">
+                        {t('clientManagement.modal.languagePreference')}
+                      </label>
+                      <Select
+                        value={newClient.languagePreference || 'fr'}
+                        onChange={(e) => handleInputChange('languagePreference', e.target.value)}
+                        options={[
+                          { value: 'fr', label: '🇫🇷 Français' },
+                          { value: 'en', label: '🇬🇧 English' },
+                          { value: 'nl', label: '🇳🇱 Nederlands' }
+                        ]}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {t('clientManagement.modal.languagePreferenceHelp')}
+                      </p>
                 </div>
-              </div>
-            )}
 
-            {/* Communication Preferences */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
               <label className="block text-sm font-medium text-foreground">
@@ -1352,18 +1458,55 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                   <div key={preference.value} className="flex items-center space-x-2">
                     <input
                       type="checkbox"
-                      id={preference.value}
+                              id={`professional-${preference.value}`}
                       checked={newClient.preferences.includes(preference.value)}
                       onChange={(e) => handlePreferenceToggle(preference.value)}
                       className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
                     />
-                    <label htmlFor={preference.value} className="text-sm text-foreground">
+                            <label htmlFor={`professional-${preference.value}`} className="text-sm text-foreground">
                       {preference.label}
                     </label>
                   </div>
                 ))}
+                      </div>
+                    </div>
               </div>
             </div>
+
+                {/* PEPPOL Configuration - only for professional clients */}
+                <div className="bg-card rounded-lg border border-border p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Icon name="Globe" size={20} />
+                    {t('quoteCreation.clientSelection.peppolConfig', 'Configuration PEPPOL')}
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="enablePeppol"
+                        checked={newClient.enablePeppol}
+                        onChange={(e) => handleInputChange('enablePeppol', e.target.checked)}
+                        className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                      />
+                      <label htmlFor="enablePeppol" className="text-sm font-medium text-foreground">
+                        {t('quoteCreation.clientSelection.enablePeppol', 'Activer PEPPOL pour ce client')}
+                      </label>
+                    </div>
+                    
+                    {newClient.enablePeppol && (
+                      <Input
+                        label={t('quoteCreation.clientSelection.peppolId', 'Peppol ID du client')}
+                        type="text"
+                        placeholder={t('quoteCreation.clientSelection.peppolIdFormat', 'Format: 0000:IDENTIFIANT')}
+                        value={newClient.peppolId}
+                        onChange={(e) => handleInputChange('peppolId', e.target.value)}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-3 sm:pt-4 justify-end">
               <Button

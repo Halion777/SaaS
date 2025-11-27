@@ -63,7 +63,7 @@ const QuotePreview = ({
   // Financial Configuration - must be declared before useEffects that use it
   const [financialConfig, setFinancialConfig] = useState(parentFinancialConfig || {
     vatConfig: {
-      display: false,
+      display: true,
       rate: 21
     },
     advanceConfig: {
@@ -712,17 +712,28 @@ const QuotePreview = ({
                       {selectedClient.client.country && <p>{selectedClient.client.country}</p>}
                     </div>
                   )}
+                  {/* Show VAT for professional clients */}
+                  {((selectedClient?.type === 'professionnel') || (selectedClient?.client?.client_type === 'company') || (selectedClient?.client?.type === 'professionnel')) && (selectedClient?.regNumber || selectedClient?.client?.regNumber || selectedClient?.client?.vat_number) && (
+                    <p>TVA: {selectedClient?.regNumber || selectedClient?.client?.regNumber || selectedClient?.client?.vat_number}</p>
+                  )}
                 </div>
               </div>
               <div className={`${previewMode === 'mobile' ? 'text-left' : 'text-right'}`}>
                 <h3 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.companyHeading', 'Entreprise')}</h3>
                 <div className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
-                  {companyInfo.name && <p className="font-semibold mb-1">{companyInfo.name}</p>}
+                  {companyInfo.name && <p className="font-medium">{companyInfo.name}</p>}
+                  {companyInfo.email && <p>{companyInfo.email}</p>}
+                  {/* Address display */}
+                  {companyInfo.address && (
+                    <div>
                   <p>{companyInfo.address}</p>
+                      {(companyInfo.postalCode || companyInfo.city) && (
                   <p>{companyInfo.postalCode} {companyInfo.city}</p>
-                  <p>{companyInfo.email}</p>
-                  <p>{companyInfo.phone}</p>
-                  <p>TVA: {companyInfo.vatNumber}</p>
+                      )}
+                    </div>
+                  )}
+                  {companyInfo.phone && <p>{companyInfo.phone}</p>}
+                  {companyInfo.vatNumber && <p>TVA: {companyInfo.vatNumber}</p>}
                 </div>
               </div>
             </div>
@@ -910,7 +921,18 @@ const QuotePreview = ({
               </div>
               <div>
                 <h4 className={`font-semibold text-black mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.clientApproval', 'Bon pour accord client:')}</h4>
-                <div className={`border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50 flex items-center justify-center ${previewMode === 'mobile' ? 'p-3 min-h-[60px]' : 'p-4 sm:p-6 min-h-[80px] sm:min-h-[100px]'}`}>
+                <div 
+                  className={`border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50 flex items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors ${previewMode === 'mobile' ? 'p-3 min-h-[60px]' : 'p-4 sm:p-6 min-h-[80px] sm:min-h-[100px]'}`}
+                  onClick={() => setShowSignatureModal(true)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setShowSignatureModal(true);
+                    }
+                  }}
+                >
                   {signatureData?.signature ? (
                     <div className="w-full">
                       <img 

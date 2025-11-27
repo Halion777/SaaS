@@ -6,7 +6,7 @@ import Input from '../../../components/ui/Input';
 import { Checkbox } from '../../../components/ui/Checkbox';
 import Select from '../../../components/ui/Select';
 
-const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSelectionChange, filters, onFiltersChange, onStatusUpdate }) => {
+const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSelectionChange, filters, onFiltersChange, onStatusUpdate, isExportingPDF = false }) => {
   const { t, i18n } = useTranslation();
   const [sortConfig, setSortConfig] = useState({ key: 'issueDate', direction: 'desc' });
   const [viewMode, setViewMode] = useState(() => {
@@ -40,10 +40,10 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
   };
 
   const statusOptions = [
-    { value: 'paid', label: t('invoicesManagement.status.paid') },
-    { value: 'unpaid', label: t('invoicesManagement.status.unpaid') },
-    { value: 'overdue', label: t('invoicesManagement.status.overdue') },
-    { value: 'cancelled', label: t('invoicesManagement.status.cancelled') }
+    { value: 'paid', label: t('invoicesManagement.status.paid'), badgeColor: 'bg-success' },
+    { value: 'unpaid', label: t('invoicesManagement.status.unpaid'), badgeColor: 'bg-warning' },
+    { value: 'overdue', label: t('invoicesManagement.status.overdue'), badgeColor: 'bg-error' },
+    { value: 'cancelled', label: t('invoicesManagement.status.cancelled'), badgeColor: 'bg-purple-500' }
   ];
 
   const getStatusBadge = (status, invoice = null) => {
@@ -51,7 +51,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
       paid: { label: t('invoicesManagement.status.paid'), color: 'bg-success text-success-foreground' },
       unpaid: { label: t('invoicesManagement.status.unpaid'), color: 'bg-warning text-warning-foreground' },
       overdue: { label: t('invoicesManagement.status.overdue'), color: 'bg-error text-error-foreground' },
-      cancelled: { label: t('invoicesManagement.status.cancelled'), color: 'bg-muted text-muted-foreground' }
+      cancelled: { label: t('invoicesManagement.status.cancelled'), color: 'bg-purple-500 text-white' }
     };
 
     const config = statusConfig[status] || statusConfig.unpaid;
@@ -232,6 +232,15 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
               <Button
                 variant="ghost"
                 size="sm"
+                iconName="Download"
+                onClick={() => onInvoiceAction('export', invoice)}
+                className="text-xs text-primary hover:text-primary/80"
+                title={t('invoicesManagement.table.actions.exportPDF', 'Export PDF')}
+                disabled={isExportingPDF}
+              />
+              <Button
+                variant="ghost"
+                size="sm"
                 iconName="Send"
                 onClick={() => onInvoiceAction('send', invoice)}
                 className="text-xs text-primary hover:text-primary/80"
@@ -402,6 +411,15 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                         iconName="Eye"
                         onClick={() => onInvoiceAction('view', invoice)}
                         title={t('invoicesManagement.table.actions.viewDetails')}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        iconName="Download"
+                        onClick={() => onInvoiceAction('export', invoice)}
+                        title={t('invoicesManagement.table.actions.exportPDF', 'Export PDF')}
+                        className="text-primary hover:text-primary/80"
+                        disabled={isExportingPDF}
                       />
                       <Button
                         variant="ghost"

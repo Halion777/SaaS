@@ -253,13 +253,33 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
       
       const { data, error } = await supabase
         .from('users')
-        .select('email, full_name, company_name, phone, country, vat_number, profession, business_size')
+        .select('email, first_name, last_name, company_name, phone, country, vat_number, profession, business_size')
         .eq('id', actualUser.id)
         .single();
 
       if (error) {
         console.error('Error loading account data:', error);
         return;
+      }
+
+      // Construct full_name from first_name and last_name
+      if (data) {
+        data.full_name = (data.first_name && data.last_name 
+          ? `${data.first_name} ${data.last_name}`.trim()
+          : data.first_name || data.last_name || '');
+      }
+
+      // Load company info from company_profiles to get the correct company name
+      try {
+        const { loadCompanyInfo } = await import('../../services/companyInfoService');
+        const companyInfo = await loadCompanyInfo(actualUser.id);
+        if (companyInfo && companyInfo.name) {
+          // Use company name from company_profiles if available (preferred over users.company_name)
+          data.company_name = companyInfo.name;
+        }
+      } catch (companyError) {
+        console.log('Could not load company info for account display:', companyError);
+        // Continue with users.company_name if company_profiles is not available
       }
 
       setUserAccountData(data);

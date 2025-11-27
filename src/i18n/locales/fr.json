@@ -764,8 +764,10 @@
     "step1": {
       "title": "Créez votre compte",
       "subtitle": "Commencez votre essai gratuit de 14 jours dès aujourd'hui",
-      "fullName": "Nom complet",
-      "fullNamePlaceholder": "Jean Dupont",
+      "firstName": "Prénom",
+      "firstNamePlaceholder": "Jean",
+      "lastName": "Nom",
+      "lastNamePlaceholder": "Dupont",
       "companyName": "Nom de l'entreprise",
       "companyNamePlaceholder": "Dupont Plomberie",
       "profession": "Profession / Type d'activité",
@@ -793,12 +795,44 @@
     "step2": {
       "title": "Quelques informations supplémentaires",
       "subtitle": "Personnalisez Haliqo selon votre activité",
+      "businessInfo": "Informations sur l'entreprise",
+      "companyInfo": "Informations de l'entreprise",
+      "bankingInfo": "Informations bancaires",
+      "additionalInfo": "Informations supplémentaires",
+      "companyName": "Nom de l'entreprise",
+      "companyNamePlaceholder": "Dupont Plomberie",
+      "vatNumber": "Numéro de TVA",
+      "vatNumberPlaceholder": "Numéro de TVA de l'entreprise",
       "businessSize": "Taille de l'entreprise",
       "businessSizePlaceholder": "Nombre d'employés",
       "solo": "Artisan seul",
       "small": "2-5 employés",
       "medium": "6-20 employés",
       "large": "20+ employés",
+      "companyAddress": "Adresse de l'entreprise",
+      "companyAddressPlaceholder": "123 Nom de la rue",
+      "companyFullAddress": "Adresse complète de l'entreprise",
+      "companyFullAddressPlaceholder": "123 Nom de la rue",
+      "companyCity": "Ville",
+      "companyCityPlaceholder": "Bruxelles",
+      "companyPostalCode": "Code postal",
+      "companyPostalCodePlaceholder": "1000",
+      "companyState": "Province/Région",
+      "companyStatePlaceholder": "Bruxelles-Capitale",
+      "companyCountry": "Pays",
+      "companyCountryPlaceholder": "Sélectionnez le pays",
+      "companyPhone": "Téléphone de l'entreprise",
+      "companyPhonePlaceholder": "+32 123 45 67 89",
+      "companyEmail": "Email de l'entreprise",
+      "companyEmailPlaceholder": "contact@entreprise.com",
+      "companyWebsite": "Site web",
+      "companyWebsitePlaceholder": "www.entreprise.com",
+      "companyIban": "IBAN",
+      "companyIbanPlaceholder": "BE68539007547034",
+      "companyAccountName": "Nom du titulaire du compte",
+      "companyAccountNamePlaceholder": "Nom du titulaire du compte",
+      "companyBankName": "Nom de la banque",
+      "companyBankNamePlaceholder": "Nom de la banque",
       "benefits": {
         "timeSaving": {
           "title": "Gain de temps",
@@ -1703,7 +1737,7 @@
       "validUntil": "Valide jusqu'au: {{date}}",
       "notScheduled": "Non programmée",
       "notDefined": "Non définie",
-      "stage": "Étape {{stage}} - {{status}}"
+      "stage": "Étape {{stage}}"
     },
     
     "actions": {
@@ -2926,8 +2960,8 @@
       },
       "materialsCount": "{{count}} matériau",
       "materialsCount_plural": "{{count}} matériaux",
-      "unitPrice": "Prix unitaire",
-      "unitPriceEuro": "Prix unitaire (€)",
+      "unitPrice": "Prix (€)",
+      "unitPriceEuro": "Prix (€)",
       "pricePlaceholder": "0.00",
       "priceExcludingMaterials": "Prix hors matériaux",
       "materials": "Matériaux",
@@ -3636,7 +3670,7 @@
         "phone": "Téléphone",
         "phonePlaceholder": "04 12 34 56 78",
         "address": "Adresse",
-        "addressPlaceholder": "Adresse complète",
+        "addressPlaceholder": "Nom de rue + numéro (ex: Rue de la Paix 123)",
         "companyName": "Raison sociale",
         "companyNamePlaceholder": "Nom de l'entreprise",
         "city": "Ville",
@@ -3658,6 +3692,12 @@
         "peppolIdPlaceholder": "Format: 0000:IDENTIFIANT",
         "invalidPeppolId": "Le format du Peppol ID n'est pas valide. Utilisez le format: 0208:123456789",
         "communicationPreferences": "Préférences de communication",
+        "languagePreference": "Préférence de langue",
+        "languagePreferenceHelp": "Les emails seront envoyés dans cette langue",
+        "personalInfo": "Informations personnelles",
+        "companyInfo": "Informations de l'entreprise",
+        "locationInfo": "Informations de localisation",
+        "preferences": "Préférences",
         "cancel": "Annuler",
         "update": "Mettre à jour",
         "create": "Créer le client"
@@ -3765,7 +3805,8 @@
         "days": "jours",
         "actions": {
           "viewDetails": "Voir les détails",
-          "sendInvoice": "Envoyer la facture"
+          "sendInvoice": "Envoyer la facture",
+          "exportPDF": "Exporter PDF"
         }
       },
       "empty": {
@@ -3778,7 +3819,24 @@
         "deselect": "Désélectionner",
         "chooseAction": "Choisir une action...",
         "export": "Exporter",
-        "delete": "Supprimer"
+        "delete": "Supprimer",
+        "sendToAccountant": "Envoyer au comptable"
+      },
+      "export": {
+        "invoiceNumber": "Numéro de facture",
+        "quoteNumber": "Numéro de devis",
+        "clientName": "Nom du client",
+        "clientEmail": "Email du client",
+        "amount": "Montant total",
+        "netAmount": "Montant net",
+        "taxAmount": "Montant de la TVA",
+        "discountAmount": "Montant de la remise",
+        "status": "Statut",
+        "issueDate": "Date d'émission",
+        "dueDate": "Date d'échéance",
+        "paymentMethod": "Méthode de paiement",
+        "title": "Titre",
+        "peppolStatus": "Statut Peppol"
       },
       "messages": {
         "markedAsPaidSuccess": "Facture marquée comme payée avec succès !",
@@ -4021,7 +4079,12 @@
         "days": "jours",
         "net": "Net",
         "vat": "TVA",
-        "received": "Reçu"
+        "received": "Reçu",
+        "actions": {
+          "viewDetails": "Voir les détails",
+          "exportPDF": "Exporter PDF",
+          "edit": "Modifier"
+        }
       },
       "empty": {
         "noInvoicesFound": "Aucune facture de dépense trouvée",
@@ -4384,5 +4447,5 @@
       "avatarUpdated": "Avatar mis à jour avec succès",
       "avatarUpdateError": "Erreur lors du téléchargement de l'avatar"
     }
-  }
+    }
 }

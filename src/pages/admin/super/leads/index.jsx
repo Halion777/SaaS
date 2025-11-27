@@ -154,7 +154,8 @@ const SuperAdminLeads = () => {
             review_status,
             created_at,
             users!lead_spam_reports_reported_by_user_id_fkey (
-              full_name,
+              first_name,
+              last_name,
               email
             )
           )
@@ -181,7 +182,7 @@ const SuperAdminLeads = () => {
             full_address, city, region, country, price_range, status, created_at
           ),
           users!lead_spam_reports_reported_by_user_id_fkey (
-            id, full_name, email
+            id, first_name, last_name, email
           )
         `)
         .order('created_at', { ascending: false });
@@ -763,7 +764,7 @@ const SuperAdminLeads = () => {
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground mt-1">
-                              {lead.price_range && `Budget: ${lead.price_range}`}
+                              {lead.price_range && `Budget: ${lead.price_range.includes('€') ? lead.price_range : `${lead.price_range} (€)`}`}
                               {lead.completion_date && ` • Due: ${new Date(lead.completion_date).toLocaleDateString()}`}
                             </p>
                           </div>
@@ -823,7 +824,7 @@ const SuperAdminLeads = () => {
                                       lead_id: lead.id,
                                       lead_client_name: lead.client_name,
                                       lead_project_description: lead.project_description,
-                                      reported_by_name: report.users?.full_name,
+                                      reported_by_name: (report.users?.first_name && report.users?.last_name ? `${report.users.first_name} ${report.users.last_name}` : report.users?.first_name || report.users?.last_name || 'Unknown'),
                                       reported_by_email: report.users?.email,
                                       reason: report.reason,
                                       review_status: report.review_status,
@@ -1037,7 +1038,7 @@ const SuperAdminLeads = () => {
                           <td className="px-4 py-3">
                             <div>
                               <p className="text-sm font-medium text-foreground">
-                                {report.users?.full_name || 'Unknown'}
+                                {(report.users?.first_name && report.users?.last_name ? `${report.users.first_name} ${report.users.last_name}` : report.users?.first_name || report.users?.last_name || 'Unknown')}
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 {report.users?.email || 'N/A'}
@@ -1323,7 +1324,7 @@ const SuperAdminLeads = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Price Range</label>
-                    <p className="text-foreground">{selectedLead.price_range || 'N/A'}</p>
+                    <p className="text-foreground">{selectedLead.price_range ? (selectedLead.price_range.includes('€') ? selectedLead.price_range : `${selectedLead.price_range} (€)`) : 'N/A'}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Completion Date</label>

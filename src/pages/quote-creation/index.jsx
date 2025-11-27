@@ -906,7 +906,7 @@ const QuoteCreation = () => {
 
           vatConfig: {
 
-            display: financialData.vat_config?.display || false,
+            display: financialData.vat_config?.display ?? true,
 
             rate: financialData.vat_config?.rate || 21
 
@@ -2255,7 +2255,7 @@ const QuoteCreation = () => {
 
             vat_config: {
 
-              display: data.financialConfig.vatConfig?.display || false,
+              display: data.financialConfig.vatConfig?.display ?? true,
 
               rate: data.financialConfig.vatConfig?.rate || 21,
 
@@ -3238,7 +3238,7 @@ const QuoteCreation = () => {
 
             vat_config: {
 
-              display: sendData.financialConfig.vatConfig?.display || false,
+              display: sendData.financialConfig.vatConfig?.display ?? true,
 
               rate: sendData.financialConfig.vatConfig?.rate || 21,
 

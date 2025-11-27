@@ -6,7 +6,7 @@ import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import { Checkbox } from '../../../components/ui/Checkbox';
 
-const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, selectedExpenseInvoices, onSelectionChange, filters, onFiltersChange, onStatusUpdate }) => {
+const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, selectedExpenseInvoices, onSelectionChange, filters, onFiltersChange, onStatusUpdate, isExportingPDF = false }) => {
   const { t, i18n } = useTranslation();
   const [sortConfig, setSortConfig] = useState({ key: 'issueDate', direction: 'desc' });
   const [viewMode, setViewMode] = useState(() => {
@@ -40,9 +40,9 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
   };
 
   const statusOptions = [
-    { value: 'paid', label: t('expenseInvoices.status.paid', 'Paid') },
-    { value: 'pending', label: t('expenseInvoices.status.pending', 'Pending') },
-    { value: 'overdue', label: t('expenseInvoices.status.overdue', 'Overdue') }
+    { value: 'paid', label: t('expenseInvoices.status.paid', 'Paid'), badgeColor: 'bg-success' },
+    { value: 'pending', label: t('expenseInvoices.status.pending', 'Pending'), badgeColor: 'bg-warning' },
+    { value: 'overdue', label: t('expenseInvoices.status.overdue', 'Overdue'), badgeColor: 'bg-error' }
   ];
 
   const getStatusBadge = (status, invoiceId = null) => {
@@ -204,6 +204,16 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                   size="sm"
                   iconName="Eye"
                   onClick={() => onExpenseInvoiceAction('view', invoice)}
+                  title={t('expenseInvoices.table.actions.viewDetails', 'View Details')}
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconName="Download"
+                  onClick={() => onExpenseInvoiceAction('export', invoice)}
+                  title={t('expenseInvoices.table.actions.exportPDF', 'Export PDF')}
+                  className="text-primary hover:text-primary/80"
+                  disabled={isExportingPDF}
                 />
                 {invoice.source === 'manual' && (
                 <Button
@@ -211,6 +221,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                   size="sm"
                   iconName="Edit"
                   onClick={() => onExpenseInvoiceAction('edit', invoice)}
+                  title={t('expenseInvoices.table.actions.edit', 'Edit')}
                 />
                 )}
               </div>
@@ -450,6 +461,16 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                         size="sm"
                         iconName="Eye"
                         onClick={() => onExpenseInvoiceAction('view', invoice)}
+                        title={t('expenseInvoices.table.actions.viewDetails', 'View Details')}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        iconName="Download"
+                        onClick={() => onExpenseInvoiceAction('export', invoice)}
+                        title={t('expenseInvoices.table.actions.exportPDF', 'Export PDF')}
+                        className="text-primary hover:text-primary/80"
+                        disabled={isExportingPDF}
                       />
                       {invoice.source === 'manual' && (
                       <Button
@@ -457,6 +478,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                         size="sm"
                         iconName="Edit"
                         onClick={() => onExpenseInvoiceAction('edit', invoice)}
+                        title={t('expenseInvoices.table.actions.edit', 'Edit')}
                       />
                       )}
                     </div>

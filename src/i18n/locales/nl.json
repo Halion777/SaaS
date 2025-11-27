@@ -763,8 +763,10 @@
     "step1": {
       "title": "Maak je account aan",
       "subtitle": "Start vandaag nog je 14-daagse gratis proefperiode",
-      "fullName": "Volledige naam",
-      "fullNamePlaceholder": "Jan Jansen",
+      "firstName": "Voornaam",
+      "firstNamePlaceholder": "Jan",
+      "lastName": "Achternaam",
+      "lastNamePlaceholder": "Jansen",
       "companyName": "Bedrijfsnaam",
       "companyNamePlaceholder": "Jansen Loodgieterij",
       "profession": "Beroep / Activiteitstype",
@@ -792,12 +794,44 @@
     "step2": {
       "title": "Aanvullende informatie",
       "subtitle": "Pas Haliqo aan volgens je activiteit",
+      "businessInfo": "Bedrijfsinformatie",
+      "companyInfo": "Bedrijfsinformatie",
+      "bankingInfo": "Bankgegevens",
+      "additionalInfo": "Aanvullende informatie",
+      "companyName": "Bedrijfsnaam",
+      "companyNamePlaceholder": "Jansen Loodgieterij",
+      "vatNumber": "BTW-nummer",
+      "vatNumberPlaceholder": "BTW-nummer van het bedrijf",
       "businessSize": "Bedrijfsgrootte",
       "businessSizePlaceholder": "Aantal werknemers",
       "solo": "Solo vakman",
       "small": "2-5 werknemers",
       "medium": "6-20 werknemers",
       "large": "20+ werknemers",
+      "companyAddress": "Bedrijfsadres",
+      "companyAddressPlaceholder": "123 Straatnaam",
+      "companyFullAddress": "Volledig bedrijfsadres",
+      "companyFullAddressPlaceholder": "123 Straatnaam",
+      "companyCity": "Stad",
+      "companyCityPlaceholder": "Brussel",
+      "companyPostalCode": "Postcode",
+      "companyPostalCodePlaceholder": "1000",
+      "companyState": "Provincie/Regio",
+      "companyStatePlaceholder": "Brussel-Hoofdstad",
+      "companyCountry": "Land",
+      "companyCountryPlaceholder": "Selecteer land",
+      "companyPhone": "Bedrijfstelefoon",
+      "companyPhonePlaceholder": "+32 123 45 67 89",
+      "companyEmail": "Bedrijfsemail",
+      "companyEmailPlaceholder": "contact@bedrijf.com",
+      "companyWebsite": "Website",
+      "companyWebsitePlaceholder": "www.bedrijf.com",
+      "companyIban": "IBAN",
+      "companyIbanPlaceholder": "BE68539007547034",
+      "companyAccountName": "Rekeninghouder naam",
+      "companyAccountNamePlaceholder": "Rekeninghouder naam",
+      "companyBankName": "Banknaam",
+      "companyBankNamePlaceholder": "Banknaam",
       "benefits": {
         "timeSaving": {
           "title": "Tijdsbesparing",
@@ -1872,7 +1906,7 @@
       "validUntil": "Geldig tot: {{date}}",
       "notScheduled": "Niet gepland",
       "notDefined": "Niet gedefinieerd",
-      "stage": "Stadium {{stage}} - {{status}}"
+      "stage": "Stadium {{stage}}"
     },
     "actions": {
       "followUp": "Herinneren",
@@ -2913,8 +2947,8 @@
       },
       "materialsCount": "{{count}} materiaal",
       "materialsCount_plural": "{{count}} materialen",
-      "unitPrice": "Eenheidsprijs",
-      "unitPriceEuro": "Eenheidsprijs (€)",
+      "unitPrice": "Prijs (€)",
+      "unitPriceEuro": "Prijs (€)",
       "pricePlaceholder": "0.00",
       "priceExcludingMaterials": "Prijs exclusief materialen",
       "materials": "Materialen",
@@ -3622,7 +3656,7 @@
         "phone": "Telefoon",
         "phonePlaceholder": "04 12 34 56 78",
         "address": "Adres",
-        "addressPlaceholder": "Volledig adres",
+        "addressPlaceholder": "Straatnaam + nummer (bijv. Vredesstraat 123)",
         "companyName": "Bedrijfsnaam",
         "companyNamePlaceholder": "Bedrijfsnaam",
         "city": "Stad",
@@ -3644,6 +3678,12 @@
         "peppolIdPlaceholder": "Formaat: 0000:IDENTIFIER",
         "invalidPeppolId": "Het Peppol ID-formaat is niet geldig. Gebruik het formaat: 0208:123456789",
         "communicationPreferences": "Communicatievoorkeuren",
+        "languagePreference": "Taalvoorkeur",
+        "languagePreferenceHelp": "E-mails worden in deze taal verzonden",
+        "personalInfo": "Persoonlijke informatie",
+        "companyInfo": "Bedrijfsinformatie",
+        "locationInfo": "Locatie-informatie",
+        "preferences": "Voorkeuren",
         "cancel": "Annuleren",
         "update": "Bijwerken",
         "create": "Klant Aanmaken"
@@ -3751,7 +3791,8 @@
         "days": "dagen",
         "actions": {
           "viewDetails": "Details bekijken",
-          "sendInvoice": "Factuur verzenden"
+          "sendInvoice": "Factuur verzenden",
+          "exportPDF": "PDF exporteren"
         }
       },
       "empty": {
@@ -3764,7 +3805,24 @@
         "deselect": "Deselecteren",
         "chooseAction": "Kies een actie...",
         "export": "Exporteren",
-        "delete": "Verwijderen"
+        "delete": "Verwijderen",
+        "sendToAccountant": "Verzenden naar accountant"
+      },
+      "export": {
+        "invoiceNumber": "Factuurnummer",
+        "quoteNumber": "Offertenummer",
+        "clientName": "Klantnaam",
+        "clientEmail": "Klant e-mail",
+        "amount": "Totaalbedrag",
+        "netAmount": "Netto bedrag",
+        "taxAmount": "BTW bedrag",
+        "discountAmount": "Kortingsbedrag",
+        "status": "Status",
+        "issueDate": "Uitgiftedatum",
+        "dueDate": "Vervaldatum",
+        "paymentMethod": "Betalingsmethode",
+        "title": "Titel",
+        "peppolStatus": "Peppol status"
       },
       "messages": {
         "markedAsPaidSuccess": "Factuur succesvol als betaald gemarkeerd!",
@@ -4007,7 +4065,12 @@
         "days": "dagen",
         "net": "Netto",
         "vat": "BTW",
-        "received": "Ontvangen"
+        "received": "Ontvangen",
+        "actions": {
+          "viewDetails": "Details bekijken",
+          "exportPDF": "PDF exporteren",
+          "edit": "Bewerken"
+        }
       },
       "empty": {
         "noInvoicesFound": "Geen uitgavenfacturen gevonden",

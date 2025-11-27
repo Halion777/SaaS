@@ -261,6 +261,9 @@ const FollowUpManagement = () => {
             stage: followUp.stage,
             scheduledAt: followUp.scheduled_at,
             attempts: followUp.attempts || 0,
+            maxAttempts: followUp.max_attempts || 3,
+            updated_at: followUp.updated_at,
+            created_at: followUp.created_at,
             // Follow-up type based on quote status
             followUpType: followUpType,
             followUpReason: followUpReason,
@@ -281,7 +284,76 @@ const FollowUpManagement = () => {
           };
         }).filter(Boolean); // Remove null entries
         
-        setFollowUps(transformedFollowUps);
+        // 🔒 CRITICAL: Filter to show only the MOST RECENT follow-up per quote
+        // Group by quote_id and keep only the one with the latest scheduled_at or created_at
+        const followUpsByQuote = {};
+        transformedFollowUps.forEach(followUp => {
+          const quoteId = followUp.quoteId;
+          if (!quoteId) return;
+          
+          const existing = followUpsByQuote[quoteId];
+          if (!existing) {
+            followUpsByQuote[quoteId] = followUp;
+          } else {
+            // Compare dates to find the most recent follow-up
+            // Priority: updated_at > scheduled_at > created_at
+            const existingUpdated = existing.updated_at ? new Date(existing.updated_at) : null;
+            const currentUpdated = followUp.updated_at ? new Date(followUp.updated_at) : null;
+            
+            const existingScheduled = existing.scheduledAt ? new Date(existing.scheduledAt) : null;
+            const currentScheduled = followUp.scheduledAt ? new Date(followUp.scheduledAt) : null;
+            
+            const existingCreated = existing.created_at ? new Date(existing.created_at) : null;
+            const currentCreated = followUp.created_at ? new Date(followUp.created_at) : null;
+            
+            // Determine which is more recent
+            let isCurrentMoreRecent = false;
+            
+            if (currentUpdated && existingUpdated) {
+              isCurrentMoreRecent = currentUpdated > existingUpdated;
+            } else if (currentUpdated && !existingUpdated) {
+              isCurrentMoreRecent = true;
+            } else if (!currentUpdated && existingUpdated) {
+              isCurrentMoreRecent = false;
+            } else if (currentScheduled && existingScheduled) {
+              isCurrentMoreRecent = currentScheduled > existingScheduled;
+            } else if (currentScheduled && !existingScheduled) {
+              isCurrentMoreRecent = true;
+            } else if (!currentScheduled && existingScheduled) {
+              isCurrentMoreRecent = false;
+            } else if (currentCreated && existingCreated) {
+              isCurrentMoreRecent = currentCreated > existingCreated;
+            } else if (currentCreated && !existingCreated) {
+              isCurrentMoreRecent = true;
+            }
+            
+            // Keep the most recent one
+            if (isCurrentMoreRecent) {
+              followUpsByQuote[quoteId] = followUp;
+            }
+          }
+        });
+        
+        // Convert back to array - now only one follow-up per quote
+        const uniqueFollowUps = Object.values(followUpsByQuote);
+        
+        // Stage = number of tries (attempts)
+        // Business logic: Stage directly equals the number of attempts/tries
+        // - 1 try = Stage 1
+        // - 2 tries = Stage 2
+        // - 3 tries = Stage 3
+        const followUpsWithCorrectStage = uniqueFollowUps.map(followUp => {
+          const attempts = followUp.attempts || 0;
+          // Stage equals number of tries (attempts), capped at 3
+          const displayStage = Math.min(attempts || 1, 3);
+          
+          return {
+            ...followUp,
+            stage: displayStage
+          };
+        });
+        
+        setFollowUps(followUpsWithCorrectStage);
         
       } catch (err) {
         console.error('Error loading data:', err);
@@ -864,7 +936,7 @@ const FollowUpManagement = () => {
                </div>
                <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground">
                  <Icon name="GitBranch" size={12} className="sm:w-3.5 sm:h-3.5" />
-                 <span>{t('followUpManagement.cardView.stage', { stage: followUp.stage, status: getStageCompletionLabel(followUp.status, followUp.stage) })}</span>
+                 <span>{t('followUpManagement.cardView.stage', { stage: followUp.stage })}</span>
                </div>
               {followUp.templateSubject && (
                 <div className="flex items-start space-x-2 text-xs sm:text-sm text-muted-foreground">

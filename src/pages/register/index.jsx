@@ -26,7 +26,8 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     phone: '',
@@ -37,7 +38,16 @@ const Register = () => {
     businessSize: '',
     selectedPlan: 'pro',
     billingCycle: 'monthly',
-    acceptTerms: false
+    acceptTerms: false,
+    // Company information fields for Step 2
+    companyAddress: '',
+    companyCity: '',
+    companyPostalCode: '',
+    companyState: '',
+    companyWebsite: '',
+    companyIban: '',
+    companyAccountName: '',
+    companyBankName: ''
   });
   const [errors, setErrors] = useState({});
 
@@ -80,8 +90,8 @@ const Register = () => {
     const newErrors = {};
 
     if (step === 1) {
-      if (!formData.fullName.trim()) newErrors.fullName = t('errors.required');
-      if (!formData.companyName.trim()) newErrors.companyName = t('errors.required');
+      if (!formData.firstName.trim()) newErrors.firstName = t('errors.required');
+      if (!formData.lastName.trim()) newErrors.lastName = t('errors.required');
       if (!formData.profession) newErrors.profession = t('errors.required');
       if (!formData.email.trim()) newErrors.email = t('errors.required');
       else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = t('errors.invalidEmail');
@@ -100,6 +110,12 @@ const Register = () => {
 
     if (step === 2) {
       if (!formData.businessSize) newErrors.businessSize = t('errors.required');
+      if (!formData.companyName.trim()) newErrors.companyName = t('errors.required');
+      if (!formData.vatNumber.trim()) newErrors.vatNumber = t('errors.required');
+      if (!formData.companyAddress.trim()) newErrors.companyAddress = t('errors.required');
+      if (!formData.companyCity.trim()) newErrors.companyCity = t('errors.required');
+      if (!formData.companyPostalCode.trim()) newErrors.companyPostalCode = t('errors.required');
+      if (!formData.companyState.trim()) newErrors.companyState = t('errors.required');
     }
 
     if (step === 3) {
@@ -200,7 +216,8 @@ const Register = () => {
         // Update user metadata with new form data
         const { error: updateError } = await supabase.auth.updateUser({
           data: {
-            full_name: formData.fullName,
+            first_name: formData.firstName,
+            last_name: formData.lastName,
             company_name: formData.companyName,
             vat_number: formData.vatNumber,
             phone: formData.phone,
@@ -224,13 +241,22 @@ const Register = () => {
           // Include all form data for user record creation in webhook
           userData: {
             email: formData.email.toLowerCase().trim(),
-            fullName: formData.fullName,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
             companyName: formData.companyName,
             vatNumber: formData.vatNumber,
             phone: formData.phone,
             profession: formData.profession,
             country: formData.country,
-            businessSize: formData.businessSize
+            businessSize: formData.businessSize,
+            companyAddress: formData.companyAddress,
+            companyCity: formData.companyCity,
+            companyPostalCode: formData.companyPostalCode,
+            companyState: formData.companyState,
+            companyWebsite: formData.companyWebsite,
+            companyIban: formData.companyIban,
+            companyAccountName: formData.companyAccountName,
+            companyBankName: formData.companyBankName
           }
         });
 
@@ -248,7 +274,8 @@ const Register = () => {
           sessionStorage.setItem('registration_pending', JSON.stringify({
             userId: signInData.user.id,
             email: formData.email.toLowerCase().trim(),
-            fullName: formData.fullName,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
             companyName: formData.companyName,
             vatNumber: formData.vatNumber,
             phone: formData.phone,
@@ -257,6 +284,14 @@ const Register = () => {
             businessSize: formData.businessSize,
             selectedPlan: formData.selectedPlan,
             billingCycle: formData.billingCycle,
+          companyAddress: formData.companyAddress,
+          companyCity: formData.companyCity,
+          companyPostalCode: formData.companyPostalCode,
+          companyState: formData.companyState,
+          companyWebsite: formData.companyWebsite,
+          companyIban: formData.companyIban,
+          companyAccountName: formData.companyAccountName,
+          companyBankName: formData.companyBankName,
             timestamp: Date.now(),
             resumingRegistration: true
           }));
@@ -318,7 +353,8 @@ const Register = () => {
         sessionStorage.setItem('registration_pending', JSON.stringify({
           userId: authData.user.id,
           email: formData.email.toLowerCase().trim(),
-          fullName: formData.fullName,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
           companyName: formData.companyName,
           vatNumber: formData.vatNumber,
           phone: formData.phone,
@@ -327,6 +363,14 @@ const Register = () => {
           businessSize: formData.businessSize,
           selectedPlan: formData.selectedPlan,
           billingCycle: formData.billingCycle,
+          companyAddress: formData.companyAddress,
+          companyCity: formData.companyCity,
+          companyPostalCode: formData.companyPostalCode,
+          companyState: formData.companyState,
+          companyWebsite: formData.companyWebsite,
+          companyIban: formData.companyIban,
+          companyAccountName: formData.companyAccountName,
+          companyBankName: formData.companyBankName,
           timestamp: Date.now()
         }));
         

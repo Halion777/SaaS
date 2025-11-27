@@ -81,7 +81,11 @@ serve(async (req) => {
     
     Extraction Guidelines:
     - Extract ONLY what you can clearly see in the document
-    - For amounts: Extract numbers only (remove currency symbols like €, $, spaces, commas used as thousands separators)
+    - For amounts: Extract numbers preserving decimal separators. Use comma (,) as decimal separator in output.
+      * If you see "60,45" (European format with comma), keep as "60,45"
+      * If you see "1.234,56" (European format: dot for thousands, comma for decimals), convert to "1234,56"
+      * If you see "1,234.56" (US format: comma for thousands, dot for decimals), convert to "1234,56" (replace dot with comma)
+      * Remove currency symbols (€, $) and spaces, but preserve the decimal separator (convert dot to comma for decimals)
     - For dates: Convert to YYYY-MM-DD format (e.g., "15/01/2025" → "2025-01-15", "15 janvier 2025" → "2025-01-15")
     - For VAT numbers: Extract the full number including country code (e.g., "BE123456789" or "0208:123456789")
     - If a field is not visible, use null (not empty string)

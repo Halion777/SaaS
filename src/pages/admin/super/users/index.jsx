@@ -139,8 +139,14 @@ const SuperAdminUsers = () => {
 
       // Now using the last_login_at column from users table for accurate login tracking
       const enrichedUsers = usersData.map(user => {
+        // Construct full_name from first_name and last_name
+        const fullName = (user.first_name && user.last_name 
+          ? `${user.first_name} ${user.last_name}`.trim()
+          : user.first_name || user.last_name || '');
+        
         return {
           ...user,
+          full_name: fullName, // Add constructed full_name for backward compatibility
           // Use the last_login_at column from users table
           last_sign_in_at: user.last_login_at,
           // Check if user has ever logged in
@@ -194,7 +200,13 @@ const SuperAdminUsers = () => {
       let aValue = a[sortBy];
       let bValue = b[sortBy];
 
-      if (sortBy === 'created_at' || sortBy === 'last_sign_in_at') {
+      // Handle first_name sorting by constructing full name from first_name and last_name
+      if (sortBy === 'first_name') {
+        const aFullName = (a.first_name && a.last_name ? `${a.first_name} ${a.last_name}` : a.first_name || a.last_name || '').toLowerCase();
+        const bFullName = (b.first_name && b.last_name ? `${b.first_name} ${b.last_name}` : b.first_name || b.last_name || '').toLowerCase();
+        aValue = aFullName;
+        bValue = bFullName;
+      } else if (sortBy === 'created_at' || sortBy === 'last_sign_in_at') {
         aValue = new Date(aValue || 0);
         bValue = new Date(bValue || 0);
       }
@@ -283,7 +295,7 @@ const SuperAdminUsers = () => {
         ['Email', 'Full Name', 'Company', 'Role', 'Status', 'Created At', 'Last Login'],
         ...filteredUsers.map(user => [
           user.email || '',
-          user.full_name || '',
+          (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.first_name || user.last_name || user.full_name || ''),
           user.company_name || '',
           user.role || '',
           user.has_logged_in ? 'Has Login' : 'No Login',
@@ -448,8 +460,8 @@ const SuperAdminUsers = () => {
                   options={[
                     { value: 'created_at-desc', label: 'Newest First' },
                     { value: 'created_at-asc', label: 'Oldest First' },
-                    { value: 'full_name-asc', label: 'Name A-Z' },
-                    { value: 'full_name-desc', label: 'Name Z-A' },
+                    { value: 'first_name-asc', label: 'Name A-Z' },
+                    { value: 'first_name-desc', label: 'Name Z-A' },
                     { value: 'last_sign_in_at-desc', label: 'Last Login' }
                   ]}
                   className="w-full sm:w-40"
@@ -781,7 +793,7 @@ const SuperAdminUsers = () => {
                   <div className="space-y-3">
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Full Name</label>
-                      <p className="text-foreground">{selectedUser.full_name || 'Not provided'}</p>
+                      <p className="text-foreground">{(selectedUser.first_name && selectedUser.last_name ? `${selectedUser.first_name} ${selectedUser.last_name}` : selectedUser.first_name || selectedUser.last_name || selectedUser.full_name || 'Not provided')}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Email</label>
@@ -959,13 +971,23 @@ const SuperAdminUsers = () => {
                 <div className="space-y-4">
                   <h4 className="text-lg font-medium text-foreground border-b border-border pb-2">Personal Information</h4>
                   <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Full Name</label>
+                        <label className="block text-sm font-medium text-foreground mb-2">First Name</label>
                       <Input
-                        value={selectedUser.full_name || ''}
-                        onChange={(e) => setSelectedUser({...selectedUser, full_name: e.target.value})}
-                        placeholder="Enter full name"
+                          value={selectedUser.first_name || ''}
+                          onChange={(e) => setSelectedUser({...selectedUser, first_name: e.target.value})}
+                          placeholder="Enter first name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">Last Name</label>
+                        <Input
+                          value={selectedUser.last_name || ''}
+                          onChange={(e) => setSelectedUser({...selectedUser, last_name: e.target.value})}
+                          placeholder="Enter last name"
                       />
+                      </div>
                     </div>
                     
                     <div>
@@ -1058,7 +1080,8 @@ const SuperAdminUsers = () => {
                       await supabase
                         .from('users')
                         .update({
-                          full_name: selectedUser.full_name,
+                          first_name: selectedUser.first_name,
+                          last_name: selectedUser.last_name,
                           company_name: selectedUser.company_name,
                           phone: selectedUser.phone,
                           profession: selectedUser.profession,

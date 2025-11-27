@@ -33,7 +33,7 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
       paid: { label: t('invoicesManagement.status.paid'), color: 'bg-success text-success-foreground' },
       unpaid: { label: t('invoicesManagement.status.unpaid'), color: 'bg-warning text-warning-foreground' },
       overdue: { label: t('invoicesManagement.status.overdue'), color: 'bg-error text-error-foreground' },
-      cancelled: { label: t('invoicesManagement.status.cancelled'), color: 'bg-muted text-muted-foreground' }
+      cancelled: { label: t('invoicesManagement.status.cancelled'), color: 'bg-purple-500 text-white' }
     };
     const config = statusConfig[status] || statusConfig.unpaid;
     return (

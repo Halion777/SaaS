@@ -1,13 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import Input from '../../../components/ui/Input';
 import Icon from '../../../components/AppIcon';
 import Select from '../../../components/ui/Select';
+import { COUNTRY_PHONE_CODES } from '../../../utils/countryCodes';
+
 
 const StepOne = ({ formData, updateFormData, errors }) => {
   const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
+  const [phoneCountryCode, setPhoneCountryCode] = useState(
+    COUNTRY_PHONE_CODES[formData.country] || '+32'
+  );
 
   const calculatePasswordStrength = (password) => {
     let strength = 0;
@@ -36,6 +41,31 @@ const StepOne = ({ formData, updateFormData, errors }) => {
     if (passwordStrength < 50) return t('registerForm.step1.passwordMedium');
     if (passwordStrength < 75) return t('registerForm.step1.passwordGood');
     return t('registerForm.step1.passwordExcellent');
+  };
+
+  // Update phone country code when country changes
+  useEffect(() => {
+    const code = COUNTRY_PHONE_CODES[formData.country] || '+32';
+    setPhoneCountryCode(code);
+  }, [formData.country]);
+
+  // Get the current unique value for the select
+  const getCurrentSelectValue = () => {
+    if (!phoneCountryCode) return '';
+    // Find the country code that matches the current phone code and country
+    const matchingCountry = Object.entries(COUNTRY_PHONE_CODES).find(
+      ([countryCode, phoneCode]) => 
+        phoneCode === phoneCountryCode && 
+        (countryCode === formData.country || !formData.country)
+    );
+    if (matchingCountry) {
+      return `${phoneCountryCode}_${matchingCountry[0]}`;
+    }
+    // Fallback: use first country with this phone code
+    const firstMatch = Object.entries(COUNTRY_PHONE_CODES).find(
+      ([, phoneCode]) => phoneCode === phoneCountryCode
+    );
+    return firstMatch ? `${phoneCountryCode}_${firstMatch[0]}` : '';
   };
   
   // Profession options with icons
@@ -153,34 +183,26 @@ const StepOne = ({ formData, updateFormData, errors }) => {
       </div>
 
       <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
         <Input
-          label={t('registerForm.step1.fullName')}
+            label={t('registerForm.step1.firstName')}
           type="text"
-          placeholder={t('registerForm.step1.fullNamePlaceholder')}
-          value={formData.fullName}
-          onChange={(e) => updateFormData('fullName', e.target.value)}
-          error={errors.fullName}
+            placeholder={t('registerForm.step1.firstNamePlaceholder')}
+            value={formData.firstName}
+            onChange={(e) => updateFormData('firstName', e.target.value)}
+            error={errors.firstName}
           required
         />
-        
         <Input
-          label={t('registerForm.step1.companyName')}
+            label={t('registerForm.step1.lastName')}
           type="text"
-          placeholder={t('registerForm.step1.companyNamePlaceholder')}
-          value={formData.companyName}
-          onChange={(e) => updateFormData('companyName', e.target.value)}
-          error={errors.companyName}
+            placeholder={t('registerForm.step1.lastNamePlaceholder')}
+            value={formData.lastName}
+            onChange={(e) => updateFormData('lastName', e.target.value)}
+            error={errors.lastName}
           required
         />
-        
-        <Input
-          label={t('registerForm.step1.vatNumber')}
-          type="text"
-          placeholder={t('registerForm.step1.vatNumberPlaceholder')}
-          value={formData.vatNumber}
-          onChange={(e) => updateFormData('vatNumber', e.target.value)}
-          error={errors.vatNumber}
-        />
+        </div>
         
         <Select
           label={t('registerForm.step1.profession')}
@@ -244,16 +266,6 @@ const StepOne = ({ formData, updateFormData, errors }) => {
             </div>
           )}
         </div>
-
-        <Input
-          label={t('registerForm.step1.phone')}
-          type="tel"
-          placeholder={t('registerForm.step1.phonePlaceholder')}
-          value={formData.phone}
-          onChange={(e) => updateFormData('phone', e.target.value)}
-          error={errors.phone}
-          required
-        />
         
         <Select
           label={t('registerForm.step1.country')}
@@ -264,6 +276,63 @@ const StepOne = ({ formData, updateFormData, errors }) => {
           error={errors.country}
           required
         />
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">
+            {t('registerForm.step1.phone')} <span className="text-error">*</span>
+          </label>
+          <div className="flex gap-2">
+            <div className="w-48 flex-shrink-0">
+              <Select
+                label=""
+                placeholder="Code"
+                options={useMemo(() => 
+                  Object.entries(COUNTRY_PHONE_CODES)
+                    .map(([countryCode, phoneCode]) => {
+                      return {
+                        value: `${phoneCode}_${countryCode}`, // Make value unique by combining phone code and country code
+                        phoneCode: phoneCode, // Store phone code separately
+                        countryCode: countryCode, // Store country code separately
+                        label: `${phoneCode} ${countryCode}`
+                      };
+                    })
+                    .sort((a, b) => {
+                      // Sort by phone code, then by country code
+                      const codeA = a.phoneCode;
+                      const codeB = b.phoneCode;
+                      if (codeA !== codeB) {
+                        return codeA.localeCompare(codeB);
+                      }
+                      return a.label.localeCompare(b.label);
+                    }), [])}
+                value={getCurrentSelectValue()}
+                onChange={(e) => {
+                  // Extract phone code and country code from the unique value
+                  const [phoneCode, countryCode] = e.target.value.split('_');
+                  setPhoneCountryCode(phoneCode);
+                  if (countryCode && countryCode !== formData.country) {
+                    updateFormData('country', countryCode);
+                  }
+                }}
+                error={errors.phoneCountryCode}
+              />
+            </div>
+            <div className="flex-1">
+              <Input
+                label=""
+                type="tel"
+                placeholder={t('registerForm.step1.phonePlaceholder')}
+                value={formData.phone}
+                onChange={(e) => updateFormData('phone', e.target.value)}
+                error={errors.phone}
+                required
+              />
+            </div>
+          </div>
+          {errors.phone && (
+            <p className="text-sm text-error mt-1">{errors.phone}</p>
+          )}
+        </div>
       </div>
 
       <div className="bg-muted rounded-lg p-4 mt-6">

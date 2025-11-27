@@ -65,10 +65,16 @@ serve(async (req)=>{
       }
       // Create a temporary user object from auth data
       // The actual user record will be created after successful payment
+      const firstName = authData.user.user_metadata?.first_name || '';
+      const lastName = authData.user.user_metadata?.last_name || '';
+      const fullName = (firstName && lastName ? `${firstName} ${lastName}` : null) || authData.user.user_metadata?.full_name || 'Unknown';
+      
       user = {
         id: authData.user.id,
         email: authData.user.email,
-        full_name: authData.user.user_metadata?.full_name || 'Unknown',
+        first_name: firstName,
+        last_name: lastName,
+        full_name: fullName,
         company_name: authData.user.user_metadata?.company_name || '',
         phone: authData.user.user_metadata?.phone || '',
         profession: authData.user.user_metadata?.profession || '',
@@ -105,9 +111,10 @@ serve(async (req)=>{
     // Create or get Stripe customer
     let customerId = user.stripe_customer_id;
     if (!customerId) {
+      const customerName = user.full_name || (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.email || 'Unknown');
       const customer = await stripe.customers.create({
         email: user.email,
-        name: user.full_name,
+        name: customerName,
         metadata: {
           supabase_user_id: userId
         }
@@ -139,7 +146,9 @@ serve(async (req)=>{
           planType: planType,
           billingCycle: billingCycle,
           email: convertToString(user.email),
-          fullName: convertToString(user.full_name),
+          firstName: convertToString(user.first_name),
+          lastName: convertToString(user.last_name),
+          fullName: convertToString(user.full_name || (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : '')),
           companyName: convertToString(user.company_name),
           vatNumber: convertToString(user.vat_number),
           phone: convertToString(user.phone),

@@ -2,6 +2,14 @@
 
 import { supabase } from './supabaseClient';
 import SubscriptionNotificationService from './subscriptionNotificationService';
+import { COUNTRY_CODES } from '../utils/countryCodes';
+
+// Helper function to convert country code to country name
+const getCountryName = (countryCode) => {
+  if (!countryCode) return 'Belgium'; // Default
+  const country = COUNTRY_CODES.find(c => c.code === countryCode.toUpperCase());
+  return country ? country.name : countryCode; // Fallback to code if not found
+};
 
 
 class RegistrationService {
@@ -49,7 +57,8 @@ class RegistrationService {
     const userRecord = {
       id: userData.userId,
       email: userData.email,
-      full_name: userData.fullName,
+      first_name: userData.firstName,
+      last_name: userData.lastName,
       company_name: userData.companyName,
       vat_number: userData.vatNumber,
       phone: userData.phone,
@@ -98,14 +107,18 @@ class RegistrationService {
     
     if (existingProfile) {
       console.log('User profile already exists, skipping creation:', existingProfile.id)
+      // Create company profile if company information is provided (using existing profile)
+      if (userData.companyName && userData.companyAddress && userData.companyCity) {
+        await this.createCompanyProfile(userData, existingProfile.id)
+      }
       return
     }
-    
-    const { error } = await supabase
+
+    const { data: newProfile, error } = await supabase
       .from('user_profiles')
       .insert({
         user_id: userData.userId,
-        name: userData.fullName,
+        name: `${userData.firstName} ${userData.lastName}`,
         email: userData.email,
         role: 'admin',
         permissions: {
@@ -125,13 +138,78 @@ class RegistrationService {
         },
         is_active: true
       })
+      .select('id')
+      .single()
 
     if (error) {
       console.error('Error creating user profile:', error)
       throw error
     }
     
-    console.log('User profile created successfully')
+    console.log('User profile created successfully:', newProfile.id)
+
+    // Create company profile if company information is provided
+    if (userData.companyName && userData.companyAddress && userData.companyCity) {
+      await this.createCompanyProfile(userData, newProfile.id)
+    }
+  }
+
+  /**
+   * Create company profile during registration
+   */
+  async createCompanyProfile(userData, profileId) {
+    try {
+      // Check if company profile already exists
+      const { data: existingCompany, error: checkError } = await supabase
+        .from('company_profiles')
+        .select('id')
+        .eq('user_id', userData.userId)
+        .maybeSingle()
+      
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking existing company profile:', checkError)
+        // Continue anyway
+      }
+      
+      if (existingCompany) {
+        console.log('Company profile already exists, skipping creation:', existingCompany.id)
+        return
+      }
+
+      const companyProfile = {
+        user_id: userData.userId,
+        profile_id: profileId || null,
+        company_name: userData.companyName,
+        vat_number: userData.vatNumber || null,
+        address: userData.companyAddress || null,
+        city: userData.companyCity || null,
+        postal_code: userData.companyPostalCode || null,
+        state: userData.companyState || null,
+        country: getCountryName(userData.country || 'BE'), // Convert country code to country name
+        phone: userData.phone || null, // Use phone from Step 1
+        email: userData.email || null, // Use email from Step 1
+        website: userData.companyWebsite || null,
+        iban: userData.companyIban || null,
+        account_name: userData.companyAccountName || null,
+        bank_name: userData.companyBankName || null,
+        is_default: true // Set as default company profile
+      }
+
+      const { error } = await supabase
+        .from('company_profiles')
+        .insert(companyProfile)
+
+      if (error) {
+        console.error('Error creating company profile:', error)
+        // Don't throw - company profile is not critical for registration
+        return
+      }
+      
+      console.log('Company profile created successfully')
+    } catch (error) {
+      console.error('Error in createCompanyProfile:', error)
+      // Don't throw - company profile is not critical for registration
+    }
   }
 
   /**
@@ -291,7 +369,11 @@ class RegistrationService {
       const userNotificationData = {
         id: userData.userId,
         email: userData.email,
-        full_name: userData.fullName
+        first_name: userData.firstName,
+        last_name: userData.lastName,
+        first_name: userData.firstName,
+        last_name: userData.lastName,
+        full_name: `${userData.firstName} ${userData.lastName}`
       }
 
       // Determine notification type based on subscription status

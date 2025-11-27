@@ -544,13 +544,13 @@ const SuperAdminDashboard = () => {
             quote_number,
             status,
             created_at,
-            users!quotes_user_id_fkey(full_name, email)
+            users!quotes_user_id_fkey(first_name, last_name, email)
           `)
           .order('created_at', { ascending: false })
           .limit(5),
         supabase
           .from('users')
-          .select('id, full_name, email, created_at')
+          .select('id, first_name, last_name, email, created_at')
           .order('created_at', { ascending: false })
           .limit(5),
         supabase
@@ -569,7 +569,7 @@ const SuperAdminDashboard = () => {
           id: quote.id,
           type: 'quote',
           title: `New quote ${quote.quote_number}`,
-          description: `Created by ${quote.users?.full_name || 'Unknown'}`,
+          description: `Created by ${(quote.users?.first_name && quote.users?.last_name ? `${quote.users.first_name} ${quote.users.last_name}` : quote.users?.first_name || quote.users?.last_name || 'Unknown')}`,
           timestamp: quote.created_at,
           status: quote.status
         })),
@@ -577,7 +577,7 @@ const SuperAdminDashboard = () => {
           id: user.id,
           type: 'user',
           title: `New user registered`,
-          description: user.full_name || user.email,
+          description: (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.first_name || user.last_name || user.email),
           timestamp: user.created_at,
           status: 'active'
         })),
@@ -602,7 +602,7 @@ const SuperAdminDashboard = () => {
       // Execute queries in parallel
       const [quotesResult, usersResult] = await Promise.all([
         supabase.from('quotes').select('user_id'),
-        supabase.from('users').select('id, full_name, email, company_name')
+        supabase.from('users').select('id, first_name, last_name, email, company_name')
       ]);
 
       if (quotesResult.error) {
@@ -638,7 +638,7 @@ const SuperAdminDashboard = () => {
           const userData = userMap[userId];
           return {
             id: userId,
-            name: userData?.full_name || 'Unknown',
+            name: (userData?.first_name && userData?.last_name ? `${userData.first_name} ${userData.last_name}` : userData?.first_name || userData?.last_name || 'Unknown'),
             email: userData?.email || '',
             company: userData?.company_name || '',
             quoteCount: count

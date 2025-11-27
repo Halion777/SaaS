@@ -2178,5 +2178,111 @@ WebHook APIs[2]:
 ✅ GET /api/v1/webhook
 ✅ POST /api/v1/webhook/configuration
 
+## Code guide
 
-**Last Updated:** October 27, 2025
+In Belgium, the company number can be used as identifier scheme 0208. The value of the identifier are the 10 numbers following the "BE" VAT number.
+function getPEPPOLIdentifiers(vatNumber) {
+  var identifiers = [];
+  var vatIdentifier = getVATPEPPOLIdentifier(vatNumber);
+  if (vatIdentifier!=null) {
+    identifiers.push(vatIdentifier);
+  }
+  var otherIdentifier = getOtherPEPPOLIdentifier(vatNumber);
+  if (otherIdentifier!=null) {
+    identifiers.push(otherIdentifier);
+  }
+  return identifiers;
+}
+
+function getOtherPEPPOLIdentifier(vatNumber) {
+  if (vatNumber.match("BE\d{10}")) {
+    return "0208:"+vatNumber.substring(2,12);
+  } else {
+    return null;
+  }
+}
+
+function getVATPEPPOLIdentifier(vatNumber) {
+  var schemeId = getPEPPOLSchemeId(vatNumber);
+  if (schemeId != null) {
+    return schemeId + ":" + vatNumber.toLowerCase();
+  } else {
+    Logger.log("Failed to determine the schemeId from " + vatNumber);
+    return null;
+  }
+}
+
+function getPEPPOLSchemeId(vatNumber) {
+  var countryCode = vatNumber.substring(0, 2);
+  if ("AD" === countryCode) {
+    return "9922";
+  } else if ("AL" === countryCode) {
+    return "9923";
+  } else if ("BA" === countryCode) {
+    return "9924";
+  } else if ("BE" === countryCode) {
+    return "9925";
+  } else if ("BG" === countryCode) {
+    return "9926";
+  } else if ("CH" === countryCode) {
+    return "9927";
+  } else if ("CY" === countryCode) {
+    return "9928";
+  } else if ("CZ" === countryCode) {
+    return "9929";
+  } else if ("DE" === countryCode) {
+    return "9930";
+  } else if ("EE" === countryCode) {
+    return "9931";
+  } else if ("GB" === countryCode) {
+    return "9932";
+  } else if ("GR" === countryCode) {
+    return "9933";
+  } else if ("HR" === countryCode) {
+    return "9934";
+  } else if ("IE" === countryCode) {
+    return "9935";
+  } else if ("LI" === countryCode) {
+    return "9936";
+  } else if ("LT" === countryCode) {
+    return "9937";
+  } else if ("LU" === countryCode) {
+    return "9938";
+  } else if ("LV" === countryCode) {
+    return "9939";
+  } else if ("MC" === countryCode) {
+    return "9940";
+  } else if ("ME" === countryCode) {
+    return "9941";
+  } else if ("MK" === countryCode) {
+    return "9942";
+  } else if ("MT" === countryCode) {
+    return "9943";
+  } else if ("NL" === countryCode) {
+    return "9944";
+  } else if ("PL" === countryCode) {
+    return "9945";
+  } else if ("PT" === countryCode) {
+    return "9946";
+  } else if ("RO" === countryCode) {
+    return "9947";
+  } else if ("RS" === countryCode) {
+    return "9948";
+  } else if ("SI" === countryCode) {
+    return "9949";
+  } else if ("SK" === countryCode) {
+    return "9950";
+  } else if ("SM" === countryCode) {
+    return "9951";
+  } else if ("TR" === countryCode) {
+    return "9952";
+  } else if ("VA" === countryCode) {
+    return "9953";
+  } else if ("SE" === countryCode) {
+    return "9955";
+  } else if ("FR" === countryCode) {
+    return "9957";
+  } else {
+    return null;
+  }
+}

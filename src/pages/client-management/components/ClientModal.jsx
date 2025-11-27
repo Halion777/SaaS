@@ -10,6 +10,8 @@ const ClientModal = ({ client, onSave, onClose }) => {
   const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: '',
+    firstName: '',
+    lastName: '',
     type: 'particulier',
     isActive: true,
     email: '',
@@ -63,8 +65,21 @@ const ClientModal = ({ client, onSave, onClose }) => {
 
   useEffect(() => {
     if (client) {
+      // Split name into firstName and lastName for individual clients
+      let firstName = '';
+      let lastName = '';
+      if (client.name && client.type === 'particulier') {
+        const nameParts = client.name.trim().split(' ');
+        if (nameParts.length > 0) {
+          firstName = nameParts[0];
+          lastName = nameParts.slice(1).join(' ');
+        }
+      }
+      
       setFormData({
         name: client.name || '',
+        firstName: firstName,
+        lastName: lastName,
         type: client.type || 'particulier',
         isActive: client.isActive !== undefined ? client.isActive : true,
         email: client.email || '',
@@ -114,11 +129,34 @@ const ClientModal = ({ client, onSave, onClose }) => {
       }
     }
     
-    onSave(formData);
+    // Prepare data for saving - combine firstName and lastName for individual clients
+    const dataToSave = { ...formData };
+    if (formData.type === 'particulier') {
+      // Combine firstName and lastName into name for backend
+      const fullName = [formData.firstName, formData.lastName].filter(Boolean).join(' ').trim();
+      dataToSave.name = fullName || formData.name; // Fallback to existing name if both are empty
+    }
+    
+    onSave(dataToSave);
   };
 
-  const isFormValid = formData.name && formData.email && formData.phone && 
-    (!formData.enablePeppol || (formData.enablePeppol && formData.peppolId.trim()));
+  // Validation: for individual clients, check firstName and lastName; for professional, check name
+  // All fields are mandatory
+  const isFormValid = (
+    (formData.type === 'particulier' ? (formData.firstName.trim() && formData.lastName.trim()) : formData.name.trim()) &&
+    formData.email && 
+    formData.phone &&
+    formData.address.trim() &&
+    (formData.type === 'professionnel' ? (
+      formData.city.trim() &&
+      formData.country &&
+      formData.postalCode.trim() &&
+      formData.contactPerson.trim() &&
+      formData.companySize &&
+      formData.regNumber.trim()
+    ) : true) &&
+    (!formData.enablePeppol || (formData.enablePeppol && formData.peppolId.trim()))
+  );
 
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -215,17 +253,35 @@ const ClientModal = ({ client, onSave, onClose }) => {
 
             {/* Individual Client Form */}
             {formData.type === 'particulier' && (
+              <div className="space-y-6">
+                {/* Personal Information */}
+                <div className="bg-card rounded-lg border border-border p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Icon name="User" size={20} />
+                    {t('clientManagement.modal.personalInfo', 'Personal Information')}
+                  </h3>
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label={t('clientManagement.modal.fullName')}
+                        label={t('registerForm.step1.firstName', 'First Name')}
                     type="text"
-                    placeholder={t('clientManagement.modal.fullNamePlaceholder')}
-                    value={formData.name}
-                    onChange={(e) => handleChange('name', e.target.value)}
+                        placeholder={t('registerForm.step1.firstNamePlaceholder', 'John')}
+                        value={formData.firstName}
+                        onChange={(e) => handleChange('firstName', e.target.value)}
                     required
                   />
                   
+                      <Input
+                        label={t('registerForm.step1.lastName', 'Last Name')}
+                        type="text"
+                        placeholder={t('registerForm.step1.lastNamePlaceholder', 'Doe')}
+                        value={formData.lastName}
+                        onChange={(e) => handleChange('lastName', e.target.value)}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
                     label={t('clientManagement.modal.email')}
                     type="email"
@@ -234,9 +290,7 @@ const ClientModal = ({ client, onSave, onClose }) => {
                     onChange={(e) => handleChange('email', e.target.value)}
                     required
                   />
-                </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
                     label={t('clientManagement.modal.phone')}
                     type="tel"
@@ -245,20 +299,29 @@ const ClientModal = ({ client, onSave, onClose }) => {
                     onChange={(e) => handleChange('phone', e.target.value)}
                     required
                   />
+                    </div>
                   
                   <Input
                     label={t('clientManagement.modal.address')}
                     type="text"
-                    placeholder={t('clientManagement.modal.addressPlaceholder')}
+                      placeholder={t('clientManagement.modal.addressPlaceholder', 'Street name + number (e.g., Rue de la Paix 123)')}
                     value={formData.address}
                     onChange={(e) => handleChange('address', e.target.value)}
+                      required
                   />
+                  </div>
                 </div>
                 
-                {/* Language Preference */}
+                {/* Preferences */}
+                <div className="bg-card rounded-lg border border-border p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Icon name="Settings" size={20} />
+                    {t('clientManagement.modal.preferences', 'Preferences')}
+                  </h3>
+                  <div className="space-y-6">
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-foreground">
-                    {t('clientManagement.modal.languagePreference', 'Préférence de langue')}
+                        {t('clientManagement.modal.languagePreference')}
                   </label>
                   <Select
                     value={formData.languagePreference || 'fr'}
@@ -270,14 +333,45 @@ const ClientModal = ({ client, onSave, onClose }) => {
                     ]}
                   />
                   <p className="text-xs text-muted-foreground">
-                    {t('clientManagement.modal.languagePreferenceHelp', 'Les emails seront envoyés dans cette langue')}
-                  </p>
+                        {t('clientManagement.modal.languagePreferenceHelp')}
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <label className="block text-sm font-medium text-foreground">
+                        {t('clientManagement.modal.communicationPreferences')}
+                      </label>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {preferenceOptions.map((preference) => (
+                          <div key={preference.value} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={`individual-${preference.value}`}
+                              checked={formData.preferences.includes(preference.value)}
+                              onChange={(e) => handlePreferenceToggle(preference.value)}
+                              className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                            />
+                            <label htmlFor={`individual-${preference.value}`} className="text-sm text-foreground">
+                              {preference.label}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Professional Client Form */}
             {formData.type === 'professionnel' && (
+              <div className="space-y-6">
+                {/* Company Information */}
+                <div className="bg-card rounded-lg border border-border p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Icon name="Briefcase" size={20} />
+                    {t('clientManagement.modal.companyInfo', 'Company Information')}
+                  </h3>
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
@@ -308,66 +402,68 @@ const ClientModal = ({ client, onSave, onClose }) => {
                     onChange={(e) => handleChange('phone', e.target.value)}
                     required
                   />
-                  
-                  <Input
-                    label={t('clientManagement.modal.address')}
-                    type="text"
-                    placeholder={t('clientManagement.modal.addressPlaceholder')}
-                    value={formData.address}
-                    onChange={(e) => handleChange('address', e.target.value)}
-                  />
+                    </div>
+                  </div>
                 </div>
 
-                {/* Location fields - moved here after telephone and address */}
+                {/* Location Information */}
+                <div className="bg-card rounded-lg border border-border p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Icon name="MapPin" size={20} />
+                    {t('clientManagement.modal.locationInfo', 'Location Information')}
+                  </h3>
+                  <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input
-                    label={t('clientManagement.modal.city')}
-                    type="text"
-                    value={formData.city}
-                    onChange={(e) => handleChange('city', e.target.value)}
-                    placeholder={t('clientManagement.modal.cityPlaceholder')}
-                  />
-                  
                   <Select
                     label={t('clientManagement.modal.country')}
                     options={countryOptions}
                     value={formData.country}
                     onChange={(e) => handleChange('country', e.target.value)}
                     placeholder={t('clientManagement.modal.countryPlaceholder')}
+                        required
                   />
                   
+                      <Input
+                        label={t('clientManagement.modal.city')}
+                        type="text"
+                        value={formData.city}
+                        onChange={(e) => handleChange('city', e.target.value)}
+                        placeholder={t('clientManagement.modal.cityPlaceholder')}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Input
                     label={t('clientManagement.modal.postalCode')}
                     type="text"
                     value={formData.postalCode}
                     onChange={(e) => handleChange('postalCode', e.target.value)}
                     placeholder={t('clientManagement.modal.postalCodePlaceholder')}
+                        required
+                      />
+                      
+                      <div className="md:col-span-2">
+                        <Input
+                          label={t('clientManagement.modal.address')}
+                          type="text"
+                          placeholder={t('clientManagement.modal.addressPlaceholder', 'Street name + number (e.g., Rue de la Paix 123)')}
+                          value={formData.address}
+                          onChange={(e) => handleChange('address', e.target.value)}
+                          required
                   />
                 </div>
-                
-                {/* Language Preference */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-foreground">
-                    {t('clientManagement.modal.languagePreference', 'Préférence de langue')}
-                  </label>
-                  <Select
-                    value={formData.languagePreference || 'fr'}
-                    onChange={(e) => handleChange('languagePreference', e.target.value)}
-                    options={[
-                      { value: 'fr', label: '🇫🇷 Français' },
-                      { value: 'en', label: '🇬🇧 English' },
-                      { value: 'nl', label: '🇳🇱 Nederlands' }
-                    ]}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {t('clientManagement.modal.languagePreferenceHelp', 'Les emails seront envoyés dans cette langue')}
-                  </p>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Professional-specific fields */}
+                {/* Professional Details */}
+                <div className="bg-card rounded-lg border border-border p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Icon name="Building" size={20} />
+                    {t('clientManagement.modal.professionalInfo')}
+                  </h3>
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-foreground">{t('clientManagement.modal.professionalInfo')}</h3>
-                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
                       label={t('clientManagement.modal.contactPerson')}
@@ -375,6 +471,7 @@ const ClientModal = ({ client, onSave, onClose }) => {
                       value={formData.contactPerson}
                       onChange={(e) => handleChange('contactPerson', e.target.value)}
                       placeholder={t('clientManagement.modal.contactPersonPlaceholder')}
+                        required
                     />
                     
                     <Select
@@ -383,6 +480,7 @@ const ClientModal = ({ client, onSave, onClose }) => {
                       value={formData.companySize}
                       onChange={(e) => handleChange('companySize', e.target.value)}
                       placeholder={t('clientManagement.modal.companySizePlaceholder')}
+                        required
                     />
                     
                     <Input
@@ -391,14 +489,68 @@ const ClientModal = ({ client, onSave, onClose }) => {
                       value={formData.regNumber}
                       onChange={(e) => handleChange('regNumber', e.target.value)}
                       placeholder={t('clientManagement.modal.vatNumberPlaceholder')}
+                        required
                     />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Preferences */}
+                <div className="bg-card rounded-lg border border-border p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Icon name="Settings" size={20} />
+                    {t('clientManagement.modal.preferences', 'Preferences')}
+                  </h3>
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-foreground">
+                        {t('clientManagement.modal.languagePreference')}
+                      </label>
+                      <Select
+                        value={formData.languagePreference || 'fr'}
+                        onChange={(e) => handleChange('languagePreference', e.target.value)}
+                        options={[
+                          { value: 'fr', label: '🇫🇷 Français' },
+                          { value: 'en', label: '🇬🇧 English' },
+                          { value: 'nl', label: '🇳🇱 Nederlands' }
+                        ]}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {t('clientManagement.modal.languagePreferenceHelp')}
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <label className="block text-sm font-medium text-foreground">
+                        {t('clientManagement.modal.communicationPreferences')}
+                      </label>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {preferenceOptions.map((preference) => (
+                          <div key={preference.value} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={`professional-${preference.value}`}
+                              checked={formData.preferences.includes(preference.value)}
+                              onChange={(e) => handlePreferenceToggle(preference.value)}
+                              className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                            />
+                            <label htmlFor={`professional-${preference.value}`} className="text-sm text-foreground">
+                              {preference.label}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
                 {/* PEPPOL Configuration - only for professional clients */}
+                <div className="bg-card rounded-lg border border-border p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Icon name="Globe" size={20} />
+                    {t('clientManagement.modal.peppolConfig')}
+                  </h3>
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-foreground">{t('clientManagement.modal.peppolConfig')}</h3>
-                  
                   <div className="flex items-center space-x-2">
                     <input
                       type="checkbox"
@@ -421,32 +573,11 @@ const ClientModal = ({ client, onSave, onClose }) => {
                       placeholder={t('clientManagement.modal.peppolIdPlaceholder')}
                     />
                   )}
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Communication Preferences */}
-            <div className="space-y-3">
-              <label className="block text-sm font-medium text-foreground">
-                {t('clientManagement.modal.communicationPreferences')}
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {preferenceOptions.map((preference) => (
-                  <div key={preference.value} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id={preference.value}
-                      checked={formData.preferences.includes(preference.value)}
-                      onChange={(e) => handlePreferenceToggle(preference.value)}
-                      className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
-                    />
-                    <label htmlFor={preference.value} className="text-sm text-foreground">
-                      {preference.label}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
 
             {/* Form Actions */}
             <div className="flex justify-end space-x-3 pt-6 border-t border-border">

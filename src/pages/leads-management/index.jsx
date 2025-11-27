@@ -452,7 +452,7 @@ const LeadsManagementPage = () => {
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground font-medium">{t('leadsManagement.leadsTab.leadCard.estimatedBudget')}</p>
-                        <p className="text-sm font-semibold text-foreground">{lead.price_range}</p>
+                        <p className="text-sm font-semibold text-foreground">{lead.price_range.includes('€') ? lead.price_range : `${lead.price_range} (€)`}</p>
                       </div>
                     </div>
                   )}

@@ -763,8 +763,10 @@
     "step1": {
       "title": "Create your account",
       "subtitle": "Start your 14-day free trial today",
-      "fullName": "Full name",
-      "fullNamePlaceholder": "John Doe",
+      "firstName": "First name",
+      "firstNamePlaceholder": "John",
+      "lastName": "Last name",
+      "lastNamePlaceholder": "Doe",
       "companyName": "Company name",
       "companyNamePlaceholder": "Doe Plumbing",
       "profession": "Profession / Activity type",
@@ -792,12 +794,44 @@
     "step2": {
       "title": "Additional information",
       "subtitle": "Customize Haliqo according to your activity",
+      "businessInfo": "Business Information",
+      "companyInfo": "Company Information",
+      "bankingInfo": "Banking Information",
+      "additionalInfo": "Additional Information",
+      "companyName": "Company name",
+      "companyNamePlaceholder": "Doe Plumbing",
+      "vatNumber": "VAT number",
+      "vatNumberPlaceholder": "Company VAT number",
       "businessSize": "Company size",
       "businessSizePlaceholder": "Number of employees",
       "solo": "Solo artisan",
       "small": "2-5 employees",
       "medium": "6-20 employees",
       "large": "20+ employees",
+      "companyAddress": "Company address",
+      "companyAddressPlaceholder": "123 Street Name",
+      "companyFullAddress": "Company full address",
+      "companyFullAddressPlaceholder": "123 Street Name",
+      "companyCity": "City",
+      "companyCityPlaceholder": "Brussels",
+      "companyPostalCode": "Postal code",
+      "companyPostalCodePlaceholder": "1000",
+      "companyState": "State/Province",
+      "companyStatePlaceholder": "Brussels-Capital",
+      "companyCountry": "Country",
+      "companyCountryPlaceholder": "Select country",
+      "companyPhone": "Company phone",
+      "companyPhonePlaceholder": "+32 123 45 67 89",
+      "companyEmail": "Company email",
+      "companyEmailPlaceholder": "contact@company.com",
+      "companyWebsite": "Website",
+      "companyWebsitePlaceholder": "www.company.com",
+      "companyIban": "IBAN",
+      "companyIbanPlaceholder": "BE68539007547034",
+      "companyAccountName": "Account holder name",
+      "companyAccountNamePlaceholder": "Account holder name",
+      "companyBankName": "Bank name",
+      "companyBankNamePlaceholder": "Bank name",
       "benefits": {
         "timeSaving": {
           "title": "Time saving",
@@ -1840,7 +1874,7 @@
       "validUntil": "Valid until: {{date}}",
       "notScheduled": "Not scheduled",
       "notDefined": "Not defined",
-      "stage": "Stage {{stage}} - {{status}}"
+      "stage": "Stage {{stage}}"
     },
     "actions": {
       "followUp": "Follow Up",
@@ -2858,8 +2892,8 @@
       },
       "materialsCount": "{{count}} material",
       "materialsCount_plural": "{{count}} materials",
-      "unitPrice": "Unit price",
-      "unitPriceEuro": "Unit price (€)",
+      "unitPrice": "Price (€)",
+      "unitPriceEuro": "Price (€)",
       "pricePlaceholder": "0.00",
       "priceExcludingMaterials": "Price excluding materials",
       "materials": "Materials",
@@ -3313,14 +3347,19 @@
       "info": "Peppol (Pan-European Public Procurement On-Line) enables secure electronic document exchange. You need a valid Peppol ID to send and receive invoices through the network.",
       "companyInfo": {
         "title": "Company Information",
-        "participantName": "Participant Name",
-        "participantNamePlaceholder": "MyCompany",
+        "companyName": "Company Name",
+        "companyNamePlaceholder": "MyCompany",
+        "countryCode": "Country Code",
         "peppolId": "Peppol ID",
         "peppolIdPlaceholder": "e.g., 0208:0630675588",
-        "peppolIdFormat": "Format: COUNTRY_CODE:VAT_NUMBER"
+        "peppolSchemeCode": "Peppol Scheme Code",
+        "peppolSchemeCodeHint": "4-digit scheme code (auto-filled from country)",
+        "vatNumber": "VAT Number",
+        "vatNumberPlaceholder": "e.g., 0630675588 or BE0630675588",
+        "combinedPeppolId": "Combined Peppol ID"
       },
       "contactPerson": {
-        "title": "Contact Person (Required)",
+        "title": "Contact Person",
         "firstName": "First Name",
         "firstNamePlaceholder": "John",
         "lastName": "Last Name",
@@ -3328,8 +3367,9 @@
         "email": "Email",
         "emailPlaceholder": "john.doe@digiteal.eu",
         "language": "Language (e.g., en-US)",
-        "phoneNumber": "Phone Number (Optional)",
+        "phoneNumber": "Phone Number",
         "phoneNumberPlaceholder": "+321234567",
+        "country": "Country",
         "countryCode": "Country Code",
         "countryCodePlaceholder": "Search country (e.g., BE, Belgium)",
         "noCountriesFound": "No countries found"
@@ -3571,7 +3611,7 @@
         "phone": "Phone",
         "phonePlaceholder": "04 12 34 56 78",
         "address": "Address",
-        "addressPlaceholder": "Full address",
+        "addressPlaceholder": "Street name + number (e.g., Rue de la Paix 123)",
         "companyName": "Company Name",
         "companyNamePlaceholder": "Company name",
         "city": "City",
@@ -3593,6 +3633,12 @@
         "peppolIdPlaceholder": "Format: 0000:IDENTIFIER",
         "invalidPeppolId": "The Peppol ID format is not valid. Use the format: 0208:123456789",
         "communicationPreferences": "Communication Preferences",
+        "languagePreference": "Language Preference",
+        "languagePreferenceHelp": "Emails will be sent in this language",
+        "personalInfo": "Personal Information",
+        "companyInfo": "Company Information",
+        "locationInfo": "Location Information",
+        "preferences": "Preferences",
         "cancel": "Cancel",
         "update": "Update",
         "create": "Create Client"
@@ -3700,7 +3746,8 @@
         "days": "days",
         "actions": {
           "viewDetails": "View details",
-          "sendInvoice": "Send invoice"
+          "sendInvoice": "Send invoice",
+          "exportPDF": "Export PDF"
         }
       },
       "empty": {
@@ -3713,7 +3760,24 @@
         "deselect": "Deselect",
         "chooseAction": "Choose an action...",
         "export": "Export",
-        "delete": "Delete"
+        "delete": "Delete",
+        "sendToAccountant": "Send to Accountant"
+      },
+      "export": {
+        "invoiceNumber": "Invoice Number",
+        "quoteNumber": "Quote Number",
+        "clientName": "Client Name",
+        "clientEmail": "Client Email",
+        "amount": "Total Amount",
+        "netAmount": "Net Amount",
+        "taxAmount": "Tax Amount",
+        "discountAmount": "Discount Amount",
+        "status": "Status",
+        "issueDate": "Issue Date",
+        "dueDate": "Due Date",
+        "paymentMethod": "Payment Method",
+        "title": "Title",
+        "peppolStatus": "Peppol Status"
       },
       "messages": {
         "markedAsPaidSuccess": "Invoice marked as paid successfully!",
@@ -3956,7 +4020,12 @@
         "days": "days",
         "net": "Net",
         "vat": "VAT",
-        "received": "Received"
+        "received": "Received",
+        "actions": {
+          "viewDetails": "View details",
+          "exportPDF": "Export PDF",
+          "edit": "Edit"
+        }
       },
       "empty": {
         "noInvoicesFound": "No expense invoices found",
@@ -4319,6 +4388,6 @@
       "avatarUpdated": "Avatar updated successfully",
       "avatarUpdateError": "Error uploading avatar"
     }
-  }
+    }
 } 
 
