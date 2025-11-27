@@ -151,7 +151,9 @@ const QuoteCreation = () => {
 
       value: id, // keep compatibility for consumers reading .value
 
-      name: c.name || sel.label || '',
+      name: c.name || sel.name || (sel.label ? sel.label.replace(/^[👤🏢]\s*/, '') : '') || '', // Clean name without emoji
+
+      label: sel.label || c.name || sel.name || '', // Keep label for backward compatibility
 
       email: c.email || sel.email || '',
 
@@ -161,7 +163,29 @@ const QuoteCreation = () => {
 
       city: c.city || sel.city || '',
 
-      postal_code: c.postal_code || sel.postalCode || ''
+      postalCode: c.postal_code || sel.postalCode || c.postalCode || '',
+
+      postal_code: c.postal_code || sel.postalCode || c.postalCode || '', // Keep both for compatibility
+
+      country: c.country || sel.country || '',
+
+      // Professional client fields
+
+      type: c.type || sel.type || c.client_type || sel.client_type || '',
+
+      client_type: c.client_type || sel.client_type || c.type || sel.type || '', // Keep both for compatibility
+
+      regNumber: c.regNumber || sel.regNumber || c.vat_number || sel.vat_number || '',
+
+      vat_number: c.vat_number || sel.vat_number || c.regNumber || sel.regNumber || '', // Keep both for compatibility
+
+      contactPerson: c.contactPerson || sel.contactPerson || c.contact_person || '',
+
+      contact_person: c.contact_person || sel.contactPerson || c.contactPerson || '', // Keep both for compatibility
+
+      companySize: c.companySize || sel.companySize || c.company_size || '',
+
+      company_size: c.company_size || sel.companySize || c.companySize || '' // Keep both for compatibility
 
     } : null;
 

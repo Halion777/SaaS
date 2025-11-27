@@ -715,16 +715,17 @@ const PublicQuoteShareViewer = () => {
             <div className="space-y-2 sm:space-y-3">
               <h4 className="text-sm sm:text-base font-semibold text-gray-800">{t('quoteShare.signatures.clientSignature')}</h4>
               <div 
-                className={`border-2 border-dashed border-gray-300 rounded-lg p-3 sm:p-4 min-h-20 sm:min-h-24 flex items-center justify-center ${quoteStatus !== 'accepted' && !isViewOnly ? 'cursor-pointer hover:bg-gray-50 transition-colors' : ''}`}
+                className={`border-2 border-dashed border-gray-300 rounded-lg p-3 sm:p-4 min-h-20 sm:min-h-24 flex items-center justify-center ${!clientSignature && quoteStatus !== 'accepted' && !isViewOnly ? 'cursor-pointer hover:bg-gray-50 transition-colors' : ''}`}
                 onClick={() => {
-                  if (quoteStatus !== 'accepted' && !isViewOnly) {
+                  if (!clientSignature && quoteStatus !== 'accepted' && !isViewOnly) {
                     setShowSignatureModal(true);
                   }
                 }}
-                role={quoteStatus !== 'accepted' && !isViewOnly ? "button" : undefined}
-                tabIndex={quoteStatus !== 'accepted' && !isViewOnly ? 0 : undefined}
+                role={!clientSignature && quoteStatus !== 'accepted' && !isViewOnly ? "button" : undefined}
+                tabIndex={!clientSignature && quoteStatus !== 'accepted' && !isViewOnly ? 0 : undefined}
+                title={!clientSignature && quoteStatus !== 'accepted' && !isViewOnly ? t('quoteCreation.quotePreview.clickToAddSignature', 'Click to add signature') : ''}
                 onKeyDown={(e) => {
-                  if ((e.key === 'Enter' || e.key === ' ') && quoteStatus !== 'accepted' && !isViewOnly) {
+                  if ((e.key === 'Enter' || e.key === ' ') && !clientSignature && quoteStatus !== 'accepted' && !isViewOnly) {
                     e.preventDefault();
                     setShowSignatureModal(true);
                   }

@@ -1383,7 +1383,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
   };
 
   const totalPrice = tasks.reduce((sum, task) => {
-    const taskTotal = task.price + task.materials.reduce((matSum, mat) => matSum + (mat.price * parseFloat(mat.quantity)), 0);
+    const taskTotal = (parseFloat(task.price) || 0) + task.materials.reduce((matSum, mat) => matSum + ((parseFloat(mat.price) || 0) * (parseFloat(mat.quantity) || 0)), 0);
     return sum + taskTotal;
   }, 0);
 
@@ -1687,7 +1687,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                   />
                   <Select
                     label={t('quoteCreation.taskDefinition.unit', 'Unité')}
-                    placeholder={t('quoteCreation.taskDefinition.unit', 'Unité')}
+                    placeholder={t('quoteCreation.taskDefinition.selectUnit', 'Select unit')}
                     options={unitOptions}
                     value={newMaterial.unit}
                     onChange={(e) => handleMaterialChange('unit', e.target.value)}
@@ -1813,8 +1813,8 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
               </h3>
               <div className="space-y-3">
                 {tasks.map((task) => {
-                  const taskMaterialsTotal = task.materials.reduce((sum, mat) => sum + (mat.price * parseFloat(mat.quantity)), 0);
-                  const taskTotal = task.price + taskMaterialsTotal;
+                  const taskMaterialsTotal = task.materials.reduce((sum, mat) => sum + (parseFloat(mat.price) || 0) * (parseFloat(mat.quantity) || 0), 0);
+                  const taskTotal = (parseFloat(task.price) || 0) + (parseFloat(taskMaterialsTotal) || 0);
                   
                   return (
                     <div key={task.id} className={`relative p-4 bg-background border rounded-lg hover:shadow-md transition-shadow ${
@@ -1842,10 +1842,10 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                             {taskMaterialsTotal > 0 && (
                               <span className="flex items-center space-x-1">
                                 <Icon name="Package" size={14} />
-                                <span>{t('quoteCreation.taskDefinition.materials', 'Matériaux')}: {taskMaterialsTotal.toFixed(2)}€</span>
+                                <span>{t('quoteCreation.taskDefinition.materials', 'Matériaux')}: {Number(taskMaterialsTotal || 0).toFixed(2)}€</span>
                               </span>
                             )}
-                            <span className="font-medium text-foreground">{t('common.total', 'Total')}: {taskTotal.toFixed(2)}€</span>
+                            <span className="font-medium text-foreground">{t('common.total', 'Total')}: {Number(taskTotal || 0).toFixed(2)}€</span>
                           </div>
                           {task.materials.length > 0 && (
                             <div className="mt-2">

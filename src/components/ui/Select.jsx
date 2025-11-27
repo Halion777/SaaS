@@ -23,6 +23,7 @@ const Select = React.forwardRef(({
     onChange,
     onValueChange,
     onOpenChange,
+    searchable, // Extract searchable to prevent it from being passed to DOM
     ...props
 }, ref) => {
     const [isOpen, setIsOpen] = useState(false);

@@ -465,9 +465,14 @@ const QuotePreview = ({
   };
 
   // Client name helper: prefer raw client name; strip any leading emoji/symbols from label fallback
+  // Handle both normalized (flat) and non-normalized (nested) client structures
   const getClientDisplayName = (sel) => {
     if (!sel) return t('quoteCreation.quotePreview.client', 'Client');
+    // Check normalized structure first (flat)
+    if (sel.name) return sel.name;
+    // Check nested structure
     if (sel.client?.name) return sel.client.name;
+    // Fallback to label (may have emoji prefix)
     const label = sel.label || '';
     try {
       return label.replace(/^[^\p{L}\p{N}]+\s*/u, '');
@@ -648,7 +653,11 @@ const QuotePreview = ({
                     )}
                   </div>
                 ) : (
-                  <div className="w-12 h-12 sm:w-20 sm:h-20 bg-gray-200 rounded-lg flex items-center justify-center text-xs sm:text-sm">
+                  <div 
+                    className="w-12 h-12 sm:w-20 sm:h-20 bg-gray-200 rounded-lg flex items-center justify-center text-xs sm:text-sm cursor-pointer hover:bg-gray-300 transition-colors"
+                    onClick={() => setShowCompanyModal(true)}
+                    title={t('quoteCreation.quotePreview.clickToAddLogo', 'Click to add logo')}
+                  >
                     LOGO
                   </div>
                 )}
@@ -688,33 +697,30 @@ const QuotePreview = ({
                 <h3 className={`font-semibold text-gray-800 mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.clientHeading', 'CLIENT')}</h3>
                 <div className={`text-gray-600 ${previewMode === 'mobile' ? 'text-xs' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
                   <p className="font-medium">{getClientDisplayName(selectedClient)}</p>
-                  <p>{selectedClient?.name}</p>
                   <p>{selectedClient?.email || 'email@client.com'}</p>
-                  <p>{selectedClient?.phone || '06 12 34 56 78'}</p>
                   {/* Enhanced address display */}
                   {selectedClient?.address && (
                     <div>
                       <p>{selectedClient.address}</p>
-                      {(selectedClient?.city || selectedClient?.postalCode) && selectedClient.city !== 'N/A' && (
-                        <p>{selectedClient.postalCode} {selectedClient.city}</p>
+                      {(selectedClient?.city || selectedClient?.postalCode || selectedClient?.postal_code) && selectedClient.city !== 'N/A' && (
+                        <p>{selectedClient.postalCode || selectedClient.postal_code} {selectedClient.city}</p>
                       )}
-                      {selectedClient?.country && <p>{selectedClient.country}</p>}
-                      
                     </div>
                   )}
                   {/* Fallback if no address but we have client object with address fields */}
                   {!selectedClient?.address && selectedClient?.client && (
                     <div>
                       {selectedClient.client.address && <p>{selectedClient.client.address}</p>}
-                      {(selectedClient.client.city || selectedClient.client.postalCode) && selectedClient.client.city !== 'N/A' && (
-                        <p>{selectedClient.client.postalCode} {selectedClient.client.city}</p>
+                      {(selectedClient.client.city || selectedClient.client.postalCode || selectedClient.client.postal_code) && selectedClient.client.city !== 'N/A' && (
+                        <p>{selectedClient.client.postalCode || selectedClient.client.postal_code} {selectedClient.client.city}</p>
                       )}
-                      {selectedClient.client.country && <p>{selectedClient.client.country}</p>}
                     </div>
                   )}
-                  {/* Show VAT for professional clients */}
-                  {((selectedClient?.type === 'professionnel') || (selectedClient?.client?.client_type === 'company') || (selectedClient?.client?.type === 'professionnel')) && (selectedClient?.regNumber || selectedClient?.client?.regNumber || selectedClient?.client?.vat_number) && (
-                    <p>TVA: {selectedClient?.regNumber || selectedClient?.client?.regNumber || selectedClient?.client?.vat_number}</p>
+                  <p>{selectedClient?.phone || '06 12 34 56 78'}</p>
+                  {/* Show VAT for professional clients - similar to company section */}
+                  {/* Handle both normalized (flat) and non-normalized (nested) client structures */}
+                  {((selectedClient?.type === 'professionnel') || (selectedClient?.client_type === 'company') || (selectedClient?.client?.client_type === 'company') || (selectedClient?.client?.type === 'professionnel')) && (selectedClient?.regNumber || selectedClient?.vat_number || selectedClient?.client?.regNumber || selectedClient?.client?.vat_number) && (
+                    <p>{t('quoteCreation.quotePreview.vatLabel', 'VAT:')} {selectedClient?.regNumber || selectedClient?.vat_number || selectedClient?.client?.regNumber || selectedClient?.client?.vat_number}</p>
                   )}
                 </div>
               </div>
@@ -733,7 +739,7 @@ const QuotePreview = ({
                     </div>
                   )}
                   {companyInfo.phone && <p>{companyInfo.phone}</p>}
-                  {companyInfo.vatNumber && <p>TVA: {companyInfo.vatNumber}</p>}
+                  {companyInfo.vatNumber && <p>{t('quoteCreation.quotePreview.vatLabel', 'VAT:')} {companyInfo.vatNumber}</p>}
                 </div>
               </div>
             </div>
@@ -874,7 +880,11 @@ const QuotePreview = ({
             <div className={`grid gap-8 sm:gap-12 ${previewMode === 'mobile' ? 'grid-cols-1 px-4 pb-4' : 'grid-cols-1 sm:grid-cols-2 px-4 sm:px-8 lg:px-10 pb-4 sm:pb-8 lg:pb-10'}`}>
               <div>
                 <h4 className={`font-semibold text-black mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.companySignature', 'Signature de l\'entreprise:')}</h4>
-                <div className={`border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50 flex items-center justify-center ${previewMode === 'mobile' ? 'p-3 min-h-[60px]' : 'p-4 sm:p-6 min-h-[80px] sm:min-h-[100px]'}`}>
+                <div 
+                  className={`border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50 flex items-center justify-center ${previewMode === 'mobile' ? 'p-3 min-h-[60px]' : 'p-4 sm:p-6 min-h-[80px] sm:min-h-[100px]'} ${!companyInfo.signature ? 'cursor-pointer hover:bg-gray-100 transition-colors' : ''}`}
+                  onClick={() => !companyInfo.signature && setShowCompanyModal(true)}
+                  title={!companyInfo.signature ? t('quoteCreation.quotePreview.clickToAddSignature', 'Click to add signature') : ''}
+                >
                   {companyInfo.signature ? (
                     <div className="w-full">
                       {companyInfo.signature.data ? (
@@ -922,16 +932,17 @@ const QuotePreview = ({
               <div>
                 <h4 className={`font-semibold text-black mb-3 sm:mb-4 ${previewMode === 'mobile' ? 'text-sm' : 'text-sm sm:text-base'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.clientApproval', 'Bon pour accord client:')}</h4>
                 <div 
-                  className={`border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50 flex items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors ${previewMode === 'mobile' ? 'p-3 min-h-[60px]' : 'p-4 sm:p-6 min-h-[80px] sm:min-h-[100px]'}`}
-                  onClick={() => setShowSignatureModal(true)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
+                  className={`border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50 flex items-center justify-center ${previewMode === 'mobile' ? 'p-3 min-h-[60px]' : 'p-4 sm:p-6 min-h-[80px] sm:min-h-[100px]'} ${!signatureData?.signature ? 'cursor-pointer hover:bg-gray-100 transition-colors' : ''}`}
+                  onClick={() => !signatureData?.signature && setShowSignatureModal(true)}
+                  role={!signatureData?.signature ? "button" : undefined}
+                  tabIndex={!signatureData?.signature ? 0 : undefined}
+                  title={!signatureData?.signature ? t('quoteCreation.quotePreview.clickToAddSignature', 'Click to add signature') : ''}
+                  onKeyDown={!signatureData?.signature ? (e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
                       setShowSignatureModal(true);
                     }
-                  }}
+                  } : undefined}
                 >
                   {signatureData?.signature ? (
                     <div className="w-full">
