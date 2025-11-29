@@ -40,7 +40,6 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
   const [isChangingEmail, setIsChangingEmail] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [changingEmail, setChangingEmail] = useState(false);
-  const [isManagingBilling, setIsManagingBilling] = useState(false);
 
   // Get multi-user context with fallback
   const multiUserContext = useMultiUser();
@@ -329,30 +328,9 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
     }
   };
 
-  const handleManageBilling = async () => {
-    if (isManagingBilling) return;
-    
-    try {
-      setIsManagingBilling(true);
-      const { createPortalSession } = await import('../../services/stripeService');
-      // Always use Supabase user ID - the Edge Function will look up the Stripe customer ID
-      const { data, error } = await createPortalSession(actualUser.id);
-      
-      if (error) {
-        console.error('Error creating portal session:', error);
-        alert('Error opening billing portal. Please try again.');
-        setIsManagingBilling(false);
-        return;
-      }
-
-      if (data?.url) {
-        window.location.href = data.url;
-      }
-    } catch (error) {
-      console.error('Error opening billing portal:', error);
-      alert('Error opening billing portal. Please try again.');
-      setIsManagingBilling(false);
-    }
+  const handleManageBilling = () => {
+    // Navigate to in-platform subscription management page
+    navigate('/subscription');
   };
 
   const getStatusColor = (status) => {
@@ -590,25 +568,15 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                 </span>
               </div>
 
-              {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
+              {/* Action Button */}
+              <div className="pt-1">
                 <Button
                   onClick={handleManageBilling}
-                  className="flex items-center justify-center gap-1.5"
+                  className="w-full flex items-center justify-center gap-1.5"
                   size="sm"
-                  disabled={isManagingBilling}
                 >
                   <Icon name="CreditCard" size={14} />
-                  <span className="text-xs">{isManagingBilling ? 'Opening...' : 'Manage'}</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/subscription')}
-                  className="flex items-center justify-center gap-1.5"
-                  size="sm"
-                >
-                  <Icon name="Eye" size={14} />
-                  <span className="text-xs">View Plans</span>
+                  <span className="text-xs">Manage Subscription</span>
                 </Button>
               </div>
             </>
@@ -617,10 +585,10 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
               <Icon name="AlertCircle" size={24} className="text-muted-foreground mx-auto mb-2" />
               <p className="text-xs text-muted-foreground mb-3">No active subscription</p>
               <Button
-                onClick={() => navigate('/subscription')}
+                onClick={handleManageBilling}
                 size="sm"
               >
-                View Plans
+                Subscribe Now
               </Button>
             </div>
           )}
@@ -1206,13 +1174,6 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
         error={pinModal.error}
       />
 
-      {/* Processing Overlay - Show when managing billing */}
-      <ProcessingOverlay 
-        isVisible={isManagingBilling}
-        message={t('subscription.managingBilling', 'Opening billing portal...')}
-        id="billing-portal-overlay"
-        preventNavigation={false}
-      />
 
     </div>
   );

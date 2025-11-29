@@ -20,14 +20,19 @@ const SubscriptionViewModal = ({ isOpen, onClose, subscription }) => {
     }).format(amount);
   };
 
+  // Normalize status (trial -> trialing)
+  const normalizeStatus = (status) => {
+    return status === 'trial' ? 'trialing' : status;
+  };
+
   const getStatusColor = (status) => {
-    switch (status) {
+    const normalizedStatus = normalizeStatus(status);
+    switch (normalizedStatus) {
       case 'active': return 'bg-green-100 text-green-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
       case 'inactive': return 'bg-red-100 text-red-800';
       case 'past_due': return 'bg-yellow-100 text-yellow-800';
       case 'trialing': return 'bg-blue-100 text-blue-800';
-      case 'trial': return 'bg-blue-100 text-blue-800';
       case 'expired': return 'bg-gray-100 text-gray-800';
       case 'payment_failed': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
@@ -103,7 +108,7 @@ const SubscriptionViewModal = ({ isOpen, onClose, subscription }) => {
                 <div>
                   <p className="text-xs text-muted-foreground">Status</p>
                   <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(subscription.status)}`}>
-                    {subscription.status}
+                    {normalizeStatus(subscription.status)}
                   </span>
                 </div>
                 <div>

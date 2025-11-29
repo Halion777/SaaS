@@ -387,30 +387,30 @@ const LeadsManagementPage = () => {
       />
       
       <div className="mt-4 sm:mt-6">
-        {loading ? (
-          <TableLoader message={t('leadsManagement.leadsTab.loading')} />
-        ) : error ? (
-          <div className="text-center py-12">
-            <Icon name="AlertCircle" className="w-12 h-12 text-destructive mx-auto mb-4" />
-            <p className="text-destructive">
-              {typeof error === 'string' ? error : error?.message || 'Erreur inconnue'}
-            </p>
-            <button
-              onClick={loadLeads}
-              className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-            >
-              {t('leadsManagement.leadsTab.retry')}
-            </button>
+      {loading ? (
+        <TableLoader message={t('leadsManagement.leadsTab.loading')} />
+      ) : error ? (
+        <div className="text-center py-12">
+          <Icon name="AlertCircle" className="w-12 h-12 text-destructive mx-auto mb-4" />
+          <p className="text-destructive">
+            {typeof error === 'string' ? error : error?.message || 'Erreur inconnue'}
+          </p>
+          <button
+            onClick={loadLeads}
+            className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+          >
+            {t('leadsManagement.leadsTab.retry')}
+          </button>
+        </div>
+      ) : filteredLeads.length === 0 ? (
+        <div className="flex items-center justify-center py-8 sm:py-12">
+          <div className="text-center">
+            <Icon name="Inbox" size={32} className="sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
+            <p className="text-xs sm:text-sm text-muted-foreground">{t('leadsManagement.leadsTab.noLeads')}</p>
           </div>
-        ) : filteredLeads.length === 0 ? (
-          <div className="flex items-center justify-center py-8 sm:py-12">
-            <div className="text-center">
-              <Icon name="Inbox" size={32} className="sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
-              <p className="text-xs sm:text-sm text-muted-foreground">{t('leadsManagement.leadsTab.noLeads')}</p>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-6">
+        </div>
+      ) : (
+        <div className="space-y-6">
           {filteredLeads.map((lead) => (
             <div key={lead.lead_id} className="relative bg-gradient-to-br from-card to-card/80 border border-border rounded-xl p-4 sm:p-6 overflow-hidden">
               {/* Subtle background pattern */}
@@ -603,8 +603,8 @@ const LeadsManagementPage = () => {
               </div>
             </div>
           ))}
-          </div>
-        )}
+        </div>
+      )}
       </div>
     </div>
   );

@@ -1075,7 +1075,118 @@
   },
   "subscription": {
     "loadingPlans": "Loading subscription plans...",
-    "managingBilling": "Opening billing portal..."
+    "managingBilling": "Opening billing portal...",
+    "pageTitle": "Manage Your Subscription",
+    "pageDescription": "Upgrade, downgrade, or manage your Haliqo plan",
+    "currentPlan": {
+      "title": "Current Plan",
+      "plan": "Plan",
+      "price": "Price",
+      "nextBilling": "Next Billing",
+      "trialEnd": "Trial End",
+      "trial": "Trial",
+      "billingStartsAfterTrial": "Billing starts after trial",
+      "paymentMethod": "Payment Method",
+      "expires": "Expires"
+    },
+    "tabs": {
+      "plans": "Plans",
+      "invoices": "Invoices & Billing History"
+    },
+    "actions": {
+      "reactivate": "Reactivate Subscription",
+      "cancel": "Cancel Subscription",
+      "updatePaymentMethod": "Update Payment Method",
+      "contactSupport": "Contact Support",
+      "changePlan": "Change Plan",
+      "currentPlan": "Current Plan",
+      "processing": "Processing...",
+      "manageSubscription": "Manage Subscription",
+      "subscribeNow": "Subscribe Now"
+    },
+    "cancelWarning": "Your subscription will be cancelled on {{date}}",
+    "billingCycle": {
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "savePercent": "Save {{percent}}%",
+      "saveAmount": "Save €{{amount}} per year",
+      "equivalent": "Equivalent to €{{amount}}/month"
+    },
+    "planChange": {
+      "title": "Change Plan",
+      "subtitle": "Confirm your plan change",
+      "newPlan": "New Plan",
+      "billing": "Billing",
+      "price": "Price",
+      "perMonth": "month",
+      "perYear": "year",
+      "confirmMessage": "Your plan will be updated immediately. You'll be charged the prorated amount for the remainder of your billing period.",
+      "upgradeMessage": "Your plan will be upgraded immediately. You'll be charged the prorated amount for the remainder of your billing period.",
+      "downgradeMessage": "Your downgrade will take effect at the end of your current billing period. You'll continue to have access to your current plan until then.",
+      "cancel": "Cancel",
+      "confirm": "Confirm Change"
+    },
+    "cancelModal": {
+      "title": "Cancel Subscription",
+      "subtitle": "We're sorry to see you go",
+      "message": "Your subscription will remain active until the end of your current billing period. You can reactivate anytime before then.",
+      "keepSubscription": "Keep Subscription",
+      "cancelAtPeriodEnd": "Cancel at Period End",
+      "cancelling": "Cancelling..."
+    },
+    "invoices": {
+      "upcomingPayment": "Upcoming Payment",
+      "billingHistory": "Billing History",
+      "loading": "Loading invoices...",
+      "noInvoices": "No invoices yet",
+      "noInvoicesDescription": "Your invoices will appear here after your first payment",
+      "invoice": "Invoice",
+      "date": "Date",
+      "amount": "Amount",
+      "status": "Status",
+      "actions": "Actions",
+      "viewInvoice": "View Invoice",
+      "downloadPdf": "Download PDF",
+      "due": "Due {{date}}"
+    },
+    "status": {
+      "active": "Active",
+      "trialing": "Trialing",
+      "cancelled": "Cancelled",
+      "inactive": "Inactive",
+      "paid": "Paid",
+      "open": "Open",
+      "draft": "Draft",
+      "void": "Void",
+      "uncollectible": "Uncollectible"
+    },
+    "checking": "Verifying subscription...",
+    "noSubscription": "No Active Subscription",
+    "expired": "Subscription Expired",
+    "noSubscriptionMessage": "You don't have an active subscription. Please subscribe to access the application.",
+    "expiredMessage": "Your subscription has expired. Please renew your subscription to continue using Haliqo.",
+    "renewSubscription": "Manage Subscription",
+    "contactSupport": "Need help? Contact us at support@haliqo.com",
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "changePlan": {
+        "question": "Can I change my plan anytime?",
+        "answer": "Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately."
+      },
+      "dataDowngrade": {
+        "question": "What happens to my data when I downgrade?",
+        "answer": "Your data is preserved. You'll have access to all your existing quotes and clients, but new features may be limited based on your plan."
+      },
+      "billing": {
+        "question": "How does billing work?",
+        "answer": "You'll be charged the prorated amount for plan changes. Upgrades are charged immediately, downgrades are credited to your next billing cycle."
+      }
+    },
+    "plans": {
+      "recommended": "Recommended",
+      "features": "Features",
+      "limitations": "Limitations"
+    }
   },
   "meta": {
     "title": "Haliqo – Your Smart Digital Partner",

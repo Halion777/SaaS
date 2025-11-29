@@ -4,6 +4,84 @@ import AppSettingsService from './appSettingsService';
 export class SubscriptionNotificationService {
   
   /**
+   * Get all pricing data from database for displaying plans
+   * Returns both monthly and yearly prices for all plans
+   */
+  static async getAllPricingData() {
+    try {
+      const pricingResult = await AppSettingsService.getSetting('pricing_settings');
+      
+      if (!pricingResult.success || !pricingResult.data) {
+        console.warn('Pricing settings not found, using fallback values');
+        // Return default pricing structure
+        return {
+          success: true,
+          data: {
+            starter: {
+              name: 'Starter Plan',
+              description: 'Perfect for beginners',
+              monthly: 29.99,
+              yearly: 24.99, // Monthly equivalent when billed yearly
+              yearlyTotal: 299.88, // 24.99 × 12
+              popular: false
+            },
+            pro: {
+              name: 'Pro Plan',
+              description: 'Complete solution with AI',
+              monthly: 49.99,
+              yearly: 41.66, // Monthly equivalent when billed yearly
+              yearlyTotal: 499.92, // 41.66 × 12
+              popular: true
+            }
+          }
+        };
+      }
+      
+      const pricingSettings = pricingResult.data;
+      
+      // Build response with calculated yearly totals
+      const pricing = {};
+      for (const [planType, plan] of Object.entries(pricingSettings)) {
+        pricing[planType] = {
+          name: plan.name || `${planType.charAt(0).toUpperCase() + planType.slice(1)} Plan`,
+          description: plan.description || '',
+          monthly: parseFloat(plan.monthly) || 0,
+          yearly: parseFloat(plan.yearly) || 0, // Monthly equivalent when billed yearly
+          yearlyTotal: parseFloat((parseFloat(plan.yearly) * 12).toFixed(2)) || 0, // Total for year
+          popular: plan.popular || false
+        };
+      }
+      
+      return { success: true, data: pricing };
+      
+    } catch (error) {
+      console.error('Error getting all pricing data:', error);
+      // Return default pricing on error
+      return {
+        success: true,
+        data: {
+          starter: {
+            name: 'Starter Plan',
+            description: 'Perfect for beginners',
+            monthly: 29.99,
+            yearly: 24.99,
+            yearlyTotal: 299.88,
+            popular: false
+          },
+          pro: {
+            name: 'Pro Plan',
+            description: 'Complete solution with AI',
+            monthly: 49.99,
+            yearly: 41.66,
+            yearlyTotal: 499.92,
+            popular: true
+          }
+        }
+      };
+    }
+  }
+  
+  /**
    * Get pricing information from database based on plan type and billing interval
    */
   static async getPricingInfo(planType, billingInterval = 'monthly') {

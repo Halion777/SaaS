@@ -916,41 +916,41 @@ const InvoicesFollowUp = () => {
                     </div>
                   </div>
 
-                  {/* View Toggle */}
+                {/* View Toggle */}
                   <div className="flex items-center p-4 border-b border-border">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-muted-foreground">{t('followUpManagement.view.label')}</span>
-                      <div className="flex bg-muted rounded-lg p-1">
-                        <button
-                          onClick={() => {
-                            setViewMode('table');
-                            localStorage.setItem('invoice-followup-view-mode', 'table');
-                          }}
-                          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                            viewMode === 'table'
-                              ? 'bg-background text-foreground shadow-sm'
-                              : 'text-muted-foreground hover:text-foreground'
-                          }`}
-                        >
-                          <Icon name="Table" size={14} className="mr-1" />
-                          {t('followUpManagement.view.table')}
-                        </button>
-                        <button
-                          onClick={() => {
-                            setViewMode('card');
-                            localStorage.setItem('invoice-followup-view-mode', 'card');
-                          }}
-                          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                            viewMode === 'card'
-                              ? 'bg-background text-foreground shadow-sm'
-                              : 'text-muted-foreground hover:text-foreground'
-                          }`}
-                        >
-                          <Icon name="Grid" size={14} className="mr-1" />
-                          {t('followUpManagement.view.cards')}
-                        </button>
-                      </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium text-muted-foreground">{t('followUpManagement.view.label')}</span>
+                    <div className="flex bg-muted rounded-lg p-1">
+                      <button
+                        onClick={() => {
+                          setViewMode('table');
+                          localStorage.setItem('invoice-followup-view-mode', 'table');
+                        }}
+                        className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                          viewMode === 'table'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        <Icon name="Table" size={14} className="mr-1" />
+                        {t('followUpManagement.view.table')}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setViewMode('card');
+                          localStorage.setItem('invoice-followup-view-mode', 'card');
+                        }}
+                        className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                          viewMode === 'card'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        <Icon name="Grid" size={14} className="mr-1" />
+                        {t('followUpManagement.view.cards')}
+                      </button>
                     </div>
+                  </div>
                   </div>
                   {error ? (
                     <div className="bg-card border border-border rounded-lg p-8 text-center">

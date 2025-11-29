@@ -52,6 +52,7 @@ class RegistrationService {
   async updateUserRecord(sessionData, userData) {
     // Determine subscription status based on trial period
     const subscriptionStatus = sessionData.subscription_status === 'trialing' ? 'trial' : 'active'
+    const isTrial = sessionData.subscription_status === 'trialing'
     
     // Use upsert to create the record if it doesn't exist, or update if it does
     const userRecord = {
@@ -71,7 +72,8 @@ class RegistrationService {
       stripe_customer_id: sessionData.customer,
       trial_start_date: sessionData.trial_start ? new Date(sessionData.trial_start * 1000).toISOString() : null,
       trial_end_date: sessionData.trial_end ? new Date(sessionData.trial_end * 1000).toISOString() : null,
-      registration_completed: true
+      registration_completed: true,
+      has_used_trial: isTrial // Mark that user has used their free trial
     }
 
     const { error } = await supabase

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
@@ -6,9 +6,37 @@ import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import { SubscriptionNotificationService } from '../../services/subscriptionNotificationService';
+
 const PricingPage = () => {
   const { t, i18n } = useTranslation();
   const [billingCycle, setBillingCycle] = useState('monthly');
+  const [pricing, setPricing] = useState({
+    starter: { monthly: 29.99, yearly: 24.99, yearlyTotal: 299.88 },
+    pro: { monthly: 49.99, yearly: 41.66, yearlyTotal: 499.92 }
+  });
+
+  // Load pricing from database on mount
+  useEffect(() => {
+    const loadPricing = async () => {
+      const result = await SubscriptionNotificationService.getAllPricingData();
+      if (result.success && result.data) {
+        setPricing({
+          starter: {
+            monthly: result.data.starter?.monthly || 29.99,
+            yearly: result.data.starter?.yearly || 24.99,
+            yearlyTotal: result.data.starter?.yearlyTotal || 299.88
+          },
+          pro: {
+            monthly: result.data.pro?.monthly || 49.99,
+            yearly: result.data.pro?.yearly || 41.66,
+            yearlyTotal: result.data.pro?.yearlyTotal || 499.92
+          }
+        });
+      }
+    };
+    loadPricing();
+  }, []);
 
   // Toggle billing cycle
   const toggleBillingCycle = (cycle) => {
@@ -21,8 +49,9 @@ const PricingPage = () => {
       name: t('pricing.plans.starter.name'),
       description: t('pricing.plans.starter.description'),
       price: {
-        monthly: "29.99",
-        annual: "24.99",
+        monthly: pricing.starter.monthly.toString(),
+        annual: pricing.starter.yearly.toString(),
+        annualTotal: pricing.starter.yearlyTotal.toString()
       },
       features: [
         t('pricing.plans.starter.features.feature1'),
@@ -44,8 +73,9 @@ const PricingPage = () => {
       name: t('pricing.plans.pro.name'),
       description: t('pricing.plans.pro.description'),
       price: {
-        monthly: "49.99",
-        annual: "41.66",
+        monthly: pricing.pro.monthly.toString(),
+        annual: pricing.pro.yearly.toString(),
+        annualTotal: pricing.pro.yearlyTotal.toString()
       },
       features: [
         t('pricing.plans.pro.features.feature1'),
@@ -218,7 +248,7 @@ const PricingPage = () => {
                     <div className="flex items-end">
                       <span className="text-5xl font-bold text-gray-900">
                         {billingCycle === 'annual' 
-                          ? (parseFloat(plan.price.annual) * 12).toFixed(2)
+                          ? plan.price.annualTotal
                           : plan.price[billingCycle]
                         }€
                       </span>
@@ -236,7 +266,7 @@ const PricingPage = () => {
                     </p>
                     {billingCycle === 'annual' && (
                       <p className="text-sm text-[#12bf23] font-medium mt-2">
-                        {t('pricing.savings', { amount: ((parseFloat(plan.price.monthly) * 12) - (parseFloat(plan.price.annual) * 12)).toFixed(2) })}
+                        {t('pricing.savings', { amount: ((parseFloat(plan.price.monthly) * 12) - parseFloat(plan.price.annualTotal)).toFixed(2) })}
                       </p>
                     )}
                   </div>

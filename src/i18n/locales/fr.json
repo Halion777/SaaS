@@ -1077,7 +1077,118 @@
   },
   "subscription": {
     "loadingPlans": "Chargement des plans d'abonnement...",
-    "managingBilling": "Ouverture du portail de facturation..."
+    "managingBilling": "Ouverture du portail de facturation...",
+    "pageTitle": "Gérer votre abonnement",
+    "pageDescription": "Upgrader, downgrader ou gérer votre plan Haliqo",
+    "currentPlan": {
+      "title": "Plan actuel",
+      "plan": "Plan",
+      "price": "Prix",
+      "nextBilling": "Prochaine facturation",
+      "trialEnd": "Fin de l'essai",
+      "trial": "Essai",
+      "billingStartsAfterTrial": "La facturation commence après l'essai",
+      "paymentMethod": "Méthode de paiement",
+      "expires": "Expire"
+    },
+    "tabs": {
+      "plans": "Plans",
+      "invoices": "Factures & Historique"
+    },
+    "actions": {
+      "reactivate": "Réactiver l'abonnement",
+      "cancel": "Annuler l'abonnement",
+      "updatePaymentMethod": "Modifier le moyen de paiement",
+      "contactSupport": "Contacter le support",
+      "changePlan": "Changer de plan",
+      "currentPlan": "Plan actuel",
+      "processing": "Traitement...",
+      "manageSubscription": "Gérer l'abonnement",
+      "subscribeNow": "S'abonner maintenant"
+    },
+    "cancelWarning": "Votre abonnement sera annulé le {{date}}",
+    "billingCycle": {
+      "monthly": "Mensuel",
+      "yearly": "Annuel",
+      "savePercent": "Économisez {{percent}}%",
+      "saveAmount": "Économisez {{amount}}€ par an",
+      "equivalent": "Équivalent à {{amount}}€/mois"
+    },
+    "planChange": {
+      "title": "Changer de plan",
+      "subtitle": "Confirmez votre changement de plan",
+      "newPlan": "Nouveau plan",
+      "billing": "Facturation",
+      "price": "Prix",
+      "perMonth": "mois",
+      "perYear": "an",
+      "confirmMessage": "Votre plan sera mis à jour immédiatement. Vous serez facturé au prorata pour le reste de votre période de facturation.",
+      "upgradeMessage": "Votre plan sera mis à niveau immédiatement. Vous serez facturé au prorata pour le reste de votre période de facturation.",
+      "downgradeMessage": "Votre rétrogradation prendra effet à la fin de votre période de facturation actuelle. Vous continuerez à avoir accès à votre plan actuel jusque-là.",
+      "cancel": "Annuler",
+      "confirm": "Confirmer le changement"
+    },
+    "cancelModal": {
+      "title": "Annuler l'abonnement",
+      "subtitle": "Nous sommes désolés de vous voir partir",
+      "message": "Votre abonnement restera actif jusqu'à la fin de votre période de facturation actuelle. Vous pouvez le réactiver à tout moment avant.",
+      "keepSubscription": "Garder l'abonnement",
+      "cancelAtPeriodEnd": "Annuler à la fin de la période",
+      "cancelling": "Annulation..."
+    },
+    "invoices": {
+      "upcomingPayment": "Prochain paiement",
+      "billingHistory": "Historique de facturation",
+      "loading": "Chargement des factures...",
+      "noInvoices": "Aucune facture",
+      "noInvoicesDescription": "Vos factures apparaîtront ici après votre premier paiement",
+      "invoice": "Facture",
+      "date": "Date",
+      "amount": "Montant",
+      "status": "Statut",
+      "actions": "Actions",
+      "viewInvoice": "Voir la facture",
+      "downloadPdf": "Télécharger PDF",
+      "due": "Échéance {{date}}"
+    },
+    "status": {
+      "active": "Actif",
+      "trialing": "Essai",
+      "cancelled": "Annulé",
+      "inactive": "Inactif",
+      "paid": "Payé",
+      "open": "Ouvert",
+      "draft": "Brouillon",
+      "void": "Annulé",
+      "uncollectible": "Irrécupérable"
+    },
+    "checking": "Vérification de l'abonnement...",
+    "noSubscription": "Aucun abonnement actif",
+    "expired": "Abonnement expiré",
+    "noSubscriptionMessage": "Vous n'avez pas d'abonnement actif. Veuillez vous abonner pour accéder à l'application.",
+    "expiredMessage": "Votre abonnement a expiré. Veuillez renouveler votre abonnement pour continuer à utiliser Haliqo.",
+    "renewSubscription": "Gérer l'abonnement",
+    "contactSupport": "Besoin d'aide ? Contactez-nous à support@haliqo.com",
+    "faq": {
+      "title": "Questions fréquentes",
+      "changePlan": {
+        "question": "Puis-je changer de plan à tout moment ?",
+        "answer": "Oui, vous pouvez upgrader ou downgrader votre plan à tout moment. Les changements prennent effet immédiatement."
+      },
+      "dataDowngrade": {
+        "question": "Qu'arrive-t-il à mes données si je downgrade ?",
+        "answer": "Vos données sont préservées. Vous aurez toujours accès à tous vos devis et clients existants, mais certaines fonctionnalités peuvent être limitées selon votre plan."
+      },
+      "billing": {
+        "question": "Comment fonctionne la facturation ?",
+        "answer": "Vous serez facturé au prorata pour les changements de plan. Les upgrades sont facturés immédiatement, les downgrades sont crédités sur votre prochaine facture."
+      }
+    },
+    "plans": {
+      "recommended": "Recommandé",
+      "features": "Fonctionnalités",
+      "limitations": "Limitations"
+    }
   },
   "meta": {
     "title": "Haliqo - Votre partenaire digital intelligent",

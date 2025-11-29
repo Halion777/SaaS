@@ -1082,7 +1082,118 @@
   },
   "subscription": {
     "loadingPlans": "Abonnementsplannen laden...",
-    "managingBilling": "Factureringsportaal openen..."
+    "managingBilling": "Factureringsportaal openen...",
+    "pageTitle": "Beheer je abonnement",
+    "pageDescription": "Upgraden, downgraden of beheer je Haliqo plan",
+    "currentPlan": {
+      "title": "Huidig plan",
+      "plan": "Plan",
+      "price": "Prijs",
+      "nextBilling": "Volgende facturering",
+      "trialEnd": "Einde proefperiode",
+      "trial": "Proefperiode",
+      "billingStartsAfterTrial": "Facturering start na proefperiode",
+      "paymentMethod": "Betaalmethode",
+      "expires": "Verloopt"
+    },
+    "tabs": {
+      "plans": "Plannen",
+      "invoices": "Facturen & Geschiedenis"
+    },
+    "actions": {
+      "reactivate": "Abonnement heractiveren",
+      "cancel": "Abonnement annuleren",
+      "updatePaymentMethod": "Betaalmethode bijwerken",
+      "contactSupport": "Contact support",
+      "changePlan": "Plan wijzigen",
+      "currentPlan": "Huidig plan",
+      "processing": "Verwerken...",
+      "manageSubscription": "Abonnement beheren",
+      "subscribeNow": "Nu abonneren"
+    },
+    "cancelWarning": "Je abonnement wordt geannuleerd op {{date}}",
+    "billingCycle": {
+      "monthly": "Maandelijks",
+      "yearly": "Jaarlijks",
+      "savePercent": "Bespaar {{percent}}%",
+      "saveAmount": "Bespaar €{{amount}} per jaar",
+      "equivalent": "Equivalent aan €{{amount}}/maand"
+    },
+    "planChange": {
+      "title": "Plan wijzigen",
+      "subtitle": "Bevestig je planwijziging",
+      "newPlan": "Nieuw plan",
+      "billing": "Facturering",
+      "price": "Prijs",
+      "perMonth": "maand",
+      "perYear": "jaar",
+      "confirmMessage": "Je plan wordt direct bijgewerkt. Je wordt naar rato gefactureerd voor de rest van je factureringsperiode.",
+      "upgradeMessage": "Je plan wordt direct geüpgraded. Je wordt naar rato gefactureerd voor de rest van je factureringsperiode.",
+      "downgradeMessage": "Je downgrade gaat in aan het einde van je huidige factureringsperiode. Je behoudt toegang tot je huidige plan tot die tijd.",
+      "cancel": "Annuleren",
+      "confirm": "Wijziging bevestigen"
+    },
+    "cancelModal": {
+      "title": "Abonnement annuleren",
+      "subtitle": "We vinden het jammer dat je vertrekt",
+      "message": "Je abonnement blijft actief tot het einde van je huidige factureringsperiode. Je kunt het op elk moment daarvoor opnieuw activeren.",
+      "keepSubscription": "Abonnement behouden",
+      "cancelAtPeriodEnd": "Annuleren aan einde periode",
+      "cancelling": "Annuleren..."
+    },
+    "invoices": {
+      "upcomingPayment": "Komende betaling",
+      "billingHistory": "Factureringsgeschiedenis",
+      "loading": "Facturen laden...",
+      "noInvoices": "Nog geen facturen",
+      "noInvoicesDescription": "Je facturen verschijnen hier na je eerste betaling",
+      "invoice": "Factuur",
+      "date": "Datum",
+      "amount": "Bedrag",
+      "status": "Status",
+      "actions": "Acties",
+      "viewInvoice": "Factuur bekijken",
+      "downloadPdf": "PDF downloaden",
+      "due": "Vervaldatum {{date}}"
+    },
+    "status": {
+      "active": "Actief",
+      "trialing": "Proefperiode",
+      "cancelled": "Geannuleerd",
+      "inactive": "Inactief",
+      "paid": "Betaald",
+      "open": "Open",
+      "draft": "Concept",
+      "void": "Ongeldig",
+      "uncollectible": "Niet-inbaar"
+    },
+    "checking": "Abonnement verifiëren...",
+    "noSubscription": "Geen actief abonnement",
+    "expired": "Abonnement verlopen",
+    "noSubscriptionMessage": "Je hebt geen actief abonnement. Abonneer je om toegang te krijgen tot de applicatie.",
+    "expiredMessage": "Je abonnement is verlopen. Verleng je abonnement om Haliqo te blijven gebruiken.",
+    "renewSubscription": "Abonnement beheren",
+    "contactSupport": "Hulp nodig? Neem contact op via support@haliqo.com",
+    "faq": {
+      "title": "Veelgestelde vragen",
+      "changePlan": {
+        "question": "Kan ik op elk moment van plan wisselen?",
+        "answer": "Ja, je kunt op elk moment upgraden of downgraden. Wijzigingen gaan direct in."
+      },
+      "dataDowngrade": {
+        "question": "Wat gebeurt er met mijn gegevens als ik downgrade?",
+        "answer": "Je gegevens blijven behouden. Je hebt toegang tot al je bestaande offertes en klanten, maar sommige functies kunnen beperkt zijn afhankelijk van je plan."
+      },
+      "billing": {
+        "question": "Hoe werkt de facturering?",
+        "answer": "Je wordt naar rato gefactureerd voor planwijzigingen. Upgrades worden direct gefactureerd, downgrades worden gecrediteerd op je volgende factuur."
+      }
+    },
+    "plans": {
+      "recommended": "Aanbevolen",
+      "features": "Functies",
+      "limitations": "Beperkingen"
+    }
   },
   "meta": {
     "title": "Haliqo - Je Slimme Digitale Partner",

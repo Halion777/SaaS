@@ -212,7 +212,7 @@ const AppRoutes = () => {
             </ProtectedRoute>
           } />
           <Route path="/subscription" element={
-            <ProtectedRoute>
+            <ProtectedRoute skipSubscriptionCheck={true}>
               <SubscriptionManagement />
             </ProtectedRoute>
           } />

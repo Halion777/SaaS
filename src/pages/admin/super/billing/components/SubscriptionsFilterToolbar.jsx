@@ -26,7 +26,7 @@ const SubscriptionsFilterToolbar = ({ searchTerm, onSearchChange, statusFilter, 
   const statusOptions = [
     { value: 'all', label: 'All Status' },
     { value: 'active', label: 'Active' },
-    { value: 'trial', label: 'Trial' },
+    { value: 'trialing', label: 'Trialing' },
     { value: 'cancelled', label: 'Cancelled' },
     { value: 'inactive', label: 'Inactive' },
     { value: 'expired', label: 'Expired' },

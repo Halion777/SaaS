@@ -61,6 +61,10 @@ export class LeadManagementService {
         await supabase.rpc('auto_assign_lead_to_artisans', {
           lead_uuid: data.id
         });
+        
+        // After assignment, send notification emails to assigned artisans
+        await this.sendLeadNotificationEmails(data);
+        
       } catch (assignmentError) {
         console.error('Failed to auto-assign lead:', assignmentError);
         // Don't fail the lead creation if assignment fails
@@ -74,6 +78,7 @@ export class LeadManagementService {
           email: leadData.email,
           language_preference: clientLanguage
         }, null, null); // No userId needed for non-authenticated clients
+        console.log('Welcome email sent successfully to:', leadData.email);
       } catch (emailError) {
         console.error('Failed to send welcome email:', emailError);
         // Don't fail the lead creation if email fails
@@ -103,6 +108,145 @@ export class LeadManagementService {
     } catch (error) {
       console.error('Error fetching lead request:', error);
       return { success: false, data: null, error };
+    }
+  }
+  
+  /**
+   * Send lead notification emails to all assigned artisans
+   * This is called after a lead is created and assigned
+   */
+  static async sendLeadNotificationEmails(leadData) {
+    try {
+      // Get all artisans assigned to this lead
+      const { data: assignments, error: assignmentError } = await supabase
+        .from('lead_assignments')
+        .select(`
+          artisan_user_id,
+          users:artisan_user_id (
+            id,
+            email,
+            first_name,
+            last_name,
+            full_name,
+            language_preference
+          )
+        `)
+        .eq('lead_id', leadData.id);
+
+      if (assignmentError) {
+        console.error('Error fetching lead assignments for email:', assignmentError);
+        return { success: false, error: assignmentError };
+      }
+
+      if (!assignments || assignments.length === 0) {
+        console.log('No artisans assigned to lead, skipping email notifications');
+        return { success: true, message: 'No artisans to notify' };
+      }
+
+      // Get artisan profiles for company names
+      const artisanUserIds = assignments.map(a => a.artisan_user_id);
+      const { data: profiles } = await supabase
+        .from('artisan_lead_preferences')
+        .select('user_id, email_notifications')
+        .in('user_id', artisanUserIds);
+
+      // Create a map for quick lookup
+      const profileMap = {};
+      if (profiles) {
+        profiles.forEach(p => {
+          profileMap[p.user_id] = p;
+        });
+      }
+
+      // Get artisan company names from user_profiles
+      const { data: userProfiles } = await supabase
+        .from('user_profiles')
+        .select('user_id, company_name')
+        .in('user_id', artisanUserIds);
+
+      const companyNameMap = {};
+      if (userProfiles) {
+        userProfiles.forEach(p => {
+          companyNameMap[p.user_id] = p.company_name;
+        });
+      }
+
+      // Send email to each assigned artisan who has email notifications enabled
+      const emailPromises = [];
+      
+      for (const assignment of assignments) {
+        const user = assignment.users;
+        if (!user || !user.email) continue;
+
+        // Check if artisan has email notifications enabled
+        const prefs = profileMap[assignment.artisan_user_id];
+        if (prefs && prefs.email_notifications === false) {
+          console.log(`Skipping email for user ${user.email} - notifications disabled`);
+          continue;
+        }
+
+        const artisanName = user.full_name || 
+                           (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : null) ||
+                           user.first_name || 
+                           'Artisan';
+        
+        const companyName = companyNameMap[assignment.artisan_user_id] || artisanName;
+        const language = user.language_preference || 'fr';
+
+        // Prepare lead data for email
+        const emailLeadData = {
+          id: leadData.id,
+          project_description: leadData.project_description,
+          city: leadData.city,
+          zip_code: leadData.zip_code,
+          client_name: leadData.client_name,
+          site_url: typeof window !== 'undefined' ? window.location.origin : 'https://app.haliqo.com'
+        };
+
+        const artisanData = {
+          email: user.email,
+          name: artisanName,
+          company_name: companyName,
+          user_id: assignment.artisan_user_id
+        };
+
+        console.log(`Sending lead notification email to ${user.email} for lead ${leadData.id}`);
+        
+        // Use the existing email service function
+        emailPromises.push(
+          EmailService.sendNewLeadNotificationEmail(emailLeadData, artisanData, language)
+            .then(result => {
+              if (result.success) {
+                console.log(`✅ Lead notification email sent successfully to ${user.email}`);
+              } else {
+                console.error(`❌ Failed to send lead email to ${user.email}:`, result.error);
+              }
+              return result;
+            })
+            .catch(err => {
+              console.error(`❌ Error sending lead email to ${user.email}:`, err);
+              return { success: false, error: err };
+            })
+        );
+      }
+
+      // Wait for all emails to be sent
+      const results = await Promise.all(emailPromises);
+      const successCount = results.filter(r => r.success).length;
+      const failCount = results.length - successCount;
+
+      console.log(`Lead notification emails: ${successCount} sent, ${failCount} failed`);
+
+      return { 
+        success: true, 
+        sent: successCount, 
+        failed: failCount,
+        total: results.length 
+      };
+
+    } catch (error) {
+      console.error('Error sending lead notification emails:', error);
+      return { success: false, error };
     }
   }
   

@@ -61,12 +61,13 @@ serve(async (req) => {
     )
 
     if (!authUser) {
-      // User doesn't exist in auth, can register
+      // User doesn't exist in auth, can register (new user - eligible for trial)
       return new Response(
         JSON.stringify({ 
           canRegister: true,
           userExists: false,
-          registrationComplete: false
+          registrationComplete: false,
+          hasUsedTrial: false
         }),
         { 
           status: 200, 
@@ -75,22 +76,22 @@ serve(async (req) => {
       )
     }
 
-    // User exists in auth, check if registration is complete
+    // User exists in auth, check full user data including subscription history
     const { data: userData, error: userError } = await supabaseClient
       .from('users')
-      .select('id, registration_completed')
+      .select('id, registration_completed, has_used_trial, subscription_status')
       .eq('id', authUser.id)
       .single()
 
     
     if (userError || !userData) {
       // User exists in auth but not in public.users (incomplete registration)
-     
       return new Response(
         JSON.stringify({ 
           canRegister: true,
           userExists: true,
           registrationComplete: false,
+          hasUsedTrial: false,
           userId: authUser.id
         }),
         { 
@@ -100,15 +101,29 @@ serve(async (req) => {
       )
     }
 
+    // Check if user has already used a trial (to prevent multiple free trials)
+    const hasUsedTrial = userData.has_used_trial === true
+    
+    // Also check subscription history for past trials
+    const { data: subscriptionHistory } = await supabaseClient
+      .from('subscriptions')
+      .select('id, status')
+      .eq('user_id', authUser.id)
+      .limit(1)
+    
+    const hasSubscriptionHistory = subscriptionHistory && subscriptionHistory.length > 0
+
     if (userData.registration_completed) {
-      // User has completed registration
+      // User has completed registration - check if they can register again
+      // They CANNOT register again (should login instead)
       console.log('User has completed registration - blocking registration');
       return new Response(
         JSON.stringify({ 
           canRegister: false,
           userExists: true,
           registrationComplete: true,
-          message: 'An account with this email already exists. Please try logging in instead.'
+          hasUsedTrial: hasUsedTrial || hasSubscriptionHistory,
+          message: 'An account with this email already exists. Please log in to manage your subscription.'
         }),
         { 
           status: 200, 
@@ -124,6 +139,7 @@ serve(async (req) => {
         canRegister: true,
         userExists: true,
         registrationComplete: false,
+        hasUsedTrial: hasUsedTrial || hasSubscriptionHistory,
         userId: authUser.id
       }),
       { 

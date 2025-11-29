@@ -2,29 +2,28 @@ import React, { useState } from 'react';
 import Icon from 'components/AppIcon';
 import Button from 'components/ui/Button';
 import Select from 'components/ui/Select';
-import Input from 'components/ui/Input';
 import { supabase } from 'services/supabaseClient';
 import SubscriptionNotificationService from 'services/subscriptionNotificationService';
 
 const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [stripeError, setStripeError] = useState(null);
   const [formData, setFormData] = useState({
-    plan_name: '',
     plan_type: '',
     status: '',
     interval: '',
-    amount: '',
     cancel_at_period_end: false
   });
 
   React.useEffect(() => {
     if (subscription) {
+      // Normalize status - convert 'trial' to 'trialing' for consistency
+      const normalizedStatus = subscription.status === 'trial' ? 'trialing' : subscription.status;
+      
       setFormData({
-        plan_name: subscription.plan_name || '',
         plan_type: subscription.plan_type || '',
-        status: subscription.status || '',
+        status: normalizedStatus || '',
         interval: subscription.interval || '',
-        amount: subscription.amount || '',
         cancel_at_period_end: subscription.cancel_at_period_end || false
       });
     }
@@ -57,6 +56,7 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setStripeError(null);
 
     try {
       // Store original subscription data for comparison
@@ -68,12 +68,97 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
         status: subscription.status
       };
 
+      // Get pricing from database (customizable in app settings)
+      const pricingResult = await SubscriptionNotificationService.getPricingInfo(
+        formData.plan_type, 
+        formData.interval
+      );
+      
+      let plan_name = `${formData.plan_type.charAt(0).toUpperCase() + formData.plan_type.slice(1)} Plan`;
+      let amount = formData.plan_type === 'pro' ? 49.99 : 29.99; // Fallback values
+      
+      if (pricingResult.success && pricingResult.data) {
+        plan_name = pricingResult.data.plan_name;
+        amount = pricingResult.data.amount;
+      }
+      
+      // Determine what changed
+      const isPlanChange = formData.plan_type !== originalSubscription.plan_type || 
+                          formData.interval !== originalSubscription.interval;
+      const isCancellation = formData.status === 'cancelled' && originalSubscription.status !== 'cancelled';
+      const isReactivation = originalSubscription.status === 'cancelled' && formData.status === 'active';
+
+      // ============================================
+      // STEP 1: Update Stripe FIRST (if user has Stripe subscription)
+      // ============================================
+      const hasStripeSubscription = subscription.stripe_subscription_id && 
+                                    !subscription.stripe_subscription_id.includes('placeholder') &&
+                                    !subscription.stripe_subscription_id.includes('temp_');
+      
+      if (hasStripeSubscription) {
+        try {
+          let stripeAction = null;
+          let stripePayload = {
+            userId: subscription.user_id,
+            stripeSubscriptionId: subscription.stripe_subscription_id
+          };
+
+          if (isPlanChange) {
+            stripeAction = 'update_plan';
+            stripePayload = {
+              ...stripePayload,
+              action: stripeAction,
+              planType: formData.plan_type,
+              billingInterval: formData.interval
+            };
+          } else if (isCancellation) {
+            stripeAction = 'cancel';
+            stripePayload = {
+              ...stripePayload,
+              action: stripeAction,
+              cancelAtPeriodEnd: formData.cancel_at_period_end
+            };
+          } else if (isReactivation) {
+            stripeAction = 'reactivate';
+            stripePayload = {
+              ...stripePayload,
+              action: stripeAction
+            };
+          }
+
+          if (stripeAction) {
+            console.log('Calling Stripe update with:', stripePayload);
+            
+            const { data: stripeResult, error: stripeError } = await supabase.functions.invoke(
+              'admin-update-subscription',
+              { body: stripePayload }
+            );
+
+            if (stripeError) {
+              console.error('Stripe update error:', stripeError);
+              setStripeError(`Stripe sync failed: ${stripeError.message}. Database will still be updated.`);
+            } else if (!stripeResult?.success) {
+              console.error('Stripe update failed:', stripeResult?.error);
+              setStripeError(`Stripe sync failed: ${stripeResult?.error || 'Unknown error'}. Database will still be updated.`);
+            } else {
+              console.log('Stripe updated successfully:', stripeResult);
+            }
+          }
+        } catch (stripeCallError) {
+          console.error('Error calling Stripe edge function:', stripeCallError);
+          setStripeError(`Stripe sync error: ${stripeCallError.message}. Database will still be updated.`);
+        }
+      }
+
+      // ============================================
+      // STEP 2: Update Supabase database
+      // ============================================
       const updateData = {
-        plan_name: formData.plan_name,
+        plan_name: plan_name,
         plan_type: formData.plan_type,
         status: formData.status,
         interval: formData.interval,
-        amount: parseFloat(formData.amount),
+        amount: amount,
         cancel_at_period_end: formData.cancel_at_period_end,
         updated_at: new Date().toISOString()
       };
@@ -103,7 +188,9 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
         // Don't fail the whole operation for this
       }
 
-      // Send notification email if subscription changed
+      // ============================================
+      // STEP 3: Send notification email if subscription changed
+      // ============================================
       try {
         // Get user data for notification
         const userResult = await SubscriptionNotificationService.getUserData(subscription.user_id);
@@ -111,21 +198,21 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
           const userData = userResult.data;
           
           // Determine notification type based on changes
-          const isUpgrade = parseFloat(formData.amount) > parseFloat(originalSubscription.amount);
-          const isDowngrade = parseFloat(formData.amount) < parseFloat(originalSubscription.amount);
+          const isUpgrade = amount > parseFloat(originalSubscription.amount);
+          const isDowngrade = amount < parseFloat(originalSubscription.amount);
           const isStatusChange = formData.status !== originalSubscription.status;
           
           // Prepare subscription data for notification
           const notificationData = {
-            plan_name: formData.plan_name,
+            plan_name: plan_name,
             plan_type: formData.plan_type,
-            amount: parseFloat(formData.amount),
+            amount: amount,
             billing_interval: formData.interval,
             status: formData.status,
             oldPlanName: originalSubscription.plan_name,
             oldAmount: originalSubscription.amount,
-            newPlanName: formData.plan_name,
-            newAmount: parseFloat(formData.amount),
+            newPlanName: plan_name,
+            newAmount: amount,
             effectiveDate: new Date().toLocaleDateString('fr-FR')
           };
 
@@ -156,7 +243,10 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
         // Don't fail the main operation if notification fails
       }
 
-      alert('Subscription updated successfully!');
+      alert(stripeError 
+        ? `Subscription updated in database. Warning: ${stripeError}`
+        : 'Subscription updated successfully (both Stripe and database)!'
+      );
       onUpdate();
       onClose();
     } catch (error) {
@@ -222,18 +312,6 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Plan Name
-                  </label>
-                  <Input
-                    value={formData.plan_name}
-                    onChange={(e) => handleInputChange('plan_name', e.target.value)}
-                    placeholder="Enter plan name"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
                     Plan Type
                   </label>
                   <Select
@@ -271,20 +349,6 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Amount (€)
-                  </label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.amount}
-                    onChange={(e) => handleInputChange('amount', e.target.value)}
-                    placeholder="0.00"
-                    required
-                  />
-                </div>
-
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -300,19 +364,20 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
               </div>
             </div>
 
-            {/* Warning */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div className="flex items-start space-x-3">
-                <Icon name="AlertTriangle" size={16} className="text-yellow-600 mt-0.5" />
-                <div>
-                  <h4 className="text-sm font-medium text-yellow-800">Important Notice</h4>
-                  <p className="text-sm text-yellow-700 mt-1">
-                    Changes to subscription details will be reflected immediately. 
-                    Make sure to communicate any changes to the user.
-                  </p>
+            {/* Stripe Sync Info */}
+            {subscription.stripe_subscription_id && !subscription.stripe_subscription_id.includes('placeholder') && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <Icon name="CreditCard" size={16} className="text-blue-600 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-medium text-blue-800">Stripe Connected</h4>
+                    <p className="text-sm text-blue-700 mt-1">
+                      This subscription is linked to Stripe. Changes will be synced automatically.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Actions */}
             <div className="flex items-center justify-end space-x-3 pt-6 border-t border-border">

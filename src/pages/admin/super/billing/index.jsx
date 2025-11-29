@@ -211,17 +211,23 @@ const SuperAdminBilling = () => {
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
+    // Normalize trial/trialing
+    const normalizedStatus = status === 'trial' ? 'trialing' : status;
+    switch (normalizedStatus) {
       case 'active': return 'bg-green-100 text-green-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
       case 'inactive': return 'bg-red-100 text-red-800';
       case 'past_due': return 'bg-yellow-100 text-yellow-800';
       case 'trialing': return 'bg-blue-100 text-blue-800';
-      case 'trial': return 'bg-blue-100 text-blue-800';
       case 'expired': return 'bg-gray-100 text-gray-800';
       case 'payment_failed': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  // Normalize status display text (trial -> trialing)
+  const normalizeStatus = (status) => {
+    return status === 'trial' ? 'trialing' : status;
   };
 
   const formatDate = (dateString) => {
@@ -350,7 +356,10 @@ const SuperAdminBilling = () => {
       sub.users?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       sub.stripe_subscription_id?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === 'all' || sub.status === statusFilter;
+    // Match both 'trial' and 'trialing' when filtering for trialing
+    const matchesStatus = statusFilter === 'all' || 
+      sub.status === statusFilter || 
+      (statusFilter === 'trialing' && sub.status === 'trial');
     
     return matchesSearch && matchesStatus;
   });
@@ -610,7 +619,7 @@ const SuperAdminBilling = () => {
                         </td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(subscription.status)}`}>
-                            {subscription.status}
+                            {normalizeStatus(subscription.status)}
                           </span>
                         </td>
                         <td className="px-4 py-3">
@@ -647,7 +656,7 @@ const SuperAdminBilling = () => {
                             </Button>
                             
                             {/* Cancel Button */}
-                            {(subscription.status === 'active' || subscription.status === 'trialing') && (
+                            {(subscription.status === 'active' || subscription.status === 'trialing' || subscription.status === 'trial') && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -687,7 +696,7 @@ const SuperAdminBilling = () => {
                           <p className="text-xs text-muted-foreground truncate">{subscription.users?.email || 'No email'}</p>
                         </div>
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(subscription.status)}`}>
-                          {subscription.status}
+                          {normalizeStatus(subscription.status)}
                         </span>
                       </div>
 
@@ -736,7 +745,7 @@ const SuperAdminBilling = () => {
                         >
                           <Icon name="Edit" size={14} />
                         </Button>
-                        {(subscription.status === 'active' || subscription.status === 'trialing') && (
+                        {(subscription.status === 'active' || subscription.status === 'trialing' || subscription.status === 'trial') && (
                           <Button
                             variant="ghost"
                             size="sm"

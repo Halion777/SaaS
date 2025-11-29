@@ -95,12 +95,24 @@ serve(async (req) => {
         // Update user record with real Stripe data if payment was successful
         if (session.payment_status === 'paid' && session.metadata?.userId) {
           try {
+            // Get subscription details to check if it's a trial
+            let isTrial = false
+            if (session.subscription) {
+              try {
+                const subscriptionDetails = await stripe.subscriptions.retrieve(session.subscription as string)
+                isTrial = subscriptionDetails.status === 'trialing'
+              } catch (e) {
+                console.log('Could not retrieve subscription details:', e)
+              }
+            }
+
             await supabaseClient
               .from('users')
               .update({
                 stripe_customer_id: session.customer as string,
                 stripe_subscription_id: session.subscription as string,
-                registration_completed: true
+                registration_completed: true,
+                has_used_trial: isTrial ? true : undefined // Mark trial as used if starting a trial
               })
               .eq('id', session.metadata.userId)
           } catch (error) {
@@ -193,9 +205,17 @@ serve(async (req) => {
 
       case 'customer.subscription.updated':
         const updatedSubscription = event.data.object as Stripe.Subscription
+        const previousAttributes = event.data.previous_attributes as any
 
         // Update subscription status in database
         try {
+          // Get the old subscription data for comparison
+          const { data: oldSubData } = await supabaseClient
+            .from('subscriptions')
+            .select('*, users!inner(id, email, first_name, last_name, full_name, language_preference)')
+            .eq('stripe_subscription_id', updatedSubscription.id)
+            .single()
+
           await supabaseClient
             .from('subscriptions')
             .update({
@@ -210,6 +230,66 @@ serve(async (req) => {
               subscription_status: updatedSubscription.status
             })
             .eq('stripe_subscription_id', updatedSubscription.id)
+
+          // Send email notification if plan changed or status changed significantly
+          if (oldSubData && oldSubData.users) {
+            const userData = oldSubData.users
+            const oldStatus = previousAttributes?.status || oldSubData.status
+            const newStatus = updatedSubscription.status
+
+            // Check if there's a meaningful change worth notifying
+            const shouldNotify = 
+              (oldStatus !== newStatus) || // Status changed
+              (previousAttributes?.items) // Plan changed
+
+            if (shouldNotify) {
+              try {
+                // Call the send-emails edge function
+                const emailType = 
+                  newStatus === 'canceled' || newStatus === 'cancelled' ? 'subscription_cancelled' :
+                  newStatus === 'past_due' ? 'subscription_cancelled' :
+                  'subscription_activated' // Default to activated for other status changes
+
+                const emailPayload = {
+                  user_email: userData.email,
+                  subject: 'Subscription Update',
+                  html: `<p>Your subscription status has been updated to: ${newStatus}</p>`,
+                  text: `Your subscription status has been updated to: ${newStatus}`
+                }
+
+                // Invoke the send-emails function
+                const response = await fetch(
+                  `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-emails`,
+                  {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
+                    },
+                    body: JSON.stringify({
+                      type: emailType,
+                      data: {
+                        user_email: userData.email,
+                        user_name: userData.full_name || userData.first_name || 'User',
+                        new_status: newStatus,
+                        old_status: oldStatus,
+                        language: userData.language_preference || 'fr'
+                      }
+                    })
+                  }
+                )
+
+                if (!response.ok) {
+                  console.error('Failed to send subscription update email:', await response.text())
+                } else {
+                  console.log('Subscription update email sent successfully')
+                }
+              } catch (emailError) {
+                console.error('Error sending subscription update email:', emailError)
+                // Don't fail the webhook for email errors
+              }
+            }
+          }
         } catch (error) {
           console.error('Error updating subscription:', error)
         }
@@ -220,6 +300,13 @@ serve(async (req) => {
 
         // Update subscription status to 'cancelled'
         try {
+          // Get user data for email notification
+          const { data: cancelledSubData } = await supabaseClient
+            .from('subscriptions')
+            .select('*, users!inner(id, email, first_name, last_name, full_name, language_preference)')
+            .eq('stripe_subscription_id', deletedSubscription.id)
+            .single()
+
           await supabaseClient
             .from('subscriptions')
             .update({
@@ -234,6 +321,39 @@ serve(async (req) => {
               subscription_status: 'cancelled'
             })
             .eq('stripe_subscription_id', deletedSubscription.id)
+
+          // Send cancellation email notification
+          if (cancelledSubData && cancelledSubData.users) {
+            const userData = cancelledSubData.users
+            try {
+              const response = await fetch(
+                `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-emails`,
+                {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
+                  },
+                  body: JSON.stringify({
+                    type: 'subscription_cancelled',
+                    data: {
+                      user_email: userData.email,
+                      user_name: userData.full_name || userData.first_name || 'User',
+                      language: userData.language_preference || 'fr'
+                    }
+                  })
+                }
+              )
+
+              if (!response.ok) {
+                console.error('Failed to send cancellation email:', await response.text())
+              } else {
+                console.log('Subscription cancellation email sent successfully')
+              }
+            } catch (emailError) {
+              console.error('Error sending cancellation email:', emailError)
+            }
+          }
         } catch (error) {
           console.error('Error updating cancelled subscription:', error)
         }

@@ -56,8 +56,8 @@ Cet email a été envoyé depuis le formulaire de contact de {company_name}.', '
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
         <h1 style="color: white; margin: 0; font-size: 28px;">⚠️ Abonnement geannuleerd</h1>
-    </div>
-    
+  </div>
+  
     <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e9ecef;">
         <p style="font-size: 18px; margin-bottom: 20px;">Hallo {user_name},</p>
         
@@ -70,23 +70,23 @@ Cet email a été envoyé depuis le formulaire de contact de {company_name}.', '
                 <li style="margin: 10px 0;"><strong>Annuleringsdatum:</strong> {effective_date}</li>
                 <li style="margin: 10px 0;"><strong>Reden:</strong> {cancellation_reason}</li>
             </ul>
-        </div>
+    </div>
         
         <p>Uw account blijft actief tot het einde van uw huidige factureringsperiode. Na deze datum verliest u toegang tot premium functies.</p>
         
         <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border: 1px solid #ffeaa7;">
             <p style="margin: 0; color: #856404;"><strong>📅 Belangrijk:</strong> U kunt uw abonnement nog steeds reactiveren vóór het einde van uw factureringsperiode.</p>
-        </div>
-        
-        <div style="text-align: center; margin: 30px 0;">
+  </div>
+  
+  <div style="text-align: center; margin: 30px 0;">
             <a href="https://app.haliqo.com/subscription" style="background: #28a745; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin-right: 10px;">Heractiveer mijn abonnement</a>
             <a href="https://app.haliqo.com/dashboard" style="background: #6c757d; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Toegang tot mijn account</a>
-        </div>
-        
+  </div>
+  
         <p>Als u uw abonnement wilt reactiveren of vragen heeft, neem dan gerust contact met ons op via <a href="mailto:{support_email}">{support_email}</a>.</p>
         
         <p style="margin-top: 30px;">We hopen u snel weer te zien!<br>Het {company_name} Team</p>
-    </div>
+  </div>
 </body>
 </html>', 'Hallo {user_name},
 
@@ -117,7 +117,7 @@ Het {company_name} Team', '{"user_name": "string", "user_email": "string", "comp
       <p style="margin: 5px 0;"><strong>Vervaldatum:</strong> {due_date}</p>
       <p style="margin: 5px 0;"><strong>Bedrag:</strong> {invoice_amount}</p>
       <p style="margin: 5px 0; color: #dc2626;"><strong>Achterstallig:</strong> {days_overdue} dag(en)</p>
-    </div>
+  </div>
     <p>De PDF van de factuur is bijgevoegd aan deze e-mail.</p>
     <p>Met vriendelijke groet,<br>{company_name}</p>
   </div>', 'Achterstallige betaling - Factuur {invoice_number}
@@ -165,16 +165,16 @@ Met vriendelijke groet,
         
         <div style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0;">
             <p style="margin: 0; color: #1976d2;"><strong>🎯 Verlies uw gegevens niet!</strong> Uw projecten en gegevens worden bewaard, maar u verliest toegang tot premium functies.</p>
-        </div>
-        
-        <div style="text-align: center; margin: 30px 0;">
+  </div>
+  
+  <div style="text-align: center; margin: 30px 0;">
             <a href="https://app.haliqo.com/subscription" style="background: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Kies mijn plan</a>
-        </div>
-        
+  </div>
+  
         <p>Als u vragen heeft over onze abonnementsplannen, neem dan gerust contact met ons op via <a href="mailto:{support_email}">{support_email}</a>.</p>
         
         <p style="margin-top: 30px;">Met vriendelijke groet,<br>Het {company_name} Team</p>
-    </div>
+  </div>
 </body>
 </html>', 'Hallo {user_name},
 
@@ -204,8 +204,8 @@ Het {company_name} Team', '{"user_name": "string", "new_amount": "string", "user
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
         <h1 style="color: white; margin: 0; font-size: 28px;">📋 Abonnement modifié</h1>
-    </div>
-    
+  </div>
+  
     <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e9ecef;">
         <p style="font-size: 18px; margin-bottom: 20px;">Bonjour {user_name},</p>
         
@@ -225,9 +225,9 @@ Het {company_name} Team', '{"user_name": "string", "new_amount": "string", "user
         
         <div style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0;">
             <p style="margin: 0; color: #1976d2;"><strong>💡 Astuce :</strong> Vous pouvez toujours mettre à niveau votre abonnement à tout moment depuis votre tableau de bord.</p>
-        </div>
-        
-        <div style="text-align: center; margin: 30px 0;">
+  </div>
+  
+  <div style="text-align: center; margin: 30px 0;">
             <a href="https://app.haliqo.com/subscription" style="background: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Gérer mon abonnement</a>
         </div>
         
@@ -1243,15 +1243,15 @@ Met vriendelijke groet,
   <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
     <h1 style="color: white; margin: 0; font-size: 24px;">Subscription Upgraded!</h1>
     
-  </div>
-  
-  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    </div>
+    
+    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
     
     
-  </div>
+    </div>
   
-  
-  <div style="text-align: center; margin: 30px 0;">
+    
+    <div style="text-align: center; margin: 30px 0;">
     <a href="{link}" style="background: #007bff; color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">Access My Dashboard</a>
   </div>
   
@@ -1277,11 +1277,11 @@ Access My Dashboard
   
   <div style="text-align: center; margin: 30px 0;">
     <a href="{quote_link}" style="background: #feca57; color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; box-shadow: 0 4px 15px rgba(254, 202, 87, 0.3);">Review Quote</a>
-  </div>
-  
-  <div style="text-align: center; color: #666; font-size: 14px;">
-    <p style="margin: 0;">{company_name}</p>
-  </div>
+    </div>
+    
+    <div style="text-align: center; color: #666; font-size: 14px;">
+      <p style="margin: 0;">{company_name}</p>
+    </div>
 </div>', 'Follow-up - Quote {quote_number}
 
 Hello {client_name},

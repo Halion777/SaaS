@@ -427,10 +427,7 @@ const EmailTemplatesManagement = () => {
   };
 
   // Handle template edit
-  const handleEditTemplate = async (template) => {
-    // Reload templates to ensure we have the latest data
-    await loadTemplates();
-    
+  const handleEditTemplate = (template) => {
     // Parse variables if needed
     const parsedVariables = typeof template.variables === 'string' 
       ? (template.variables ? JSON.parse(template.variables) : {})
