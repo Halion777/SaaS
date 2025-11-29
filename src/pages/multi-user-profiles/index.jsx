@@ -222,26 +222,56 @@ const MultiUserProfilesPage = () => {
     }
   };
 
+  // Default form values - set to admin if no profiles exist (first profile should be admin)
+  const getDefaultProfileForm = () => {
+    const isFirstProfile = companyProfiles.length === 0;
+    const defaultRole = isFirstProfile ? 'admin' : 'viewer';
+    const defaultTemplate = roleTemplates[defaultRole];
+    
+    return {
+      name: '',
+      email: '',
+      role: defaultRole,
+      selectedTemplate: defaultRole,
+      pin: '',
+      permissions: defaultTemplate?.permissions || {
+        dashboard: 'view_only',
+        analytics: 'view_only',
+        peppolAccessPoint: 'no_access',
+        leadsManagement: 'view_only',
+        quoteCreation: 'no_access',
+        quotesManagement: 'view_only',
+        quotesFollowUp: 'view_only',
+        invoicesFollowUp: 'view_only',
+        clientInvoices: 'view_only',
+        supplierInvoices: 'no_access',
+        clientManagement: 'view_only',
+        creditInsurance: 'no_access',
+        recovery: 'no_access'
+      }
+    };
+  };
+
   const [profileForm, setProfileForm] = useState({
     name: '',
     email: '',
-    role: 'viewer',
-    selectedTemplate: 'viewer',
-    pin: '', // PIN for profile access
+    role: 'admin', // Default to admin for first profile
+    selectedTemplate: 'admin',
+    pin: '',
     permissions: {
-      dashboard: 'view_only',
-      analytics: 'view_only',
-      peppolAccessPoint: 'no_access',
-      leadsManagement: 'view_only',
-      quoteCreation: 'no_access',
-      quotesManagement: 'view_only',
-      quotesFollowUp: 'view_only',
-      invoicesFollowUp: 'view_only',
-      clientInvoices: 'view_only',
-      supplierInvoices: 'no_access',
-      clientManagement: 'view_only',
-      creditInsurance: 'no_access',
-      recovery: 'no_access'
+      dashboard: 'full_access',
+      analytics: 'full_access',
+      peppolAccessPoint: 'full_access',
+      leadsManagement: 'full_access',
+      quoteCreation: 'full_access',
+      quotesManagement: 'full_access',
+      quotesFollowUp: 'full_access',
+      invoicesFollowUp: 'full_access',
+      clientInvoices: 'full_access',
+      supplierInvoices: 'full_access',
+      clientManagement: 'full_access',
+      creditInsurance: 'full_access',
+      recovery: 'full_access'
     }
   });
 
@@ -431,6 +461,9 @@ const MultiUserProfilesPage = () => {
     e.preventDefault();
     
     try {
+      // Check if this is the first profile being created
+      const isFirstProfile = companyProfiles.length === 0;
+      
       const newProfile = await addProfile({
         name: profileForm.name,
         email: profileForm.email,
@@ -440,28 +473,15 @@ const MultiUserProfilesPage = () => {
       });
       
       setShowAddProfileModal(false);
-      setProfileForm({ 
-        name: '', 
-        email: '', 
-        role: 'viewer', 
-        selectedTemplate: 'viewer',
-        pin: '',
-        permissions: {
-          dashboard: 'view_only',
-          analytics: 'view_only',
-          peppolAccessPoint: 'no_access',
-          leadsManagement: 'view_only',
-          quoteCreation: 'no_access',
-          quotesManagement: 'view_only',
-          quotesFollowUp: 'view_only',
-          invoicesFollowUp: 'view_only',
-          clientInvoices: 'view_only',
-          supplierInvoices: 'no_access',
-          clientManagement: 'view_only',
-          creditInsurance: 'no_access',
-          recovery: 'no_access'
-        }
-      });
+      // Reset form - will get new defaults next time modal opens
+      setProfileForm(getDefaultProfileForm());
+      
+      // If this is the first profile, automatically switch to it (activate it)
+      if (isFirstProfile) {
+        await switchProfile(newProfile.id);
+        alert(t('multiUserProfiles.messages.profileCreated', { name: newProfile.name }));
+        return;
+      }
       
       // Check if this is the second profile (multiple profiles scenario)
       const allProfiles = await getCompanyProfiles();
@@ -482,8 +502,11 @@ const MultiUserProfilesPage = () => {
           await updateProfile(adminProfile.id, { pin: adminPin });
         }
       }
+      
+      alert(t('multiUserProfiles.messages.profileCreated', { name: newProfile.name }));
     } catch (error) {
       console.error('Error adding profile:', error);
+      alert(t('multiUserProfiles.messages.profileCreateError') || 'Error creating profile');
     }
   };
 
@@ -504,28 +527,7 @@ const MultiUserProfilesPage = () => {
       });
       setShowEditProfileModal(false);
       setEditingProfile(null);
-      setProfileForm({ 
-        name: '', 
-        email: '', 
-        role: 'viewer', 
-        selectedTemplate: 'viewer',
-        pin: '',
-        permissions: {
-          dashboard: 'view_only',
-          analytics: 'view_only',
-          peppolAccessPoint: 'no_access',
-          leadsManagement: 'view_only',
-          quoteCreation: 'no_access',
-          quotesManagement: 'view_only',
-          quotesFollowUp: 'view_only',
-          invoicesFollowUp: 'view_only',
-          clientInvoices: 'view_only',
-          supplierInvoices: 'no_access',
-          clientManagement: 'view_only',
-          creditInsurance: 'no_access',
-          recovery: 'no_access'
-        }
-      });
+      setProfileForm(getDefaultProfileForm());
       alert(t('multiUserProfiles.messages.profileUpdated'));
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -672,8 +674,17 @@ const MultiUserProfilesPage = () => {
                 </p>
               </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
-                {isPremium && isAdmin() && companyProfiles.length < subscriptionLimits.maxProfiles && (
-                  <Button onClick={() => setShowAddProfileModal(true)}>
+                {/* Show Add Profile button when:
+                    1. Premium user AND admin with room for more profiles, OR
+                    2. No profiles exist yet (need to create first admin profile)
+                */}
+                {((isPremium && isAdmin() && companyProfiles.length < subscriptionLimits.maxProfiles) || 
+                  companyProfiles.length === 0) && (
+                  <Button onClick={() => {
+                    // Reset form with appropriate defaults based on whether this is the first profile
+                    setProfileForm(getDefaultProfileForm());
+                    setShowAddProfileModal(true);
+                  }}>
                     <Icon name="Plus" size={16} className="mr-2" />
                     {t('multiUserProfiles.addProfile')}
                   </Button>
@@ -877,16 +888,18 @@ const MultiUserProfilesPage = () => {
                 <p className="text-muted-foreground mb-4">
                   {t('multiUserProfiles.noProfilesConfigured.description')}
                 </p>
-                {isAdmin() && (
-                  <Button
-                    onClick={() => setShowAddProfileModal(true)}
-                    variant="default"
-                    iconName="Plus"
-                    iconPosition="left"
-                  >
-                    {t('multiUserProfiles.noProfilesConfigured.createFirst')}
-                  </Button>
-                )}
+                {/* Always show create button when no profiles exist (need to create first admin profile) */}
+                <Button
+                  onClick={() => {
+                    setProfileForm(getDefaultProfileForm());
+                    setShowAddProfileModal(true);
+                  }}
+                  variant="default"
+                  iconName="Plus"
+                  iconPosition="left"
+                >
+                  {t('multiUserProfiles.noProfilesConfigured.createFirst')}
+                </Button>
               </div>
             )}
           </div>

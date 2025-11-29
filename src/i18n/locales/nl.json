@@ -4434,6 +4434,27 @@
         "send": "Verzenden"
       }
     },
+  "profileSelection": {
+    "title": "Selecteer een profiel",
+    "subtitle": "Kies het profiel waarmee u wilt inloggen",
+    "pinRequired": "PIN-code vereist",
+    "active": "Actief",
+    "enterPinFor": "Voer PIN-code in voor {{name}}",
+    "errors": {
+      "selectError": "Fout bij selecteren van profiel",
+      "incorrectPin": "Onjuiste PIN-code",
+      "verifyError": "Fout bij verifiëren van PIN"
+    }
+  },
+  "pinModal": {
+    "title": "PIN-code vereist",
+    "message": "Voer de PIN-code in om toegang te krijgen tot dit profiel",
+    "pinCode": "PIN-code",
+    "cancel": "Annuleren",
+    "confirm": "Bevestigen",
+    "verifying": "Verifiëren...",
+    "hint": "De PIN-code beschermt de toegang tot dit profiel"
+  },
   "multiUserProfiles": {
     "title": "Gebruikersprofielbeheer",
     "subtitle": "Beheer uw teamprofielen en hun machtigingen",
@@ -4570,6 +4591,8 @@
     "messages": {
       "profileSwitched": "Profiel gewisseld naar {{name}}",
       "profileSwitchError": "Fout bij wisselen van profiel",
+      "profileCreated": "Profiel {{name}} succesvol aangemaakt",
+      "profileCreateError": "Fout bij aanmaken van profiel",
       "profileUpdated": "Profiel succesvol bijgewerkt",
       "profileUpdateError": "Fout bij bijwerken van profiel",
       "profileDeleted": "Profiel succesvol verwijderd",

@@ -41,7 +41,7 @@ const ProfileSelectionModal = ({ isOpen, onProfileSelect, onClose }) => {
       onProfileSelect(profile);
     } catch (error) {
       console.error('Error selecting profile:', error);
-      setPinError('Erreur lors de la sélection du profil');
+      setPinError(t('profileSelection.errors.selectError'));
     } finally {
       setIsLoading(false);
     }
@@ -59,11 +59,11 @@ const ProfileSelectionModal = ({ isOpen, onProfileSelect, onClose }) => {
         setShowPinModal(false);
         await selectProfile(selectedProfile);
       } else {
-        setPinError('Code PIN incorrect');
+        setPinError(t('profileSelection.errors.incorrectPin'));
       }
     } catch (error) {
       console.error('Error confirming PIN:', error);
-      setPinError('Erreur lors de la vérification du PIN');
+      setPinError(t('profileSelection.errors.verifyError'));
     } finally {
       setIsLoading(false);
     }
@@ -84,7 +84,7 @@ const ProfileSelectionModal = ({ isOpen, onProfileSelect, onClose }) => {
         <div className="w-full h-full flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-border">
-            <h2 className="text-3xl font-bold text-foreground">Sélectionner un profil</h2>
+            <h2 className="text-3xl font-bold text-foreground">{t('profileSelection.title')}</h2>
             <button
               onClick={onClose}
               className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-full hover:bg-muted"
@@ -96,7 +96,7 @@ const ProfileSelectionModal = ({ isOpen, onProfileSelect, onClose }) => {
           {/* Content */}
           <div className="flex-1 flex flex-col items-center justify-center p-6">
             <p className="text-xl text-muted-foreground mb-12 text-center max-w-2xl">
-              Choisissez le profil avec lequel vous souhaitez vous connecter
+              {t('profileSelection.subtitle')}
             </p>
 
             {/* Profile Grid */}
@@ -135,7 +135,7 @@ const ProfileSelectionModal = ({ isOpen, onProfileSelect, onClose }) => {
                     {profile.pin && profile.pin.trim() !== '' && (
                       <div className="flex items-center space-x-3 text-base text-muted-foreground bg-muted/50 px-4 py-2 rounded-full">
                         <AppIcon name="Lock" size={18} />
-                        <span>Code PIN requis</span>
+                        <span>{t('profileSelection.pinRequired')}</span>
                       </div>
                     )}
 
@@ -143,7 +143,7 @@ const ProfileSelectionModal = ({ isOpen, onProfileSelect, onClose }) => {
                     {profile.is_active && (
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                         <AppIcon name="CheckCircle" size={16} className="mr-2" />
-                        Actif
+                        {t('profileSelection.active')}
                       </span>
                     )}
                   </div>
@@ -160,7 +160,7 @@ const ProfileSelectionModal = ({ isOpen, onProfileSelect, onClose }) => {
           isOpen={showPinModal}
           onClose={handlePinModalClose}
           onConfirm={handlePinConfirm}
-          title={`Entrez le code PIN pour ${selectedProfile.name}`}
+          title={t('profileSelection.enterPinFor', { name: selectedProfile.name })}
           error={pinError}
           isLoading={isLoading}
         />

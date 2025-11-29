@@ -2,7 +2,12 @@
 
 ## Overview
 
-The system uses a multi-user profile system where each user account can have multiple profiles with different roles and permissions. **All actions are performed by the parent user account** - profiles are **ONLY for access control** to determine which features/modules each profile can access. This allows teams to share a single account while maintaining granular access control per team member.
+The system uses a **two-layer access control**:
+
+1. **Subscription-Based Access** - What features the plan allows (Starter vs Pro)
+2. **Profile-Based Permissions** - What modules each profile role can access
+
+**All actions are performed by the parent user account** - profiles are **ONLY for access control** to determine which features/modules each profile can access. This allows teams to share a single account while maintaining granular access control per team member.
 
 **Important:** Profiles are NOT separate user accounts. They are permission containers that control what features are accessible. All data, actions, and operations belong to the parent user account.
 
@@ -12,6 +17,9 @@ The system uses a multi-user profile system where each user account can have mul
 - ✅ Profile management UI with translations (FR, EN, NL)
 - ✅ Profile switching with PIN protection
 - ✅ Subscription limit enforcement
+- ✅ **NEW: Subscription-based feature access configuration** (`src/config/subscriptionFeatures.js`)
+- ✅ **NEW: Feature access service** (`src/services/featureAccessService.js`)
+- ✅ **NEW: useFeatureAccess hook** (`src/hooks/useFeatureAccess.js`)
 - ⚠️ **Access control enforcement in UI pending** (see Implementation Plan section below)
 
 **Note:** The permission system is fully implemented but not yet enforced in sidebar navigation, pages, and widgets. See Implementation Plan section for complete access control rollout.
@@ -39,6 +47,113 @@ The system uses a multi-user profile system where each user account can have mul
   - Active status (`is_active` - only one profile can be active at a time)
   - Last active timestamp (`last_active`)
   - Created/updated timestamps
+
+---
+
+## Subscription-Based Feature Access (NEW)
+
+### Configuration File
+
+All subscription-based feature access is defined in:
+**`src/config/subscriptionFeatures.js`**
+
+This file is the **single source of truth** for:
+- Plan definitions (Starter, Pro)
+- Feature access levels per plan
+- Quota limits per plan
+- Module-to-feature mapping
+
+### Feature Access Levels
+
+| Level | Description |
+|-------|-------------|
+| `full` | Full access to feature |
+| `limited` | Limited access (with quotas) |
+| `none` | No access to feature |
+
+### Feature Keys
+
+```javascript
+FEATURES = {
+  QUOTES: 'quotes',
+  INVOICES: 'invoices',
+  CLIENTS: 'clients',
+  TEMPLATES: 'templates',
+  LEAD_GENERATION: 'leadGeneration',
+  AUTOMATIC_REMINDERS: 'automaticReminders',
+  MULTI_USER: 'multiUser',
+  ADVANCED_ANALYTICS: 'advancedAnalytics',
+  AI_FEATURES: 'aiFeatures',
+  SIGNATURE_PREDICTIONS: 'signaturePredictions',
+  PRICE_OPTIMIZATION: 'priceOptimization',
+  PEPPOL: 'peppol',
+  CREDIT_INSURANCE: 'creditInsurance',
+  RECOVERY: 'recovery',
+  EMAIL_SUPPORT: 'emailSupport',
+  PRIORITY_SUPPORT: 'prioritySupport'
+}
+```
+
+### Module-to-Feature Mapping
+
+Maps profile permission modules to subscription features:
+
+```javascript
+MODULE_FEATURE_MAP = {
+  dashboard: null,                        // Always accessible
+  analytics: 'advancedAnalytics',
+  peppolAccessPoint: 'peppol',
+  leadsManagement: 'leadGeneration',
+  quoteCreation: 'quotes',
+  quotesManagement: 'quotes',
+  quotesFollowUp: 'automaticReminders',
+  invoicesFollowUp: 'automaticReminders',
+  clientInvoices: 'invoices',
+  supplierInvoices: 'invoices',
+  clientManagement: 'clients',
+  creditInsurance: 'creditInsurance',
+  recovery: 'recovery'
+}
+```
+
+### How to Update Features
+
+To change feature access for a plan, edit `PLAN_FEATURES` in `src/config/subscriptionFeatures.js`:
+
+```javascript
+PLAN_FEATURES = {
+  starter: {
+    [FEATURES.QUOTES]: 'limited',        // Change to 'full' or 'none'
+    [FEATURES.LEAD_GENERATION]: 'none',  // Change to 'full' to enable
+    // ... other features
+  },
+  pro: {
+    [FEATURES.QUOTES]: 'full',
+    // ... other features
+  }
+}
+```
+
+### How to Update Quotas
+
+Edit `QUOTAS` in `src/config/subscriptionFeatures.js`:
+
+```javascript
+QUOTAS = {
+  starter: {
+    quotesPerMonth: 15,      // Change limit (-1 = unlimited)
+    invoicesPerMonth: 15,
+    maxProfiles: 1,
+    maxStorage: '10GB'
+  },
+  pro: {
+    quotesPerMonth: -1,      // -1 = unlimited
+    invoicesPerMonth: -1,
+    maxProfiles: 10,
+    maxStorage: '100GB'
+  }
+}
+```
 
 ---
 
@@ -238,19 +353,45 @@ The system supports 13 feature modules:
 ## Access Control Flow
 
 ```
-User Account (Subscription Plan)
-    ↓
-    ├─→ Determines: Max profiles, Storage, Premium features
-    ↓
-User Profile (Role & Permissions)
-    ↓
-    ├─→ Determines: Feature access, Actions allowed
-    ↓
-Feature Access
-    ├─→ Check subscription plan limits
-    ├─→ Check profile permissions
-    └─→ Grant or deny access
+┌─────────────────────────────────────────────────────────────────┐
+│                    TWO-LAYER ACCESS CONTROL                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  Layer 1: SUBSCRIPTION-BASED (What the plan allows)             │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │ User Account (selected_plan + subscription_status)          ││
+│  │    ↓                                                         ││
+│  │ Check: Is subscription active? (trial/trialing/active)      ││
+│  │    ↓                                                         ││
+│  │ Check: Does plan include this feature?                      ││
+│  │    ↓                                                         ││
+│  │ Check: Is user within quota limits?                         ││
+│  └─────────────────────────────────────────────────────────────┘│
+│                           ↓                                       │
+│  Layer 2: PROFILE-BASED (What the profile role allows)          │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │ User Profile (role + permissions)                           ││
+│  │    ↓                                                         ││
+│  │ Check: Is user admin? (bypass all checks)                   ││
+│  │    ↓                                                         ││
+│  │ Check: Does profile have module permission?                 ││
+│  │    ↓                                                         ││
+│  │ Check: Is permission level sufficient? (view_only/full)     ││
+│  └─────────────────────────────────────────────────────────────┘│
+│                           ↓                                       │
+│  RESULT: ALLOW or DENY                                           │
+└─────────────────────────────────────────────────────────────────┘
 ```
+
+### Access Control Files
+
+| File | Purpose |
+|------|---------|
+| `src/config/subscriptionFeatures.js` | Define subscription features |
+| `src/services/featureAccessService.js` | Combined access checks |
+| `src/hooks/useFeatureAccess.js` | React hook for components |
+| `src/context/MultiUserContext.jsx` | Profile permissions |
+| `src/services/multiUserService.js` | Profile service |
 
 ### How Access is Determined
 
@@ -425,7 +566,33 @@ Indexes:
 
 ## Key Files & Implementation
 
+### Configuration
+
+#### `src/config/subscriptionFeatures.js`
+**Purpose:** Central configuration for subscription-based feature access
+
+**Exports:**
+- `PLANS` - Plan type constants ('starter', 'pro')
+- `SUBSCRIPTION_STATUS` - Status constants ('trial', 'active', etc.)
+- `FEATURES` - Feature key constants
+- `QUOTAS` - Quota limits per plan
+- `PLAN_FEATURES` - Feature access levels per plan
+- `MODULE_FEATURE_MAP` - Maps modules to features
+- Helper functions: `isActiveSubscription()`, `getFeatureAccess()`, `isFeatureAvailable()`, etc.
+
 ### Services
+
+#### `src/services/featureAccessService.js`
+**Purpose:** Unified access control combining subscription + profile permissions
+
+**Key Methods:**
+- `checkFeatureAccess(userId, feature)` - Check subscription feature access
+- `canAccessModule(userId, module, requiredPermission)` - Combined check (subscription + profile)
+- `checkQuota(userId, quotaKey, currentUsage)` - Check if within quota limits
+- `canCreateQuote(userId)` - Check if can create more quotes
+- `canCreateInvoice(userId)` - Check if can create more invoices
+- `canCreateProfile(userId)` - Check if can create more profiles
+- `getUpgradeFeatures(userId)` - Get features unlocked by upgrading
 
 #### `src/services/multiUserService.js`
 **Purpose:** Core service for profile management operations
@@ -471,6 +638,55 @@ Indexes:
   - Sets all permissions to `full_access`
   - Sets `is_active: true`
   - Checks for existing profile (idempotency)
+
+### Hooks
+
+#### `src/hooks/useFeatureAccess.js`
+**Purpose:** React hook for easy feature access checks in components
+
+**Usage:**
+```javascript
+import { useFeatureAccess } from '../hooks/useFeatureAccess';
+
+const MyComponent = () => {
+  const { 
+    canAccess, 
+    checkModule, 
+    isPro, 
+    quotas,
+    canCreateQuote,
+    needsUpgrade 
+  } = useFeatureAccess();
+  
+  // Check subscription feature
+  if (canAccess('leadGeneration')) { /* show leads */ }
+  
+  // Check module access (subscription + profile)
+  if (checkModule('leadsManagement', 'full_access')) { /* allow create */ }
+  
+  // Check quota
+  if (canCreateQuote()) { /* show create button */ }
+  
+  // Check if upgrade needed
+  const upgrade = needsUpgrade('leadGeneration');
+  if (upgrade.needed) { /* show upgrade prompt */ }
+};
+```
+
+**Returns:**
+- `plan` - Current plan ('starter' or 'pro')
+- `isPro` - Boolean if Pro plan with active subscription
+- `isStarter` - Boolean if Starter plan
+- `isActive` - Boolean if subscription is active
+- `quotas` - Current quota usage and limits
+- `canAccess(feature)` - Check subscription feature access
+- `checkModule(module, permission)` - Combined subscription + profile check
+- `canPerformAction(module, action)` - Check if can view/create/edit/delete
+- `canCreateQuote()` - Check quota for quotes
+- `canCreateInvoice()` - Check quota for invoices
+- `needsUpgrade(feature)` - Check if upgrade needed for feature
+- `upgradeFeatures` - List of features unlocked by upgrading
+- `FEATURES`, `PLANS` - Constants for reference
 
 ### Context
 
@@ -1371,6 +1587,84 @@ hasPermission(module, requiredPermission = 'view') {
 
 ---
 
+## Quick Reference: Feature Access Usage
+
+### In Components (using hook)
+
+```javascript
+import { useFeatureAccess } from '../hooks/useFeatureAccess';
+
+const MyComponent = () => {
+  const { canAccess, checkModule, isPro, quotas, FEATURES } = useFeatureAccess();
+
+  // 1. Check subscription feature
+  const hasLeads = canAccess(FEATURES.LEAD_GENERATION);
+
+  // 2. Check module access (subscription + profile)
+  const canManageLeads = checkModule('leadsManagement', 'full_access');
+  const canViewLeads = checkModule('leadsManagement', 'view_only');
+
+  // 3. Check quota
+  const { withinLimit, remaining, unlimited } = quotas.quotes;
+
+  // 4. Show upgrade prompt
+  if (!hasLeads) {
+    return <UpgradePrompt feature="Lead Generation" />;
+  }
+
+  // 5. Disable button if no permission
+  return (
+    <Button disabled={!canManageLeads}>
+      Create Lead
+    </Button>
+  );
+};
+```
+
+### In Services (async)
+
+```javascript
+import featureAccessService from '../services/featureAccessService';
+
+// Check feature access
+const canAccess = await featureAccessService.canAccessFeature(userId, 'leadGeneration');
+
+// Check module access (combined)
+const result = await featureAccessService.canAccessModule(userId, 'leadsManagement', 'full_access');
+if (!result.allowed) {
+  if (result.upgradeRequired) {
+    // Show upgrade prompt
+  } else {
+    // Show permission error
+  }
+}
+
+// Check quota
+const quotaResult = await featureAccessService.canCreateQuote(userId);
+if (!quotaResult.withinLimit) {
+  // Show limit reached message
+}
+```
+
+### Updating Feature Access (Config)
+
+Edit `src/config/subscriptionFeatures.js`:
+
+```javascript
+// Enable a feature for Starter plan
+PLAN_FEATURES.starter[FEATURES.LEAD_GENERATION] = 'full';
+
+// Change quota limit
+QUOTAS.starter.quotesPerMonth = 20;
+
+// Add new feature
+FEATURES.NEW_FEATURE = 'newFeature';
+PLAN_FEATURES.starter[FEATURES.NEW_FEATURE] = 'none';
+PLAN_FEATURES.pro[FEATURES.NEW_FEATURE] = 'full';
+```
+
+---
+
 ## Notes
 
 - Admin role always returns `true` for permission checks
@@ -1382,3 +1676,5 @@ hasPermission(module, requiredPermission = 'view') {
 - Profiles are NOT separate user accounts - they are permission containers
 - All actions (create, edit, delete) are performed by the parent user account
 - Profiles only determine which features are visible and accessible
+- **NEW:** Subscription features are defined in `src/config/subscriptionFeatures.js` for easy updates
+- **NEW:** Use `useFeatureAccess` hook for combined subscription + profile checks in components

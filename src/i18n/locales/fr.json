@@ -4461,6 +4461,27 @@
         "send": "Envoyer"
       }
     },
+  "profileSelection": {
+    "title": "Sélectionner un profil",
+    "subtitle": "Choisissez le profil avec lequel vous souhaitez vous connecter",
+    "pinRequired": "Code PIN requis",
+    "active": "Actif",
+    "enterPinFor": "Entrez le code PIN pour {{name}}",
+    "errors": {
+      "selectError": "Erreur lors de la sélection du profil",
+      "incorrectPin": "Code PIN incorrect",
+      "verifyError": "Erreur lors de la vérification du PIN"
+    }
+  },
+  "pinModal": {
+    "title": "Code PIN requis",
+    "message": "Entrez le code PIN pour accéder à ce profil",
+    "pinCode": "Code PIN",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "verifying": "Vérification...",
+    "hint": "Le code PIN protège l'accès à ce profil"
+  },
   "multiUserProfiles": {
     "title": "Gestion des profils utilisateurs",
     "subtitle": "Gérez les profils de votre équipe et leurs permissions",
@@ -4597,6 +4618,8 @@
     "messages": {
       "profileSwitched": "Profil changé vers {{name}}",
       "profileSwitchError": "Erreur lors du changement de profil",
+      "profileCreated": "Profil {{name}} créé avec succès",
+      "profileCreateError": "Erreur lors de la création du profil",
       "profileUpdated": "Profil modifié avec succès",
       "profileUpdateError": "Erreur lors de la modification du profil",
       "profileDeleted": "Profil supprimé avec succès",

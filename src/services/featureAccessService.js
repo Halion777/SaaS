@@ -1,0 +1,477 @@
+/**
+ * Feature Access Service
+ * 
+ * This service provides unified access control combining:
+ * 1. Subscription-based feature access (what plan allows)
+ * 2. Profile-based permission access (what profile role allows)
+ * 
+ * Use this service to check if a user can access any feature in the app.
+ */
+
+import { supabase } from './supabaseClient';
+import {
+  PLANS,
+  FEATURES,
+  QUOTAS,
+  MODULE_FEATURE_MAP,
+  isActiveSubscription,
+  getFeatureAccess,
+  isFeatureAvailable,
+  hasFullAccess,
+  getQuota,
+  isUnlimited,
+  getAvailableFeatures,
+  getUnavailableFeatures
+} from '../config/subscriptionFeatures';
+
+class FeatureAccessService {
+  
+  // ============================================
+  // USER DATA FETCHING
+  // ============================================
+  
+  /**
+   * Get user subscription data
+   */
+  async getUserSubscription(userId) {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('selected_plan, subscription_status, business_size')
+        .eq('id', userId)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error getting user subscription:', error);
+      return { selected_plan: 'starter', subscription_status: 'cancelled', business_size: null };
+    }
+  }
+  
+  /**
+   * Get current active profile for user
+   */
+  async getCurrentProfile(userId) {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    } catch (error) {
+      console.error('Error getting current profile:', error);
+      return null;
+    }
+  }
+  
+  // ============================================
+  // SUBSCRIPTION CHECKS
+  // ============================================
+  
+  /**
+   * Check if user has active subscription
+   */
+  async hasActiveSubscription(userId) {
+    const subscription = await this.getUserSubscription(userId);
+    return isActiveSubscription(subscription.subscription_status);
+  }
+  
+  /**
+   * Get user's current plan
+   */
+  async getUserPlan(userId) {
+    const subscription = await this.getUserSubscription(userId);
+    return subscription.selected_plan || PLANS.STARTER;
+  }
+  
+  /**
+   * Check if user is on Pro plan with active subscription
+   */
+  async isPro(userId) {
+    const subscription = await this.getUserSubscription(userId);
+    return subscription.selected_plan === PLANS.PRO && 
+           isActiveSubscription(subscription.subscription_status);
+  }
+  
+  /**
+   * Check if user is on Starter plan
+   */
+  async isStarter(userId) {
+    const plan = await this.getUserPlan(userId);
+    return plan === PLANS.STARTER;
+  }
+  
+  // ============================================
+  // FEATURE ACCESS CHECKS
+  // ============================================
+  
+  /**
+   * Check if user can access a feature based on subscription
+   * Returns: { allowed: boolean, accessLevel: string, reason?: string }
+   */
+  async checkFeatureAccess(userId, feature) {
+    const subscription = await this.getUserSubscription(userId);
+    const { selected_plan, subscription_status } = subscription;
+    
+    // Check if subscription is active
+    if (!isActiveSubscription(subscription_status)) {
+      return {
+        allowed: false,
+        accessLevel: 'none',
+        reason: 'subscription_inactive'
+      };
+    }
+    
+    // Get feature access level for plan
+    const accessLevel = getFeatureAccess(selected_plan, feature);
+    
+    return {
+      allowed: accessLevel !== 'none',
+      accessLevel,
+      plan: selected_plan,
+      reason: accessLevel === 'none' ? 'feature_not_in_plan' : null
+    };
+  }
+  
+  /**
+   * Check if feature is available (any access level)
+   */
+  async canAccessFeature(userId, feature) {
+    const result = await this.checkFeatureAccess(userId, feature);
+    return result.allowed;
+  }
+  
+  /**
+   * Check if feature has full access
+   */
+  async hasFullFeatureAccess(userId, feature) {
+    const result = await this.checkFeatureAccess(userId, feature);
+    return result.accessLevel === 'full';
+  }
+  
+  // ============================================
+  // MODULE ACCESS (Combined Check)
+  // ============================================
+  
+  /**
+   * Check if user can access a module (combines subscription + profile permissions)
+   * This is the main method to use for access control
+   * 
+   * @param userId - User ID
+   * @param module - Module key (e.g., 'quotesManagement', 'leadsManagement')
+   * @param requiredPermission - Required permission level ('view_only' or 'full_access')
+   * @returns { allowed: boolean, reason?: string, upgradeRequired?: boolean }
+   */
+  async canAccessModule(userId, module, requiredPermission = 'view_only') {
+    try {
+      // Step 1: Check subscription status
+      const subscription = await this.getUserSubscription(userId);
+      if (!isActiveSubscription(subscription.subscription_status)) {
+        return {
+          allowed: false,
+          reason: 'subscription_inactive',
+          upgradeRequired: true
+        };
+      }
+      
+      // Step 2: Check if module maps to a subscription feature
+      const feature = MODULE_FEATURE_MAP[module];
+      if (feature) {
+        const featureAccess = getFeatureAccess(subscription.selected_plan, feature);
+        if (featureAccess === 'none') {
+          return {
+            allowed: false,
+            reason: 'feature_not_in_plan',
+            upgradeRequired: true,
+            requiredPlan: PLANS.PRO
+          };
+        }
+      }
+      
+      // Step 3: Special check for PEPPOL (business users only)
+      if (module === 'peppolAccessPoint') {
+        const businessSizes = ['small', 'medium', 'large'];
+        if (!businessSizes.includes(subscription.business_size)) {
+          return {
+            allowed: false,
+            reason: 'business_users_only',
+            upgradeRequired: false
+          };
+        }
+      }
+      
+      // Step 4: Check profile permissions
+      const profile = await this.getCurrentProfile(userId);
+      if (!profile) {
+        return {
+          allowed: false,
+          reason: 'no_active_profile',
+          upgradeRequired: false
+        };
+      }
+      
+      // Admin bypasses permission checks
+      if (profile.role === 'admin') {
+        return { allowed: true };
+      }
+      
+      // Check profile permissions
+      const permissions = profile.permissions || {};
+      const modulePermission = permissions[module];
+      
+      if (!modulePermission || modulePermission === 'no_access') {
+        return {
+          allowed: false,
+          reason: 'profile_no_access',
+          upgradeRequired: false
+        };
+      }
+      
+      // Check if permission level is sufficient
+      if (requiredPermission === 'full_access' && modulePermission !== 'full_access') {
+        return {
+          allowed: false,
+          reason: 'insufficient_permission',
+          upgradeRequired: false
+        };
+      }
+      
+      return { allowed: true };
+      
+    } catch (error) {
+      console.error('Error checking module access:', error);
+      return {
+        allowed: false,
+        reason: 'error',
+        upgradeRequired: false
+      };
+    }
+  }
+  
+  // ============================================
+  // QUOTA CHECKS
+  // ============================================
+  
+  /**
+   * Get quota limit for user's plan
+   */
+  async getQuotaLimit(userId, quotaKey) {
+    const plan = await this.getUserPlan(userId);
+    return getQuota(plan, quotaKey);
+  }
+  
+  /**
+   * Check if quota is unlimited for user
+   */
+  async isQuotaUnlimited(userId, quotaKey) {
+    const plan = await this.getUserPlan(userId);
+    return isUnlimited(plan, quotaKey);
+  }
+  
+  /**
+   * Check if user is within quota
+   */
+  async checkQuota(userId, quotaKey, currentUsage) {
+    const limit = await this.getQuotaLimit(userId, quotaKey);
+    
+    // -1 means unlimited
+    if (limit === -1) {
+      return { withinLimit: true, limit: -1, usage: currentUsage, unlimited: true };
+    }
+    
+    return {
+      withinLimit: currentUsage < limit,
+      limit,
+      usage: currentUsage,
+      remaining: Math.max(0, limit - currentUsage),
+      unlimited: false
+    };
+  }
+  
+  /**
+   * Get monthly quotes usage (example quota check)
+   */
+  async getMonthlyQuotesUsage(userId) {
+    try {
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      
+      const { count, error } = await supabase
+        .from('quotes')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('created_at', startOfMonth.toISOString());
+      
+      if (error) throw error;
+      return count || 0;
+    } catch (error) {
+      console.error('Error getting quotes usage:', error);
+      return 0;
+    }
+  }
+  
+  /**
+   * Get monthly invoices usage
+   */
+  async getMonthlyInvoicesUsage(userId) {
+    try {
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      
+      const { count, error } = await supabase
+        .from('invoices')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('created_at', startOfMonth.toISOString());
+      
+      if (error) throw error;
+      return count || 0;
+    } catch (error) {
+      console.error('Error getting invoices usage:', error);
+      return 0;
+    }
+  }
+  
+  /**
+   * Check if user can create more quotes this month
+   */
+  async canCreateQuote(userId) {
+    const usage = await this.getMonthlyQuotesUsage(userId);
+    return this.checkQuota(userId, 'quotesPerMonth', usage);
+  }
+  
+  /**
+   * Check if user can create more invoices this month
+   */
+  async canCreateInvoice(userId) {
+    const usage = await this.getMonthlyInvoicesUsage(userId);
+    return this.checkQuota(userId, 'invoicesPerMonth', usage);
+  }
+  
+  // ============================================
+  // PROFILE LIMIT CHECKS
+  // ============================================
+  
+  /**
+   * Get max profiles for user's plan
+   */
+  async getMaxProfiles(userId) {
+    return this.getQuotaLimit(userId, 'maxProfiles');
+  }
+  
+  /**
+   * Check if user can create more profiles
+   */
+  async canCreateProfile(userId) {
+    try {
+      const maxProfiles = await this.getMaxProfiles(userId);
+      
+      const { count, error } = await supabase
+        .from('user_profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+      
+      if (error) throw error;
+      
+      const currentCount = count || 0;
+      return {
+        canCreate: currentCount < maxProfiles,
+        current: currentCount,
+        max: maxProfiles,
+        remaining: Math.max(0, maxProfiles - currentCount)
+      };
+    } catch (error) {
+      console.error('Error checking profile limit:', error);
+      return { canCreate: false, current: 0, max: 1, remaining: 0 };
+    }
+  }
+  
+  // ============================================
+  // FEATURE LISTS
+  // ============================================
+  
+  /**
+   * Get all features available for user's plan
+   */
+  async getAvailableFeatures(userId) {
+    const plan = await this.getUserPlan(userId);
+    return getAvailableFeatures(plan);
+  }
+  
+  /**
+   * Get all features NOT available for user's plan
+   */
+  async getUnavailableFeatures(userId) {
+    const plan = await this.getUserPlan(userId);
+    return getUnavailableFeatures(plan);
+  }
+  
+  /**
+   * Get features that would be unlocked by upgrading
+   */
+  async getUpgradeFeatures(userId) {
+    const currentPlan = await this.getUserPlan(userId);
+    if (currentPlan === PLANS.PRO) {
+      return []; // Already on highest plan
+    }
+    
+    const currentFeatures = getAvailableFeatures(currentPlan);
+    const proFeatures = getAvailableFeatures(PLANS.PRO);
+    
+    return proFeatures.filter(f => !currentFeatures.includes(f));
+  }
+  
+  // ============================================
+  // QUICK ACCESS METHODS
+  // ============================================
+  
+  /**
+   * Quick check methods for common features
+   */
+  async canAccessLeads(userId) {
+    return this.canAccessFeature(userId, FEATURES.LEAD_GENERATION);
+  }
+  
+  async canAccessReminders(userId) {
+    return this.canAccessFeature(userId, FEATURES.AUTOMATIC_REMINDERS);
+  }
+  
+  async canAccessMultiUser(userId) {
+    return this.canAccessFeature(userId, FEATURES.MULTI_USER);
+  }
+  
+  async canAccessAdvancedAnalytics(userId) {
+    return this.canAccessFeature(userId, FEATURES.ADVANCED_ANALYTICS);
+  }
+  
+  async canAccessAI(userId) {
+    return this.canAccessFeature(userId, FEATURES.AI_FEATURES);
+  }
+  
+  async canAccessSignaturePredictions(userId) {
+    return this.canAccessFeature(userId, FEATURES.SIGNATURE_PREDICTIONS);
+  }
+  
+  async canAccessPriceOptimization(userId) {
+    return this.canAccessFeature(userId, FEATURES.PRICE_OPTIMIZATION);
+  }
+  
+  async canAccessPrioritySupport(userId) {
+    return this.canAccessFeature(userId, FEATURES.PRIORITY_SUPPORT);
+  }
+}
+
+// Export singleton instance
+const featureAccessService = new FeatureAccessService();
+export default featureAccessService;
+
+// Export class for testing
+export { FeatureAccessService };
+

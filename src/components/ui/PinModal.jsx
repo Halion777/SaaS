@@ -9,12 +9,16 @@ const PinModal = ({
   onClose, 
   onConfirm, 
   profileName, 
-  title = 'Code PIN requis',
-  message = 'Entrez le code PIN pour accéder à ce profil',
+  title,
+  message,
   error: externalError = '',
   isLoading: externalLoading = false
 }) => {
   const { t } = useTranslation();
+  
+  // Use translations with fallback to props
+  const displayTitle = title || t('pinModal.title');
+  const displayMessage = message || t('pinModal.message');
   const [pin, setPin] = useState('');
   const inputRef = useRef(null);
 
@@ -54,7 +58,7 @@ const PinModal = ({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000] p-4">
       <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-foreground">{title}</h3>
+          <h3 className="text-lg font-medium text-foreground">{displayTitle}</h3>
           <button
             onClick={handleClose}
             className="p-1 rounded hover:bg-muted transition-colors"
@@ -67,7 +71,7 @@ const PinModal = ({
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <Icon name="Lock" size={24} className="text-primary" />
           </div>
-          <p className="text-sm text-muted-foreground mb-2">{message}</p>
+          <p className="text-sm text-muted-foreground mb-2">{displayMessage}</p>
           {profileName && (
             <p className="text-sm font-medium text-foreground">{profileName}</p>
           )}
@@ -76,7 +80,7 @@ const PinModal = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              Code PIN
+              {t('pinModal.pinCode')}
             </label>
             <input
               ref={inputRef}
@@ -103,7 +107,7 @@ const PinModal = ({
               onClick={handleClose}
               className="flex-1"
             >
-              Annuler
+              {t('pinModal.cancel')}
             </Button>
             <Button
               type="submit"
@@ -113,17 +117,17 @@ const PinModal = ({
               {externalLoading ? (
                 <div className="flex items-center space-x-2">
                   <Icon name="Loader" size={16} className="animate-spin" />
-                  <span>Vérification...</span>
+                  <span>{t('pinModal.verifying')}</span>
                 </div>
               ) : (
-                'Confirmer'
+                t('pinModal.confirm')
               )}
             </Button>
           </div>
         </form>
 
         <div className="mt-4 text-xs text-muted-foreground text-center">
-          <p>Le code PIN protège l'accès à ce profil</p>
+          <p>{t('pinModal.hint')}</p>
         </div>
       </div>
     </div>,

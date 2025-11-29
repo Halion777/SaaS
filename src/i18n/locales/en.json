@@ -4403,6 +4403,27 @@
         "send": "Send"
       }
     },
+  "profileSelection": {
+    "title": "Select a Profile",
+    "subtitle": "Choose the profile you want to connect with",
+    "pinRequired": "PIN code required",
+    "active": "Active",
+    "enterPinFor": "Enter PIN code for {{name}}",
+    "errors": {
+      "selectError": "Error selecting profile",
+      "incorrectPin": "Incorrect PIN code",
+      "verifyError": "Error verifying PIN"
+    }
+  },
+  "pinModal": {
+    "title": "PIN code required",
+    "message": "Enter the PIN code to access this profile",
+    "pinCode": "PIN Code",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "verifying": "Verifying...",
+    "hint": "The PIN code protects access to this profile"
+  },
   "multiUserProfiles": {
     "title": "User Profile Management",
     "subtitle": "Manage your team profiles and their permissions",
@@ -4539,6 +4560,8 @@
     "messages": {
       "profileSwitched": "Profile switched to {{name}}",
       "profileSwitchError": "Error switching profile",
+      "profileCreated": "Profile {{name}} created successfully",
+      "profileCreateError": "Error creating profile",
       "profileUpdated": "Profile updated successfully",
       "profileUpdateError": "Error updating profile",
       "profileDeleted": "Profile deleted successfully",
