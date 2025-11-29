@@ -9,6 +9,7 @@ import Input from 'components/ui/Input';
 import Select from 'components/ui/Select';
 import SuperAdminSidebar from 'components/ui/SuperAdminSidebar';
 import TableLoader from 'components/ui/TableLoader';
+import UsersFilterToolbar from './components/UsersFilterToolbar';
 
 const SuperAdminUsers = () => {
   const { t } = useTranslation();
@@ -142,20 +143,20 @@ const SuperAdminUsers = () => {
       // Now using the last_login_at column from users table for accurate login tracking
       const enrichedUsers = usersData
         .map(user => {
-          // Construct full_name from first_name and last_name
-          const fullName = (user.first_name && user.last_name 
-            ? `${user.first_name} ${user.last_name}`.trim()
-            : user.first_name || user.last_name || '');
-          
-          return {
-            ...user,
-            full_name: fullName, // Add constructed full_name for backward compatibility
-            // Use the last_login_at column from users table
-            last_sign_in_at: user.last_login_at,
-            // Check if user has ever logged in
-            has_logged_in: !!user.last_login_at
-          };
-        });
+        // Construct full_name from first_name and last_name
+        const fullName = (user.first_name && user.last_name 
+          ? `${user.first_name} ${user.last_name}`.trim()
+          : user.first_name || user.last_name || '');
+        
+        return {
+          ...user,
+          full_name: fullName, // Add constructed full_name for backward compatibility
+          // Use the last_login_at column from users table
+          last_sign_in_at: user.last_login_at,
+          // Check if user has ever logged in
+          has_logged_in: !!user.last_login_at
+        };
+      });
 
       setUsers(enrichedUsers);
       setFilteredUsers(enrichedUsers);
@@ -450,37 +451,17 @@ const SuperAdminUsers = () => {
           </div>
 
           {/* Search and Filters */}
-          <div className="bg-card border border-border rounded-lg p-4">
-            <div className="flex flex-col lg:flex-row gap-4">
-              <div className="flex-1">
-                <Input
-                  placeholder="Search users by name, email, or company..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  iconName="Search"
-                />
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Select
-                  value={`${sortBy}-${sortOrder}`}
-                  onChange={(e) => {
-                    const [field, order] = e.target.value.split('-');
-                    setSortBy(field);
-                    setSortOrder(order);
-                  }}
-                  placeholder="Sort by"
-                  options={[
-                    { value: 'created_at-desc', label: 'Newest First' },
-                    { value: 'created_at-asc', label: 'Oldest First' },
-                    { value: 'first_name-asc', label: 'Name A-Z' },
-                    { value: 'first_name-desc', label: 'Name Z-A' },
-                    { value: 'last_sign_in_at-desc', label: 'Last Login' }
-                  ]}
-                  className="w-full sm:w-40"
-                />
-              </div>
-            </div>
-          </div>
+          <UsersFilterToolbar
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            onSortChange={(field, order) => {
+              setSortBy(field);
+              setSortOrder(order);
+            }}
+            filteredCount={filteredUsers.length}
+          />
 
           {/* Bulk Actions */}
           {selectedUsers.length > 0 && (
@@ -638,24 +619,24 @@ const SuperAdminUsers = () => {
                           </Button>
                           {user.role !== 'superadmin' && (
                             <>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleUserAction(user.id, 'edit')}
-                                className="h-8 px-2"
-                                title="Edit User"
-                              >
-                                <Icon name="Edit" size={14} />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleUserAction(user.id, 'delete')}
-                                className="h-8 px-2 text-red-600 hover:text-red-700"
-                                title="Delete User"
-                              >
-                                <Icon name="Trash2" size={14} />
-                              </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleUserAction(user.id, 'edit')}
+                            className="h-8 px-2"
+                            title="Edit User"
+                          >
+                            <Icon name="Edit" size={14} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleUserAction(user.id, 'delete')}
+                            className="h-8 px-2 text-red-600 hover:text-red-700"
+                            title="Delete User"
+                          >
+                            <Icon name="Trash2" size={14} />
+                          </Button>
                             </>
                           )}
                         </div>
@@ -731,24 +712,24 @@ const SuperAdminUsers = () => {
                       </Button>
                       {user.role !== 'superadmin' && (
                         <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleUserAction(user.id, 'edit')}
-                            className="h-8 px-2"
-                            title="Edit User"
-                          >
-                            <Icon name="Edit" size={14} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleUserAction(user.id, 'delete')}
-                            className="h-8 px-2 text-red-600 hover:text-red-700"
-                            title="Delete User"
-                          >
-                            <Icon name="Trash2" size={14} />
-                          </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleUserAction(user.id, 'edit')}
+                        className="h-8 px-2"
+                        title="Edit User"
+                      >
+                        <Icon name="Edit" size={14} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleUserAction(user.id, 'delete')}
+                        className="h-8 px-2 text-red-600 hover:text-red-700"
+                        title="Delete User"
+                      >
+                        <Icon name="Trash2" size={14} />
+                      </Button>
                         </>
                       )}
                     </div>
@@ -959,14 +940,14 @@ const SuperAdminUsers = () => {
                   Close
                 </Button>
                 {selectedUser.role !== 'superadmin' && (
-                  <Button
-                    onClick={() => {
-                      setShowUserModal(false);
-                      setShowEditModal(true);
-                    }}
-                  >
-                    Edit User
-                  </Button>
+                <Button
+                  onClick={() => {
+                    setShowUserModal(false);
+                    setShowEditModal(true);
+                  }}
+                >
+                  Edit User
+                </Button>
                 )}
               </div>
             </div>

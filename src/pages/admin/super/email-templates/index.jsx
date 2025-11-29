@@ -9,6 +9,7 @@ import Input from 'components/ui/Input';
 import Select from 'components/ui/Select';
 import SuperAdminSidebar from 'components/ui/SuperAdminSidebar';
 import TableLoader from 'components/ui/TableLoader';
+import EmailTemplatesFilterToolbar from './components/EmailTemplatesFilterToolbar';
 
 const EmailTemplatesManagement = () => {
   const { t } = useTranslation();
@@ -43,6 +44,30 @@ const EmailTemplatesManagement = () => {
   });
   const [editingLanguage, setEditingLanguage] = useState('fr'); // Language for editing template
   const [isLoadingLanguage, setIsLoadingLanguage] = useState(false); // Loading state for language switch
+  const [useSimpleEditor, setUseSimpleEditor] = useState(true); // Toggle between simple and advanced editor
+  const [simpleTemplate, setSimpleTemplate] = useState({
+    headerTitle: '',
+    headerSubtitle: '',
+    headerColorStart: '#667eea',
+    headerColorEnd: '#764ba2',
+    greeting: '',
+    bodyContent: '',
+    buttonText: '',
+    buttonColor: '#667eea',
+    footerText: ''
+  });
+
+  // Parse HTML to simple template when switching to simple editor from advanced
+  React.useEffect(() => {
+    if (useSimpleEditor && editingTemplate.html_content && editingTemplate.template_type) {
+      // Only parse if simple template is empty (switching from advanced to simple)
+      const hasSimpleContent = simpleTemplate.headerTitle || simpleTemplate.greeting || simpleTemplate.bodyContent;
+      if (!hasSimpleContent) {
+        const parsed = parseHTMLToSimpleTemplate(editingTemplate.html_content);
+        setSimpleTemplate(parsed);
+      }
+    }
+  }, [useSimpleEditor]); // Only when switching editor mode
 
   // Handle sidebar offset for responsive layout
   React.useEffect(() => {
@@ -248,6 +273,159 @@ const EmailTemplatesManagement = () => {
     return colors[type] || 'bg-gray-100 text-gray-800';
   };
 
+  // Parse HTML to extract simplified template fields
+  const parseHTMLToSimpleTemplate = (htmlContent) => {
+    if (!htmlContent) {
+      return {
+        headerTitle: '',
+        headerSubtitle: '',
+        headerColorStart: '#667eea',
+        headerColorEnd: '#764ba2',
+        greeting: '',
+        bodyContent: '',
+        buttonText: '',
+        buttonColor: '#667eea',
+        footerText: ''
+      };
+    }
+
+    // Create a temporary DOM element to parse HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+
+    // Extract header (first div with gradient background)
+    const headerDiv = tempDiv.querySelector('div[style*="gradient"], div[style*="background"]');
+    let headerTitle = '';
+    let headerSubtitle = '';
+    let headerColorStart = '#667eea';
+    let headerColorEnd = '#764ba2';
+
+    if (headerDiv) {
+      const h1 = headerDiv.querySelector('h1');
+      const p = headerDiv.querySelector('p');
+      if (h1) headerTitle = h1.textContent || '';
+      if (p) headerSubtitle = p.textContent || '';
+      
+      // Extract gradient colors from style
+      const style = headerDiv.getAttribute('style') || '';
+      const gradientMatch = style.match(/gradient\([^)]+\)/);
+      if (gradientMatch) {
+        const colors = gradientMatch[0].match(/#[0-9a-fA-F]{6}/g);
+        if (colors && colors.length >= 2) {
+          headerColorStart = colors[0];
+          headerColorEnd = colors[1];
+        }
+      }
+    }
+
+    // Extract greeting and body content
+    const bodyDiv = tempDiv.querySelector('div[style*="#f8f9fa"], div[style*="background"]:not([style*="gradient"])');
+    let greeting = '';
+    let bodyContent = '';
+    
+    if (bodyDiv) {
+      const h2 = bodyDiv.querySelector('h2');
+      if (h2) greeting = h2.textContent || '';
+      
+      // Get all paragraphs except the first one (which might be in a box)
+      const paragraphs = bodyDiv.querySelectorAll('p');
+      const contentParagraphs = Array.from(paragraphs).filter(p => {
+        const parent = p.parentElement;
+        return !parent || !parent.style || !parent.style.borderLeft;
+      });
+      bodyContent = contentParagraphs.map(p => p.textContent).join('\n\n');
+    }
+
+    // Extract button
+    const buttonLink = tempDiv.querySelector('a[style*="background"], a[style*="padding"]');
+    let buttonText = '';
+    let buttonColor = '#667eea';
+    
+    if (buttonLink) {
+      buttonText = buttonLink.textContent || '';
+      const buttonStyle = buttonLink.getAttribute('style') || '';
+      const bgMatch = buttonStyle.match(/background:\s*(#[0-9a-fA-F]{6})/);
+      if (bgMatch) buttonColor = bgMatch[1];
+    }
+
+    // Extract footer
+    const footerDiv = tempDiv.querySelector('div[style*="text-align: center"]:last-child');
+    let footerText = '';
+    if (footerDiv) {
+      footerText = footerDiv.textContent.trim() || '';
+    }
+
+    return {
+      headerTitle,
+      headerSubtitle,
+      headerColorStart,
+      headerColorEnd,
+      greeting,
+      bodyContent,
+      buttonText,
+      buttonColor,
+      footerText
+    };
+  };
+
+  // Check if template type needs a call-to-action button
+  // Only quote-related templates have buttons (View Quote, Accept, etc.)
+  // Subscription, Lead, Invoice, Credit Insurance, and Contact templates do NOT have buttons
+  const templateNeedsButton = (templateType) => {
+    const typesWithButtons = [
+      'quote_sent',           // Has "View Quote" button
+      'client_accepted',      // Has "View Quote" button
+      'followup_viewed_no_action',  // Has "View Quote" button
+      'followup_not_viewed',  // Has "View Quote" button
+      'general_followup',     // Has action button
+      'custom_quote_sent'     // Has "View Quote" button
+    ];
+    return typesWithButtons.includes(templateType);
+  };
+
+  // Generate HTML from simplified template fields
+  const generateHTMLFromSimpleTemplate = (simple) => {
+    return `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, ${simple.headerColorStart} 0%, ${simple.headerColorEnd} 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">${simple.headerTitle || '{title}'}</h1>
+    ${simple.headerSubtitle ? `<p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">${simple.headerSubtitle}</p>` : ''}
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    ${simple.greeting ? `<h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">${simple.greeting}</h2>` : ''}
+    ${simple.bodyContent ? `<div style="color: #555; margin: 0 0 15px 0; line-height: 1.5; white-space: pre-wrap;">${simple.bodyContent.replace(/\n/g, '<br>')}</div>` : ''}
+  </div>
+  
+  ${simple.buttonText ? `
+  <div style="text-align: center; margin: 30px 0;">
+    <a href="{link}" style="background: ${simple.buttonColor}; color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">${simple.buttonText}</a>
+  </div>
+  ` : ''}
+  
+  ${simple.footerText ? `
+  <div style="text-align: center; color: #666; font-size: 14px; margin-top: 30px;">
+    ${simple.footerText}
+  </div>
+  ` : ''}
+</div>
+    `.trim();
+  };
+
+  // Generate text content from simplified template
+  const generateTextFromSimpleTemplate = (simple, subject) => {
+    let text = subject || '';
+    text += '\n\n';
+    if (simple.headerTitle) text += simple.headerTitle + '\n';
+    if (simple.headerSubtitle) text += simple.headerSubtitle + '\n';
+    text += '\n';
+    if (simple.greeting) text += simple.greeting + '\n';
+    if (simple.bodyContent) text += simple.bodyContent + '\n';
+    if (simple.buttonText) text += '\n' + simple.buttonText + '\n';
+    if (simple.footerText) text += '\n' + simple.footerText;
+    return text;
+  };
+
   // Handle template edit
   const handleEditTemplate = async (template) => {
     // Reload templates to ensure we have the latest data
@@ -265,6 +443,12 @@ const EmailTemplatesManagement = () => {
       text_content: template.text_content || '',
       subject: template.subject || ''
     });
+    
+    // Parse HTML to simple template
+    const parsed = parseHTMLToSimpleTemplate(template.html_content);
+    setSimpleTemplate(parsed);
+    setUseSimpleEditor(true);
+    
     setEditingLanguage(template.language || 'fr');
     setIsEditModalOpen(true);
   };
@@ -288,6 +472,18 @@ const EmailTemplatesManagement = () => {
       is_default: false,
       language: 'fr'
     });
+    setSimpleTemplate({
+      headerTitle: '',
+      headerSubtitle: '',
+      headerColorStart: '#667eea',
+      headerColorEnd: '#764ba2',
+      greeting: '',
+      bodyContent: '',
+      buttonText: '',
+      buttonColor: '#667eea',
+      footerText: ''
+    });
+    setUseSimpleEditor(true);
     setEditingLanguage('fr');
     setIsCreateModalOpen(true);
   };
@@ -295,8 +491,19 @@ const EmailTemplatesManagement = () => {
   // Save template
   const handleSaveTemplate = async () => {
     try {
+      // Generate HTML and text from simple template if using simple editor
+      let htmlContent = editingTemplate.html_content;
+      let textContent = editingTemplate.text_content;
+      
+      if (useSimpleEditor) {
+        htmlContent = generateHTMLFromSimpleTemplate(simpleTemplate);
+        textContent = generateTextFromSimpleTemplate(simpleTemplate, editingTemplate.subject);
+      }
+      
       const templateData = {
         ...editingTemplate,
+        html_content: htmlContent,
+        text_content: textContent,
         language: editingLanguage, // Use the selected language from tabs
         variables: JSON.stringify(editingTemplate.variables)
       };
@@ -416,11 +623,13 @@ const EmailTemplatesManagement = () => {
           language: lang
         };
         
+        // Parse HTML to simple template
+        const parsed = parseHTMLToSimpleTemplate(existingTemplate.html_content || '');
        
-        
         // Use setTimeout to ensure state update happens after current render cycle
         setTimeout(() => {
           setEditingTemplate(updatedTemplate);
+          setSimpleTemplate(parsed);
           setEditingLanguage(lang);
         }, 0);
       } else {
@@ -442,6 +651,17 @@ const EmailTemplatesManagement = () => {
        
         setTimeout(() => {
           setEditingTemplate(emptyTemplate);
+          setSimpleTemplate({
+            headerTitle: '',
+            headerSubtitle: '',
+            headerColorStart: '#667eea',
+            headerColorEnd: '#764ba2',
+            greeting: '',
+            bodyContent: '',
+            buttonText: '',
+            buttonColor: '#667eea',
+            footerText: ''
+          });
           setEditingLanguage(lang);
         }, 0);
       }
@@ -544,86 +764,20 @@ const EmailTemplatesManagement = () => {
           </div>
 
           {/* Filters */}
-          <div className="bg-card border border-border rounded-lg p-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Search</label>
-                <Input
-                  type="text"
-                  placeholder="Search templates..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Type</label>
-                    <Select
-                      value={typeFilter}
-                      onChange={(e) => setTypeFilter(e.target.value)}
-                      options={[
-                        { value: 'all', label: 'All Types' },
-                        { value: 'client_accepted', label: 'Client Accepted' },
-                        { value: 'quote_sent', label: 'Quote Sent' },
-                        { value: 'followup_viewed_no_action', label: 'Follow-up - Viewed' },
-                        { value: 'welcome_client', label: 'Welcome Client' },
-                        { value: 'general_followup', label: 'General Follow-up' },
-                        { value: 'client_rejected', label: 'Client Rejected' },
-                        { value: 'followup_not_viewed', label: 'Follow-up - Not Viewed' },
-                        { value: 'subscription_upgraded', label: 'Subscription Upgraded' },
-                        { value: 'subscription_downgraded', label: 'Subscription Downgraded' },
-                        { value: 'subscription_cancelled', label: 'Subscription Cancelled' },
-                        { value: 'subscription_activated', label: 'Subscription Activated' },
-                        { value: 'subscription_trial_ending', label: 'Trial Ending' },
-                        { value: 'contact_form', label: 'Contact Form' },
-                        { value: 'credit_insurance_application', label: 'Credit Insurance Application' },
-                        { value: 'credit_insurance_confirmation', label: 'Credit Insurance Confirmation' },
-                        { value: 'new_lead_available', label: 'New Lead Available' },
-                        { value: 'lead_assigned', label: 'Lead Assigned' },
-                        { value: 'custom_quote_sent', label: 'Custom Quote Sent' },
-                        { value: 'invoice_overdue_reminder', label: 'Invoice Overdue Reminder' },
-                        { value: 'invoice_payment_reminder', label: 'Invoice Payment Reminder' },
-                        { value: 'invoice_to_accountant', label: 'Invoice to Accountant' },
-                        { value: 'expense_invoice_to_accountant', label: 'Expense Invoice to Accountant' },
-                        { value: 'overdue', label: 'Overdue' }
-                      ]}
-                      className="w-full"
-                    />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Language</label>
-                <Select
-                  value={languageFilter}
-                  onChange={(e) => setLanguageFilter(e.target.value)}
-                  options={[
-                    { value: 'all', label: 'All Languages' },
-                    { value: 'fr', label: 'French' },
-                    { value: 'en', label: 'English' },
-                    { value: 'nl', label: 'Dutch' }
-                  ]}
-                  className="w-full"
-                />
-              </div>
-              <div className="flex items-end">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSearchTerm('');
-                    setTypeFilter('all');
-                    setLanguageFilter('all');
-                  }}
-                  className="w-full"
-                >
-                  Clear Filters
-                </Button>
-              </div>
-            </div>
-          </div>
+          <EmailTemplatesFilterToolbar
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            typeFilter={typeFilter}
+            onTypeFilterChange={setTypeFilter}
+            languageFilter={languageFilter}
+            onLanguageFilterChange={setLanguageFilter}
+            filteredCount={filteredTemplates.length}
+          />
 
           {/* View Toggle */}
-          <div className="flex items-center justify-between p-4 border-b border-border bg-card rounded-lg mb-6">
+          <div className="flex items-center p-4 border-b border-border bg-card rounded-lg mb-6">
             <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium text-muted-foreground">View:</span>
+              <span className="text-sm font-medium text-muted-foreground">View</span>
               <div className="flex bg-muted rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('table')}
@@ -648,9 +802,6 @@ const EmailTemplatesManagement = () => {
                   Cards
                 </button>
               </div>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {filteredTemplates.length} template(s)
             </div>
           </div>
 
@@ -754,78 +905,77 @@ const EmailTemplatesManagement = () => {
               )}
 
               {viewMode === 'card' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 p-3 sm:p-4">
                   {filteredTemplates.map((template) => (
-                    <div key={template.id} className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div key={template.id} className="bg-card border border-border rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow">
                       {/* Template Header */}
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <h3 className="text-sm font-semibold text-foreground truncate">{template.template_name}</h3>
-                          <p className="text-xs text-muted-foreground truncate">{template.subject}</p>
+                      <div className="flex items-start justify-between mb-2 sm:mb-3 gap-2">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-xs sm:text-sm font-semibold text-foreground truncate">{template.template_name}</h3>
+                          <p className="text-[10px] sm:text-xs text-muted-foreground truncate mt-0.5">{template.subject}</p>
                         </div>
                       </div>
 
                       {/* Template Details */}
-                      <div className="space-y-2 mb-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">Type:</span>
-                          <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${getTemplateTypeColor(template.template_type)}`}>
+                      <div className="space-y-1.5 sm:space-y-2 mb-2 sm:mb-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0">
+                          <span className="text-[10px] sm:text-xs text-muted-foreground">Type:</span>
+                          <span className={`inline-flex px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-semibold rounded-full ${getTemplateTypeColor(template.template_type)}`}>
                             {getTemplateTypeName(template.template_type)}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">Language:</span>
-                          <span className="text-xs text-foreground">{template.language.toUpperCase()}</span>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0">
+                          <span className="text-[10px] sm:text-xs text-muted-foreground">Language:</span>
+                          <span className="text-[10px] sm:text-xs text-foreground font-medium">{template.language.toUpperCase()}</span>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">Status:</span>
-                          <div className="flex items-center space-x-1">
-                            <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0">
+                          <span className="text-[10px] sm:text-xs text-muted-foreground">Status:</span>
+                          <div className="flex items-center flex-wrap gap-1 sm:space-x-1">
+                            <span className={`inline-flex px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-semibold rounded-full ${
                               template.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                             }`}>
                               {template.is_active ? 'Active' : 'Inactive'}
                             </span>
                             {template.is_default && (
-                              <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                              <span className="inline-flex px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
                                 Default
                               </span>
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">Created:</span>
-                          <span className="text-xs text-foreground">{new Date(template.created_at).toLocaleDateString()}</span>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0">
+                          <span className="text-[10px] sm:text-xs text-muted-foreground">Created:</span>
+                          <span className="text-[10px] sm:text-xs text-foreground">{new Date(template.created_at).toLocaleDateString()}</span>
                         </div>
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center justify-end space-x-1 pt-3 border-t border-border">
+                      <div className="flex items-center justify-end gap-1 sm:space-x-1 pt-2 sm:pt-3 border-t border-border">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handlePreviewTemplate(template)}
-                          className="h-8 px-2"
+                          className="h-7 sm:h-8 px-1.5 sm:px-2 flex-shrink-0"
                           title="Preview"
                         >
-                          <Icon name="Eye" size={14} />
+                          <Icon name="Eye" size={12} className="sm:w-[14px] sm:h-[14px]" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleEditTemplate(template)}
-                          className="h-8 px-2"
+                          className="h-7 sm:h-8 px-1.5 sm:px-2 flex-shrink-0"
                           title="Edit"
                         >
-                          <Icon name="Edit" size={14} />
+                          <Icon name="Edit" size={12} className="sm:w-[14px] sm:h-[14px]" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleToggleActive(template)}
-                          className="h-8 px-2"
+                          className="h-7 sm:h-8 px-1.5 sm:px-2 flex-shrink-0"
                           title={template.is_active ? 'Deactivate' : 'Activate'}
                         >
-                          <Icon name={template.is_active ? "EyeOff" : "Eye"} size={14} />
                         </Button>
                       </div>
                     </div>
@@ -862,17 +1012,18 @@ const EmailTemplatesManagement = () => {
               <div className="space-y-4">
                 <div>
                   <h4 className="font-medium text-foreground mb-2">Subject:</h4>
-                  <p className="text-muted-foreground">{selectedTemplate.subject}</p>
+                  <p className="text-muted-foreground bg-muted/30 p-3 rounded-lg">{selectedTemplate.subject}</p>
                 </div>
                 <div>
-                  <h4 className="font-medium text-foreground mb-2">HTML Content:</h4>
+                  <h4 className="font-medium text-foreground mb-3">Email Preview:</h4>
                   <div 
-                    className="border border-border rounded-lg p-4 bg-muted/30"
+                    className="border border-border rounded-lg p-4 bg-white shadow-sm max-w-2xl mx-auto"
+                    style={{ maxHeight: '500px', overflowY: 'auto' }}
                     dangerouslySetInnerHTML={{ __html: selectedTemplate.html_content }}
                   />
                 </div>
-                <div>
-                  <h4 className="font-medium text-foreground mb-2">Text Content:</h4>
+                <div className="pt-4 border-t border-border">
+                  <h4 className="font-medium text-foreground mb-2">Plain Text Version:</h4>
                   <pre className="text-sm text-muted-foreground whitespace-pre-wrap bg-muted/30 p-4 rounded-lg">
                     {selectedTemplate.text_content}
                   </pre>
@@ -904,7 +1055,7 @@ const EmailTemplatesManagement = () => {
             </div>
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className={`grid grid-cols-1 ${isCreateModalOpen ? 'md:grid-cols-2' : ''} gap-4`}>
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">Template Name</label>
                     <Input
@@ -914,23 +1065,24 @@ const EmailTemplatesManagement = () => {
                       placeholder="Enter template name"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Template Type</label>
-                    <Select
-                      value={editingTemplate.template_type}
-                      onChange={(e) => setEditingTemplate({...editingTemplate, template_type: e.target.value})}
-                      options={[
-                        { value: 'client_accepted', label: 'Client Accepted' },
-                        { value: 'quote_sent', label: 'Quote Sent' },
-                        { value: 'followup_viewed_no_action', label: 'Follow-up - Viewed No Action' },
-                        { value: 'welcome_client', label: 'Welcome Client' },
-                        { value: 'general_followup', label: 'General Follow-up' },
-                        { value: 'client_rejected', label: 'Client Rejected' },
-                        { value: 'followup_not_viewed', label: 'Follow-up - Not Viewed' },
-                        { value: 'subscription_upgraded', label: 'Subscription Upgraded' },
-                        { value: 'subscription_downgraded', label: 'Subscription Downgraded' },
-                        { value: 'subscription_cancelled', label: 'Subscription Cancelled' },
-                        { value: 'subscription_activated', label: 'Subscription Activated' },
+                  {isCreateModalOpen && (
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">Template Type</label>
+                      <Select
+                        value={editingTemplate.template_type}
+                        onChange={(e) => setEditingTemplate({...editingTemplate, template_type: e.target.value})}
+                        options={[
+                          { value: 'client_accepted', label: 'Client Accepted' },
+                          { value: 'quote_sent', label: 'Quote Sent' },
+                          { value: 'followup_viewed_no_action', label: 'Follow-up - Viewed No Action' },
+                          { value: 'welcome_client', label: 'Welcome Client' },
+                          { value: 'general_followup', label: 'General Follow-up' },
+                          { value: 'client_rejected', label: 'Client Rejected' },
+                          { value: 'followup_not_viewed', label: 'Follow-up - Not Viewed' },
+                          { value: 'subscription_upgraded', label: 'Subscription Upgraded' },
+                          { value: 'subscription_downgraded', label: 'Subscription Downgraded' },
+                          { value: 'subscription_cancelled', label: 'Subscription Cancelled' },
+                          { value: 'subscription_activated', label: 'Subscription Activated' },
                         { value: 'subscription_trial_ending', label: 'Trial Ending' },
                         { value: 'contact_form', label: 'Contact Form' },
                         { value: 'credit_insurance_application', label: 'Credit Insurance Application' },
@@ -944,7 +1096,8 @@ const EmailTemplatesManagement = () => {
                         { value: 'expense_invoice_to_accountant', label: 'Expense Invoice to Accountant' }
                       ]}
                     />
-                  </div>
+                    </div>
+                  )}
                 </div>
                 
                 <div>
@@ -957,27 +1110,243 @@ const EmailTemplatesManagement = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">HTML Content</label>
-                  <textarea
-                    key={`html-${editingLanguage}-${editingTemplate.template_type}`}
-                    value={editingTemplate.html_content || ''}
-                    onChange={(e) => setEditingTemplate({...editingTemplate, html_content: e.target.value})}
-                    placeholder="Enter HTML content"
-                    className="w-full h-64 p-3 border border-border rounded-lg bg-background text-foreground"
-                  />
+                {/* Editor Mode Toggle */}
+                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border">
+                  <div className="flex items-center gap-2">
+                    <Icon name="Settings" size={16} className="text-muted-foreground" />
+                    <span className="text-sm font-medium text-foreground">Editor Mode</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // When switching to simple editor, parse existing HTML
+                        if (!useSimpleEditor && editingTemplate.html_content) {
+                          const parsed = parseHTMLToSimpleTemplate(editingTemplate.html_content);
+                          setSimpleTemplate(parsed);
+                        }
+                        setUseSimpleEditor(true);
+                      }}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                        useSimpleEditor
+                          ? 'bg-primary text-white'
+                          : 'bg-background text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Simple
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // When switching to advanced editor, generate HTML from simple template
+                        if (useSimpleEditor) {
+                          const htmlContent = generateHTMLFromSimpleTemplate(simpleTemplate);
+                          const textContent = generateTextFromSimpleTemplate(simpleTemplate, editingTemplate.subject);
+                          setEditingTemplate(prev => ({
+                            ...prev,
+                            html_content: htmlContent,
+                            text_content: textContent
+                          }));
+                        }
+                        setUseSimpleEditor(false);
+                      }}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                        !useSimpleEditor
+                          ? 'bg-primary text-white'
+                          : 'bg-background text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Advanced
+                    </button>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Text Content</label>
-                  <textarea
-                    key={`text-${editingLanguage}-${editingTemplate.template_type}`}
-                    value={editingTemplate.text_content || ''}
-                    onChange={(e) => setEditingTemplate({...editingTemplate, text_content: e.target.value})}
-                    placeholder="Enter text content"
-                    className="w-full h-32 p-3 border border-border rounded-lg bg-background text-foreground"
-                  />
-                </div>
+                {useSimpleEditor ? (
+                  /* Simple Editor */
+                  <div className="space-y-4">
+                    {/* Header Section */}
+                    <div className="p-4 bg-muted/30 rounded-lg border border-border">
+                      <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                        <Icon name="Image" size={16} className="text-primary" />
+                        Header Section
+                      </h4>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5">Header Title</label>
+                          <Input
+                            value={simpleTemplate.headerTitle}
+                            onChange={(e) => setSimpleTemplate({...simpleTemplate, headerTitle: e.target.value})}
+                            placeholder="e.g., Factures de dépenses à traiter"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5">Header Subtitle (optional)</label>
+                          <Input
+                            value={simpleTemplate.headerSubtitle}
+                            onChange={(e) => setSimpleTemplate({...simpleTemplate, headerSubtitle: e.target.value})}
+                            placeholder="e.g., {invoice_count} facture(s)"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5">Header Color Start</label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="color"
+                                value={simpleTemplate.headerColorStart}
+                                onChange={(e) => setSimpleTemplate({...simpleTemplate, headerColorStart: e.target.value})}
+                                className="w-12 h-10 rounded border border-border cursor-pointer"
+                              />
+                              <Input
+                                value={simpleTemplate.headerColorStart}
+                                onChange={(e) => setSimpleTemplate({...simpleTemplate, headerColorStart: e.target.value})}
+                                placeholder="#667eea"
+                                className="flex-1"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5">Header Color End</label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="color"
+                                value={simpleTemplate.headerColorEnd}
+                                onChange={(e) => setSimpleTemplate({...simpleTemplate, headerColorEnd: e.target.value})}
+                                className="w-12 h-10 rounded border border-border cursor-pointer"
+                              />
+                              <Input
+                                value={simpleTemplate.headerColorEnd}
+                                onChange={(e) => setSimpleTemplate({...simpleTemplate, headerColorEnd: e.target.value})}
+                                placeholder="#764ba2"
+                                className="flex-1"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Body Section */}
+                    <div className="p-4 bg-muted/30 rounded-lg border border-border">
+                      <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                        <Icon name="FileText" size={16} className="text-primary" />
+                        Body Content
+                      </h4>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5">Greeting</label>
+                          <Input
+                            value={simpleTemplate.greeting}
+                            onChange={(e) => setSimpleTemplate({...simpleTemplate, greeting: e.target.value})}
+                            placeholder="e.g., Bonjour {client_name},"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5">Body Text</label>
+                          <textarea
+                            value={simpleTemplate.bodyContent}
+                            onChange={(e) => setSimpleTemplate({...simpleTemplate, bodyContent: e.target.value})}
+                            placeholder="Enter the main message content. Use {variable_name} for dynamic values."
+                            className="w-full h-32 p-3 border border-border rounded-lg bg-background text-foreground resize-y"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Tip: Use variables like {`{variable_name}`} for dynamic content
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Button Section (Only for templates that need links) */}
+                    {templateNeedsButton(editingTemplate.template_type) && (
+                      <div className="p-4 bg-muted/30 rounded-lg border border-border">
+                        <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                          <Icon name="MousePointerClick" size={16} className="text-primary" />
+                          Call-to-Action Button
+                        </h4>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5">Button Text</label>
+                            <Input
+                              value={simpleTemplate.buttonText}
+                              onChange={(e) => setSimpleTemplate({...simpleTemplate, buttonText: e.target.value})}
+                              placeholder="e.g., View Quote"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5">Button Color</label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="color"
+                                value={simpleTemplate.buttonColor}
+                                onChange={(e) => setSimpleTemplate({...simpleTemplate, buttonColor: e.target.value})}
+                                className="w-12 h-10 rounded border border-border cursor-pointer"
+                              />
+                              <Input
+                                value={simpleTemplate.buttonColor}
+                                onChange={(e) => setSimpleTemplate({...simpleTemplate, buttonColor: e.target.value})}
+                                placeholder="#667eea"
+                                className="flex-1"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Footer Section (Optional) */}
+                    <div className="p-4 bg-muted/30 rounded-lg border border-border">
+                      <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                        <Icon name="AlignCenter" size={16} className="text-primary" />
+                        Footer (Optional)
+                      </h4>
+                      <div>
+                        <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5">Footer Text</label>
+                        <Input
+                          value={simpleTemplate.footerText}
+                          onChange={(e) => setSimpleTemplate({...simpleTemplate, footerText: e.target.value})}
+                          placeholder="e.g., Best regards, {company_name}"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Live Preview */}
+                    <div className="p-4 bg-muted/30 rounded-lg border border-border">
+                      <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                        <Icon name="Eye" size={16} className="text-primary" />
+                        Preview
+                      </h4>
+                      <div 
+                        className="border border-border rounded-lg p-4 bg-white max-h-96 overflow-y-auto"
+                        dangerouslySetInnerHTML={{ __html: generateHTMLFromSimpleTemplate(simpleTemplate) }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  /* Advanced Editor */
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">HTML Content</label>
+                      <textarea
+                        key={`html-${editingLanguage}-${editingTemplate.template_type}`}
+                        value={editingTemplate.html_content || ''}
+                        onChange={(e) => setEditingTemplate({...editingTemplate, html_content: e.target.value})}
+                        placeholder="Enter HTML content"
+                        className="w-full h-64 p-3 border border-border rounded-lg bg-background text-foreground font-mono text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">Text Content</label>
+                      <textarea
+                        key={`text-${editingLanguage}-${editingTemplate.template_type}`}
+                        value={editingTemplate.text_content || ''}
+                        onChange={(e) => setEditingTemplate({...editingTemplate, text_content: e.target.value})}
+                        placeholder="Enter text content"
+                        className="w-full h-32 p-3 border border-border rounded-lg bg-background text-foreground"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* Language Selection Tabs */}
                 <div className="mb-6 p-4 bg-muted/30 rounded-lg border border-border">

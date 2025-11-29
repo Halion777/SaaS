@@ -292,25 +292,25 @@ const Peppol = () => {
           {/* Configuration Card */}
           <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
             {/* Environment Status Bar */}
-            <div className="px-6 py-4 border-b border-border bg-blue-600 dark:bg-blue-700">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-border bg-blue-600 dark:bg-blue-700">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className={`p-1.5 sm:p-2 rounded-lg flex-shrink-0 ${
                     settings.isTestMode 
                       ? 'bg-white/20' 
                       : 'bg-white/20'
                   }`}>
                     <Icon 
                       name={settings.isTestMode ? "TestTube" : "Shield"} 
-                      size={18} 
-                      className="text-white" 
+                      size={16} 
+                      className="sm:w-[18px] sm:h-[18px] text-white" 
                     />
                   </div>
-                  <span className="text-base font-bold text-white">
+                  <span className="text-sm sm:text-base font-bold text-white">
                     {settings.isTestMode ? 'Sandbox Environment' : 'Live Environment'}
                   </span>
                 </div>
-                <span className={`px-4 py-2 rounded-full text-xs font-extrabold tracking-wide ${
+                <span className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-[10px] sm:text-xs font-extrabold tracking-wide whitespace-nowrap ${
                   settings.isTestMode 
                     ? 'bg-green-500 text-white' 
                     : 'bg-white text-blue-600'
@@ -320,42 +320,42 @@ const Peppol = () => {
               </div>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               {/* Configuration Info */}
               <div className="space-y-1">
                 {/* API Endpoint */}
-                <div className="flex items-start justify-between py-4 px-4 rounded-lg hover:bg-muted/50 transition-colors">
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-foreground">API Endpoint</p>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between py-3 sm:py-4 px-3 sm:px-4 rounded-lg hover:bg-muted/50 transition-colors gap-2 sm:gap-0">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm font-semibold text-foreground">API Endpoint</p>
                     <p className="text-xs text-muted-foreground mt-1">Digiteal Peppol Access Point</p>
                   </div>
-                  <div className="text-right ml-4">
-                    <p className="text-sm text-foreground font-mono bg-muted px-3 py-1.5 rounded">{settings.apiEndpoint}</p>
-                    <p className="text-xs text-muted-foreground mt-1">VITE_PEPPOL_API_ENDPOINT</p>
+                  <div className="text-left sm:text-right sm:ml-4 flex-shrink-0 sm:flex-shrink">
+                    <p className="text-xs sm:text-sm text-foreground font-mono bg-muted px-2 sm:px-3 py-1 sm:py-1.5 rounded break-all">{settings.apiEndpoint}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">VITE_PEPPOL_API_ENDPOINT</p>
                   </div>
                 </div>
 
                 {/* Username */}
-                <div className="flex items-start justify-between py-4 px-4 rounded-lg hover:bg-muted/50 transition-colors">
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-foreground">API Username</p>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between py-3 sm:py-4 px-3 sm:px-4 rounded-lg hover:bg-muted/50 transition-colors gap-2 sm:gap-0">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm font-semibold text-foreground">API Username</p>
                     <p className="text-xs text-muted-foreground mt-1">Authentication credentials</p>
                   </div>
-                  <div className="text-right ml-4">
-                    <p className="text-sm text-foreground font-mono bg-muted px-3 py-1.5 rounded">{settings.apiUsername || 'Not configured'}</p>
-                    <p className="text-xs text-muted-foreground mt-1">VITE_PEPPOL_API_USERNAME</p>
+                  <div className="text-left sm:text-right sm:ml-4 flex-shrink-0 sm:flex-shrink">
+                    <p className="text-xs sm:text-sm text-foreground font-mono bg-muted px-2 sm:px-3 py-1 sm:py-1.5 rounded break-all">{settings.apiUsername || 'Not configured'}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">VITE_PEPPOL_API_USERNAME</p>
                   </div>
                 </div>
 
                 {/* Password */}
-                <div className="flex items-start justify-between py-4 px-4 rounded-lg hover:bg-muted/50 transition-colors">
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-foreground">API Password</p>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between py-3 sm:py-4 px-3 sm:px-4 rounded-lg hover:bg-muted/50 transition-colors gap-2 sm:gap-0">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm font-semibold text-foreground">API Password</p>
                     <p className="text-xs text-muted-foreground mt-1">Secure credentials</p>
                   </div>
-                  <div className="text-right ml-4">
-                    <div className="inline-flex items-center gap-2 bg-muted px-3 py-1.5 rounded">
-                      <p className="text-sm text-foreground font-mono">
+                  <div className="text-left sm:text-right sm:ml-4 flex-shrink-0 sm:flex-shrink">
+                    <div className="inline-flex items-center gap-2 bg-muted px-2 sm:px-3 py-1 sm:py-1.5 rounded">
+                      <p className="text-xs sm:text-sm text-foreground font-mono break-all">
                         {settings.apiPassword ? (showPassword ? settings.apiPassword : '••••••••') : 'Not configured'}
                       </p>
                       {settings.apiPassword && (
@@ -364,23 +364,23 @@ const Peppol = () => {
                           className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
                           title={showPassword ? "Hide password" : "Show password"}
                         >
-                          <Icon name={showPassword ? "EyeOff" : "Eye"} size={18} />
+                          <Icon name={showPassword ? "EyeOff" : "Eye"} size={16} className="sm:w-[18px] sm:h-[18px]" />
                         </button>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">VITE_PEPPOL_API_PASSWORD</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">VITE_PEPPOL_API_PASSWORD</p>
                   </div>
                 </div>
 
                 {/* Webhook URL */}
-                <div className="flex items-start justify-between py-4 px-4 rounded-lg hover:bg-muted/50 transition-colors">
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-foreground">Webhook URL</p>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between py-3 sm:py-4 px-3 sm:px-4 rounded-lg hover:bg-muted/50 transition-colors gap-2 sm:gap-0">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm font-semibold text-foreground">Webhook URL</p>
                     <p className="text-xs text-muted-foreground mt-1">Event receiver endpoint</p>
                   </div>
-                  <div className="text-right ml-4 max-w-md">
-                    <p className="text-sm text-foreground font-mono bg-muted px-3 py-1.5 rounded break-all">{settings.webhookUrl || 'Not configured'}</p>
-                    <p className="text-xs text-muted-foreground mt-1">VITE_PEPPOL_WEBHOOK_URL</p>
+                  <div className="text-left sm:text-right sm:ml-4 w-full sm:w-auto sm:max-w-md">
+                    <p className="text-xs sm:text-sm text-foreground font-mono bg-muted px-2 sm:px-3 py-1 sm:py-1.5 rounded break-all">{settings.webhookUrl || 'Not configured'}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">VITE_PEPPOL_WEBHOOK_URL</p>
                   </div>
                 </div>
               </div>
@@ -417,34 +417,35 @@ const Peppol = () => {
               </div>
 
               {/* Webhook Event Types */}
-              <div className="bg-gradient-to-br from-muted/50 to-muted/30 rounded-xl p-5 border border-border">
+              <div className="bg-gradient-to-br from-muted/50 to-muted/30 rounded-xl p-3 sm:p-5 border border-border">
                 <button 
                   onClick={() => setShowWebhookTypes(!showWebhookTypes)}
-                  className="w-full text-sm font-bold text-foreground mb-4 flex items-center justify-between hover:opacity-80 transition-opacity"
+                  className="w-full text-xs sm:text-sm font-bold text-foreground mb-3 sm:mb-4 flex items-center justify-between hover:opacity-80 transition-opacity"
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-primary/10 rounded-lg">
-                      <Icon name="List" size={16} className="text-primary" />
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <div className="p-1 sm:p-1.5 bg-primary/10 rounded-lg">
+                      <Icon name="List" size={14} className="sm:w-4 sm:h-4 text-primary" />
                     </div>
-                    Webhook Event Types
+                    <span className="hidden sm:inline">Webhook Event Types</span>
+                    <span className="sm:hidden">Event Types</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
                     {loadingConfig ? (
-                      <Icon name="Loader2" size={14} className="animate-spin text-muted-foreground" />
+                      <Icon name="Loader2" size={12} className="sm:w-[14px] sm:h-[14px] animate-spin text-muted-foreground" />
                     ) : (
-                      <span className="text-xs font-normal text-muted-foreground">
-                        {configuredWebhooks.length} / {allWebhookTypes.length} configured
+                      <span className="text-[10px] sm:text-xs font-normal text-muted-foreground">
+                        {configuredWebhooks.length} / {allWebhookTypes.length}
                       </span>
                     )}
                     <Icon 
                       name={showWebhookTypes ? "ChevronUp" : "ChevronDown"} 
-                      size={16} 
-                      className="text-muted-foreground" 
+                      size={14} 
+                      className="sm:w-4 sm:h-4 text-muted-foreground" 
                     />
                   </div>
                 </button>
                 {showWebhookTypes && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                   {allWebhookTypes.map((event, index) => {
                     const isConfigured = configuredWebhooks.includes(event.type);
                     return (

@@ -246,7 +246,7 @@ const Customization = () => {
       if (companyError && companyError.code !== 'PGRST116') {
         console.error('❌ Error loading company details:', companyError);
       } else if (companyData && companyData.setting_value) {
-        console.log('✅ Company details loaded successfully:', companyData);
+        
         // Ensure socialLinks exists
         const loadedDetails = companyData.setting_value;
         setCompanyDetails({
@@ -285,7 +285,7 @@ const Customization = () => {
       if (mediaError && mediaError.code !== 'PGRST116') {
         console.error('❌ Error loading media settings:', mediaError);
       } else if (mediaData && mediaData.setting_value) {
-        console.log('✅ Media settings loaded successfully:', mediaData);
+    
         const loadedMedia = mediaData.setting_value;
         // Ensure proper structure with language support
         setMediaSettings({
@@ -325,7 +325,7 @@ const Customization = () => {
       if (bannerError && bannerError.code !== 'PGRST116') {
         console.error('❌Error loading banner settings:', bannerError);
       } else if (bannerData && bannerData.setting_value) {
-        console.log('✅ Banner settings loaded successfully:', bannerData);
+        
         setSponsoredBannerSettings(bannerData.setting_value);
       } else {
         // Set default values if no settings found
@@ -1248,65 +1248,68 @@ const Customization = () => {
           ) : (
             <div className="space-y-6">
               {/* Tabs */}
-              <div className="bg-card border border-border rounded-lg">
-                <div className="flex border-b border-border">
+              <div className="bg-card border border-border rounded-lg overflow-hidden">
+                <div className="flex overflow-x-auto scrollbar-hide border-b border-border">
                   <button
                     onClick={() => setActiveTab('services')}
-                    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'services'
+                    className={`flex-shrink-0 px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'services'
                         ? 'text-primary border-b-2 border-primary bg-primary/5'
                         : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                       }`}
                   >
-                    <div className="flex items-center justify-center gap-2">
-                      <Icon name="Eye" size={16} />
-                      <span>Service Visibility</span>
+                    <div className="flex items-center justify-center gap-1 sm:gap-2">
+                      <Icon name="Eye" size={14} className="sm:w-4 sm:h-4" />
+                      <span className="hidden xs:inline">Service Visibility</span>
+                      <span className="xs:hidden">Services</span>
                     </div>
                   </button>
                   <button
                     onClick={() => setActiveTab('banner')}
-                    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'banner'
+                    className={`flex-shrink-0 px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'banner'
                         ? 'text-primary border-b-2 border-primary bg-primary/5'
                         : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                       }`}
                   >
-                    <div className="flex items-center justify-center gap-2">
-                      <Icon name="Gift" size={16} />
-                      <span>Sponsored Banner</span>
+                    <div className="flex items-center justify-center gap-1 sm:gap-2">
+                      <Icon name="Gift" size={14} className="sm:w-4 sm:h-4" />
+                      <span className="hidden xs:inline">Sponsored Banner</span>
+                      <span className="xs:hidden">Banner</span>
                     </div>
                   </button>
                   <button
                     onClick={() => setActiveTab('company')}
-                    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'company'
+                    className={`flex-shrink-0 px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'company'
                         ? 'text-primary border-b-2 border-primary bg-primary/5'
                         : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                       }`}
                   >
-                    <div className="flex items-center justify-center gap-2">
-                      <Icon name="Building" size={16} />
-                      <span>Company Details</span>
+                    <div className="flex items-center justify-center gap-1 sm:gap-2">
+                      <Icon name="Building" size={14} className="sm:w-4 sm:h-4" />
+                      <span className="hidden xs:inline">Company Details</span>
+                      <span className="xs:hidden">Company</span>
                     </div>
                   </button>
                   <button
                     onClick={() => setActiveTab('media')}
-                    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'media'
+                    className={`flex-shrink-0 px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'media'
                         ? 'text-primary border-b-2 border-primary bg-primary/5'
                         : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                       }`}
                   >
-                    <div className="flex items-center justify-center gap-2">
-                      <Icon name="Image" size={16} />
+                    <div className="flex items-center justify-center gap-1 sm:gap-2">
+                      <Icon name="Image" size={14} className="sm:w-4 sm:h-4" />
                       <span>Media</span>
                     </div>
                   </button>
                   <button
                     onClick={() => setActiveTab('pricing')}
-                    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'pricing'
+                    className={`flex-shrink-0 px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'pricing'
                         ? 'text-primary border-b-2 border-primary bg-primary/5'
                         : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                       }`}
                   >
-                    <div className="flex items-center justify-center gap-2">
-                      <Icon name="DollarSign" size={16} />
+                    <div className="flex items-center justify-center gap-1 sm:gap-2">
+                      <Icon name="DollarSign" size={14} className="sm:w-4 sm:h-4" />
                       <span>Pricing</span>
                     </div>
                   </button>
@@ -1315,86 +1318,88 @@ const Customization = () => {
 
               {/* Service Visibility Tab */}
               {activeTab === 'services' && (
-                <div className="bg-card border border-border rounded-lg p-6">
-                  <div className="flex items-center justify-between mb-6">
+                <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-2 sm:gap-0">
                     <div>
-                      <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                        <Icon name="Eye" size={20} className="text-primary" />
+                      <h2 className="text-base sm:text-lg font-semibold text-foreground flex items-center gap-2">
+                        <Icon name="Eye" size={18} className="sm:w-5 sm:h-5 text-primary" />
                         Service Visibility
                       </h2>
-                      <p className="text-sm text-muted-foreground mt-1">
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                         Toggle services on/off to control what users see in their navigation
                       </p>
                     </div>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {services.map((service) => (
                       <div
                         key={service.id}
-                        className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/50 transition-colors"
+                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 rounded-lg border border-border hover:border-primary/50 transition-colors gap-3 sm:gap-0"
                       >
-                        <div className="flex items-center gap-4 flex-1">
-                          <div className={`p-3 rounded-lg ${serviceSettings[service.id] ? 'bg-primary/10' : 'bg-muted'}`}>
+                        <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                          <div className={`p-2 sm:p-3 rounded-lg flex-shrink-0 ${serviceSettings[service.id] ? 'bg-primary/10' : 'bg-muted'}`}>
                             <Icon
                               name={service.icon}
-                              size={24}
-                              className={serviceSettings[service.id] ? 'text-primary' : 'text-muted-foreground'}
+                              size={20}
+                              className="sm:w-6 sm:h-6"
+                              style={{ color: serviceSettings[service.id] ? 'var(--color-primary)' : 'var(--color-muted-foreground)' }}
                             />
                           </div>
-                          <div className="flex-1">
-                            <h3 className="text-sm font-medium text-foreground">{service.name}</h3>
-                            <p className="text-xs text-muted-foreground mt-0.5">{service.description}</p>
-                            <p className="text-xs text-muted-foreground mt-1 font-mono">{service.path}</p>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-xs sm:text-sm font-medium text-foreground truncate">{service.name}</h3>
+                            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 line-clamp-1">{service.description}</p>
+                            <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-mono truncate">{service.path}</p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                          <span className={`text-xs font-medium ${serviceSettings[service.id] ? 'text-green-600' : 'text-muted-foreground'}`}>
+                        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
+                          <span className={`text-[10px] sm:text-xs font-medium ${serviceSettings[service.id] ? 'text-green-600' : 'text-muted-foreground'}`}>
                             {serviceSettings[service.id] ? 'Visible' : 'Hidden'}
                           </span>
-                          <label className="relative inline-flex items-center cursor-pointer">
+                          <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
                             <input
                               type="checkbox"
                               className="sr-only peer"
                               checked={serviceSettings[service.id]}
                               onChange={() => handleToggle(service.id)}
                             />
-                            <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            <div className="w-10 h-5 sm:w-11 sm:h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all peer-checked:bg-primary"></div>
                           </label>
                         </div>
                       </div>
                     ))}
 
                     {/* Home Page Services Section Toggle */}
-                    <div className="mt-6 pt-6 border-t border-border">
-                      <div className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/50 transition-colors bg-muted/30">
-                        <div className="flex items-center gap-4 flex-1">
-                          <div className={`p-3 rounded-lg ${homePageServicesVisibility.enabled ? 'bg-primary/10' : 'bg-muted'}`}>
+                    <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-border">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 rounded-lg border border-border hover:border-primary/50 transition-colors bg-muted/30 gap-3 sm:gap-0">
+                        <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                          <div className={`p-2 sm:p-3 rounded-lg flex-shrink-0 ${homePageServicesVisibility.enabled ? 'bg-primary/10' : 'bg-muted'}`}>
                             <Icon
                               name="Home"
-                              size={24}
-                              className={homePageServicesVisibility.enabled ? 'text-primary' : 'text-muted-foreground'}
+                              size={20}
+                              className="sm:w-6 sm:h-6"
+                              style={{ color: homePageServicesVisibility.enabled ? 'var(--color-primary)' : 'var(--color-muted-foreground)' }}
                             />
                           </div>
-                          <div className="flex-1">
-                            <h3 className="text-sm font-medium text-foreground">Home Page Services Section</h3>
-                            <p className="text-xs text-muted-foreground mt-0.5">Show/hide Recovery & Credit Insurance section on home page</p>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-xs sm:text-sm font-medium text-foreground">Home Page Services Section</h3>
+                            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 line-clamp-2">Show/hide Recovery & Credit Insurance section on home page</p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                          <span className={`text-xs font-medium ${homePageServicesVisibility.enabled ? 'text-green-600' : 'text-muted-foreground'}`}>
+                        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
+                          <span className={`text-[10px] sm:text-xs font-medium ${homePageServicesVisibility.enabled ? 'text-green-600' : 'text-muted-foreground'}`}>
                             {homePageServicesVisibility.enabled ? 'Visible' : 'Hidden'}
                           </span>
-                          <label className="relative inline-flex items-center cursor-pointer">
+                          <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
                             <input
                               type="checkbox"
                               className="sr-only peer"
                               checked={homePageServicesVisibility.enabled}
                               onChange={(e) => handleHomePageServicesVisibilityChange({ enabled: e.target.checked })}
                             />
-                            <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            <div className="w-10 h-5 sm:w-11 sm:h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all peer-checked:bg-primary"></div>
                           </label>
                         </div>
                       </div>
@@ -1405,45 +1410,45 @@ const Customization = () => {
 
               {/* Sponsored Banner Tab */}
               {activeTab === 'banner' && (
-                <div className="bg-card border border-border rounded-lg p-6">
-                  <div className="flex items-center justify-between mb-6">
+                <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-2 sm:gap-0">
                     <div>
-                      <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                        <Icon name="Gift" size={20} className="text-primary" />
+                      <h2 className="text-base sm:text-lg font-semibold text-foreground flex items-center gap-2">
+                        <Icon name="Gift" size={18} className="sm:w-5 sm:h-5 text-primary" />
                         Sponsored Banner Settings
                       </h2>
-                      <p className="text-sm text-muted-foreground mt-1">
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                         Configure the sponsored banner displayed on the dashboard
                       </p>
                     </div>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {/* Language Selection */}
-                    <div className="mb-6 p-4 bg-muted/30 rounded-lg border border-border">
-                      <label className="block text-sm font-medium text-foreground mb-3">Select Language</label>
-                      <div className="flex gap-2">
+                    <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-muted/30 rounded-lg border border-border">
+                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2 sm:mb-3">Select Language</label>
+                      <div className="flex flex-wrap gap-2">
                         {languages.map((lang) => (
                           <button
                             key={lang.code}
                             onClick={() => setSelectedLanguage(lang.code)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${selectedLanguage === lang.code
+                            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg border transition-colors text-xs sm:text-sm ${selectedLanguage === lang.code
                                 ? 'bg-primary text-white border-primary'
                                 : 'bg-card text-foreground border-border hover:border-primary/50'
                               }`}
                           >
-                            <span className="text-lg">{lang.flag}</span>
-                            <span className="text-sm font-medium">{lang.name}</span>
+                            <span className="text-base sm:text-lg">{lang.flag}</span>
+                            <span className="font-medium">{lang.name}</span>
                           </button>
                         ))}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-2">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-2">
                         Configure banner content for {languages.find(l => l.code === selectedLanguage)?.name}
                       </p>
                     </div>
 
                     {/* Enabled Toggle */}
-                    <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 rounded-lg border border-border gap-2 sm:gap-0">
                       <div>
                         <label className="text-sm font-medium text-foreground">Enable Banner</label>
                         <p className="text-xs text-muted-foreground mt-0.5">Show/hide the sponsored banner on dashboard</p>
@@ -1802,47 +1807,47 @@ const Customization = () => {
                   </div>
                 </div>
                 {/* Language Selector - Only for language-specific media */}
-                <div className="mb-6 p-4 bg-gradient-to-r from-primary/5 to-primary/10 rounded-xl border border-primary/20">
-                  <label className="block text-sm font-semibold text-foreground mb-3">Select Language for Multi-Language Media</label>
-                  <div className="flex gap-2">
+                <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gradient-to-r from-primary/5 to-primary/10 rounded-xl border border-primary/20">
+                  <label className="block text-xs sm:text-sm font-semibold text-foreground mb-2 sm:mb-3">Select Language for Multi-Language Media</label>
+                  <div className="flex flex-wrap gap-2">
                     {languages.map((lang) => (
                       <button
                         key={lang.code}
                         onClick={() => setSelectedMediaLanguage(lang.code)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${selectedMediaLanguage === lang.code
+                        className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg border-2 transition-all text-xs sm:text-sm ${selectedMediaLanguage === lang.code
                             ? 'bg-primary text-white border-primary shadow-lg scale-105'
                             : 'bg-card text-foreground border-border hover:border-primary/50 hover:shadow-md'
                           }`}
                       >
-                        <span className="text-lg">{lang.flag}</span>
-                        <span className="text-sm font-medium">{lang.name}</span>
+                        <span className="text-base sm:text-lg">{lang.flag}</span>
+                        <span className="font-medium whitespace-nowrap">{lang.name}</span>
                       </button>
                     ))}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-3">
-                    <Icon name="Info" size={14} className="inline mr-1" />
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 sm:mt-3">
+                    <Icon name="Info" size={12} className="sm:w-[14px] sm:h-[14px] inline mr-1" />
                     Select language to upload/view Hero Image, Desktop Image, Mobile Image, and Demo Video for Home Page. Each language has its own media files.
                   </p>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                 {/* Home Page Media */}
-                <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-                  <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border">
-                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                      <Icon name="Home" size={20} className="text-primary" />
+                <div className="bg-card border border-border rounded-xl p-4 sm:p-6 shadow-sm">
+                  <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-border">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Icon name="Home" size={18} className="sm:w-5 sm:h-5 text-primary" />
                     </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-foreground">Home Page</h3>
-                      <p className="text-xs text-muted-foreground">Multi-Platform Section</p>
+                    <div className="min-w-0">
+                      <h3 className="text-base sm:text-lg font-semibold text-foreground">Home Page</h3>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Multi-Platform Section</p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     {/* Hero Image */}
-                    <div className="bg-muted/30 rounded-lg p-4 border border-border">
-                      <label className="block text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                        <Icon name="Image" size={16} className="text-primary" />
-                        Hero Image ({languages.find(l => l.code === selectedMediaLanguage)?.flag} {languages.find(l => l.code === selectedMediaLanguage)?.name})
+                    <div className="bg-muted/30 rounded-lg p-3 sm:p-4 border border-border">
+                      <label className="block text-xs sm:text-sm font-semibold text-foreground mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2">
+                        <Icon name="Image" size={14} className="sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                        <span className="truncate">Hero Image ({languages.find(l => l.code === selectedMediaLanguage)?.flag} {languages.find(l => l.code === selectedMediaLanguage)?.name})</span>
                       </label>
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
@@ -1917,10 +1922,10 @@ const Customization = () => {
                     </div>
 
                     {/* Desktop Image */}
-                    <div className="bg-muted/30 rounded-lg p-4 border border-border">
-                      <label className="block text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                        <Icon name="Monitor" size={16} className="text-primary" />
-                        Desktop Image ({languages.find(l => l.code === selectedMediaLanguage)?.flag} {languages.find(l => l.code === selectedMediaLanguage)?.name})
+                    <div className="bg-muted/30 rounded-lg p-3 sm:p-4 border border-border">
+                      <label className="block text-xs sm:text-sm font-semibold text-foreground mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2">
+                        <Icon name="Monitor" size={14} className="sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                        <span className="truncate">Desktop Image ({languages.find(l => l.code === selectedMediaLanguage)?.flag} {languages.find(l => l.code === selectedMediaLanguage)?.name})</span>
                       </label>
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
@@ -1995,10 +2000,10 @@ const Customization = () => {
                     </div>
 
                     {/* Mobile Image */}
-                    <div className="bg-muted/30 rounded-lg p-4 border border-border">
-                      <label className="block text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                        <Icon name="Smartphone" size={16} className="text-primary" />
-                        Mobile Image ({languages.find(l => l.code === selectedMediaLanguage)?.flag} {languages.find(l => l.code === selectedMediaLanguage)?.name})
+                    <div className="bg-muted/30 rounded-lg p-3 sm:p-4 border border-border">
+                      <label className="block text-xs sm:text-sm font-semibold text-foreground mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2">
+                        <Icon name="Smartphone" size={14} className="sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                        <span className="truncate">Mobile Image ({languages.find(l => l.code === selectedMediaLanguage)?.flag} {languages.find(l => l.code === selectedMediaLanguage)?.name})</span>
                       </label>
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
@@ -2073,10 +2078,10 @@ const Customization = () => {
                     </div>
 
                     {/* Demo Video */}
-                    <div className="bg-muted/30 rounded-lg p-4 border border-border md:col-span-2">
-                      <label className="block text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                        <Icon name="Video" size={16} className="text-primary" />
-                        Demo Video ({languages.find(l => l.code === selectedMediaLanguage)?.flag} {languages.find(l => l.code === selectedMediaLanguage)?.name})
+                    <div className="bg-muted/30 rounded-lg p-3 sm:p-4 border border-border md:col-span-2">
+                      <label className="block text-xs sm:text-sm font-semibold text-foreground mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2">
+                        <Icon name="Video" size={14} className="sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+                        <span className="truncate">Demo Video ({languages.find(l => l.code === selectedMediaLanguage)?.flag} {languages.find(l => l.code === selectedMediaLanguage)?.name})</span>
                       </label>
                       <div className="flex items-center gap-3">
                         <input

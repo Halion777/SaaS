@@ -492,7 +492,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
       </div>
 
       {/* View Toggle */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
+      <div className="flex items-center p-4 border-b border-border">
         <div className="flex items-center space-x-2">
           <span className="text-sm font-medium text-muted-foreground">{t('quotesManagement.table.view')}</span>
           <div className="flex bg-muted rounded-lg p-1">
@@ -519,9 +519,6 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
               {t('quotesManagement.table.cardView')}
             </button>
           </div>
-        </div>
-        <div className="text-xs text-muted-foreground">
-          {t('quotesManagement.table.quotesCount', { count: sortedAndFilteredQuotes.length })}
         </div>
       </div>
 

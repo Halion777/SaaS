@@ -21,7 +21,7 @@ const BlogPage = () => {
     const loadBlogs = async () => {
       try {
         setLoading(true);
-        console.log('Loading blogs...');
+   
         
         const { data, error } = await supabase
           .from('blogs')
@@ -47,7 +47,7 @@ const BlogPage = () => {
           throw error;
         }
 
-        console.log('Blogs loaded:', data);
+        
         setBlogs(data || []);
       } catch (error) {
         console.error('Error loading blogs:', error);
@@ -100,8 +100,7 @@ const BlogPage = () => {
   };
 
 
-  console.log('Rendering blogs:', blogs);
-
+ 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Helmet>

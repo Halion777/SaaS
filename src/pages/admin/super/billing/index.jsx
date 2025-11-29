@@ -13,6 +13,8 @@ import RevenueChart from 'components/ui/RevenueChart';
 import SubscriptionViewModal from './components/SubscriptionViewModal';
 import SubscriptionEditModal from './components/SubscriptionEditModal';
 import SubscriptionCancelModal from './components/SubscriptionCancelModal';
+import SubscriptionsFilterToolbar from './components/SubscriptionsFilterToolbar';
+import PaymentsFilterToolbar from './components/PaymentsFilterToolbar';
 
 const SuperAdminBilling = () => {
   const { t } = useTranslation();
@@ -106,7 +108,7 @@ const SuperAdminBilling = () => {
   const loadBillingData = async () => {
     try {
       setLoading(true);
-      console.log('Loading billing data...');
+      
       
       // Load subscriptions from subscriptions table (created by Stripe webhook)
       // Exclude subscriptions for superadmin users
@@ -168,11 +170,7 @@ const SuperAdminBilling = () => {
         record.subscriptions?.users && record.subscriptions.users.role !== 'superadmin'
       );
 
-      console.log('Billing data loaded:', {
-        subscriptions: filteredSubscriptions.length,
-        payments: filteredPaymentsData.length,
-        paymentRecords: filteredPaymentRecords.length
-      });
+     
 
       setSubscriptions(filteredSubscriptions);
       setPayments(filteredPaymentRecords);
@@ -263,7 +261,7 @@ const SuperAdminBilling = () => {
     setFilteredPayments(filtered);
   };
 
-  // Clear all filters
+  // Clear all filters (kept for backward compatibility, but filters are now handled by toolbars)
   const clearFilters = () => {
     setSearchTerm('');
     setStatusFilter('all');
@@ -411,14 +409,6 @@ const SuperAdminBilling = () => {
               </p>
             </div>
               <div className="flex items-center space-x-3 mt-4 sm:mt-0">
-              <Button
-                variant="outline"
-                onClick={() => navigate('/admin/super/dashboard')}
-                  className="flex items-center gap-2"
-              >
-                  <Icon name="ArrowLeft" size={16} />
-                Back to Dashboard
-              </Button>
             </div>
           </div>
           </header>
@@ -515,64 +505,14 @@ const SuperAdminBilling = () => {
             />
           </div>
 
-          {/* Filters */}
-          <div className="bg-card border border-border rounded-lg p-4 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Search</label>
-                <Input
-                  placeholder="Search subscriptions..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Status</label>
-                <Select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                  options={[
-                    { value: 'all', label: 'All Status' },
-                    { value: 'active', label: 'Active' },
-                    { value: 'trial', label: 'Trial' },
-                    { value: 'cancelled', label: 'Cancelled' },
-                    { value: 'inactive', label: 'Inactive' },
-                    { value: 'expired', label: 'Expired' },
-                    { value: 'payment_failed', label: 'Payment Failed' }
-                  ]}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">From Date</label>
-                <Input
-                  type="date"
-                  value={dateFilter.from}
-                  onChange={(e) => setDateFilter(prev => ({ ...prev, from: e.target.value }))}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">To Date</label>
-                <Input
-                  type="date"
-                  value={dateFilter.to}
-                  onChange={(e) => setDateFilter(prev => ({ ...prev, to: e.target.value }))}
-                  className="w-full"
-                />
-              </div>
-              <div className="flex items-end">
-                <Button
-                  variant="outline"
-                  onClick={clearFilters}
-                  className="w-full"
-                >
-                  Clear Filters
-                </Button>
-              </div>
-            </div>
-          </div>
+          {/* Subscriptions Filter */}
+          <SubscriptionsFilterToolbar
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            filteredCount={filteredSubscriptions.length}
+          />
 
           {/* View Toggle */}
           <div className="flex items-center justify-between p-4 border-b border-border bg-card rounded-lg mb-6">
@@ -821,6 +761,13 @@ const SuperAdminBilling = () => {
               </>
             )}
           </div>
+
+          {/* Payments Filter */}
+          <PaymentsFilterToolbar
+            dateFilter={dateFilter}
+            onDateFilterChange={setDateFilter}
+            filteredCount={filteredPayments.length}
+          />
 
           {/* Recent Payments */}
           <div className="bg-card border border-border rounded-lg overflow-hidden">

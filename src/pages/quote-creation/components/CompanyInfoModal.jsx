@@ -559,20 +559,21 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
-      <div className="bg-card border border-border rounded-lg shadow-xl max-w-2xl w-full overflow-hidden">
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-0 sm:p-2 md:p-4">
+      <div className="bg-card border border-border rounded-none sm:rounded-lg shadow-xl max-w-2xl w-full h-full sm:h-auto max-h-full sm:max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 bg-gray-50 flex-shrink-0">
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-800">{t('quoteCreation.companyInfo.title', "Informations de l'entreprise")}</h2>
+          <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-800">{t('quoteCreation.companyInfo.title', "Informations de l'entreprise")}</h2>
           <button
             onClick={handleClose}
-            className="text-gray-500 hover:text-gray-700 transition-colors p-1 rounded-full hover:bg-gray-100"
+            className="text-gray-500 hover:text-gray-700 transition-colors p-1 sm:p-2 rounded-full hover:bg-gray-100"
+            aria-label="Close"
           >
-            <AppIcon name="X" size={18} className="sm:w-5 sm:h-5" />
+            <AppIcon name="X" size={20} className="sm:w-5 sm:h-5" />
           </button>
         </div>
 
-        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto max-h-[calc(90vh-180px)]" onScroll={handleScroll}>
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6" onScroll={handleScroll}>
           {/* Company Logo */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
@@ -714,7 +715,7 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
           </div>
 
           {/* Postal Code and City */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
                 Code postal *
@@ -944,12 +945,19 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+        <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-0 p-4 sm:p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+          <Button
+            onClick={handleClose}
+            variant="outline"
+            className="w-full sm:w-auto order-2 sm:order-1 mr-0 sm:mr-4"
+          >
+            {t('clientManagement.modal.cancel', 'Cancel')}
+          </Button>
           <Button
             onClick={handleSave}
             iconName="Save"
             iconPosition="left"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 rounded-lg font-medium w-full sm:w-auto order-1 sm:order-2"
             disabled={isSaving}
           >
             {isSaving ? t('quoteCreation.companyInfo.saving', 'Sauvegarde en cours...') : t('quoteCreation.companyInfo.saveInfo', 'Sauvegarder les informations')}

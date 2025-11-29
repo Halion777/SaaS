@@ -640,6 +640,7 @@ const ExpenseInvoicesManagement = () => {
           <ExpenseInvoicesFilterToolbar
             filters={filters}
             onFiltersChange={handleFiltersChange}
+            filteredCount={filteredExpenseInvoices.length}
           />
 
           {/* Bulk Actions */}

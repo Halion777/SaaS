@@ -386,32 +386,33 @@ const LeadsManagementPage = () => {
         filteredCount={filteredLeads.length}
       />
       
-      {loading ? (
-        <TableLoader message={t('leadsManagement.leadsTab.loading')} />
-      ) : error ? (
-        <div className="text-center py-12">
-          <Icon name="AlertCircle" className="w-12 h-12 text-destructive mx-auto mb-4" />
-          <p className="text-destructive">
-            {typeof error === 'string' ? error : error?.message || 'Erreur inconnue'}
-          </p>
-          <button
-            onClick={loadLeads}
-            className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-          >
-            {t('leadsManagement.leadsTab.retry')}
-          </button>
-        </div>
-      ) : filteredLeads.length === 0 ? (
-        <div className="flex items-center justify-center py-8 sm:py-12">
-          <div className="text-center">
-            <Icon name="Inbox" size={32} className="sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
-            <p className="text-xs sm:text-sm text-muted-foreground">{t('leadsManagement.leadsTab.noLeads')}</p>
+      <div className="mt-4 sm:mt-6">
+        {loading ? (
+          <TableLoader message={t('leadsManagement.leadsTab.loading')} />
+        ) : error ? (
+          <div className="text-center py-12">
+            <Icon name="AlertCircle" className="w-12 h-12 text-destructive mx-auto mb-4" />
+            <p className="text-destructive">
+              {typeof error === 'string' ? error : error?.message || 'Erreur inconnue'}
+            </p>
+            <button
+              onClick={loadLeads}
+              className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+            >
+              {t('leadsManagement.leadsTab.retry')}
+            </button>
           </div>
-        </div>
-      ) : (
-        <div className="space-y-6">
+        ) : filteredLeads.length === 0 ? (
+          <div className="flex items-center justify-center py-8 sm:py-12">
+            <div className="text-center">
+              <Icon name="Inbox" size={32} className="sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
+              <p className="text-xs sm:text-sm text-muted-foreground">{t('leadsManagement.leadsTab.noLeads')}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
           {filteredLeads.map((lead) => (
-            <div key={lead.lead_id} className="relative bg-gradient-to-br from-card to-card/80 border border-border rounded-xl p-6 overflow-hidden">
+            <div key={lead.lead_id} className="relative bg-gradient-to-br from-card to-card/80 border border-border rounded-xl p-4 sm:p-6 overflow-hidden">
               {/* Subtle background pattern */}
               <div className="absolute inset-0 opacity-5">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full -translate-y-16 translate-x-16"></div>
@@ -419,15 +420,15 @@ const LeadsManagementPage = () => {
               </div>
               <div className="relative z-10">
               {/* Header Section */}
-              <div className="flex justify-between items-start mb-5">
-                <div className="flex-1">
-                  <h3 className="font-bold text-foreground text-xl mb-1">{lead.client_name}</h3>
-                  <p className="text-sm text-muted-foreground">{t('leadsManagement.leadsTab.leadCard.requestReceived')} {new Date(lead.created_at).toLocaleDateString()}</p>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-5 gap-3">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-foreground text-lg sm:text-xl mb-1 truncate">{lead.client_name}</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{t('leadsManagement.leadsTab.leadCard.requestReceived')} {new Date(lead.created_at).toLocaleDateString()}</p>
                 </div>
                 
                 {/* Quote Status Badge */}
-                <div className="text-right ml-4">
-                  <div className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                <div className="flex-shrink-0 sm:text-right">
+                  <div className={`inline-block rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold ${
                     lead.quotes_sent_count >= 3 
                       ? 'bg-destructive/10 text-destructive border border-destructive/20' 
                       : 'bg-primary/10 text-primary border border-primary/20'
@@ -435,37 +436,37 @@ const LeadsManagementPage = () => {
                     {lead.quotes_sent_count}/3 {t('leadsManagement.leadsTab.leadCard.quotesCount')}
                   </div>
                   {lead.quotes_sent_count >= 3 && (
-                    <span className="block text-xs text-destructive mt-2 text-center">Max atteint</span>
+                    <span className="block text-xs text-destructive mt-1 sm:mt-2 text-center">Max atteint</span>
                   )}
                 </div>
               </div>
               
               {/* Key Information Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-5">
                 {/* Left Column */}
                 <div className="space-y-3">
                   {/* Price Range */}
                   {lead.price_range && (
-                    <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                      <div className="p-2 bg-primary/10 rounded-lg">
-                        <Icon name="Coins" className="w-5 h-5 text-primary" />
+                    <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-muted/30 rounded-lg">
+                      <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg flex-shrink-0">
+                        <Icon name="Coins" className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                       </div>
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <p className="text-xs text-muted-foreground font-medium">{t('leadsManagement.leadsTab.leadCard.estimatedBudget')}</p>
-                        <p className="text-sm font-semibold text-foreground">{lead.price_range.includes('€') ? lead.price_range : `${lead.price_range} (€)`}</p>
+                        <p className="text-xs sm:text-sm font-semibold text-foreground truncate">{lead.price_range.includes('€') ? lead.price_range : `${lead.price_range} (€)`}</p>
                       </div>
                     </div>
                   )}
                   
                   {/* Completion Date */}
                   {lead.completion_date && (
-                    <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                      <div className="p-2 bg-blue-500/10 rounded-lg">
-                        <Icon name="Calendar" className="w-5 h-5 text-blue-500" />
+                    <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-muted/30 rounded-lg">
+                      <div className="p-1.5 sm:p-2 bg-blue-500/10 rounded-lg flex-shrink-0">
+                        <Icon name="Calendar" className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
                       </div>
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <p className="text-xs text-muted-foreground font-medium">{t('leadsManagement.leadsTab.leadCard.desiredCompletionDate')}</p>
-                        <p className="text-sm font-semibold text-foreground">{new Date(lead.completion_date).toLocaleDateString('fr-FR')}</p>
+                        <p className="text-xs sm:text-sm font-semibold text-foreground">{new Date(lead.completion_date).toLocaleDateString('fr-FR')}</p>
                       </div>
                     </div>
                   )}
@@ -474,16 +475,16 @@ const LeadsManagementPage = () => {
                 {/* Right Column */}
                 <div className="space-y-3">
                   {/* Address Information */}
-                  <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
-                    <div className="p-2 bg-green-500/10 rounded-lg">
-                      <Icon name="MapPin" className="w-5 h-5 text-green-500" />
+                  <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 bg-muted/30 rounded-lg">
+                    <div className="p-1.5 sm:p-2 bg-green-500/10 rounded-lg flex-shrink-0">
+                      <Icon name="MapPin" className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-xs text-muted-foreground font-medium">{t('leadsManagement.leadsTab.leadCard.location')}</p>
-                      <p className="text-sm font-semibold text-foreground mb-1">
+                      <p className="text-xs sm:text-sm font-semibold text-foreground mb-1 break-words">
                         {lead.street_number && `${lead.street_number} `}{lead.full_address}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground break-words">
                         {[
                           lead.zip_code,
                           lead.city,
@@ -495,20 +496,20 @@ const LeadsManagementPage = () => {
                   </div>
                   
                   {/* Services Required */}
-                  <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
-                    <div className="p-2 bg-purple-500/10 rounded-lg">
-                      <Icon name="Wrench" className="w-5 h-5 text-purple-500" />
+                  <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 bg-muted/30 rounded-lg">
+                    <div className="p-1.5 sm:p-2 bg-purple-500/10 rounded-lg flex-shrink-0">
+                      <Icon name="Wrench" className="w-4 h-4 sm:w-5 sm:h-5 text-purple-500" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-xs text-muted-foreground font-medium">{t('leadsManagement.leadsTab.leadCard.servicesRequired')}</p>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {lead.project_categories?.map((category) => (
-                          <span key={category} className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded border border-primary/20">
+                          <span key={category} className="px-2 py-0.5 sm:py-1 bg-primary/10 text-primary text-xs font-medium rounded border border-primary/20">
                             {category}
                           </span>
                         ))}
                         {lead.custom_category && (
-                          <span className="px-2 py-1 bg-secondary/10 text-secondary text-xs font-medium rounded border border-secondary/20">
+                          <span className="px-2 py-0.5 sm:py-1 bg-secondary/10 text-secondary text-xs font-medium rounded border border-secondary/20">
                             {lead.custom_category}
                           </span>
                         )}
@@ -519,9 +520,9 @@ const LeadsManagementPage = () => {
               </div>
               
               {/* Project Description */}
-              <div className="mb-5 p-4 bg-muted/20 rounded-lg">
-                <h4 className="text-sm font-semibold text-muted-foreground mb-2">{t('leadsManagement.leadsTab.leadCard.projectDescription')}</h4>
-                <p className="text-sm text-foreground leading-relaxed">{lead.project_description}</p>
+              <div className="mb-4 sm:mb-5 p-3 sm:p-4 bg-muted/20 rounded-lg">
+                <h4 className="text-xs sm:text-sm font-semibold text-muted-foreground mb-2">{t('leadsManagement.leadsTab.leadCard.projectDescription')}</h4>
+                <p className="text-xs sm:text-sm text-foreground leading-relaxed break-words">{lead.project_description}</p>
               </div>
               
               {/* Project Images */}
@@ -558,27 +559,28 @@ const LeadsManagementPage = () => {
               )}
               
               {/* Action Section */}
-              <div className="flex justify-between items-center pt-4 border-t border-border/50">
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center pt-4 border-t border-border/50 gap-3 sm:gap-0">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-muted-foreground">
                   <div className="flex items-center gap-2">
-                    <Icon name="Clock" className="w-4 h-4" />
-                    <span>{t('leadsManagement.leadsTab.leadCard.createdOn')} {new Date(lead.created_at).toLocaleDateString()}</span>
+                    <Icon name="Clock" className="w-4 h-4 flex-shrink-0" />
+                    <span className="whitespace-nowrap">{t('leadsManagement.leadsTab.leadCard.createdOn')} {new Date(lead.created_at).toLocaleDateString()}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Icon name="Eye" className="w-4 h-4" />
-                    <span>{t('leadsManagement.leadsTab.leadCard.leadId')}{lead.lead_id.slice(-8)}</span>
+                    <Icon name="Eye" className="w-4 h-4 flex-shrink-0" />
+                    <span className="whitespace-nowrap">{t('leadsManagement.leadsTab.leadCard.leadId')}{lead.lead_id.slice(-8)}</span>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <Button
                     onClick={() => handleReportSpam(lead.lead_id)}
                     variant="outline"
                     size="sm"
-                    className="text-red-600 border-red-200 hover:bg-red-50"
+                    className="text-red-600 border-red-200 hover:bg-red-50 w-full sm:w-auto"
                   >
                     <Icon name="AlertTriangle" className="w-4 h-4 mr-1" />
-                    {t('leadsManagement.leadsTab.leadCard.reportSpam')}
+                    <span className="hidden sm:inline">{t('leadsManagement.leadsTab.leadCard.reportSpam')}</span>
+                    <span className="sm:hidden">{t('leadsManagement.leadsTab.leadCard.reportSpam')}</span>
                   </Button>
                   
                   {lead.can_send_quote ? (
@@ -586,13 +588,13 @@ const LeadsManagementPage = () => {
                       onClick={() => handleQuoteLead(lead.lead_id)}
                       variant="default"
                       size="default"
-                      className="px-6 py-2 font-semibold"
+                      className="px-4 sm:px-6 py-2 font-semibold w-full sm:w-auto"
                     >
                       <Icon name="FileText" className="w-4 h-4 mr-2" />
                       {t('leadsManagement.leadsTab.leadCard.createQuote')}
                     </Button>
                   ) : (
-                    <span className="text-sm text-muted-foreground px-4 py-2 bg-muted/50 rounded-lg border">
+                    <span className="text-xs sm:text-sm text-muted-foreground px-3 sm:px-4 py-2 bg-muted/50 rounded-lg border text-center">
                       {lead.quote_status === 'max_reached' ? t('leadsManagement.leadsTab.leadCard.maxQuotesReached') : t('leadsManagement.leadsTab.leadCard.alreadyProcessed')}
                     </span>
                   )}
@@ -601,8 +603,9 @@ const LeadsManagementPage = () => {
               </div>
             </div>
           ))}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -990,7 +993,7 @@ const LeadsManagementPage = () => {
         className="flex-1 flex flex-col pb-20 md:pb-6"
         style={{ marginLeft: `${sidebarOffset}px` }}
       >
-        <main className="flex-1 px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
+        <main className="flex-1 px-4 sm:px-6 pt-0 pb-20 sm:pb-6 space-y-4 sm:space-y-6">
           {/* Header */}
           <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">

@@ -587,63 +587,63 @@ const FindArtisanPage = () => {
                       </h3>
 
                       <div className="space-y-4">
-                        {/* Work Category */}
-                        <div>
-                          <label className="block text-sm font-medium text-foreground mb-2">
-                            {t('findArtisan.form.category')} *
-                          </label>
-                          <div className="relative" ref={categoryDropdownRef}>
-                            {/* Custom Dropdown Button */}
-                            <button
-                              type="button"
-                              onClick={() => setDropdownOpen(!dropdownOpen)}
-                              className="w-full h-11 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left flex items-center"
-                            >
-                              <div className="absolute left-3 text-muted-foreground">
-                                <Icon name="Briefcase" className="w-5 h-5" />
-                              </div>
-                              <span className={formData.categories.length > 0 ? 'text-foreground' : 'text-muted-foreground'}>
-                                {formData.categories.length > 0 
-                                  ? formData.categories.map(cat => workCategories.find(c => c.value === cat)?.label).join(', ')
-                                  : t('findArtisan.form.selectCategory')
-                                }
-                              </span>
-                              <div className="absolute right-3 text-muted-foreground">
-                                <Icon name="ChevronDown" className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
-                              </div>
-                            </button>
-                            
-                            {/* Dropdown Options */}
-                            {dropdownOpen && (
-                              <div className="absolute top-full left-0 right-0 mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-md z-10 max-h-60 overflow-y-auto overflow-x-hidden scrollbar-hide">
-                                {workCategories.map(category => (
-                                  <button
-                                    key={category.value}
-                                    type="button"
-                                    onClick={() => handleCategoryToggle(category.value)}
-                                    className={`w-full px-3 py-2 text-left text-sm outline-none transition-transform duration-200 hover:scale-[1.02] flex items-center rounded-sm ${
-                                      formData.categories.includes(category.value) ? 'bg-accent text-accent-foreground' : 'text-foreground'
-                                    }`}
-                                  >
-                                    <div className={`w-6 h-6 rounded flex items-center justify-center mr-3 ${
-                                      formData.categories.includes(category.value) ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                                    }`}>
-                                      <Icon name={category.icon} className="w-3 h-3" />
-                                    </div>
-                                    <span className="flex-1">{category.label}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            )}
+                    {/* Work Category */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        {t('findArtisan.form.category')} *
+                      </label>
+                      <div className="relative" ref={categoryDropdownRef}>
+                        {/* Custom Dropdown Button */}
+                        <button
+                          type="button"
+                          onClick={() => setDropdownOpen(!dropdownOpen)}
+                          className="w-full h-11 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left flex items-center"
+                        >
+                          <div className="absolute left-3 text-muted-foreground">
+                            <Icon name="Briefcase" className="w-5 h-5" />
                           </div>
-                          
-                          {/* Error message if no category selected */}
-                          {formSubmitted && formData.categories.length === 0 && (
-                            <p className="text-sm text-destructive mt-2">
-                              {t('findArtisan.form.categoryError')}
-                            </p>
-                          )}
-                        </div>
+                          <span className={formData.categories.length > 0 ? 'text-foreground' : 'text-muted-foreground'}>
+                            {formData.categories.length > 0 
+                              ? formData.categories.map(cat => workCategories.find(c => c.value === cat)?.label).join(', ')
+                              : t('findArtisan.form.selectCategory')
+                            }
+                          </span>
+                          <div className="absolute right-3 text-muted-foreground">
+                            <Icon name="ChevronDown" className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                          </div>
+                        </button>
+                        
+                        {/* Dropdown Options */}
+                        {dropdownOpen && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-md z-10 max-h-60 overflow-y-auto overflow-x-hidden scrollbar-hide">
+                            {workCategories.map(category => (
+                              <button
+                                key={category.value}
+                                type="button"
+                                onClick={() => handleCategoryToggle(category.value)}
+                                className={`w-full px-3 py-2 text-left text-sm outline-none transition-transform duration-200 hover:scale-[1.02] flex items-center rounded-sm ${
+                                  formData.categories.includes(category.value) ? 'bg-accent text-accent-foreground' : 'text-foreground'
+                                }`}
+                              >
+                                <div className={`w-6 h-6 rounded flex items-center justify-center mr-3 ${
+                                  formData.categories.includes(category.value) ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                                }`}>
+                                  <Icon name={category.icon} className="w-3 h-3" />
+                                </div>
+                                <span className="flex-1">{category.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Error message if no category selected */}
+                      {formSubmitted && formData.categories.length === 0 && (
+                        <p className="text-sm text-destructive mt-2">
+                          {t('findArtisan.form.categoryError')}
+                        </p>
+                      )}
+                    </div>
 
                         {/* Project Description */}
                         <div>
@@ -785,139 +785,139 @@ const FindArtisanPage = () => {
 
                       <div className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {/* Country Selection */}
-                          <div>
-                            <label className="block text-sm font-medium text-foreground mb-2">
-                              Pays *
-                            </label>
-                            <div className="relative" ref={countryDropdownRef}>
-                              {/* Custom Dropdown Button */}
-                              <button
-                                type="button"
-                                onClick={() => setCountryDropdownOpen(!countryDropdownOpen)}
-                                className="w-full h-11 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left flex items-center"
-                              >
-                                <div className="absolute left-3 text-muted-foreground">
-                                  <Icon name="Globe" className="w-5 h-5" />
-                                </div>
-                                <span className={formData.country ? 'text-foreground' : 'text-muted-foreground'}>
-                                  {formData.country 
-                                    ? countryOptions.find(c => c.value === formData.country)?.label
-                                    : 'Sélectionner le pays'
-                                  }
-                                </span>
-                                <div className="absolute right-3 text-muted-foreground">
-                                  <Icon name="ChevronDown" className={`w-4 h-4 transition-transform ${countryDropdownOpen ? 'rotate-180' : ''}`} />
-                                </div>
-                              </button>
-                              
-                              {/* Dropdown Options */}
-                              {countryDropdownOpen && (
-                                <div className="absolute top-full left-0 right-0 mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-md z-10 max-h-60 overflow-y-auto overflow-x-hidden scrollbar-hide">
-                                  {countryOptions.map(country => (
-                                    <button
-                                      key={country.value}
-                                      type="button"
-                                      onClick={() => {
-                                        handleInputChange('country', country.value);
-                                        setCountryDropdownOpen(false);
-                                      }}
-                                      className={`w-full px-3 py-2 text-left text-sm outline-none transition-transform duration-200 hover:scale-[1.02] flex items-center rounded-sm ${
-                                        formData.country === country.value ? 'bg-accent text-accent-foreground' : 'text-foreground'
-                                      }`}
-                                    >
-                                      <div className={`w-6 h-6 rounded flex items-center justify-center mr-3 ${
-                                        formData.country === country.value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                                      }`}>
-                                        <Icon name="Flag" className="w-3 h-3" />
-                                      </div>
-                                      <span className="flex-1">{country.label}</span>
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
+                    {/* Country Selection */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Pays *
+                      </label>
+                      <div className="relative" ref={countryDropdownRef}>
+                        {/* Custom Dropdown Button */}
+                        <button
+                          type="button"
+                          onClick={() => setCountryDropdownOpen(!countryDropdownOpen)}
+                          className="w-full h-11 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left flex items-center"
+                        >
+                          <div className="absolute left-3 text-muted-foreground">
+                            <Icon name="Globe" className="w-5 h-5" />
                           </div>
-
-                          {/* Region Selection */}
-                          <div>
-                            <label className="block text-sm font-medium text-foreground mb-2">
-                              Région/Province *
-                            </label>
-                            <div className="relative" ref={regionDropdownRef}>
-                              {/* Custom Dropdown Button */}
+                          <span className={formData.country ? 'text-foreground' : 'text-muted-foreground'}>
+                            {formData.country 
+                              ? countryOptions.find(c => c.value === formData.country)?.label
+                              : 'Sélectionner le pays'
+                            }
+                          </span>
+                          <div className="absolute right-3 text-muted-foreground">
+                            <Icon name="ChevronDown" className={`w-4 h-4 transition-transform ${countryDropdownOpen ? 'rotate-180' : ''}`} />
+                          </div>
+                        </button>
+                        
+                        {/* Dropdown Options */}
+                        {countryDropdownOpen && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-md z-10 max-h-60 overflow-y-auto overflow-x-hidden scrollbar-hide">
+                            {countryOptions.map(country => (
                               <button
+                                key={country.value}
                                 type="button"
-                                onClick={() => setRegionDropdownOpen(!regionDropdownOpen)}
-                                disabled={!formData.country}
-                                className={`w-full h-11 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left flex items-center ${
-                                  !formData.country ? 'opacity-50 cursor-not-allowed' : ''
+                                onClick={() => {
+                                  handleInputChange('country', country.value);
+                                  setCountryDropdownOpen(false);
+                                }}
+                                className={`w-full px-3 py-2 text-left text-sm outline-none transition-transform duration-200 hover:scale-[1.02] flex items-center rounded-sm ${
+                                  formData.country === country.value ? 'bg-accent text-accent-foreground' : 'text-foreground'
                                 }`}
                               >
-                                <div className="absolute left-3 text-muted-foreground">
-                                  <Icon name="MapPin" className="w-5 h-5" />
+                                <div className={`w-6 h-6 rounded flex items-center justify-center mr-3 ${
+                                  formData.country === country.value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                                }`}>
+                                  <Icon name="Flag" className="w-3 h-3" />
                                 </div>
-                                <span className={formData.region ? 'text-foreground' : 'text-muted-foreground'}>
-                                  {formData.region 
-                                    ? formData.region
-                                    : formData.country ? 'Sélectionner la région' : 'Sélectionnez d\'abord un pays'
-                                  }
-                                </span>
-                                <div className="absolute right-3 text-muted-foreground">
-                                  <Icon name="ChevronDown" className={`w-4 h-4 transition-transform ${regionDropdownOpen ? 'rotate-180' : ''}`} />
-                                </div>
+                                <span className="flex-1">{country.label}</span>
                               </button>
-                              
-                              {/* Dropdown Options */}
-                              {regionDropdownOpen && formData.country && (
-                                <div className="absolute top-full left-0 right-0 mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-md z-10 max-h-60 overflow-y-auto overflow-x-hidden scrollbar-hide">
-                                  {regionOptions.map(region => (
-                                    <button
-                                      key={region.value}
-                                      type="button"
-                                      onClick={() => {
-                                        handleInputChange('region', region.value);
-                                        setRegionDropdownOpen(false);
-                                      }}
-                                      className={`w-full px-3 py-2 text-left text-sm outline-none transition-transform duration-200 hover:scale-[1.02] flex items-center rounded-sm ${
-                                        formData.region === region.value ? 'bg-accent text-accent-foreground' : 'text-foreground'
-                                      }`}
-                                    >
-                                      <div className={`w-6 h-6 rounded flex items-center justify-center mr-3 ${
-                                        formData.region === region.value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                                      }`}>
-                                        <Icon name="MapPin" className="w-3 h-3" />
-                                      </div>
-                                      <span className="flex-1">{region.label}</span>
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                            
-                            {/* Error message if no region selected */}
-                            {formSubmitted && !formData.region && (
-                              <p className="text-sm text-destructive mt-2">
-                                Veuillez sélectionner une région
-                              </p>
-                            )}
+                            ))}
                           </div>
-                        </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Region Selection */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Région/Province *
+                      </label>
+                      <div className="relative" ref={regionDropdownRef}>
+                        {/* Custom Dropdown Button */}
+                        <button
+                          type="button"
+                          onClick={() => setRegionDropdownOpen(!regionDropdownOpen)}
+                          disabled={!formData.country}
+                          className={`w-full h-11 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left flex items-center ${
+                            !formData.country ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                        >
+                          <div className="absolute left-3 text-muted-foreground">
+                            <Icon name="MapPin" className="w-5 h-5" />
+                          </div>
+                          <span className={formData.region ? 'text-foreground' : 'text-muted-foreground'}>
+                            {formData.region 
+                              ? formData.region
+                              : formData.country ? 'Sélectionner la région' : 'Sélectionnez d\'abord un pays'
+                            }
+                          </span>
+                          <div className="absolute right-3 text-muted-foreground">
+                            <Icon name="ChevronDown" className={`w-4 h-4 transition-transform ${regionDropdownOpen ? 'rotate-180' : ''}`} />
+                          </div>
+                        </button>
+                        
+                        {/* Dropdown Options */}
+                        {regionDropdownOpen && formData.country && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-md z-10 max-h-60 overflow-y-auto overflow-x-hidden scrollbar-hide">
+                            {regionOptions.map(region => (
+                              <button
+                                key={region.value}
+                                type="button"
+                                onClick={() => {
+                                  handleInputChange('region', region.value);
+                                  setRegionDropdownOpen(false);
+                                }}
+                                className={`w-full px-3 py-2 text-left text-sm outline-none transition-transform duration-200 hover:scale-[1.02] flex items-center rounded-sm ${
+                                  formData.region === region.value ? 'bg-accent text-accent-foreground' : 'text-foreground'
+                                }`}
+                              >
+                                <div className={`w-6 h-6 rounded flex items-center justify-center mr-3 ${
+                                  formData.region === region.value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                                }`}>
+                                  <Icon name="MapPin" className="w-3 h-3" />
+                                </div>
+                                <span className="flex-1">{region.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Error message if no region selected */}
+                      {formSubmitted && !formData.region && (
+                        <p className="text-sm text-destructive mt-2">
+                          Veuillez sélectionner une région
+                        </p>
+                      )}
+                          </div>
+                    </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {/* Zip Code */}
-                          <div>
-                            <label className="block text-sm font-medium text-foreground mb-2">
-                              {t('findArtisan.form.zipCode')} *
-                            </label>
-                            <Input
-                              type="text"
-                              placeholder={t('findArtisan.form.zipCodePlaceholder')}
-                              value={formData.zipCode}
-                              onChange={(e) => handleInputChange('zipCode', e.target.value)}
-                              required
-                            />
-                          </div>
+                    {/* Zip Code */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        {t('findArtisan.form.zipCode')} *
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder={t('findArtisan.form.zipCodePlaceholder')}
+                        value={formData.zipCode}
+                        onChange={(e) => handleInputChange('zipCode', e.target.value)}
+                        required
+                      />
+                    </div>
 
                           {/* City */}
                           <div>
@@ -935,35 +935,35 @@ const FindArtisanPage = () => {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {/* Street Number */}
-                          <div>
-                            <label className="block text-sm font-medium text-foreground mb-2">
-                              {t('findArtisan.form.streetNumber')} *
-                            </label>
-                            <Input
-                              type="text"
-                              placeholder={t('findArtisan.form.streetNumberPlaceholder')}
-                              value={formData.streetNumber}
-                              onChange={(e) => handleInputChange('streetNumber', e.target.value)}
-                              required
-                            />
-                          </div>
+                    {/* Street Number */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        {t('findArtisan.form.streetNumber')} *
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder={t('findArtisan.form.streetNumberPlaceholder')}
+                        value={formData.streetNumber}
+                        onChange={(e) => handleInputChange('streetNumber', e.target.value)}
+                        required
+                      />
+                    </div>
 
-                          {/* Full Address */}
-                          <div>
-                            <label className="block text-sm font-medium text-foreground mb-2">
-                              {t('findArtisan.form.fullAddress')} *
-                            </label>
-                            <Input
-                              type="text"
-                              placeholder={t('findArtisan.form.fullAddressPlaceholder')}
-                              value={formData.fullAddress}
-                              onChange={(e) => handleInputChange('fullAddress', e.target.value)}
-                              required
-                            />
+                    {/* Full Address */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        {t('findArtisan.form.fullAddress')} *
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder={t('findArtisan.form.fullAddressPlaceholder')}
+                        value={formData.fullAddress}
+                        onChange={(e) => handleInputChange('fullAddress', e.target.value)}
+                        required
+                      />
+                    </div>
+                    </div>
                           </div>
-                        </div>
-                      </div>
                     </div>
 
                     {/* Contact Information */}
@@ -974,71 +974,71 @@ const FindArtisanPage = () => {
                       </h3>
 
                       <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-foreground mb-2">
-                              {t('registerForm.step1.firstName', 'First Name')} *
-                            </label>
-                            <Input
-                              type="text"
-                              placeholder={t('registerForm.step1.firstNamePlaceholder', 'John')}
-                              value={formData.firstName}
-                              onChange={(e) => handleInputChange('firstName', e.target.value)}
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-foreground mb-2">
-                              {t('registerForm.step1.lastName', 'Last Name')} *
-                            </label>
-                            <Input
-                              type="text"
-                              placeholder={t('registerForm.step1.lastNamePlaceholder', 'Doe')}
-                              value={formData.lastName}
-                              onChange={(e) => handleInputChange('lastName', e.target.value)}
-                              required
-                            />
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-foreground mb-2">
-                              {t('findArtisan.form.phone')} *
-                            </label>
-                            <Input
-                              type="tel"
-                              placeholder={t('findArtisan.form.phonePlaceholder')}
-                              value={formData.phone}
-                              onChange={(e) => handleInputChange('phone', e.target.value)}
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-foreground mb-2">
-                              {t('findArtisan.form.email')} *
-                            </label>
-                            <Input
-                              type="email"
-                              placeholder={t('findArtisan.form.emailPlaceholder')}
-                              value={formData.email}
-                              onChange={(e) => handleInputChange('email', e.target.value)}
-                              required
-                            />
-                          </div>
-                        </div>
-
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-foreground mb-2">
-                            {t('findArtisan.form.clientAddress')} *
+                            {t('registerForm.step1.firstName', 'First Name')} *
                           </label>
                           <Input
                             type="text"
-                            placeholder={t('findArtisan.form.clientAddressPlaceholder')}
-                            value={formData.clientAddress}
-                            onChange={(e) => handleInputChange('clientAddress', e.target.value)}
+                            placeholder={t('registerForm.step1.firstNamePlaceholder', 'John')}
+                            value={formData.firstName}
+                            onChange={(e) => handleInputChange('firstName', e.target.value)}
                             required
                           />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">
+                            {t('registerForm.step1.lastName', 'Last Name')} *
+                          </label>
+                          <Input
+                            type="text"
+                            placeholder={t('registerForm.step1.lastNamePlaceholder', 'Doe')}
+                            value={formData.lastName}
+                            onChange={(e) => handleInputChange('lastName', e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">
+                            {t('findArtisan.form.phone')} *
+                          </label>
+                          <Input
+                            type="tel"
+                            placeholder={t('findArtisan.form.phonePlaceholder')}
+                            value={formData.phone}
+                            onChange={(e) => handleInputChange('phone', e.target.value)}
+                            required
+                          />
+                        </div>
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          {t('findArtisan.form.email')} *
+                        </label>
+                        <Input
+                          type="email"
+                          placeholder={t('findArtisan.form.emailPlaceholder')}
+                          value={formData.email}
+                          onChange={(e) => handleInputChange('email', e.target.value)}
+                          required
+                        />
+                      </div>
+                        </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          {t('findArtisan.form.clientAddress')} *
+                        </label>
+                        <Input
+                          type="text"
+                          placeholder={t('findArtisan.form.clientAddressPlaceholder')}
+                          value={formData.clientAddress}
+                          onChange={(e) => handleInputChange('clientAddress', e.target.value)}
+                          required
+                        />
                         </div>
                       </div>
                     </div>
@@ -1051,67 +1051,67 @@ const FindArtisanPage = () => {
                       </h3>
 
                       <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-foreground mb-3">
-                            {t('findArtisan.form.communicationPreferences')}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-3">
+                        {t('findArtisan.form.communicationPreferences')}
+                      </label>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="pref-email"
+                            checked={formData.communicationPreferences.email}
+                            onChange={() => handleCommunicationPreferenceChange('email')}
+                            className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                          />
+                          <label htmlFor="pref-email" className="text-sm text-foreground">
+                            {t('findArtisan.form.preferences.email')}
                           </label>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                id="pref-email"
-                                checked={formData.communicationPreferences.email}
-                                onChange={() => handleCommunicationPreferenceChange('email')}
-                                className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
-                              />
-                              <label htmlFor="pref-email" className="text-sm text-foreground">
-                                {t('findArtisan.form.preferences.email')}
-                              </label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                id="pref-phone"
-                                checked={formData.communicationPreferences.phone}
-                                onChange={() => handleCommunicationPreferenceChange('phone')}
-                                className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
-                              />
-                              <label htmlFor="pref-phone" className="text-sm text-foreground">
-                                {t('findArtisan.form.preferences.phone')}
-                              </label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                id="pref-sms"
-                                checked={formData.communicationPreferences.sms}
-                                onChange={() => handleCommunicationPreferenceChange('sms')}
-                                className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
-                              />
-                              <label htmlFor="pref-sms" className="text-sm text-foreground">
-                                {t('findArtisan.form.preferences.sms')}
-                              </label>
-                            </div>
-                          </div>
                         </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="pref-phone"
+                            checked={formData.communicationPreferences.phone}
+                            onChange={() => handleCommunicationPreferenceChange('phone')}
+                            className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                          />
+                          <label htmlFor="pref-phone" className="text-sm text-foreground">
+                            {t('findArtisan.form.preferences.phone')}
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="pref-sms"
+                            checked={formData.communicationPreferences.sms}
+                            onChange={() => handleCommunicationPreferenceChange('sms')}
+                            className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                          />
+                          <label htmlFor="pref-sms" className="text-sm text-foreground">
+                            {t('findArtisan.form.preferences.sms')}
+                          </label>
+                        </div>
+                      </div>
+                    </div>
 
-                        {/* Language Preference */}
+                    {/* Language Preference */}
                         <div>
                           <label className="block text-sm font-medium text-foreground mb-2">
-                            {t('findArtisan.form.languagePreference', 'Préférence de langue')}
-                          </label>
-                          <Select
-                            value={formData.languagePreference || 'fr'}
-                            onChange={(e) => handleInputChange('languagePreference', e.target.value)}
-                            options={[
-                              { value: 'fr', label: '🇫🇷 Français' },
-                              { value: 'en', label: '🇬🇧 English' },
-                              { value: 'nl', label: '🇳🇱 Nederlands' }
-                            ]}
-                          />
+                        {t('findArtisan.form.languagePreference', 'Préférence de langue')}
+                      </label>
+                      <Select
+                        value={formData.languagePreference || 'fr'}
+                        onChange={(e) => handleInputChange('languagePreference', e.target.value)}
+                        options={[
+                          { value: 'fr', label: '🇫🇷 Français' },
+                          { value: 'en', label: '🇬🇧 English' },
+                          { value: 'nl', label: '🇳🇱 Nederlands' }
+                        ]}
+                      />
                           <p className="text-xs text-muted-foreground mt-2">
-                            {t('findArtisan.form.languagePreferenceHelp', 'Nous communiquerons avec vous dans cette langue')}
-                          </p>
+                        {t('findArtisan.form.languagePreferenceHelp', 'Nous communiquerons avec vous dans cette langue')}
+                      </p>
                         </div>
                       </div>
                     </div>

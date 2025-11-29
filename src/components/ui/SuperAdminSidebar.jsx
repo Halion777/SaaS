@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../../services/supabaseClient';
 import Icon from '../AppIcon';
 import NavigationItem from './NavigationItem';
+import { useScrollPosition } from '../../utils/useScrollPosition';
 
 const SuperAdminSidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -21,6 +22,7 @@ const SuperAdminSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const mobileNavRef = useScrollPosition('superadmin-mobile-nav-scroll', isMobile);
 
   useEffect(() => {
     const handleResize = () => {
@@ -253,7 +255,7 @@ const SuperAdminSidebar = () => {
   if (isMobile) {
     return (
       <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-100">
-        <div className="flex overflow-x-auto scrollbar-hide h-16 px-4">
+        <div ref={mobileNavRef} className="flex overflow-x-auto scrollbar-hide h-16 px-4">
           <div className="flex items-center space-x-2 min-w-full">
             {flatNavigationItems.map((item) => (
               <NavigationItem
@@ -264,6 +266,23 @@ const SuperAdminSidebar = () => {
                 isMobile={true}
               />
             ))}
+            {/* Logout button for mobile */}
+            <button
+              onClick={handleLogout}
+              className="relative flex flex-col items-center justify-center transition-all duration-150 ease-in-out flex-shrink-0 p-2 rounded-lg min-w-[60px] text-foreground hover:bg-muted hover:text-foreground"
+              title={t('nav.logout', 'Logout')}
+            >
+              <div className="relative flex items-center justify-center">
+                <Icon 
+                  name="LogOut" 
+                  size={20} 
+                  color="currentColor"
+                />
+              </div>
+              <span className="text-xs font-medium mt-1 truncate">
+                {t('nav.logout', 'Logout')}
+              </span>
+            </button>
           </div>
         </div>
       </nav>

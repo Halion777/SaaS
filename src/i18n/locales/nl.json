@@ -3415,7 +3415,15 @@
         "participantNamePlaceholder": "MijnBedrijf",
         "peppolId": "Peppol ID",
         "peppolIdPlaceholder": "bijv. 0208:0630675588",
-        "peppolIdFormat": "Formaat: LANDCODE:BTW_NUMMER"
+        "peppolIdFormat": "Formaat: LANDCODE:BTW_NUMMER",
+        "peppolSchemeCode": "Peppol Schema Code",
+        "peppolSchemeCodeHint": "4-cijferige schemacode (automatisch ingevuld op basis van land)",
+        "belgiumScheme0208": "0208: Standaard",
+        "belgiumScheme9925": "9925",
+        "selectScheme": "Selecteer schema",
+        "vatNumber": "BTW-nummer",
+        "vatNumberPlaceholder": "bijv. 0630675588 of BE0630675588",
+        "combinedPeppolId": "Gecombineerd Peppol ID"
       },
       "contactPerson": {
         "title": "Contactpersoon (Verplicht)",

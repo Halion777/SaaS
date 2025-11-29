@@ -142,13 +142,32 @@ const Select = React.forwardRef(({
         }
         
         return options.filter(option => {
-            // Extract country code from label (format: "+92 PK")
-            const labelParts = option.label.split(' ');
-            const countryCode = labelParts[1] || ''; // e.g., "PK"
+            const labelLower = option.label.toLowerCase();
             
-            // Match country code starting with keyboard filter (e.g., "b" -> "BE", "BR")
-            const countryCodeLower = countryCode.toLowerCase();
-            return countryCodeLower.startsWith(keyboardFilter);
+            // Try to extract country code from different label formats:
+            // Format 1: "BE - Belgium" (country code - country name)
+            // Format 2: "+92 PK" (phone code + country code)
+            // Format 3: Direct country code match
+            
+            // Check if label contains " - " (country code - country name format)
+            if (labelLower.includes(' - ')) {
+                const parts = option.label.split(' - ');
+                const countryCode = parts[0] || ''; // e.g., "BE"
+                return countryCode.toLowerCase().startsWith(keyboardFilter);
+            }
+            
+            // Check if label contains space (phone code + country code format)
+            const labelParts = option.label.split(' ');
+            if (labelParts.length >= 2) {
+                // Try second part as country code (format: "+92 PK")
+                const countryCode = labelParts[1] || '';
+                if (countryCode.length === 2 && countryCode.toLowerCase().startsWith(keyboardFilter)) {
+                    return true;
+                }
+            }
+            
+            // Fallback: match against entire label
+            return labelLower.includes(keyboardFilter);
         });
     }, [keyboardFilter, options]);
 

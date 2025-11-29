@@ -90,15 +90,28 @@ const PeppolNetworkPage = () => {
     return searchCountries(countrySearchQuery);
   }, [countrySearchQuery]);
 
-  // Auto-fill scheme code when country is set (use VAT scheme, not company scheme)
+  // Auto-fill scheme code when country is set
+  // For Belgium: default to 0208 (company number without BE) - mandatory format
+  // For other countries: use VAT scheme
   useEffect(() => {
     if (peppolSettings.countryCode) {
-      // Use VAT scheme ID (Format 2) instead of company scheme
-      const schemeId = getPeppolVATSchemeId(peppolSettings.countryCode);
-      if (schemeId && (!peppolSchemeCode || peppolSchemeCode !== schemeId)) {
-        setPeppolSchemeCode(schemeId);
+      const countryCode = peppolSettings.countryCode.toUpperCase();
+      if (countryCode === 'BE') {
+        // Belgium: default to 0208 (company number without BE) - mandatory format
+        // Only set if not already one of the valid Belgium schemes
+        if (!peppolSchemeCode || (peppolSchemeCode !== '0208' && peppolSchemeCode !== '9925')) {
+          setPeppolSchemeCode('0208');
+        }
+      } else {
+        // Other countries: use VAT scheme ID
+        // Only set if not already set or if it doesn't match the VAT scheme
+        const schemeId = getPeppolVATSchemeId(peppolSettings.countryCode);
+        if (schemeId && (!peppolSchemeCode || peppolSchemeCode !== schemeId)) {
+          setPeppolSchemeCode(schemeId);
+        }
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [peppolSettings.countryCode]);
 
   // Close dropdown when clicking outside
@@ -444,9 +457,6 @@ const PeppolNetworkPage = () => {
             }
           }
 
-          // Use VAT scheme ID (Format 2) for all countries including Belgium
-          const schemeId = getPeppolVATSchemeId(companyCountry);
-
           // Auto-fill all fields, but only if they're empty (preserve existing values)
           setPeppolSettings(prev => ({
             ...prev,
@@ -458,9 +468,19 @@ const PeppolNetworkPage = () => {
             lastName: prev.lastName || lastName
           }));
 
-          // Set scheme code if country is available (use VAT scheme)
-          if (companyCountry && !peppolSchemeCode && schemeId) {
-            setPeppolSchemeCode(schemeId);
+          // Set scheme code if country is available
+          if (companyCountry && !peppolSchemeCode) {
+            const countryCodeUpper = companyCountry.toUpperCase();
+            if (countryCodeUpper === 'BE') {
+              // Belgium: default to 0208 (company number without BE) - mandatory format
+              setPeppolSchemeCode('0208');
+            } else {
+              // Other countries: use VAT scheme
+              const schemeId = getPeppolVATSchemeId(companyCountry);
+              if (schemeId) {
+                setPeppolSchemeCode(schemeId);
+              }
+            }
           }
 
           // Auto-fill VAT number identifier if available (only numbers)
@@ -635,15 +655,27 @@ const PeppolNetworkPage = () => {
   const handleInputChange = (field, value) => {
     setPeppolSettings(prev => ({ ...prev, [field]: value }));
 
-    // When country code changes, auto-fill scheme code (use VAT scheme)
+    // When country code changes, auto-fill scheme code
     if (field === 'countryCode') {
-      const schemeId = getPeppolVATSchemeId(value);
-      if (schemeId) {
-        setPeppolSchemeCode(schemeId);
+      const countryCodeUpper = value.toUpperCase();
+      if (countryCodeUpper === 'BE') {
+        // Belgium: default to 0208 (company number without BE) - mandatory format
+        setPeppolSchemeCode('0208');
         // Update combined Peppol ID when country changes
         if (peppolIdentifier) {
-          const combined = combinePeppolIdWithCountry(schemeId, value, peppolIdentifier);
+          const combined = combinePeppolIdWithCountry('0208', value, peppolIdentifier);
           setPeppolSettings(prev => ({ ...prev, peppolId: combined }));
+        }
+      } else {
+        // Other countries: use VAT scheme
+        const schemeId = getPeppolVATSchemeId(value);
+        if (schemeId) {
+          setPeppolSchemeCode(schemeId);
+          // Update combined Peppol ID when country changes
+          if (peppolIdentifier) {
+            const combined = combinePeppolIdWithCountry(schemeId, value, peppolIdentifier);
+            setPeppolSettings(prev => ({ ...prev, peppolId: combined }));
+          }
         }
       }
     }
@@ -658,12 +690,31 @@ const PeppolNetworkPage = () => {
   };
 
   // Combine scheme code, country code, and VAT number into full Peppol ID
-  // Format: {SCHEME_ID}:{COUNTRY_CODE}{VAT_NUMBER} (e.g., 9925:BE1231231231)
+  // For Belgium:
+  //   - 0208: Company Number without BE (e.g., 0208:0630675588)
+  //   - 9925: BE + company Number (e.g., 9925:BE0630675588)
+  // For other countries:
+  //   - Format: {SCHEME_ID}:{COUNTRY_CODE}{VAT_NUMBER} (e.g., 9925:BE1231231231)
   const combinePeppolIdWithCountry = (schemeCode, countryCode, vatNumber) => {
     if (!schemeCode || !countryCode || !vatNumber) {
       return '';
     }
-    return `${schemeCode}:${countryCode.toUpperCase()}${vatNumber}`;
+    
+    const countryCodeUpper = countryCode.toUpperCase();
+    
+    // Belgium-specific handling
+    if (countryCodeUpper === 'BE') {
+      if (schemeCode === '0208') {
+        // 0208: Company Number without BE prefix
+        return `${schemeCode}:${vatNumber}`;
+      } else if (schemeCode === '9925') {
+        // 9925: BE + company Number
+        return `${schemeCode}:BE${vatNumber}`;
+      }
+    }
+    
+    // Default format for other countries: {SCHEME_ID}:{COUNTRY_CODE}{VAT_NUMBER}
+    return `${schemeCode}:${countryCodeUpper}${vatNumber}`;
   };
 
   // Handle Peppol identifier change - only allow numbers
@@ -1198,14 +1249,27 @@ const PeppolNetworkPage = () => {
                                 <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
                                   {t('peppol.setup.companyInfo.peppolSchemeCode', 'Peppol Scheme Code')} *
                                 </label>
-                                <Input
-                                  value={peppolSchemeCode}
-                                  onChange={(e) => handleSchemeCodeChange(e.target.value)}
-                                  placeholder="0208"
-                                  className="font-mono"
-                                  required
-                                  maxLength={4}
-                                />
+                                {peppolSettings.countryCode?.toUpperCase() === 'BE' ? (
+                                  <Select
+                                    value={peppolSchemeCode}
+                                    onChange={(e) => handleSchemeCodeChange(e.target.value)}
+                                    options={[
+                                      { value: '0208', label: t('peppol.setup.companyInfo.belgiumScheme0208', '0208: Company Number (without BE) - Default') },
+                                      { value: '9925', label: t('peppol.setup.companyInfo.belgiumScheme9925', '9925: BE + Company Number') }
+                                    ]}
+                                    placeholder={t('peppol.setup.companyInfo.selectScheme', 'Select scheme')}
+                                    required
+                                  />
+                                ) : (
+                                  <Input
+                                    value={peppolSchemeCode}
+                                    onChange={(e) => handleSchemeCodeChange(e.target.value)}
+                                    placeholder="0208"
+                                    className="font-mono"
+                                    required
+                                    maxLength={4}
+                                  />
+                                )}
                               </div>
 
                               <div>
@@ -1518,17 +1582,7 @@ const PeppolNetworkPage = () => {
 
                   {/* Desktop Filters - Always visible on md+ screens */}
                   <div className="hidden md:block p-4 space-y-4 border-t border-border">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                      {/* Search */}
-                      <div>
-                        <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('peppol.filters.search')}</label>
-                        <Input
-                          value={filters.search}
-                          onChange={(e) => handleFilterChange('search', e.target.value)}
-                          placeholder={t('peppol.filters.searchPlaceholderSent')}
-                          iconName="Search"
-                        />
-                      </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
 
                       {/* Status Filter */}
                       <div>
@@ -1585,16 +1639,6 @@ const PeppolNetworkPage = () => {
                   {isSentFiltersExpanded && (
                     <div className="md:hidden p-3 space-y-4 border-t border-border">
                       <div className="space-y-3">
-                        {/* Search */}
-                        <div>
-                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Rechercher</label>
-                          <Input
-                            value={filters.search}
-                            onChange={(e) => handleFilterChange('search', e.target.value)}
-                            placeholder="N° facture, destinataire, Peppol ID..."
-                            iconName="Search"
-                          />
-                        </div>
 
                         {/* Status Filter */}
                         <div>
@@ -1665,11 +1709,24 @@ const PeppolNetworkPage = () => {
                 </div>
 
                 {/* Invoices Table */}
-                <div className="bg-card border border-border rounded-lg overflow-hidden">
+                <div className="bg-card border border-border rounded-lg overflow-hidden mt-4 sm:mt-6">
+                  {/* Search Bar */}
+                  <div className="p-3 md:p-4 border-b border-border">
+                    <div className="relative">
+                      <Icon name="Search" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        type="search"
+                        placeholder={t('peppol.filters.searchPlaceholderSent')}
+                        value={filters.search || ''}
+                        onChange={(e) => handleFilterChange('search', e.target.value)}
+                        className="pl-9 max-w-md"
+                      />
+                    </div>
+                  </div>
                   {/* View Toggle */}
-                  <div className="flex items-center justify-between p-4 border-b border-border">
+                  <div className="flex items-center p-4 border-b border-border">
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-muted-foreground">{t('peppol.invoices.view')}:</span>
+                      <span className="text-sm font-medium text-muted-foreground">{t('peppol.invoices.view')}</span>
                       <div className="flex bg-muted rounded-lg p-1">
                         <button
                           onClick={() => setSentViewMode('table')}
@@ -1692,9 +1749,6 @@ const PeppolNetworkPage = () => {
                           {t('peppol.invoices.cardView')}
                         </button>
                       </div>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {t('peppol.invoices.sentCount', { count: filteredSentInvoices.length })}
                     </div>
                   </div>
 
@@ -1771,18 +1825,7 @@ const PeppolNetworkPage = () => {
 
                   {/* Desktop Filters - Always visible on md+ screens */}
                   <div className="hidden md:block p-4 space-y-4 border-t border-border">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {/* Search */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">{t('peppol.filters.search')}</label>
-                        <Input
-                          value={filters.search}
-                          onChange={(e) => handleFilterChange('search', e.target.value)}
-                          placeholder={t('peppol.filters.searchPlaceholderReceived')}
-                          iconName="Search"
-                        />
-                      </div>
-
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {/* Status Filter */}
                       <div>
                         <label className="block text-sm font-medium text-foreground mb-2">{t('peppol.filters.status')}</label>
@@ -1838,17 +1881,6 @@ const PeppolNetworkPage = () => {
                   {isReceivedFiltersExpanded && (
                     <div className="md:hidden p-3 space-y-4 border-t border-border">
                       <div className="space-y-3">
-                        {/* Search */}
-                        <div>
-                          <label className="block text-sm font-medium text-foreground mb-2">{t('peppol.filters.search')}</label>
-                          <Input
-                            value={filters.search}
-                            onChange={(e) => handleFilterChange('search', e.target.value)}
-                            placeholder={t('peppol.filters.searchPlaceholderReceived')}
-                            iconName="Search"
-                          />
-                        </div>
-
                         {/* Status Filter */}
                         <div>
                           <label className="block text-sm font-medium text-foreground mb-2">{t('peppol.filters.status')}</label>
@@ -1918,11 +1950,24 @@ const PeppolNetworkPage = () => {
                 </div>
 
                 {/* Invoices Table */}
-                <div className="bg-card border border-border rounded-lg overflow-hidden">
+                <div className="bg-card border border-border rounded-lg overflow-hidden mt-4 sm:mt-6">
+                  {/* Search Bar */}
+                  <div className="p-3 md:p-4 border-b border-border">
+                    <div className="relative">
+                      <Icon name="Search" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        type="search"
+                        placeholder={t('peppol.filters.searchPlaceholderReceived')}
+                        value={filters.search || ''}
+                        onChange={(e) => handleFilterChange('search', e.target.value)}
+                        className="pl-9 max-w-md"
+                      />
+                    </div>
+                  </div>
                   {/* View Toggle */}
-                  <div className="flex items-center justify-between p-4 border-b border-border">
+                  <div className="flex items-center p-4 border-b border-border">
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-muted-foreground">{t('peppol.invoices.view')}:</span>
+                      <span className="text-sm font-medium text-muted-foreground">{t('peppol.invoices.view')}</span>
                       <div className="flex bg-muted rounded-lg p-1">
                         <button
                           onClick={() => setReceivedViewMode('table')}
@@ -1945,9 +1990,6 @@ const PeppolNetworkPage = () => {
                           {t('peppol.invoices.cardView')}
                         </button>
                       </div>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {t('peppol.invoices.receivedCount', { count: filteredReceivedInvoices.length })}
                     </div>
                   </div>
 

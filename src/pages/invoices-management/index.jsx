@@ -596,16 +596,6 @@ const InvoicesManagement = () => {
               </p>
             </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={fetchInvoices}
-                  iconName="RefreshCw"
-                  iconPosition="left"
-                  className="text-xs sm:text-sm"
-                  disabled={isLoading}
-                >
-                  {isLoading ? t('invoicesManagement.refreshing') : t('invoicesManagement.refresh')}
-                </Button>
               </div>
           </div>
           </header>
@@ -618,6 +608,7 @@ const InvoicesManagement = () => {
             filters={filters}
             onFiltersChange={handleFiltersChange}
             invoices={invoices}
+            filteredCount={filteredInvoices.length}
           />
 
           {/* Bulk Actions */}

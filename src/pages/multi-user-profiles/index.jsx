@@ -645,17 +645,6 @@ const MultiUserProfilesPage = () => {
     });
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Icon name="Loader" size={48} className="animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">{t('multiUserProfiles.loading')}</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <MainSidebar />

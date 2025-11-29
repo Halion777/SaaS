@@ -463,13 +463,6 @@ const ClientManagement = () => {
               </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
                 <Button
-                  variant="outline"
-                  onClick={handleRefresh}
-                  iconName="RefreshCw"
-                >
-                  {t('clientManagement.refresh')}
-                </Button>
-                <Button
                   onClick={() => {
                     setSelectedClient(null);
                     setIsModalOpen(true);
@@ -630,20 +623,6 @@ const ClientManagement = () => {
 
 
 
-        {/* Search Bar */}
-        <div className="mb-4">
-          <div className="relative">
-            <Icon name="Search" size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder={t('clientManagement.search.placeholder')}
-              value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-          </div>
-        </div>
-
         {/* Filter Toolbar */}
         <div className="mb-6">
           <FilterToolbar
@@ -653,73 +632,86 @@ const ClientManagement = () => {
           />
         </div>
 
-        {/* View Toggle */}
-        <div className="flex items-center justify-between p-4 border-b border-border bg-card rounded-lg mb-6">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium text-muted-foreground">{t('clientManagement.view.label')}:</span>
-            <div className="flex bg-muted rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('table')}
-                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                  viewMode === 'table'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Icon name="Table" size={14} className="mr-1" />
-                {t('clientManagement.view.table')}
-              </button>
-              <button
-                onClick={() => setViewMode('card')}
-                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                  viewMode === 'card'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Icon name="Grid" size={14} className="mr-1" />
-                {t('clientManagement.view.cards')}
-              </button>
-            </div>
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {t('clientManagement.view.clientsCount', { count: filteredClients.length })}
-          </div>
-        </div>
 
         {/* Clients Display */}
         {isLoading ? (
           <div className="w-full">
             <TableLoader message={t('clientManagement.loading')} />
           </div>
-        ) : filteredClients.length === 0 ? (
-          <div className="text-center py-12">
-            <Icon name="Users" size={48} className="mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium text-foreground mb-2">{t('clientManagement.empty.noClientsFound')}</h3>
-            <p className="text-muted-foreground mb-4">
-              {searchTerm || Object.values(filters).some(f => f !== 'all')
-                ? t('clientManagement.empty.tryModifyingSearch')
-                : t('clientManagement.empty.addFirstClient')
-              }
-            </p>
-            {!searchTerm && Object.values(filters).every(f => f === 'all') && (
-              <Button
-                onClick={() => {
-                  setSelectedClient(null);
-                  setIsModalOpen(true);
-                }}
-                iconName="Plus"
-              >
-                {t('clientManagement.empty.addClient')}
-              </Button>
-            )}
-          </div>
         ) : (
-          <>
-            {viewMode === 'table' && (
-              <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
+          <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm">
+            {/* Search Bar */}
+            <div className="p-3 md:p-4 border-b border-border">
+              <div className="relative">
+                <Icon name="Search" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="search"
+                  placeholder={t('clientManagement.search.placeholder')}
+                  value={searchTerm}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="pl-9 max-w-md w-full pr-4 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            {/* View Toggle */}
+            <div className="flex items-center p-4 border-b border-border">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium text-muted-foreground">{t('clientManagement.view.label')}</span>
+                <div className="flex bg-muted rounded-lg p-1">
+                  <button
+                    onClick={() => setViewMode('table')}
+                    className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                      viewMode === 'table'
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <Icon name="Table" size={14} className="mr-1" />
+                    {t('clientManagement.view.table')}
+                  </button>
+                  <button
+                    onClick={() => setViewMode('card')}
+                    className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                      viewMode === 'card'
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <Icon name="Grid" size={14} className="mr-1" />
+                    {t('clientManagement.view.cards')}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {filteredClients.length === 0 ? (
+              <div className="text-center py-12">
+                <Icon name="Users" size={48} className="mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium text-foreground mb-2">{t('clientManagement.empty.noClientsFound')}</h3>
+                <p className="text-muted-foreground mb-4">
+                  {searchTerm || Object.values(filters).some(f => f !== 'all')
+                    ? t('clientManagement.empty.tryModifyingSearch')
+                    : t('clientManagement.empty.addFirstClient')
+                  }
+                </p>
+                {!searchTerm && Object.values(filters).every(f => f === 'all') && (
+                  <Button
+                    onClick={() => {
+                      setSelectedClient(null);
+                      setIsModalOpen(true);
+                    }}
+                    iconName="Plus"
+                  >
+                    {t('clientManagement.empty.addClient')}
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <>
+                {viewMode === 'table' && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
                     <thead className="bg-muted/50">
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -831,25 +823,28 @@ const ClientManagement = () => {
                       ))}
                     </tbody>
                   </table>
-                </div>
-              </div>
+                  </div>
+                )}
+                
+                {viewMode === 'card' && (
+                  <div className="p-4 sm:p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {filteredClients.map((client) => (
+                        <ClientCard
+                          key={client.id}
+                          client={client}
+                          onSelect={() => handleClientSelect(client)}
+                          onDelete={() => handleClientDelete(client.id)}
+                          onStatusToggle={(newStatus) => handleStatusToggle(client.id, newStatus)}
+                          getStatusColor={getStatusColor}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
-            
-            {viewMode === 'card' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredClients.map((client) => (
-                  <ClientCard
-                    key={client.id}
-                    client={client}
-                    onSelect={() => handleClientSelect(client)}
-                    onDelete={() => handleClientDelete(client.id)}
-                    onStatusToggle={(newStatus) => handleStatusToggle(client.id, newStatus)}
-                    getStatusColor={getStatusColor}
-                  />
-                ))}
-              </div>
-            )}
-          </>
+          </div>
         )}
         </div>
       </main>

@@ -1441,17 +1441,6 @@ const QuotesManagement = () => {
             </div>
             
             <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-              <Button
-                variant="outline"
-                onClick={handleRefresh}
-                iconName={loading ? "Loader2" : "RefreshCw"}
-                iconPosition="left"
-                className="hidden md:flex text-xs sm:text-sm"
-                disabled={loading}
-              >
-                {loading ? t('quotesManagement.refreshing') : t('quotesManagement.refresh')}
-              </Button>
-              
               {/* Relances and Analyse IA buttons removed */}
               
               <Button
@@ -1533,7 +1522,8 @@ const QuotesManagement = () => {
             filters={filters}
             onFiltersChange={handleFiltersChange}
             onClearFilters={clearFilters}
-          quotes={quotes}
+            quotes={quotes}
+            filteredCount={filteredQuotes.length}
           />
 
           {/* Bulk Actions */}
@@ -1607,19 +1597,6 @@ const QuotesManagement = () => {
             )}
           </div>
           
-          {/* Mobile Actions */}
-          <div className="md:hidden flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handleRefresh}
-              iconName={loading ? "Loader2" : "RefreshCw"}
-              iconPosition="left"
-              className="flex-1 text-xs sm:text-sm"
-              disabled={loading}
-            >
-              {loading ? t('quotesManagement.refreshing') : t('quotesManagement.refresh')}
-            </Button>
-          </div>
 
           {/* Mobile AI Panel removed */}
 

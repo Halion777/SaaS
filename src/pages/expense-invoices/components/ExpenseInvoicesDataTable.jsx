@@ -325,9 +325,9 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
       </div>
 
       {/* View Toggle */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
+      <div className="flex items-center p-4 border-b border-border">
         <div className="flex items-center space-x-2">
-          <span className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.table.view.label', 'View')}:</span>
+          <span className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.table.view.label', 'View')}</span>
           <div className="flex bg-muted rounded-lg p-1">
             <button
               onClick={() => setViewMode('table')}
@@ -352,9 +352,6 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
               {t('expenseInvoices.table.view.cards', 'Cards')}
             </button>
           </div>
-        </div>
-        <div className="text-xs text-muted-foreground">
-          {t('expenseInvoices.table.invoicesCount', { count: expenseInvoices.length }, `${expenseInvoices.length} invoice(s)`)}
         </div>
       </div>
 

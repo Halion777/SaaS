@@ -5,7 +5,7 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import { useTranslation } from 'react-i18next';
 
-const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) => {
+const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [], filteredCount = 0 }) => {
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [amountRange, setAmountRange] = useState({ min: '', max: '' });
   const [isExpanded, setIsExpanded] = useState(false);
@@ -81,6 +81,9 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [] }) =>
           )}
         </div>
         <div className="flex items-center space-x-2">
+          <span className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
+            {t('quotesManagement.filter.quotesFound', { count: filteredCount })}
+          </span>
           {activeFiltersCount > 0 && (
             <Button
               variant="ghost"

@@ -7,6 +7,7 @@ import { createCheckoutSession, createPortalSession } from '../../services/strip
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import MainSidebar from '../../components/ui/MainSidebar';
+import GlobalProfile from '../../components/ui/GlobalProfile';
 import TableLoader from '../../components/ui/TableLoader';
 import ProcessingOverlay from '../../components/ui/ProcessingOverlay';
 
@@ -18,21 +19,69 @@ const SubscriptionManagement = () => {
   const [isChangingPlan, setIsChangingPlan] = useState(false);
   const [isManagingBilling, setIsManagingBilling] = useState(false);
   const [sidebarOffset, setSidebarOffset] = useState(288);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
   const [billingCycle, setBillingCycle] = useState('monthly');
 
-  // Handle sidebar toggle
+  // Handle sidebar toggle and responsive layout
   useEffect(() => {
     const handleSidebarToggle = (e) => {
       const { isCollapsed } = e.detail;
-      setSidebarOffset(isCollapsed ? 80 : 288);
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setIsTablet(tablet);
+
+      if (mobile) {
+        setSidebarOffset(0);
+      } else if (tablet) {
+        // On tablet, sidebar is always collapsed
+        setSidebarOffset(80);
+      } else {
+        // On desktop, respond to sidebar state
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
     };
 
-    // Set initial state
-    const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
-    setSidebarOffset(isCollapsed ? 80 : 288);
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setIsTablet(tablet);
 
+      if (mobile) {
+        setSidebarOffset(0);
+      } else if (tablet) {
+        // On tablet, sidebar is always collapsed
+        setSidebarOffset(80);
+      } else {
+        // On desktop, check sidebar state
+        const savedCollapsed = localStorage.getItem('sidebar-collapsed');
+        const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+
+    const handleStorage = () => {
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      
+      if (!mobile && !tablet) {
+        const savedCollapsed = localStorage.getItem('sidebar-collapsed');
+        const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
+        setSidebarOffset(isCollapsed ? 64 : 288);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('storage', handleStorage);
     window.addEventListener('sidebar-toggle', handleSidebarToggle);
-    return () => window.removeEventListener('sidebar-toggle', handleSidebarToggle);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('sidebar-toggle', handleSidebarToggle);
+    };
   }, []);
 
   const plans = [
@@ -222,12 +271,17 @@ const SubscriptionManagement = () => {
       />
 
       <MainSidebar />
+      <GlobalProfile />
       
-      <div
-        className="flex-1 flex flex-col pb-20 md:pb-6"
-        style={{ marginLeft: `${sidebarOffset}px` }}
+      <main 
+        className={`transition-all duration-300 ease-out ${
+          isMobile ? 'pb-16 pt-4' : ''
+        }`}
+        style={{ 
+          marginLeft: isMobile ? 0 : `${sidebarOffset}px`,
+        }}
       >
-        <main className="flex-1 px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
+        <div className="px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
           {/* Header */}
           <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
@@ -439,8 +493,8 @@ const SubscriptionManagement = () => {
             </div>
           </div>
         </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 };

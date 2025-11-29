@@ -5,7 +5,7 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 
-const ExpenseInvoicesFilterToolbar = ({ filters, onFiltersChange }) => {
+const ExpenseInvoicesFilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
   const { t } = useTranslation();
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [amountRange, setAmountRange] = useState({ min: '', max: '' });
@@ -95,6 +95,9 @@ const ExpenseInvoicesFilterToolbar = ({ filters, onFiltersChange }) => {
           )}
         </div>
         <div className="flex items-center space-x-2">
+          <span className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
+            {t('expenseInvoices.filter.invoicesFound', { count: filteredCount }, `${filteredCount} invoice(s) found`)}
+          </span>
           {activeFiltersCount > 0 && (
             <Button
               variant="ghost"

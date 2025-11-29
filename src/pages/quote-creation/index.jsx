@@ -4661,7 +4661,7 @@ const QuoteCreation = () => {
 
       >
 
-        <div className="container mx-auto px-4 sm:px-6 pt-0 pb-4 sm:pb-8 max-w-7xl">
+        <div className="container mx-auto px-4 sm:px-6 pt-0 pb-20 sm:pb-8 max-w-7xl">
 
           {/* Header */}
 

@@ -300,15 +300,57 @@ const ClientModal = ({ client, onSave, onClose }) => {
                     required
                   />
                     </div>
-                  
-                  <Input
-                    label={t('clientManagement.modal.address')}
-                    type="text"
-                      placeholder={t('clientManagement.modal.addressPlaceholder', 'Street name + number (e.g., Rue de la Paix 123)')}
-                    value={formData.address}
-                    onChange={(e) => handleChange('address', e.target.value)}
-                      required
+                  </div>
+                </div>
+
+                {/* Location Information */}
+                <div className="bg-card rounded-lg border border-border p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Icon name="MapPin" size={20} />
+                    {t('clientManagement.modal.locationInfo', 'Location Information')}
+                  </h3>
+                  <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Select
+                    label={t('clientManagement.modal.country')}
+                    options={countryOptions}
+                    value={formData.country}
+                    onChange={(e) => handleChange('country', e.target.value)}
+                    placeholder={t('clientManagement.modal.countryPlaceholder')}
+                        required
                   />
+                  
+                      <Input
+                        label={t('clientManagement.modal.city')}
+                        type="text"
+                        value={formData.city}
+                        onChange={(e) => handleChange('city', e.target.value)}
+                        placeholder={t('clientManagement.modal.cityPlaceholder')}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Input
+                    label={t('clientManagement.modal.postalCode')}
+                    type="text"
+                    value={formData.postalCode}
+                    onChange={(e) => handleChange('postalCode', e.target.value)}
+                    placeholder={t('clientManagement.modal.postalCodePlaceholder')}
+                        required
+                      />
+                      
+                      <div className="md:col-span-2">
+                        <Input
+                          label={t('clientManagement.modal.address')}
+                          type="text"
+                          placeholder={t('clientManagement.modal.addressPlaceholder', 'Street name + number (e.g., Rue de la Paix 123)')}
+                          value={formData.address}
+                          onChange={(e) => handleChange('address', e.target.value)}
+                          required
+                  />
+                </div>
+                    </div>
                   </div>
                 </div>
                 

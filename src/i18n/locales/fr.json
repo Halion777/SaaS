@@ -3428,7 +3428,15 @@
         "participantNamePlaceholder": "MonEntreprise",
         "peppolId": "Identifiant Peppol",
         "peppolIdPlaceholder": "ex: 0208:0630675588",
-        "peppolIdFormat": "Format: CODE_PAYS:NUMÉRO_TVA"
+        "peppolIdFormat": "Format: CODE_PAYS:NUMÉRO_TVA",
+        "peppolSchemeCode": "Code de schéma Peppol",
+        "peppolSchemeCodeHint": "Code de schéma à 4 chiffres (rempli automatiquement selon le pays)",
+        "belgiumScheme0208": "0208: Par défaut",
+        "belgiumScheme9925": "9925",
+        "selectScheme": "Sélectionner le schéma",
+        "vatNumber": "Numéro de TVA",
+        "vatNumberPlaceholder": "ex: 0630675588 ou BE0630675588",
+        "combinedPeppolId": "Identifiant Peppol combiné"
       },
       "contactPerson": {
         "title": "Personne de contact (Obligatoire)",

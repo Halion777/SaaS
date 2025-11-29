@@ -467,7 +467,7 @@ const MainSidebar = () => {
             <div className="flex items-center space-x-3">
               <img 
                 src="/assets/logo/logo.png" 
-                alt="Havitam Logo" 
+                alt="Haliqo Logo" 
                 className="w-14 h-14 object-contain"
               />
               <div>

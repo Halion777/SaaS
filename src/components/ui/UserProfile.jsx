@@ -10,7 +10,6 @@ import { useMultiUser } from '../../context/MultiUserContext';
 import { useAuth } from '../../context/AuthContext';
 import emailVerificationService from '../../services/emailVerificationService';
 import { resetPassword } from '../../services/authService';
-import CompanyInfoModal from '../../pages/quote-creation/components/CompanyInfoModal';
 
 const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) => {
   const { t } = useTranslation();
@@ -41,7 +40,6 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
   const [isChangingEmail, setIsChangingEmail] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [changingEmail, setChangingEmail] = useState(false);
-  const [isCompanyInfoModalOpen, setIsCompanyInfoModalOpen] = useState(false);
   const [isManagingBilling, setIsManagingBilling] = useState(false);
 
   // Get multi-user context with fallback
@@ -765,27 +763,6 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
               </div>
             )}
 
-            {/* Company Information */}
-            <div className="flex items-center justify-between pt-4 border-t border-border">
-              <div className="flex-1">
-                <h4 className="text-sm font-medium text-foreground">{t('profile.settings.account.companyInfo.title', 'Company Information')}</h4>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {t('profile.settings.account.companyInfo.description', 'Manage your company details for quotes and invoices')}
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setIsAccountSettingsOpen(false);
-                  setIsCompanyInfoModalOpen(true);
-                }}
-                iconName="Edit"
-                iconPosition="left"
-              >
-                {t('profile.settings.account.companyInfo.edit', 'Edit')}
-              </Button>
-            </div>
           </div>
   );
 
@@ -1237,15 +1214,6 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
         preventNavigation={false}
       />
 
-      {/* Company Information Modal */}
-      <CompanyInfoModal
-        isOpen={isCompanyInfoModalOpen}
-        onClose={() => setIsCompanyInfoModalOpen(false)}
-        onSave={(companyInfo) => {
-          // Company info is saved automatically by the modal
-          setIsCompanyInfoModalOpen(false);
-        }}
-      />
     </div>
   );
 };

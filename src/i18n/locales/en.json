@@ -1670,6 +1670,8 @@
     },
     "filter": {
       "title": "Filters",
+      "quotesFound": "{{count}} quote found",
+      "quotesFound_plural": "{{count}} quotes found",
       "activeFilters": "{{count}} active filter(s)",
       "clear": "Clear",
       "showFilters": "Show filters",
@@ -3367,6 +3369,9 @@
         "peppolIdPlaceholder": "e.g., 0208:0630675588",
         "peppolSchemeCode": "Peppol Scheme Code",
         "peppolSchemeCodeHint": "4-digit scheme code (auto-filled from country)",
+        "belgiumScheme0208": "0208: Default",
+        "belgiumScheme9925": "9925",
+        "selectScheme": "Select scheme",
         "vatNumber": "VAT Number",
         "vatNumberPlaceholder": "e.g., 0630675588 or BE0630675588",
         "combinedPeppolId": "Combined Peppol ID"
@@ -3690,6 +3695,8 @@
       },
       "filter": {
         "title": "Filters",
+        "invoicesFound": "{{count}} invoice found",
+        "invoicesFound_plural": "{{count}} invoices found",
         "clear": "Clear",
         "showFilters": "Show filters",
         "hideFilters": "Hide filters",
@@ -3983,6 +3990,8 @@
       },
       "filter": {
         "title": "Filters",
+        "invoicesFound": "{{count}} invoice found",
+        "invoicesFound_plural": "{{count}} invoices found",
         "clear": "Clear",
         "hideFilters": "Hide filters",
         "showFilters": "Show filters",

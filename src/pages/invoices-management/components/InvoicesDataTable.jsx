@@ -293,9 +293,9 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
       </div>
 
       {/* View Toggle */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
+      <div className="flex items-center p-4 border-b border-border">
         <div className="flex items-center space-x-2">
-          <span className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.table.view.label')}:</span>
+          <span className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.table.view.label')}</span>
           <div className="flex bg-muted rounded-lg p-1">
             <button
               onClick={() => setViewMode('table')}
@@ -320,9 +320,6 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
               {t('invoicesManagement.table.view.cards')}
             </button>
           </div>
-        </div>
-        <div className="text-xs text-muted-foreground">
-          {t('invoicesManagement.table.invoicesCount', { count: invoices.length })}
         </div>
       </div>
 

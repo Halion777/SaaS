@@ -18,8 +18,9 @@ const GlobalProfile = () => {
     const dashboardPages = [
       '/dashboard', '/quotes-management', '/invoices-management', 
       '/client-management', '/analytics-dashboard', '/follow-up-management',
-              '/leads-management', '/expense-invoices', '/multi-user-profiles',
-      '/quote-creation'
+      '/quotes-follow-up', '/invoices-follow-up', '/leads-management', 
+      '/expense-invoices', '/multi-user-profiles', '/quote-creation', 
+      '/services/peppol'
     ];
     
     // Check if current path starts with any dashboard page

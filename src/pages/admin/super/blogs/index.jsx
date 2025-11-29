@@ -9,6 +9,7 @@ import Input from 'components/ui/Input';
 import Select from 'components/ui/Select';
 import SuperAdminSidebar from 'components/ui/SuperAdminSidebar';
 import TableLoader from 'components/ui/TableLoader';
+import BlogsFilterToolbar from './components/BlogsFilterToolbar';
 
 const BlogsManagement = () => {
   const { t } = useTranslation();
@@ -131,8 +132,7 @@ const BlogsManagement = () => {
   const loadBlogs = async () => {
     try {
       setLoading(true);
-      console.log('Loading blogs in super admin...');
-      
+   
       const { data, error } = await supabase
         .from('blogs')
         .select(`
@@ -145,7 +145,6 @@ const BlogsManagement = () => {
         throw error;
       }
 
-      console.log('Blogs loaded in super admin:', data);
       setBlogs(data || []);
       setFilteredBlogs(data || []);
     } catch (error) {
@@ -421,67 +420,20 @@ const BlogsManagement = () => {
           </div>
 
           {/* Filters */}
-          <div className="bg-card border border-border rounded-lg p-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Search</label>
-                <Input
-                  type="text"
-                  placeholder="Search blog posts..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Status</label>
-                <Select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  options={[
-                    { value: 'all', label: 'All Status' },
-                    { value: 'published', label: 'Published' },
-                    { value: 'draft', label: 'Draft' },
-                    { value: 'archived', label: 'Archived' }
-                  ]}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Category</label>
-                <Select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  options={[
-                    { value: 'all', label: 'All Categories' },
-                    { value: 'technology', label: 'Technology' },
-                    { value: 'business', label: 'Business' },
-                    { value: 'tutorials', label: 'Tutorials' },
-                    { value: 'news', label: 'News' }
-                  ]}
-                  className="w-full"
-                />
-              </div>
-              <div className="flex items-end">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSearchTerm('');
-                    setStatusFilter('all');
-                    setCategoryFilter('all');
-                  }}
-                  className="w-full"
-                >
-                  Clear Filters
-                </Button>
-              </div>
-            </div>
-          </div>
+          <BlogsFilterToolbar
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            categoryFilter={categoryFilter}
+            onCategoryFilterChange={setCategoryFilter}
+            filteredCount={filteredBlogs.length}
+          />
 
           {/* View Toggle */}
-          <div className="flex items-center justify-between p-4 border-b border-border bg-card rounded-lg mb-6">
+          <div className="flex items-center p-4 border-b border-border bg-card rounded-lg mb-6">
             <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium text-muted-foreground">View:</span>
+              <span className="text-sm font-medium text-muted-foreground">View</span>
               <div className="flex bg-muted rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('table')}
@@ -492,7 +444,7 @@ const BlogsManagement = () => {
                   }`}
                 >
                   <Icon name="Table" size={14} className="mr-1" />
-                  Table
+                  <span>Table</span>
                 </button>
                 <button
                   onClick={() => setViewMode('card')}
@@ -503,12 +455,9 @@ const BlogsManagement = () => {
                   }`}
                 >
                   <Icon name="Grid" size={14} className="mr-1" />
-                  Cards
+                  <span>Cards</span>
                 </button>
               </div>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {filteredBlogs.length} blog post(s)
             </div>
           </div>
 

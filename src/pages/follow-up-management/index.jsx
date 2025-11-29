@@ -31,6 +31,7 @@ const FollowUpManagement = () => {
   const [isTablet, setIsTablet] = useState(false);
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'card'
   const [activeFilter, setActiveFilter] = useState('quotes');
+  const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
     type: 'all',
     priority: 'all',
@@ -601,6 +602,16 @@ const FollowUpManagement = () => {
     // Only show quote follow-ups
     if (followUp.type !== 'quote') return false;
     
+    // Apply search filter
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = 
+        (followUp.name && followUp.name.toLowerCase().includes(searchLower)) ||
+        (followUp.number && followUp.number.toLowerCase().includes(searchLower)) ||
+        (followUp.status && followUp.status.toLowerCase().includes(searchLower));
+      if (!matchesSearch) return false;
+    }
+    
     // Filter by follow-up type
     if (filters.type !== 'all' && followUp.followUpType !== filters.type) return false;
     
@@ -999,16 +1010,6 @@ const FollowUpManagement = () => {
               </div>
               
               <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                <Button
-                  variant="outline"
-                  onClick={handleRefresh}
-                  iconName={loading ? "Loader2" : "RefreshCw"}
-                  iconPosition="left"
-                  className="hidden md:flex text-xs sm:text-sm"
-                  disabled={loading}
-                >
-                  {loading ? t('followUpManagement.refreshing') : t('followUpManagement.refresh')}
-                </Button>
               </div>
             </div>
           </header>
@@ -1066,39 +1067,49 @@ const FollowUpManagement = () => {
               </div>
             ) : (
               <>
-                {/* View Toggle */}
-                <div className="flex items-center justify-between p-4 border-b border-border">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium text-muted-foreground">{t('followUpManagement.view.label')}</span>
-                    <div className="flex bg-muted rounded-lg p-1">
-                      <button
-                        onClick={() => setViewMode('table')}
-                        className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${viewMode === 'table'
-                            ? 'bg-background text-foreground shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                      >
-                        <Icon name="Table" size={14} className="mr-1" />
-                        {t('followUpManagement.view.table')}
-                      </button>
-                      <button
-                        onClick={() => setViewMode('card')}
-                        className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${viewMode === 'card'
-                            ? 'bg-background text-foreground shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                      >
-                        <Icon name="Grid" size={14} className="mr-1" />
-                        {t('followUpManagement.view.cards')}
-                      </button>
+                <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+                  {/* Search Bar */}
+                  <div className="p-3 md:p-4 border-b border-border">
+                    <div className="relative">
+                      <Icon name="Search" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                      <input
+                        type="search"
+                        placeholder={t('followUpManagement.search.placeholder', 'Search by client, quote number, or status...')}
+                        value={searchTerm || ''}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-9 max-w-md w-full pr-4 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      />
                     </div>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {t('followUpManagement.view.followUpsCount', { count: filteredFollowUps.length })}
-                  </div>
-                </div>
 
-                <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+                  {/* View Toggle */}
+                  <div className="flex items-center p-4 border-b border-border">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-muted-foreground">{t('followUpManagement.view.label')}</span>
+                      <div className="flex bg-muted rounded-lg p-1">
+                        <button
+                          onClick={() => setViewMode('table')}
+                          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${viewMode === 'table'
+                              ? 'bg-background text-foreground shadow-sm'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          <Icon name="Table" size={14} className="mr-1" />
+                          {t('followUpManagement.view.table')}
+                        </button>
+                        <button
+                          onClick={() => setViewMode('card')}
+                          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${viewMode === 'card'
+                              ? 'bg-background text-foreground shadow-sm'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          <Icon name="Grid" size={14} className="mr-1" />
+                          {t('followUpManagement.view.cards')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                   {error ? (
             <div className="bg-card border border-border rounded-lg p-8 text-center">
               <Icon name="AlertCircle" size={48} className="text-red-500 mx-auto mb-4" />
@@ -1106,13 +1117,6 @@ const FollowUpManagement = () => {
               <p className="text-muted-foreground">
                 {error}. {t('followUpManagement.error.message')}
               </p>
-              <Button
-                variant="outline"
-                onClick={handleRefresh}
-                className="mt-4"
-              >
-                {t('followUpManagement.error.refresh')}
-              </Button>
                               </div>
                   ) : filteredFollowUps.length === 0 ? (
                     <div className="p-8 text-center">
