@@ -2920,7 +2920,12 @@ const QuoteCreation = () => {
       // ========================================
       // UPDATE CLIENT EMAIL FIRST (before anything else)
       // ========================================
-      // This ensures the database has the latest email before creating/updating quote or sending email
+      // This ensures the database has the latest email before:
+      // - Creating/updating quote (which logs client info)
+      // - Sending emails
+      // - Logging to quote_events or other tables
+      let finalClientEmail = selectedClient?.email || selectedClient?.client?.email || '';
+      
       if (sendData.emailData?.clientEmail && selectedClient) {
         const clientId = selectedClient?.value || selectedClient?.id || selectedClient?.client?.id;
         const currentEmail = selectedClient?.email || selectedClient?.client?.email;
@@ -2929,6 +2934,7 @@ const QuoteCreation = () => {
         // Only update if email is different and client ID exists
         if (clientId && newEmail && newEmail !== currentEmail) {
           try {
+            // AWAIT the email update to ensure it completes before any other database operations
             const { error: updateError } = await supabase
               .from('clients')
               .update({ email: newEmail })
@@ -2936,7 +2942,8 @@ const QuoteCreation = () => {
             
             if (updateError) {
               console.error('Failed to update client email:', updateError);
-              // Don't block the flow, but log the error
+              // Use the new email from modal even if update fails (for sending/logging)
+              finalClientEmail = newEmail;
             } else {
               // Update the selectedClient object to reflect the new email
               if (selectedClient.client) {
@@ -2944,13 +2951,21 @@ const QuoteCreation = () => {
               } else {
                 selectedClient.email = newEmail;
               }
+              finalClientEmail = newEmail;
               console.log('✅ Client email updated successfully in database:', newEmail);
             }
           } catch (error) {
             console.error('Error updating client email:', error);
-            // Don't block the flow, but log the error
+            // Use the new email from modal even if update fails (for sending/logging)
+            finalClientEmail = newEmail;
           }
+        } else {
+          // Email hasn't changed, use current email
+          finalClientEmail = currentEmail || sendData.emailData?.clientEmail?.trim() || '';
         }
+      } else if (sendData.emailData?.clientEmail) {
+        // If emailData has clientEmail but selectedClient doesn't match, use the emailData value
+        finalClientEmail = sendData.emailData.clientEmail.trim();
       }
 
       // Check if we're editing an existing quote
@@ -3938,7 +3953,7 @@ const QuoteCreation = () => {
 
                     email_type: 'quote_notification',
 
-                    recipient: selectedClient.email,
+                    recipient: finalClientEmail || selectedClient?.email || selectedClient?.client?.email || sendData.emailData?.clientEmail || '',
 
                     timestamp: new Date().toISOString(),
                     custom_subject: sendData.emailData?.subject || null,
