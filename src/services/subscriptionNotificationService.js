@@ -405,13 +405,16 @@ export class SubscriptionNotificationService {
       }
       
       // Send via edge function
+      // Pass variables and let edge function fetch template from database
+      // Keep pre-rendered HTML as fallback only
       const emailData = {
         user_email: userData.email,
-        subject: renderResult.data.subject,
-        html: renderResult.data.html,
-        text: renderResult.data.text,
+        user_id: userData.id, // Pass user_id so edge function can fetch user-specific templates
+        subject: renderResult.data.subject, // Fallback subject
+        html: renderResult.data.html, // Fallback HTML
+        text: renderResult.data.text, // Fallback text
         template_type: templateType,
-        variables,
+        variables, // Pass variables so edge function can render template
         subscription_data: subscriptionData,
         language: userLanguage
       };
@@ -489,13 +492,15 @@ export class SubscriptionNotificationService {
       }
       
       // Send via edge function
+      // Pass variables and let edge function fetch template from database
       const emailData = {
         user_email: userData.email,
-        subject: renderResult.data.subject,
-        html: renderResult.data.html,
-        text: renderResult.data.text,
+        user_id: userData.id, // Pass user_id so edge function can fetch user-specific templates
+        subject: renderResult.data.subject, // Fallback subject
+        html: renderResult.data.html, // Fallback HTML
+        text: renderResult.data.text, // Fallback text
         template_type: templateType,
-        variables,
+        variables, // Pass variables so edge function can render template
         subscription_data: subscriptionData,
         language: userLanguage
       };
@@ -558,11 +563,12 @@ export class SubscriptionNotificationService {
       // Send via edge function
       const emailData = {
         user_email: userData.email,
-        subject: renderResult.data.subject,
-        html: renderResult.data.html,
-        text: renderResult.data.text,
+        user_id: userData.id, // Pass user_id so edge function can fetch user-specific templates
+        subject: renderResult.data.subject, // Fallback subject
+        html: renderResult.data.html, // Fallback HTML
+        text: renderResult.data.text, // Fallback text
         template_type: templateType,
-        variables,
+        variables, // Pass variables so edge function can render template
         subscription_data: subscriptionData,
         cancellation_reason: cancellationReason,
         language: userLanguage
@@ -628,11 +634,12 @@ export class SubscriptionNotificationService {
       // Send via edge function
       const emailData = {
         user_email: userData.email,
-        subject: renderResult.data.subject,
-        html: renderResult.data.html,
-        text: renderResult.data.text,
+        user_id: userData.id, // Pass user_id so edge function can fetch user-specific templates
+        subject: renderResult.data.subject, // Fallback subject
+        html: renderResult.data.html, // Fallback HTML
+        text: renderResult.data.text, // Fallback text
         template_type: templateType,
-        variables,
+        variables, // Pass variables so edge function can render template
         subscription_data: subscriptionData,
         language: userLanguage
       };
@@ -697,11 +704,12 @@ export class SubscriptionNotificationService {
       // Send via edge function
       const emailData = {
         user_email: userData.email,
-        subject: renderResult.data.subject,
-        html: renderResult.data.html,
-        text: renderResult.data.text,
+        user_id: userData.id, // Pass user_id so edge function can fetch user-specific templates
+        subject: renderResult.data.subject, // Fallback subject
+        html: renderResult.data.html, // Fallback HTML
+        text: renderResult.data.text, // Fallback text
         template_type: templateType,
-        variables,
+        variables, // Pass variables so edge function can render template
         subscription_data: subscriptionData,
         language: userLanguage
       };
