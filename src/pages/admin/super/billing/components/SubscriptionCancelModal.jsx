@@ -31,8 +31,48 @@ const SubscriptionCancelModal = ({ isOpen, onClose, subscription, onUpdate }) =>
     }
 
     setIsLoading(true);
+    let stripeError = null;
 
     try {
+      // ============================================
+      // STEP 1: Update Stripe FIRST (if user has Stripe subscription)
+      // ============================================
+      const hasStripeSubscription = subscription.stripe_subscription_id && 
+                                    !subscription.stripe_subscription_id.includes('placeholder') &&
+                                    !subscription.stripe_subscription_id.includes('temp_');
+      
+      if (hasStripeSubscription) {
+        try {
+          const { data: stripeResult, error: stripeError } = await supabase.functions.invoke(
+            'admin-update-subscription',
+            { 
+              body: {
+                userId: subscription.user_id,
+                stripeSubscriptionId: subscription.stripe_subscription_id,
+                action: 'cancel',
+                cancelAtPeriodEnd: cancelType === 'end_of_period'
+              }
+            }
+          );
+
+          if (stripeError) {
+            console.error('Stripe cancel error:', stripeError);
+            stripeError = `Stripe sync failed: ${stripeError.message}. Database will still be updated.`;
+          } else if (!stripeResult?.success) {
+            console.error('Stripe cancel failed:', stripeResult?.error);
+            stripeError = `Stripe sync failed: ${stripeResult?.error || 'Unknown error'}. Database will still be updated.`;
+          } else {
+            console.log('Stripe cancelled successfully:', stripeResult);
+          }
+        } catch (stripeCallError) {
+          console.error('Error calling Stripe edge function:', stripeCallError);
+          stripeError = `Stripe sync error: ${stripeCallError.message}. Database will still be updated.`;
+        }
+      }
+
+      // ============================================
+      // STEP 2: Update Supabase database
+      // ============================================
       const updateData = {
         status: 'cancelled',
         cancel_at_period_end: cancelType === 'end_of_period',
@@ -40,7 +80,6 @@ const SubscriptionCancelModal = ({ isOpen, onClose, subscription, onUpdate }) =>
         updated_at: new Date().toISOString()
       };
 
-      // Update subscription
       const { error } = await supabase
         .from('subscriptions')
         .update(updateData)
@@ -106,7 +145,10 @@ const SubscriptionCancelModal = ({ isOpen, onClose, subscription, onUpdate }) =>
         // Don't fail the main operation if notification fails
       }
 
-      alert('Subscription cancelled successfully!');
+      alert(stripeError 
+        ? `Subscription cancelled in database. Warning: ${stripeError}`
+        : 'Subscription cancelled successfully (both Stripe and database)!'
+      );
       onUpdate();
       onClose();
     } catch (error) {
