@@ -212,14 +212,84 @@ serve(async (req) => {
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         } else {
-          // UPGRADE: Apply immediately with proration (as per Stripe portal settings)
-          result = await stripe.subscriptions.update(subscriptionId, {
-            items: [{
-              id: currentItemId,
-              price: newPriceId
-            }],
-            proration_behavior: 'always_invoice' // Prorate charges immediately
-          })
+          // UPGRADE: Check if subscription is in trial period
+          const isInTrial = currentSub.status === 'trialing' && currentSub.trial_end
+          const effectiveDate = isInTrial ? currentSub.trial_end : currentSub.current_period_end
+          
+          if (isInTrial) {
+            // If in trial, schedule upgrade for after trial ends (no charge during trial)
+            
+            // Check if there's already a schedule
+            let schedule = currentSub.schedule
+            
+            if (schedule) {
+              // Update existing schedule
+              result = await stripe.subscriptionSchedules.update(schedule as string, {
+                phases: [
+                  {
+                    items: [{ price: currentPriceId, quantity: 1 }],
+                    start_date: currentSub.current_period_start,
+                    end_date: effectiveDate
+                  },
+                  {
+                    items: [{ price: newPriceId, quantity: 1 }],
+                    start_date: effectiveDate
+                  }
+                ]
+              })
+            } else {
+              // Create new schedule from subscription
+              const newSchedule = await stripe.subscriptionSchedules.create({
+                from_subscription: subscriptionId
+              })
+              
+              // Update the schedule with the upgrade at trial end
+              result = await stripe.subscriptionSchedules.update(newSchedule.id, {
+                phases: [
+                  {
+                    items: [{ price: currentPriceId, quantity: 1 }],
+                    start_date: currentSub.current_period_start,
+                    end_date: effectiveDate
+                  },
+                  {
+                    items: [{ price: newPriceId, quantity: 1 }],
+                    start_date: effectiveDate
+                  }
+                ]
+              })
+            }
+            
+            // Return schedule info
+            return new Response(
+              JSON.stringify({ 
+                success: true, 
+                data: {
+                  id: subscriptionId,
+                  status: currentSub.status,
+                  cancel_at_period_end: false,
+                  current_period_end: currentSub.current_period_end,
+                  trial_end: currentSub.trial_end,
+                  plan: currentPriceId,
+                  scheduled_change: {
+                    new_plan: newPriceId,
+                    effective_date: effectiveDate,
+                    is_trial_upgrade: true
+                  }
+                },
+                message: 'Upgrade scheduled for after trial period ends (no charge during trial)'
+              }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+          } else {
+            // Not in trial: Apply immediately with proration (as per Stripe portal settings)
+            result = await stripe.subscriptions.update(subscriptionId, {
+              items: [{
+                id: currentItemId,
+                price: newPriceId
+              }],
+              proration_behavior: 'always_invoice' // Prorate charges immediately
+            })
+          }
         }
         break
 

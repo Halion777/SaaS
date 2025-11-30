@@ -607,6 +607,44 @@ serve(async (req) => {
         }
         break;
 
+      case 'subscription_reactivated':
+        // Use database template for subscription reactivation emails
+        const reactivatedLanguage = emailData.language || 'fr';
+        const reactivatedTemplate = await getEmailTemplate('subscription_reactivated', reactivatedLanguage, emailData.user_id || null);
+        if (reactivatedTemplate.success) {
+          const variables = {
+            user_name: emailData.variables?.user_name || emailData.user_name || 'User',
+            plan_name: emailData.variables?.plan_name || emailData.plan_name || '',
+            amount: emailData.variables?.amount || emailData.amount || '',
+            billing_interval: emailData.variables?.billing_interval || emailData.billing_interval || 'monthly',
+            effective_date: emailData.variables?.effective_date || emailData.effective_date || new Date().toLocaleDateString('fr-FR'),
+            support_email: emailData.variables?.support_email || 'support@haliqo.com',
+            company_name: emailData.variables?.company_name || 'Haliqo'
+          };
+          const rendered = renderTemplate(reactivatedTemplate.data, variables);
+          emailResult = await sendEmail({
+            from: fromEmail,
+            to: [emailData.user_email],
+            subject: emailData.subject || rendered.subject,
+            html: rendered.html,
+            text: emailData.text || rendered.text
+          });
+        } else {
+          // Fallback to pre-rendered HTML if template not found
+          if (emailData.html && emailData.subject) {
+            emailResult = await sendEmail({
+              from: fromEmail,
+              to: [emailData.user_email],
+              subject: emailData.subject,
+              html: emailData.html,
+              text: emailData.text
+            });
+          } else {
+            throw new Error(`Template 'subscription_reactivated' not found for language '${reactivatedLanguage}'`);
+          }
+        }
+        break;
+
       case 'contact_form':
         // Use database template
         const contactLanguage = emailData.language || 'fr';

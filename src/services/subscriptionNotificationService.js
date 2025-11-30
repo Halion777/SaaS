@@ -591,6 +591,76 @@ export class SubscriptionNotificationService {
   }
 
   /**
+   * Send subscription reactivation notification
+   */
+  static async sendSubscriptionReactivationNotification(subscriptionData, userData) {
+    try {
+      const templateType = 'subscription_reactivated';
+      
+      // Get user's language preference
+      const userLanguage = await this.getUserLanguagePreference(userData.id);
+      
+      // Get the appropriate template
+      const templateResult = await this.getSubscriptionEmailTemplate(templateType, userData.id, userLanguage);
+      if (!templateResult.success) {
+        throw new Error(`Failed to get template: ${templateResult.error}`);
+      }
+      
+      // Get pricing info from database
+      const planType = subscriptionData.plan_type || 'starter';
+      const billingInterval = subscriptionData.billing_interval || subscriptionData.interval || 'monthly';
+      const planPricing = await this.getPricingInfo(planType, billingInterval);
+      const planName = planPricing.success ? planPricing.data.plan_name : (subscriptionData.plan_name || 'Plan actuel');
+      const planAmount = planPricing.success ? planPricing.data.amount : (subscriptionData.amount || 0);
+      
+      // Prepare variables
+      const variables = {
+        user_name: userData.full_name || (userData.first_name && userData.last_name ? `${userData.first_name} ${userData.last_name}` : null) || userData.email,
+        user_email: userData.email,
+        plan_name: planName,
+        amount: `${planAmount}€`,
+        billing_interval: billingInterval === 'yearly' ? 'yearly' : 'monthly',
+        effective_date: subscriptionData.effectiveDate || new Date().toLocaleDateString('fr-FR'),
+        support_email: 'support@haliqo.com',
+        company_name: 'Haliqo'
+      };
+      
+      // Render template with variables
+      const renderResult = this.renderSubscriptionEmailTemplate(templateResult.data, variables);
+      if (!renderResult.success) {
+        throw new Error(`Failed to render template: ${renderResult.error}`);
+      }
+      
+      // Send via edge function
+      const emailData = {
+        user_email: userData.email,
+        user_id: userData.id, // Pass user_id so edge function can fetch user-specific templates
+        subject: renderResult.data.subject, // Fallback subject
+        html: renderResult.data.html, // Fallback HTML
+        text: renderResult.data.text, // Fallback text
+        template_type: templateType,
+        variables, // Pass variables so edge function can render template
+        subscription_data: subscriptionData,
+        language: userLanguage
+      };
+      
+      const result = await this.sendSubscriptionNotificationEmail('subscription_reactivated', emailData);
+      
+      if (result.success) {
+        console.log(`Subscription reactivation notification sent successfully to ${userData.email}`);
+        return result;
+      } else {
+        console.error(`Failed to send subscription reactivation notification:`, result.error);
+        return result;
+      }
+      
+    } catch (error) {
+      console.error('Error sending subscription reactivation notification:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
    * Send subscription activation notification (for new registrations)
    */
   static async sendSubscriptionActivationNotification(subscriptionData, userData) {

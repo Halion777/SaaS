@@ -102,7 +102,7 @@ serve(async (req) => {
                 const subscriptionDetails = await stripe.subscriptions.retrieve(session.subscription as string)
                 isTrial = subscriptionDetails.status === 'trialing'
               } catch (e) {
-                console.log('Could not retrieve subscription details:', e)
+                
               }
             }
 
@@ -231,30 +231,63 @@ serve(async (req) => {
             })
             .eq('stripe_subscription_id', updatedSubscription.id)
 
-          // Send email notification if plan changed or status changed significantly
+          // Send email notification if plan changed, status changed, or reactivated
           if (oldSubData && oldSubData.users) {
             const userData = oldSubData.users
             const oldStatus = previousAttributes?.status || oldSubData.status
             const newStatus = updatedSubscription.status
+            const oldCancelAtPeriodEnd = previousAttributes?.cancel_at_period_end !== undefined 
+              ? previousAttributes.cancel_at_period_end 
+              : oldSubData.cancel_at_period_end
+            const newCancelAtPeriodEnd = updatedSubscription.cancel_at_period_end
+
+            // Detect reactivation: cancel_at_period_end changed from true to false
+            const isReactivation = oldCancelAtPeriodEnd === true && newCancelAtPeriodEnd === false
 
             // Check if there's a meaningful change worth notifying
             const shouldNotify = 
               (oldStatus !== newStatus) || // Status changed
-              (previousAttributes?.items) // Plan changed
+              (previousAttributes?.items) || // Plan changed
+              isReactivation // Reactivated
 
             if (shouldNotify) {
               try {
-                // Call the send-emails edge function
-                const emailType = 
-                  newStatus === 'canceled' || newStatus === 'cancelled' ? 'subscription_cancelled' :
-                  newStatus === 'past_due' ? 'subscription_cancelled' :
-                  'subscription_activated' // Default to activated for other status changes
+                // Determine email type based on the change
+                let emailType = 'subscription_activated' // Default
+                if (isReactivation) {
+                  emailType = 'subscription_reactivated'
+                } else if (newStatus === 'canceled' || newStatus === 'cancelled') {
+                  emailType = 'subscription_cancelled'
+                } else if (newStatus === 'past_due') {
+                  emailType = 'subscription_cancelled'
+                }
 
-                const emailPayload = {
+                // Get subscription details for reactivation email
+                const subscriptionDetails = await supabaseClient
+                  .from('subscriptions')
+                  .select('plan_name, plan_type, amount, interval')
+                  .eq('stripe_subscription_id', updatedSubscription.id)
+                  .single()
+
+                // Prepare email data
+                const emailData: any = {
                   user_email: userData.email,
-                  subject: 'Subscription Update',
-                  html: `<p>Your subscription status has been updated to: ${newStatus}</p>`,
-                  text: `Your subscription status has been updated to: ${newStatus}`
+                  user_id: userData.id,
+                  user_name: userData.full_name || userData.first_name || 'User',
+                  language: userData.language_preference || 'fr'
+                }
+
+                // Add subscription details for reactivation
+                if (isReactivation && subscriptionDetails?.data) {
+                  const sub = subscriptionDetails.data
+                  emailData.variables = {
+                    plan_name: sub.plan_name || '',
+                    amount: sub.amount ? `${sub.amount}€` : '',
+                    billing_interval: sub.interval || 'monthly',
+                    effective_date: new Date().toLocaleDateString('fr-FR'),
+                    company_name: 'Haliqo',
+                    support_email: 'support@haliqo.com'
+                  }
                 }
 
                 // Invoke the send-emails function
@@ -267,14 +300,8 @@ serve(async (req) => {
                       'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
                     },
                     body: JSON.stringify({
-                      type: emailType,
-                      data: {
-                        user_email: userData.email,
-                        user_name: userData.full_name || userData.first_name || 'User',
-                        new_status: newStatus,
-                        old_status: oldStatus,
-                        language: userData.language_preference || 'fr'
-                      }
+                      emailType: emailType,
+                      emailData: emailData
                     })
                   }
                 )
@@ -282,7 +309,7 @@ serve(async (req) => {
                 if (!response.ok) {
                   console.error('Failed to send subscription update email:', await response.text())
                 } else {
-                  console.log('Subscription update email sent successfully')
+                  
                 }
               } catch (emailError) {
                 console.error('Error sending subscription update email:', emailError)
@@ -348,7 +375,7 @@ serve(async (req) => {
               if (!response.ok) {
                 console.error('Failed to send cancellation email:', await response.text())
               } else {
-                console.log('Subscription cancellation email sent successfully')
+                
               }
             } catch (emailError) {
               console.error('Error sending cancellation email:', emailError)

@@ -345,6 +345,7 @@ const SubscriptionManagement = () => {
       }
 
       // Update local subscription in database
+      // Use user_id instead of id since subscription.id might be Stripe subscription ID
       const { error: updateError } = await supabase
         .from('subscriptions')
         .update({
@@ -354,7 +355,7 @@ const SubscriptionManagement = () => {
           amount: amount,
           updated_at: new Date().toISOString()
         })
-        .eq('id', subscription.id);
+        .eq('user_id', user.id);
 
       if (updateError) {
         console.error('Error updating local subscription:', updateError);
@@ -411,6 +412,7 @@ const SubscriptionManagement = () => {
       }
 
       // Update local subscription
+      // Use user_id instead of id since subscription.id might be Stripe subscription ID
       const newStatus = cancelAtPeriodEnd ? 'active' : 'cancelled';
       await supabase
         .from('subscriptions')
@@ -419,7 +421,7 @@ const SubscriptionManagement = () => {
           cancel_at_period_end: cancelAtPeriodEnd,
           updated_at: new Date().toISOString()
         })
-        .eq('id', subscription.id);
+        .eq('user_id', user.id);
 
       // Also update user's subscription status
       await supabase
@@ -462,6 +464,7 @@ const SubscriptionManagement = () => {
       }
 
       // Update local subscription
+      // Use user_id instead of id since subscription.id might be Stripe subscription ID
       await supabase
         .from('subscriptions')
         .update({
@@ -469,7 +472,7 @@ const SubscriptionManagement = () => {
           status: 'active',
           updated_at: new Date().toISOString()
         })
-        .eq('id', subscription.id);
+        .eq('user_id', user.id);
 
       // Also update user's subscription status
       await supabase

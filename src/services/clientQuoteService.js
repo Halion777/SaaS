@@ -336,60 +336,36 @@ class ClientQuoteService {
           share_token,
           user_id,
           company_profiles!quotes_company_profile_id_fkey(company_name),
-          client:clients(language_preference, languagePreference)
+          client:clients(language_preference)
         `)
         .eq('id', quoteId)
         .single();
 
       if (quoteError) throw quoteError;
 
-      // Get email template
-      const templateType = status === 'accepted' ? 'client_accepted' : 'client_rejected';
-      const { data: template, error: templateError } = await supabase
-        .from('email_templates')
-        .select('subject, html_content, text_content')
-        .eq('template_type', templateType)
-        .eq('is_active', true)
-        .maybeSingle();
+      // Prepare variables for template rendering
+      const variables = {
+        client_name: clientData.client_name || 'Madame, Monsieur',
+        quote_number: quote.quote_number,
+        quote_amount: `${quote.final_amount || quote.total_amount}€`,
+        quote_link: quote.share_token ? `${window.location.origin}/quote-share/${quote.share_token}` : '#',
+        company_name: quote.company_profiles?.company_name || 'Notre équipe'
+      };
 
-      let subject, html, text;
-
-      if (templateError || !template) {
-        // Fallback templates
-        if (status === 'accepted') {
-          subject = `Devis ${quote.quote_number} accepté - Merci !`;
-          text = `Bonjour ${clientData.client_name || 'Madame, Monsieur'},\n\nMerci d'avoir accepté notre devis !\nMontant accepté : ${quote.final_amount || quote.total_amount}€\n\nNotre équipe vous contacte bientôt pour la suite !\n\nCordialement,\n${quote.company_profiles?.company_name || 'Notre équipe'}`;
-          html = `<p>Bonjour ${clientData.client_name || 'Madame, Monsieur'},</p><p>Merci d'avoir accepté notre devis !</p><p><strong>Montant accepté : ${quote.final_amount || quote.total_amount}€</strong></p><p>Notre équipe vous contacte bientôt pour la suite !</p><p>Cordialement,<br><strong>${quote.company_profiles?.company_name || 'Notre équipe'}</strong></p>`;
-        } else {
-          subject = `Devis ${quote.quote_number} - Merci pour votre retour`;
-          text = `Bonjour ${clientData.client_name || 'Madame, Monsieur'},\n\nMerci pour votre retour sur notre devis.\nNous restons à votre disposition pour de futurs projets.\n\nCordialement,\n${quote.company_profiles?.company_name || 'Notre équipe'}`;
-          html = `<p>Bonjour ${clientData.client_name || 'Madame, Monsieur'},</p><p>Merci pour votre retour sur notre devis.</p><p>Nous restons à votre disposition pour de futurs projets.</p><p>Cordialement,<br><strong>${quote.company_profiles?.company_name || 'Notre équipe'}</strong></p>`;
-        }
+      // Prepare fallback templates (only used if edge function can't find database template)
+      let fallbackSubject, fallbackHtml, fallbackText;
+      if (status === 'accepted') {
+        fallbackSubject = `Devis ${quote.quote_number} accepté - Merci !`;
+        fallbackText = `Bonjour ${variables.client_name},\n\nMerci d'avoir accepté notre devis !\nMontant accepté : ${variables.quote_amount}\n\nNotre équipe vous contacte bientôt pour la suite !\n\nCordialement,\n${variables.company_name}`;
+        fallbackHtml = `<p>Bonjour ${variables.client_name},</p><p>Merci d'avoir accepté notre devis !</p><p><strong>Montant accepté : ${variables.quote_amount}</strong></p><p>Notre équipe vous contacte bientôt pour la suite !</p><p>Cordialement,<br><strong>${variables.company_name}</strong></p>`;
       } else {
-        // Use database template with variable replacement
-        const variables = {
-          client_name: clientData.client_name || 'Madame, Monsieur',
-          quote_number: quote.quote_number,
-          quote_amount: `${quote.final_amount || quote.total_amount}€`,
-          quote_link: quote.share_token ? `${window.location.origin}/quote-share/${quote.share_token}` : '#',
-          company_name: quote.company_profiles?.company_name || 'Notre équipe'
-        };
-
-        subject = template.subject;
-        text = template.text_content;
-        html = template.html_content;
-
-        // Replace variables
-        Object.keys(variables).forEach(key => {
-          const regex = new RegExp(`{${key}}`, 'g');
-          subject = subject.replace(regex, variables[key]);
-          text = text.replace(regex, variables[key]);
-          html = html.replace(regex, variables[key]);
-        });
+        fallbackSubject = `Devis ${quote.quote_number} - Merci pour votre retour`;
+        fallbackText = `Bonjour ${variables.client_name},\n\nMerci pour votre retour sur notre devis.\nNous restons à votre disposition pour de futurs projets.\n\nCordialement,\n${variables.company_name}`;
+        fallbackHtml = `<p>Bonjour ${variables.client_name},</p><p>Merci pour votre retour sur notre devis.</p><p>Nous restons à votre disposition pour de futurs projets.</p><p>Cordialement,<br><strong>${variables.company_name}</strong></p>`;
       }
 
       // Send email via Edge Function
-      // Pass variables and let edge function fetch template from database
+      // Edge function will fetch template from database with correct language preference
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-emails`, {
         method: 'POST',
         headers: {
@@ -401,18 +377,14 @@ class ClientQuoteService {
           emailData: {
             to: clientData.client_email,
             user_id: quote.user_id,
-            language: (quote.client?.language_preference || quote.client?.languagePreference || 'fr').split('-')[0] || 'fr',
-            subject: subject, // Fallback subject
-            html: html, // Fallback HTML
-            text: text, // Fallback text
+            language: (quote.client?.language_preference || 'fr').split('-')[0] || 'fr',
+            subject: fallbackSubject, // Fallback subject (only used if template not found)
+            html: fallbackHtml, // Fallback HTML (only used if template not found)
+            text: fallbackText, // Fallback text (only used if template not found)
             variables: {
               status: status, // Pass status so edge function knows which template to fetch
               quote_status: status, // Alternative key
-              client_name: clientData.client_name || 'Madame, Monsieur',
-              quote_number: quote.quote_number,
-              quote_amount: `${quote.final_amount || quote.total_amount}€`,
-              quote_link: quote.share_token ? `${window.location.origin}/quote-share/${quote.share_token}` : '#',
-              company_name: quote.company_profiles?.company_name || 'Notre équipe'
+              ...variables // Spread all variables for template rendering
             }
           }
         })

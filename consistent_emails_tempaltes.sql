@@ -893,6 +893,154 @@ Het {company_name} Team',
 );
 
 -- =====================================================
+-- SUBSCRIPTION REACTIVATED TEMPLATES (No button, no emoji)
+-- =====================================================
+
+-- French
+INSERT INTO public.email_templates (
+  template_type, template_name, subject, html_content, text_content, variables, is_active, is_default, language
+) VALUES (
+  'subscription_reactivated',
+  'Abonnement réactivé',
+  'Votre abonnement a été réactivé - {company_name}',
+  '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Abonnement réactivé</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">{company_name}</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Bonjour {user_name},</h2>
+    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">Nous sommes ravis de vous informer que votre abonnement a été réactivé avec succès.</p>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #10b981;">
+      <p style="margin: 0 0 5px 0;"><strong>Plan:</strong> {plan_name}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Montant:</strong> {amount}€ / {billing_interval}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Statut:</strong> Actif</p>
+      <p style="margin: 0;"><strong>Date de réactivation:</strong> {effective_date}</p>
+    </div>
+    <p style="color: #555; margin: 15px 0 0 0; line-height: 1.5;">Vous avez maintenant à nouveau accès à toutes les fonctionnalités de votre plan.</p>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">Bienvenue de retour !<br>L''équipe {company_name}</p>
+  </div>
+</div>',
+  'Abonnement réactivé - {company_name}
+
+Bonjour {user_name},
+
+Nous sommes ravis de vous informer que votre abonnement a été réactivé avec succès.
+
+Plan: {plan_name}
+Montant: {amount}€ / {billing_interval}
+Statut: Actif
+Date de réactivation: {effective_date}
+
+Vous avez maintenant à nouveau accès à toutes les fonctionnalités de votre plan.
+
+Bienvenue de retour !
+L''équipe {company_name}',
+  '{"user_name": "string", "amount": "string", "user_email": "string", "company_name": "string", "plan_name": "string", "support_email": "string", "effective_date": "string", "billing_interval": "string"}',
+  true, true, 'fr'
+);
+
+-- English
+INSERT INTO public.email_templates (
+  template_type, template_name, subject, html_content, text_content, variables, is_active, is_default, language
+) VALUES (
+  'subscription_reactivated',
+  'Subscription Reactivated',
+  'Your subscription has been reactivated - {company_name}',
+  '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Subscription Reactivated</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">{company_name}</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Hello {user_name},</h2>
+    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">We are delighted to inform you that your subscription has been successfully reactivated.</p>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #10b981;">
+      <p style="margin: 0 0 5px 0;"><strong>Plan:</strong> {plan_name}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Amount:</strong> {amount}€ / {billing_interval}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Status:</strong> Active</p>
+      <p style="margin: 0;"><strong>Reactivation Date:</strong> {effective_date}</p>
+    </div>
+    <p style="color: #555; margin: 15px 0 0 0; line-height: 1.5;">You now have access again to all features of your plan.</p>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">Welcome back!<br>The {company_name} Team</p>
+  </div>
+</div>',
+  'Subscription Reactivated - {company_name}
+
+Hello {user_name},
+
+We are delighted to inform you that your subscription has been successfully reactivated.
+
+Plan: {plan_name}
+Amount: {amount}€ / {billing_interval}
+Status: Active
+Reactivation Date: {effective_date}
+
+You now have access again to all features of your plan.
+
+Welcome back!
+The {company_name} Team',
+  '{"user_name": "string", "amount": "string", "user_email": "string", "company_name": "string", "plan_name": "string", "support_email": "string", "effective_date": "string", "billing_interval": "string"}',
+  true, false, 'en'
+);
+
+-- Dutch
+INSERT INTO public.email_templates (
+  template_type, template_name, subject, html_content, text_content, variables, is_active, is_default, language
+) VALUES (
+  'subscription_reactivated',
+  'Abonnement opnieuw geactiveerd',
+  'Uw abonnement is opnieuw geactiveerd - {company_name}',
+  '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Abonnement opnieuw geactiveerd</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">{company_name}</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Hallo {user_name},</h2>
+    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">We zijn verheugd u te informeren dat uw abonnement met succes opnieuw is geactiveerd.</p>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #10b981;">
+      <p style="margin: 0 0 5px 0;"><strong>Plan:</strong> {plan_name}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Bedrag:</strong> {amount}€ / {billing_interval}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Status:</strong> Actief</p>
+      <p style="margin: 0;"><strong>Heractiveringsdatum:</strong> {effective_date}</p>
+    </div>
+    <p style="color: #555; margin: 15px 0 0 0; line-height: 1.5;">U heeft nu weer toegang tot alle functies van uw plan.</p>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">Welkom terug!<br>Het {company_name} Team</p>
+  </div>
+</div>',
+  'Abonnement opnieuw geactiveerd - {company_name}
+
+Hallo {user_name},
+
+We zijn verheugd u te informeren dat uw abonnement met succes opnieuw is geactiveerd.
+
+Plan: {plan_name}
+Bedrag: {amount}€ / {billing_interval}
+Status: Actief
+Heractiveringsdatum: {effective_date}
+
+U heeft nu weer toegang tot alle functies van uw plan.
+
+Welkom terug!
+Het {company_name} Team',
+  '{"user_name": "string", "amount": "string", "user_email": "string", "company_name": "string", "plan_name": "string", "support_email": "string", "effective_date": "string", "billing_interval": "string"}',
+  true, false, 'nl'
+);
+
+-- =====================================================
 -- SUBSCRIPTION TRIAL ENDING TEMPLATES (No button, no emoji)
 -- =====================================================
 
