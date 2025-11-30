@@ -1060,7 +1060,27 @@ const SubscriptionManagement = () => {
           {activeTab === 'invoices' && (
             <div className="space-y-6">
               {/* Upcoming Invoice */}
-              {upcomingInvoice && (
+              {loadingInvoices ? (
+                // Loading state for upcoming invoice banner
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 animate-pulse">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <Icon name="Calendar" size={20} className="text-blue-600" />
+                      </div>
+                      <div>
+                        <div className="h-5 w-40 bg-blue-200 rounded mb-2"></div>
+                        <div className="h-4 w-60 bg-blue-200 rounded"></div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="h-8 w-32 bg-blue-200 rounded mb-2"></div>
+                      <div className="h-4 w-24 bg-blue-200 rounded"></div>
+                    </div>
+                  </div>
+                </div>
+              ) : upcomingInvoice ? (
+                // Actual upcoming invoice banner
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -1084,7 +1104,7 @@ const SubscriptionManagement = () => {
                     </div>
                   </div>
                 </div>
-              )}
+              ) : null}
 
               {/* Invoices List */}
               <div className="bg-card border border-border rounded-lg overflow-hidden">

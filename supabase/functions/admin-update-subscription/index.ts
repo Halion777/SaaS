@@ -177,7 +177,13 @@ serve(async (req) => {
 
         if (isDowngrade) {
           // DOWNGRADE: Wait until end of billing period (as per Stripe portal settings)
-          // Use subscription schedule to schedule the change at period end
+          // BUT: If in trial, schedule for after trial ends (no charge during trial)
+          // Use subscription schedule to schedule the change
+          
+          // Check if subscription is in trial period
+          const now = Math.floor(Date.now() / 1000)
+          const isInTrial = (currentSub.status === 'trialing' || (currentSub.trial_end && currentSub.trial_end > now)) && currentSub.trial_end
+          const effectiveDate = isInTrial ? currentSub.trial_end : currentSub.current_period_end
           
           // Check if there's already a schedule
           let schedule = currentSub.schedule
@@ -190,11 +196,11 @@ serve(async (req) => {
                 {
                   items: [{ price: currentPriceId, quantity: 1 }],
                   start_date: currentSub.current_period_start,
-                  end_date: currentSub.current_period_end
+                  end_date: effectiveDate
                 },
                 {
                   items: [{ price: newPriceId, quantity: 1 }],
-                  start_date: currentSub.current_period_end
+                  start_date: effectiveDate
                   // Last phase has no end_date - will continue indefinitely
                 }
               ]
@@ -205,24 +211,89 @@ serve(async (req) => {
               from_subscription: subscriptionId
             })
             
-            // Update the schedule with the downgrade at period end
+            // Update the schedule with the downgrade at period/trial end
             result = await stripe.subscriptionSchedules.update(newSchedule.id, {
               end_behavior: 'release', // Release schedule at end (subscription continues with new plan)
               phases: [
                 {
                   items: [{ price: currentPriceId, quantity: 1 }],
                   start_date: currentSub.current_period_start,
-                  end_date: currentSub.current_period_end
+                  end_date: effectiveDate
                 },
                 {
                   items: [{ price: newPriceId, quantity: 1 }],
-                  start_date: currentSub.current_period_end
+                  start_date: effectiveDate
                   // Last phase has no end_date - will continue indefinitely
                 }
               ]
             })
           }
           
+          // For scheduled downgrades, send email immediately to confirm scheduling
+          // Webhook will send another email when change actually takes effect
+          if (userId) {
+            try {
+              const { data: userData } = await supabaseClient
+                .from('users')
+                .select('id, email, first_name, last_name, full_name, language_preference')
+                .eq('id', userId)
+                .single()
+
+              if (userData) {
+                const { data: subData } = await supabaseClient
+                  .from('subscriptions')
+                  .select('plan_name, plan_type, amount, interval')
+                  .eq('user_id', userId)
+                  .single()
+
+                if (subData) {
+                  const emailData: any = {
+                    user_email: userData.email,
+                    user_id: userData.id,
+                    user_name: userData.full_name || userData.first_name || 'User',
+                    language: userData.language_preference || 'fr',
+                    variables: {
+                      plan_name: subData.plan_name || '',
+                      new_plan_name: subData.plan_name || '',
+                      amount: subData.amount ? `${subData.amount}€` : '',
+                      new_amount: subData.amount ? `${subData.amount}€` : '',
+                      billing_interval: subData.interval || 'monthly',
+                      effective_date: new Date(effectiveDate * 1000).toLocaleDateString('fr-FR'),
+                      company_name: 'Haliqo',
+                      support_email: 'support@haliqo.com'
+                    }
+                  }
+
+                  // Get old plan info
+                  const { data: oldSub } = await supabaseClient
+                    .from('subscriptions')
+                    .select('plan_name, amount')
+                    .eq('user_id', userId)
+                    .single()
+                  
+                  if (oldSub) {
+                    emailData.variables.old_plan_name = oldSub.plan_name || ''
+                    emailData.variables.old_amount = oldSub.amount ? `${oldSub.amount}€` : ''
+                  }
+
+                  await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-emails`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
+                    },
+                    body: JSON.stringify({
+                      emailType: 'subscription_downgraded',
+                      emailData: emailData
+                    })
+                  })
+                }
+              }
+            } catch (e) {
+              console.error('Error sending downgrade email:', e)
+            }
+          }
+
           // Return schedule info
           return new Response(
             JSON.stringify({ 
@@ -235,16 +306,20 @@ serve(async (req) => {
                 plan: currentPriceId,
                 scheduled_change: {
                   new_plan: newPriceId,
-                  effective_date: currentSub.current_period_end
+                  effective_date: effectiveDate
                 }
               },
-              message: 'Downgrade scheduled for end of billing period'
+              message: isInTrial 
+                ? 'Downgrade scheduled for after trial period ends (no charge during trial)'
+                : 'Downgrade scheduled for end of billing period'
             }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         } else {
           // UPGRADE: Check if subscription is in trial period
-          const isInTrial = currentSub.status === 'trialing' && currentSub.trial_end
+          // Check both status and trial_end date to handle reactivated subscriptions that are still in trial
+          const now = Math.floor(Date.now() / 1000)
+          const isInTrial = (currentSub.status === 'trialing' || (currentSub.trial_end && currentSub.trial_end > now)) && currentSub.trial_end
           const effectiveDate = isInTrial ? currentSub.trial_end : currentSub.current_period_end
           
           if (isInTrial) {
@@ -294,6 +369,71 @@ serve(async (req) => {
               })
             }
             
+            // For scheduled upgrades during trial, send email immediately to confirm scheduling
+            // Webhook will send another email when change actually takes effect
+            if (userId) {
+              try {
+                const { data: userData } = await supabaseClient
+                  .from('users')
+                  .select('id, email, first_name, last_name, full_name, language_preference')
+                  .eq('id', userId)
+                  .single()
+
+                if (userData) {
+                  const { data: subData } = await supabaseClient
+                    .from('subscriptions')
+                    .select('plan_name, plan_type, amount, interval')
+                    .eq('user_id', userId)
+                    .single()
+
+                  if (subData) {
+                    const emailData: any = {
+                      user_email: userData.email,
+                      user_id: userData.id,
+                      user_name: userData.full_name || userData.first_name || 'User',
+                      language: userData.language_preference || 'fr',
+                      variables: {
+                        plan_name: subData.plan_name || '',
+                        new_plan_name: subData.plan_name || '',
+                        amount: subData.amount ? `${subData.amount}€` : '',
+                        new_amount: subData.amount ? `${subData.amount}€` : '',
+                        billing_interval: subData.interval || 'monthly',
+                        effective_date: new Date(effectiveDate * 1000).toLocaleDateString('fr-FR'),
+                        company_name: 'Haliqo',
+                        support_email: 'support@haliqo.com'
+                      }
+                    }
+
+                    // Get old plan info
+                    const { data: oldSub } = await supabaseClient
+                      .from('subscriptions')
+                      .select('plan_name, amount')
+                      .eq('user_id', userId)
+                      .single()
+                    
+                    if (oldSub) {
+                      emailData.variables.old_plan_name = oldSub.plan_name || ''
+                      emailData.variables.old_amount = oldSub.amount ? `${oldSub.amount}€` : ''
+                    }
+
+                    await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-emails`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
+                      },
+                      body: JSON.stringify({
+                        emailType: 'subscription_upgraded',
+                        emailData: emailData
+                      })
+                    })
+                  }
+                }
+              } catch (e) {
+                console.error('Error sending upgrade email:', e)
+              }
+            }
+
             // Return schedule info
             return new Response(
               JSON.stringify({ 
@@ -317,6 +457,80 @@ serve(async (req) => {
             )
           } else {
             // Not in trial: Apply immediately with proration (as per Stripe portal settings)
+            // BUT: Double-check trial_end to prevent charging during trial period
+            const now = Math.floor(Date.now() / 1000)
+            const stillInTrial = currentSub.trial_end && currentSub.trial_end > now
+            
+            if (stillInTrial) {
+              // Still in trial period - schedule for after trial ends (no charge during trial)
+              const effectiveDate = currentSub.trial_end
+              
+              // Check if there's already a schedule
+              let schedule = currentSub.schedule
+              
+              if (schedule) {
+                // Update existing schedule
+                result = await stripe.subscriptionSchedules.update(schedule as string, {
+                  end_behavior: 'release',
+                  phases: [
+                    {
+                      items: [{ price: currentPriceId, quantity: 1 }],
+                      start_date: currentSub.current_period_start,
+                      end_date: effectiveDate
+                    },
+                    {
+                      items: [{ price: newPriceId, quantity: 1 }],
+                      start_date: effectiveDate
+                    }
+                  ]
+                })
+              } else {
+                // Create new schedule from subscription
+                const newSchedule = await stripe.subscriptionSchedules.create({
+                  from_subscription: subscriptionId
+                })
+                
+                // Update the schedule with the upgrade at trial end
+                result = await stripe.subscriptionSchedules.update(newSchedule.id, {
+                  end_behavior: 'release',
+                  phases: [
+                    {
+                      items: [{ price: currentPriceId, quantity: 1 }],
+                      start_date: currentSub.current_period_start,
+                      end_date: effectiveDate
+                    },
+                    {
+                      items: [{ price: newPriceId, quantity: 1 }],
+                      start_date: effectiveDate
+                    }
+                  ]
+                })
+              }
+              
+              // Return schedule info
+              return new Response(
+                JSON.stringify({ 
+                  success: true, 
+                  data: {
+                    id: subscriptionId,
+                    status: currentSub.status,
+                    cancel_at_period_end: false,
+                    current_period_end: currentSub.current_period_end,
+                    trial_end: currentSub.trial_end,
+                    plan: currentPriceId,
+                    scheduled_change: {
+                      new_plan: newPriceId,
+                      effective_date: effectiveDate,
+                      is_trial_upgrade: true
+                    }
+                  },
+                  message: 'Change scheduled for after trial period ends (no charge during trial)'
+                }),
+                { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              )
+            }
+            
+            // Not in trial - apply immediately with proration
             result = await stripe.subscriptions.update(subscriptionId, {
               items: [{
                 id: currentItemId,
@@ -324,6 +538,10 @@ serve(async (req) => {
               }],
               proration_behavior: 'always_invoice' // Prorate charges immediately
             })
+            
+            // For immediate upgrades, send email immediately (webhook will also send as backup)
+            // Store action info for email sending at the end
+            // (Email sending happens after switch statement)
           }
         }
         break
@@ -404,6 +622,143 @@ serve(async (req) => {
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
+    }
+
+    // Send email notification immediately after successful update
+    // For immediate changes (upgrades, cancel, reactivate), send email right away
+    // For scheduled changes (downgrades, upgrades during trial), webhook will send email when change takes effect
+    if (result && userId && action !== 'update_status') {
+      try {
+        // Get user data for email
+        const { data: userData } = await supabaseClient
+          .from('users')
+          .select('id, email, first_name, last_name, full_name, language_preference')
+          .eq('id', userId)
+          .single()
+
+        if (userData) {
+          // Get current subscription details from database
+          const { data: subData } = await supabaseClient
+            .from('subscriptions')
+            .select('plan_name, plan_type, amount, interval')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single()
+
+          let emailType: string | null = null
+          let shouldSendImmediately = false
+          const emailData: any = {
+            user_email: userData.email,
+            user_id: userData.id,
+            user_name: userData.full_name || userData.first_name || 'User',
+            language: userData.language_preference || 'fr'
+          }
+
+          // Determine email type and if we should send immediately
+          if (action === 'update_plan' && result) {
+            // Check if change is immediate or scheduled
+            // If result is a subscription object (not schedule), change is immediate
+            // If result is a schedule, change is scheduled (webhook will handle)
+            const isSchedule = result.object === 'subscription_schedule'
+            
+            if (!isSchedule) {
+              // Immediate change - send email now
+              shouldSendImmediately = true
+              
+              // Get old subscription to compare
+              const { data: oldSub } = await supabaseClient
+                .from('subscriptions')
+                .select('plan_type, plan_name, amount')
+                .eq('user_id', userId)
+                .order('updated_at', { ascending: false })
+                .limit(1)
+                .single()
+
+              if (oldSub && subData) {
+                const newPriceAmount = result.items?.data[0]?.price?.unit_amount || 0
+                const oldAmount = parseFloat(oldSub.amount || '0') * 100 // Convert to cents
+                const planHierarchy: Record<string, number> = { 'starter': 1, 'pro': 2 }
+                const oldPlanType = oldSub.plan_type || 'starter'
+                const newPlanType = subData.plan_type || 'starter'
+                
+                const isUpgrade = planHierarchy[newPlanType] > planHierarchy[oldPlanType] || 
+                                 (newPlanType === oldPlanType && newPriceAmount > oldAmount)
+                const isDowngrade = planHierarchy[newPlanType] < planHierarchy[oldPlanType] ||
+                                   (newPlanType === oldPlanType && newPriceAmount < oldAmount)
+
+                if (isUpgrade) {
+                  emailType = 'subscription_upgraded'
+                } else if (isDowngrade) {
+                  emailType = 'subscription_downgraded'
+                }
+              }
+            }
+            // If scheduled, webhook will send email when change takes effect
+          } else if (action === 'cancel') {
+            emailType = 'subscription_cancelled'
+            shouldSendImmediately = true
+          } else if (action === 'reactivate') {
+            emailType = 'subscription_reactivated'
+            shouldSendImmediately = true
+          }
+
+          // Send email immediately for immediate changes
+          if (shouldSendImmediately && emailType && subData) {
+            emailData.variables = {
+              plan_name: subData.plan_name || '',
+              new_plan_name: subData.plan_name || '',
+              amount: subData.amount ? `${subData.amount}€` : '',
+              new_amount: subData.amount ? `${subData.amount}€` : '',
+              billing_interval: subData.interval || 'monthly',
+              effective_date: new Date().toLocaleDateString('fr-FR'),
+              company_name: 'Haliqo',
+              support_email: 'support@haliqo.com'
+            }
+
+            // For upgrade/downgrade, add old plan info
+            if (emailType === 'subscription_upgraded' || emailType === 'subscription_downgraded') {
+              const { data: oldSub } = await supabaseClient
+                .from('subscriptions')
+                .select('plan_name, amount')
+                .eq('user_id', userId)
+                .order('updated_at', { ascending: false })
+                .limit(1)
+                .single()
+              
+              if (oldSub) {
+                emailData.variables.old_plan_name = oldSub.plan_name || ''
+                emailData.variables.old_amount = oldSub.amount ? `${oldSub.amount}€` : ''
+              }
+            }
+
+            // Call send-emails edge function
+            const emailResponse = await fetch(
+              `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-emails`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
+                },
+                body: JSON.stringify({
+                  emailType: emailType,
+                  emailData: emailData
+                })
+              }
+            )
+
+            if (!emailResponse.ok) {
+              console.error('Failed to send subscription email:', await emailResponse.text())
+            } else {
+              console.log(`Subscription email sent immediately: ${emailType} for user ${userId}`)
+            }
+          }
+        }
+      } catch (emailError) {
+        console.error('Error sending subscription email:', emailError)
+        // Don't fail the main operation if email fails
+      }
     }
 
     return new Response(

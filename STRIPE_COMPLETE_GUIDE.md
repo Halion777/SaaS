@@ -35,9 +35,27 @@ Registration → Stripe Checkout (14-day trial) → Trial → Auto Payment → A
 ### Plan Changes
 | Action | Timing | Proration |
 |--------|--------|-----------|
-| **Upgrade** | Immediate | Charged prorated amount |
-| **Downgrade** | End of period | Credit applied |
+| **Upgrade** | Immediate (if not in trial) | Charged prorated amount |
+| **Upgrade (during trial)** | After trial ends | No charge during trial |
+| **Downgrade** | End of period/trial | Credit applied |
 | **Cancel** | End of period | Access until period ends |
+
+### Trial Period Protection
+
+**Important:** The system prevents charges during the 14-day trial period, even if the subscription status is `active` (e.g., after reactivation).
+
+**Trial Detection Logic:**
+- Checks both `status === 'trialing'` AND `trial_end > now` to determine if subscription is in trial
+- This handles cases where reactivated subscriptions may have `active` status but are still within trial period
+- All plan changes (upgrades and downgrades) are scheduled for after trial ends if still in trial
+- No charges are applied during trial period, regardless of subscription status
+
+**Scenarios:**
+1. **Upgrade during trial:** Change is scheduled for after trial ends, no immediate charge
+2. **Downgrade during trial:** Change is scheduled for after trial ends, no immediate charge
+3. **Reactivated subscription in trial:** Even if status is `active`, if `trial_end` is in future, no charges are applied
+4. **Upgrade after trial:** Applied immediately with proration
+5. **Downgrade after trial:** Scheduled for end of billing period
 
 ### Cancel/Reactivate Flow with Scheduled Plan Changes
 
@@ -83,10 +101,12 @@ Registration → Stripe Checkout (14-day trial) → Trial → Auto Payment → A
    ```
 
 ### Status Values
-- `trialing` - 14-day free trial
-- `active` - Paid and active
+- `trialing` - 14-day free trial (actively in trial)
+- `active` - Paid and active (may still be in trial period if reactivated - system checks `trial_end` date)
 - `past_due` - Payment failed
 - `cancelled` - Subscription ended
+
+**Note:** A subscription with `active` status may still be within the trial period if it was reactivated. The system checks `trial_end` date to prevent charges during trial, regardless of status.
 
 ---
 
@@ -142,8 +162,9 @@ All changes sync to both `subscriptions` AND `users` tables:
 
 ### Edge Functions
 - `create-checkout-session` - Creates Stripe checkout
-- `admin-update-subscription` - Handles plan changes (upgrade/downgrade/cancel/reactivate) with smart conflict resolution
-- `stripe-webhook` - Processes Stripe events
+- `admin-update-subscription` - Handles plan changes (upgrade/downgrade/cancel/reactivate) with smart conflict resolution, sends emails immediately after successful Stripe updates
+- `stripe-webhook` - Processes Stripe events, sends backup emails for subscription changes
+- `send-emails` - Centralized email sending function, handles all email types including 6 subscription types, fetches templates from database
 - `check-user-registration` - Validates email for trial eligibility
 - `get-subscription` - Fetches real-time Stripe data
 - `get-invoices` - Fetches user invoices
@@ -152,13 +173,110 @@ All changes sync to both `subscriptions` AND `users` tables:
 
 ## Email Notifications
 
-| Event | Template Type |
-|-------|--------------|
-| Registration complete | `subscription_activated` |
-| Trial starting | `subscription_trial_ending` |
-| Upgrade | `subscription_upgraded` |
-| Downgrade | `subscription_downgraded` |
-| Cancellation | `subscription_cancelled` |
+### Subscription Email Template Types
+
+The system uses **6 subscription email template types**, each available in 3 languages (FR, EN, NL):
+
+| Template Type | Description | When Sent |
+|--------------|-------------|-----------|
+| `subscription_activated` | Welcome email when subscription becomes active | After successful registration/payment |
+| `subscription_upgraded` | Plan upgrade confirmation | When user upgrades plan (immediate or scheduled) |
+| `subscription_downgraded` | Plan downgrade confirmation | When user downgrades plan (scheduled for period end) |
+| `subscription_cancelled` | Cancellation confirmation | When subscription is cancelled (immediate or at period end) |
+| `subscription_reactivated` | Reactivation confirmation | When cancelled subscription is reactivated |
+| `subscription_trial_ending` | Trial ending reminder | Before trial period ends |
+
+**Total:** 18 templates (6 types × 3 languages)
+
+### Email Sending Flow
+
+#### Primary Flow: Immediate Email Sending
+
+**All subscription emails are sent immediately** from the `admin-update-subscription` edge function after Stripe confirms the change was successful:
+
+```
+User/Admin Action → admin-update-subscription Edge Function
+↓
+Stripe API Call (update/cancel/reactivate)
+↓
+Stripe Returns Success (confirms change)
+↓
+✅ Email Sent Immediately via send-emails Edge Function
+↓
+Response Returned to Frontend
+```
+
+**Email Sending Logic:**
+
+1. **Immediate Changes** (Upgrades outside trial, Cancel, Reactivate):
+   - Stripe processes change immediately
+   - Edge function receives success response
+   - Email sent immediately with confirmation
+
+2. **Scheduled Changes** (Downgrades, Upgrades during trial):
+   - Stripe schedules change for future date
+   - Edge function receives schedule confirmation
+   - Email sent immediately to confirm scheduling
+   - Webhook sends another email when change actually takes effect
+
+#### Backup Flow: Webhook Email Sending
+
+The `stripe-webhook` edge function also sends emails as a **backup mechanism** for:
+- External Stripe events (payment failures, automatic renewals)
+- Ensuring emails are sent even if edge function email fails
+- Handling edge cases where changes happen outside our control
+
+**Webhook Email Events:**
+
+| Webhook Event | Email Type | When |
+|--------------|-----------|------|
+| `customer.subscription.updated` (plan change) | `subscription_upgraded` or `subscription_downgraded` | When scheduled plan change takes effect |
+| `customer.subscription.updated` (reactivation) | `subscription_reactivated` | When subscription is reactivated |
+| `customer.subscription.updated` (status change) | `subscription_activated` | When subscription becomes active |
+
+### Email Template System
+
+**All emails use database-driven templates:**
+- Templates stored in `email_templates` table
+- Templates fetched by `template_type` and `language`
+- Variables replaced dynamically (e.g., `{user_name}`, `{plan_name}`, `{amount}`)
+- User-specific templates supported (via `user_id`)
+
+**Template Variables:**
+
+Common variables available in all subscription templates:
+- `{user_name}` - User's full name
+- `{user_email}` - User's email
+- `{plan_name}` - Current/new plan name
+- `{amount}` or `{new_amount}` - Plan price
+- `{billing_interval}` - Monthly or yearly
+- `{effective_date}` - When change takes effect
+- `{company_name}` - Company name (Haliqo)
+- `{support_email}` - Support contact
+
+For upgrade/downgrade emails:
+- `{old_plan_name}` - Previous plan name
+- `{old_amount}` - Previous plan price
+
+### Email Sending Implementation
+
+**Edge Function:** `send-emails/index.ts`
+- Handles all email types including all 6 subscription types
+- Fetches template from database
+- Renders template with variables
+- Sends via Resend API
+
+**Service:** `subscriptionNotificationService.js`
+- Used by Super Admin for manual subscription edits
+- Calls `send-emails` edge function
+- Handles user language preference
+- Prepares email variables
+
+**Key Files:**
+- `supabase/functions/send-emails/index.ts` - Email sending edge function
+- `supabase/functions/admin-update-subscription/index.ts` - Sends emails immediately after Stripe updates
+- `supabase/functions/stripe-webhook/index.ts` - Sends emails as backup for webhook events
+- `src/services/subscriptionNotificationService.js` - Frontend service for Super Admin emails
 
 ---
 
@@ -193,12 +311,16 @@ All changes sync to both `subscriptions` AND `users` tables:
 supabase functions deploy create-checkout-session
 supabase functions deploy stripe-webhook
 supabase functions deploy admin-update-subscription
+supabase functions deploy send-emails
 supabase functions deploy check-user-registration
 supabase functions deploy get-subscription
 supabase functions deploy get-invoices
 
 # Run migration
 # Execute add_has_used_trial_column.sql in Supabase SQL Editor
+
+# Email templates
+# Execute consistent_emails_tempaltes.sql in Supabase SQL Editor to create all email templates
 ```
 
 ---
@@ -206,6 +328,7 @@ supabase functions deploy get-invoices
 ## Summary
 
 - ✅ 14-day trial for all plans
+- ✅ **Trial Period Protection:** No charges during trial, even if subscription status is `active` (checks both status and `trial_end` date)
 - ✅ Automatic billing after trial
 - ✅ Automatic proration (Stripe handles calculations)
 - ✅ Database sync via webhooks
@@ -215,3 +338,10 @@ supabase functions deploy get-invoices
 - ✅ Super admin can edit subscriptions (syncs to Stripe)
 - ✅ Smart conflict resolution for cancel/reactivate with scheduled plan changes
 - ✅ Seamless flow: plan changes, cancellations, and reactivations work together without conflicts
+- ✅ **Complete email notification system:**
+  - 6 subscription email template types (18 templates total: 6 types × 3 languages)
+  - Immediate email sending from `admin-update-subscription` after successful Stripe updates
+  - Backup email sending from webhook for external events
+  - Database-driven templates with dynamic variable replacement
+  - User-specific templates supported
+  - All emails sent via centralized `send-emails` edge function

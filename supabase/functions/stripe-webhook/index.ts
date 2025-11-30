@@ -216,10 +216,45 @@ serve(async (req) => {
             .eq('stripe_subscription_id', updatedSubscription.id)
             .single()
 
+          // Detect plan change to update plan details
+          const isPlanChange = previousAttributes?.items !== undefined
+          const newPriceId = updatedSubscription.items.data[0]?.price?.id
+          const newPrice = updatedSubscription.items.data[0]?.price
+          
+          // Determine plan type and interval from price ID
+          const starterMonthly = Deno.env.get('STRIPE_STARTER_MONTHLY_PRICE_ID')
+          const starterYearly = Deno.env.get('STRIPE_STARTER_YEARLY_PRICE_ID')
+          const proMonthly = Deno.env.get('STRIPE_PRO_MONTHLY_PRICE_ID')
+          const proYearly = Deno.env.get('STRIPE_PRO_YEARLY_PRICE_ID')
+          
+          let planType = oldSubData?.plan_type || 'starter'
+          let planName = oldSubData?.plan_name || 'Starter Plan'
+          let interval = oldSubData?.interval || 'monthly'
+          let amount = oldSubData?.amount || 0
+          
+          if (isPlanChange && newPriceId) {
+            if (newPriceId === starterMonthly || newPriceId === starterYearly) {
+              planType = 'starter'
+              planName = 'Starter Plan'
+            } else if (newPriceId === proMonthly || newPriceId === proYearly) {
+              planType = 'pro'
+              planName = 'Pro Plan'
+            }
+            
+            interval = newPrice?.recurring?.interval || interval
+            amount = newPrice ? (newPrice.unit_amount || 0) / 100 : amount // Convert cents to euros
+          }
+
+          // Update subscription in database
           await supabaseClient
             .from('subscriptions')
             .update({
               status: updatedSubscription.status,
+              plan_type: planType,
+              plan_name: planName,
+              interval: interval,
+              amount: amount,
+              cancel_at_period_end: updatedSubscription.cancel_at_period_end || false,
               updated_at: new Date().toISOString()
             })
             .eq('stripe_subscription_id', updatedSubscription.id)
@@ -227,7 +262,8 @@ serve(async (req) => {
           await supabaseClient
             .from('users')
             .update({
-              subscription_status: updatedSubscription.status
+              subscription_status: updatedSubscription.status,
+              selected_plan: planType
             })
             .eq('stripe_subscription_id', updatedSubscription.id)
 
@@ -244,30 +280,80 @@ serve(async (req) => {
             // Detect reactivation: cancel_at_period_end changed from true to false
             const isReactivation = oldCancelAtPeriodEnd === true && newCancelAtPeriodEnd === false
 
+            // Detect plan change: items changed
+            const isPlanChange = previousAttributes?.items !== undefined
+            const oldPriceId = previousAttributes?.items?.data?.[0]?.price?.id
+            const newPriceId = updatedSubscription.items.data[0]?.price?.id
+
+            // Determine if upgrade or downgrade
+            let isUpgrade = false
+            let isDowngrade = false
+            if (isPlanChange && oldPriceId && newPriceId && oldPriceId !== newPriceId) {
+              // Get price amounts to determine upgrade/downgrade
+              const oldPrice = previousAttributes.items.data[0]?.price
+              const newPrice = updatedSubscription.items.data[0]?.price
+              const oldAmount = oldPrice?.unit_amount || 0
+              const newAmount = newPrice?.unit_amount || 0
+              
+              // Also check plan hierarchy (starter = 1, pro = 2)
+              const planHierarchy: Record<string, number> = {
+                'starter': 1,
+                'pro': 2
+              }
+              
+              // Get plan types from price IDs (check environment variables)
+              const starterMonthly = Deno.env.get('STRIPE_STARTER_MONTHLY_PRICE_ID')
+              const starterYearly = Deno.env.get('STRIPE_STARTER_YEARLY_PRICE_ID')
+              const proMonthly = Deno.env.get('STRIPE_PRO_MONTHLY_PRICE_ID')
+              const proYearly = Deno.env.get('STRIPE_PRO_YEARLY_PRICE_ID')
+              
+              let oldPlanType = 'starter'
+              if (oldPriceId === proMonthly || oldPriceId === proYearly) {
+                oldPlanType = 'pro'
+              }
+              
+              let newPlanType = 'starter'
+              if (newPriceId === proMonthly || newPriceId === proYearly) {
+                newPlanType = 'pro'
+              }
+              
+              // Determine upgrade/downgrade
+              isUpgrade = planHierarchy[newPlanType] > planHierarchy[oldPlanType] || 
+                         (newPlanType === oldPlanType && newAmount > oldAmount)
+              isDowngrade = planHierarchy[newPlanType] < planHierarchy[oldPlanType] ||
+                           (newPlanType === oldPlanType && newAmount < oldAmount)
+            }
+
             // Check if there's a meaningful change worth notifying
             const shouldNotify = 
               (oldStatus !== newStatus) || // Status changed
-              (previousAttributes?.items) || // Plan changed
+              isPlanChange || // Plan changed
               isReactivation // Reactivated
 
             if (shouldNotify) {
               try {
-                // Determine email type based on the change
-                let emailType = 'subscription_activated' // Default
-                if (isReactivation) {
-                  emailType = 'subscription_reactivated'
-                } else if (newStatus === 'canceled' || newStatus === 'cancelled') {
-                  emailType = 'subscription_cancelled'
-                } else if (newStatus === 'past_due') {
-                  emailType = 'subscription_cancelled'
-                }
-
-                // Get subscription details for reactivation email
+                // Get subscription details from database
                 const subscriptionDetails = await supabaseClient
                   .from('subscriptions')
                   .select('plan_name, plan_type, amount, interval')
                   .eq('stripe_subscription_id', updatedSubscription.id)
                   .single()
+
+                const sub = subscriptionDetails?.data || oldSubData
+
+                // Determine email type based on the change
+                let emailType = 'subscription_activated' // Default
+                if (isReactivation) {
+                  emailType = 'subscription_reactivated'
+                } else if (isUpgrade) {
+                  emailType = 'subscription_upgraded'
+                } else if (isDowngrade) {
+                  emailType = 'subscription_downgraded'
+                } else if (newStatus === 'canceled' || newStatus === 'cancelled') {
+                  emailType = 'subscription_cancelled'
+                } else if (newStatus === 'past_due') {
+                  emailType = 'subscription_cancelled'
+                }
 
                 // Prepare email data
                 const emailData: any = {
@@ -277,16 +363,26 @@ serve(async (req) => {
                   language: userData.language_preference || 'fr'
                 }
 
-                // Add subscription details for reactivation
-                if (isReactivation && subscriptionDetails?.data) {
-                  const sub = subscriptionDetails.data
+                // Add subscription details for upgrade/downgrade/reactivation emails
+                if ((isUpgrade || isDowngrade || isReactivation) && sub) {
                   emailData.variables = {
                     plan_name: sub.plan_name || '',
+                    new_plan_name: sub.plan_name || '',
                     amount: sub.amount ? `${sub.amount}€` : '',
+                    new_amount: sub.amount ? `${sub.amount}€` : '',
                     billing_interval: sub.interval || 'monthly',
                     effective_date: new Date().toLocaleDateString('fr-FR'),
                     company_name: 'Haliqo',
                     support_email: 'support@haliqo.com'
+                  }
+                  
+                  // For upgrade/downgrade, also include old plan info if available
+                  if (isUpgrade || isDowngrade) {
+                    const oldSub = oldSubData
+                    if (oldSub) {
+                      emailData.variables.old_plan_name = oldSub.plan_name || ''
+                      emailData.variables.old_amount = oldSub.amount ? `${oldSub.amount}€` : ''
+                    }
                   }
                 }
 
@@ -309,7 +405,7 @@ serve(async (req) => {
                 if (!response.ok) {
                   console.error('Failed to send subscription update email:', await response.text())
                 } else {
-                  
+                  console.log(`Subscription email sent: ${emailType} for user ${userData.id}`)
                 }
               } catch (emailError) {
                 console.error('Error sending subscription update email:', emailError)
