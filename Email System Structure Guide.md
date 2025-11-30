@@ -130,52 +130,114 @@ CREATE TABLE public.email_templates (
 
 ### Template Types
 
-The system supports the following email template types:
+The system supports the following email template types. **All templates are available in 3 languages: French (FR), English (EN), and Dutch (NL).**
 
 #### Quote-Related Templates
-| Template Type | Description | Variables | Language Support |
-|--------------|-------------|-----------|------------------|
-| `quote_sent` | Quote sent to client | `{client_name}`, `{quote_number}`, `{quote_title}`, `{quote_amount}`, `{quote_link}`, `{valid_until}`, `{company_name}` | ✅ Uses client language preference |
-| `custom_quote_sent` | Custom quote with user message | Same as `quote_sent` + `{custom_message}` | ✅ Uses client language preference |
-| `client_accepted` | Quote accepted by client | `{client_name}`, `{quote_number}`, `{quote_amount}`, `{company_name}` | ✅ Uses client language preference |
-| `client_rejected` | Quote rejected by client | Same as `client_accepted` | ✅ Uses client language preference |
-| `followup_not_viewed` | Follow-up for unopened quotes | `{client_name}`, `{quote_number}`, `{quote_link}`, `{company_name}` | ✅ Uses client language preference |
-| `followup_viewed_no_action` | Follow-up for viewed but no action | Same as `followup_not_viewed` | ✅ Uses client language preference |
-| `general_followup` | General follow-up reminder | Same as `followup_not_viewed` | ✅ Uses client language preference |
-| `welcome_client` | Welcome email for new clients | `{client_name}`, `{company_name}`, `{login_url}` | ✅ Uses client language preference |
+| Template Type | Description | Variables | Language Support | Total Templates |
+|--------------|-------------|-----------|------------------|-----------------|
+| `quote_sent` | Quote sent to client (with custom message support) | `{client_name}`, `{quote_number}`, `{quote_title}`, `{quote_amount}`, `{quote_link}`, `{valid_until}`, `{custom_message}`, `{company_name}` | ✅ Uses client language preference | 3 (FR, EN, NL) |
+| `client_accepted` | Quote accepted by client | `{client_name}`, `{quote_number}`, `{quote_amount}`, `{company_name}` | ✅ Uses client language preference | 3 (FR, EN, NL) |
+| `client_rejected` | Quote rejected by client | `{client_name}`, `{quote_number}`, `{quote_amount}`, `{company_name}` | ✅ Uses client language preference | 3 (FR, EN, NL) |
+| `followup_not_viewed` | Follow-up for unopened quotes | `{client_name}`, `{quote_number}`, `{quote_link}`, `{company_name}` | ✅ Uses client language preference | 3 (FR, EN, NL) |
+| `followup_viewed_no_action` | Follow-up for viewed but no action | `{client_name}`, `{quote_number}`, `{quote_link}`, `{company_name}` | ✅ Uses client language preference | 3 (FR, EN, NL) |
+| `general_followup` | General follow-up reminder | `{client_name}`, `{quote_number}`, `{quote_link}`, `{company_name}` | ✅ Uses client language preference | 3 (FR, EN, NL) |
+| `welcome_client` | Welcome email for new clients | `{client_name}`, `{company_name}`, `{login_url}` | ✅ Uses client language preference | 3 (FR, EN, NL) |
+
+**Note:** 
+- `custom_quote_sent` template type has been deprecated. The `quote_sent` template now supports `{custom_message}` variable.
+- All quote-related templates (except `quote_sent`) are stored in the database but may be managed separately from the main template file.
 
 #### Subscription Templates
-| Template Type | Description | Variables | Language Support |
-|--------------|-------------|-----------|------------------|
-| `subscription_upgraded` | Subscription upgrade notification | `{user_name}`, `{old_plan_name}`, `{new_plan_name}`, `{price}`, `{billing_cycle}`, `{company_name}` | ✅ Uses user language preference |
-| `subscription_downgraded` | Subscription downgrade notification | Same as `subscription_upgraded` | ✅ Uses user language preference |
-| `subscription_cancelled` | Subscription cancellation notification | `{user_name}`, `{plan_name}`, `{company_name}` | ✅ Uses user language preference |
-| `subscription_activated` | Subscription activation notification | `{user_name}`, `{plan_name}`, `{price}`, `{company_name}` | ✅ Uses user language preference |
-| `subscription_trial_ending` | Trial ending reminder | `{user_name}`, `{plan_name}`, `{trial_end_date}`, `{company_name}` | ✅ Uses user language preference |
+| Template Type | Description | Variables | Language Support | Total Templates |
+|--------------|-------------|-----------|------------------|-----------------|
+| `subscription_activated` | Subscription activation notification | `{user_name}`, `{user_email}`, `{new_plan_name}`, `{new_amount}`, `{billing_interval}`, `{effective_date}`, `{company_name}`, `{support_email}` | ✅ Uses user language preference | 3 (FR, EN, NL) |
+| `subscription_upgraded` | Subscription upgrade notification | `{user_name}`, `{user_email}`, `{old_plan_name}`, `{new_plan_name}`, `{old_amount}`, `{new_amount}`, `{billing_interval}`, `{effective_date}`, `{company_name}`, `{support_email}` | ✅ Uses user language preference | 3 (FR, EN, NL) |
+| `subscription_downgraded` | Subscription downgrade notification | `{user_name}`, `{user_email}`, `{old_plan_name}`, `{new_plan_name}`, `{old_amount}`, `{new_amount}`, `{billing_interval}`, `{effective_date}`, `{company_name}`, `{support_email}` | ✅ Uses user language preference | 3 (FR, EN, NL) |
+| `subscription_cancelled` | Subscription cancellation notification | `{user_name}`, `{user_email}`, `{old_plan_name}`, `{effective_date}`, `{cancellation_reason}`, `{company_name}`, `{support_email}` | ✅ Uses user language preference | 3 (FR, EN, NL) |
+| `subscription_reactivated` | Subscription reactivation notification | `{user_name}`, `{user_email}`, `{plan_name}`, `{amount}`, `{billing_interval}`, `{effective_date}`, `{company_name}`, `{support_email}` | ✅ Uses user language preference | 3 (FR, EN, NL) |
+| `subscription_trial_ending` | Trial ending reminder | `{user_name}`, `{user_email}`, `{new_plan_name}`, `{new_amount}`, `{trial_end_date}`, `{billing_interval}`, `{company_name}`, `{support_email}` | ✅ Uses user language preference | 3 (FR, EN, NL) |
+
+**Total Subscription Templates:** 18 (6 types × 3 languages)
 
 #### Lead Management Templates
-| Template Type | Description | Variables | Language Support |
-|--------------|-------------|-----------|------------------|
-| `new_lead_available` | New project available notification | `{artisan_name}`, `{artisan_company_name}`, `{project_description}`, `{city}`, `{zip_code}`, `{location}`, `{leads_management_url}`, `{site_url}`, `{company_name}` | ✅ Uses artisan/user language preference |
-| `lead_assigned` | Project assigned confirmation | Same as `new_lead_available` + `{client_name}` | ✅ Uses artisan/user language preference |
+| Template Type | Description | Variables | Language Support | Total Templates |
+|--------------|-------------|-----------|------------------|-----------------|
+| `new_lead_available` | New project available notification | `{artisan_company_name}`, `{project_description}`, `{location}`, `{leads_management_url}`, `{company_name}` | ✅ Uses artisan/user language preference | 3 (FR, EN, NL) |
+| `lead_assigned` | Project assigned confirmation | `{artisan_company_name}`, `{project_description}`, `{client_name}`, `{location}`, `{leads_management_url}`, `{company_name}` | ✅ Uses artisan/user language preference | 3 (FR, EN, NL) |
 
 #### Contact & Support Templates
-| Template Type | Description | Variables | Language Support |
-|--------------|-------------|-----------|------------------|
-| `contact_form` | Contact form submission notification | `{first_name}`, `{last_name}`, `{full_name}`, `{email}`, `{phone}`, `{subject}`, `{subject_label}`, `{message}`, `{company_name}`, `{submission_date}` | ✅ Uses browser/i18n language |
+| Template Type | Description | Variables | Language Support | Total Templates |
+|--------------|-------------|-----------|------------------|-----------------|
+| `contact_form` | Contact form submission notification | `{first_name}`, `{last_name}`, `{full_name}`, `{email}`, `{phone}`, `{subject}`, `{subject_label}`, `{message}`, `{company_name}`, `{submission_date}` | ✅ Uses browser/i18n language | 3 (FR, EN, NL) |
 
 #### Credit Insurance Templates
-| Template Type | Description | Variables | Language Support |
-|--------------|-------------|-----------|------------------|
-| `credit_insurance_application` | Application submission (internal) | `{application_id}`, `{submission_date}`, `{company_name}`, `{contact_person}`, `{email}`, `{telephone}`, `{address}`, `{sector}`, `{activity_description}`, `{annual_turnover}`, `{top_customers}` | ✅ Uses language parameter (default: 'fr') |
-| `credit_insurance_confirmation` | Application confirmation (client) | `{application_id}`, `{submission_date}`, `{company_name}`, `{contact_person}`, `{sector}`, `{annual_turnover}`, `{haliqo_company_name}` | ✅ Uses language parameter (default: 'fr') |
+| Template Type | Description | Variables | Language Support | Total Templates |
+|--------------|-------------|-----------|------------------|-----------------|
+| `credit_insurance_application` | Application submission (internal notification) | `{application_id}`, `{submission_date}`, `{company_name}`, `{contact_person}`, `{email}`, `{telephone}`, `{address}`, `{sector}`, `{activity_description}`, `{annual_turnover}`, `{top_customers}` | ✅ Uses language parameter (default: 'fr') | 3 (FR, EN, NL) |
+| `credit_insurance_confirmation` | Application confirmation (client) | `{application_id}`, `{submission_date}`, `{company_name}`, `{contact_person}`, `{sector}`, `{annual_turnover}`, `{haliqo_company_name}` | ✅ Uses language parameter (default: 'fr') | 3 (FR, EN, NL) |
 
 #### Invoice Templates
-| Template Type | Description | Variables | Language Support |
-|--------------|-------------|-----------|------------------|
-| `invoice_overdue_reminder` | Overdue invoice reminder | `{client_name}`, `{invoice_number}`, `{invoice_amount}`, `{days_overdue}`, `{due_date}`, `{company_name}` | ✅ Uses client language preference |
-| `invoice_payment_reminder` | Payment due soon reminder | Same as `invoice_overdue_reminder` | ✅ Uses client language preference |
-| `overdue` | General overdue notification | Same as `invoice_overdue_reminder` | ✅ Uses client language preference |
+| Template Type | Description | Variables | Language Support | Total Templates |
+|--------------|-------------|-----------|------------------|-----------------|
+| `invoice_sent` | Invoice sent to client (with custom message support) | `{client_name}`, `{invoice_number}`, `{invoice_title}`, `{invoice_amount}`, `{issue_date}`, `{due_date}`, `{custom_message}`, `{company_name}` | ✅ Uses client language preference | 3 (FR, EN, NL) |
+| `invoice_payment_reminder` | Payment due soon reminder (before due date) | `{client_name}`, `{invoice_number}`, `{invoice_amount}`, `{due_date}`, `{issue_date}`, `{days_until_due}`, `{company_name}` | ✅ Uses client language preference | 3 (FR, EN, NL) |
+| `invoice_overdue_reminder` | Overdue invoice reminder (after due date) | `{client_name}`, `{invoice_number}`, `{invoice_amount}`, `{due_date}`, `{issue_date}`, `{days_overdue}`, `{company_name}` | ✅ Uses client language preference | 3 (FR, EN, NL) |
+| `invoice_to_accountant` | Invoice sent to accountant (internal) | `{invoice_count}`, `{total_amount}`, `{date}`, `{company_name}`, `{language}`, `{user_id}` | ✅ Uses language parameter | 3 (FR, EN, NL) |
+| `expense_invoice_to_accountant` | Expense invoice sent to accountant (internal) | `{invoice_count}`, `{total_amount}`, `{date}`, `{company_name}`, `{language}`, `{user_id}` | ✅ Uses language parameter | 3 (FR, EN, NL) |
+| `overdue` | General overdue notification (legacy) | `{client_name}`, `{invoice_number}`, `{invoice_amount}`, `{days_overdue}`, `{due_date}`, `{company_name}` | ✅ Uses client language preference | 3 (FR, EN, NL) |
+
+**Note:** `overdue` template type is a legacy template. Use `invoice_overdue_reminder` for new implementations.
+
+### Template Summary
+
+**Total Email Template Types:** 24 types
+**Total Templates (with 3 languages each):** 72+ templates (24 types × 3 languages)
+
+**Breakdown by Category:**
+- **Quote Templates:** 7 types × 3 languages = 21 templates
+- **Subscription Templates:** 6 types × 3 languages = 18 templates
+- **Lead Management Templates:** 2 types × 3 languages = 6 templates
+- **Contact Templates:** 1 type × 3 languages = 3 templates
+- **Credit Insurance Templates:** 2 types × 3 languages = 6 templates
+- **Invoice Templates:** 6 types × 3 languages = 18 templates
+
+**All templates are stored in the `email_templates` table and can be managed via the Super Admin UI at `/admin/super/email-templates`.**
+
+### Complete Template List (All 24 Template Types)
+
+**Total: 24 email template types** (each available in 3 languages: FR, EN, NL = 72+ total templates)
+
+#### Templates from `consistent_emails_tempaltes.sql` (15 types):
+
+1. **invoice_payment_reminder** - Payment reminder before due date
+2. **invoice_overdue_reminder** - Overdue invoice reminder
+3. **subscription_activated** - Subscription activation notification
+4. **subscription_upgraded** - Subscription upgrade notification
+5. **subscription_downgraded** - Subscription downgrade notification
+6. **subscription_cancelled** - Subscription cancellation notification
+7. **subscription_reactivated** - Subscription reactivation notification
+8. **subscription_trial_ending** - Trial ending reminder
+9. **new_lead_available** - New project available notification
+10. **lead_assigned** - Project assigned confirmation
+11. **quote_sent** - Quote sent to client (with custom message support)
+12. **credit_insurance_application** - Credit insurance application (internal)
+13. **credit_insurance_confirmation** - Credit insurance confirmation (client)
+14. **contact_form** - Contact form submission notification
+15. **invoice_sent** - Invoice sent to client (with custom message support)
+
+#### Additional templates (not in SQL file but used in system - 9 types):
+
+16. **client_accepted** - Quote accepted by client
+17. **client_rejected** - Quote rejected by client
+18. **followup_not_viewed** - Follow-up for unopened quotes
+19. **followup_viewed_no_action** - Follow-up for viewed but no action
+20. **general_followup** - General follow-up reminder
+21. **welcome_client** - Welcome email for new clients
+22. **invoice_to_accountant** - Invoice sent to accountant (internal)
+23. **expense_invoice_to_accountant** - Expense invoice sent to accountant (internal)
+24. **overdue** - General overdue notification (legacy - use `invoice_overdue_reminder` instead)
+
+**Note:** All templates are stored in the `email_templates` database table and can be managed via the Super Admin UI at `/admin/super/email-templates`.
 
 ---
 
@@ -219,7 +281,7 @@ Templates use variables in the format `{variable_name}` that are replaced with a
   quote_title: "Kitchen Renovation",
   quote_amount: "€5,000",
   valid_until: "2024-12-31",
-  quote_link: "https://app.haliqo.com/quote-share/qt_123",
+  quote_link: "https://haliqo.com/quote-share/qt_123",
   company_name: "Haliqo"
 }
 ```
@@ -230,7 +292,7 @@ Templates use variables in the format `{variable_name}` that are replaced with a
 <p>Your quote QT-2024-001 for Kitchen Renovation is ready.</p>
 <p>Amount: €5,000</p>
 <p>Valid until: 2024-12-31</p>
-<a href="https://app.haliqo.com/quote-share/qt_123">View Quote</a>
+<a href="https://haliqo.com/quote-share/qt_123">View Quote</a>
 <p>Best regards,<br>Haliqo</p>
 ```
 
@@ -551,12 +613,22 @@ const getTemplateTypeName = (type) => {
 **The email system:**
 - ✅ Stores all templates in database (`email_templates` table)
 - ✅ Supports 3 languages (French, English, Dutch)
+- ✅ **24 email template types** covering all system communications
+- ✅ **72+ total templates** (24 types × 3 languages)
 - ✅ Uses variables for dynamic content (`{variable_name}`)
 - ✅ Allows Super Admin customization via UI
 - ✅ Throws clear errors if templates are missing (no silent fallbacks)
 - ✅ Supports user-specific templates (via `user_id` field)
 - ✅ Uses edge functions for secure email delivery
 - ✅ Includes retry mechanism via `email_outbox` table
+
+**Template Categories:**
+- **Quote Templates:** 7 types (quote_sent, client_accepted, client_rejected, followup_not_viewed, followup_viewed_no_action, general_followup, welcome_client)
+- **Subscription Templates:** 6 types (activated, upgraded, downgraded, cancelled, reactivated, trial_ending)
+- **Lead Management Templates:** 2 types (new_lead_available, lead_assigned)
+- **Contact Templates:** 1 type (contact_form)
+- **Credit Insurance Templates:** 2 types (application, confirmation)
+- **Invoice Templates:** 6 types (invoice_sent, invoice_payment_reminder, invoice_overdue_reminder, invoice_to_accountant, expense_invoice_to_accountant, overdue)
 
 **All email types use the database template system for consistency and easy management!** 🚀
 
