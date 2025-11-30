@@ -9,7 +9,9 @@ const corsHeaders = {
 };
 // Minimal email sender using Resend (or no-op if missing key)
 async function sendEmail({ to, subject, html, text }) {
+  // @ts-ignore
   const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+  // @ts-ignore
   const FROM_EMAIL = Deno.env.get('RESEND_FROM_EMAIL') || 'onboarding@resend.dev';
   if (!RESEND_API_KEY) {
     // No provider configured; simulate success
@@ -47,7 +49,9 @@ serve(async (req)=>{
     });
   }
   try {
+    // @ts-ignore0
     const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+    // @ts-ignore
     // ========================================
     // 1. FIND DUE FOLLOW-UPS
     // ========================================
@@ -195,6 +199,7 @@ serve(async (req)=>{
     })();
     // Build quote link - use share_token if available, otherwise use quote ID
     // Use SITE_URL from environment variables for proper domain
+    // @ts-ignore
     const siteUrl = Deno.env.get('SITE_URL') || 'https://www.haliqo.com';
     const quoteLink = `${siteUrl}/quote-share/${quote.share_token || quote.id}`;
     const companyName = 'Haliqo'; // This should come from user settings or company table
