@@ -200,7 +200,7 @@ export class LeadManagementService {
           city: leadData.city,
           zip_code: leadData.zip_code,
           client_name: leadData.client_name,
-          site_url: typeof window !== 'undefined' ? window.location.origin : 'https://app.haliqo.com'
+          site_url: typeof window !== 'undefined' ? window.location.origin : 'https://haliqo.com'
         };
 
         const artisanData = {
