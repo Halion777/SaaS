@@ -4,7 +4,7 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import { updateAnalyticsObjectives } from '../../../services/authService';
 
-const MetricsProgress = ({ metrics, userObjectives, onUpdate, isLoading = false }) => {
+const MetricsProgress = ({ metrics, userObjectives, onUpdate, isLoading = false, canEdit = true }) => {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [editingValues, setEditingValues] = useState({
@@ -122,6 +122,8 @@ const MetricsProgress = ({ metrics, userObjectives, onUpdate, isLoading = false 
             onClick={() => setIsEditing(true)}
             iconName="Edit"
             iconPosition="left"
+            disabled={!canEdit}
+            title={!canEdit ? t('permissions.noFullAccess', 'You need full access to perform this action') : ''}
           >
             {t('analyticsDashboard.metricsProgress.edit')}
           </Button>

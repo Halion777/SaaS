@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import MainSidebar from '../../components/ui/MainSidebar';
+import PermissionGuard, { usePermissionCheck } from '../../components/PermissionGuard';
 import TableLoader from '../../components/ui/TableLoader';
 import FilterToolbar from '../follow-up-management/components/FilterToolbar';
 import { useScrollPosition } from '../../utils/useScrollPosition';
@@ -723,8 +724,8 @@ const InvoicesFollowUp = () => {
                       iconName={processingFollowUp === followUp.id ? "Loader" : "Mail"}
                       iconPosition="left"
                       className="h-7 sm:h-8 text-xs"
-                      title="Relancer"
-                      disabled={processingFollowUp === followUp.id}
+                      title={!canEdit ? t('permissions.noFullAccess') : t('followUpManagement.actions.followUp')}
+                      disabled={!canEdit || processingFollowUp === followUp.id}
                     >
                       {processingFollowUp === followUp.id ? t('followUpManagement.actions.sending') : t('followUpManagement.actions.followUp')}
                     </Button>
@@ -810,7 +811,8 @@ const InvoicesFollowUp = () => {
                   iconName={processingFollowUp === followUp.id ? "Loader" : "Mail"}
                   iconPosition="left"
                   className="h-8 sm:h-9"
-                  disabled={processingFollowUp === followUp.id}
+                  title={!canEdit ? t('permissions.noFullAccess') : t('followUpManagement.actions.followUp')}
+                  disabled={!canEdit || processingFollowUp === followUp.id}
                 >
                   {processingFollowUp === followUp.id ? t('followUpManagement.actions.sending') : t('followUpManagement.actions.followUp')}
                 </Button>
@@ -822,7 +824,11 @@ const InvoicesFollowUp = () => {
     </div>
   );
 
+  // Check permissions for actions
+  const { canEdit } = usePermissionCheck('invoicesFollowUp');
+
   return (
+    <PermissionGuard module="invoicesFollowUp" requiredPermission="view_only">
     <div className="min-h-screen bg-background">
       <MainSidebar />
       
@@ -993,6 +999,7 @@ const InvoicesFollowUp = () => {
         </div>
       </main>
     </div>
+    </PermissionGuard>
   );
 };
 

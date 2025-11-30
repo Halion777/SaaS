@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import MainSidebar from '../../components/ui/MainSidebar';
+import PermissionGuard, { usePermissionCheck } from '../../components/PermissionGuard';
 import TableLoader from '../../components/ui/TableLoader';
 import FilterToolbar from './components/FilterToolbar';
 import { useScrollPosition } from '../../utils/useScrollPosition';
@@ -882,8 +883,8 @@ const FollowUpManagement = () => {
                       iconName={processingFollowUp === followUp.id ? "Loader" : "Mail"}
                       iconPosition="left"
                       className="h-7 sm:h-8 text-xs"
-                      title="Relancer"
-                      disabled={processingFollowUp === followUp.id}
+                      title={!canEdit ? t('permissions.noFullAccess') : t('followUpManagement.actions.followUp')}
+                      disabled={!canEdit || processingFollowUp === followUp.id}
                     >
                       {processingFollowUp === followUp.id ? t('followUpManagement.actions.sending') : t('followUpManagement.actions.followUp')}
                     </Button>
@@ -971,7 +972,8 @@ const FollowUpManagement = () => {
                   iconName={processingFollowUp === followUp.id ? "Loader" : "Mail"}
                   iconPosition="left"
                   className="h-8 sm:h-9"
-                  disabled={processingFollowUp === followUp.id}
+                  title={!canEdit ? t('permissions.noFullAccess') : t('followUpManagement.actions.followUp')}
+                  disabled={!canEdit || processingFollowUp === followUp.id}
                 >
                   {processingFollowUp === followUp.id ? t('followUpManagement.actions.sending') : t('followUpManagement.actions.followUp')}
                 </Button>
@@ -984,7 +986,11 @@ const FollowUpManagement = () => {
     </div>
   );
 
+  // Check permissions for actions
+  const { canEdit } = usePermissionCheck('quotesFollowUp');
+
   return (
+    <PermissionGuard module="quotesFollowUp" requiredPermission="view_only">
     <div className="min-h-screen bg-background">
       <MainSidebar />
       
@@ -1158,6 +1164,7 @@ const FollowUpManagement = () => {
         </div>
       </main>
     </div>
+    </PermissionGuard>
   );
 
 };

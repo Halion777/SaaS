@@ -11,6 +11,7 @@ import GlobalProfile from '../../components/ui/GlobalProfile';
 import TableLoader from '../../components/ui/TableLoader';
 import ProcessingOverlay from '../../components/ui/ProcessingOverlay';
 import SubscriptionNotificationService from '../../services/subscriptionNotificationService';
+import PermissionGuard from '../../components/PermissionGuard';
 
 const SubscriptionManagement = () => {
   const { t } = useTranslation();
@@ -565,8 +566,11 @@ const SubscriptionManagement = () => {
     }).format(amount);
   };
 
-
   return (
+    <PermissionGuard 
+      adminOnly 
+      customMessage={t('subscription.adminOnly', 'Only administrators can manage subscription settings.')}
+    >
     <div className="min-h-screen bg-background">
       <Helmet>
         <title>Subscription Management | Haliqo</title>
@@ -1128,6 +1132,7 @@ const SubscriptionManagement = () => {
         </div>
       )}
     </div>
+    </PermissionGuard>
   );
 };
 

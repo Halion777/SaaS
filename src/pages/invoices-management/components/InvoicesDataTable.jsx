@@ -6,7 +6,7 @@ import Input from '../../../components/ui/Input';
 import { Checkbox } from '../../../components/ui/Checkbox';
 import Select from '../../../components/ui/Select';
 
-const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSelectionChange, filters, onFiltersChange, onStatusUpdate, isExportingPDF = false }) => {
+const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSelectionChange, filters, onFiltersChange, onStatusUpdate, isExportingPDF = false, canEdit = true, canDelete = true }) => {
   const { t, i18n } = useTranslation();
   const [sortConfig, setSortConfig] = useState({ key: 'issueDate', direction: 'desc' });
   const [viewMode, setViewMode] = useState(() => {
@@ -57,19 +57,20 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
     const config = statusConfig[status] || statusConfig.unpaid;
     
     // Show editable status dropdown only for individual clients (not professional clients who use Peppol)
-    if (onStatusUpdate && invoice) {
+    if (onStatusUpdate && invoice && canEdit) {
       const clientType = invoice.client?.client_type || invoice.client?.type;
       const isIndividual = clientType === 'individual' || clientType === 'particulier';
       
-      // Only show editable status for individual clients
+      // Only show editable status for individual clients with edit permission
       if (isIndividual) {
         return (
-          <div className="relative inline-block" style={{ zIndex: 'auto' }}>
+          <div className="relative inline-block">
             <Select
               value={status}
               onValueChange={(newStatus) => onStatusUpdate(invoice.id, newStatus)}
               options={statusOptions}
               className="w-auto min-w-[120px]"
+              usePortal={true}
             />
           </div>
         );
@@ -244,7 +245,8 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                 iconName="Send"
                 onClick={() => onInvoiceAction('send', invoice)}
                 className="text-xs text-primary hover:text-primary/80"
-                title={t('invoicesManagement.table.actions.sendInvoice')}
+                title={!canEdit ? t('permissions.noFullAccess') : t('invoicesManagement.table.actions.sendInvoice')}
+                disabled={!canEdit}
               />
               <Button
                 variant="ghost"
@@ -252,7 +254,8 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                 iconName="Mail"
                 onClick={() => onInvoiceAction('send_to_accountant', invoice)}
                 className="text-xs text-primary hover:text-primary/80"
-                title={t('invoicesManagement.table.actions.sendToAccountant', 'Send to Accountant')}
+                title={!canEdit ? t('permissions.noFullAccess') : t('invoicesManagement.table.actions.sendToAccountant', 'Send to Accountant')}
+                disabled={!canEdit}
               />
             </div>
           </div>
@@ -262,7 +265,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
   );
 
   return (
-    <div className="bg-card border border-border rounded-lg overflow-hidden">
+    <div className="bg-card border border-border rounded-lg overflow-visible">
       {/* Search Bar */}
       <div className="p-3 md:p-4 border-b border-border">
         <div className="flex items-center justify-between">
@@ -333,7 +336,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
       ) : viewMode === 'card' ? (
         renderCardView()
       ) : (
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto overflow-y-visible">
         <table className="min-w-full divide-y divide-border">
           <thead className="bg-muted/30">
             <tr>
@@ -431,16 +434,18 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                         size="sm"
                         iconName="Send"
                         onClick={() => onInvoiceAction('send', invoice)}
-                        title={t('invoicesManagement.table.actions.sendInvoice')}
+                        title={!canEdit ? t('permissions.noFullAccess') : t('invoicesManagement.table.actions.sendInvoice')}
                         className="text-primary hover:text-primary/80"
+                        disabled={!canEdit}
                       />
                       <Button
                         variant="ghost"
                         size="sm"
                         iconName="Mail"
                         onClick={() => onInvoiceAction('send_to_accountant', invoice)}
-                        title={t('invoicesManagement.table.actions.sendToAccountant', 'Send to Accountant')}
+                        title={!canEdit ? t('permissions.noFullAccess') : t('invoicesManagement.table.actions.sendToAccountant', 'Send to Accountant')}
                         className="text-primary hover:text-primary/80"
+                        disabled={!canEdit}
                       />
                     </div>
                   </td>

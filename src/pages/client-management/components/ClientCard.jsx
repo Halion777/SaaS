@@ -4,7 +4,7 @@ import Button from '../../../components/ui/Button';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
-const ClientCard = ({ client, onSelect, onDelete, onStatusToggle, getStatusColor }) => {
+const ClientCard = ({ client, onSelect, onDelete, onStatusToggle, getStatusColor, canEdit = true, canDelete = true }) => {
   const { t, i18n } = useTranslation();
   
   const formatCurrency = (amount) => {
@@ -74,6 +74,8 @@ const ClientCard = ({ client, onSelect, onDelete, onStatusToggle, getStatusColor
             }}
             iconName="Edit"
             className="text-muted-foreground hover:text-foreground"
+            disabled={!canEdit}
+            title={!canEdit ? t('permissions.noFullAccess') : t('clientManagement.table.actions.edit')}
           />
           <Button
             variant="ghost"
@@ -84,6 +86,8 @@ const ClientCard = ({ client, onSelect, onDelete, onStatusToggle, getStatusColor
             }}
             iconName="Trash2"
             className="text-destructive hover:text-destructive/80"
+            disabled={!canDelete}
+            title={!canDelete ? t('permissions.noFullAccess') : t('clientManagement.table.actions.delete')}
           />
         </div>
       </div>

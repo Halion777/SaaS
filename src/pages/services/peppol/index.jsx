@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import MainSidebar from '../../../components/ui/MainSidebar';
+import PermissionGuard, { usePermissionCheck } from '../../../components/PermissionGuard';
 import TableLoader from '../../../components/ui/TableLoader';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
@@ -1011,9 +1012,11 @@ const PeppolNetworkPage = () => {
     </div>
   );
 
-
+  // Check permissions for actions
+  const { canEdit } = usePermissionCheck('peppolAccessPoint');
 
   return (
+    <PermissionGuard module="peppolAccessPoint" requiredPermission="view_only">
     <div className="min-h-screen bg-background">
       <MainSidebar />
 
@@ -1416,20 +1419,22 @@ const PeppolNetworkPage = () => {
                             <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4 pt-4">
                               <Button
                                 onClick={handleTestConnection}
-                                disabled={isTesting || !peppolSchemeCode || !peppolIdentifier || !peppolSettings.name || !peppolSettings.email || !peppolSettings.firstName || !peppolSettings.lastName}
+                                disabled={!canEdit || isTesting || !peppolSchemeCode || !peppolIdentifier || !peppolSettings.name || !peppolSettings.email || !peppolSettings.firstName || !peppolSettings.lastName}
                                 variant="outline"
                                 iconName={isTesting ? "Loader2" : "Wifi"}
                                 iconPosition="left"
                                 className="w-full sm:w-auto"
+                                title={!canEdit ? t('permissions.noFullAccess', 'You need full access to perform this action') : ''}
                               >
                                 {isTesting ? t('peppol.buttons.testing') : t('peppol.buttons.test')}
                               </Button>
                               <Button
                                 onClick={handleSaveSettings}
-                                disabled={isSaving || !peppolSchemeCode || !peppolIdentifier || !peppolSettings.name || !peppolSettings.email || !peppolSettings.firstName || !peppolSettings.lastName}
+                                disabled={!canEdit || isSaving || !peppolSchemeCode || !peppolIdentifier || !peppolSettings.name || !peppolSettings.email || !peppolSettings.firstName || !peppolSettings.lastName}
                                 iconName={isSaving ? "Loader2" : "Save"}
                                 iconPosition="left"
                                 className="w-full sm:min-w-[200px]"
+                                title={!canEdit ? t('permissions.noFullAccess', 'You need full access to perform this action') : ''}
                               >
                                 {isSaving
                                   ? (peppolSettings.isConfigured ? t('peppol.buttons.updating') : t('peppol.buttons.registering'))
@@ -2022,7 +2027,7 @@ const PeppolNetworkPage = () => {
         </main>
       </div>
     </div>
-
+    </PermissionGuard>
   );
 };
 

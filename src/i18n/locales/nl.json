@@ -1,4 +1,49 @@
 {
+  "pageTitle": {
+    "home": "Home",
+    "login": "Inloggen",
+    "register": "Registreren",
+    "forgotPassword": "Wachtwoord vergeten",
+    "resetPassword": "Wachtwoord resetten",
+    "pricing": "Prijzen",
+    "about": "Over ons",
+    "contact": "Contact",
+    "features": "Functies",
+    "terms": "Algemene voorwaarden",
+    "privacy": "Privacybeleid",
+    "cookies": "Cookiebeleid",
+    "blog": "Blog",
+    "blogPost": "Blogartikel",
+    "findArtisan": "Vind een vakman",
+    "dashboard": "Dashboard",
+    "quoteCreation": "Offerte maken",
+    "quotesManagement": "Offertes",
+    "invoicesManagement": "Facturen",
+    "expenseInvoices": "Onkostenfacturen",
+    "clientManagement": "Klanten",
+    "quotesFollowUp": "Offertes opvolging",
+    "invoicesFollowUp": "Facturen opvolging",
+    "analytics": "Analyses",
+    "leadsManagement": "Leads",
+    "profiles": "Profielen",
+    "subscription": "Abonnement",
+    "tasks": "Taken",
+    "peppol": "PEPPOL",
+    "creditInsurance": "Kredietverzekering",
+    "recovery": "Incasso",
+    "quoteShare": "Offerte",
+    "superAdmin": {
+      "default": "Super Admin",
+      "dashboard": "Admin Dashboard",
+      "users": "Gebruikersbeheer",
+      "leads": "Leadbeheer",
+      "billing": "Facturatie",
+      "emailTemplates": "E-mailsjablonen",
+      "blogs": "Blogbeheer",
+      "customization": "Aanpassing",
+      "peppol": "PEPPOL instellingen"
+    }
+  },
   "nav": {
     "home": "Home",
     "about": "Over ons",
@@ -1085,6 +1130,8 @@
     "managingBilling": "Factureringsportaal openen...",
     "pageTitle": "Beheer je abonnement",
     "pageDescription": "Upgraden, downgraden of beheer je Haliqo plan",
+    "adminOnly": "Alleen beheerders kunnen abonnementsinstellingen beheren.",
+    "adminOnlyNote": "Neem contact op met de beheerder om het abonnement te beheren",
     "currentPlan": {
       "title": "Huidig plan",
       "plan": "Plan",
@@ -1780,7 +1827,8 @@
           "resetPassword": {
             "title": "Wachtwoord Resetten",
             "description": "Wijzig uw wachtwoord"
-          }
+          },
+          "adminOnlyNote": "Neem contact op met de beheerder om het wachtwoord te resetten"
         }
       }
     }
@@ -3275,7 +3323,10 @@
       "send": "Versturen",
       "sendError": "Er is een fout opgetreden bij het versturen van de offerte. Probeer het opnieuw.",
       "yourCompany": "Uw bedrijf",
-      "yourTeam": "Uw team"
+      "yourTeam": "Uw team",
+      "defaultSubject": "Offerte {{quoteNumber}} - {{projectDescription}}",
+      "defaultMessage": "Hierbij vindt u onze offerte {{quoteNumber}}.",
+      "defaultProject": "Nieuw project"
     },
     "errors": {
       "clientRequired": "Selecteer een klant",
@@ -4041,7 +4092,7 @@
         "yourCompany": "Uw bedrijf",
         "yourTeam": "Uw team",
         "defaultSubject": "Factuur {{invoiceNumber}} - {{companyName}}",
-        "defaultMessage": "Hallo,\n\nHierbij vindt u onze factuur {{invoiceNumber}}.\n\nMet vriendelijke groet,\n{{companyName}}",
+        "defaultMessage": "Hierbij vindt u onze factuur {{invoiceNumber}}.",
         "emailText": "Factuur {{invoiceNumber}} - Bedrag: {{amount}}",
         "preview": {
           "invoice": "Factuur",
@@ -4455,11 +4506,33 @@
     "verifying": "Verifiëren...",
     "hint": "De PIN-code beschermt de toegang tot dit profiel"
   },
+  "permissions": {
+    "checking": "Machtigingen controleren...",
+    "noFullAccess": "U heeft volledige toegang nodig om deze actie uit te voeren",
+    "accessDenied": {
+      "title": "Toegang Geweigerd",
+      "noAccess": "U heeft geen toestemming om deze pagina te bekijken. Neem contact op met uw beheerder voor toegang.",
+      "noFullAccess": "U heeft geen toestemming om deze actie uit te voeren. Neem contact op met uw beheerder voor toegang.",
+      "adminOnly": "Alleen beheerders kunnen toegang krijgen tot deze pagina.",
+      "currentRole": "Huidige Rol",
+      "requiredAccess": "Vereiste Toegang",
+      "adminRole": "Beheerder",
+      "goBack": "Terug",
+      "goHome": "Ga naar Dashboard"
+    },
+    "viewOnly": {
+      "message": "U heeft alleen-lezen toegang. U kunt geen wijzigingen aanbrengen.",
+      "createDisabled": "U heeft geen toestemming om te maken",
+      "editDisabled": "U heeft geen toestemming om te bewerken",
+      "deleteDisabled": "U heeft geen toestemming om te verwijderen"
+    }
+  },
   "multiUserProfiles": {
     "title": "Gebruikersprofielbeheer",
     "subtitle": "Beheer uw teamprofielen en hun machtigingen",
     "loading": "Profielen laden...",
     "addProfile": "Profiel toevoegen",
+    "adminOnly": "Alleen beheerders kunnen gebruikersprofielen beheren.",
     "premiumAccount": {
       "title": "Premium Account",
       "description": "U kunt maximaal {{max}} gebruikersprofielen aanmaken",
@@ -4498,6 +4571,9 @@
         "pinHintMultiple": "PIN vereist voor alle profielen (inclusief admin) wanneer meerdere profielen bestaan. Laat leeg om standaard PIN (1234) te gebruiken.",
         "roleTemplate": "Rol Sjabloon",
         "roleTemplateDescription": "Selecteer een vooraf gedefinieerd sjabloon of pas machtigingen aan",
+        "customRoleName": "Naam Aangepaste Rol",
+        "customRoleNamePlaceholder": "bijv. HR, Support, Operaties, Stagiair",
+        "customRoleNameHint": "Voer een beschrijvende naam in voor deze aangepaste rol. Deze naam wordt weergegeven in het profiel.",
         "detailedPermissions": "Gedetailleerde Machtigingen",
         "detailedPermissionsDescription": "Pas machtigingen aan voor elke module",
         "permissionsSummary": "Machtigingen Overzicht",
@@ -4569,23 +4645,27 @@
     "roles": {
       "admin": {
         "name": "Beheerder",
-        "description": "Volledige toegang tot alle functies"
+        "description": "Volledige toegang tot alle functies en instellingen. Kan gebruikers en systeemconfiguratie beheren."
       },
       "manager": {
         "name": "Manager",
-        "description": "Teambeheer en documentgoedkeuring"
+        "description": "Volledige toegang tot offertes, facturen, klanten en teambeheer. Beperkte toegang tot financiële diensten."
       },
       "accountant": {
         "name": "Accountant",
-        "description": "Financieel beheer en facturering"
+        "description": "Volledige toegang tot facturen, uitgaven en financiële analyses. Geen toegang tot offertes aanmaken of leads."
       },
       "sales": {
         "name": "Verkoop",
-        "description": "Verkoopbeheer en klantrelaties"
+        "description": "Volledige toegang tot offertes, leads en klanten. Geen toegang tot facturen of financiële functies."
       },
       "viewer": {
         "name": "Viewer",
-        "description": "Alleen-lezen toegang tot gegevens"
+        "description": "Alleen-lezen toegang tot offertes, klanten en analyses. Kan geen gegevens aanmaken of wijzigen."
+      },
+      "custom": {
+        "name": "Aangepaste Rol",
+        "description": "Maak een aangepaste rol met een unieke naam (bijv. HR, Support, Operaties) en stel machtigingen handmatig in."
       }
     },
     "messages": {
@@ -4600,6 +4680,203 @@
       "deleteConfirm": "Weet u zeker dat u dit profiel wilt verwijderen?",
       "avatarUpdated": "Avatar succesvol bijgewerkt",
       "avatarUpdateError": "Fout bij uploaden van avatar"
+    }
+  },
+  "creditInsurance": {
+    "title": "Kredietverzekering",
+    "subtitle": "Bescherm uw cashflow tegen wanbetaling van klanten",
+    "tabs": {
+      "overview": "Overzicht",
+      "application": "Aanvraag"
+    },
+    "highlights": {
+      "coverage": {
+        "title": "90% Dekking",
+        "description": "Van onbetaald bedrag"
+      },
+      "b2b": {
+        "title": "B2B Klanten",
+        "description": "Alleen bedrijven"
+      },
+      "claims": {
+        "title": "Snelle Claims",
+        "description": "Verwerkt in 48u"
+      }
+    },
+    "serviceDescription": {
+      "title": "Servicebeschrijving",
+      "riskProtection": {
+        "title": "Risicobescherming",
+        "description": "Deze verzekering dekt tot 90% van het onbetaalde bedrag in geval van faillissement of langdurige wanbetaling door een B2B-klant. Hiermee kunt u uw cashflow behouden en uw bedrijf rustig voortzetten, zelfs als een belangrijke klant in gebreke blijft."
+      }
+    },
+    "benefits": {
+      "title": "Voordelen",
+      "item1": "Dekking tot 90% van de vorderingen",
+      "item2": "Bescherming tegen faillissement van klanten",
+      "item3": "Juridische ondersteuning inbegrepen",
+      "item4": "Snelle reactie bij claims"
+    },
+    "conditions": {
+      "title": "Voorwaarden",
+      "item1": "Alleen B2B-klanten (bedrijven)",
+      "item2": "Facturen boven €500",
+      "item3": "Maximaal 90 dagen betalingstermijn",
+      "item4": "Melding binnen maximaal 30 dagen"
+    },
+    "cta": {
+      "title": "Vraag een gepersonaliseerde offerte aan",
+      "description": "Ontvang een kredietverzekeringsvoorstel op maat van uw bedrijf",
+      "button": "Mijn offerte aanvragen"
+    },
+    "sectors": {
+      "construction": "Bouw",
+      "manufacturing": "Productie",
+      "retail": "Detailhandel",
+      "services": "Diensten",
+      "technology": "Technologie",
+      "healthcare": "Gezondheidszorg",
+      "finance": "Financiën",
+      "other": "Overig"
+    },
+    "form": {
+      "title": "Kredietverzekering Aanvraag",
+      "subtitle": "Vul dit formulier in om een gepersonaliseerd voorstel te ontvangen",
+      "sections": {
+        "companyInfo": {
+          "title": "Contactgegevens van het bedrijf"
+        },
+        "industry": {
+          "title": "Bedrijfssector"
+        },
+        "financial": {
+          "title": "Financiële informatie"
+        }
+      },
+      "fields": {
+        "companyName": "Bedrijfsnaam",
+        "contactPerson": "Contactpersoon",
+        "email": "E-mail",
+        "telephone": "Telefoon",
+        "address": "Volledig adres",
+        "sector": "Hoofdsector",
+        "activityDescription": "Activiteitsomschrijving",
+        "annualTurnover": "Jaaromzet",
+        "topCustomers": "Belangrijkste B2B-klanten"
+      },
+      "placeholders": {
+        "companyName": "bijv. Artisan Dupont BVBA",
+        "contactPerson": "bijv. Jan Jansen",
+        "email": "contact@bedrijf.com",
+        "telephone": "+32 123 456 789",
+        "address": "Hoofdstraat 123, 1000 Brussel",
+        "sector": "Selecteer uw sector",
+        "activityDescription": "Beschrijf uw hoofdactiviteit, diensten, werkgebied...",
+        "topCustomers": "Noem uw belangrijkste zakelijke klanten (naam, sector, gemiddeld factuurbedrag...)"
+      },
+      "submit": "Aanvraag verzenden",
+      "submitting": "Verzenden...",
+      "errorSubmitting": "Fout bij verzenden aanvraag",
+      "securityMessage": "Uw gegevens zijn veilig en worden alleen gebruikt voor de verwerking van uw aanvraag.",
+      "success": {
+        "title": "Aanvraag verzonden!",
+        "message": "Uw aanvraag is succesvol verzonden. U ontvangt binnenkort een bevestigingsmail."
+      }
+    }
+  },
+  "recovery": {
+    "title": "Incasso",
+    "subtitle": "Innen uw onbetaalde facturen efficiënt.",
+    "headerSubtitle": "Innen uw onbetaalde vorderingen efficiënt en professioneel",
+    "tabs": {
+      "overview": "Overzicht",
+      "invoices": "Onbetaalde facturen"
+    },
+    "urgency": {
+      "urgent": "Urgent",
+      "medium": "Gemiddeld",
+      "recent": "Recent"
+    },
+    "highlights": {
+      "successRate": {
+        "title": "85% Slagingspercentage",
+        "description": "Van facturen geïnd"
+      },
+      "fastRecovery": {
+        "title": "Snelle Incasso",
+        "description": "Gemiddeld 15 dagen"
+      },
+      "legalProtection": {
+        "title": "Juridische Bescherming",
+        "description": "Volledige juridische ondersteuning"
+      }
+    },
+    "howItWorks": {
+      "title": "Hoe het werkt",
+      "performanceBased": {
+        "title": "Prestatiegerichte dienst",
+        "description": "Zodra een factuur onbetaald is en u geen nieuws van de klant heeft, gaan we over tot incasso. Geen kosten tenzij we het bedrag innen. Onze vergoeding is uitsluitend gebaseerd op ons succes."
+      }
+    },
+    "process": {
+      "title": "Ons Proces",
+      "step1": "Dossieranalyse en verificatie",
+      "step2": "Professionele minnelijke herinneringen",
+      "step3": "Onderhandeling en betalingsplan",
+      "step4": "Juridische procedures indien nodig"
+    },
+    "conditions": {
+      "title": "Voorwaarden",
+      "item1": "Factuur onbetaald gedurende meer dan 15 dagen",
+      "item2": "Minimumbedrag €200",
+      "item3": "Volledig dossier en bewijsstukken"
+    },
+    "cta": {
+      "title": "Vertrouw ons uw onbetaalde facturen toe",
+      "description": "Onze incasso-experts ondersteunen u bij het innen van uw vorderingen",
+      "button": "Start Incasso"
+    },
+    "invoices": {
+      "title": "Onbetaalde Facturen",
+      "subtitle": "Selecteer de facturen die u wilt indienen voor onze incassodienst",
+      "dueDate": "Vervaldatum",
+      "daysOverdue": "dagen achterstallig",
+      "noInvoices": {
+        "title": "Geen onbetaalde facturen",
+        "description": "Al uw facturen zijn betaald. Goed gedaan!"
+      }
+    },
+    "form": {
+      "context": {
+        "title": "Context en Uitleg",
+        "placeholder": "Beschrijf de context van deze onbetaalde facturen, contactpogingen, door de klant gegeven redenen..."
+      },
+      "attachments": {
+        "title": "Bijlagen",
+        "subtitle": "Facturen, contracten, bewijsstukken",
+        "addLabel": "Documenten toevoegen",
+        "addDescription": "Slepen en neerzetten of klik om bestanden te selecteren",
+        "addedFiles": "Toegevoegde bestanden"
+      },
+      "submit": "Indienen voor Incasso",
+      "submitting": "Verzenden...",
+      "selectInvoiceError": "Selecteer ten minste één factuur",
+      "selectInvoiceHint": "Selecteer ten minste één factuur om door te gaan",
+      "submitError": "Fout bij verzenden van incassoverzoek",
+      "success": {
+        "title": "Verzoek Ingediend!",
+        "message": "Uw facturen zijn ingediend voor incasso. Ons team neemt binnen 48 uur contact met u op."
+      },
+      "info": {
+        "timeline": {
+          "label": "Tijdlijn",
+          "value": "Eerste actie binnen 48u, regelmatige en transparante opvolging"
+        },
+        "guarantee": {
+          "label": "Garantie",
+          "value": "Geen kosten als we uw geld niet innen"
+        }
+      }
     }
   }
 }

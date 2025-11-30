@@ -5,8 +5,10 @@ export class CreditInsuranceService {
   
   /**
    * Create a new credit insurance application
+   * @param {Object} applicationData - The application data
+   * @param {string} language - The language for email templates (default: 'fr')
    */
-  static async createApplication(applicationData) {
+  static async createApplication(applicationData, language = 'fr') {
     try {
       // Validate required fields
       const requiredFields = [
@@ -14,9 +16,47 @@ export class CreditInsuranceService {
         'address', 'sector', 'activityDescription', 'annualTurnover', 'topCustomers'
       ];
       
+      const fieldNames = {
+        en: {
+          companyName: 'Company Name',
+          contactPerson: 'Contact Person',
+          email: 'Email',
+          telephone: 'Phone',
+          address: 'Address',
+          sector: 'Sector',
+          activityDescription: 'Activity Description',
+          annualTurnover: 'Annual Turnover',
+          topCustomers: 'Top Customers'
+        },
+        fr: {
+          companyName: 'Nom de l\'entreprise',
+          contactPerson: 'Personne de contact',
+          email: 'Email',
+          telephone: 'Téléphone',
+          address: 'Adresse',
+          sector: 'Secteur',
+          activityDescription: 'Description de l\'activité',
+          annualTurnover: 'Chiffre d\'affaires annuel',
+          topCustomers: 'Principaux clients'
+        },
+        nl: {
+          companyName: 'Bedrijfsnaam',
+          contactPerson: 'Contactpersoon',
+          email: 'E-mail',
+          telephone: 'Telefoon',
+          address: 'Adres',
+          sector: 'Sector',
+          activityDescription: 'Activiteitsomschrijving',
+          annualTurnover: 'Jaaromzet',
+          topCustomers: 'Belangrijkste klanten'
+        }
+      };
+      
+      const langFields = fieldNames[language] || fieldNames.fr;
+      
       for (const field of requiredFields) {
         if (!applicationData[field]) {
-          throw new Error(`Le champ ${field} est obligatoire`);
+          throw new Error(`${langFields[field]} is required`);
         }
       }
 
@@ -71,21 +111,28 @@ export class CreditInsuranceService {
         createdAt: data.created_at
       };
 
-      // Send email to info@haliqo.com
-      const notificationResult = await EmailService.sendCreditInsuranceApplicationEmail(application);
+      // Send email to info@haliqo.com (always in FR for admin)
+      const notificationResult = await EmailService.sendCreditInsuranceApplicationEmail(application, 'fr');
       if (!notificationResult.success) {
         console.warn('Failed to send notification email to info@haliqo.com:', notificationResult.error);
       }
 
-      // Send confirmation email to applicant
-      const confirmationResult = await EmailService.sendCreditInsuranceConfirmationEmail(application);
+      // Send confirmation email to applicant in their language
+      const confirmationResult = await EmailService.sendCreditInsuranceConfirmationEmail(application, language);
       if (!confirmationResult.success) {
         console.warn('Failed to send confirmation email to applicant:', confirmationResult.error);
       }
 
+      // Success messages in different languages
+      const successMessages = {
+        en: 'Your application has been successfully submitted!',
+        fr: 'Votre demande a été envoyée avec succès !',
+        nl: 'Uw aanvraag is succesvol verzonden!'
+      };
+
       return {
         success: true,
-        message: 'Votre demande a été envoyée avec succès !',
+        message: successMessages[language] || successMessages.fr,
         application: data,
         applicationId: data.id
       };

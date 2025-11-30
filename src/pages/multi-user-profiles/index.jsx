@@ -10,6 +10,7 @@ import FileUpload from '../../components/ui/FileUpload';
 import EnhancedSelect from '../../components/ui/EnhancedSelect';
 import MainSidebar from '../../components/ui/MainSidebar';
 import GlobalProfile from '../../components/ui/GlobalProfile';
+import PermissionGuard from '../../components/PermissionGuard';
 
 const MultiUserProfilesPage = () => {
   const { t } = useTranslation();
@@ -147,7 +148,7 @@ const MultiUserProfilesPage = () => {
       permissions: {
         dashboard: 'full_access',
         analytics: 'full_access',
-        peppolAccessPoint: 'no_access',
+        peppolAccessPoint: 'view_only',
         leadsManagement: 'full_access',
         quoteCreation: 'full_access',
         quotesManagement: 'full_access',
@@ -165,19 +166,19 @@ const MultiUserProfilesPage = () => {
       description: t('multiUserProfiles.roles.accountant.description'),
       role: 'accountant',
       permissions: {
-        dashboard: 'view_only',
-        analytics: 'full_access',
-        peppolAccessPoint: 'view_only',
-        leadsManagement: 'view_only',
-        quoteCreation: 'view_only',
-        quotesManagement: 'view_only',
-        quotesFollowUp: 'view_only',
-        invoicesFollowUp: 'full_access',
-        clientInvoices: 'full_access',
-        supplierInvoices: 'full_access',
-        clientManagement: 'view_only',
-        creditInsurance: 'view_only',
-        recovery: 'view_only'
+        dashboard: 'view_only',           // Can view dashboard summary
+        analytics: 'full_access',          // Full access to financial analytics
+        peppolAccessPoint: 'full_access',  // Can manage e-invoicing
+        leadsManagement: 'no_access',      // No access to leads - not their domain
+        quoteCreation: 'no_access',        // Cannot create quotes
+        quotesManagement: 'view_only',     // Can view quotes for reference
+        quotesFollowUp: 'no_access',       // No access to quote follow-ups
+        invoicesFollowUp: 'full_access',   // Full access to invoice follow-ups
+        clientInvoices: 'full_access',     // Full access to client invoices
+        supplierInvoices: 'full_access',   // Full access to expense/supplier invoices
+        clientManagement: 'view_only',     // Can view clients for billing info
+        creditInsurance: 'view_only',      // Can view credit insurance info
+        recovery: 'view_only'              // Can view recovery info
       }
     },
     sales: {
@@ -185,19 +186,19 @@ const MultiUserProfilesPage = () => {
       description: t('multiUserProfiles.roles.sales.description'),
       role: 'sales',
       permissions: {
-        dashboard: 'view_only',
-        analytics: 'view_only',
-        peppolAccessPoint: 'no_access',
-        leadsManagement: 'full_access',
-        quoteCreation: 'full_access',
-        quotesManagement: 'view_only',
-        quotesFollowUp: 'view_only',
-        invoicesFollowUp: 'view_only',
-        clientInvoices: 'view_only',
-        supplierInvoices: 'no_access',
-        clientManagement: 'full_access',
-        creditInsurance: 'no_access',
-        recovery: 'no_access'
+        dashboard: 'view_only',            // Can view dashboard
+        analytics: 'view_only',            // Can view analytics for sales metrics
+        peppolAccessPoint: 'no_access',    // No access to e-invoicing
+        leadsManagement: 'full_access',    // Full access to leads
+        quoteCreation: 'full_access',      // Can create quotes
+        quotesManagement: 'full_access',   // Can manage quotes
+        quotesFollowUp: 'full_access',     // Can follow up on quotes
+        invoicesFollowUp: 'no_access',     // No access to invoice follow-ups
+        clientInvoices: 'no_access',       // No access to invoices
+        supplierInvoices: 'no_access',     // No access to expense invoices
+        clientManagement: 'full_access',   // Full access to clients
+        creditInsurance: 'no_access',      // No access to financial services
+        recovery: 'no_access'              // No access to recovery
       }
     },
     viewer: {
@@ -209,13 +210,33 @@ const MultiUserProfilesPage = () => {
         analytics: 'view_only',
         peppolAccessPoint: 'no_access',
         leadsManagement: 'view_only',
-        quoteCreation: 'no_access',
+        quoteCreation: 'no_access',        // Cannot create quotes
         quotesManagement: 'view_only',
         quotesFollowUp: 'view_only',
         invoicesFollowUp: 'view_only',
         clientInvoices: 'view_only',
         supplierInvoices: 'no_access',
         clientManagement: 'view_only',
+        creditInsurance: 'no_access',
+        recovery: 'no_access'
+      }
+    },
+    custom: {
+      name: t('multiUserProfiles.roles.custom.name'),
+      description: t('multiUserProfiles.roles.custom.description'),
+      role: 'custom',
+      permissions: {
+        dashboard: 'view_only',
+        analytics: 'no_access',
+        peppolAccessPoint: 'no_access',
+        leadsManagement: 'no_access',
+        quoteCreation: 'no_access',
+        quotesManagement: 'no_access',
+        quotesFollowUp: 'no_access',
+        invoicesFollowUp: 'no_access',
+        clientInvoices: 'no_access',
+        supplierInvoices: 'no_access',
+        clientManagement: 'no_access',
         creditInsurance: 'no_access',
         recovery: 'no_access'
       }
@@ -232,6 +253,7 @@ const MultiUserProfilesPage = () => {
       name: '',
       email: '',
       role: defaultRole,
+      customRoleName: '',
       selectedTemplate: defaultRole,
       pin: '',
       permissions: defaultTemplate?.permissions || {
@@ -256,6 +278,7 @@ const MultiUserProfilesPage = () => {
     name: '',
     email: '',
     role: 'admin', // Default to admin for first profile
+    customRoleName: '', // For custom role names like "HR", "Support", etc.
     selectedTemplate: 'admin',
     pin: '',
     permissions: {
@@ -402,11 +425,21 @@ const MultiUserProfilesPage = () => {
       const updated = {
         ...prev,
         selectedTemplate: templateKey,
-        role: templateKey,
+        role: templateKey === 'custom' ? prev.customRoleName || 'custom' : templateKey,
+        customRoleName: templateKey === 'custom' ? prev.customRoleName : '',
         permissions: template.permissions
       };
       return updated;
     });
+  };
+
+  // Handle custom role name change
+  const handleCustomRoleNameChange = (customName) => {
+    setProfileForm(prev => ({
+      ...prev,
+      customRoleName: customName,
+      role: customName || 'custom'
+    }));
   };
 
   // Handle individual permission changes
@@ -618,14 +651,15 @@ const MultiUserProfilesPage = () => {
   };
 
   const getRoleLabel = (role) => {
-    const roleMap = {
-      admin: 'Administrateur',
-      manager: 'Gestionnaire',
-      accountant: 'Comptable',
-      sales: 'Commercial',
-      viewer: 'Lecteur'
-    };
-    return roleMap[role] || 'Utilisateur';
+    // Standard roles use translation keys
+    const standardRoles = ['admin', 'manager', 'accountant', 'sales', 'viewer', 'custom'];
+    
+    if (standardRoles.includes(role)) {
+      return t(`multiUserProfiles.roles.${role}.name`, role);
+    }
+    
+    // For custom role names (e.g., "HR", "Support"), return as-is (they're user-defined)
+    return role || t('multiUserProfiles.roles.custom.name', 'Custom');
   };
 
   const getProfileAvatar = (profile) => {
@@ -648,6 +682,10 @@ const MultiUserProfilesPage = () => {
   };
 
   return (
+    <PermissionGuard 
+      adminOnly 
+      customMessage={t('multiUserProfiles.adminOnly', 'Only administrators can manage user profiles.')}
+    >
     <div className="min-h-screen bg-background">
       <MainSidebar />
       <GlobalProfile />
@@ -1008,29 +1046,38 @@ const MultiUserProfilesPage = () => {
                           <div
                             key={key}
                             onClick={() => handleTemplateChange(key)}
-                            className={`group relative p-4 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
+                            className={`group relative p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
                               profileForm.selectedTemplate === key
                                 ? 'border-primary bg-primary/5 shadow-md'
                                 : 'border-border hover:border-primary/50 bg-card'
                             }`}
                           >
                             <div className="flex items-center justify-between mb-3">
-                              <h4 className="font-semibold text-foreground">{template.name}</h4>
-                              {profileForm.selectedTemplate === key && (
-                                <div className="flex items-center justify-center w-6 h-6 bg-primary rounded-full">
-                                  <Icon name="Check" size={14} className="text-primary-foreground" />
-                                </div>
-                              )}
+                              <h4 className="font-semibold text-foreground">
+                                {template.name}
+                              </h4>
                             </div>
                             <p className="text-sm text-muted-foreground leading-relaxed">{template.description}</p>
-                            {profileForm.selectedTemplate === key && (
-                              <div className="absolute top-2 right-2">
-                                <div className="w-2 h-2 bg-primary rounded-full"></div>
-                              </div>
-                            )}
                           </div>
                         ))}
                       </div>
+
+                      {/* Custom Role Name Input - only shown when custom template is selected */}
+                      {profileForm.selectedTemplate === 'custom' && (
+                        <div className="mt-4">
+                          <label className="text-sm font-medium leading-none text-foreground flex items-center mb-2">
+                            {t('multiUserProfiles.modals.addProfile.customRoleName')} <span className="text-destructive ml-1">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={profileForm.customRoleName}
+                            onChange={(e) => handleCustomRoleNameChange(e.target.value)}
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                            placeholder={t('multiUserProfiles.modals.addProfile.customRoleNamePlaceholder')}
+                            required={profileForm.selectedTemplate === 'custom'}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -1232,39 +1279,48 @@ const MultiUserProfilesPage = () => {
                       <div>
                         <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
                           <Icon name="Shield" size={18} className="mr-2 text-primary" />
-                          Modèle de rôle
+                          {t('multiUserProfiles.modals.addProfile.roleTemplate')}
                         </h3>
                         <p className="text-sm text-muted-foreground mb-4">
-                          Sélectionnez un modèle prédéfini ou personnalisez les permissions
+                          {t('multiUserProfiles.modals.addProfile.roleTemplateDescription')}
                         </p>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                           {Object.entries(roleTemplates).map(([key, template]) => (
                             <div
                               key={key}
                               onClick={() => handleTemplateChange(key)}
-                              className={`group relative p-4 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
+                              className={`group relative p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
                                 profileForm.selectedTemplate === key
                                   ? 'border-primary bg-primary/5 shadow-md'
                                   : 'border-border hover:border-primary/50 bg-card'
                               }`}
                             >
                               <div className="flex items-center justify-between mb-3">
-                                <h4 className="font-semibold text-foreground">{template.name}</h4>
-                                {profileForm.selectedTemplate === key && (
-                                  <div className="flex items-center justify-center w-6 h-6 bg-primary rounded-full">
-                                    <Icon name="Check" size={14} className="text-primary-foreground" />
-                                  </div>
-                                )}
+                                <h4 className="font-semibold text-foreground">
+                                  {template.name}
+                                </h4>
                               </div>
                               <p className="text-sm text-muted-foreground leading-relaxed">{template.description}</p>
-                              {profileForm.selectedTemplate === key && (
-                                <div className="absolute top-2 right-2">
-                                  <div className="w-2 h-2 bg-primary rounded-full"></div>
-                                </div>
-                              )}
                             </div>
                           ))}
                         </div>
+
+                        {/* Custom Role Name Input - only shown when custom template is selected */}
+                        {profileForm.selectedTemplate === 'custom' && (
+                          <div className="mt-4">
+                            <label className="text-sm font-medium leading-none text-foreground flex items-center mb-2">
+                              {t('multiUserProfiles.modals.addProfile.customRoleName')} <span className="text-destructive ml-1">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={profileForm.customRoleName}
+                              onChange={(e) => handleCustomRoleNameChange(e.target.value)}
+                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                              placeholder={t('multiUserProfiles.modals.addProfile.customRoleNamePlaceholder')}
+                              required={profileForm.selectedTemplate === 'custom'}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1273,10 +1329,10 @@ const MultiUserProfilesPage = () => {
                       <div>
                         <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
                           <Icon name="Settings" size={18} className="mr-2 text-primary" />
-                          Permissions détaillées
+                          {t('multiUserProfiles.modals.addProfile.detailedPermissions')}
                         </h3>
                         <p className="text-sm text-muted-foreground mb-4">
-                          Personnalisez les permissions pour chaque module
+                          {t('multiUserProfiles.modals.addProfile.detailedPermissionsDescription')}
                         </p>
                         <div className="space-y-4">
                           {Object.entries(accessPermissions).map(([moduleKey, module]) => (
@@ -1392,6 +1448,7 @@ const MultiUserProfilesPage = () => {
         </div>
       </main>
     </div>
+    </PermissionGuard>
   );
 };
 

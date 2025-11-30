@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
+import { useMultiUser } from '../../context/MultiUserContext';
 import { supabase } from '../../services/supabaseClient';
 import Icon from '../AppIcon';
 import NavigationItem from './NavigationItem';
@@ -9,6 +10,23 @@ import UserProfile from './UserProfile';
 import ProfileSwitcher from './ProfileSwitcher';
 import MultiUserProfile from './MultiUserProfile';
 import { useScrollPosition } from '../../utils/useScrollPosition';
+
+// Map navigation item IDs to permission modules
+const NAVIGATION_PERMISSION_MAP = {
+  'dashboard': 'dashboard',
+  'analytics-dashboard': 'analytics',
+  'peppol-access-point': 'peppolAccessPoint',
+  'leads-management': 'leadsManagement',
+  'quote-creation': 'quoteCreation',
+  'quotes-management': 'quotesManagement',
+  'quotes-follow-up': 'quotesFollowUp',
+  'invoices-follow-up': 'invoicesFollowUp',
+  'client-invoices': 'clientInvoices',
+  'expense-invoices': 'supplierInvoices',
+  'client-management': 'clientManagement',
+  'assurance-credit': 'creditInsurance',
+  'recouvrement': 'recovery'
+};
 
 const MainSidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -21,18 +39,42 @@ const MainSidebar = () => {
     invoices: false,
     followUps: false
   });
-  const [serviceVisibility, setServiceVisibility] = useState({
-    creditInsurance: false,
-    recovery: false
+  // Initialize service visibility from localStorage cache to prevent flash
+  const [serviceVisibility, setServiceVisibility] = useState(() => {
+    try {
+      const cached = localStorage.getItem('haliqo_service_visibility');
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch (e) {}
+    // Default to true to show services initially (prevents flash)
+    return { creditInsurance: true, recovery: true };
   });
-  const [isServiceVisibilityLoaded, setIsServiceVisibilityLoaded] = useState(false);
+  const [isServiceVisibilityLoaded, setIsServiceVisibilityLoaded] = useState(() => {
+    // If we have cached data, consider it loaded
+    return !!localStorage.getItem('haliqo_service_visibility');
+  });
   const [overdueExpenseInvoicesCount, setOverdueExpenseInvoicesCount] = useState(0);
   const [overdueClientInvoicesCount, setOverdueClientInvoicesCount] = useState(0);
+  const [pendingQuotesCount, setPendingQuotesCount] = useState(0);
+  const [pendingQuoteFollowUpsCount, setPendingQuoteFollowUpsCount] = useState(0);
+  const [pendingInvoiceFollowUpsCount, setPendingInvoiceFollowUpsCount] = useState(0);
+  const [newLeadsCount, setNewLeadsCount] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+  const { hasPermission } = useMultiUser();
   const { t } = useTranslation();
   const mobileNavRef = useScrollPosition('mobile-nav-scroll', isMobile);
+
+  // Helper function to check if user can access a navigation item
+  const canAccessNavItem = (itemId) => {
+    const module = NAVIGATION_PERMISSION_MAP[itemId];
+    // If no module mapping, allow access (for items without permission requirements)
+    if (!module) return true;
+    // Check if user has at least view_only permission
+    return hasPermission(module, 'view_only');
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -127,7 +169,7 @@ const MainSidebar = () => {
     });
   };
 
-  // Load service visibility settings
+  // Load service visibility settings (with caching to prevent flash)
   useEffect(() => {
     const loadServiceVisibility = async () => {
       try {
@@ -137,24 +179,27 @@ const MainSidebar = () => {
           .eq('setting_key', 'service_visibility')
           .single();
 
+        let visibility;
         if (data && data.setting_value) {
-          setServiceVisibility(data.setting_value);
+          visibility = data.setting_value;
         } else {
           // If no setting exists, default to showing services
-          setServiceVisibility({
-            creditInsurance: true,
-            recovery: true
-          });
+          visibility = { creditInsurance: true, recovery: true };
         }
+        
+        // Cache in localStorage to prevent flash on next load
+        localStorage.setItem('haliqo_service_visibility', JSON.stringify(visibility));
+        setServiceVisibility(visibility);
       } catch (error) {
         console.error('Error loading service visibility:', error);
-        // Use default settings if there's an error
-        setServiceVisibility({
-          creditInsurance: true,
-          recovery: true
-        });
+        // Use cached or default settings if there's an error
+        const cached = localStorage.getItem('haliqo_service_visibility');
+        if (!cached) {
+          const defaultVisibility = { creditInsurance: true, recovery: true };
+          localStorage.setItem('haliqo_service_visibility', JSON.stringify(defaultVisibility));
+          setServiceVisibility(defaultVisibility);
+        }
       } finally {
-        // Mark as loaded to prevent flash of hidden services
         setIsServiceVisibilityLoaded(true);
       }
     };
@@ -248,7 +293,149 @@ const MainSidebar = () => {
     return () => clearInterval(interval);
   }, [user]);
 
+  // Fetch pending quotes count (quotes sent but not yet responded)
+  useEffect(() => {
+    const fetchPendingQuotesCount = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (!currentUser) return;
 
+        // Get pending quotes (status = 'sent' or 'viewed')
+        const { data: quotes, error } = await supabase
+          .from('quotes')
+          .select('id')
+          .eq('user_id', currentUser.id)
+          .in('status', ['sent', 'viewed']);
+
+        if (error) throw error;
+
+        setPendingQuotesCount(quotes?.length || 0);
+      } catch (error) {
+        console.error('Error fetching pending quotes count:', error);
+        setPendingQuotesCount(0);
+      }
+    };
+
+    fetchPendingQuotesCount();
+    const interval = setInterval(fetchPendingQuotesCount, 300000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // Fetch pending quote follow-ups count
+  useEffect(() => {
+    const fetchPendingQuoteFollowUpsCount = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (!currentUser) return;
+
+        // Get active follow-ups that are due
+        const { data: followUps, error } = await supabase
+          .from('quote_follow_ups')
+          .select('id, next_attempt_at, scheduled_at')
+          .eq('user_id', currentUser.id)
+          .eq('status', 'active');
+
+        if (error) throw error;
+
+        // Count follow-ups that are due today or overdue
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+        
+        const dueCount = followUps?.filter(followUp => {
+          const nextDate = followUp.next_attempt_at || followUp.scheduled_at;
+          if (!nextDate) return false;
+          const date = new Date(nextDate);
+          return date <= today;
+        }).length || 0;
+
+        setPendingQuoteFollowUpsCount(dueCount);
+      } catch (error) {
+        console.error('Error fetching pending quote follow-ups count:', error);
+        setPendingQuoteFollowUpsCount(0);
+      }
+    };
+
+    fetchPendingQuoteFollowUpsCount();
+    const interval = setInterval(fetchPendingQuoteFollowUpsCount, 300000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // Fetch pending invoice follow-ups count
+  useEffect(() => {
+    const fetchPendingInvoiceFollowUpsCount = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (!currentUser) return;
+
+        // Get active invoice follow-ups that are due
+        const { data: followUps, error } = await supabase
+          .from('invoice_follow_ups')
+          .select('id, next_attempt_at, scheduled_at')
+          .eq('user_id', currentUser.id)
+          .eq('status', 'active');
+
+        if (error) throw error;
+
+        // Count follow-ups that are due today or overdue
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+        
+        const dueCount = followUps?.filter(followUp => {
+          const nextDate = followUp.next_attempt_at || followUp.scheduled_at;
+          if (!nextDate) return false;
+          const date = new Date(nextDate);
+          return date <= today;
+        }).length || 0;
+
+        setPendingInvoiceFollowUpsCount(dueCount);
+      } catch (error) {
+        console.error('Error fetching pending invoice follow-ups count:', error);
+        setPendingInvoiceFollowUpsCount(0);
+      }
+    };
+
+    fetchPendingInvoiceFollowUpsCount();
+    const interval = setInterval(fetchPendingInvoiceFollowUpsCount, 300000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // Fetch new leads count
+  useEffect(() => {
+    const fetchNewLeadsCount = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (!currentUser) return;
+
+        // Get new leads (status = 'new' or 'contacted' within last 7 days)
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const { data: leads, error } = await supabase
+          .from('lead_requests')
+          .select('id')
+          .eq('status', 'new');
+
+        if (error) throw error;
+
+        setNewLeadsCount(leads?.length || 0);
+      } catch (error) {
+        console.error('Error fetching new leads count:', error);
+        setNewLeadsCount(0);
+      }
+    };
+
+    fetchNewLeadsCount();
+    const interval = setInterval(fetchNewLeadsCount, 300000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   // Navigation items organized by categories with collapsible sections
   const navigationCategories = [
@@ -282,7 +469,7 @@ const MainSidebar = () => {
           label: t('sidebar.categories.main.items.leadsManagement'),
           path: '/leads-management',
           icon: 'Users',
-          notifications: 0
+          notifications: newLeadsCount
         }
       ]
     },
@@ -304,7 +491,7 @@ const MainSidebar = () => {
           label: t('sidebar.categories.quotes.items.quotesManagement'),
           path: '/quotes-management',
           icon: 'FolderOpen',
-          notifications: 0
+          notifications: pendingQuotesCount
         }
       ]
     },
@@ -319,14 +506,14 @@ const MainSidebar = () => {
           label: t('sidebar.categories.followUps.items.quotesFollowUp'),
           path: '/quotes-follow-up',
           icon: 'MessageCircle',
-          notifications: 0
+          notifications: pendingQuoteFollowUpsCount
         },
         {
           id: 'invoices-follow-up',
           label: t('sidebar.categories.followUps.items.invoicesFollowUp'),
           path: '/invoices-follow-up',
           icon: 'Bell',
-          notifications: 0
+          notifications: pendingInvoiceFollowUpsCount
         }
       ]
     },
@@ -390,18 +577,30 @@ const MainSidebar = () => {
         }] : [])
       ]
     }
-  ].filter(category => {
-    // Hide the services category if visibility not loaded yet, or if all services are hidden
-    if (category.id === 'services') {
-      if (!isServiceVisibilityLoaded) {
-        return false; // Hide until loaded to prevent flash
-      }
-      if (category.items.length === 0) {
-        return false; // Hide if no services are enabled
-      }
-    }
-    return true;
-  });
+  ];
+
+  // Filter navigation categories based on permissions
+  const filteredNavigationCategories = useMemo(() => {
+    return navigationCategories
+      .map(category => ({
+        ...category,
+        // Filter items based on user permissions
+        items: category.items.filter(item => canAccessNavItem(item.id))
+      }))
+      .filter(category => {
+        // Hide the services category if visibility not loaded yet, or if all services are hidden
+        if (category.id === 'services') {
+          if (!isServiceVisibilityLoaded) {
+            return false; // Hide until loaded to prevent flash
+          }
+        }
+        // Hide categories with no accessible items
+        if (category.items.length === 0) {
+          return false;
+        }
+        return true;
+      });
+  }, [navigationCategories, isServiceVisibilityLoaded, hasPermission]);
 
   const handleLogout = async () => {
     try {
@@ -425,8 +624,8 @@ const MainSidebar = () => {
     avatar: '/assets/images/no profile.jpg'
   };
 
-  // Flatten navigation items for mobile view
-  const flatNavigationItems = navigationCategories.flatMap(category => category.items);
+  // Flatten navigation items for mobile view (using filtered categories)
+  const flatNavigationItems = filteredNavigationCategories.flatMap(category => category.items);
 
   if (isMobile) {
     return (
@@ -508,7 +707,7 @@ const MainSidebar = () => {
               </div>
             ) : (
               // Expanded view - show categorized navigation
-              navigationCategories.map((category) => (
+              filteredNavigationCategories.map((category) => (
                 <div key={category.id} className="space-y-1">
                   {/* Category Header */}
                   <div className="px-3 py-2">

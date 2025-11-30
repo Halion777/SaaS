@@ -33,6 +33,7 @@ const SuperAdminUsers = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [expandedUsers, setExpandedUsers] = useState(new Set());
   const [userStats, setUserStats] = useState({
     total: 0,
     newThisMonth: 0,
@@ -317,17 +318,37 @@ const SuperAdminUsers = () => {
       setIsExporting(true);
       
       const csvContent = [
-        ['Email', 'Full Name', 'Company', 'Role', 'Status', 'Created At', 'Last Login'],
-        ...filteredUsers.map(user => [
-          user.email || '',
-          (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.first_name || user.last_name || user.full_name || ''),
-          user.company_name || '',
-          user.role || '',
-          user.has_logged_in ? 'Has Login' : 'No Login',
-          new Date(user.created_at).toLocaleDateString(),
-          user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'Never'
-        ])
-      ].map(row => row.join(',')).join('\n');
+        ['Email', 'Full Name', 'Company', 'Role', 'Status', 'Created At', 'Last Login', 'Profiles Count', 'Profile Names', 'Profile Roles', 'Profile Emails', 'Profile Status'],
+        ...filteredUsers.map(user => {
+          const profiles = user.user_profiles || [];
+          const profileNames = profiles.map(p => p.name || 'Unnamed').join('; ');
+          const profileRoles = profiles.map(p => getProfileRoleLabel(p.role)).join('; ');
+          const profileEmails = profiles.map(p => p.email || 'N/A').join('; ');
+          const profileStatus = profiles.map(p => p.is_active ? 'Active' : 'Inactive').join('; ');
+          
+          return [
+            user.email || '',
+            (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.first_name || user.last_name || user.full_name || ''),
+            user.company_name || '',
+            user.role || '',
+            user.has_logged_in ? 'Has Login' : 'No Login',
+            new Date(user.created_at).toLocaleDateString(),
+            user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'Never',
+            profiles.length.toString(),
+            profileNames || 'No profiles',
+            profileRoles || 'No profiles',
+            profileEmails || 'No profiles',
+            profileStatus || 'No profiles'
+          ];
+        })
+      ].map(row => row.map(cell => {
+        // Escape commas and quotes in CSV cells
+        const cellStr = String(cell || '');
+        if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+          return `"${cellStr.replace(/"/g, '""')}"`;
+        }
+        return cellStr;
+      }).join(',')).join('\n');
 
       const blob = new Blob([csvContent], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
@@ -366,6 +387,23 @@ const SuperAdminUsers = () => {
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const toggleUserProfiles = (userId) => {
+    setExpandedUsers(prev => {
+      const newSet = new Set();
+      // If the clicked user is already expanded, close it
+      // Otherwise, close all others and open only this one
+      if (!prev.has(userId)) {
+        newSet.add(userId);
+      }
+      return newSet;
+    });
+  };
+
+  const getProfileRoleLabel = (role) => {
+    // Use translation if available, otherwise return role as-is
+    return t(`multiUserProfiles.roles.${role}.name`, role);
   };
 
 
@@ -551,6 +589,9 @@ const SuperAdminUsers = () => {
                       Role
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Profiles
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Last Login
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -562,43 +603,101 @@ const SuperAdminUsers = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {paginatedUsers.map((user) => (
-                    <tr key={user.id} className="hover:bg-muted/50">
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <input
-                          type="checkbox"
-                          checked={selectedUsers.includes(user.id)}
-                          disabled={user.role === 'superadmin'}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedUsers([...selectedUsers, user.id]);
-                            } else {
-                              setSelectedUsers(selectedUsers.filter(id => id !== user.id));
-                            }
-                          }}
-                          className="rounded border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                        />
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                            <Icon name="User" size={20} className="text-muted-foreground" />
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-foreground">
-                              {user.full_name || 'No Name'}
+                  {paginatedUsers.map((user) => {
+                    const isExpanded = expandedUsers.has(user.id);
+                    const hasProfiles = user.user_profiles && user.user_profiles.length > 0;
+                    return (
+                      <React.Fragment key={user.id}>
+                        <tr className="hover:bg-muted/50">
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              checked={selectedUsers.includes(user.id)}
+                              disabled={user.role === 'superadmin'}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedUsers([...selectedUsers, user.id]);
+                                } else {
+                                  setSelectedUsers(selectedUsers.filter(id => id !== user.id));
+                                }
+                              }}
+                              className="rounded border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                            />
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex items-center">
+                              {hasProfiles && (
+                                <Icon 
+                                  name={isExpanded ? "ChevronDown" : "ChevronRight"} 
+                                  size={16} 
+                                  className="text-muted-foreground mr-2 flex-shrink-0" 
+                                />
+                              )}
+                              <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                                <Icon name="User" size={20} className="text-muted-foreground" />
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-foreground">
+                                  {user.full_name || 'No Name'}
+                                </div>
+                                <div className="text-sm text-muted-foreground">{user.email}</div>
+                                {user.company_name && (
+                                  <div className="text-xs text-muted-foreground">{user.company_name}</div>
+                                )}
+                              </div>
                             </div>
-                            <div className="text-sm text-muted-foreground">{user.email}</div>
-                            {user.company_name && (
-                              <div className="text-xs text-muted-foreground">{user.company_name}</div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
+                          </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(user.role)}`}>
                           {user.role || 'admin'}
                         </span>
+                      </td>
+                      <td 
+                        className={`px-4 py-3 whitespace-nowrap ${hasProfiles ? 'cursor-pointer hover:bg-muted/30 transition-colors' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (hasProfiles) {
+                            toggleUserProfiles(user.id);
+                          }
+                        }}
+                      >
+                        {hasProfiles ? (
+                          <div className="flex flex-col space-y-1">
+                            <div className="text-sm font-medium text-foreground flex items-center">
+                              {user.user_profiles.length} {user.user_profiles.length === 1 ? 'Profile' : 'Profiles'}
+                              <Icon 
+                                name={isExpanded ? "ChevronDown" : "ChevronRight"} 
+                                size={14} 
+                                className="ml-1 text-muted-foreground" 
+                              />
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {user.user_profiles.slice(0, 3).map((profile, index) => (
+                                <span
+                                  key={profile.id || index}
+                                  className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
+                                    profile.role === 'admin' ? 'bg-blue-100 text-blue-800' :
+                                    profile.role === 'manager' ? 'bg-purple-100 text-purple-800' :
+                                    profile.role === 'accountant' ? 'bg-green-100 text-green-800' :
+                                    profile.role === 'sales' ? 'bg-orange-100 text-orange-800' :
+                                    profile.role === 'viewer' ? 'bg-gray-100 text-gray-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }`}
+                                  title={profile.name || 'Unnamed Profile'}
+                                >
+                                  {getProfileRoleLabel(profile.role)}
+                                </span>
+                              ))}
+                              {user.user_profiles.length > 3 && (
+                                <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-muted text-muted-foreground">
+                                  +{user.user_profiles.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">No profiles</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-muted-foreground">
                         {formatDateTime(user.last_sign_in_at)}
@@ -606,7 +705,7 @@ const SuperAdminUsers = () => {
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-muted-foreground">
                         {formatDate(user.created_at)}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium" onClick={(e) => e.stopPropagation()}>
                         <div className="flex space-x-1">
                           <Button
                             variant="ghost"
@@ -642,7 +741,53 @@ const SuperAdminUsers = () => {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    {isExpanded && hasProfiles && (
+                      <tr>
+                        <td 
+                          colSpan={7} 
+                          className="px-4 py-4 bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => toggleUserProfiles(user.id)}
+                        >
+                          <div className="space-y-2">
+                            <div 
+                              className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center"
+                            >
+                              <Icon name="ChevronDown" size={14} className="mr-1" />
+                              Profiles ({user.user_profiles.length})
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                              {user.user_profiles.map((profile, index) => (
+                                <div key={profile.id || index} className="bg-card border border-border rounded-lg p-3">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h5 className="text-sm font-medium text-foreground">{profile.name || 'Unnamed Profile'}</h5>
+                                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                                      profile.role === 'admin' ? 'bg-blue-100 text-blue-800' :
+                                      profile.role === 'manager' ? 'bg-purple-100 text-purple-800' :
+                                      profile.role === 'accountant' ? 'bg-green-100 text-green-800' :
+                                      profile.role === 'sales' ? 'bg-orange-100 text-orange-800' :
+                                      profile.role === 'viewer' ? 'bg-gray-100 text-gray-800' :
+                                      'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {getProfileRoleLabel(profile.role)}
+                                    </span>
+                                  </div>
+                                  {profile.email && (
+                                    <p className="text-xs text-muted-foreground mb-1">{profile.email}</p>
+                                  )}
+                                  <div className="flex items-center text-xs text-muted-foreground">
+                                    <Icon name={profile.is_active ? "CheckCircle" : "XCircle"} size={12} className={`mr-1 ${profile.is_active ? 'text-green-600' : 'text-gray-400'}`} />
+                                    {profile.is_active ? 'Active' : 'Inactive'}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
+                  );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -650,38 +795,51 @@ const SuperAdminUsers = () => {
 
             {viewMode === 'card' && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-                {paginatedUsers.map((user) => (
-                  <div key={user.id} className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center space-x-3 flex-1">
-                        <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                          <Icon name="User" size={24} className="text-muted-foreground" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold text-foreground truncate">
-                            {user.full_name || 'No Name'}
-                          </h3>
-                          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                          {user.company_name && (
-                            <p className="text-xs text-muted-foreground truncate">{user.company_name}</p>
+                {paginatedUsers.map((user) => {
+                  const isExpanded = expandedUsers.has(user.id);
+                  const hasProfiles = user.user_profiles && user.user_profiles.length > 0;
+                  return (
+                    <div key={user.id} className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between mb-3">
+                        <div 
+                          className="flex items-center space-x-3 flex-1 cursor-pointer" 
+                          onClick={() => hasProfiles && toggleUserProfiles(user.id)}
+                        >
+                          {hasProfiles && (
+                            <Icon 
+                              name={isExpanded ? "ChevronDown" : "ChevronRight"} 
+                              size={16} 
+                              className="text-muted-foreground flex-shrink-0" 
+                            />
                           )}
+                          <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                            <Icon name="User" size={24} className="text-muted-foreground" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-semibold text-foreground truncate">
+                              {user.full_name || 'No Name'}
+                            </h3>
+                            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                            {user.company_name && (
+                              <p className="text-xs text-muted-foreground truncate">{user.company_name}</p>
+                            )}
+                          </div>
                         </div>
+                        <input
+                          type="checkbox"
+                          checked={selectedUsers.includes(user.id)}
+                          disabled={user.role === 'superadmin'}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedUsers([...selectedUsers, user.id]);
+                            } else {
+                              setSelectedUsers(selectedUsers.filter(id => id !== user.id));
+                            }
+                          }}
+                          className="rounded border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={(e) => e.stopPropagation()}
+                        />
                       </div>
-                      <input
-                        type="checkbox"
-                        checked={selectedUsers.includes(user.id)}
-                        disabled={user.role === 'superadmin'}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedUsers([...selectedUsers, user.id]);
-                          } else {
-                            setSelectedUsers(selectedUsers.filter(id => id !== user.id));
-                          }
-                        }}
-                        className="rounded border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </div>
 
                     <div className="space-y-2 mb-3">
                       <div className="flex items-center justify-between">
@@ -698,7 +856,47 @@ const SuperAdminUsers = () => {
                         <span className="text-xs text-muted-foreground">Created:</span>
                         <span className="text-xs text-foreground">{formatDate(user.created_at)}</span>
                       </div>
+                      {hasProfiles && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Profiles:</span>
+                          <span className="text-xs text-foreground">{user.user_profiles.length}</span>
+                        </div>
+                      )}
                     </div>
+
+                    {isExpanded && hasProfiles && (
+                      <div className="mb-3 pt-3 border-t border-border">
+                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                          Profiles ({user.user_profiles.length})
+                        </div>
+                        <div className="space-y-2">
+                          {user.user_profiles.map((profile, index) => (
+                            <div key={profile.id || index} className="bg-muted/50 border border-border rounded-lg p-2">
+                              <div className="flex items-center justify-between mb-1">
+                                <h5 className="text-xs font-medium text-foreground">{profile.name || 'Unnamed Profile'}</h5>
+                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                                  profile.role === 'admin' ? 'bg-blue-100 text-blue-800' :
+                                  profile.role === 'manager' ? 'bg-purple-100 text-purple-800' :
+                                  profile.role === 'accountant' ? 'bg-green-100 text-green-800' :
+                                  profile.role === 'sales' ? 'bg-orange-100 text-orange-800' :
+                                  profile.role === 'viewer' ? 'bg-gray-100 text-gray-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {getProfileRoleLabel(profile.role)}
+                                </span>
+                              </div>
+                              {profile.email && (
+                                <p className="text-xs text-muted-foreground mb-1">{profile.email}</p>
+                              )}
+                              <div className="flex items-center text-xs text-muted-foreground">
+                                <Icon name={profile.is_active ? "CheckCircle" : "XCircle"} size={10} className={`mr-1 ${profile.is_active ? 'text-green-600' : 'text-gray-400'}`} />
+                                {profile.is_active ? 'Active' : 'Inactive'}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex items-center justify-end space-x-1 pt-3 border-t border-border">
                       <Button
@@ -734,7 +932,8 @@ const SuperAdminUsers = () => {
                       )}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
             </>

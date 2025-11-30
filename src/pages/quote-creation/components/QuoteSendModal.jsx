@@ -39,8 +39,14 @@ const QuoteSendModal = ({
     // Only initialize when transitioning to step 2 (not on every render)
     if (selectedClient && step === 2 && prevStepRef.current !== 2) {
       const clientEmail = selectedClient.email || selectedClient.client?.email || '';
-      const defaultSubject = `Devis ${projectInfo?.description || 'Nouveau projet'} - ${companyInfo?.name || t('quoteCreation.quoteSendModal.yourCompany')}`;
-      const defaultMessage = `Bonjour,\n\nVeuillez trouver ci-joint notre devis pour votre projet.\n\nCordialement,\n${companyInfo?.name || t('quoteCreation.quoteSendModal.yourTeam')}`;
+      const projectDescription = projectInfo?.description || projectInfo?.title || t('quoteCreation.quoteSendModal.defaultProject', 'New project');
+      const defaultSubject = t('quoteCreation.quoteSendModal.defaultSubject', {
+        quoteNumber: quoteNumber || '',
+        projectDescription: projectDescription
+      });
+      const defaultMessage = t('quoteCreation.quoteSendModal.defaultMessage', {
+        quoteNumber: quoteNumber || ''
+      });
 
       setEmailData(prev => ({
         clientEmail,
@@ -51,7 +57,7 @@ const QuoteSendModal = ({
     }
     
     prevStepRef.current = step;
-  }, [selectedClient, step, projectInfo, companyInfo, t]);
+  }, [selectedClient, step, projectInfo, companyInfo, quoteNumber, t]);
 
   const handleOptionSelect = async (method) => {
     setSendMethod(method);

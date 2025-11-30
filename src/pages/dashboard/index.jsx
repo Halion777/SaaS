@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import MainSidebar from '../../components/ui/MainSidebar';
+import PermissionGuard from '../../components/PermissionGuard';
 import MetricsCard from './components/MetricsCard';
 import QuoteChart from './components/QuoteChart';
 import TaskList from './components/TaskList';
@@ -492,6 +493,7 @@ const Dashboard = () => {
 
 
   return (
+    <PermissionGuard module="dashboard" requiredPermission="view_only">
     <div className="min-h-screen bg-background">
       {/* Tour Component */}
       <DashboardTour run={runTour} onFinish={endTour} />
@@ -710,6 +712,7 @@ const Dashboard = () => {
         onSave={handleWidgetSettingsSave}
       />
     </div>
+    </PermissionGuard>
   );
 };
 

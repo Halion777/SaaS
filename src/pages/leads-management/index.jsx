@@ -3,6 +3,7 @@ import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import MainSidebar from '../../components/ui/MainSidebar';
+import PermissionGuard, { usePermissionCheck } from '../../components/PermissionGuard';
 import TableLoader from '../../components/ui/TableLoader';
 import LeadsFilterToolbar from './components/LeadsFilterToolbar';
 import { useScrollPosition } from '../../utils/useScrollPosition';
@@ -577,6 +578,8 @@ const LeadsManagementPage = () => {
                     variant="outline"
                     size="sm"
                     className="text-red-600 border-red-200 hover:bg-red-50 w-full sm:w-auto"
+                    disabled={!canEdit}
+                    title={!canEdit ? t('permissions.noFullAccess') : ''}
                   >
                     <Icon name="AlertTriangle" className="w-4 h-4 mr-1" />
                     <span className="hidden sm:inline">{t('leadsManagement.leadsTab.leadCard.reportSpam')}</span>
@@ -589,6 +592,8 @@ const LeadsManagementPage = () => {
                       variant="default"
                       size="default"
                       className="px-4 sm:px-6 py-2 font-semibold w-full sm:w-auto"
+                      disabled={!canEdit}
+                      title={!canEdit ? t('permissions.noFullAccess') : ''}
                     >
                       <Icon name="FileText" className="w-4 h-4 mr-2" />
                       {t('leadsManagement.leadsTab.leadCard.createQuote')}
@@ -985,7 +990,11 @@ const LeadsManagementPage = () => {
     </div>
   );
 
+  // Check permissions for actions
+  const { canEdit } = usePermissionCheck('leadsManagement');
+
   return (
+    <PermissionGuard module="leadsManagement" requiredPermission="view_only">
     <div className="min-h-screen bg-background">
       <MainSidebar />
       
@@ -1135,6 +1144,7 @@ const LeadsManagementPage = () => {
         </div>
       )}
     </div>
+    </PermissionGuard>
   );
 };
 

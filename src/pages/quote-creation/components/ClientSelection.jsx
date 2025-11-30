@@ -1605,7 +1605,13 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
               </Button>
               <Button
                 type="submit"
-                disabled={!newClient.name || !newClient.email || isCreatingClient}
+                disabled={
+                  (clientType === 'particulier' 
+                    ? (!newClient.firstName?.trim() || !newClient.lastName?.trim()) 
+                    : !newClient.name?.trim()) 
+                  || !newClient.email?.trim() 
+                  || isCreatingClient
+                }
                 loading={isCreatingClient}
               >
                 {isCreatingClient ? t('quoteCreation.clientSelection.creating', 'Création...') : t('quoteCreation.clientSelection.addClient', 'Ajouter le client')}

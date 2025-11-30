@@ -3,9 +3,11 @@ import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
+import { useMultiUser } from '../../../context/MultiUserContext';
 
 const SendToAccountantModal = ({ invoices, isOpen, onClose, onSuccess, isExpenseInvoice = false }) => {
   const { t } = useTranslation();
+  const { companyProfiles } = useMultiUser();
   const [email, setEmail] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -18,8 +20,12 @@ const SendToAccountantModal = ({ invoices, isOpen, onClose, onSuccess, isExpense
       const count = invoices?.length || 0;
       setInvoiceCount(count);
       
-      // Try to get email from first invoice's client or supplier
-      if (invoices && invoices.length > 0) {
+      // Priority 1: Try to get email from accountant profile if exists
+      const accountantProfile = companyProfiles?.find(profile => profile.role === 'accountant');
+      if (accountantProfile?.email) {
+        setEmail(accountantProfile.email);
+      } else if (invoices && invoices.length > 0) {
+        // Priority 2: Try to get email from first invoice's client or supplier
         const firstInvoice = invoices[0];
         const invoiceEmail = isExpenseInvoice 
           ? firstInvoice.supplier_email 
@@ -30,11 +36,13 @@ const SendToAccountantModal = ({ invoices, isOpen, onClose, onSuccess, isExpense
         } else {
           setEmail('');
         }
+      } else {
+        setEmail('');
       }
       setError(null);
       setIsSuccess(false);
     }
-  }, [isOpen, invoices, isExpenseInvoice]);
+  }, [isOpen, invoices, isExpenseInvoice, companyProfiles]);
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

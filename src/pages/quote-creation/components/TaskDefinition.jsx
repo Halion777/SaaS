@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import Select from '../../../components/ui/Select';
@@ -792,64 +792,77 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
   const [aiSuggestions, setAiSuggestions] = useState([]);
   const [isLoadingAISuggestions, setIsLoadingAISuggestions] = useState(false);
   const [suggestionsCacheKey, setSuggestionsCacheKey] = useState(null);
+  const [aiSuggestionsError, setAiSuggestionsError] = useState(false);
   
   // Ref for scrolling to input form when suggestion is clicked
   const taskFormRef = useRef(null);
 
+  // Load AI suggestions function (reusable for retry)
+  const loadAISuggestions = useCallback(async (forceRetry = false) => {
+    const categoriesRaw = Array.isArray(projectCategory) ? projectCategory : [projectCategory];
+    const categories = (categoriesRaw || []).filter(Boolean);
+    if (categories.length === 0 || !projectDescription || !projectDescription.trim()) {
+      setAiSuggestions([]);
+      setSuggestionsCacheKey(null);
+      setAiSuggestionsError(false);
+      return;
+    }
+
+    // Cache key to avoid re-calls when navigating back to step 2
+    const cacheKey = JSON.stringify({ c: [...categories].sort(), cc: projectCustomCategory || '', d: (projectDescription || '').trim().slice(0, 150) });
+    if (!forceRetry && cacheKey === suggestionsCacheKey && aiSuggestions.length > 0) {
+      return;
+    }
+
+    setIsLoadingAISuggestions(true);
+    setAiSuggestionsError(false);
+    try {
+      const n = categories.length;
+      const perCategoryMax = n === 1 ? 6 : n === 2 ? 3 : 2;
+      const results = await Promise.all(
+        categories.map(async (cat) => {
+          const res = await generateTaskSuggestionsWithGemini(cat, projectDescription, perCategoryMax);
+          const rows = (res.success && Array.isArray(res.data)) ? res.data.slice(0, perCategoryMax) : [];
+          return rows.map((t, idx) => ({
+            id: `ai-${cat}-${Date.now()}-${idx}`,
+            title: t.title,
+            description: t.description,
+            duration: minutesToHoursCeil(t.estimatedDuration) || '',
+            durationUnit: 'hours',
+            price: typeof t.laborPrice === 'number' ? t.laborPrice : parseFloat(t.laborPrice) || '',
+            materials: (t.suggestedMaterials || []).map(m => ({
+              id: Date.now() + Math.random(),
+              name: m.name,
+              quantity: m.quantity,
+              unit: m.unit,
+              price: parseFloat(m.price) || 0
+            })),
+            category: cat
+          }));
+        })
+      );
+      const flatResults = results.flat();
+      if (flatResults.length === 0) {
+        setAiSuggestionsError(true);
+        setAiSuggestions([]);
+      } else {
+        setAiSuggestions(flatResults);
+        setSuggestionsCacheKey(cacheKey);
+        setAiSuggestionsError(false);
+      }
+    } catch (e) {
+      console.error('AI suggestions error', e);
+      setAiSuggestions([]);
+      setAiSuggestionsError(true);
+    } finally {
+      setIsLoadingAISuggestions(false);
+    }
+  }, [projectCategory, projectDescription, projectCustomCategory, suggestionsCacheKey, aiSuggestions.length]);
+
   // Load AI suggestions when category or description changes
   useEffect(() => {
-    const loadSuggestions = async () => {
-      const categoriesRaw = Array.isArray(projectCategory) ? projectCategory : [projectCategory];
-      const categories = (categoriesRaw || []).filter(Boolean);
-      if (categories.length === 0 || !projectDescription || !projectDescription.trim()) {
-        setAiSuggestions([]);
-        setSuggestionsCacheKey(null);
-        return;
-      }
-
-      // Cache key to avoid re-calls when navigating back to step 2
-      const cacheKey = JSON.stringify({ c: [...categories].sort(), cc: projectCustomCategory || '', d: (projectDescription || '').trim().slice(0, 150) });
-      if (cacheKey === suggestionsCacheKey && aiSuggestions.length > 0) {
-        return;
-      }
-
-      setIsLoadingAISuggestions(true);
-      try {
-        const n = categories.length;
-        const perCategoryMax = n === 1 ? 6 : n === 2 ? 3 : 2;
-        const results = await Promise.all(
-          categories.map(async (cat) => {
-            const res = await generateTaskSuggestionsWithGemini(cat, projectDescription, perCategoryMax);
-            const rows = (res.success && Array.isArray(res.data)) ? res.data.slice(0, perCategoryMax) : [];
-            return rows.map((t, idx) => ({
-              id: `ai-${cat}-${Date.now()}-${idx}`,
-              title: t.title,
-              description: t.description,
-              duration: minutesToHoursCeil(t.estimatedDuration) || '',
-              durationUnit: 'hours',
-              price: typeof t.laborPrice === 'number' ? t.laborPrice : parseFloat(t.laborPrice) || '',
-              materials: (t.suggestedMaterials || []).map(m => ({
-                id: Date.now() + Math.random(),
-                name: m.name,
-                quantity: m.quantity,
-                unit: m.unit,
-                price: parseFloat(m.price) || 0
-              })),
-              category: cat
-            }));
-          })
-        );
-        setAiSuggestions(results.flat());
-        setSuggestionsCacheKey(cacheKey);
-      } catch (e) {
-        console.error('AI suggestions error', e);
-        setAiSuggestions([]);
-      } finally {
-        setIsLoadingAISuggestions(false);
-      }
-    };
-    loadSuggestions();
-  }, [projectCategory, projectDescription, projectCustomCategory]);
+    loadAISuggestions();
+  }, [loadAISuggestions]);
 
   // Voice recording functions
   const startRecording = async () => {
@@ -1467,6 +1480,18 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
               })}
             </div>
           </>
+        ) : aiSuggestionsError ? (
+          <div className="text-center py-8 relative">
+            <Icon name="Package" size={48} className="text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">Aucune suggestion IA disponible. Décrivez davantage le projet.</p>
+            <button
+              onClick={() => loadAISuggestions(true)}
+              className="absolute top-2 right-2 p-1.5 rounded-md hover:bg-muted transition-colors"
+              title="Retry"
+            >
+              <Icon name="RefreshCw" size={16} className="text-muted-foreground hover:text-foreground" />
+            </button>
+          </div>
         ) : (
           <div className="text-center py-8">
             <Icon name="Package" size={48} className="text-muted-foreground mx-auto mb-4" />

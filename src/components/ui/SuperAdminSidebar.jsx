@@ -361,71 +361,46 @@ const SuperAdminSidebar = () => {
                   ))}
                 </div>
 
-                {/* Categorized Navigation with Hover Dropdown */}
-                {navigationCategories.map((category) => {
-                  // Check if current path is within this category
-                  const isCurrentCategory = category.items.some(item => 
-                    location.pathname === item.path || location.pathname.startsWith(item.path + '/')
-                  );
-                  
-                  return (
-                  <div 
-                    key={category.id} 
-                    className="space-y-1 group transition-all duration-200 ease-in-out"
-                    onMouseEnter={() => {
-                      if (category.isCollapsible && !isCurrentCategory) {
-                        setExpandedSections(prev => ({ ...prev, [category.id]: true }));
-                      }
-                    }}
-                    onMouseLeave={() => {
-                      if (category.isCollapsible && !isCurrentCategory) {
-                        setExpandedSections(prev => ({ ...prev, [category.id]: false }));
-                      }
-                    }}
-                  >
+                {/* Categorized Navigation */}
+                {navigationCategories.map((category) => (
+                  <div key={category.id} className="space-y-1">
                     {/* Category Header */}
                     <div className="px-3 py-2">
-                      <div className="flex items-center justify-between">
-                        <div className={`flex items-center justify-between w-full ${
-                          category.isCollapsible ? 'cursor-default' : ''
-                        }`}>
-                          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                            {category.label}
-                          </h3>
-                          {category.isCollapsible && (
-                            <div className="transition-transform duration-200 ease-in-out">
-                              <Icon 
-                                name={category.isExpanded ? "ChevronDown" : "ChevronRight"} 
-                                size={12} 
-                                color="var(--color-muted-foreground)"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                      <button
+                        onClick={() => category.isCollapsible && toggleSection(category.id)}
+                        className={`flex items-center justify-between w-full ${
+                          category.isCollapsible ? 'cursor-pointer hover:opacity-80' : ''
+                        }`}
+                      >
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          {category.label}
+                        </h3>
+                        {category.isCollapsible && (
+                          <Icon 
+                            name={category.isExpanded ? "ChevronDown" : "ChevronRight"} 
+                            size={12} 
+                            color="var(--color-muted-foreground)"
+                          />
+                        )}
+                      </button>
                     </div>
 
-                    {/* Category Items - Show on hover with smooth transition */}
-                    <div 
-                      className={`space-y-1 overflow-hidden transition-all duration-200 ease-in-out ${
-                        (!category.isCollapsible || category.isExpanded) 
-                          ? 'max-h-96 opacity-100' 
-                          : 'max-h-0 opacity-0'
-                      }`}
-                    >
-                      {category.items.map((item) => (
-                        <NavigationItem
-                          key={item.id}
-                          {...item}
-                          isActive={location.pathname === item.path}
-                          isCollapsed={isCollapsed}
-                          isMobile={false}
-                        />
-                      ))}
-                    </div>
+                    {/* Category Items */}
+                    {(!category.isCollapsible || category.isExpanded) && (
+                      <div className="space-y-1">
+                        {category.items.map((item) => (
+                          <NavigationItem
+                            key={item.id}
+                            {...item}
+                            isActive={location.pathname === item.path}
+                            isCollapsed={isCollapsed}
+                            isMobile={false}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  );
-                })}
+                ))}
               </>
             )}
           </div>

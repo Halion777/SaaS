@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import MainSidebar from '../../components/ui/MainSidebar';
+import PermissionGuard, { usePermissionCheck } from '../../components/PermissionGuard';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import TableLoader from '../../components/ui/TableLoader';
@@ -567,11 +568,12 @@ const InvoicesManagement = () => {
     }
   };
 
-
-
+  // Check permissions for actions
+  const { canEdit, canDelete } = usePermissionCheck('clientInvoices');
 
   return (
-    <div className="min-h-screen bg-background">
+    <PermissionGuard module="clientInvoices" requiredPermission="view_only">
+    <div className="h-screen bg-background overflow-y-auto">
       <MainSidebar />
       
       <main 
@@ -582,7 +584,7 @@ const InvoicesManagement = () => {
           marginLeft: isMobile ? 0 : `${sidebarOffset}px`,
         }}
       >
-        <div className="px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
+        <div className="px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6 overflow-visible">
           {/* Header */}
           <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
@@ -645,6 +647,8 @@ const InvoicesManagement = () => {
                   onClick={() => handleBulkAction('send_to_accountant')}
                   iconName="Send"
                   iconPosition="left"
+                  disabled={!canEdit}
+                  title={!canEdit ? t('permissions.noFullAccess') : ''}
                 >
                   {t('invoicesManagement.bulkActions.sendToAccountant', 'Send to Accountant')}
                 </Button>
@@ -666,6 +670,8 @@ const InvoicesManagement = () => {
                   onClick={() => handleBulkAction('delete')}
                   iconName="Trash2"
                   iconPosition="left"
+                  disabled={!canDelete}
+                  title={!canDelete ? t('permissions.noFullAccess') : ''}
                 >
                   {t('invoicesManagement.bulkActions.delete')}
                 </Button>
@@ -685,6 +691,8 @@ const InvoicesManagement = () => {
             selectedInvoices={selectedInvoices}
             onSelectionChange={setSelectedInvoices}
             filters={filters}
+            canEdit={canEdit}
+            canDelete={canDelete}
             onFiltersChange={handleFiltersChange}
               onStatusUpdate={handleStatusUpdate}
             />
@@ -729,6 +737,7 @@ const InvoicesManagement = () => {
         </div>
       </main>
     </div>
+    </PermissionGuard>
   );
 };
 

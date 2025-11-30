@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import MainSidebar from '../../components/ui/MainSidebar';
+import PermissionGuard, { usePermissionCheck } from '../../components/PermissionGuard';
 import TableLoader from '../../components/ui/TableLoader';
 import ClientModal from './components/ClientModal';
 import ClientCard from './components/ClientCard';
@@ -434,7 +435,11 @@ const ClientManagement = () => {
     return sizes[size] || size;
   };
 
+  // Check permissions for actions
+  const { canEdit, canCreate, canDelete } = usePermissionCheck('clientManagement');
+
   return (
+    <PermissionGuard module="clientManagement" requiredPermission="view_only">
     <div className="min-h-screen bg-background">
       {/* Sidebar */}
       <MainSidebar />
@@ -462,15 +467,17 @@ const ClientManagement = () => {
                 </p>
               </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
-                <Button
-                  onClick={() => {
-                    setSelectedClient(null);
-                    setIsModalOpen(true);
-                  }}
-                  iconName="Plus"
-                >
-                  {t('clientManagement.newClient')}
-                </Button>
+                {canCreate && (
+                  <Button
+                    onClick={() => {
+                      setSelectedClient(null);
+                      setIsModalOpen(true);
+                    }}
+                    iconName="Plus"
+                  >
+                    {t('clientManagement.newClient')}
+                  </Button>
+                )}
               </div>
             </div>
           </header>
@@ -695,7 +702,7 @@ const ClientManagement = () => {
                     : t('clientManagement.empty.addFirstClient')
                   }
                 </p>
-                {!searchTerm && Object.values(filters).every(f => f === 'all') && (
+                {!searchTerm && Object.values(filters).every(f => f === 'all') && canCreate && (
                   <Button
                     onClick={() => {
                       setSelectedClient(null);
@@ -804,7 +811,8 @@ const ClientManagement = () => {
                                 size="sm"
                                 onClick={() => handleClientSelect(client)}
                                 className="h-8 w-8 p-0"
-                                title={t('clientManagement.table.actions.edit')}
+                                title={!canEdit ? t('permissions.noFullAccess') : t('clientManagement.table.actions.edit')}
+                                disabled={!canEdit}
                               >
                                 <Icon name="Edit" size={16} />
                               </Button>
@@ -813,7 +821,8 @@ const ClientManagement = () => {
                                 size="sm"
                                 onClick={() => handleClientDelete(client.id)}
                                 className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                                title={t('clientManagement.table.actions.delete')}
+                                title={!canDelete ? t('permissions.noFullAccess') : t('clientManagement.table.actions.delete')}
+                                disabled={!canDelete}
                               >
                                 <Icon name="Trash2" size={16} />
                               </Button>
@@ -837,6 +846,8 @@ const ClientManagement = () => {
                           onDelete={() => handleClientDelete(client.id)}
                           onStatusToggle={(newStatus) => handleStatusToggle(client.id, newStatus)}
                           getStatusColor={getStatusColor}
+                          canEdit={canEdit}
+                          canDelete={canDelete}
                         />
                       ))}
                     </div>
@@ -861,6 +872,7 @@ const ClientManagement = () => {
         />
       )}
     </div>
+    </PermissionGuard>
   );
 };
 

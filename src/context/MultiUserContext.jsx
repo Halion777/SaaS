@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from './AuthContext';
 import multiUserService from '../services/multiUserService';
 
@@ -13,6 +14,7 @@ export const useMultiUser = () => {
 };
 
 export const MultiUserProvider = ({ children }) => {
+  const { t } = useTranslation();
   const [currentProfile, setCurrentProfile] = useState(null);
   const [companyProfiles, setCompanyProfiles] = useState([]);
   const [isPremium, setIsPremium] = useState(false);
@@ -350,14 +352,15 @@ export const MultiUserProvider = ({ children }) => {
   };
 
   const getRoleLabel = (role) => {
-    const roleMap = {
-      admin: 'Administrateur',
-      manager: 'Gestionnaire',
-      accountant: 'Comptable',
-      sales: 'Commercial',
-      viewer: 'Lecteur'
-    };
-    return roleMap[role] || 'Utilisateur';
+    // Standard roles use translation keys
+    const standardRoles = ['admin', 'manager', 'accountant', 'sales', 'viewer', 'custom'];
+    
+    if (standardRoles.includes(role)) {
+      return t(`multiUserProfiles.roles.${role}.name`, role);
+    }
+    
+    // For custom role names (e.g., "HR", "Support"), return as-is (they're user-defined)
+    return role || t('multiUserProfiles.roles.custom.name', 'Custom');
   };
 
   const value = useMemo(() => ({
@@ -426,6 +429,7 @@ export const MultiUserProvider = ({ children }) => {
     getProfileAvatar,
     getRoleColor,
     getRoleLabel,
+    t,
     user?.id
   ]);
 

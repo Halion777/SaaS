@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import MainSidebar from '../../components/ui/MainSidebar';
+import PermissionGuard, { usePermissionCheck } from '../../components/PermissionGuard';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import TableLoader from '../../components/ui/TableLoader';
@@ -594,8 +595,12 @@ const ExpenseInvoicesManagement = () => {
     }
   };
 
+  // Check permissions for actions
+  const { canEdit, canCreate, canDelete } = usePermissionCheck('supplierInvoices');
+
   return (
-    <div className="min-h-screen bg-background">
+    <PermissionGuard module="supplierInvoices" requiredPermission="view_only">
+    <div className="h-screen bg-background overflow-y-auto">
       <MainSidebar />
       
       <main 
@@ -606,7 +611,7 @@ const ExpenseInvoicesManagement = () => {
           marginLeft: isMobile ? 0 : `${sidebarOffset}px`,
         }}
       >
-        <div className="px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
+        <div className="px-4 sm:px-6 pt-0 pb-4 sm:pb-6 space-y-4 sm:space-y-6 overflow-visible">
           {/* Header */}
           <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
@@ -620,16 +625,17 @@ const ExpenseInvoicesManagement = () => {
               </p>
             </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
-
-              <Button
-                iconName="Plus"
-                iconPosition="left"
-                onClick={() => setIsQuickCreateOpen(true)}
-                  className="text-xs sm:text-sm"
-              >
-                {t('expenseInvoices.addInvoice', 'Add Invoice')}
-              </Button>
-            </div>
+                {canCreate && (
+                  <Button
+                    iconName="Plus"
+                    iconPosition="left"
+                    onClick={() => setIsQuickCreateOpen(true)}
+                    className="text-xs sm:text-sm"
+                  >
+                    {t('expenseInvoices.addInvoice', 'Add Invoice')}
+                  </Button>
+                )}
+              </div>
           </div>
           </header>
 
@@ -677,6 +683,8 @@ const ExpenseInvoicesManagement = () => {
                   onClick={() => handleBulkAction('send_to_accountant')}
                   iconName="Send"
                   iconPosition="left"
+                  disabled={!canEdit}
+                  title={!canEdit ? t('permissions.noFullAccess') : ''}
                 >
                   {t('expenseInvoices.bulkActions.sendToAccountant', 'Send to Accountant')}
                 </Button>
@@ -692,15 +700,17 @@ const ExpenseInvoicesManagement = () => {
                   {t('expenseInvoices.bulkActions.export', 'Export')}
                 </Button>
                 
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => handleBulkAction('delete')}
-                  iconName="Trash2"
-                  iconPosition="left"
-                >
-                  {t('expenseInvoices.bulkActions.delete', 'Delete')}
-                </Button>
+                {canDelete && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleBulkAction('delete')}
+                    iconName="Trash2"
+                    iconPosition="left"
+                  >
+                    {t('expenseInvoices.bulkActions.delete', 'Delete')}
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -720,6 +730,8 @@ const ExpenseInvoicesManagement = () => {
               onFiltersChange={handleFiltersChange}
               onStatusUpdate={handleStatusUpdate}
               isExportingPDF={isExportingPDF}
+              canEdit={canEdit}
+              canDelete={canDelete}
             />
           )}
 
@@ -798,6 +810,7 @@ const ExpenseInvoicesManagement = () => {
         isExpenseInvoice={true}
       />
     </div>
+    </PermissionGuard>
   );
 };
 

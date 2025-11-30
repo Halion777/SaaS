@@ -10,12 +10,14 @@ import Icon from './AppIcon';
 /**
  * SubscriptionGuard component that checks if user has an active subscription
  * Redirects to subscription page if subscription is cancelled or expired
+ * Super admin users are exempt from subscription checks
  */
 const SubscriptionGuard = ({ children }) => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showExpiredModal, setShowExpiredModal] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -27,6 +29,21 @@ const SubscriptionGuard = ({ children }) => {
       }
 
       try {
+        // First, check if user is a super admin
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        // Super admin users are exempt from subscription checks
+        if (userData?.role === 'superadmin') {
+          setIsSuperAdmin(true);
+          setSubscriptionStatus('active');
+          setLoading(false);
+          return;
+        }
+
         // Fetch subscription status from database
         const { data: subscriptionData, error } = await supabase
           .from('subscriptions')
@@ -80,16 +97,9 @@ const SubscriptionGuard = ({ children }) => {
     }
   }, [isAuthenticated, user, authLoading]);
 
-  // Show loading while checking auth and subscription
+  // Don't show separate loader - parent already shows one
   if (authLoading || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <TableLoader 
-          message={t('subscription.checking', 'Verifying subscription...')}
-          className="h-screen"
-        />
-      </div>
-    );
+    return null;
   }
 
   // Show expired subscription modal

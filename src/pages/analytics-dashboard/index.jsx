@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import MainSidebar from '../../components/ui/MainSidebar';
+import PermissionGuard, { usePermissionCheck } from '../../components/PermissionGuard';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import KPICard from './components/KPICard';
@@ -43,6 +44,9 @@ const AnalyticsDashboard = () => {
   });
   const tabsScrollRef = useScrollPosition('analytics-tabs-scroll');
   const hasLoadedData = useRef(false);
+  
+  // Check permissions for editing
+  const { canEdit } = usePermissionCheck('analytics');
 
   useEffect(() => {
     const handleSidebarToggle = (e) => {
@@ -590,6 +594,7 @@ const AnalyticsDashboard = () => {
                 onUpdate={(objectives) => {
                   setUserObjectives(objectives);
                 }}
+                canEdit={canEdit}
               />
             </motion.div>
           </>
@@ -600,6 +605,7 @@ const AnalyticsDashboard = () => {
   };
 
   return (
+    <PermissionGuard module="analytics" requiredPermission="view_only">
     <div className="min-h-screen bg-background">
       <MainSidebar />
       
@@ -687,6 +693,7 @@ const AnalyticsDashboard = () => {
         </div>
       </main>
     </div>
+    </PermissionGuard>
   );
 };
 

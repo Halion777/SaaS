@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import AppIcon from '../AppIcon';
@@ -13,6 +13,18 @@ const ProfileSelectionModal = ({ isOpen, onProfileSelect, onClose }) => {
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinError, setPinError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
 
   const handleProfileClick = async (profile) => {
     setSelectedProfile(profile);
@@ -80,8 +92,8 @@ const ProfileSelectionModal = ({ isOpen, onProfileSelect, onClose }) => {
   return createPortal(
     <>
       {/* Profile Selection Modal - Full Screen */}
-      <div className="fixed inset-0 bg-background z-[9999] flex items-center justify-center">
-        <div className="w-full h-full flex flex-col">
+      <div className="fixed inset-0 bg-background z-[9999] overflow-hidden">
+        <div className="w-full h-full flex flex-col overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-border">
             <h2 className="text-3xl font-bold text-foreground">{t('profileSelection.title')}</h2>
@@ -93,15 +105,16 @@ const ProfileSelectionModal = ({ isOpen, onProfileSelect, onClose }) => {
             </button>
           </div>
 
-          {/* Content */}
-          <div className="flex-1 flex flex-col items-center justify-center p-6">
-            <p className="text-xl text-muted-foreground mb-12 text-center max-w-2xl">
-              {t('profileSelection.subtitle')}
-            </p>
+          {/* Content - Scrollable */}
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex flex-col items-center min-h-full">
+              <p className="text-xl text-muted-foreground mb-12 text-center max-w-2xl">
+                {t('profileSelection.subtitle')}
+              </p>
 
-            {/* Profile Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 max-w-6xl w-full">
-              {companyProfiles.map((profile) => (
+              {/* Profile Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 max-w-6xl w-full pb-8">
+                {companyProfiles.map((profile) => (
                 <div
                   key={profile.id}
                   onClick={() => handleProfileClick(profile)}
@@ -149,6 +162,7 @@ const ProfileSelectionModal = ({ isOpen, onProfileSelect, onClose }) => {
                   </div>
                 </div>
               ))}
+              </div>
             </div>
           </div>
         </div>

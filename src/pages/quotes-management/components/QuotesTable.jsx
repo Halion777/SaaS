@@ -5,7 +5,7 @@ import Input from '../../../components/ui/Input';
 import { Checkbox } from '../../../components/ui/Checkbox';
 import { useTranslation } from 'react-i18next';
 
-const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuoteAction, onQuoteSelect, viewMode = 'table', setViewMode = () => {}, searchTerm = '', setSearchTerm = () => {} }) => {
+const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuoteAction, onQuoteSelect, viewMode = 'table', setViewMode = () => {}, searchTerm = '', setSearchTerm = () => {}, canEdit = true, canDelete = true }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
   const { t } = useTranslation();
 
@@ -303,8 +303,9 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                       variant="ghost"
                       size="icon"
                       onClick={() => onQuoteAction('markAsSent', quote)}
-                      title={t('quotesManagement.table.actions.markAsSent')}
+                      title={!canEdit ? t('permissions.noFullAccess') : t('quotesManagement.table.actions.markAsSent')}
                       className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                      disabled={!canEdit}
                     >
                       <Icon name="Check" size={16} />
                     </Button>
@@ -315,8 +316,9 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                     variant="ghost"
                     size="icon"
                     onClick={() => onQuoteAction('edit', quote)}
-                    title={t('quotesManagement.table.actions.edit')}
+                    title={!canEdit ? t('permissions.noFullAccess') : t('quotesManagement.table.actions.edit')}
                     className="h-8 w-8"
+                    disabled={!canEdit}
                   >
                     <Icon name="Edit" size={16} />
                   </Button>
@@ -326,8 +328,9 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                 variant="ghost"
                 size="icon"
                 onClick={() => onQuoteAction('convert', quote)}
-                title={t('quotesManagement.table.actions.convertToInvoice')}
+                title={!canEdit ? t('permissions.noFullAccess') : t('quotesManagement.table.actions.convertToInvoice')}
                 className="h-8 w-8"
+                disabled={!canEdit}
               >
                 <Icon name="Receipt" size={16} />
               </Button>
@@ -338,8 +341,9 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                     variant="ghost"
                     size="icon"
                     onClick={() => onQuoteAction('delete', quote)}
-                    title={t('quotesManagement.table.actions.delete')}
+                    title={!canDelete ? t('permissions.noFullAccess') : t('quotesManagement.table.actions.delete')}
                     className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    disabled={!canDelete}
                   >
                     <Icon name="Trash" size={16} />
                   </Button>
@@ -428,8 +432,9 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                 variant="ghost"
                 size="icon"
                 onClick={() => onQuoteAction('markAsSent', quote)}
-                title={t('quotesManagement.table.actions.markAsSent')}
+                title={!canEdit ? t('permissions.noFullAccess') : t('quotesManagement.table.actions.markAsSent')}
                 className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50"
+                disabled={!canEdit}
               >
                 <Icon name="Check" size={14} />
               </Button>
@@ -440,8 +445,9 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
               variant="ghost"
               size="icon"
               onClick={() => onQuoteAction('edit', quote)}
-                              title={t('quotesManagement.table.actions.edit')}
+              title={!canEdit ? t('permissions.noFullAccess') : t('quotesManagement.table.actions.edit')}
               className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              disabled={!canEdit}
             >
               <Icon name="Edit" size={14} />
             </Button>
@@ -451,8 +457,9 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                 variant="ghost"
                 size="icon"
                 onClick={() => onQuoteAction('convert', quote)}
-                title={t('quotesManagement.table.actions.convertToInvoice')}
+                title={!canEdit ? t('permissions.noFullAccess') : t('quotesManagement.table.actions.convertToInvoice')}
                 className="h-7 w-7"
+                disabled={!canEdit}
               >
                 <Icon name="Receipt" size={14} />
               </Button>
@@ -464,8 +471,9 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
               variant="ghost"
               size="icon"
               onClick={() => onQuoteAction('delete', quote)}
-              title="Supprimer le devis"
+              title={!canDelete ? t('permissions.noFullAccess') : t('quotesManagement.table.actions.delete')}
               className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+              disabled={!canDelete}
             >
               <Icon name="Trash" size={14} />
             </Button>

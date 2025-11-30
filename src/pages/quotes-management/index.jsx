@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainSidebar from '../../components/ui/MainSidebar';
+import PermissionGuard, { usePermissionCheck } from '../../components/PermissionGuard';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import TableLoader, { TableSkeletonLoader } from '../../components/ui/TableLoader';
@@ -1414,7 +1415,13 @@ const QuotesManagement = () => {
     }
   };
 
+  // Check permissions for actions (create, edit, delete)
+  // Note: canCreate checks quoteCreation module, while canEdit/canDelete check quotesManagement
+  const { canEdit, canDelete } = usePermissionCheck('quotesManagement');
+  const { canCreate } = usePermissionCheck('quoteCreation');
+
   return (
+    <PermissionGuard module="quotesManagement" requiredPermission="view_only">
     <div className="min-h-screen bg-background">
       <MainSidebar />
       
@@ -1443,15 +1450,17 @@ const QuotesManagement = () => {
             <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
               {/* Relances and Analyse IA buttons removed */}
               
-              <Button
-                variant="default"
-                onClick={() => navigate('/quote-creation')}
-                iconName="Plus"
-                iconPosition="left"
-                className="flex-1 sm:flex-none text-xs sm:text-sm"
-              >
-                <span className="hidden sm:inline">{t('quotesManagement.newQuote')}</span>
-              </Button>
+              {canCreate && (
+                <Button
+                  variant="default"
+                  onClick={() => navigate('/quote-creation')}
+                  iconName="Plus"
+                  iconPosition="left"
+                  className="flex-1 sm:flex-none text-xs sm:text-sm"
+                >
+                  <span className="hidden sm:inline">{t('quotesManagement.newQuote')}</span>
+                </Button>
+              )}
             </div>
           </div>
 
@@ -1585,6 +1594,8 @@ const QuotesManagement = () => {
                 setViewMode={setViewMode}
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
+                canEdit={canEdit}
+                canDelete={canDelete}
               />
             )}
             </div>
@@ -1607,6 +1618,7 @@ const QuotesManagement = () => {
 
       {/* Follow-up side panel removed per request */}
     </div>
+    </PermissionGuard>
   );
 };
 

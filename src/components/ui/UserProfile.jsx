@@ -534,6 +534,11 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
     }));
   };
 
+  // Check if user can manage subscription (admin or no profiles set up)
+  const canManageSubscription = () => {
+    return companyProfiles.length === 0 || isAdmin();
+  };
+
   const renderSubscriptionSection = () => (
         <div className="space-y-3">
           {loadingSubscription ? (
@@ -568,28 +573,37 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                 </span>
               </div>
 
-              {/* Action Button */}
-              <div className="pt-1">
-                <Button
-                  onClick={handleManageBilling}
-                  className="w-full flex items-center justify-center gap-1.5"
-                  size="sm"
-                >
-                  <Icon name="CreditCard" size={14} />
-                  <span className="text-xs">Manage Subscription</span>
-                </Button>
-              </div>
+              {/* Action Button - Only visible to admins */}
+              {canManageSubscription() && (
+                <div className="pt-1">
+                  <Button
+                    onClick={handleManageBilling}
+                    className="w-full flex items-center justify-center gap-1.5"
+                    size="sm"
+                  >
+                    <Icon name="CreditCard" size={14} />
+                    <span className="text-xs">Manage Subscription</span>
+                  </Button>
+                </div>
+              )}
+              {!canManageSubscription() && (
+                <p className="text-xs text-muted-foreground text-center pt-1 italic">
+                  {t('subscription.adminOnlyNote', 'Contact admin to manage subscription')}
+                </p>
+              )}
             </>
           ) : (
             <div className="text-center py-6">
               <Icon name="AlertCircle" size={24} className="text-muted-foreground mx-auto mb-2" />
               <p className="text-xs text-muted-foreground mb-3">No active subscription</p>
-              <Button
-                onClick={handleManageBilling}
-                size="sm"
-              >
-                Subscribe Now
-              </Button>
+              {canManageSubscription() && (
+                <Button
+                  onClick={handleManageBilling}
+                  size="sm"
+                >
+                  Subscribe Now
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -783,6 +797,11 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
         );
   };
 
+  // Check if user can manage security settings (admin or no profiles set up)
+  const canManageSecuritySettings = () => {
+    return companyProfiles.length === 0 || isAdmin();
+  };
+
   const renderSecuritySection = () => (
           <div className="space-y-4">
           {/* Email Verification */}
@@ -816,7 +835,8 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
             )}
               </div>
           
-          {/* Reset Password */}
+          {/* Reset Password - Admin only */}
+          {canManageSecuritySettings() && (
               <div className="flex items-center justify-between">
             <div className="flex-1">
                   <h5 className="text-sm font-medium text-foreground">{t('profile.settings.security.authentication.resetPassword.title')}</h5>
@@ -840,6 +860,17 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
               )}
                 </Button>
               </div>
+          )}
+          {!canManageSecuritySettings() && (
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <h5 className="text-sm font-medium text-foreground">{t('profile.settings.security.authentication.resetPassword.title')}</h5>
+                <p className="text-xs text-muted-foreground mt-0.5 italic">
+                  {t('profile.settings.security.adminOnlyNote', 'Contact admin to reset password')}
+                </p>
+              </div>
+            </div>
+          )}
             </div>
   );
 

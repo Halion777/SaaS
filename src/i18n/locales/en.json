@@ -1,4 +1,49 @@
 {
+  "pageTitle": {
+    "home": "Home",
+    "login": "Login",
+    "register": "Register",
+    "forgotPassword": "Forgot Password",
+    "resetPassword": "Reset Password",
+    "pricing": "Pricing",
+    "about": "About",
+    "contact": "Contact",
+    "features": "Features",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "cookies": "Cookie Policy",
+    "blog": "Blog",
+    "blogPost": "Blog Post",
+    "findArtisan": "Find Artisan",
+    "dashboard": "Dashboard",
+    "quoteCreation": "Create Quote",
+    "quotesManagement": "Quotes",
+    "invoicesManagement": "Invoices",
+    "expenseInvoices": "Expense Invoices",
+    "clientManagement": "Clients",
+    "quotesFollowUp": "Quotes Follow-up",
+    "invoicesFollowUp": "Invoices Follow-up",
+    "analytics": "Analytics",
+    "leadsManagement": "Leads",
+    "profiles": "Profiles",
+    "subscription": "Subscription",
+    "tasks": "Tasks",
+    "peppol": "PEPPOL",
+    "creditInsurance": "Credit Insurance",
+    "recovery": "Recovery",
+    "quoteShare": "Quote",
+    "superAdmin": {
+      "default": "Super Admin",
+      "dashboard": "Admin Dashboard",
+      "users": "Users Management",
+      "leads": "Leads Management",
+      "billing": "Billing",
+      "emailTemplates": "Email Templates",
+      "blogs": "Blog Management",
+      "customization": "Customization",
+      "peppol": "PEPPOL Settings"
+    }
+  },
   "nav": {
     "home": "Home",
     "about": "About",
@@ -1078,6 +1123,8 @@
     "managingBilling": "Opening billing portal...",
     "pageTitle": "Manage Your Subscription",
     "pageDescription": "Upgrade, downgrade, or manage your Haliqo plan",
+    "adminOnly": "Only administrators can manage subscription settings.",
+    "adminOnlyNote": "Contact admin to manage subscription",
     "currentPlan": {
       "title": "Current Plan",
       "plan": "Plan",
@@ -1747,7 +1794,8 @@
           "resetPassword": {
             "title": "Reset Password",
             "description": "Change your password"
-          }
+          },
+          "adminOnlyNote": "Contact admin to reset password"
         }
       }
     }
@@ -3226,7 +3274,10 @@
       "send": "Send",
       "sendError": "An error occurred while sending the quote. Please try again.",
       "yourCompany": "Your company",
-      "yourTeam": "Your team"
+      "yourTeam": "Your team",
+      "defaultSubject": "Quote {{quoteNumber}} - {{projectDescription}}",
+      "defaultMessage": "Please find attached our quote {{quoteNumber}}.",
+      "defaultProject": "New project"
     },
     "saving": "Saving...",
     "financialConfig": {
@@ -3995,7 +4046,7 @@
         "yourCompany": "Your company",
         "yourTeam": "Your team",
         "defaultSubject": "Invoice {{invoiceNumber}} - {{companyName}}",
-        "defaultMessage": "Hello,\n\nPlease find attached our invoice {{invoiceNumber}}.\n\nBest regards,\n{{companyName}}",
+        "defaultMessage": "Please find attached our invoice {{invoiceNumber}}.",
         "emailText": "Invoice {{invoiceNumber}} - Amount: {{amount}}",
         "preview": {
           "invoice": "Invoice",
@@ -4424,11 +4475,33 @@
     "verifying": "Verifying...",
     "hint": "The PIN code protects access to this profile"
   },
+  "permissions": {
+    "checking": "Checking permissions...",
+    "noFullAccess": "You need full access to perform this action",
+    "accessDenied": {
+      "title": "Access Denied",
+      "noAccess": "You don't have permission to view this page. Contact your administrator for access.",
+      "noFullAccess": "You don't have permission to perform this action. Contact your administrator for access.",
+      "adminOnly": "Only administrators can access this page.",
+      "currentRole": "Current Role",
+      "requiredAccess": "Required Access",
+      "adminRole": "Administrator",
+      "goBack": "Go Back",
+      "goHome": "Go to Dashboard"
+    },
+    "viewOnly": {
+      "message": "You have view-only access. You cannot make changes.",
+      "createDisabled": "You don't have permission to create",
+      "editDisabled": "You don't have permission to edit",
+      "deleteDisabled": "You don't have permission to delete"
+    }
+  },
   "multiUserProfiles": {
     "title": "User Profile Management",
     "subtitle": "Manage your team profiles and their permissions",
     "loading": "Loading profiles...",
     "addProfile": "Add Profile",
+    "adminOnly": "Only administrators can manage user profiles.",
     "premiumAccount": {
       "title": "Premium Account",
       "description": "You can create up to {{max}} user profiles",
@@ -4467,6 +4540,9 @@
         "pinHintMultiple": "PIN required for all profiles (including admin) when multiple profiles exist. Leave empty to use default PIN (1234).",
         "roleTemplate": "Role Template",
         "roleTemplateDescription": "Select a predefined template or customize permissions",
+        "customRoleName": "Custom Role Name",
+        "customRoleNamePlaceholder": "e.g., HR, Support, Operations, Intern",
+        "customRoleNameHint": "Enter a descriptive name for this custom role. This name will be displayed in the profile.",
         "detailedPermissions": "Detailed Permissions",
         "detailedPermissionsDescription": "Customize permissions for each module",
         "permissionsSummary": "Permissions Summary",
@@ -4538,23 +4614,27 @@
     "roles": {
       "admin": {
         "name": "Administrator",
-        "description": "Full access to all features"
+        "description": "Full access to all features and settings. Can manage users and system configuration."
       },
       "manager": {
         "name": "Manager",
-        "description": "Team management and document approval"
+        "description": "Full access to quotes, invoices, clients, and team management. Limited access to financial services."
       },
       "accountant": {
         "name": "Accountant",
-        "description": "Financial management and invoicing"
+        "description": "Full access to invoices, expenses, and financial analytics. No access to quotes creation or leads."
       },
       "sales": {
         "name": "Sales",
-        "description": "Sales management and client relationships"
+        "description": "Full access to quotes, leads, and clients. No access to invoices or financial features."
       },
       "viewer": {
         "name": "Viewer",
-        "description": "Read-only access to data"
+        "description": "Read-only access to view quotes, clients, and analytics. Cannot create or modify data."
+      },
+      "custom": {
+        "name": "Custom Role",
+        "description": "Create a custom role with a unique name (e.g., HR, Support, Operations) and set permissions manually."
       }
     },
     "messages": {
@@ -4570,6 +4650,203 @@
       "avatarUpdated": "Avatar updated successfully",
       "avatarUpdateError": "Error uploading avatar"
     }
+    },
+  "creditInsurance": {
+    "title": "Credit Insurance",
+    "subtitle": "Protect your cash flow against customer non-payment",
+    "tabs": {
+      "overview": "Overview",
+      "application": "Application"
+    },
+    "highlights": {
+      "coverage": {
+        "title": "90% Coverage",
+        "description": "Of unpaid amount"
+      },
+      "b2b": {
+        "title": "B2B Clients",
+        "description": "Business only"
+      },
+      "claims": {
+        "title": "Fast Claims",
+        "description": "Processed in 48h"
+      }
+    },
+    "serviceDescription": {
+      "title": "Service Description",
+      "riskProtection": {
+        "title": "Risk Protection",
+        "description": "This insurance covers up to 90% of the unpaid amount in case of bankruptcy or prolonged non-payment by a B2B customer. It allows you to maintain your cash flow and continue your business peacefully, even if an important customer defaults."
+      }
+    },
+    "benefits": {
+      "title": "Benefits",
+      "item1": "Coverage up to 90% of receivables",
+      "item2": "Protection against client bankruptcy",
+      "item3": "Legal support included",
+      "item4": "Quick response in case of claims"
+    },
+    "conditions": {
+      "title": "Conditions",
+      "item1": "B2B clients only (businesses)",
+      "item2": "Invoices over €500",
+      "item3": "Maximum 90 days payment terms",
+      "item4": "Report within 30 days maximum"
+    },
+    "cta": {
+      "title": "Request a personalized quote",
+      "description": "Get a credit insurance proposal tailored to your business",
+      "button": "Request my quote"
+    },
+    "sectors": {
+      "construction": "Construction",
+      "manufacturing": "Manufacturing",
+      "retail": "Retail",
+      "services": "Services",
+      "technology": "Technology",
+      "healthcare": "Healthcare",
+      "finance": "Finance",
+      "other": "Other"
+    },
+    "form": {
+      "title": "Credit Insurance Application",
+      "subtitle": "Fill out this form to receive a personalized proposal",
+      "sections": {
+        "companyInfo": {
+          "title": "Company Contact Information"
+        },
+        "industry": {
+          "title": "Business Sector"
+        },
+        "financial": {
+          "title": "Financial Information"
+        }
+      },
+      "fields": {
+        "companyName": "Company Name",
+        "contactPerson": "Contact Person",
+        "email": "Email",
+        "telephone": "Phone",
+        "address": "Full Address",
+        "sector": "Main Sector",
+        "activityDescription": "Activity Description",
+        "annualTurnover": "Annual Turnover",
+        "topCustomers": "Main B2B Customers"
+      },
+      "placeholders": {
+        "companyName": "e.g. Artisan Dupont SARL",
+        "contactPerson": "e.g. John Doe",
+        "email": "contact@company.com",
+        "telephone": "+32 123 456 789",
+        "address": "123 Main Street, 1000 Brussels",
+        "sector": "Select your sector",
+        "activityDescription": "Describe your main activity, services, area of operation...",
+        "topCustomers": "List your main business customers (name, sector, average invoice amount...)"
+      },
+      "submit": "Submit Application",
+      "submitting": "Submitting...",
+      "errorSubmitting": "Error submitting application",
+      "securityMessage": "Your data is secure and used only for processing your application.",
+      "success": {
+        "title": "Application Submitted!",
+        "message": "Your application has been successfully submitted. You will receive a confirmation email shortly."
+      }
     }
+  },
+  "recovery": {
+    "title": "Debt Recovery",
+    "subtitle": "Recover your unpaid invoices efficiently.",
+    "headerSubtitle": "Recover your unpaid receivables efficiently and professionally",
+    "tabs": {
+      "overview": "Overview",
+      "invoices": "Unpaid Invoices"
+    },
+    "urgency": {
+      "urgent": "Urgent",
+      "medium": "Medium",
+      "recent": "Recent"
+    },
+    "highlights": {
+      "successRate": {
+        "title": "85% Success Rate",
+        "description": "Of invoices recovered"
+      },
+      "fastRecovery": {
+        "title": "Fast Recovery",
+        "description": "Average 15 days"
+      },
+      "legalProtection": {
+        "title": "Legal Protection",
+        "description": "Full legal support"
+      }
+    },
+    "howItWorks": {
+      "title": "How it works",
+      "performanceBased": {
+        "title": "Performance-based service",
+        "description": "Once an invoice is unpaid and you have no news from the client, we proceed with recovery. No fees unless we recover the amount. Our compensation is based solely on our success."
+      }
+    },
+    "process": {
+      "title": "Our Process",
+      "step1": "Case analysis and verification",
+      "step2": "Professional amicable reminders",
+      "step3": "Negotiation and payment plan",
+      "step4": "Legal procedures if necessary"
+    },
+    "conditions": {
+      "title": "Conditions",
+      "item1": "Invoice unpaid for more than 15 days",
+      "item2": "Minimum amount €200",
+      "item3": "Complete file and supporting documents"
+    },
+    "cta": {
+      "title": "Entrust us with your unpaid invoices",
+      "description": "Our recovery experts support you in recovering your receivables",
+      "button": "Start Recovery"
+    },
+    "invoices": {
+      "title": "Unpaid Invoices",
+      "subtitle": "Select the invoices you want to submit for our recovery service",
+      "dueDate": "Due",
+      "daysOverdue": "days overdue",
+      "noInvoices": {
+        "title": "No unpaid invoices",
+        "description": "All your invoices are paid. Great job!"
+      }
+    },
+    "form": {
+      "context": {
+        "title": "Context and Explanations",
+        "placeholder": "Describe the context of these unpaid invoices, contact attempts made, reasons given by the client..."
+      },
+      "attachments": {
+        "title": "Attachments",
+        "subtitle": "Invoices, contracts, supporting documents",
+        "addLabel": "Add documents",
+        "addDescription": "Drag and drop or click to select files",
+        "addedFiles": "Added files"
+      },
+      "submit": "Submit for Recovery",
+      "submitting": "Submitting...",
+      "selectInvoiceError": "Please select at least one invoice",
+      "selectInvoiceHint": "Select at least one invoice to continue",
+      "submitError": "Error submitting recovery request",
+      "success": {
+        "title": "Request Submitted!",
+        "message": "Your invoices have been submitted for recovery. Our team will contact you within 48 hours."
+      },
+      "info": {
+        "timeline": {
+          "label": "Timeline",
+          "value": "First action within 48h, regular and transparent follow-up"
+        },
+        "guarantee": {
+          "label": "Guarantee",
+          "value": "No fees if we don't recover your money"
+        }
+      }
+    }
+  }
 } 
 

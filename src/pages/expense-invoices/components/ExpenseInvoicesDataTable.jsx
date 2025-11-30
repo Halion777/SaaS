@@ -6,7 +6,7 @@ import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import { Checkbox } from '../../../components/ui/Checkbox';
 
-const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, selectedExpenseInvoices, onSelectionChange, filters, onFiltersChange, onStatusUpdate, isExportingPDF = false }) => {
+const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, selectedExpenseInvoices, onSelectionChange, filters, onFiltersChange, onStatusUpdate, isExportingPDF = false, canEdit = true, canDelete = true }) => {
   const { t, i18n } = useTranslation();
   const [sortConfig, setSortConfig] = useState({ key: 'issueDate', direction: 'desc' });
   const [viewMode, setViewMode] = useState(() => {
@@ -54,14 +54,16 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
 
     const config = statusConfig[status] || statusConfig.pending;
     
-    if (onStatusUpdate && invoiceId) {
+    // Only show editable dropdown if user has edit permission
+    if (onStatusUpdate && invoiceId && canEdit) {
       return (
-        <div className="relative inline-block" style={{ zIndex: 'auto' }}>
+        <div className="relative inline-block">
           <Select
             value={status}
             onValueChange={(newStatus) => onStatusUpdate(invoiceId, newStatus)}
             options={statusOptions}
             className="w-auto min-w-[120px]"
+            usePortal={true}
           />
         </div>
       );
@@ -218,10 +220,11 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                 <Button
                   variant="ghost"
                   size="sm"
-                  iconName="Send"
+                  iconName="Mail"
                   onClick={() => onExpenseInvoiceAction('send_to_accountant', invoice)}
-                  title={t('expenseInvoices.table.actions.sendToAccountant', 'Send to Accountant')}
+                  title={!canEdit ? t('permissions.noFullAccess') : t('expenseInvoices.table.actions.sendToAccountant', 'Send to Accountant')}
                   className="text-primary hover:text-primary/80"
+                  disabled={!canEdit}
                 />
                 {invoice.source === 'manual' && (
                 <Button
@@ -229,7 +232,8 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                   size="sm"
                   iconName="Edit"
                   onClick={() => onExpenseInvoiceAction('edit', invoice)}
-                  title={t('expenseInvoices.table.actions.edit', 'Edit')}
+                  title={!canEdit ? t('permissions.noFullAccess') : t('expenseInvoices.table.actions.edit', 'Edit')}
+                  disabled={!canEdit}
                 />
                 )}
               </div>
@@ -480,10 +484,11 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                       <Button
                         variant="ghost"
                         size="sm"
-                        iconName="Send"
+                        iconName="Mail"
                         onClick={() => onExpenseInvoiceAction('send_to_accountant', invoice)}
-                        title={t('expenseInvoices.table.actions.sendToAccountant', 'Send to Accountant')}
+                        title={!canEdit ? t('permissions.noFullAccess') : t('expenseInvoices.table.actions.sendToAccountant', 'Send to Accountant')}
                         className="text-primary hover:text-primary/80"
+                        disabled={!canEdit}
                       />
                       {invoice.source === 'manual' && (
                       <Button
@@ -491,7 +496,8 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                         size="sm"
                         iconName="Edit"
                         onClick={() => onExpenseInvoiceAction('edit', invoice)}
-                        title={t('expenseInvoices.table.actions.edit', 'Edit')}
+                        title={!canEdit ? t('permissions.noFullAccess') : t('expenseInvoices.table.actions.edit', 'Edit')}
+                        disabled={!canEdit}
                       />
                       )}
                     </div>

@@ -1,4 +1,49 @@
 {
+  "pageTitle": {
+    "home": "Accueil",
+    "login": "Connexion",
+    "register": "Inscription",
+    "forgotPassword": "Mot de passe oublié",
+    "resetPassword": "Réinitialiser le mot de passe",
+    "pricing": "Tarifs",
+    "about": "À propos",
+    "contact": "Contact",
+    "features": "Fonctionnalités",
+    "terms": "Conditions d'utilisation",
+    "privacy": "Politique de confidentialité",
+    "cookies": "Politique des cookies",
+    "blog": "Blog",
+    "blogPost": "Article de blog",
+    "findArtisan": "Trouver un artisan",
+    "dashboard": "Tableau de bord",
+    "quoteCreation": "Créer un devis",
+    "quotesManagement": "Devis",
+    "invoicesManagement": "Factures",
+    "expenseInvoices": "Factures de dépenses",
+    "clientManagement": "Clients",
+    "quotesFollowUp": "Suivi des devis",
+    "invoicesFollowUp": "Suivi des factures",
+    "analytics": "Analytique",
+    "leadsManagement": "Prospects",
+    "profiles": "Profils",
+    "subscription": "Abonnement",
+    "tasks": "Tâches",
+    "peppol": "PEPPOL",
+    "creditInsurance": "Assurance crédit",
+    "recovery": "Recouvrement",
+    "quoteShare": "Devis",
+    "superAdmin": {
+      "default": "Super Admin",
+      "dashboard": "Tableau de bord Admin",
+      "users": "Gestion des utilisateurs",
+      "leads": "Gestion des prospects",
+      "billing": "Facturation",
+      "emailTemplates": "Modèles d'e-mail",
+      "blogs": "Gestion du blog",
+      "customization": "Personnalisation",
+      "peppol": "Paramètres PEPPOL"
+    }
+  },
   "nav": {
     "home": "Accueil",
     "about": "À propos",
@@ -1080,6 +1125,8 @@
     "managingBilling": "Ouverture du portail de facturation...",
     "pageTitle": "Gérer votre abonnement",
     "pageDescription": "Upgrader, downgrader ou gérer votre plan Haliqo",
+    "adminOnly": "Seuls les administrateurs peuvent gérer les paramètres d'abonnement.",
+    "adminOnlyNote": "Contactez l'administrateur pour gérer l'abonnement",
     "currentPlan": {
       "title": "Plan actuel",
       "plan": "Plan",
@@ -2161,7 +2208,8 @@
           "resetPassword": {
             "title": "Réinitialiser le mot de passe",
             "description": "Modifier votre mot de passe"
-          }
+          },
+          "adminOnlyNote": "Contactez l'administrateur pour réinitialiser le mot de passe"
         }
       }
     }
@@ -3287,7 +3335,10 @@
       "send": "Envoyer",
       "sendError": "Une erreur est survenue lors de l'envoi du devis. Veuillez réessayer.",
       "yourCompany": "Votre entreprise",
-      "yourTeam": "Votre équipe"
+      "yourTeam": "Votre équipe",
+      "defaultSubject": "Devis {{quoteNumber}} - {{projectDescription}}",
+      "defaultMessage": "Veuillez trouver ci-joint notre devis {{quoteNumber}}.",
+      "defaultProject": "Nouveau projet"
     },
   
     "errors": {
@@ -4055,7 +4106,7 @@
         "yourCompany": "Votre entreprise",
         "yourTeam": "Votre équipe",
         "defaultSubject": "Facture {{invoiceNumber}} - {{companyName}}",
-        "defaultMessage": "Bonjour,\n\nVeuillez trouver ci-joint notre facture {{invoiceNumber}}.\n\nCordialement,\n{{companyName}}",
+        "defaultMessage": "Veuillez trouver ci-joint notre facture {{invoiceNumber}}.",
         "emailText": "Facture {{invoiceNumber}} - Montant: {{amount}}",
         "preview": {
           "invoice": "Facture",
@@ -4482,11 +4533,33 @@
     "verifying": "Vérification...",
     "hint": "Le code PIN protège l'accès à ce profil"
   },
+  "permissions": {
+    "checking": "Vérification des permissions...",
+    "noFullAccess": "Vous avez besoin d'un accès complet pour effectuer cette action",
+    "accessDenied": {
+      "title": "Accès Refusé",
+      "noAccess": "Vous n'avez pas la permission d'afficher cette page. Contactez votre administrateur pour obtenir l'accès.",
+      "noFullAccess": "Vous n'avez pas la permission d'effectuer cette action. Contactez votre administrateur pour obtenir l'accès.",
+      "adminOnly": "Seuls les administrateurs peuvent accéder à cette page.",
+      "currentRole": "Rôle Actuel",
+      "requiredAccess": "Accès Requis",
+      "adminRole": "Administrateur",
+      "goBack": "Retour",
+      "goHome": "Aller au Tableau de Bord"
+    },
+    "viewOnly": {
+      "message": "Vous avez un accès en lecture seule. Vous ne pouvez pas apporter de modifications.",
+      "createDisabled": "Vous n'avez pas la permission de créer",
+      "editDisabled": "Vous n'avez pas la permission de modifier",
+      "deleteDisabled": "Vous n'avez pas la permission de supprimer"
+    }
+  },
   "multiUserProfiles": {
     "title": "Gestion des profils utilisateurs",
     "subtitle": "Gérez les profils de votre équipe et leurs permissions",
     "loading": "Chargement des profils...",
     "addProfile": "Ajouter un profil",
+    "adminOnly": "Seuls les administrateurs peuvent gérer les profils utilisateurs.",
     "premiumAccount": {
       "title": "Compte Premium",
       "description": "Vous pouvez créer jusqu'à {{max}} profils utilisateurs",
@@ -4525,6 +4598,9 @@
         "pinHintMultiple": "PIN requis pour tous les profils (y compris admin) quand plusieurs profils existent. Laissez vide pour utiliser le code PIN par défaut (1234).",
         "roleTemplate": "Modèle de rôle",
         "roleTemplateDescription": "Sélectionnez un modèle prédéfini ou personnalisez les permissions",
+        "customRoleName": "Nom du rôle personnalisé",
+        "customRoleNamePlaceholder": "ex: RH, Support, Opérations, Stagiaire",
+        "customRoleNameHint": "Entrez un nom descriptif pour ce rôle personnalisé. Ce nom sera affiché dans le profil.",
         "detailedPermissions": "Permissions détaillées",
         "detailedPermissionsDescription": "Personnalisez les permissions pour chaque module",
         "permissionsSummary": "Résumé des permissions",
@@ -4596,23 +4672,27 @@
     "roles": {
       "admin": {
         "name": "Administrateur",
-        "description": "Accès complet à toutes les fonctionnalités"
+        "description": "Accès complet à toutes les fonctionnalités et paramètres. Peut gérer les utilisateurs et la configuration."
       },
       "manager": {
         "name": "Gestionnaire",
-        "description": "Gestion des équipes et approbation des documents"
+        "description": "Accès complet aux devis, factures, clients et gestion d'équipe. Accès limité aux services financiers."
       },
       "accountant": {
         "name": "Comptable",
-        "description": "Gestion financière et facturation"
+        "description": "Accès complet aux factures, dépenses et analyses financières. Pas d'accès à la création de devis ou aux prospects."
       },
       "sales": {
         "name": "Commercial",
-        "description": "Gestion des ventes et relations clients"
+        "description": "Accès complet aux devis, prospects et clients. Pas d'accès aux factures ou fonctionnalités financières."
       },
       "viewer": {
         "name": "Lecteur",
-        "description": "Accès en lecture seule aux données"
+        "description": "Accès en lecture seule aux devis, clients et analyses. Ne peut pas créer ou modifier de données."
+      },
+      "custom": {
+        "name": "Rôle Personnalisé",
+        "description": "Créez un rôle personnalisé avec un nom unique (ex: RH, Support, Opérations) et définissez les permissions manuellement."
       }
     },
     "messages": {
@@ -4628,5 +4708,203 @@
       "avatarUpdated": "Avatar mis à jour avec succès",
       "avatarUpdateError": "Erreur lors du téléchargement de l'avatar"
     }
+  },
+
+  "creditInsurance": {
+    "title": "Assurance Crédit",
+    "subtitle": "Protégez votre trésorerie contre les impayés clients",
+    "tabs": {
+      "overview": "Aperçu",
+      "application": "Demande"
+    },
+    "highlights": {
+      "coverage": {
+        "title": "Couverture 90%",
+        "description": "Du montant impayé"
+      },
+      "b2b": {
+        "title": "Clients B2B",
+        "description": "Entreprises uniquement"
+      },
+      "claims": {
+        "title": "Réclamations Rapides",
+        "description": "Traitées en 48h"
+      }
+    },
+    "serviceDescription": {
+      "title": "Description du Service",
+      "riskProtection": {
+        "title": "Protection des risques",
+        "description": "Cette assurance couvre jusqu'à 90% du montant impayé en cas de faillite ou de non-paiement prolongé d'un client B2B. Elle vous permet de maintenir votre trésorerie et de continuer votre activité sereinement, même en cas de défaillance d'un client important."
+      }
+    },
+    "benefits": {
+      "title": "Avantages",
+      "item1": "Couverture jusqu'à 90% des créances",
+      "item2": "Protection contre la faillite client",
+      "item3": "Support juridique inclus",
+      "item4": "Réactivité en cas de sinistre"
+    },
+    "conditions": {
+      "title": "Conditions",
+      "item1": "Clients B2B uniquement (entreprises)",
+      "item2": "Factures supérieures à 500€",
+      "item3": "Délai de paiement maximum 90 jours",
+      "item4": "Déclaration dans les 30 jours maximum"
+    },
+    "cta": {
+      "title": "Demander un devis personnalisé",
+      "description": "Obtenez une proposition d'assurance crédit adaptée à votre activité",
+      "button": "Demander mon devis"
+    },
+    "sectors": {
+      "construction": "Construction",
+      "manufacturing": "Fabrication",
+      "retail": "Commerce de détail",
+      "services": "Services",
+      "technology": "Technologie",
+      "healthcare": "Santé",
+      "finance": "Finance",
+      "other": "Autre"
+    },
+    "form": {
+      "title": "Demande d'assurance crédit",
+      "subtitle": "Remplissez ce formulaire pour recevoir une proposition personnalisée",
+      "sections": {
+        "companyInfo": {
+          "title": "Informations de contact de l'entreprise"
+        },
+        "industry": {
+          "title": "Secteur d'activité"
+        },
+        "financial": {
+          "title": "Informations financières"
+        }
+      },
+      "fields": {
+        "companyName": "Nom de l'entreprise",
+        "contactPerson": "Personne de contact",
+        "email": "Email",
+        "telephone": "Téléphone",
+        "address": "Adresse complète",
+        "sector": "Secteur principal",
+        "activityDescription": "Description de l'activité",
+        "annualTurnover": "Chiffre d'affaires annuel",
+        "topCustomers": "Principaux clients B2B"
+      },
+      "placeholders": {
+        "companyName": "Ex: Artisan Dupont SARL",
+        "contactPerson": "Ex: Jean Dupont",
+        "email": "contact@entreprise.com",
+        "telephone": "+32 123 456 789",
+        "address": "123 Rue de l'Artisan, 1000 Bruxelles",
+        "sector": "Sélectionnez votre secteur",
+        "activityDescription": "Décrivez votre activité principale, vos services, votre zone d'intervention...",
+        "topCustomers": "Listez vos principaux clients entreprises (nom, secteur, montant moyen des factures...)"
+      },
+      "submit": "Envoyer ma demande",
+      "submitting": "Envoi en cours...",
+      "errorSubmitting": "Erreur lors de l'envoi de la demande",
+      "securityMessage": "Vos données sont sécurisées et utilisées uniquement pour l'étude de votre dossier.",
+      "success": {
+        "title": "Demande envoyée !",
+        "message": "Votre demande a été envoyée avec succès. Vous recevrez un email de confirmation sous peu."
+      }
     }
+  },
+  "recovery": {
+    "title": "Recouvrement",
+    "subtitle": "Récupérez vos factures impayées avec efficacité.",
+    "headerSubtitle": "Récupérez vos créances impayées avec efficacité et professionnalisme",
+    "tabs": {
+      "overview": "Aperçu",
+      "invoices": "Factures impayées"
+    },
+    "urgency": {
+      "urgent": "Urgent",
+      "medium": "Moyen",
+      "recent": "Récent"
+    },
+    "highlights": {
+      "successRate": {
+        "title": "Taux de réussite 85%",
+        "description": "Des factures récupérées"
+      },
+      "fastRecovery": {
+        "title": "Recouvrement rapide",
+        "description": "Moyenne 15 jours"
+      },
+      "legalProtection": {
+        "title": "Protection juridique",
+        "description": "Support juridique complet"
+      }
+    },
+    "howItWorks": {
+      "title": "Comment ça fonctionne",
+      "performanceBased": {
+        "title": "Service à la performance",
+        "description": "Une fois qu'une facture est impayée et sans nouvelles du client, nous procédons au recouvrement. Aucun frais sauf si nous récupérons la somme. Notre rémunération est uniquement basée sur notre réussite."
+      }
+    },
+    "process": {
+      "title": "Notre processus",
+      "step1": "Analyse du dossier et vérification",
+      "step2": "Relances amiables professionnelles",
+      "step3": "Négociation et plan de paiement",
+      "step4": "Procédures juridiques si nécessaire"
+    },
+    "conditions": {
+      "title": "Conditions",
+      "item1": "Facture impayée depuis plus de 15 jours",
+      "item2": "Montant minimum 200€",
+      "item3": "Dossier complet et justificatifs"
+    },
+    "cta": {
+      "title": "Confiez-nous vos impayés",
+      "description": "Nos experts en recouvrement vous accompagnent pour récupérer vos créances",
+      "button": "Commencer le recouvrement"
+    },
+    "invoices": {
+      "title": "Factures impayées",
+      "subtitle": "Sélectionnez les factures que vous souhaitez confier à notre service de recouvrement",
+      "dueDate": "Échéance",
+      "daysOverdue": "jours de retard",
+      "noInvoices": {
+        "title": "Aucune facture impayée",
+        "description": "Toutes vos factures sont payées. Excellent travail !"
+      }
+    },
+    "form": {
+      "context": {
+        "title": "Contexte et explications",
+        "placeholder": "Décrivez le contexte de ces impayés, les tentatives de contact effectuées, les raisons invoquées par le client..."
+      },
+      "attachments": {
+        "title": "Pièces jointes",
+        "subtitle": "Factures, contrats, justificatifs",
+        "addLabel": "Ajouter des documents",
+        "addDescription": "Glissez-déposez ou cliquez pour sélectionner des fichiers",
+        "addedFiles": "Fichiers ajoutés"
+      },
+      "submit": "Envoyer pour recouvrement",
+      "submitting": "Envoi en cours...",
+      "selectInvoiceError": "Veuillez sélectionner au moins une facture",
+      "selectInvoiceHint": "Sélectionnez au moins une facture pour continuer",
+      "submitError": "Erreur lors de l'envoi de la demande de recouvrement",
+      "success": {
+        "title": "Demande envoyée !",
+        "message": "Vos factures ont été envoyées pour recouvrement. Notre équipe vous contactera dans les 48 heures."
+      },
+      "info": {
+        "timeline": {
+          "label": "Délais",
+          "value": "Première action sous 48h, suivi régulier et transparent"
+        },
+        "guarantee": {
+          "label": "Garantie",
+          "value": "Aucun frais si nous ne récupérons pas votre argent"
+        }
+      }
+    }
+  }
 }

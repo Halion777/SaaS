@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useMultiUser } from '../../context/MultiUserContext';
+import PermissionGuard from '../../components/PermissionGuard';
 import MainSidebar from '../../components/ui/MainSidebar';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
@@ -282,7 +283,7 @@ const QuoteCreation = () => {
         const quoteNumber = d.projectInfo?.quoteNumber;
         const fallbackKey = `quote-draft-${user.id}-${currentProfile?.id || 'default'}`;
         const fallbackRowIdKey = `quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`;
-        
+
         if (quoteNumber) {
           const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
           const draftRowIdKey = getDraftRowIdKeyByQuoteNumber(quoteNumber);
@@ -440,7 +441,7 @@ const QuoteCreation = () => {
             };
 
             setSelectedClient(formattedClient);
-            
+
             // Load project information from lead
             const { data: leadData } = await LeadManagementService.getLeadDetailsForQuote(leadId);
             if (leadData) {
@@ -451,7 +452,7 @@ const QuoteCreation = () => {
                 description: leadData.project_description || ''
               });
             }
-            
+
             setIsLoadingQuote(false);
             return;
           }
@@ -1073,15 +1074,15 @@ const QuoteCreation = () => {
           return sum + (task.price || 0) + taskMaterialsTotal;
         }, 0);
 
-        const taxAmount = financialConfig?.vatConfig?.display 
-          ? (totalAmount * (financialConfig.vatConfig.rate || 20) / 100) 
+        const taxAmount = financialConfig?.vatConfig?.display
+          ? (totalAmount * (financialConfig.vatConfig.rate || 20) / 100)
           : 0;
 
         // Calculate the final amount including VAT
         const finalAmount = totalAmount + taxAmount;
-        
+
         // Calculate deposit amount if enabled
-        const depositAmount = financialConfig?.advanceConfig?.enabled 
+        const depositAmount = financialConfig?.advanceConfig?.enabled
           ? parseFloat(financialConfig.advanceConfig.amount || 0)
           : 0;
 
@@ -1178,7 +1179,7 @@ const QuoteCreation = () => {
                 return sum + (task.price || 0) + taskMaterialsTotal;
               }, 0);
 
-              const depositAmount = financialConfig?.advanceConfig?.enabled 
+              const depositAmount = financialConfig?.advanceConfig?.enabled
                 ? parseFloat(financialConfig.advanceConfig.amount || 0)
                 : 0;
 
@@ -1224,7 +1225,7 @@ const QuoteCreation = () => {
 
               // Update the quote in the backend
               const { error: updateError } = await updateQuote(editingQuoteId, quoteUpdateData);
-              
+
               if (updateError) {
                 console.warn('Auto-save: Error updating quote:', updateError);
               } else {
@@ -1238,14 +1239,14 @@ const QuoteCreation = () => {
               const draftRowIdKey = getDraftRowIdKeyByQuoteNumber(quoteNumber);
 
               const existingRowId = localStorage.getItem(draftRowIdKey);
-              
+
               // Also check fallback user-based key if quote number is not available
               const fallbackRowIdKey = `quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`;
               const fallbackRowId = !quoteNumber ? localStorage.getItem(fallbackRowIdKey) : null;
-              
+
               // Use existing row ID if available (from quote number key or fallback key)
               const rowIdToUse = existingRowId || fallbackRowId;
-              
+
               const { data: saved, error: draftErr } = await saveQuoteDraft({
 
                 id: rowIdToUse || undefined,
@@ -1695,14 +1696,14 @@ const QuoteCreation = () => {
         try {
           const draftRowIdKey = getDraftRowIdKeyByQuoteNumber(quoteNumber);
           const existingRowId = localStorage.getItem(draftRowIdKey);
-          
+
           // Also check fallback user-based key if quote number is not available
           const fallbackRowIdKey = `quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`;
           const fallbackRowId = !quoteNumber ? localStorage.getItem(fallbackRowIdKey) : null;
-          
+
           // Use existing row ID if available (from quote number key or fallback key)
           const rowIdToUse = existingRowId || fallbackRowId;
-          
+
           const { data: saved, error: draftErr } = await saveQuoteDraft({
             id: rowIdToUse || undefined,
             user_id: user.id,
@@ -1803,14 +1804,14 @@ const QuoteCreation = () => {
         try {
           const draftRowIdKey = getDraftRowIdKeyByQuoteNumber(quoteNumber);
           const existingRowId = localStorage.getItem(draftRowIdKey);
-          
+
           // Also check fallback user-based key if quote number is not available
           const fallbackRowIdKey = `quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`;
           const fallbackRowId = !quoteNumber ? localStorage.getItem(fallbackRowIdKey) : null;
-          
+
           // Use existing row ID if available (from quote number key or fallback key)
           const rowIdToUse = existingRowId || fallbackRowId;
-          
+
           const { data: saved, error: draftErr } = await saveQuoteDraft({
             id: rowIdToUse || undefined,
             user_id: user.id,
@@ -1974,7 +1975,7 @@ const QuoteCreation = () => {
 
 
         // Calculate deposit amount if enabled
-        const depositAmount = data.financialConfig?.advanceConfig?.enabled 
+        const depositAmount = data.financialConfig?.advanceConfig?.enabled
           ? parseFloat(data.financialConfig.advanceConfig.amount || 0)
           : 0;
 
@@ -1997,13 +1998,13 @@ const QuoteCreation = () => {
           discount_amount: 0,
 
           final_amount: totalAmount + (data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0),
-          
+
           // Add deposit amount to the quote data
           advance_payment_amount: depositAmount,
-          
+
           // Add VAT config
           vat_config: data.financialConfig?.vatConfig || null,
-          
+
           // Add marketing banner config
           marketing_banner: data.financialConfig?.marketingBannerConfig || null,
 
@@ -4115,14 +4116,14 @@ const QuoteCreation = () => {
         try {
           const draftRowIdKey = getDraftRowIdKeyByQuoteNumber(quoteNumber);
           const existingRowId = localStorage.getItem(draftRowIdKey);
-          
+
           // Also check fallback user-based key if quote number is not available
           const fallbackRowIdKey = `quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`;
           const fallbackRowId = !quoteNumber ? localStorage.getItem(fallbackRowIdKey) : null;
-          
+
           // Use existing row ID if available (from quote number key or fallback key)
           const rowIdToUse = existingRowId || fallbackRowId;
-          
+
           const { data: saved, error: draftErr } = await saveQuoteDraft({
             id: rowIdToUse || undefined,
             user_id: user.id,
@@ -4640,330 +4641,332 @@ const QuoteCreation = () => {
 
 
   return (
+    <PermissionGuard module="quoteCreation" requiredPermission="full_access">
+      <div className="min-h-screen bg-background">
 
-    <div className="min-h-screen bg-background">
-
-      <MainSidebar />
+        <MainSidebar />
 
 
 
-      <div
+        <div
 
-        style={{
+          style={{
 
-          marginLeft: isMobile ? 0 : `${sidebarOffset}px`,
+            marginLeft: isMobile ? 0 : `${sidebarOffset}px`,
 
-          transition: 'margin-left 0.3s ease-out'
+            transition: 'margin-left 0.3s ease-out'
 
-        }}
+          }}
 
-        className="min-h-screen pt-4 md:pt-0"
+          className="min-h-screen pt-4 md:pt-0"
 
-      >
+        >
 
-        <div className="container mx-auto px-4 sm:px-6 pt-0 pb-20 sm:pb-8 max-w-7xl">
+          <div className="container mx-auto px-4 sm:px-6 pt-0 pb-20 sm:pb-8 max-w-7xl">
 
-          {/* Header */}
+            {/* Header */}
 
-          <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
+            <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
 
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
 
-              <div>
+                <div>
 
-                <div className="flex items-center">
+                  <div className="flex items-center">
 
-                  <Icon name="FileText" size={24} className="text-primary mr-3" />
+                    <Icon name="FileText" size={24} className="text-primary mr-3" />
 
-                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">
+                    <h1 className="text-xl sm:text-2xl font-bold text-foreground">
 
-                    {isEditing ? t('quoteCreation.editTitle') : t('quoteCreation.title')}
+                      {isEditing ? t('quoteCreation.editTitle') : t('quoteCreation.title')}
 
-                  </h1>
+                    </h1>
+
+                  </div>
+
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+
+                    {isEditing
+                      ? t('quoteCreation.editSubtitle', 'Modifiez les informations du devis existant')
+                      : t('quoteCreation.subtitle', 'Remplissez les informations ci-dessous pour générer automatiquement un devis professionnel')
+
+                    }
+
+                    {projectInfo.quoteNumber && (
+
+                      <span className="ml-2 inline-flex items-center text-blue-500 text-xs">
+
+                        {projectInfo.quoteNumber}
+
+                      </span>
+
+                    )}
+
+                  </p>
 
                 </div>
 
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                <div className="flex items-center space-x-2 sm:space-x-3">
 
-                  {isEditing
-                    ? t('quoteCreation.editSubtitle', 'Modifiez les informations du devis existant')
-                    : t('quoteCreation.subtitle', 'Remplissez les informations ci-dessous pour générer automatiquement un devis professionnel')
+                  {isLoadingQuote && (
 
-                  }
+                    <div className="flex items-center text-xs sm:text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-200">
 
-                  {projectInfo.quoteNumber && (
+                      <Icon name="Loader" size={14} className="sm:w-4 sm:h-4 mr-2 animate-spin" />
 
-                    <span className="ml-2 inline-flex items-center text-blue-500 text-xs">
+                      Chargement du devis...
 
-                      {projectInfo.quoteNumber}
-
-                    </span>
+                    </div>
 
                   )}
 
-                </p>
+                  {isSaving && (
+
+                    <div className="flex items-center text-xs sm:text-sm text-orange-600 bg-orange-50 px-2 py-1 rounded-md border border-orange-200">
+
+                      <Icon name="Save" size={14} className="sm:w-4 sm:h-4 mr-2 animate-pulse" />
+
+                      Sauvegarde en cours...
+
+                    </div>
+
+                  )}
+
+                  {isAutoSaving && !isSaving && (
+
+                    <div className="flex items-center text-xs sm:text-sm text-green-600 bg-green-50 px-2 py-1 rounded-md border border-green-200">
+
+                      <Icon name="Save" size={14} className="sm:w-4 sm:h-4 mr-2 animate-pulse" />
+
+                      {t('quoteCreation.autoSave.saving')}
+
+                    </div>
+
+                  )}
+
+                  {lastSaved && !isAutoSaving && !isLoadingQuote && !isSaving && (
+
+                    <div className="flex items-center text-xs sm:text-sm text-muted-foreground">
+
+                      <Icon name="CheckCircle" size={14} className="sm:w-4 sm:h-4 mr-2 text-green-500" />
+
+                      {t('quoteCreation.autoSave.saved', { time: new Date(lastSaved).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) })}
+
+                    </div>
+
+                  )}
+
+
+
+                  {/* Clear draft button removed per new flow */}
+
+
+
+
+
+                </div>
 
               </div>
 
-              <div className="flex items-center space-x-2 sm:space-x-3">
-
-                {isLoadingQuote && (
-
-                  <div className="flex items-center text-xs sm:text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-200">
-
-                    <Icon name="Loader" size={14} className="sm:w-4 sm:h-4 mr-2 animate-spin" />
-
-                    Chargement du devis...
-
-                  </div>
-
-                )}
-
-                {isSaving && (
-
-                  <div className="flex items-center text-xs sm:text-sm text-orange-600 bg-orange-50 px-2 py-1 rounded-md border border-orange-200">
-
-                    <Icon name="Save" size={14} className="sm:w-4 sm:h-4 mr-2 animate-pulse" />
-
-                    Sauvegarde en cours...
-
-                  </div>
-
-                )}
-
-                {isAutoSaving && !isSaving && (
-
-                  <div className="flex items-center text-xs sm:text-sm text-green-600 bg-green-50 px-2 py-1 rounded-md border border-green-200">
-
-                    <Icon name="Save" size={14} className="sm:w-4 sm:h-4 mr-2 animate-pulse" />
-
-                    {t('quoteCreation.autoSave.saving')}
-
-                  </div>
-
-                )}
-
-                {lastSaved && !isAutoSaving && !isLoadingQuote && !isSaving && (
-
-                  <div className="flex items-center text-xs sm:text-sm text-muted-foreground">
-
-                    <Icon name="CheckCircle" size={14} className="sm:w-4 sm:h-4 mr-2 text-green-500" />
-
-                    {t('quoteCreation.autoSave.saved', { time: new Date(lastSaved).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) })}
-
-                  </div>
-
-                )}
+            </header>
 
 
 
-                {/* Clear draft button removed per new flow */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
 
+              {/* Main Content */}
 
+              <div className="lg:col-span-3 space-y-4 sm:space-y-6">
 
+                <StepIndicator
 
+                  currentStep={currentStep}
+
+                  onStepChange={handleStepChange}
+
+                />
+
+                {renderCurrentStep()}
 
               </div>
 
-            </div>
-
-          </header>
 
 
+              {/* Recommendations Sidebar */}
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+              <div className="lg:col-span-1 space-y-4">
 
-            {/* Main Content */}
+                {/* Step box */}
 
-            <div className="lg:col-span-3 space-y-4 sm:space-y-6">
+                <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-center">
 
-              <StepIndicator
+                  <span className="text-3xl sm:text-4xl font-extrabold text-primary">{t('quoteCreation.stepIndicator.step', 'Étape')} {currentStep}/4</span>
 
-                currentStep={currentStep}
+                </div>
 
-                onStepChange={handleStepChange}
+                {/* Recommendation box */}
 
-              />
+                <div className="bg-card border border-border rounded-lg p-4">
 
-              {renderCurrentStep()}
+                  <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center">
 
-            </div>
+                    <Icon name="Sparkles" size={14} className="mr-2 text-primary" />
 
+                    {t('quoteCreation.recommendations.title', 'Recommandations')}
 
+                  </h3>
 
-            {/* Recommendations Sidebar */}
+                  {currentStep === 1 && (
 
-            <div className="lg:col-span-1 space-y-4">
+                    <>
 
-              {/* Step box */}
+                      <div className="space-y-2">
 
-              <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-center">
+                        <div className="flex items-start text-sm text-muted-foreground"><Icon name="Sparkles" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step1.selectCategory', 'Sélectionnez au moins une catégorie (obligatoire) pour activer les suggestions de tâches.')}</div>
 
-                <span className="text-3xl sm:text-4xl font-extrabold text-primary">{t('quoteCreation.stepIndicator.step', 'Étape')} {currentStep}/4</span>
+                        <div className="flex items-start text-sm text-muted-foreground"><Icon name="Sparkles" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step1.multipleCategories', 'Vous pouvez choisir plusieurs catégories si nécessaire.')}</div>
 
-              </div>
+                        <div className="flex items-start text-sm text-muted-foreground"><Icon name="Mic" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step1.useMic', 'Cliquez sur l\'icône micro pour dicter; l\'IA nettoie et reformule proprement.')}</div>
 
-              {/* Recommendation box */}
+                        <div className="flex items-start text-sm text-muted-foreground"><Icon name="Wand2" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step1.useEnhance', 'Utilisez « Améliorer » pour une description courte, claire et professionnelle.')}</div>
 
-              <div className="bg-card border border-border rounded-lg p-4">
+                        <div className="flex items-start text-sm text-muted-foreground"><Icon name="Globe" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step1.language', 'La langue suit vos préférences de compte.')}</div>
 
-                <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center">
-
-                  <Icon name="Sparkles" size={14} className="mr-2 text-primary" />
-
-                  {t('quoteCreation.recommendations.title', 'Recommandations')}
-
-                </h3>
-
-                {currentStep === 1 && (
-
-                  <>
-
-                    <div className="space-y-2">
-
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Sparkles" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step1.selectCategory', 'Sélectionnez au moins une catégorie (obligatoire) pour activer les suggestions de tâches.')}</div>
-
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Sparkles" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step1.multipleCategories', 'Vous pouvez choisir plusieurs catégories si nécessaire.')}</div>
-
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Mic" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step1.useMic', 'Cliquez sur l\'icône micro pour dicter; l\'IA nettoie et reformule proprement.')}</div>
-
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Wand2" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step1.useEnhance', 'Utilisez « Améliorer » pour une description courte, claire et professionnelle.')}</div>
-
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Globe" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step1.language', 'La langue suit vos préférences de compte.')}</div>
-
-                    </div>
-
-                    <div className="mt-3 p-2 rounded-md bg-blue-50 border border-blue-100 text-[12px] text-blue-700 flex items-start">
-
-                      <Icon name="Info" size={14} className="mr-2 mt-0.5" />
-
-                      {t('quoteCreation.recommendations.step1.tip', 'Astuce: plus votre description est précise, meilleures seront les suggestions de tâches.')}
-
-                    </div>
-
-                  </>
-
-                )}
-
-                {currentStep === 2 && (
-
-                  <>
-
-                    <div className="space-y-2">
-
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Mic" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step2.dictate', 'Dictez/écrivez; l\'IA génère description, durée, prix et matériaux proposés.')}</div>
-
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Hand" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step2.clickSuggestion', 'Cliquez sur une suggestion pour préremplir; modifiez librement avant d\'ajouter.')}</div>
-
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Coins" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step2.checkPrices', 'Vérifiez les prix et quantités de matériaux; ajustez selon votre tarif.')}</div>
-
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Clock" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step2.duration', 'Durée par défaut en heures; renseignez la durée pour un prix cohérent.')}</div>
-
-                    </div>
-
-                    <div className="mt-3 p-2 rounded-md bg-blue-50 border border-blue-100 text-[12px] text-blue-700 flex items-start">
-
-                      <Icon name="Info" size={14} className="mr-2 mt-0.5" />
-
-                      {t('quoteCreation.recommendations.step2.tip', 'Astuce: ajoutez les tâches une par une pour garder un devis clair.')}
-
-                    </div>
-
-                  </>
-
-                )}
-
-                {currentStep === 3 && (
-
-                  <>
-
-                    {/* File Upload Status */}
-                    {isFileUploading && (
-                      <div className="mb-3 p-3 rounded-md bg-blue-50 border border-blue-200 flex items-center space-x-2">
-                        <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-sm text-blue-700 font-medium">{t('quoteCreation.recommendations.step3.uploading', 'Upload de fichiers en cours...')}</span>
                       </div>
-                    )}
 
-                    <div className="space-y-2">
+                      <div className="mt-3 p-2 rounded-md bg-blue-50 border border-blue-100 text-[12px] text-blue-700 flex items-start">
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Image" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step3.addFiles', 'Ajoutez des fichiers utiles (photos avant/après, croquis, PDF).')}</div>
+                        <Icon name="Info" size={14} className="mr-2 mt-0.5" />
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Upload" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step3.dragDrop', 'Glissez‑déposez ou cliquez pour sélectionner; privilégiez PDF/JPG/PNG légers.')}</div>
+                        {t('quoteCreation.recommendations.step1.tip', 'Astuce: plus votre description est précise, meilleures seront les suggestions de tâches.')}
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Type" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step3.nameFiles', 'Nommez vos fichiers clairement pour le client.')}</div>
+                      </div>
 
-                    </div>
+                    </>
 
-                    <div className="mt-3 p-2 rounded-md bg-blue-50 border border-blue-100 text-[12px] text-blue-700 flex items-start">
+                  )}
 
-                      <Icon name="Info" size={14} className="mr-2 mt-0.5" />
+                  {currentStep === 2 && (
 
-                      {t('quoteCreation.recommendations.step3.tip', 'Astuce: des visuels clairs augmentent le taux d\'acceptation.')}
+                    <>
 
-                    </div>
+                      <div className="space-y-2">
 
-                  </>
+                        <div className="flex items-start text-sm text-muted-foreground"><Icon name="Mic" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step2.dictate', 'Dictez/écrivez; l\'IA génère description, durée, prix et matériaux proposés.')}</div>
 
-                )}
+                        <div className="flex items-start text-sm text-muted-foreground"><Icon name="Hand" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step2.clickSuggestion', 'Cliquez sur une suggestion pour préremplir; modifiez librement avant d\'ajouter.')}</div>
 
-                {currentStep === 4 && (
+                        <div className="flex items-start text-sm text-muted-foreground"><Icon name="Coins" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step2.checkPrices', 'Vérifiez les prix et quantités de matériaux; ajustez selon votre tarif.')}</div>
 
-                  <>
+                        <div className="flex items-start text-sm text-muted-foreground"><Icon name="Clock" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step2.duration', 'Durée par défaut en heures; renseignez la durée pour un prix cohérent.')}</div>
 
-                    <div className="space-y-2">
+                      </div>
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Percent" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step4.configVat', 'Configurez la TVA et l\'acompte dans « Configuration ».')}</div>
+                      <div className="mt-3 p-2 rounded-md bg-blue-50 border border-blue-100 text-[12px] text-blue-700 flex items-start">
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Palette" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step4.customize', 'Personnalisez le modèle et les couleurs.')}</div>
+                        <Icon name="Info" size={14} className="mr-2 mt-0.5" />
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="Download" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step4.download', 'Téléchargez le devis en PDF.')}</div>
+                        {t('quoteCreation.recommendations.step2.tip', 'Astuce: ajoutez les tâches une par une pour garder un devis clair.')}
 
-                      <div className="flex items-start text-sm text-muted-foreground"><Icon name="EyeOff" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step4.hidePrices', 'Masquez les prix des matériaux dans les Préférences du compte si besoin.')}</div>
+                      </div>
 
-                    </div>
+                    </>
 
-                    <div className="mt-3 p-2 rounded-md bg-blue-50 border border-blue-100 text-[12px] text-blue-700 flex items-start">
+                  )}
 
-                      <Icon name="Info" size={14} className="mr-2 mt-0.5" />
+                  {currentStep === 3 && (
 
-                      {t('quoteCreation.recommendations.step4.tip', 'Astuce: un devis simple et lisible se signe plus vite.')}
+                    <>
 
-                    </div>
+                      {/* File Upload Status */}
+                      {isFileUploading && (
+                        <div className="mb-3 p-3 rounded-md bg-blue-50 border border-blue-200 flex items-center space-x-2">
+                          <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                          <span className="text-sm text-blue-700 font-medium">{t('quoteCreation.recommendations.step3.uploading', 'Upload de fichiers en cours...')}</span>
+                        </div>
+                      )}
 
-                  </>
+                      <div className="space-y-2">
 
-                )}
+                        <div className="flex items-start text-sm text-muted-foreground"><Icon name="Image" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step3.addFiles', 'Ajoutez des fichiers utiles (photos avant/après, croquis, PDF).')}</div>
 
-              </div>
+                        <div className="flex items-start text-sm text-muted-foreground"><Icon name="Upload" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step3.dragDrop', 'Glissez‑déposez ou cliquez pour sélectionner; privilégiez PDF/JPG/PNG légers.')}</div>
 
-              {/* Notes box */}
+                        <div className="flex items-start text-sm text-muted-foreground"><Icon name="Type" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step3.nameFiles', 'Nommez vos fichiers clairement pour le client.')}</div>
 
-              <div className="bg-card border border-border rounded-lg p-4">
+                      </div>
 
-                <h3 className="text-sm font-semibold text-foreground mb-2">{t('quoteCreation.notes.title', 'Notes')}</h3>
+                      <div className="mt-3 p-2 rounded-md bg-blue-50 border border-blue-100 text-[12px] text-blue-700 flex items-start">
 
-                <div className="text-xs sm:text-sm text-muted-foreground">
+                        <Icon name="Info" size={14} className="mr-2 mt-0.5" />
 
-                  {t('quoteCreation.notes.autosaved', 'Brouillon auto‑enregistré. Vous pouvez le retrouver dans')}
+                        {t('quoteCreation.recommendations.step3.tip', 'Astuce: des visuels clairs augmentent le taux d\'acceptation.')}
 
-                  <Button
+                      </div>
 
-                    variant="outline"
+                    </>
 
-                    size="sm"
+                  )}
 
-                    onClick={() => navigate('/quotes-management')}
+                  {currentStep === 4 && (
 
-                    className="inline-flex items-center gap-1 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
+                    <>
 
-                  >
+                      <div className="space-y-2">
 
-                    <Icon name="ExternalLink" size={14} />
+                        <div className="flex items-start text-sm text-muted-foreground"><Icon name="Percent" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step4.configVat', 'Configurez la TVA et l\'acompte dans « Configuration ».')}</div>
 
-                    {t('quoteCreation.notes.quotesManagement', 'Gestion des devis')}
+                        <div className="flex items-start text-sm text-muted-foreground"><Icon name="Palette" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step4.customize', 'Personnalisez le modèle et les couleurs.')}</div>
 
-                  </Button>
+                        <div className="flex items-start text-sm text-muted-foreground"><Icon name="Download" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step4.download', 'Téléchargez le devis en PDF.')}</div>
+
+                        <div className="flex items-start text-sm text-muted-foreground"><Icon name="EyeOff" size={14} className="mt-0.5 mr-2 text-primary" />{t('quoteCreation.recommendations.step4.hidePrices', 'Masquez les prix des matériaux dans les Préférences du compte si besoin.')}</div>
+
+                      </div>
+
+                      <div className="mt-3 p-2 rounded-md bg-blue-50 border border-blue-100 text-[12px] text-blue-700 flex items-start">
+
+                        <Icon name="Info" size={14} className="mr-2 mt-0.5" />
+
+                        {t('quoteCreation.recommendations.step4.tip', 'Astuce: un devis simple et lisible se signe plus vite.')}
+
+                      </div>
+
+                    </>
+
+                  )}
+
+                </div>
+
+                {/* Notes box */}
+
+                <div className="bg-card border border-border rounded-lg p-4">
+
+                  <h3 className="text-sm font-semibold text-foreground mb-2">{t('quoteCreation.notes.title', 'Notes')}</h3>
+
+                  <div className="text-xs sm:text-sm text-muted-foreground">
+
+                    {t('quoteCreation.notes.autosaved', 'Brouillon auto‑enregistré. Vous pouvez le retrouver dans')}
+
+                    <Button
+
+                      variant="outline"
+
+                      size="sm"
+
+                      onClick={() => navigate('/quotes-management')}
+
+                      className="inline-flex items-center gap-1 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
+
+                    >
+
+                      <Icon name="ExternalLink" size={14} />
+
+                      {t('quoteCreation.notes.quotesManagement', 'Gestion des devis')}
+
+                    </Button>
+
+                  </div>
 
                 </div>
 
@@ -4975,57 +4978,55 @@ const QuoteCreation = () => {
 
         </div>
 
-      </div>
 
 
+        {/* Quote Send Modal */}
 
-      {/* Quote Send Modal */}
+        <QuoteSendModal
 
-      <QuoteSendModal
+          isOpen={showQuoteSendModal}
 
-        isOpen={showQuoteSendModal}
+          onClose={() => setShowQuoteSendModal(false)}
 
-        onClose={() => setShowQuoteSendModal(false)}
+          onSend={processQuoteSend}
 
-        onSend={processQuoteSend}
+          selectedClient={selectedClient}
 
-        selectedClient={selectedClient}
+          projectInfo={projectInfo}
 
-        projectInfo={projectInfo}
+          companyInfo={companyInfo}
 
-        companyInfo={companyInfo}
+          quoteNumber={projectInfo.quoteNumber}
 
-        quoteNumber={projectInfo.quoteNumber}
+          tasks={tasks}
 
-        tasks={tasks}
+          files={files}
 
-        files={files}
+          financialConfig={financialConfig}
 
-        financialConfig={financialConfig}
-
-        signatureData={(() => {
-          // Get client signature from localStorage
-          if (selectedClient?.id || selectedClient?.value) {
-            const clientId = selectedClient.id || selectedClient.value;
-            const key = `client-signature-${user?.id}-${clientId}`;
-            const storedSignature = localStorage.getItem(key);
-            if (storedSignature) {
-              try {
-                return JSON.parse(storedSignature);
-              } catch (e) {
-                console.warn('Failed to parse stored signature:', e);
-                return null;
+          signatureData={(() => {
+            // Get client signature from localStorage
+            if (selectedClient?.id || selectedClient?.value) {
+              const clientId = selectedClient.id || selectedClient.value;
+              const key = `client-signature-${user?.id}-${clientId}`;
+              const storedSignature = localStorage.getItem(key);
+              if (storedSignature) {
+                try {
+                  return JSON.parse(storedSignature);
+                } catch (e) {
+                  console.warn('Failed to parse stored signature:', e);
+                  return null;
+                }
               }
             }
-          }
-          return null;
-        })()}
-      />
+            return null;
+          })()}
+        />
 
 
 
-    </div>
-
+      </div>
+    </PermissionGuard>
   );
 
 };

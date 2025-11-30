@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import SuperAdminProtectedRoute from './components/SuperAdminProtectedRoute';
 import PublicRoute from './components/PublicRoute';
 import GlobalProfile from './components/ui/GlobalProfile';
+import usePageTitle from './hooks/usePageTitle';
 
 // Import pages
 import HomePage from './pages/home';
@@ -55,6 +56,9 @@ import SuperAdminCustomization from './pages/admin/super/customization';
 import Peppol from './pages/admin/super/peppol-settings';
 
 const AppRoutes = () => {
+  // Automatically update page title on route changes
+  usePageTitle();
+  
   return (
     <>
       <ScrollToTop />
