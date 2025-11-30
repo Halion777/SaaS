@@ -39,6 +39,49 @@ Registration → Stripe Checkout (14-day trial) → Trial → Auto Payment → A
 | **Downgrade** | End of period | Credit applied |
 | **Cancel** | End of period | Access until period ends |
 
+### Cancel/Reactivate Flow with Scheduled Plan Changes
+
+**Smart Conflict Resolution:**
+- If a plan change is scheduled and user cancels → Plan change is cancelled first, then subscription is cancelled
+- If a plan change is scheduled and user reactivates → Cancellation is removed, plan change remains scheduled
+- If cancellation is scheduled and user changes plan → Cancellation is removed first, then plan change is applied
+
+**Flow Examples:**
+
+1. **Cancel with Scheduled Plan Change:**
+   ```
+   User has scheduled downgrade → Clicks Cancel
+   ↓
+   Edge function releases schedule (cancels plan change)
+   ↓
+   Edge function cancels subscription
+   ↓
+   Success: Subscription cancelled, plan change removed
+   ```
+
+2. **Reactivate with Scheduled Plan Change:**
+   ```
+   User has scheduled upgrade + cancellation → Clicks Reactivate
+   ↓
+   Edge function checks schedule type
+   ↓
+   If cancellation schedule → Remove cancellation, keep plan change
+   If plan change schedule → Just remove cancellation flag
+   ↓
+   Success: Subscription reactivated, plan change still scheduled
+   ```
+
+3. **Plan Change with Scheduled Cancellation:**
+   ```
+   User has scheduled cancellation → Changes plan
+   ↓
+   Edge function removes cancellation first
+   ↓
+   Edge function applies plan change
+   ↓
+   Success: Plan changed, cancellation removed
+   ```
+
 ### Status Values
 - `trialing` - 14-day free trial
 - `active` - Paid and active
@@ -99,7 +142,7 @@ All changes sync to both `subscriptions` AND `users` tables:
 
 ### Edge Functions
 - `create-checkout-session` - Creates Stripe checkout
-- `admin-update-subscription` - Handles plan changes (upgrade/downgrade/cancel)
+- `admin-update-subscription` - Handles plan changes (upgrade/downgrade/cancel/reactivate) with smart conflict resolution
 - `stripe-webhook` - Processes Stripe events
 - `check-user-registration` - Validates email for trial eligibility
 - `get-subscription` - Fetches real-time Stripe data
@@ -170,3 +213,5 @@ supabase functions deploy get-invoices
 - ✅ Trial prevention (one trial per email)
 - ✅ In-platform subscription management
 - ✅ Super admin can edit subscriptions (syncs to Stripe)
+- ✅ Smart conflict resolution for cancel/reactivate with scheduled plan changes
+- ✅ Seamless flow: plan changes, cancellations, and reactivations work together without conflicts

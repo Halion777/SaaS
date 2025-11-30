@@ -32,6 +32,25 @@ const SubscriptionManagement = () => {
   const [showPlanChangeModal, setShowPlanChangeModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(null);
+  const [errorType, setErrorType] = useState(null); // 'upgrade', 'downgrade', 'cancel', 'reactivate'
+
+  // Auto-dismiss error after 5 seconds
+  useEffect(() => {
+    if (errorMessage) {
+      // Close any open modals when error appears
+      setShowPlanChangeModal(false);
+      setShowCancelModal(false);
+      
+      // Auto-dismiss error after 5 seconds
+      const timer = setTimeout(() => {
+        setErrorMessage(null);
+        setErrorType(null);
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
 
   // Handle sidebar toggle and responsive layout
   useEffect(() => {
@@ -280,9 +299,15 @@ const SubscriptionManagement = () => {
     }
   };
 
-  // Load invoices when switching to invoices tab
+  // Refresh data when switching between tabs
   useEffect(() => {
-    if (activeTab === 'invoices' && invoices.length === 0 && user) {
+    if (!user) return;
+    
+    if (activeTab === 'plans') {
+      // Refresh subscription data when switching to plans tab
+      loadSubscriptionData();
+    } else if (activeTab === 'invoices') {
+      // Always refresh invoices when switching to invoices tab
       loadInvoices();
     }
   }, [activeTab, user]);
@@ -306,6 +331,10 @@ const SubscriptionManagement = () => {
   const confirmPlanChange = async () => {
     if (!selectedPlan || isChangingPlan) return;
     
+    // Clear any previous errors
+    setErrorMessage(null);
+    setErrorType(null);
+    
     try {
       setIsChangingPlan(true);
       
@@ -323,6 +352,12 @@ const SubscriptionManagement = () => {
         amount = pricingResult.data.amount;
       }
 
+      // Determine if this is an upgrade or downgrade for error type
+      const planHierarchy = { starter: 1, pro: 2 };
+      const currentPlanType = subscription?.plan_type || 'starter';
+      const isUpgrade = planHierarchy[selectedPlan.id] > planHierarchy[currentPlanType];
+      const operationType = isUpgrade ? 'upgrade' : 'downgrade';
+
       // Call edge function to update subscription in Stripe
       const { data, error } = await supabase.functions.invoke('admin-update-subscription', {
         body: {
@@ -333,14 +368,31 @@ const SubscriptionManagement = () => {
         }
       });
 
-      if (error) {
-        console.error('Error updating subscription:', error);
-       
+      // Check for errors - prioritize data.error (from edge function) over invoke error
+      if (data && !data.success) {
+        // Edge function returned an error response - show the actual error message
+        console.error('Subscription update failed:', data.error || data.technicalError);
+        setErrorMessage(data.error || data.technicalError || 'Unable to update your subscription. Please try again or contact support if the problem persists.');
+        setErrorType(operationType);
+        setShowPlanChangeModal(false); // Close modal on error
         return;
       }
 
-      if (!data?.success) {
-        alert(data?.error || 'Error updating subscription. Please try again.');
+      if (error) {
+        // Network/connection error from invoke
+        console.error('Error invoking subscription function:', error);
+        setErrorMessage(error.message || 'Unable to connect to subscription service. Please check your internet connection and try again.');
+        setErrorType(operationType);
+        setShowPlanChangeModal(false); // Close modal on error
+        return;
+      }
+
+      if (!data) {
+        // No data returned
+        console.error('No data returned from subscription update');
+        setErrorMessage('No response from subscription service. Please try again.');
+        setErrorType(operationType);
+        setShowPlanChangeModal(false); // Close modal on error
         return;
       }
 
@@ -375,11 +427,17 @@ const SubscriptionManagement = () => {
       
       setShowPlanChangeModal(false);
       setSelectedPlan(null);
-     
+      setErrorMessage(null);
+      setErrorType(null);
+    
 
     } catch (error) {
       console.error('Error changing plan:', error);
-    
+      const planHierarchy = { starter: 1, pro: 2 };
+      const currentPlanType = subscription?.plan_type || 'starter';
+      const isUpgrade = planHierarchy[selectedPlan?.id] > planHierarchy[currentPlanType];
+      setErrorMessage(error?.message || 'An unexpected error occurred while updating your subscription. Please try again.');
+      setErrorType(isUpgrade ? 'upgrade' : 'downgrade');
     } finally {
       setIsChangingPlan(false);
     }
@@ -388,10 +446,15 @@ const SubscriptionManagement = () => {
   const handleCancelSubscription = async (cancelAtPeriodEnd = true) => {
     if (isCancelling || !subscription) return;
     
+    // Clear any previous errors
+    setErrorMessage(null);
+    setErrorType(null);
+    
     try {
       setIsCancelling(true);
       
       // Call edge function to cancel subscription in Stripe
+      // Edge function will handle releasing any scheduled plan changes first
       const { data, error } = await supabase.functions.invoke('admin-update-subscription', {
         body: {
           userId: user.id,
@@ -400,25 +463,44 @@ const SubscriptionManagement = () => {
         }
       });
 
+      // Check for errors - prioritize data.error (from edge function) over invoke error
+      if (data && !data.success) {
+        setErrorMessage(data.error || data.technicalError || 'Unable to cancel your subscription. Please try again or contact support if the problem persists.');
+        setErrorType('cancel');
+        setShowCancelModal(false);
+        return;
+      }
+
       if (error) {
-        console.error('Error cancelling subscription:', error);
-       
+        setErrorMessage(error.message || 'Unable to connect to subscription service. Please check your internet connection and try again.');
+        setErrorType('cancel');
+        setShowCancelModal(false);
         return;
       }
 
-      if (!data?.success) {
-        alert(data?.error || 'Error cancelling subscription. Please try again.');
+      if (!data) {
+        setErrorMessage('No response from subscription service. Please try again.');
+        setErrorType('cancel');
+        setShowCancelModal(false);
         return;
       }
 
-      // Update local subscription
-      // Use user_id instead of id since subscription.id might be Stripe subscription ID
+      // Update local subscription state immediately with response data
+      if (data?.data) {
+        setSubscription(prev => ({
+          ...prev,
+          ...data.data,
+          cancel_at_period_end: data.data.cancel_at_period_end ?? cancelAtPeriodEnd
+        }));
+      }
+
+      // Update local subscription in database
       const newStatus = cancelAtPeriodEnd ? 'active' : 'cancelled';
       await supabase
         .from('subscriptions')
         .update({
           status: newStatus,
-          cancel_at_period_end: cancelAtPeriodEnd,
+          cancel_at_period_end: data?.data?.cancel_at_period_end ?? cancelAtPeriodEnd,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id);
@@ -431,15 +513,15 @@ const SubscriptionManagement = () => {
         })
         .eq('id', user.id);
 
-      // Reload subscription data
+      // Reload subscription data to ensure everything is in sync
       await loadSubscriptionData();
       
       setShowCancelModal(false);
-      
 
     } catch (error) {
       console.error('Error cancelling subscription:', error);
-    
+      setErrorMessage(error?.message || 'An unexpected error occurred while cancelling your subscription. Please try again.');
+      setErrorType('cancel');
     } finally {
       setIsCancelling(false);
     }
@@ -448,9 +530,15 @@ const SubscriptionManagement = () => {
   const handleReactivateSubscription = async () => {
     if (isChangingPlan || !subscription) return;
     
+    // Clear any previous errors
+    setErrorMessage(null);
+    setErrorType(null);
+    
     try {
       setIsChangingPlan(true);
       
+      // Call edge function to reactivate subscription
+      // Edge function will handle any scheduled plan changes appropriately
       const { data, error } = await supabase.functions.invoke('admin-update-subscription', {
         body: {
           userId: user.id,
@@ -458,13 +546,36 @@ const SubscriptionManagement = () => {
         }
       });
 
-      if (error || !data?.success) {
-        alert(data?.error || 'Error reactivating subscription. Please try again.');
+      // Check for errors
+      if (data && !data.success) {
+        setErrorMessage(data.error || data.technicalError || 'Unable to reactivate your subscription. Please try again or contact support if the problem persists.');
+        setErrorType('reactivate');
         return;
       }
 
-      // Update local subscription
-      // Use user_id instead of id since subscription.id might be Stripe subscription ID
+      if (error) {
+        setErrorMessage(error.message || 'Unable to connect to subscription service. Please check your internet connection and try again.');
+        setErrorType('reactivate');
+        return;
+      }
+
+      if (!data) {
+        setErrorMessage('No response from subscription service. Please try again.');
+        setErrorType('reactivate');
+        return;
+      }
+
+      // Update local subscription state immediately with response data
+      if (data?.data) {
+        setSubscription(prev => ({
+          ...prev,
+          ...data.data,
+          cancel_at_period_end: false,
+          status: 'active'
+        }));
+      }
+
+      // Update local subscription in database
       await supabase
         .from('subscriptions')
         .update({
@@ -482,12 +593,14 @@ const SubscriptionManagement = () => {
         })
         .eq('id', user.id);
 
+      // Reload subscription data to ensure everything is in sync
       await loadSubscriptionData();
-      
+      setErrorMessage(null);
+      setErrorType(null);
 
     } catch (error) {
-      console.error('Error reactivating subscription:', error);
- 
+      setErrorMessage(error?.message || 'An unexpected error occurred while reactivating your subscription. Please try again.');
+      setErrorType('reactivate');
     } finally {
       setIsChangingPlan(false);
     }
@@ -503,7 +616,6 @@ const SubscriptionManagement = () => {
       const { data, error } = await createPortalSession(user.id);
       
       if (error) {
-        console.error('Error creating portal session:', error);
         alert('Error opening billing portal. Please try again.');
         setIsManagingBilling(false);
         return;
@@ -514,7 +626,6 @@ const SubscriptionManagement = () => {
       }
 
     } catch (error) {
-      console.error('Error opening billing portal:', error);
       alert('Error opening billing portal. Please try again.');
       setIsManagingBilling(false);
     }
@@ -569,6 +680,22 @@ const SubscriptionManagement = () => {
     }).format(amount);
   };
 
+  // Get error title based on error type
+  const getErrorTitle = () => {
+    switch (errorType) {
+      case 'upgrade':
+        return 'Upgrade Failed';
+      case 'downgrade':
+        return 'Downgrade Failed';
+      case 'cancel':
+        return 'Cancellation Failed';
+      case 'reactivate':
+        return 'Reactivation Failed';
+      default:
+        return 'Operation Failed';
+    }
+  };
+
   return (
     <PermissionGuard 
       adminOnly 
@@ -614,6 +741,37 @@ const SubscriptionManagement = () => {
               </div>
             </div>
           </header>
+
+          {/* Error Message Display */}
+          {errorMessage && (
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <Icon name="AlertCircle" size={20} className="text-red-500" />
+                </div>
+                <div className="ml-3 flex-1">
+                  <h3 className="text-sm font-semibold text-red-800">
+                    {errorType ? getErrorTitle() : 'Operation Failed'}
+                  </h3>
+                  <p className="mt-1 text-sm text-red-700">
+                    {errorMessage}
+                  </p>
+                </div>
+                <div className="ml-4 flex-shrink-0">
+                  <button
+                    onClick={() => {
+                      setErrorMessage(null);
+                      setErrorType(null);
+                    }}
+                    className="text-red-500 hover:text-red-700 focus:outline-none"
+                    aria-label="Dismiss error"
+                  >
+                    <Icon name="X" size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Current Subscription Status */}
           {loading ? (
@@ -680,7 +838,7 @@ const SubscriptionManagement = () => {
             </div>
 
             <div className="mt-6 flex flex-wrap gap-3">
-              {subscription.cancel_at_period_end ? (
+              {subscription.cancel_at_period_end === true ? (
                 <Button
                   onClick={handleReactivateSubscription}
                   className="flex items-center gap-2"
@@ -1028,6 +1186,46 @@ const SubscriptionManagement = () => {
       </main>
 
       {/* Plan Change Confirmation Modal */}
+      {/* Cancel Subscription Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                <Icon name="AlertTriangle" size={20} className="text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">{t('subscription.cancelModal.title', 'Cancel Subscription')}</h3>
+                <p className="text-sm text-muted-foreground">{t('subscription.cancelModal.subtitle', 'We\'re sorry to see you go')}</p>
+              </div>
+            </div>
+
+            <p className="text-sm text-muted-foreground mb-6">
+              {t('subscription.cancelModal.message', 'Your subscription will remain active until the end of your current billing period. Any scheduled plan changes will be cancelled. You can reactivate anytime before then.')}
+            </p>
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowCancelModal(false)}
+                disabled={isCancelling}
+                className="flex-1"
+              >
+                {t('subscription.cancelModal.keepSubscription', 'Keep Subscription')}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleCancelSubscription(true)}
+                disabled={isCancelling}
+                className="flex-1 text-red-600 border-red-200 hover:bg-red-50"
+              >
+                {isCancelling ? t('subscription.cancelModal.cancelling', 'Cancelling...') : t('subscription.cancelModal.cancelAtPeriodEnd', 'Cancel at Period End')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showPlanChangeModal && selectedPlan && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-card border border-border rounded-lg shadow-xl max-w-md w-full p-6">
@@ -1095,45 +1293,6 @@ const SubscriptionManagement = () => {
         </div>
       )}
 
-      {/* Cancel Subscription Modal */}
-      {showCancelModal && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-lg shadow-xl max-w-md w-full p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                <Icon name="AlertTriangle" size={20} className="text-red-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground">{t('subscription.cancelModal.title', 'Cancel Subscription')}</h3>
-                <p className="text-sm text-muted-foreground">{t('subscription.cancelModal.subtitle', 'We\'re sorry to see you go')}</p>
-              </div>
-            </div>
-
-            <p className="text-sm text-muted-foreground mb-6">
-              {t('subscription.cancelModal.message', 'Your subscription will remain active until the end of your current billing period. You can reactivate anytime before then.')}
-            </p>
-
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setShowCancelModal(false)}
-                disabled={isCancelling}
-                className="flex-1"
-              >
-                {t('subscription.cancelModal.keepSubscription', 'Keep Subscription')}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => handleCancelSubscription(true)}
-                disabled={isCancelling}
-                className="flex-1 text-red-600 border-red-200 hover:bg-red-50"
-              >
-                {isCancelling ? t('subscription.cancelModal.cancelling', 'Cancelling...') : t('subscription.cancelModal.cancelAtPeriodEnd', 'Cancel at Period End')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
     </PermissionGuard>
   );

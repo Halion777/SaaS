@@ -390,6 +390,12 @@ class ClientQuoteService {
         })
       });
 
+      // Check if HTTP response is OK
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to send email'}`);
+      }
+
       const result = await response.json();
       if (!result.success) {
         throw new Error(result.error || 'Failed to send email');

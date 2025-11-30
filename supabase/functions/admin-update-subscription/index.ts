@@ -26,7 +26,7 @@ serve(async (req) => {
     const { 
       userId,
       stripeSubscriptionId,
-      action, // 'update_plan', 'cancel', 'reactivate', 'update_status'
+      action, // 'update_plan', 'cancel' (admin only), 'reactivate' (admin only), 'update_status'
       planType,
       billingInterval,
       cancelAtPeriodEnd
@@ -115,7 +115,7 @@ serve(async (req) => {
         }
 
         // Get current subscription to find the item ID and current plan
-        const currentSub = await stripe.subscriptions.retrieve(subscriptionId)
+        let currentSub = await stripe.subscriptions.retrieve(subscriptionId)
         const currentItemId = currentSub.items.data[0]?.id
         const currentPriceId = currentSub.items.data[0]?.price?.id
         const currentAmount = currentSub.items.data[0]?.price?.unit_amount || 0
@@ -129,6 +129,33 @@ serve(async (req) => {
             }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
+        }
+
+        // If subscription is set to cancel, remove cancellation first to allow plan change
+        if (currentSub.cancel_at_period_end) {
+          const cancelSchedule = currentSub.schedule
+          
+          if (cancelSchedule) {
+            // Check if schedule is for cancellation
+            const scheduleData = await stripe.subscriptionSchedules.retrieve(cancelSchedule as string)
+            if (scheduleData.end_behavior === 'cancel') {
+              // Release the cancellation schedule
+              await stripe.subscriptionSchedules.release(cancelSchedule as string)
+            } else {
+              // Just remove cancellation flag
+              await stripe.subscriptions.update(subscriptionId, {
+                cancel_at_period_end: false
+              })
+            }
+          } else {
+            // No schedule - remove cancellation directly
+            await stripe.subscriptions.update(subscriptionId, {
+              cancel_at_period_end: false
+            })
+          }
+          
+          // Re-fetch subscription to get updated state
+          currentSub = await stripe.subscriptions.retrieve(subscriptionId)
         }
 
         // Determine current plan type from price ID
@@ -158,6 +185,7 @@ serve(async (req) => {
           if (schedule) {
             // Update existing schedule
             result = await stripe.subscriptionSchedules.update(schedule as string, {
+              end_behavior: 'release', // Release schedule at end (subscription continues with new plan)
               phases: [
                 {
                   items: [{ price: currentPriceId, quantity: 1 }],
@@ -167,6 +195,7 @@ serve(async (req) => {
                 {
                   items: [{ price: newPriceId, quantity: 1 }],
                   start_date: currentSub.current_period_end
+                  // Last phase has no end_date - will continue indefinitely
                 }
               ]
             })
@@ -178,6 +207,7 @@ serve(async (req) => {
             
             // Update the schedule with the downgrade at period end
             result = await stripe.subscriptionSchedules.update(newSchedule.id, {
+              end_behavior: 'release', // Release schedule at end (subscription continues with new plan)
               phases: [
                 {
                   items: [{ price: currentPriceId, quantity: 1 }],
@@ -187,6 +217,7 @@ serve(async (req) => {
                 {
                   items: [{ price: newPriceId, quantity: 1 }],
                   start_date: currentSub.current_period_end
+                  // Last phase has no end_date - will continue indefinitely
                 }
               ]
             })
@@ -225,6 +256,7 @@ serve(async (req) => {
             if (schedule) {
               // Update existing schedule
               result = await stripe.subscriptionSchedules.update(schedule as string, {
+                end_behavior: 'release', // Release schedule at end (subscription continues with new plan)
                 phases: [
                   {
                     items: [{ price: currentPriceId, quantity: 1 }],
@@ -234,6 +266,7 @@ serve(async (req) => {
                   {
                     items: [{ price: newPriceId, quantity: 1 }],
                     start_date: effectiveDate
+                    // Last phase has no end_date - will continue indefinitely
                   }
                 ]
               })
@@ -245,6 +278,7 @@ serve(async (req) => {
               
               // Update the schedule with the upgrade at trial end
               result = await stripe.subscriptionSchedules.update(newSchedule.id, {
+                end_behavior: 'release', // Release schedule at end (subscription continues with new plan)
                 phases: [
                   {
                     items: [{ price: currentPriceId, quantity: 1 }],
@@ -254,6 +288,7 @@ serve(async (req) => {
                   {
                     items: [{ price: newPriceId, quantity: 1 }],
                     start_date: effectiveDate
+                    // Last phase has no end_date - will continue indefinitely
                   }
                 ]
               })
@@ -295,20 +330,63 @@ serve(async (req) => {
 
       case 'cancel':
         // Cancel subscription (immediately or at period end)
-        if (cancelAtPeriodEnd) {
-          result = await stripe.subscriptions.update(subscriptionId, {
-            cancel_at_period_end: true
-          })
+        // First, check if there's a scheduled plan change and release it
+        const cancelSub = await stripe.subscriptions.retrieve(subscriptionId)
+        const cancelSchedule = cancelSub.schedule
+        
+        if (cancelSchedule) {
+          // Release any existing schedule (plan changes) first
+          await stripe.subscriptionSchedules.release(cancelSchedule as string)
+          // Re-fetch subscription after schedule release
+          const updatedCancelSub = await stripe.subscriptions.retrieve(subscriptionId)
+          
+          if (cancelAtPeriodEnd) {
+            result = await stripe.subscriptions.update(subscriptionId, {
+              cancel_at_period_end: true
+            })
+          } else {
+            result = await stripe.subscriptions.cancel(subscriptionId)
+          }
         } else {
-          result = await stripe.subscriptions.cancel(subscriptionId)
+          // No schedule - proceed with cancellation directly
+          if (cancelAtPeriodEnd) {
+            result = await stripe.subscriptions.update(subscriptionId, {
+              cancel_at_period_end: true
+            })
+          } else {
+            result = await stripe.subscriptions.cancel(subscriptionId)
+          }
         }
         break
 
       case 'reactivate':
         // Reactivate a subscription that was set to cancel at period end
-        result = await stripe.subscriptions.update(subscriptionId, {
-          cancel_at_period_end: false
-        })
+        const reactivateSub = await stripe.subscriptions.retrieve(subscriptionId)
+        const reactivateSchedule = reactivateSub.schedule
+        
+        if (reactivateSchedule) {
+          // If there's a schedule, check if it's for cancellation or plan change
+          const scheduleData = await stripe.subscriptionSchedules.retrieve(reactivateSchedule as string)
+          
+          if (scheduleData.end_behavior === 'cancel') {
+            // Schedule is for cancellation - update to release instead
+            await stripe.subscriptionSchedules.update(reactivateSchedule as string, {
+              end_behavior: 'release'
+            })
+            result = await stripe.subscriptions.retrieve(subscriptionId)
+            result.cancel_at_period_end = false
+          } else {
+            // Schedule is for plan change - just remove cancellation flag
+            result = await stripe.subscriptions.update(subscriptionId, {
+              cancel_at_period_end: false
+            })
+          }
+        } else {
+          // No schedule - update subscription directly
+          result = await stripe.subscriptions.update(subscriptionId, {
+            cancel_at_period_end: false
+          })
+        }
         break
 
       case 'update_status':
@@ -353,4 +431,3 @@ serve(async (req) => {
     )
   }
 })
-
