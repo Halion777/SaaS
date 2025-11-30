@@ -1295,14 +1295,14 @@ Het {company_name} Team',
 );
 
 -- =====================================================
--- CUSTOM QUOTE SENT TEMPLATES (With View Quote button like quote_sent)
+-- QUOTE SENT TEMPLATES (With View Quote button and custom message support)
 -- =====================================================
 
 -- French
 INSERT INTO public.email_templates (
   template_type, template_name, subject, html_content, text_content, variables, is_active, is_default, language
 ) VALUES (
-  'custom_quote_sent',
+  'quote_sent',
   'Devis personnalisé',
   'Devis {quote_number} - {quote_title}',
   '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -1355,8 +1355,8 @@ Cordialement,
 INSERT INTO public.email_templates (
   template_type, template_name, subject, html_content, text_content, variables, is_active, is_default, language
 ) VALUES (
-  'custom_quote_sent',
-  'Custom Quote',
+  'quote_sent',
+  'Quote Sent',
   'Quote {quote_number} - {quote_title}',
   '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
@@ -1408,8 +1408,8 @@ Best regards,
 INSERT INTO public.email_templates (
   template_type, template_name, subject, html_content, text_content, variables, is_active, is_default, language
 ) VALUES (
-  'custom_quote_sent',
-  'Aangepaste offerte',
+  'quote_sent',
+  'Offerte verzonden',
   'Offerte {quote_number} - {quote_title}',
   '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
@@ -1953,3 +1953,162 @@ Deze e-mail is verzonden vanuit het {company_name} contactformulier.',
   '{"email": "string", "phone": "string", "message": "string", "subject": "string", "full_name": "string", "last_name": "string", "first_name": "string", "company_name": "string", "subject_label": "string", "submission_date": "string"}',
   true, false, 'nl'
 );
+
+-- =====================================================
+-- INVOICE SENT TEMPLATES (Matching Quote Template Style)
+-- =====================================================
+
+-- French
+INSERT INTO public.email_templates (
+  template_type, template_name, subject, html_content, text_content, variables, is_active, is_default, language
+) VALUES (
+  'invoice_sent',
+  'Facture envoyée',
+  'Facture {invoice_number} - {invoice_title}',
+  '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Facture {invoice_number}</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">{invoice_title}</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Bonjour {client_name},</h2>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #667eea; margin-bottom: 15px;">
+      <p style="margin: 0 0 5px 0;"><strong>Numéro de facture:</strong> {invoice_number}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Date:</strong> {issue_date}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Date d''échéance:</strong> {due_date}</p>
+      <p style="margin: 0; font-weight: bold; color: #333;"><strong>Montant:</strong> {invoice_amount}</p>
+    </div>
+    <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e0e0e0; margin-bottom: 15px;">
+      <div style="white-space: pre-line; color: #555; line-height: 1.6;">{custom_message}</div>
+    </div>
+    <p style="color: #555; margin: 0; line-height: 1.5;">Le PDF de la facture est joint à cet email.</p>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">Cordialement,<br>{company_name}</p>
+  </div>
+</div>',
+  'Facture {invoice_number} - {invoice_title}
+
+Bonjour {client_name},
+
+{custom_message}
+
+Numéro de facture: {invoice_number}
+Date: {issue_date}
+Date d''échéance: {due_date}
+Montant: {invoice_amount}
+
+Le PDF de la facture est joint à cet email.
+
+Cordialement,
+{company_name}',
+  '{"invoice_number": "string", "client_name": "string", "invoice_title": "string", "invoice_amount": "string", "issue_date": "string", "due_date": "string", "company_name": "string", "custom_message": "string"}',
+  true, true, 'fr'
+);
+
+-- English
+INSERT INTO public.email_templates (
+  template_type, template_name, subject, html_content, text_content, variables, is_active, is_default, language
+) VALUES (
+  'invoice_sent',
+  'Invoice Sent',
+  'Invoice {invoice_number} - {invoice_title}',
+  '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Invoice {invoice_number}</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">{invoice_title}</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Hello {client_name},</h2>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #667eea; margin-bottom: 15px;">
+      <p style="margin: 0 0 5px 0;"><strong>Invoice Number:</strong> {invoice_number}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Date:</strong> {issue_date}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Due Date:</strong> {due_date}</p>
+      <p style="margin: 0; font-weight: bold; color: #333;"><strong>Amount:</strong> {invoice_amount}</p>
+    </div>
+    <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e0e0e0; margin-bottom: 15px;">
+      <div style="white-space: pre-line; color: #555; line-height: 1.6;">{custom_message}</div>
+    </div>
+    <p style="color: #555; margin: 0; line-height: 1.5;">The invoice PDF is attached to this email.</p>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">Best regards,<br>{company_name}</p>
+  </div>
+</div>',
+  'Invoice {invoice_number} - {invoice_title}
+
+Hello {client_name},
+
+{custom_message}
+
+Invoice Number: {invoice_number}
+Date: {issue_date}
+Due Date: {due_date}
+Amount: {invoice_amount}
+
+The invoice PDF is attached to this email.
+
+Best regards,
+{company_name}',
+  '{"invoice_number": "string", "client_name": "string", "invoice_title": "string", "invoice_amount": "string", "issue_date": "string", "due_date": "string", "company_name": "string", "custom_message": "string"}',
+  true, false, 'en'
+);
+
+-- Dutch
+INSERT INTO public.email_templates (
+  template_type, template_name, subject, html_content, text_content, variables, is_active, is_default, language
+) VALUES (
+  'invoice_sent',
+  'Factuur verzonden',
+  'Factuur {invoice_number} - {invoice_title}',
+  '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Factuur {invoice_number}</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">{invoice_title}</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Hallo {client_name},</h2>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #667eea; margin-bottom: 15px;">
+      <p style="margin: 0 0 5px 0;"><strong>Factuurnummer:</strong> {invoice_number}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Datum:</strong> {issue_date}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Vervaldatum:</strong> {due_date}</p>
+      <p style="margin: 0; font-weight: bold; color: #333;"><strong>Bedrag:</strong> {invoice_amount}</p>
+    </div>
+    <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e0e0e0; margin-bottom: 15px;">
+      <div style="white-space: pre-line; color: #555; line-height: 1.6;">{custom_message}</div>
+    </div>
+    <p style="color: #555; margin: 0; line-height: 1.5;">De PDF van de factuur is bijgevoegd aan deze e-mail.</p>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">Met vriendelijke groet,<br>{company_name}</p>
+  </div>
+</div>',
+  'Factuur {invoice_number} - {invoice_title}
+
+Hallo {client_name},
+
+{custom_message}
+
+Factuurnummer: {invoice_number}
+Datum: {issue_date}
+Vervaldatum: {due_date}
+Bedrag: {invoice_amount}
+
+De PDF van de factuur is bijgevoegd aan deze e-mail.
+
+Met vriendelijke groet,
+{company_name}',
+  '{"invoice_number": "string", "client_name": "string", "invoice_title": "string", "invoice_amount": "string", "issue_date": "string", "due_date": "string", "company_name": "string", "custom_message": "string"}',
+  true, false, 'nl'
+);
+
+-- =====================================================
+-- NOTE: invoice_to_accountant and expense_invoice_to_accountant templates
+-- already exist in the database. Only invoice_sent templates are added below.
+-- =====================================================

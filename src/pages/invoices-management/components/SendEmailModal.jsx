@@ -137,22 +137,6 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
         reader.readAsDataURL(pdfBlob);
       });
 
-      // Generate email HTML
-      const emailHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #333; margin-bottom: 20px;">${t('invoicesManagement.sendEmailModal.emailHtml.invoice')} ${invoiceNumber}</h2>
-          <p>${t('invoicesManagement.sendEmailModal.emailHtml.hello')} ${clientName},</p>
-          <p>${emailData.message || t('invoicesManagement.sendEmailModal.emailHtml.defaultMessage', { invoiceNumber })}</p>
-          <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <p style="margin: 5px 0;"><strong>${t('invoicesManagement.sendEmailModal.emailHtml.invoiceNumber')}:</strong> ${invoiceNumber}</p>
-            <p style="margin: 5px 0;"><strong>${t('invoicesManagement.sendEmailModal.emailHtml.date')}:</strong> ${invoiceDate}</p>
-            ${dueDate ? `<p style="margin: 5px 0;"><strong>${t('invoicesManagement.sendEmailModal.emailHtml.dueDate')}:</strong> ${dueDate}</p>` : ''}
-            <p style="margin: 5px 0;"><strong>${t('invoicesManagement.sendEmailModal.emailHtml.amount')}:</strong> ${new Intl.NumberFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US', { style: 'currency', currency: 'EUR' }).format(invoiceAmount)}</p>
-          </div>
-          <p>${t('invoicesManagement.sendEmailModal.emailHtml.regards')},<br>${companyName}</p>
-        </div>
-      `;
-
       // Get client's language preference
       let clientLanguage = 'fr';
       if (invoice.client?.id) {
@@ -171,13 +155,25 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
         }
       }
       
-      // Send email to client via Resend using EmailService with PDF attachment
-      const result = await EmailService.sendEmailViaEdgeFunction('templated_email', {
+      // Format invoice amount
+      const formattedAmount = new Intl.NumberFormat(
+        clientLanguage === 'fr' ? 'fr-FR' : clientLanguage === 'nl' ? 'nl-NL' : 'en-US',
+        { style: 'currency', currency: 'EUR' }
+      ).format(invoiceAmount);
+      
+      // Send email to client using invoice_sent template from database
+      const result = await EmailService.sendEmailViaEdgeFunction('invoice_sent', {
         client_email: emailData.clientEmail,
-        subject: emailData.subject,
-        html: emailHtml,
-        text: emailData.message || t('invoicesManagement.sendEmailModal.emailText', { invoiceNumber, amount: new Intl.NumberFormat(clientLanguage === 'fr' ? 'fr-FR' : clientLanguage === 'nl' ? 'nl-NL' : 'en-US', { style: 'currency', currency: 'EUR' }).format(invoiceAmount) }),
+        invoice_number: invoiceNumber,
+        invoice_title: invoice.title || invoiceNumber,
+        client_name: clientName,
+        invoice_amount: formattedAmount,
+        issue_date: invoiceDate,
+        due_date: dueDate || '',
+        company_name: companyName,
+        custom_message: emailData.message || (clientLanguage === 'fr' ? 'Veuillez trouver ci-joint notre facture.' : clientLanguage === 'nl' ? 'Gelieve onze factuur bijgevoegd te vinden.' : 'Please find attached our invoice.'),
         language: clientLanguage,
+        user_id: user?.id || null,
         attachments: [{
           filename: `facture-${invoiceNumber}.pdf`,
           content: pdfBase64
@@ -211,12 +207,24 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
           }
         }
         
-        await EmailService.sendEmailViaEdgeFunction('templated_email', {
+        // Format invoice amount for user copy
+        const userFormattedAmount = new Intl.NumberFormat(
+          userLanguage === 'fr' ? 'fr-FR' : userLanguage === 'nl' ? 'nl-NL' : 'en-US',
+          { style: 'currency', currency: 'EUR' }
+        ).format(invoiceAmount);
+        
+        await EmailService.sendEmailViaEdgeFunction('invoice_sent', {
           client_email: user.email,
-          subject: `[Copie] ${emailData.subject}`,
-          html: emailHtml,
-          text: emailData.message || t('invoicesManagement.sendEmailModal.emailText', { invoiceNumber, amount: new Intl.NumberFormat(userLanguage === 'fr' ? 'fr-FR' : userLanguage === 'nl' ? 'nl-NL' : 'en-US', { style: 'currency', currency: 'EUR' }).format(invoiceAmount) }),
+          invoice_number: invoiceNumber,
+          invoice_title: invoice.title || invoiceNumber,
+          client_name: user.full_name || user.email,
+          invoice_amount: userFormattedAmount,
+          issue_date: invoiceDate,
+          due_date: dueDate || '',
+          company_name: companyName,
+          custom_message: emailData.message || (userLanguage === 'fr' ? 'Veuillez trouver ci-joint notre facture.' : userLanguage === 'nl' ? 'Gelieve onze factuur bijgevoegd te vinden.' : 'Please find attached our invoice.'),
           language: userLanguage,
+          user_id: user?.id || null,
           attachments: [{
             filename: `facture-${invoiceNumber}.pdf`,
             content: pdfBase64,

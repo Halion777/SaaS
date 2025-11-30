@@ -3,19 +3,24 @@
 
 // Import Supabase OpenAI client
 // Note: Edge Functions have access to the service_role key, so be careful with your security
+// @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.5'
+// @ts-ignore
 import { OpenAI } from 'https://esm.sh/openai@4.93.0'
-
 // These would come from your Supabase env vars in production
+// @ts-ignore
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
+// @ts-ignore
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')
+// @ts-ignore
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+// @ts-ignore
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
 
 const openai = new OpenAI({
   apiKey: OPENAI_API_KEY
 })
-
+// @ts-ignore
 // This is the main function that gets called when your Edge Function is invoked
 Deno.serve(async (req) => {
   try {

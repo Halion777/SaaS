@@ -233,7 +233,7 @@ const EmailTemplatesManagement = () => {
       'credit_insurance_confirmation': 'Credit Insurance Confirmation',
       'new_lead_available': 'New Lead Available',
       'lead_assigned': 'Lead Assigned',
-      'custom_quote_sent': 'Custom Quote Sent',
+      'invoice_sent': 'Invoice Sent',
       'invoice_overdue_reminder': 'Invoice Overdue Reminder',
       'invoice_payment_reminder': 'Invoice Payment Reminder',
       'invoice_to_accountant': 'Invoice to Accountant',
@@ -241,6 +241,27 @@ const EmailTemplatesManagement = () => {
       'overdue': 'Overdue'
     };
     return typeNames[type] || type;
+  };
+
+  // Check if template is updated (updated within last 7 days and not new)
+  const isTemplateUpdated = (template) => {
+    if (!template.updated_at) return false;
+    const updatedDate = new Date(template.updated_at);
+    const createdDate = new Date(template.created_at);
+    const daysSinceUpdated = (Date.now() - updatedDate.getTime()) / (1000 * 60 * 60 * 24);
+    const daysSinceCreated = (Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
+    // Only show updated if it was updated recently and not created recently (to avoid showing both)
+    return daysSinceUpdated <= 7 && daysSinceCreated > 7 && updatedDate.getTime() > createdDate.getTime();
+  };
+
+  // Get language color
+  const getLanguageColor = (language) => {
+    const colors = {
+      'fr': 'text-blue-600',      // French - Blue
+      'en': 'text-green-600',      // English - Green
+      'nl': 'text-orange-600'      // Dutch - Orange
+    };
+    return colors[language?.toLowerCase()] || 'text-muted-foreground';
   };
 
   // Get template type color
@@ -263,7 +284,7 @@ const EmailTemplatesManagement = () => {
       'credit_insurance_confirmation': 'bg-teal-100 text-teal-800',
       'new_lead_available': 'bg-lime-100 text-lime-800',
       'lead_assigned': 'bg-violet-100 text-violet-800',
-      'custom_quote_sent': 'bg-sky-100 text-sky-800',
+      'invoice_sent': 'bg-emerald-100 text-emerald-800',
       'invoice_overdue_reminder': 'bg-rose-100 text-rose-800',
       'invoice_payment_reminder': 'bg-yellow-100 text-yellow-800',
       'invoice_to_accountant': 'bg-indigo-100 text-indigo-800',
@@ -377,8 +398,7 @@ const EmailTemplatesManagement = () => {
       'client_accepted',      // Has "View Quote" button
       'followup_viewed_no_action',  // Has "View Quote" button
       'followup_not_viewed',  // Has "View Quote" button
-      'general_followup',     // Has action button
-      'custom_quote_sent'     // Has "View Quote" button
+      'general_followup'      // Has action button
     ];
     return typesWithButtons.includes(templateType);
   };
@@ -843,8 +863,15 @@ const EmailTemplatesManagement = () => {
                     <tr key={template.id} className="hover:bg-muted/30">
                       <td className="px-6 py-4">
                         <div>
-                          <div className="text-sm font-medium text-foreground">
-                            {template.template_name}
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm font-medium text-foreground">
+                              {template.template_name}
+                            </div>
+                            {isTemplateUpdated(template) && (
+                              <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-500 text-white">
+                                Updated
+                              </span>
+                            )}
                           </div>
                           <div className="text-sm text-muted-foreground">
                             {template.subject}
@@ -856,8 +883,10 @@ const EmailTemplatesManagement = () => {
                           {getTemplateTypeName(template.template_type)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground">
-                        {template.language.toUpperCase()}
+                      <td className="px-6 py-4">
+                        <span className={`text-sm font-semibold ${getLanguageColor(template.language)}`}>
+                          {template.language.toUpperCase()}
+                        </span>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-2">
@@ -908,7 +937,14 @@ const EmailTemplatesManagement = () => {
                       {/* Template Header */}
                       <div className="flex items-start justify-between mb-2 sm:mb-3 gap-2">
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-xs sm:text-sm font-semibold text-foreground truncate">{template.template_name}</h3>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h3 className="text-xs sm:text-sm font-semibold text-foreground truncate">{template.template_name}</h3>
+                            {isTemplateUpdated(template) && (
+                              <span className="inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-blue-500 text-white whitespace-nowrap">
+                                Updated
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[10px] sm:text-xs text-muted-foreground truncate mt-0.5">{template.subject}</p>
                         </div>
                       </div>
@@ -923,7 +959,9 @@ const EmailTemplatesManagement = () => {
                         </div>
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0">
                           <span className="text-[10px] sm:text-xs text-muted-foreground">Language:</span>
-                          <span className="text-[10px] sm:text-xs text-foreground font-medium">{template.language.toUpperCase()}</span>
+                          <span className={`text-[10px] sm:text-xs font-semibold ${getLanguageColor(template.language)}`}>
+                            {template.language.toUpperCase()}
+                          </span>
                         </div>
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0">
                           <span className="text-[10px] sm:text-xs text-muted-foreground">Status:</span>
@@ -1086,7 +1124,7 @@ const EmailTemplatesManagement = () => {
                         { value: 'credit_insurance_confirmation', label: 'Credit Insurance Confirmation' },
                         { value: 'new_lead_available', label: 'New Lead Available' },
                         { value: 'lead_assigned', label: 'Lead Assigned' },
-                        { value: 'custom_quote_sent', label: 'Custom Quote Sent' },
+                        { value: 'invoice_sent', label: 'Invoice Sent' },
                         { value: 'invoice_overdue_reminder', label: 'Invoice Overdue Reminder' },
                         { value: 'invoice_payment_reminder', label: 'Invoice Payment Reminder' },
                         { value: 'invoice_to_accountant', label: 'Invoice to Accountant' },

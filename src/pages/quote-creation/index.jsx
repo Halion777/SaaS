@@ -2922,6 +2922,36 @@ const QuoteCreation = () => {
       // Check if we're editing an existing quote
 
       if (isEditing && editingQuoteId) {
+        // Update client email if it was changed in the modal
+        if (sendData.emailData?.clientEmail && selectedClient) {
+          const clientId = selectedClient?.value || selectedClient?.id || selectedClient?.client?.id;
+          const currentEmail = selectedClient?.email || selectedClient?.client?.email;
+          const newEmail = sendData.emailData.clientEmail.trim();
+          
+          // Only update if email is different and client ID exists
+          if (clientId && newEmail && newEmail !== currentEmail) {
+            try {
+              const { error: updateError } = await supabase
+                .from('clients')
+                .update({ email: newEmail })
+                .eq('id', clientId);
+              
+              if (updateError) {
+                console.warn('Failed to update client email:', updateError);
+              } else {
+                // Update the selectedClient object to reflect the new email
+                if (selectedClient.client) {
+                  selectedClient.client.email = newEmail;
+                } else {
+                  selectedClient.email = newEmail;
+                }
+                console.log('Client email updated successfully:', newEmail);
+              }
+            } catch (error) {
+              console.error('Error updating client email:', error);
+            }
+          }
+        }
 
         // Update existing quote and send it
 
@@ -3111,6 +3141,37 @@ const QuoteCreation = () => {
         return sum + (task.price || 0) + taskMaterialsTotal;
 
       }, 0);
+
+      // Update client email if it was changed in the modal
+      if (sendData.emailData?.clientEmail && selectedClient) {
+        const clientId = selectedClient?.value || selectedClient?.id || selectedClient?.client?.id;
+        const currentEmail = selectedClient?.email || selectedClient?.client?.email;
+        const newEmail = sendData.emailData.clientEmail.trim();
+        
+        // Only update if email is different and client ID exists
+        if (clientId && newEmail && newEmail !== currentEmail) {
+          try {
+            const { error: updateError } = await supabase
+              .from('clients')
+              .update({ email: newEmail })
+              .eq('id', clientId);
+            
+            if (updateError) {
+              console.warn('Failed to update client email:', updateError);
+            } else {
+              // Update the selectedClient object to reflect the new email
+              if (selectedClient.client) {
+                selectedClient.client.email = newEmail;
+              } else {
+                selectedClient.email = newEmail;
+              }
+              console.log('Client email updated successfully:', newEmail);
+            }
+          } catch (error) {
+            console.error('Error updating client email:', error);
+          }
+        }
+      }
 
 
 

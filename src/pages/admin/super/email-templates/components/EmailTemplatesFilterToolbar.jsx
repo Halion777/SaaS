@@ -52,7 +52,7 @@ const EmailTemplatesFilterToolbar = ({
     { value: 'credit_insurance_confirmation', label: 'Credit Insurance Confirmation' },
     { value: 'new_lead_available', label: 'New Lead Available' },
     { value: 'lead_assigned', label: 'Lead Assigned' },
-    { value: 'custom_quote_sent', label: 'Custom Quote Sent' },
+    { value: 'invoice_sent', label: 'Invoice Sent' },
     { value: 'invoice_overdue_reminder', label: 'Invoice Overdue Reminder' },
     { value: 'invoice_payment_reminder', label: 'Invoice Payment Reminder' },
     { value: 'invoice_to_accountant', label: 'Invoice to Accountant' },

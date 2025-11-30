@@ -546,7 +546,7 @@ export class EmailService {
         language: language || 'fr'
       };
       
-      return await this.sendEmailViaEdgeFunction('custom_quote_sent', emailData);
+      return await this.sendEmailViaEdgeFunction('quote_sent', emailData);
       
     } catch (error) {
       console.error('Error sending custom quote email:', error);

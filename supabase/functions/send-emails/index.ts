@@ -156,8 +156,48 @@ serve(async (req) => {
     };
     
     switch (emailType) {
+      case 'invoice_sent':
+        // Use database template for invoice sent emails
+        const invoiceLanguage = emailData.language || 'fr';
+        const invoiceTemplate = await getEmailTemplate('invoice_sent', invoiceLanguage, emailData.user_id || null);
+        if (invoiceTemplate.success) {
+          const invoiceDate = emailData.issue_date || new Date().toLocaleDateString(invoiceLanguage === 'fr' ? 'fr-FR' : invoiceLanguage === 'nl' ? 'nl-NL' : 'en-US');
+          const dueDate = emailData.due_date || '';
+          const invoiceAmount = emailData.invoice_amount || '0.00€';
+          const variables = {
+            invoice_number: emailData.invoice_number || '',
+            invoice_title: emailData.invoice_title || emailData.invoice_number || '',
+            client_name: emailData.client_name || 'Madame, Monsieur',
+            invoice_amount: invoiceAmount,
+            issue_date: invoiceDate,
+            due_date: dueDate,
+            company_name: emailData.company_name || 'Haliqo',
+            custom_message: emailData.custom_message || (invoiceLanguage === 'fr' ? 'Veuillez trouver ci-joint notre facture.' : invoiceLanguage === 'nl' ? 'Gelieve onze factuur bijgevoegd te vinden.' : 'Please find attached our invoice.')
+          };
+          const rendered = renderTemplate(invoiceTemplate.data, variables);
+          emailResult = await sendEmail({
+            from: fromEmail,
+            to: [emailData.client_email],
+            subject: rendered.subject,
+            html: rendered.html,
+            text: rendered.text,
+            attachments: emailData.attachments || undefined
+          });
+        } else {
+          // Fallback to templated_email if template not found
+          emailResult = await sendEmail({
+            from: fromEmail,
+            to: [emailData.client_email],
+            subject: emailData.subject,
+            html: emailData.html,
+            text: emailData.text,
+            attachments: emailData.attachments || undefined
+          });
+        }
+        break;
+        
       case 'templated_email':
-        // New template system for client emails
+        // New template system for client emails (fallback for other types)
         emailResult = await sendEmail({
           from: fromEmail,
           to: [emailData.client_email],
@@ -183,8 +223,8 @@ serve(async (req) => {
             city: emailData.leadData?.city || '',
             zip_code: emailData.leadData?.zip_code || '',
             location: location,
-            leads_management_url: emailData.leadData?.site_url ? `${emailData.leadData.site_url}/leads-management` : 'https://app.haliqo.com/leads-management',
-            site_url: emailData.leadData?.site_url || 'https://app.haliqo.com',
+            leads_management_url: emailData.leadData?.site_url ? `${emailData.leadData.site_url}/leads-management` : 'https://haliqo.com/leads-management',
+            site_url: emailData.leadData?.site_url || 'https://haliqo.com',
             company_name: 'Haliqo'
           };
           const rendered = renderTemplate(leadTemplate.data, variables);
@@ -216,8 +256,8 @@ serve(async (req) => {
             city: emailData.leadData?.city || '',
             zip_code: emailData.leadData?.zip_code || '',
             location: location,
-            leads_management_url: emailData.leadData?.site_url ? `${emailData.leadData.site_url}/leads-management` : 'https://app.haliqo.com/leads-management',
-            site_url: emailData.leadData?.site_url || 'https://app.haliqo.com',
+            leads_management_url: emailData.leadData?.site_url ? `${emailData.leadData.site_url}/leads-management` : 'https://haliqo.com/leads-management',
+            site_url: emailData.leadData?.site_url || 'https://haliqo.com',
             company_name: 'Haliqo'
           };
           const rendered = renderTemplate(assignedTemplate.data, variables);
@@ -233,30 +273,23 @@ serve(async (req) => {
         }
         break;
         
-      case 'custom_quote_sent':
+      case 'quote_sent':
+      case 'custom_quote_sent': // Support both for backward compatibility
         // Use database template
-        const customQuoteLanguage = emailData.language || 'fr';
-        const customQuoteTemplate = await getEmailTemplate('custom_quote_sent', customQuoteLanguage, emailData.user_id || null);
-        if (customQuoteTemplate.success) {
-          // Build quote link HTML if quote_link exists
-          let quoteLinkHtml = '';
-          if (emailData.variables?.quote_link && emailData.variables.quote_link !== '#') {
-            quoteLinkHtml = `<div style="text-align: center; margin: 30px 0;">
-              <a href="${emailData.variables.quote_link}" style="background: #059669; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Voir le devis</a>
-            </div>`;
-          }
-          
+        const quoteLanguage = emailData.language || 'fr';
+        const quoteTemplate = await getEmailTemplate('quote_sent', quoteLanguage, emailData.user_id || null);
+        if (quoteTemplate.success) {
           const variables = {
             client_name: emailData.variables?.client_name || 'Madame, Monsieur',
             quote_number: emailData.variables?.quote_number || 'N/A',
             quote_title: emailData.variables?.quote_title || 'Votre projet',
             quote_amount: emailData.variables?.quote_amount || '0€',
             valid_until: emailData.variables?.valid_until || '30 jours',
-            custom_message: emailData.message || '',
-            quote_link: quoteLinkHtml,
+            custom_message: emailData.message || emailData.variables?.custom_message || '',
+            quote_link: emailData.variables?.quote_link || '#',
             company_name: emailData.variables?.company_name || 'Notre équipe'
           };
-          const rendered = renderTemplate(customQuoteTemplate.data, variables);
+          const rendered = renderTemplate(quoteTemplate.data, variables);
           emailResult = await sendEmail({
             from: fromEmail,
             to: [emailData.to],
@@ -265,7 +298,7 @@ serve(async (req) => {
             text: emailData.message || rendered.text
           });
         } else {
-          throw new Error(`Email template 'custom_quote_sent' not found in database for language '${customQuoteLanguage}'. Please create the template in the email_templates table.`);
+          throw new Error(`Email template 'quote_sent' not found in database for language '${quoteLanguage}'. Please create the template in the email_templates table.`);
         }
         break;
 
@@ -282,13 +315,44 @@ serve(async (req) => {
 
       case 'quote_status_update':
         // Handle quote status update emails (accepted/rejected)
-        emailResult = await sendEmail({
-          from: fromEmail,
-          to: [emailData.to],
-          subject: emailData.subject,
-          html: generateQuoteStatusEmail(emailData.html, emailData.variables),
-          text: emailData.text
-        });
+        // Determine template type based on status (accepted or rejected)
+        const statusTemplateType = emailData.variables?.status === 'accepted' || emailData.variables?.quote_status === 'accepted' 
+          ? 'client_accepted' 
+          : 'client_rejected';
+        
+        // Get client language preference or default to 'fr'
+        const statusLanguage = emailData.language || 'fr';
+        
+        // Fetch template from database
+        const statusTemplate = await getEmailTemplate(statusTemplateType, statusLanguage, emailData.user_id || null);
+        
+        if (statusTemplate.success) {
+          const variables = {
+            client_name: emailData.variables?.client_name || 'Madame, Monsieur',
+            quote_number: emailData.variables?.quote_number || 'N/A',
+            quote_amount: emailData.variables?.quote_amount || '0€',
+            quote_link: emailData.variables?.quote_link || '#',
+            company_name: emailData.variables?.company_name || 'Notre équipe'
+          };
+          
+          const rendered = renderTemplate(statusTemplate.data, variables);
+          emailResult = await sendEmail({
+            from: fromEmail,
+            to: [emailData.to],
+            subject: emailData.subject || rendered.subject,
+            html: rendered.html,
+            text: emailData.text || rendered.text
+          });
+        } else {
+          // Fallback to pre-rendered HTML if template not found
+          emailResult = await sendEmail({
+            from: fromEmail,
+            to: [emailData.to],
+            subject: emailData.subject,
+            html: generateQuoteStatusEmail(emailData.html, emailData.variables),
+            text: emailData.text
+          });
+        }
         break;
         
       case 'credit_insurance_application':
@@ -582,15 +646,37 @@ serve(async (req) => {
         
       case 'invoice_to_accountant':
       case 'expense_invoice_to_accountant':
-        // Send invoice to accountant with attachment
-        emailResult = await sendEmail({
-          from: fromEmail,
-          to: [emailData.to_email],
-          subject: emailData.subject,
-          html: emailData.html,
-          text: emailData.text,
-          attachments: emailData.attachments || undefined
-        });
+        // Use database template for invoice to accountant emails
+        const accountantLanguage = emailData.language || 'fr';
+        const accountantTemplateType = emailType === 'expense_invoice_to_accountant' ? 'expense_invoice_to_accountant' : 'invoice_to_accountant';
+        const accountantTemplate = await getEmailTemplate(accountantTemplateType, accountantLanguage, emailData.user_id || null);
+        if (accountantTemplate.success) {
+          const variables = {
+            invoice_count: emailData.invoice_count?.toString() || emailData.meta?.invoice_count?.toString() || '0',
+            total_amount: emailData.total_amount || emailData.meta?.total_amount || '0.00€',
+            date: emailData.date || new Date().toLocaleDateString(accountantLanguage === 'fr' ? 'fr-FR' : accountantLanguage === 'nl' ? 'nl-NL' : 'en-US'),
+            company_name: emailData.company_name || 'Haliqo'
+          };
+          const rendered = renderTemplate(accountantTemplate.data, variables);
+          emailResult = await sendEmail({
+            from: fromEmail,
+            to: [emailData.to_email],
+            subject: rendered.subject,
+            html: rendered.html,
+            text: rendered.text,
+            attachments: emailData.attachments || undefined
+          });
+        } else {
+          // Fallback to pre-rendered HTML if template not found
+          emailResult = await sendEmail({
+            from: fromEmail,
+            to: [emailData.to_email],
+            subject: emailData.subject,
+            html: emailData.html,
+            text: emailData.text,
+            attachments: emailData.attachments || undefined
+          });
+        }
         break;
         
       default:

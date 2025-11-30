@@ -1702,12 +1702,17 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                 onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
                 className="w-full h-11 pl-4 pr-4 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left flex items-center justify-between"
               >
-                <span className={projectInfo.categories?.length > 0 ? 'text-foreground' : 'text-muted-foreground'}>
+                <span className={`${projectInfo.categories?.length > 0 ? 'text-foreground' : 'text-muted-foreground'} ${projectInfo.categories?.length > 0 ? 'hidden sm:inline' : ''}`}>
                   {projectInfo.categories?.length > 0 
                     ? projectInfo.categories.map(cat => categoryOptions.find(c => c.value === cat)?.label).join(', ')
                     : t('quoteCreation.projectInfo.selectCategories')
                   }
                 </span>
+                {projectInfo.categories?.length > 0 && (
+                  <span className="text-muted-foreground sm:hidden">
+                    {t('quoteCreation.projectInfo.selectCategories')}
+                  </span>
+                )}
                 <div className="text-muted-foreground">
                   <Icon name="ChevronDown" className={`w-4 h-4 transition-transform ${categoryDropdownOpen ? 'rotate-180' : ''}`} />
                 </div>

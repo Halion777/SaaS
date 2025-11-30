@@ -379,56 +379,28 @@ export class ExpenseInvoicesService {
       const companyProfile = await EmailService.getCurrentUserCompanyProfile(userId);
       const companyName = companyProfile?.company_name || 'Notre entreprise';
 
-      // Get email template
-      const templateResult = await EmailService.getEmailTemplate('expense_invoice_to_accountant', userId, 'fr');
-      
-      let subject, html, text;
-      if (templateResult.success && templateResult.data) {
-        const template = templateResult.data;
-        const variables = {
-          company_name: companyName,
-          invoice_count: invoiceIds.length.toString(),
-          total_amount: invoicesData.reduce((sum, inv) => sum + parseFloat(inv.amount || 0), 0).toFixed(2) + '€',
-          date: new Date().toLocaleDateString('fr-FR')
-        };
-        
-        const renderResult = EmailService.renderEmailTemplate(template, variables);
-        if (renderResult.success) {
-          subject = renderResult.data.subject;
-          html = renderResult.data.html;
-          text = renderResult.data.text;
-        }
-      }
-
-      // Fallback if no template found
-      if (!subject) {
-        subject = `Factures de dépenses à traiter - ${invoiceIds.length} facture(s)`;
-        html = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2>Bonjour,</h2>
-            <p>Veuillez trouver ci-joint ${invoiceIds.length} facture(s) de dépenses à traiter.</p>
-            <p>Montant total: ${invoicesData.reduce((sum, inv) => sum + parseFloat(inv.amount || 0), 0).toFixed(2)}€</p>
-            <p>Cordialement,<br>${companyName}</p>
-          </div>
-        `;
-        text = `Bonjour,\n\nVeuillez trouver ci-joint ${invoiceIds.length} facture(s) de dépenses à traiter.\n\nMontant total: ${invoicesData.reduce((sum, inv) => sum + parseFloat(inv.amount || 0), 0).toFixed(2)}€\n\nCordialement,\n${companyName}`;
-      }
+      // Prepare variables for template (edge function will load and render template)
+      const totalAmount = invoicesData.reduce((sum, inv) => sum + parseFloat(inv.amount || 0), 0).toFixed(2) + '€';
+      const invoiceDate = new Date().toLocaleDateString('fr-FR');
 
       // Send email via edge function with attachment
+      // Edge function will load template from database and render it
       const emailData = {
         to_email: accountantEmail.trim(),
-        subject,
-        html,
-        text,
+        invoice_count: invoiceIds.length.toString(),
+        total_amount: totalAmount,
+        date: invoiceDate,
+        company_name: companyName,
+        language: 'fr', // Can be made dynamic based on user preference
+        user_id: userId,
         attachments: [
           {
-            filename: `factures-depenses-${new Date().toISOString().split('T')[0]}.csv`,
+            filename: `factures-fournisseurs-${new Date().toISOString().split('T')[0]}.csv`,
             content: csvBase64,
             type: 'text/csv',
             disposition: 'attachment'
           }
         ],
-        template_type: 'expense_invoice_to_accountant',
         meta: {
           invoice_count: invoiceIds.length,
           invoice_ids: invoiceIds,

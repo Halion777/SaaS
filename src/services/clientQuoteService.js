@@ -324,7 +324,7 @@ class ClientQuoteService {
    */
   static async sendQuoteStatusEmail(quoteId, status, clientData) {
     try {
-      // Get quote details
+      // Get quote details with client language preference
       const { data: quote, error: quoteError } = await supabase
         .from('quotes')
         .select(`
@@ -335,7 +335,8 @@ class ClientQuoteService {
           final_amount,
           share_token,
           user_id,
-          company_profiles!quotes_company_profile_id_fkey(company_name)
+          company_profiles!quotes_company_profile_id_fkey(company_name),
+          client:clients(language_preference, languagePreference)
         `)
         .eq('id', quoteId)
         .single();
@@ -388,6 +389,7 @@ class ClientQuoteService {
       }
 
       // Send email via Edge Function
+      // Pass variables and let edge function fetch template from database
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-emails`, {
         method: 'POST',
         headers: {
@@ -398,10 +400,14 @@ class ClientQuoteService {
           emailType: 'quote_status_update',
           emailData: {
             to: clientData.client_email,
-            subject: subject,
-            html: html,
-            text: text,
+            user_id: quote.user_id,
+            language: (quote.client?.language_preference || quote.client?.languagePreference || 'fr').split('-')[0] || 'fr',
+            subject: subject, // Fallback subject
+            html: html, // Fallback HTML
+            text: text, // Fallback text
             variables: {
+              status: status, // Pass status so edge function knows which template to fetch
+              quote_status: status, // Alternative key
               client_name: clientData.client_name || 'Madame, Monsieur',
               quote_number: quote.quote_number,
               quote_amount: `${quote.final_amount || quote.total_amount}€`,
