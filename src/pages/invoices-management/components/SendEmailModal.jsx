@@ -137,14 +137,17 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
         reader.readAsDataURL(pdfBlob);
       });
 
+      // Get client ID - use direct client_id field first, then fallback to client relation
+      const clientId = invoice.client_id || invoice.client?.id || null;
+      
       // Get client's language preference
       let clientLanguage = 'fr';
-      if (invoice.client?.id) {
+      if (clientId) {
         try {
           const { data: clientData } = await supabase
             .from('clients')
             .select('language_preference')
-            .eq('id', invoice.client.id)
+            .eq('id', clientId)
             .maybeSingle();
           
           if (clientData?.language_preference) {
@@ -164,7 +167,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
       // Send email to client using invoice_sent template from database
       const result = await EmailService.sendEmailViaEdgeFunction('invoice_sent', {
         client_email: emailData.clientEmail,
-        client_id: invoice.client?.id || null, // Pass client_id so edge function can fetch language if needed
+        client_id: clientId, // Pass client_id so edge function can fetch language from database
         invoice_number: invoiceNumber,
         invoice_title: invoice.title || invoiceNumber,
         client_name: clientName,

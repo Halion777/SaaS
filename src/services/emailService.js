@@ -303,44 +303,46 @@ export class EmailService {
   
   /**
    * Send email using template system
+   * Now uses proper template types so edge function can fetch language preference from database
    */
-  static async sendTemplatedEmail(templateType, variables, clientEmail, userId = null, language = null) {
+  static async sendTemplatedEmail(templateType, variables, clientEmail, userId = null, language = null, clientId = null) {
     try {
-      // Get language preference (default to 'fr')
-      // Priority: provided language > localStorage > 'fr'
-      let finalLanguage = language;
-      if (!finalLanguage && typeof window !== 'undefined') {
-        const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
-        finalLanguage = storedLang.split('-')[0] || 'fr';
-      }
-      if (!finalLanguage) {
-        finalLanguage = 'fr';
-      }
-      
-      // Get the appropriate template
-      const templateResult = await this.getEmailTemplate(templateType, userId, finalLanguage);
-      if (!templateResult.success) {
-        throw new Error(`Failed to get template: ${templateResult.error}`);
-      }
-      
-      // Render template with variables
-      const renderResult = this.renderEmailTemplate(templateResult.data, variables);
-      if (!renderResult.success) {
-        throw new Error(`Failed to render template: ${renderResult.error}`);
-      }
-      
-      // Send via edge function
+      // Send via edge function with proper template type
+      // Edge function will fetch language preference from database if client_id is provided
       const emailData = {
+        to: clientEmail,
         client_email: clientEmail,
-        subject: renderResult.data.subject,
-        html: renderResult.data.html,
-        text: renderResult.data.text,
-        template_type: templateType,
-        variables,
-        language: finalLanguage
+        client_id: clientId || null, // Pass client_id so edge function can fetch language from database
+        user_id: userId,
+        userId: userId,
+        language: language || null, // Fallback language, but edge function will prioritize database
+        variables: variables,
+        template_type: templateType
       };
       
-      const result = await this.sendEmailViaEdgeFunction('templated_email', emailData);
+      // Map template types to proper edge function email types
+      let emailType = templateType;
+      if (templateType === 'client_accepted' || templateType === 'client_rejected') {
+        emailType = 'quote_status_update';
+        emailData.variables = {
+          ...variables,
+          status: templateType === 'client_accepted' ? 'accepted' : 'rejected',
+          quote_status: templateType === 'client_accepted' ? 'accepted' : 'rejected'
+        };
+      } else if (templateType === 'welcome_client') {
+        // welcome_client should use a proper template type if it exists, otherwise use templated_email as fallback
+        emailType = 'templated_email';
+        // Get template on frontend as fallback for welcome_client
+        const templateResult = await this.getEmailTemplate(templateType, userId, language || 'fr');
+        if (templateResult.success) {
+          const renderResult = this.renderEmailTemplate(templateResult.data, variables);
+          emailData.subject = renderResult.data.subject;
+          emailData.html = renderResult.data.html;
+          emailData.text = renderResult.data.text;
+        }
+      }
+      
+      const result = await this.sendEmailViaEdgeFunction(emailType, emailData);
       
       if (result.success) {
         console.log(`Templated email sent successfully: ${templateType}`);
@@ -405,10 +407,12 @@ export class EmailService {
       // Use the email from customEmailData if provided (updated in modal), otherwise fall back to client.email
       const recipientEmail = customEmailData?.clientEmail || client.email;
       
+      // Get client ID - check quote.client_id first, then client object
+      const clientId = quote.client_id || client?.id || client?.value || client?.client?.id || null;
+      
       let clientEmailResult;
       if (customEmailData) {
         // Use provided custom email data
-        const clientId = client?.id || client?.value || client?.client?.id;
         clientEmailResult = await this.sendCustomQuoteEmail(variables, recipientEmail, userId, customEmailData, clientLanguage, clientId);
       } else {
         // Use default custom email format instead of templated email
@@ -416,7 +420,6 @@ export class EmailService {
           subject: emailSubject,
           message: emailMessage
         };
-        const clientId = client?.id || client?.value || client?.client?.id;
         clientEmailResult = await this.sendCustomQuoteEmail(variables, recipientEmail, userId, defaultEmailData, clientLanguage, clientId);
       }
       
@@ -631,10 +634,13 @@ export class EmailService {
         company_name: companyProfile?.company_name || 'Notre entreprise'
       };
       
+      // Get client ID - check quote.client_id first, then client object
+      const clientId = quote.client_id || client?.id || client?.value || client?.client?.id || null;
+      
       // Get client's language preference using centralized helper
       const clientLanguage = await this.getClientLanguagePreference(client);
       
-      return await this.sendTemplatedEmail(followUpType, variables, client.email || client.client?.email, userId, clientLanguage);
+      return await this.sendTemplatedEmail(followUpType, variables, client.email || client.client?.email, userId, clientLanguage, clientId);
       
     } catch (error) {
       console.error('Error sending follow-up email:', error);
@@ -676,10 +682,13 @@ export class EmailService {
         company_name: companyProfile?.company_name || 'Notre entreprise'
       };
       
+      // Get client ID - check quote.client_id first, then client object
+      const clientId = quote.client_id || client?.id || client?.value || client?.client?.id || null;
+      
       // Get client's language preference using centralized helper
       const clientLanguage = await this.getClientLanguagePreference(client);
       
-      return await this.sendTemplatedEmail('client_accepted', variables, client.email || client.client?.email, userId, clientLanguage);
+      return await this.sendTemplatedEmail('client_accepted', variables, client.email || client.client?.email, userId, clientLanguage, clientId);
       
     } catch (error) {
       console.error('Error sending client accepted email:', error);
@@ -703,10 +712,13 @@ export class EmailService {
         company_name: companyProfile?.company_name || 'Notre entreprise'
       };
       
+      // Get client ID - check quote.client_id first, then client object
+      const clientId = quote.client_id || client?.id || client?.value || client?.client?.id || null;
+      
       // Get client's language preference using centralized helper
       const clientLanguage = await this.getClientLanguagePreference(client);
       
-      return await this.sendTemplatedEmail('client_rejected', variables, client.email || client.client?.email, userId, clientLanguage);
+      return await this.sendTemplatedEmail('client_rejected', variables, client.email || client.client?.email, userId, clientLanguage, clientId);
       
     } catch (error) {
       console.error('Error sending client rejected email:', error);
@@ -729,10 +741,13 @@ export class EmailService {
         company_name: companyProfile?.company_name || 'Notre entreprise'
       };
       
+      // Get client ID from clientData
+      const clientId = clientData?.id || clientData?.value || clientData?.client?.id || null;
+      
       // Get client's language preference using centralized helper
       const clientLanguage = await this.getClientLanguagePreference(clientData);
       
-      return await this.sendTemplatedEmail('welcome_client', variables, clientData.email, userId, clientLanguage);
+      return await this.sendTemplatedEmail('welcome_client', variables, clientData.email, userId, clientLanguage, clientId);
       
     } catch (error) {
       console.error('Error sending welcome email:', error);

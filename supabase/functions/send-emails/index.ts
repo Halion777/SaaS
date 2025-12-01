@@ -49,8 +49,8 @@ serve(async (req) => {
     };
 
     // Helper function to get user's language preference from database
-    const getUserLanguagePreference = async (userId: string | null): Promise<string> => {
-      if (!userId) return 'fr';
+    const getUserLanguagePreference = async (userId: string | null): Promise<string | null> => {
+      if (!userId) return null;
       try {
         const { data: userData, error } = await supabase
           .from('users')
@@ -60,7 +60,7 @@ serve(async (req) => {
         
         if (error) {
           console.warn('Error fetching user language preference:', error);
-          return 'fr';
+          return null;
         }
         
         if (userData?.language_preference) {
@@ -69,12 +69,12 @@ serve(async (req) => {
       } catch (error) {
         console.warn('Exception fetching user language preference:', error);
       }
-      return 'fr';
+      return null;
     };
 
     // Helper function to get client's language preference from database
-    const getClientLanguagePreference = async (clientId: string | null): Promise<string> => {
-      if (!clientId) return 'fr';
+    const getClientLanguagePreference = async (clientId: string | null): Promise<string | null> => {
+      if (!clientId) return null;
       try {
         const { data: clientData, error } = await supabase
           .from('clients')
@@ -84,7 +84,7 @@ serve(async (req) => {
         
         if (error) {
           console.warn('Error fetching client language preference:', error);
-          return 'fr';
+          return null;
         }
         
         if (clientData?.language_preference) {
@@ -93,7 +93,7 @@ serve(async (req) => {
       } catch (error) {
         console.warn('Exception fetching client language preference:', error);
       }
-      return 'fr';
+      return null;
     };
 
     // Helper function to get and render email template from database
@@ -232,10 +232,13 @@ serve(async (req) => {
     switch (emailType) {
       case 'invoice_sent':
         // Use database template for invoice sent emails
-        // Get language: provided language > client's database language_preference > 'fr'
-        let invoiceLanguage = emailData.language;
-        if (!invoiceLanguage && emailData.client_id) {
+        // Get language: client's database language_preference > provided language > 'fr'
+        let invoiceLanguage: string | null = null;
+        if (emailData.client_id) {
           invoiceLanguage = await getClientLanguagePreference(emailData.client_id);
+        }
+        if (!invoiceLanguage && emailData.language) {
+          invoiceLanguage = emailData.language;
         }
         invoiceLanguage = invoiceLanguage || 'fr';
         const invoiceTemplate = await getEmailTemplate('invoice_sent', invoiceLanguage, emailData.user_id || null);
@@ -276,10 +279,32 @@ serve(async (req) => {
         break;
         
       case 'templated_email':
-        // New template system for client emails (fallback for other types)
+        // Fallback for pre-rendered emails (e.g., welcome_client)
+        // If client_id is provided, try to fetch template from database with correct language
+        let templatedLanguage: string | null = null;
+        if (emailData.client_id && emailData.template_type) {
+          templatedLanguage = await getClientLanguagePreference(emailData.client_id);
+          if (templatedLanguage && emailData.template_type) {
+            // Try to fetch template from database
+            const dbTemplate = await getEmailTemplate(emailData.template_type, templatedLanguage, emailData.user_id || null);
+            if (dbTemplate.success) {
+              const rendered = renderTemplate(dbTemplate.data, emailData.variables || {});
+              emailResult = await sendEmail({
+                from: fromEmail,
+                to: [emailData.client_email || emailData.to],
+                subject: rendered.subject,
+                html: rendered.html,
+                text: rendered.text,
+                attachments: emailData.attachments || undefined
+              });
+              break;
+            }
+          }
+        }
+        // Fallback to pre-rendered content if template not found or no client_id
         emailResult = await sendEmail({
           from: fromEmail,
-          to: [emailData.client_email],
+          to: [emailData.client_email || emailData.to],
           subject: emailData.subject,
           html: emailData.html,
           text: emailData.text,
@@ -289,10 +314,13 @@ serve(async (req) => {
         
       case 'new_lead_available':
         // Use database template
-        // Get language: provided language > user's database language_preference > 'fr'
-        let leadLanguage = emailData.language;
-        if (!leadLanguage && emailData.user_id) {
+        // Get language: user's database language_preference > provided language > 'fr'
+        let leadLanguage: string | null = null;
+        if (emailData.user_id) {
           leadLanguage = await getUserLanguagePreference(emailData.user_id);
+        }
+        if (!leadLanguage && emailData.language) {
+          leadLanguage = emailData.language;
         }
         leadLanguage = leadLanguage || 'fr';
         const leadTemplate = await getEmailTemplate('new_lead_available', leadLanguage, emailData.user_id || null);
@@ -326,10 +354,13 @@ serve(async (req) => {
         
       case 'lead_assigned':
         // Use database template
-        // Get language: provided language > user's database language_preference > 'fr'
-        let assignedLanguage = emailData.language;
-        if (!assignedLanguage && emailData.user_id) {
+        // Get language: user's database language_preference > provided language > 'fr'
+        let assignedLanguage: string | null = null;
+        if (emailData.user_id) {
           assignedLanguage = await getUserLanguagePreference(emailData.user_id);
+        }
+        if (!assignedLanguage && emailData.language) {
+          assignedLanguage = emailData.language;
         }
         assignedLanguage = assignedLanguage || 'fr';
         const assignedTemplate = await getEmailTemplate('lead_assigned', assignedLanguage, emailData.user_id || null);
@@ -365,10 +396,13 @@ serve(async (req) => {
       case 'quote_sent':
       case 'custom_quote_sent': // Support both for backward compatibility
         // Use database template
-        // Get language: provided language > client's database language_preference > 'fr'
-        let quoteLanguage = emailData.language;
-        if (!quoteLanguage && emailData.client_id) {
+        // Get language: client's database language_preference > provided language > 'fr'
+        let quoteLanguage: string | null = null;
+        if (emailData.client_id) {
           quoteLanguage = await getClientLanguagePreference(emailData.client_id);
+        }
+        if (!quoteLanguage && emailData.language) {
+          quoteLanguage = emailData.language;
         }
         quoteLanguage = quoteLanguage || 'fr';
         const quoteTemplate = await getEmailTemplate('quote_sent', quoteLanguage, emailData.user_id || null);
@@ -414,10 +448,13 @@ serve(async (req) => {
           ? 'client_accepted' 
           : 'client_rejected';
         
-        // Get language: provided language > client's database language_preference > 'fr'
-        let statusLanguage = emailData.language;
-        if (!statusLanguage && emailData.client_id) {
+        // Get language: client's database language_preference > provided language > 'fr'
+        let statusLanguage: string | null = null;
+        if (emailData.client_id) {
           statusLanguage = await getClientLanguagePreference(emailData.client_id);
+        }
+        if (!statusLanguage && emailData.language) {
+          statusLanguage = emailData.language;
         }
         statusLanguage = statusLanguage || 'fr';
         
@@ -487,10 +524,13 @@ serve(async (req) => {
         
       case 'credit_insurance_confirmation':
         // Use database template
-        // Get language: provided language > user's database language_preference > 'fr'
-        let confirmationLanguage = emailData.language;
-        if (!confirmationLanguage && emailData.user_id) {
+        // Get language: user's database language_preference > provided language > 'fr'
+        let confirmationLanguage: string | null = null;
+        if (emailData.user_id) {
           confirmationLanguage = await getUserLanguagePreference(emailData.user_id);
+        }
+        if (!confirmationLanguage && emailData.language) {
+          confirmationLanguage = emailData.language;
         }
         confirmationLanguage = confirmationLanguage || 'fr';
         const confirmationTemplate = await getEmailTemplate('credit_insurance_confirmation', confirmationLanguage, emailData.user_id || null);
@@ -520,10 +560,13 @@ serve(async (req) => {
 
       case 'subscription_upgraded':
         // Use database template for subscription upgrade emails
-        // Get language: provided language > user's database language_preference > 'fr'
-        let upgradedLanguage = emailData.language;
-        if (!upgradedLanguage && emailData.user_id) {
+        // Get language: user's database language_preference > provided language > 'fr'
+        let upgradedLanguage: string | null = null;
+        if (emailData.user_id) {
           upgradedLanguage = await getUserLanguagePreference(emailData.user_id);
+        }
+        if (!upgradedLanguage && emailData.language) {
+          upgradedLanguage = emailData.language;
         }
         upgradedLanguage = upgradedLanguage || 'fr';
         const upgradedTemplate = await getEmailTemplate('subscription_upgraded', upgradedLanguage, emailData.user_id || null);
@@ -565,10 +608,13 @@ serve(async (req) => {
 
       case 'subscription_downgraded':
         // Use database template for subscription downgrade emails
-        // Get language: provided language > user's database language_preference > 'fr'
-        let downgradedLanguage = emailData.language;
-        if (!downgradedLanguage && emailData.user_id) {
+        // Get language: user's database language_preference > provided language > 'fr'
+        let downgradedLanguage: string | null = null;
+        if (emailData.user_id) {
           downgradedLanguage = await getUserLanguagePreference(emailData.user_id);
+        }
+        if (!downgradedLanguage && emailData.language) {
+          downgradedLanguage = emailData.language;
         }
         downgradedLanguage = downgradedLanguage || 'fr';
         const downgradedTemplate = await getEmailTemplate('subscription_downgraded', downgradedLanguage, emailData.user_id || null);
@@ -610,10 +656,13 @@ serve(async (req) => {
 
       case 'subscription_cancelled':
         // Use database template for subscription cancellation emails
-        // Get language: provided language > user's database language_preference > 'fr'
-        let cancelledLanguage = emailData.language;
-        if (!cancelledLanguage && emailData.user_id) {
+        // Get language: user's database language_preference > provided language > 'fr'
+        let cancelledLanguage: string | null = null;
+        if (emailData.user_id) {
           cancelledLanguage = await getUserLanguagePreference(emailData.user_id);
+        }
+        if (!cancelledLanguage && emailData.language) {
+          cancelledLanguage = emailData.language;
         }
         cancelledLanguage = cancelledLanguage || 'fr';
         const cancelledTemplate = await getEmailTemplate('subscription_cancelled', cancelledLanguage, emailData.user_id || null);
@@ -652,10 +701,13 @@ serve(async (req) => {
 
       case 'subscription_trial_ending':
         // Use database template for trial ending emails
-        // Get language: provided language > user's database language_preference > 'fr'
-        let trialLanguage = emailData.language;
-        if (!trialLanguage && emailData.user_id) {
+        // Get language: user's database language_preference > provided language > 'fr'
+        let trialLanguage: string | null = null;
+        if (emailData.user_id) {
           trialLanguage = await getUserLanguagePreference(emailData.user_id);
+        }
+        if (!trialLanguage && emailData.language) {
+          trialLanguage = emailData.language;
         }
         trialLanguage = trialLanguage || 'fr';
         const trialTemplate = await getEmailTemplate('subscription_trial_ending', trialLanguage, emailData.user_id || null);
@@ -694,10 +746,13 @@ serve(async (req) => {
 
       case 'subscription_activated':
         // Use database template for subscription activation emails
-        // Get language: provided language > user's database language_preference > 'fr'
-        let activatedLanguage = emailData.language;
-        if (!activatedLanguage && emailData.user_id) {
+        // Get language: user's database language_preference > provided language > 'fr'
+        let activatedLanguage: string | null = null;
+        if (emailData.user_id) {
           activatedLanguage = await getUserLanguagePreference(emailData.user_id);
+        }
+        if (!activatedLanguage && emailData.language) {
+          activatedLanguage = emailData.language;
         }
         activatedLanguage = activatedLanguage || 'fr';
         const activatedTemplate = await getEmailTemplate('subscription_activated', activatedLanguage, emailData.user_id || null);
@@ -737,10 +792,13 @@ serve(async (req) => {
 
       case 'subscription_reactivated':
         // Use database template for subscription reactivation emails
-        // Get language: provided language > user's database language_preference > 'fr'
-        let reactivatedLanguage = emailData.language;
-        if (!reactivatedLanguage && emailData.user_id) {
+        // Get language: user's database language_preference > provided language > 'fr'
+        let reactivatedLanguage: string | null = null;
+        if (emailData.user_id) {
           reactivatedLanguage = await getUserLanguagePreference(emailData.user_id);
+        }
+        if (!reactivatedLanguage && emailData.language) {
+          reactivatedLanguage = emailData.language;
         }
         reactivatedLanguage = reactivatedLanguage || 'fr';
         const reactivatedTemplate = await getEmailTemplate('subscription_reactivated', reactivatedLanguage, emailData.user_id || null);
@@ -780,10 +838,13 @@ serve(async (req) => {
 
       case 'welcome_registration':
         // Use database template for welcome registration emails
-        // Get language: provided language > user's database language_preference > 'fr'
-        let welcomeLanguage = emailData.language;
-        if (!welcomeLanguage && emailData.user_id) {
+        // Get language: user's database language_preference > provided language > 'fr'
+        let welcomeLanguage: string | null = null;
+        if (emailData.user_id) {
           welcomeLanguage = await getUserLanguagePreference(emailData.user_id);
+        }
+        if (!welcomeLanguage && emailData.language) {
+          welcomeLanguage = emailData.language;
         }
         welcomeLanguage = welcomeLanguage || 'fr';
         const welcomeTemplate = await getEmailTemplate('welcome_registration', welcomeLanguage, emailData.user_id || null);
@@ -861,10 +922,13 @@ serve(async (req) => {
       case 'invoice_to_accountant':
       case 'expense_invoice_to_accountant':
         // Use database template for invoice to accountant emails
-        // Get language: provided language > user's database language_preference > 'fr'
-        let accountantLanguage = emailData.language;
-        if (!accountantLanguage && emailData.user_id) {
+        // Get language: user's database language_preference > provided language > 'fr'
+        let accountantLanguage: string | null = null;
+        if (emailData.user_id) {
           accountantLanguage = await getUserLanguagePreference(emailData.user_id);
+        }
+        if (!accountantLanguage && emailData.language) {
+          accountantLanguage = emailData.language;
         }
         accountantLanguage = accountantLanguage || 'fr';
         const accountantTemplateType = emailType === 'expense_invoice_to_accountant' ? 'expense_invoice_to_accountant' : 'invoice_to_accountant';

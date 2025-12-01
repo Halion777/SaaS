@@ -335,8 +335,9 @@ class ClientQuoteService {
           final_amount,
           share_token,
           user_id,
+          client_id,
           company_profiles!quotes_company_profile_id_fkey(company_name),
-          client:clients(language_preference)
+          client:clients(id, language_preference)
         `)
         .eq('id', quoteId)
         .single();
@@ -376,9 +377,9 @@ class ClientQuoteService {
           emailType: 'quote_status_update',
           emailData: {
             to: clientData.client_email,
-            client_id: quote.client_id || null, // Pass client_id so edge function can fetch language if needed
+            client_id: quote.client_id || quote.client?.id || null, // Pass client_id so edge function can fetch language from database
             user_id: quote.user_id,
-            language: (quote.client?.language_preference || 'fr').split('-')[0] || 'fr', // Pass language, but edge function will fetch from client_id if not provided
+            language: (quote.client?.language_preference || 'fr').split('-')[0] || 'fr', // Fallback language, but edge function will prioritize database
             subject: fallbackSubject, // Fallback subject (only used if template not found)
             html: fallbackHtml, // Fallback HTML (only used if template not found)
             text: fallbackText, // Fallback text (only used if template not found)

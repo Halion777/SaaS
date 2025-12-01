@@ -640,7 +640,13 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
             : createdClient.name,
           description: `${createdClient.email} • ${createdClient.phone}`,
         type: clientType,
-          client: createdClient
+          client: createdClient,
+          address: createdClient.address,
+          city: createdClient.city,
+          postalCode: createdClient.postalCode,
+          country: createdClient.country,
+          email: createdClient.email,
+          phone: createdClient.phone
       };
         
         // Select the newly created client

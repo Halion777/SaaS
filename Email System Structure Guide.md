@@ -225,7 +225,7 @@ The system supports the following email template types. **All templates are avai
 14. **contact_form** - Contact form submission notification
 15. **invoice_sent** - Invoice sent to client (with custom message support)
 
-#### Additional templates (not in SQL file but used in system - 9 types):
+#### Additional templates (not in SQL file but used in system - 9+ types):
 
 16. **client_accepted** - Quote accepted by client
 17. **client_rejected** - Quote rejected by client
@@ -235,7 +235,7 @@ The system supports the following email template types. **All templates are avai
 21. **welcome_client** - Welcome email for new clients
 22. **invoice_to_accountant** - Invoice sent to accountant (internal)
 23. **expense_invoice_to_accountant** - Expense invoice sent to accountant (internal)
-24. **overdue** - General overdue notification (legacy - use `invoice_overdue_reminder` instead)
+24. **welcome-new user** - Welcome email for new users
 
 **Note:** All templates are stored in the `email_templates` database table and can be managed via the Super Admin UI at `/admin/super/email-templates`.
 
