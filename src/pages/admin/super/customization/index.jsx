@@ -2539,7 +2539,7 @@ const Customization = () => {
                           Pricing Management
                         </h2>
                         <p className="text-sm text-muted-foreground mt-2">
-                          Configure pricing plans for monthly and yearly subscriptions. Customize descriptions, features, and limitations in all 3 languages. These will be displayed on pricing page, subscription page, and registration step.
+                          Configure pricing plans for monthly and yearly subscriptions.
                         </p>
                       </div>
                     </div>
