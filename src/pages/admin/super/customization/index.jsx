@@ -135,19 +135,50 @@ const Customization = () => {
   const [pricingSettings, setPricingSettings] = useState({
     starter: {
       name: 'Starter Plan',
-      description: 'An intelligent entry-level plan for craftsmen who want clean, compliant quotes and invoices with a tool that is very easy to use.',
+      description: {
+        fr: 'Un plan d\'entrée de gamme intelligent pour les artisans qui souhaitent des devis et factures propres, conformes, avec un outil très facile à utiliser.',
+        en: 'An intelligent entry-level plan for craftsmen who want clean, compliant quotes and invoices with a tool that is very easy to use.',
+        nl: 'Een intelligente instapplan voor ambachtslieden die schone, conforme offertes en facturen willen met een zeer gebruiksvriendelijk hulpmiddel.'
+      },
+      features: {
+        fr: [],
+        en: [],
+        nl: []
+      },
+      limitations: {
+        fr: [],
+        en: [],
+        nl: []
+      },
       monthly: 39.99,
       yearly: 31.99, // 20% discount: €39,99 × 0.8 = €31,99/month when billed yearly
       popular: false
     },
     pro: {
       name: 'Pro Plan',
-      description: 'The premium version of your back-office: an intelligent tool focused on AI, automation and growth, still very easy to use for any craftsman.',
+      description: {
+        fr: 'La version premium de votre back-office : un outil intelligent axé sur l\'IA, l\'automatisation et la croissance, toujours très facile à utiliser pour tout artisan.',
+        en: 'The premium version of your back-office: an intelligent tool focused on AI, automation and growth, still very easy to use for any craftsman.',
+        nl: 'De premium versie van uw back-office: een intelligent hulpmiddel gericht op AI, automatisering en groei, nog steeds zeer gebruiksvriendelijk voor elke ambachtsman.'
+      },
+      features: {
+        fr: [],
+        en: [],
+        nl: []
+      },
+      limitations: {
+        fr: [],
+        en: [],
+        nl: []
+      },
       monthly: 69.99,
       yearly: 55.99, // 20% discount: €69,99 × 0.8 = €55,99/month when billed yearly
       popular: true
     }
   });
+  const [selectedPricingLanguage, setSelectedPricingLanguage] = useState('fr');
+  const [bulkPasteMode, setBulkPasteMode] = useState({ type: null, plan: null }); // { type: 'features' | 'limitations', plan: 'starter' | 'pro' }
+  const [bulkPasteText, setBulkPasteText] = useState('');
 
   const languages = [
     { code: 'fr', name: 'Français', flag: '🇫🇷' },
@@ -270,7 +301,40 @@ const Customization = () => {
       if (pricingError && pricingError.code !== 'PGRST116') {
         console.error('❌ Error loading pricing settings:', pricingError);
       } else if (pricingData && pricingData.setting_value) {
-        setPricingSettings(pricingData.setting_value);
+        const loadedPricing = pricingData.setting_value;
+        // Merge with defaults to ensure all fields exist
+        setPricingSettings({
+          starter: {
+            name: loadedPricing.starter?.name || 'Starter Plan',
+            description: typeof loadedPricing.starter?.description === 'object' 
+              ? loadedPricing.starter.description 
+              : {
+                  fr: loadedPricing.starter?.description || 'Un plan d\'entrée de gamme intelligent pour les artisans qui souhaitent des devis et factures propres, conformes, avec un outil très facile à utiliser.',
+                  en: 'An intelligent entry-level plan for craftsmen who want clean, compliant quotes and invoices with a tool that is very easy to use.',
+                  nl: 'Een intelligente instapplan voor ambachtslieden die schone, conforme offertes en facturen willen met een zeer gebruiksvriendelijk hulpmiddel.'
+                },
+            features: loadedPricing.starter?.features || { fr: [], en: [], nl: [] },
+            limitations: loadedPricing.starter?.limitations || { fr: [], en: [], nl: [] },
+            monthly: loadedPricing.starter?.monthly || 39.99,
+            yearly: loadedPricing.starter?.yearly || 31.99,
+            popular: loadedPricing.starter?.popular || false
+          },
+          pro: {
+            name: loadedPricing.pro?.name || 'Pro Plan',
+            description: typeof loadedPricing.pro?.description === 'object'
+              ? loadedPricing.pro.description
+              : {
+                  fr: loadedPricing.pro?.description || 'La version premium de votre back-office : un outil intelligent axé sur l\'IA, l\'automatisation et la croissance, toujours très facile à utiliser pour tout artisan.',
+                  en: 'The premium version of your back-office: an intelligent tool focused on AI, automation and growth, still very easy to use for any craftsman.',
+                  nl: 'De premium versie van uw back-office: een intelligent hulpmiddel gericht op AI, automatisering en groei, nog steeds zeer gebruiksvriendelijk voor elke ambachtsman.'
+                },
+            features: loadedPricing.pro?.features || { fr: [], en: [], nl: [] },
+            limitations: loadedPricing.pro?.limitations || { fr: [], en: [], nl: [] },
+            monthly: loadedPricing.pro?.monthly || 69.99,
+            yearly: loadedPricing.pro?.yearly || 55.99,
+            popular: loadedPricing.pro?.popular || true
+          }
+        });
       } else {
         // Keep default values
       }
@@ -2479,8 +2543,29 @@ const Customization = () => {
                           Pricing Management
                         </h2>
                         <p className="text-sm text-muted-foreground mt-2">
-                          Configure pricing plans for monthly and yearly subscriptions. These prices will be displayed on pricing page, subscription page, and registration step.
+                          Configure pricing plans for monthly and yearly subscriptions. Customize descriptions, features, and limitations in all 3 languages. These will be displayed on pricing page, subscription page, and registration step.
                         </p>
+                      </div>
+                    </div>
+
+                    {/* Language Selector */}
+                    <div className="mb-6">
+                      <label className="block text-sm font-semibold text-foreground mb-3">Select Language</label>
+                      <div className="flex gap-2">
+                        {languages.map((lang) => (
+                          <button
+                            key={lang.code}
+                            type="button"
+                            onClick={() => setSelectedPricingLanguage(lang.code)}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                              selectedPricingLanguage === lang.code
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                            }`}
+                          >
+                            {lang.flag} {lang.name}
+                          </button>
+                        ))}
                       </div>
                     </div>
 
@@ -2526,22 +2611,323 @@ const Customization = () => {
                               placeholder="Starter Plan"
                             />
                           </div>
-                          <div className="bg-card rounded-lg p-4 border border-border">
-                            <label className="block text-sm font-semibold text-foreground mb-2">Description</label>
-                            <input
-                              type="text"
-                              value={pricingSettings.starter?.description || ''}
+                          <div className="bg-card rounded-lg p-4 border border-border md:col-span-2">
+                            <label className="block text-sm font-semibold text-foreground mb-2">
+                              Description ({languages.find(l => l.code === selectedPricingLanguage)?.flag} {languages.find(l => l.code === selectedPricingLanguage)?.name})
+                            </label>
+                            <textarea
+                              value={pricingSettings.starter?.description?.[selectedPricingLanguage] || ''}
                               onChange={(e) => handlePricingSettingsChange({
                                 ...pricingSettings,
                                 starter: {
                                   ...pricingSettings.starter,
-                                  description: e.target.value
+                                  description: {
+                                    ...(pricingSettings.starter?.description || { fr: '', en: '', nl: '' }),
+                                    [selectedPricingLanguage]: e.target.value
+                                  }
                                 }
                               })}
+                              rows={3}
                               className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                              placeholder="Perfect for beginners"
+                              placeholder="Enter plan description..."
                             />
                           </div>
+                        </div>
+                        
+                        {/* Features Editor */}
+                        <div className="bg-card rounded-lg p-6 border border-border">
+                          <div className="flex items-center justify-between mb-4">
+                            <label className="block text-sm font-semibold text-foreground">
+                              Features ({languages.find(l => l.code === selectedPricingLanguage)?.flag} {languages.find(l => l.code === selectedPricingLanguage)?.name})
+                            </label>
+                            {bulkPasteMode.type === 'features' && bulkPasteMode.plan === 'starter' ? (
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const lines = bulkPasteText.split('\n')
+                                      .map(line => line.trim())
+                                      .filter(line => line.length > 0);
+                                    if (lines.length > 0) {
+                                      handlePricingSettingsChange({
+                                        ...pricingSettings,
+                                        starter: {
+                                          ...pricingSettings.starter,
+                                          features: {
+                                            ...(pricingSettings.starter?.features || { fr: [], en: [], nl: [] }),
+                                            [selectedPricingLanguage]: lines
+                                          }
+                                        }
+                                      });
+                                    }
+                                    setBulkPasteMode({ type: null, plan: null });
+                                    setBulkPasteText('');
+                                  }}
+                                  className="text-xs bg-primary text-primary-foreground"
+                                >
+                                  <Icon name="Check" size={14} className="mr-1" />
+                                  Apply
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setBulkPasteMode({ type: null, plan: null });
+                                    setBulkPasteText('');
+                                  }}
+                                  className="text-xs"
+                                >
+                                  <Icon name="X" size={14} className="mr-1" />
+                                  Cancel
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setBulkPasteMode({ type: 'features', plan: 'starter' });
+                                  setBulkPasteText((pricingSettings.starter?.features?.[selectedPricingLanguage] || []).join('\n'));
+                                }}
+                                className="text-xs"
+                              >
+                                <Icon name="FileText" size={14} className="mr-1" />
+                                Bulk Paste
+                              </Button>
+                            )}
+                          </div>
+                          {bulkPasteMode.type === 'features' && bulkPasteMode.plan === 'starter' ? (
+                            <textarea
+                              value={bulkPasteText}
+                              onChange={(e) => setBulkPasteText(e.target.value)}
+                              rows={10}
+                              className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary font-mono"
+                              placeholder="Paste all features here, one per line..."
+                            />
+                          ) : (
+                            <div className="space-y-3">
+                            {(pricingSettings.starter?.features?.[selectedPricingLanguage] || []).map((feature, index) => (
+                              <div key={index} className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={feature}
+                                  onChange={(e) => {
+                                    const newFeatures = [...(pricingSettings.starter?.features?.[selectedPricingLanguage] || [])];
+                                    newFeatures[index] = e.target.value;
+                                    handlePricingSettingsChange({
+                                      ...pricingSettings,
+                                      starter: {
+                                        ...pricingSettings.starter,
+                                        features: {
+                                          ...(pricingSettings.starter?.features || { fr: [], en: [], nl: [] }),
+                                          [selectedPricingLanguage]: newFeatures
+                                        }
+                                      }
+                                    });
+                                  }}
+                                  className="flex-1 px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                  placeholder="Enter feature..."
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const newFeatures = [...(pricingSettings.starter?.features?.[selectedPricingLanguage] || [])];
+                                    newFeatures.splice(index, 1);
+                                    handlePricingSettingsChange({
+                                      ...pricingSettings,
+                                      starter: {
+                                        ...pricingSettings.starter,
+                                        features: {
+                                          ...(pricingSettings.starter?.features || { fr: [], en: [], nl: [] }),
+                                          [selectedPricingLanguage]: newFeatures
+                                        }
+                                      }
+                                    });
+                                  }}
+                                  className="text-red-600 hover:text-red-700 hover:border-red-300"
+                                >
+                                  <Icon name="Trash2" size={16} />
+                                </Button>
+                              </div>
+                            ))}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const newFeatures = [...(pricingSettings.starter?.features?.[selectedPricingLanguage] || []), ''];
+                                handlePricingSettingsChange({
+                                  ...pricingSettings,
+                                  starter: {
+                                    ...pricingSettings.starter,
+                                    features: {
+                                      ...(pricingSettings.starter?.features || { fr: [], en: [], nl: [] }),
+                                      [selectedPricingLanguage]: newFeatures
+                                    }
+                                  }
+                                });
+                              }}
+                              className="w-full"
+                            >
+                              <Icon name="Plus" size={16} className="mr-2" />
+                              Add Feature
+                            </Button>
+                          </div>
+                          )}
+                        </div>
+
+                        {/* Limitations Editor */}
+                        <div className="bg-card rounded-lg p-6 border border-border">
+                          <div className="flex items-center justify-between mb-4">
+                            <label className="block text-sm font-semibold text-foreground">
+                              Limitations ({languages.find(l => l.code === selectedPricingLanguage)?.flag} {languages.find(l => l.code === selectedPricingLanguage)?.name})
+                            </label>
+                            {bulkPasteMode.type === 'limitations' && bulkPasteMode.plan === 'starter' ? (
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const lines = bulkPasteText.split('\n')
+                                      .map(line => line.trim())
+                                      .filter(line => line.length > 0);
+                                    if (lines.length > 0) {
+                                      handlePricingSettingsChange({
+                                        ...pricingSettings,
+                                        starter: {
+                                          ...pricingSettings.starter,
+                                          limitations: {
+                                            ...(pricingSettings.starter?.limitations || { fr: [], en: [], nl: [] }),
+                                            [selectedPricingLanguage]: lines
+                                          }
+                                        }
+                                      });
+                                    }
+                                    setBulkPasteMode({ type: null, plan: null });
+                                    setBulkPasteText('');
+                                  }}
+                                  className="text-xs bg-primary text-primary-foreground"
+                                >
+                                  <Icon name="Check" size={14} className="mr-1" />
+                                  Apply
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setBulkPasteMode({ type: null, plan: null });
+                                    setBulkPasteText('');
+                                  }}
+                                  className="text-xs"
+                                >
+                                  <Icon name="X" size={14} className="mr-1" />
+                                  Cancel
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setBulkPasteMode({ type: 'limitations', plan: 'starter' });
+                                  setBulkPasteText((pricingSettings.starter?.limitations?.[selectedPricingLanguage] || []).join('\n'));
+                                }}
+                                className="text-xs"
+                              >
+                                <Icon name="FileText" size={14} className="mr-1" />
+                                Bulk Paste
+                              </Button>
+                            )}
+                          </div>
+                          {bulkPasteMode.type === 'limitations' && bulkPasteMode.plan === 'starter' ? (
+                            <textarea
+                              value={bulkPasteText}
+                              onChange={(e) => setBulkPasteText(e.target.value)}
+                              rows={10}
+                              className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary font-mono"
+                              placeholder="Paste all limitations here, one per line..."
+                            />
+                          ) : (
+                            <div className="space-y-3">
+                            {(pricingSettings.starter?.limitations?.[selectedPricingLanguage] || []).map((limitation, index) => (
+                              <div key={index} className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={limitation}
+                                  onChange={(e) => {
+                                    const newLimitations = [...(pricingSettings.starter?.limitations?.[selectedPricingLanguage] || [])];
+                                    newLimitations[index] = e.target.value;
+                                    handlePricingSettingsChange({
+                                      ...pricingSettings,
+                                      starter: {
+                                        ...pricingSettings.starter,
+                                        limitations: {
+                                          ...(pricingSettings.starter?.limitations || { fr: [], en: [], nl: [] }),
+                                          [selectedPricingLanguage]: newLimitations
+                                        }
+                                      }
+                                    });
+                                  }}
+                                  className="flex-1 px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                  placeholder="Enter limitation..."
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const newLimitations = [...(pricingSettings.starter?.limitations?.[selectedPricingLanguage] || [])];
+                                    newLimitations.splice(index, 1);
+                                    handlePricingSettingsChange({
+                                      ...pricingSettings,
+                                      starter: {
+                                        ...pricingSettings.starter,
+                                        limitations: {
+                                          ...(pricingSettings.starter?.limitations || { fr: [], en: [], nl: [] }),
+                                          [selectedPricingLanguage]: newLimitations
+                                        }
+                                      }
+                                    });
+                                  }}
+                                  className="text-red-600 hover:text-red-700 hover:border-red-300"
+                                >
+                                  <Icon name="Trash2" size={16} />
+                                </Button>
+                              </div>
+                            ))}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const newLimitations = [...(pricingSettings.starter?.limitations?.[selectedPricingLanguage] || []), ''];
+                                handlePricingSettingsChange({
+                                  ...pricingSettings,
+                                  starter: {
+                                    ...pricingSettings.starter,
+                                    limitations: {
+                                      ...(pricingSettings.starter?.limitations || { fr: [], en: [], nl: [] }),
+                                      [selectedPricingLanguage]: newLimitations
+                                    }
+                                  }
+                                });
+                              }}
+                              className="w-full"
+                            >
+                              <Icon name="Plus" size={16} className="mr-2" />
+                              Add Limitation
+                            </Button>
+                          </div>
+                          )}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="bg-card rounded-lg p-4 border border-border">
@@ -2650,23 +3036,326 @@ const Customization = () => {
                               placeholder="Pro Plan"
                             />
                           </div>
-                          <div className="bg-card rounded-lg p-4 border border-border">
-                            <label className="block text-sm font-semibold text-foreground mb-2">Description</label>
-                            <input
-                              type="text"
-                              value={pricingSettings.pro?.description || ''}
+                          <div className="bg-card rounded-lg p-4 border border-border md:col-span-2">
+                            <label className="block text-sm font-semibold text-foreground mb-2">
+                              Description ({languages.find(l => l.code === selectedPricingLanguage)?.flag} {languages.find(l => l.code === selectedPricingLanguage)?.name})
+                            </label>
+                            <textarea
+                              value={pricingSettings.pro?.description?.[selectedPricingLanguage] || ''}
                               onChange={(e) => handlePricingSettingsChange({
                                 ...pricingSettings,
                                 pro: {
                                   ...pricingSettings.pro,
-                                  description: e.target.value
+                                  description: {
+                                    ...(pricingSettings.pro?.description || { fr: '', en: '', nl: '' }),
+                                    [selectedPricingLanguage]: e.target.value
+                                  }
                                 }
                               })}
+                              rows={3}
                               className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                              placeholder="Complete solution with AI"
+                              placeholder="Enter plan description..."
                             />
                           </div>
                         </div>
+                        
+                        {/* Features Editor */}
+                        <div className="bg-card rounded-lg p-6 border border-border">
+                          <div className="flex items-center justify-between mb-4">
+                            <label className="block text-sm font-semibold text-foreground">
+                              Features ({languages.find(l => l.code === selectedPricingLanguage)?.flag} {languages.find(l => l.code === selectedPricingLanguage)?.name})
+                            </label>
+                            {bulkPasteMode.type === 'features' && bulkPasteMode.plan === 'pro' ? (
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const lines = bulkPasteText.split('\n')
+                                      .map(line => line.trim())
+                                      .filter(line => line.length > 0);
+                                    if (lines.length > 0) {
+                                      handlePricingSettingsChange({
+                                        ...pricingSettings,
+                                        pro: {
+                                          ...pricingSettings.pro,
+                                          features: {
+                                            ...(pricingSettings.pro?.features || { fr: [], en: [], nl: [] }),
+                                            [selectedPricingLanguage]: lines
+                                          }
+                                        }
+                                      });
+                                    }
+                                    setBulkPasteMode({ type: null, plan: null });
+                                    setBulkPasteText('');
+                                  }}
+                                  className="text-xs bg-primary text-primary-foreground"
+                                >
+                                  <Icon name="Check" size={14} className="mr-1" />
+                                  Apply
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setBulkPasteMode({ type: null, plan: null });
+                                    setBulkPasteText('');
+                                  }}
+                                  className="text-xs"
+                                >
+                                  <Icon name="X" size={14} className="mr-1" />
+                                  Cancel
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setBulkPasteMode({ type: 'features', plan: 'pro' });
+                                  setBulkPasteText((pricingSettings.pro?.features?.[selectedPricingLanguage] || []).join('\n'));
+                                }}
+                                className="text-xs"
+                              >
+                                <Icon name="FileText" size={14} className="mr-1" />
+                                Bulk Paste
+                              </Button>
+                            )}
+                          </div>
+                          {bulkPasteMode.type === 'features' && bulkPasteMode.plan === 'pro' ? (
+                            <textarea
+                              value={bulkPasteText}
+                              onChange={(e) => setBulkPasteText(e.target.value)}
+                              rows={10}
+                              className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary font-mono"
+                              placeholder="Paste all features here, one per line..."
+                            />
+                          ) : (
+                            <div className="space-y-3">
+                            {(pricingSettings.pro?.features?.[selectedPricingLanguage] || []).map((feature, index) => (
+                              <div key={index} className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={feature}
+                                  onChange={(e) => {
+                                    const newFeatures = [...(pricingSettings.pro?.features?.[selectedPricingLanguage] || [])];
+                                    newFeatures[index] = e.target.value;
+                                    handlePricingSettingsChange({
+                                      ...pricingSettings,
+                                      pro: {
+                                        ...pricingSettings.pro,
+                                        features: {
+                                          ...(pricingSettings.pro?.features || { fr: [], en: [], nl: [] }),
+                                          [selectedPricingLanguage]: newFeatures
+                                        }
+                                      }
+                                    });
+                                  }}
+                                  className="flex-1 px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                  placeholder="Enter feature..."
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const newFeatures = [...(pricingSettings.pro?.features?.[selectedPricingLanguage] || [])];
+                                    newFeatures.splice(index, 1);
+                                    handlePricingSettingsChange({
+                                      ...pricingSettings,
+                                      pro: {
+                                        ...pricingSettings.pro,
+                                        features: {
+                                          ...(pricingSettings.pro?.features || { fr: [], en: [], nl: [] }),
+                                          [selectedPricingLanguage]: newFeatures
+                                        }
+                                      }
+                                    });
+                                  }}
+                                  className="text-red-600 hover:text-red-700 hover:border-red-300"
+                                >
+                                  <Icon name="Trash2" size={16} />
+                                </Button>
+                              </div>
+                            ))}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const newFeatures = [...(pricingSettings.pro?.features?.[selectedPricingLanguage] || []), ''];
+                                handlePricingSettingsChange({
+                                  ...pricingSettings,
+                                  pro: {
+                                    ...pricingSettings.pro,
+                                    features: {
+                                      ...(pricingSettings.pro?.features || { fr: [], en: [], nl: [] }),
+                                      [selectedPricingLanguage]: newFeatures
+                                    }
+                                  }
+                                });
+                              }}
+                              className="w-full"
+                            >
+                              <Icon name="Plus" size={16} className="mr-2" />
+                              Add Feature
+                            </Button>
+                          </div>
+                          )}
+                        </div>
+
+                        {/* Limitations Editor - Hidden for Pro Plan */}
+                        {false && (
+                        <div className="bg-card rounded-lg p-6 border border-border">
+                          <div className="flex items-center justify-between mb-4">
+                            <label className="block text-sm font-semibold text-foreground">
+                              Limitations ({languages.find(l => l.code === selectedPricingLanguage)?.flag} {languages.find(l => l.code === selectedPricingLanguage)?.name})
+                            </label>
+                            {bulkPasteMode.type === 'limitations' && bulkPasteMode.plan === 'pro' ? (
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const lines = bulkPasteText.split('\n')
+                                      .map(line => line.trim())
+                                      .filter(line => line.length > 0);
+                                    if (lines.length > 0) {
+                                      handlePricingSettingsChange({
+                                        ...pricingSettings,
+                                        pro: {
+                                          ...pricingSettings.pro,
+                                          limitations: {
+                                            ...(pricingSettings.pro?.limitations || { fr: [], en: [], nl: [] }),
+                                            [selectedPricingLanguage]: lines
+                                          }
+                                        }
+                                      });
+                                    }
+                                    setBulkPasteMode({ type: null, plan: null });
+                                    setBulkPasteText('');
+                                  }}
+                                  className="text-xs bg-primary text-primary-foreground"
+                                >
+                                  <Icon name="Check" size={14} className="mr-1" />
+                                  Apply
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setBulkPasteMode({ type: null, plan: null });
+                                    setBulkPasteText('');
+                                  }}
+                                  className="text-xs"
+                                >
+                                  <Icon name="X" size={14} className="mr-1" />
+                                  Cancel
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setBulkPasteMode({ type: 'limitations', plan: 'pro' });
+                                  setBulkPasteText((pricingSettings.pro?.limitations?.[selectedPricingLanguage] || []).join('\n'));
+                                }}
+                                className="text-xs"
+                              >
+                                <Icon name="FileText" size={14} className="mr-1" />
+                                Bulk Paste
+                              </Button>
+                            )}
+                          </div>
+                          {bulkPasteMode.type === 'limitations' && bulkPasteMode.plan === 'pro' ? (
+                            <textarea
+                              value={bulkPasteText}
+                              onChange={(e) => setBulkPasteText(e.target.value)}
+                              rows={10}
+                              className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary font-mono"
+                              placeholder="Paste all limitations here, one per line..."
+                            />
+                          ) : (
+                            <div className="space-y-3">
+                            {(pricingSettings.pro?.limitations?.[selectedPricingLanguage] || []).map((limitation, index) => (
+                              <div key={index} className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={limitation}
+                                  onChange={(e) => {
+                                    const newLimitations = [...(pricingSettings.pro?.limitations?.[selectedPricingLanguage] || [])];
+                                    newLimitations[index] = e.target.value;
+                                    handlePricingSettingsChange({
+                                      ...pricingSettings,
+                                      pro: {
+                                        ...pricingSettings.pro,
+                                        limitations: {
+                                          ...(pricingSettings.pro?.limitations || { fr: [], en: [], nl: [] }),
+                                          [selectedPricingLanguage]: newLimitations
+                                        }
+                                      }
+                                    });
+                                  }}
+                                  className="flex-1 px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                  placeholder="Enter limitation..."
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const newLimitations = [...(pricingSettings.pro?.limitations?.[selectedPricingLanguage] || [])];
+                                    newLimitations.splice(index, 1);
+                                    handlePricingSettingsChange({
+                                      ...pricingSettings,
+                                      pro: {
+                                        ...pricingSettings.pro,
+                                        limitations: {
+                                          ...(pricingSettings.pro?.limitations || { fr: [], en: [], nl: [] }),
+                                          [selectedPricingLanguage]: newLimitations
+                                        }
+                                      }
+                                    });
+                                  }}
+                                  className="text-red-600 hover:text-red-700 hover:border-red-300"
+                                >
+                                  <Icon name="Trash2" size={16} />
+                                </Button>
+                              </div>
+                            ))}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const newLimitations = [...(pricingSettings.pro?.limitations?.[selectedPricingLanguage] || []), ''];
+                                handlePricingSettingsChange({
+                                  ...pricingSettings,
+                                  pro: {
+                                    ...pricingSettings.pro,
+                                    limitations: {
+                                      ...(pricingSettings.pro?.limitations || { fr: [], en: [], nl: [] }),
+                                      [selectedPricingLanguage]: newLimitations
+                                    }
+                                  }
+                                });
+                              }}
+                              className="w-full"
+                            >
+                              <Icon name="Plus" size={16} className="mr-2" />
+                              Add Limitation
+                            </Button>
+                          </div>
+                          )}
+                        </div>
+                        )}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="bg-card rounded-lg p-4 border border-border">
                             <label className="block text-sm font-semibold text-foreground mb-2 flex items-center gap-2">

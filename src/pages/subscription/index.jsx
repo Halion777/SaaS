@@ -155,8 +155,8 @@ const SubscriptionManagement = () => {
                 yearlyTotal: planData.yearlyTotal
               },
               description: planData.description || t(`pricing.plans.${planId}.description`, ''),
-              features: planFeatures.length > 0 ? planFeatures : (planData.features || []),
-              limitations: planLimitations.length > 0 ? planLimitations : (planData.limitations || []),
+              features: (planData.features && planData.features.length > 0) ? planData.features : (planFeatures.length > 0 ? planFeatures : []),
+              limitations: (planData.limitations && planData.limitations.length > 0) ? planData.limitations : (planLimitations.length > 0 ? planLimitations : []),
               current: false,
               popular: planData.popular || false
             };

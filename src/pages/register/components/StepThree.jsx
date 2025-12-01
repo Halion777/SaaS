@@ -26,8 +26,12 @@ const StepThree = ({ formData, updateFormData, errors }) => {
       },
       period: billingCycle === 'monthly' ? t('registerForm.step3.perMonth') : t('registerForm.step3.perYear'),
               description: result.data.starter?.description || t('registerForm.step3.plans.starter.description'),
-      features: t('registerForm.step3.plans.starter.features', { returnObjects: true }),
-      limitations: t('registerForm.step3.plans.starter.limitations', { returnObjects: true }),
+      features: (result.data.starter?.features && result.data.starter.features.length > 0)
+        ? result.data.starter.features
+        : (t('registerForm.step3.plans.starter.features', { returnObjects: true }) || []),
+      limitations: (result.data.starter?.limitations && result.data.starter.limitations.length > 0)
+        ? result.data.starter.limitations
+        : (t('registerForm.step3.plans.starter.limitations', { returnObjects: true }) || []),
               popular: result.data.starter?.popular || false
     },
     {
@@ -39,8 +43,12 @@ const StepThree = ({ formData, updateFormData, errors }) => {
       },
       period: billingCycle === 'monthly' ? t('registerForm.step3.perMonth') : t('registerForm.step3.perYear'),
               description: result.data.pro?.description || t('registerForm.step3.plans.pro.description'),
-      features: t('registerForm.step3.plans.pro.features', { returnObjects: true }),
-      limitations: t('registerForm.step3.plans.pro.limitations', { returnObjects: true }),
+      features: (result.data.pro?.features && result.data.pro.features.length > 0)
+        ? result.data.pro.features
+        : (t('registerForm.step3.plans.pro.features', { returnObjects: true }) || []),
+      limitations: (result.data.pro?.limitations && result.data.pro.limitations.length > 0)
+        ? result.data.pro.limitations
+        : (t('registerForm.step3.plans.pro.limitations', { returnObjects: true }) || []),
               popular: result.data.pro?.popular || true
     }
   ];

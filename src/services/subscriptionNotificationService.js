@@ -42,9 +42,29 @@ export class SubscriptionNotificationService {
       // Build response with calculated yearly totals
       const pricing = {};
       for (const [planType, plan] of Object.entries(pricingSettings)) {
+        // Get current language from localStorage or default to 'fr'
+        const currentLang = typeof window !== 'undefined' 
+          ? (localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr').split('-')[0] || 'fr'
+          : 'fr';
+        
+        // Get description, features, and limitations for current language
+        const description = typeof plan.description === 'object' 
+          ? (plan.description[currentLang] || plan.description['fr'] || '')
+          : (plan.description || '');
+        
+        const features = plan.features && typeof plan.features === 'object'
+          ? (plan.features[currentLang] || plan.features['fr'] || [])
+          : [];
+        
+        const limitations = plan.limitations && typeof plan.limitations === 'object'
+          ? (plan.limitations[currentLang] || plan.limitations['fr'] || [])
+          : [];
+        
         pricing[planType] = {
           name: plan.name || `${planType.charAt(0).toUpperCase() + planType.slice(1)} Plan`,
-          description: plan.description || '',
+          description: description,
+          features: features,
+          limitations: limitations,
           monthly: parseFloat(plan.monthly) || 0,
           yearly: parseFloat(plan.yearly) || 0, // Monthly equivalent when billed yearly
           yearlyTotal: parseFloat((parseFloat(plan.yearly) * 12).toFixed(2)) || 0, // Total for year

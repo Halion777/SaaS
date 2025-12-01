@@ -11,23 +11,43 @@ import { SubscriptionNotificationService } from '../../services/subscriptionNoti
 const PricingPage = () => {
   const { t, i18n } = useTranslation();
   const [billingCycle, setBillingCycle] = useState('monthly');
-  const [pricing, setPricing] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Initialize with default/fallback values immediately - no loading state
+  const [pricing, setPricing] = useState({
+    starter: {
+      name: 'Starter Plan',
+      description: t('pricing.plans.starter.description'),
+      monthly: 39.99,
+      yearly: 31.99,
+      yearlyTotal: 383.88,
+      popular: false,
+      features: [],
+      limitations: []
+    },
+    pro: {
+      name: 'Pro Plan',
+      description: t('pricing.plans.pro.description'),
+      monthly: 69.99,
+      yearly: 55.99,
+      yearlyTotal: 671.88,
+      popular: true,
+      features: [],
+      limitations: []
+    }
+  });
   const [error, setError] = useState(null);
 
-  // Load pricing from database on mount
+  // Load pricing from database in background - update when ready
   useEffect(() => {
     const loadPricing = async () => {
       try {
-        setLoading(true);
         setError(null);
         const result = await SubscriptionNotificationService.getAllPricingData();
         if (result.success && result.data) {
           setPricing(result.data);
         } else {
-          // Service will return fallback values on error, but we still show error state
+          // Service will return fallback values on error
+          setPricing(result.data || pricing);
           setError('Using default pricing due to connection issue');
-          setPricing(result.data); // Fallback data is still available
         }
       } catch (err) {
         console.error('Error loading pricing:', err);
@@ -36,11 +56,7 @@ const PricingPage = () => {
         if (result.success && result.data) {
           setPricing(result.data);
           setError('Using default pricing due to connection issue');
-        } else {
-          setError('Failed to load pricing information');
         }
-      } finally {
-        setLoading(false);
       }
     };
     loadPricing();
@@ -56,76 +72,84 @@ const PricingPage = () => {
     if (!pricing) return [];
     return [
     {
-      name: t('pricing.plans.starter.name'),
-      description: t('pricing.plans.starter.description'),
+      name: pricing.starter?.name || t('pricing.plans.starter.name'),
+      description: pricing.starter?.description || t('pricing.plans.starter.description'),
       price: {
         monthly: pricing.starter.monthly.toString().replace('.', ','),
         annual: pricing.starter.yearly.toString().replace('.', ','),
         annualTotal: pricing.starter.yearlyTotal.toString().replace('.', ',')
       },
-      features: [
-        t('pricing.plans.starter.features.feature1'),
-        t('pricing.plans.starter.features.feature2'),
-        t('pricing.plans.starter.features.feature3'),
-        t('pricing.plans.starter.features.feature4'),
-        t('pricing.plans.starter.features.feature5'),
-        t('pricing.plans.starter.features.feature6'),
-        t('pricing.plans.starter.features.feature7'),
-        t('pricing.plans.starter.features.feature8'),
-        t('pricing.plans.starter.features.feature9'),
-        t('pricing.plans.starter.features.feature10'),
-        t('pricing.plans.starter.features.feature11'),
-        t('pricing.plans.starter.features.feature12'),
-        t('pricing.plans.starter.features.feature13'),
-        t('pricing.plans.starter.features.feature14'),
-        t('pricing.plans.starter.features.feature15'),
-        t('pricing.plans.starter.features.feature16'),
-        t('pricing.plans.starter.features.feature17')
-      ],
-      limitations: [
-        t('pricing.plans.starter.limitations.limitation1'),
-        t('pricing.plans.starter.limitations.limitation2'),
-        t('pricing.plans.starter.limitations.limitation3'),
-        t('pricing.plans.starter.limitations.limitation4'),
-        t('pricing.plans.starter.limitations.limitation5')
-      ],
+      features: pricing.starter?.features && pricing.starter.features.length > 0
+        ? pricing.starter.features
+        : [
+            t('pricing.plans.starter.features.feature1'),
+            t('pricing.plans.starter.features.feature2'),
+            t('pricing.plans.starter.features.feature3'),
+            t('pricing.plans.starter.features.feature4'),
+            t('pricing.plans.starter.features.feature5'),
+            t('pricing.plans.starter.features.feature6'),
+            t('pricing.plans.starter.features.feature7'),
+            t('pricing.plans.starter.features.feature8'),
+            t('pricing.plans.starter.features.feature9'),
+            t('pricing.plans.starter.features.feature10'),
+            t('pricing.plans.starter.features.feature11'),
+            t('pricing.plans.starter.features.feature12'),
+            t('pricing.plans.starter.features.feature13'),
+            t('pricing.plans.starter.features.feature14'),
+            t('pricing.plans.starter.features.feature15'),
+            t('pricing.plans.starter.features.feature16'),
+            t('pricing.plans.starter.features.feature17')
+          ],
+      limitations: pricing.starter?.limitations && pricing.starter.limitations.length > 0
+        ? pricing.starter.limitations
+        : [
+            t('pricing.plans.starter.limitations.limitation1'),
+            t('pricing.plans.starter.limitations.limitation2'),
+            t('pricing.plans.starter.limitations.limitation3'),
+            t('pricing.plans.starter.limitations.limitation4'),
+            t('pricing.plans.starter.limitations.limitation5')
+          ],
       cta: t('pricing.plans.starter.cta'),
-      popular: false
+      popular: pricing.starter?.popular || false
     },
     {
-      name: t('pricing.plans.pro.name'),
-      description: t('pricing.plans.pro.description'),
+      name: pricing.pro?.name || t('pricing.plans.pro.name'),
+      description: pricing.pro?.description || t('pricing.plans.pro.description'),
       price: {
         monthly: pricing.pro.monthly.toString().replace('.', ','),
         annual: pricing.pro.yearly.toString().replace('.', ','),
         annualTotal: pricing.pro.yearlyTotal.toString().replace('.', ',')
       },
-      features: [
-        t('pricing.plans.pro.features.feature1'),
-        t('pricing.plans.pro.features.feature2'),
-        t('pricing.plans.pro.features.feature3'),
-        t('pricing.plans.pro.features.feature4'),
-        t('pricing.plans.pro.features.feature5'),
-        t('pricing.plans.pro.features.feature6'),
-        t('pricing.plans.pro.features.feature7'),
-        t('pricing.plans.pro.features.feature8'),
-        t('pricing.plans.pro.features.feature9'),
-        t('pricing.plans.pro.features.feature10'),
-        t('pricing.plans.pro.features.feature11'),
-        t('pricing.plans.pro.features.feature12'),
-        t('pricing.plans.pro.features.feature13'),
-        t('pricing.plans.pro.features.feature14'),
-        t('pricing.plans.pro.features.feature15'),
-        t('pricing.plans.pro.features.feature16'),
-        t('pricing.plans.pro.features.feature17'),
-        t('pricing.plans.pro.features.feature18'),
-        t('pricing.plans.pro.features.feature19'),
-        t('pricing.plans.pro.features.feature20'),
-        t('pricing.plans.pro.features.feature21'),
-        t('pricing.plans.pro.features.feature22'),
-        t('pricing.plans.pro.features.feature23')
-      ],
-      limitations: [],
+      features: pricing.pro?.features && pricing.pro.features.length > 0
+        ? pricing.pro.features
+        : [
+            t('pricing.plans.pro.features.feature1'),
+            t('pricing.plans.pro.features.feature2'),
+            t('pricing.plans.pro.features.feature3'),
+            t('pricing.plans.pro.features.feature4'),
+            t('pricing.plans.pro.features.feature5'),
+            t('pricing.plans.pro.features.feature6'),
+            t('pricing.plans.pro.features.feature7'),
+            t('pricing.plans.pro.features.feature8'),
+            t('pricing.plans.pro.features.feature9'),
+            t('pricing.plans.pro.features.feature10'),
+            t('pricing.plans.pro.features.feature11'),
+            t('pricing.plans.pro.features.feature12'),
+            t('pricing.plans.pro.features.feature13'),
+            t('pricing.plans.pro.features.feature14'),
+            t('pricing.plans.pro.features.feature15'),
+            t('pricing.plans.pro.features.feature16'),
+            t('pricing.plans.pro.features.feature17'),
+            t('pricing.plans.pro.features.feature18'),
+            t('pricing.plans.pro.features.feature19'),
+            t('pricing.plans.pro.features.feature20'),
+            t('pricing.plans.pro.features.feature21'),
+            t('pricing.plans.pro.features.feature22'),
+            t('pricing.plans.pro.features.feature23')
+          ],
+      limitations: pricing.pro?.limitations && pricing.pro.limitations.length > 0
+        ? pricing.pro.limitations
+        : [],
       cta: t('pricing.plans.pro.cta'),
       popular: pricing.pro?.popular || true
     }
@@ -163,16 +187,7 @@ const PricingPage = () => {
       
       {/* Main Content */}
       <main>
-        {loading && (
-          <div className="min-h-screen flex items-center justify-center">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0036ab] mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading pricing information...</p>
-            </div>
-          </div>
-        )}
-        
-        {error && pricing && (
+        {error && (
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
             <div className="flex">
               <Icon name="AlertCircle" size={20} className="text-yellow-400 mr-2" />
@@ -181,7 +196,7 @@ const PricingPage = () => {
           </div>
         )}
         
-        {!loading && pricing && (
+        {pricing && (
           <>
             {/* Pricing Header */}
             <section className="py-20 bg-gradient-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden">
