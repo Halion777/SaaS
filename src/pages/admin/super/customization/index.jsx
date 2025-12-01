@@ -9,6 +9,37 @@ import Button from '../../../../components/ui/Button';
 import SuperAdminSidebar from '../../../../components/ui/SuperAdminSidebar';
 import TableLoader from '../../../../components/ui/TableLoader';
 
+// Language Selector Component
+const LanguageSelector = ({ selectedLanguage, onLanguageChange }) => {
+  const languages = [
+    { code: 'fr', name: 'Français', flag: '🇫🇷' },
+    { code: 'en', name: 'English', flag: '🇬🇧' },
+    { code: 'nl', name: 'Nederlands', flag: '🇳🇱' }
+  ];
+
+  return (
+    <div className="mb-6">
+      <label className="block text-sm font-semibold text-foreground mb-3">Select Language</label>
+      <div className="flex gap-2">
+        {languages.map((lang) => (
+          <button
+            key={lang.code}
+            type="button"
+            onClick={() => onLanguageChange(lang.code)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              selectedLanguage === lang.code
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            }`}
+          >
+            {lang.flag} {lang.name}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const Customization = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -1495,27 +1526,10 @@ const Customization = () => {
 
                   <div className="space-y-3 sm:space-y-4">
                     {/* Language Selection */}
-                    <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-muted/30 rounded-lg border border-border">
-                      <label className="block text-xs sm:text-sm font-medium text-foreground mb-2 sm:mb-3">Select Language</label>
-                      <div className="flex flex-wrap gap-2">
-                        {languages.map((lang) => (
-                          <button
-                            key={lang.code}
-                            onClick={() => setSelectedLanguage(lang.code)}
-                            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg border transition-colors text-xs sm:text-sm ${selectedLanguage === lang.code
-                                ? 'bg-primary text-white border-primary'
-                                : 'bg-card text-foreground border-border hover:border-primary/50'
-                              }`}
-                          >
-                            <span className="text-base sm:text-lg">{lang.flag}</span>
-                            <span className="font-medium">{lang.name}</span>
-                          </button>
-                        ))}
-                      </div>
-                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-2">
-                        Configure banner content for {languages.find(l => l.code === selectedLanguage)?.name}
-                      </p>
-                    </div>
+                    <LanguageSelector
+                      selectedLanguage={selectedLanguage}
+                      onLanguageChange={setSelectedLanguage}
+                    />
 
                     {/* Enabled Toggle */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 rounded-lg border border-border gap-2 sm:gap-0">
@@ -1864,40 +1878,22 @@ const Customization = () => {
               {activeTab === 'media' && (
                 <div className="space-y-6">
                 <div className="bg-card border border-border rounded-lg p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <h2 className="text-xl font-bold text-foreground flex items-center gap-3">
-                        <Icon name="Image" size={24} className="text-primary" />
-                        Media Management
-                      </h2>
-                      <p className="text-sm text-muted-foreground mt-2">
-                        Upload and manage images and videos for home, about, and other pages
-                      </p>
-                    </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-foreground flex items-center gap-3">
+                      <Icon name="Image" size={24} className="text-primary" />
+                      Media Management
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Upload and manage images and videos for home, about, and other pages
+                    </p>
                   </div>
-                </div>
-                {/* Language Selector - Only for language-specific media */}
-                <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gradient-to-r from-primary/5 to-primary/10 rounded-xl border border-primary/20">
-                  <label className="block text-xs sm:text-sm font-semibold text-foreground mb-2 sm:mb-3">Select Language for Multi-Language Media</label>
-                  <div className="flex flex-wrap gap-2">
-                    {languages.map((lang) => (
-                      <button
-                        key={lang.code}
-                        onClick={() => setSelectedMediaLanguage(lang.code)}
-                        className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg border-2 transition-all text-xs sm:text-sm ${selectedMediaLanguage === lang.code
-                            ? 'bg-primary text-white border-primary shadow-lg scale-105'
-                            : 'bg-card text-foreground border-border hover:border-primary/50 hover:shadow-md'
-                          }`}
-                      >
-                        <span className="text-base sm:text-lg">{lang.flag}</span>
-                        <span className="font-medium whitespace-nowrap">{lang.name}</span>
-                      </button>
-                    ))}
+                  {/* Language Selector */}
+                  <div className="mt-6">
+                    <LanguageSelector
+                      selectedLanguage={selectedMediaLanguage}
+                      onLanguageChange={setSelectedMediaLanguage}
+                    />
                   </div>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 sm:mt-3">
-                    <Icon name="Info" size={12} className="sm:w-[14px] sm:h-[14px] inline mr-1" />
-                    Select language to upload/view Hero Image, Desktop Image, Mobile Image, and Demo Video for Home Page. Each language has its own media files.
-                  </p>
                 </div>
 
                 <div className="space-y-4 sm:space-y-6">
@@ -2549,25 +2545,10 @@ const Customization = () => {
                     </div>
 
                     {/* Language Selector */}
-                    <div className="mb-6">
-                      <label className="block text-sm font-semibold text-foreground mb-3">Select Language</label>
-                      <div className="flex gap-2">
-                        {languages.map((lang) => (
-                          <button
-                            key={lang.code}
-                            type="button"
-                            onClick={() => setSelectedPricingLanguage(lang.code)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                              selectedPricingLanguage === lang.code
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                            }`}
-                          >
-                            {lang.flag} {lang.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                    <LanguageSelector
+                      selectedLanguage={selectedPricingLanguage}
+                      onLanguageChange={setSelectedPricingLanguage}
+                    />
 
                     <div className="space-y-6">
                       {/* Starter Plan */}
