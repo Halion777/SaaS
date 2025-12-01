@@ -165,12 +165,11 @@ const QuotesManagement = () => {
       return sum + taskPrice;
     }, 0);
     
-    // Handle materials - they have price and quantity fields
+    // Handle materials - price is already total, no multiplication needed
     const materials = draftData.materials || draftData.quote_materials || draftData.quoteMaterials || [];
     total += materials.reduce((sum, material) => {
-      const quantity = parseFloat(material.quantity || material.qty || 1);
       const price = parseFloat(material.price || material.unit_price || material.unitPrice || 0);
-      return sum + (quantity * price);
+      return sum + price;
     }, 0);
     
     // If no tasks/materials or total is 0, try direct amount fields

@@ -645,6 +645,33 @@ serve(async (req) => {
         }
         break;
 
+      case 'welcome_registration':
+        // Use database template for welcome registration emails
+        const welcomeLanguage = emailData.language || 'fr';
+        const welcomeTemplate = await getEmailTemplate('welcome_registration', welcomeLanguage, emailData.user_id || null);
+        if (welcomeTemplate.success) {
+          const variables = {
+            user_name: emailData.variables?.user_name || emailData.user_name || 'User',
+            user_email: emailData.variables?.user_email || emailData.user_email || '',
+            plan_name: emailData.variables?.plan_name || emailData.plan_name || '',
+            amount: emailData.variables?.amount || emailData.amount || '',
+            billing_interval: emailData.variables?.billing_interval || emailData.billing_interval || 'monthly',
+            account_settings_url: emailData.variables?.account_settings_url || emailData.account_settings_url || 'https://haliqo.com/settings',
+            company_name: emailData.variables?.company_name || 'Haliqo'
+          };
+          const rendered = renderTemplate(welcomeTemplate.data, variables);
+          emailResult = await sendEmail({
+            from: fromEmail,
+            to: [emailData.user_email],
+            subject: emailData.subject || rendered.subject,
+            html: rendered.html,
+            text: emailData.text || rendered.text
+          });
+        } else {
+          throw new Error(`Template 'welcome_registration' not found for language '${welcomeLanguage}'`);
+        }
+        break;
+
       case 'contact_form':
         // Use database template
         const contactLanguage = emailData.language || 'fr';

@@ -410,7 +410,7 @@ const QuotePreview = ({
   // Calculate totals
   const totalPrice = tasks.reduce((sum, task) => {
     const taskMaterialsTotal = task.materials.reduce(
-      (matSum, mat) => matSum + ((parseFloat(mat.price) || 0) * (parseFloat(mat.quantity) || 0)),
+      (matSum, mat) => matSum + (parseFloat(mat.price) || 0),
       0
     );
     return sum + (parseFloat(task.price) || 0) + taskMaterialsTotal;
@@ -779,7 +779,7 @@ const QuotePreview = ({
                   <tbody>
                     {tasks.map((task, index) => {
                       const materials = task.materials || [];
-                      const taskMaterialsTotal = materials.reduce((sum, m) => sum + ((parseFloat(m.price || 0)) * (parseFloat(m.quantity || 0))), 0);
+                      const taskMaterialsTotal = materials.reduce((sum, m) => sum + (parseFloat(m.price || 0)), 0);
                       const laborTotal = parseFloat(task.price || 0);
                       const taskSubtotal = laborTotal + taskMaterialsTotal;
 
@@ -817,8 +817,7 @@ const QuotePreview = ({
                           {/* Material rows */}
                           {materials.map((m, mi) => {
                             const qty = parseFloat(m.quantity || 0);
-                            const pu = parseFloat(m.price || 0);
-                            const lineTotal = qty * pu;
+                            const lineTotal = parseFloat(m.price || 0); // Price is already total, no multiplication needed
                             const stripe = mi % 2 === 0 ? `${customization.colors.primary}08` : 'transparent';
                             return (
                               <tr key={`${task.id}-${m.id}`} style={{ backgroundColor: stripe }}>
@@ -827,7 +826,7 @@ const QuotePreview = ({
                                   <div className="leading-tight text-[12px] sm:text-[13px]">{m.name}</div>
                                 </td>
                                 <td className={`border border-gray-200 text-center text-black ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>{formatNumber(qty)} {m.unit || ''}</td>
-                                <td className={`border border-gray-200 text-right text-black ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>{includeMaterialsPrices ? formatMoney(pu) : ''}</td>
+                                <td className={`border border-gray-200 text-right text-black ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>{includeMaterialsPrices ? formatMoney(lineTotal) : ''}</td>
                                 <td className={`border border-gray-200 text-right text-black font-medium ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>{includeMaterialsPrices ? formatMoney(lineTotal) : ''}</td>
                               </tr>
                             );

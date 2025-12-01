@@ -2257,6 +2257,190 @@ Met vriendelijke groet,
 );
 
 -- =====================================================
+-- WELCOME REGISTRATION TEMPLATES (With PIN information)
+-- =====================================================
+
+-- French
+INSERT INTO public.email_templates (
+  template_type, template_name, subject, html_content, text_content, variables, is_active, is_default, language
+) VALUES (
+  'welcome_registration',
+  'Bienvenue - Inscription réussie',
+  'Bienvenue chez {company_name} - Votre compte est prêt',
+  '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Bienvenue !</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">Votre inscription est complète</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Bonjour {user_name},</h2>
+    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">Félicitations ! Votre compte a été créé avec succès et votre abonnement est maintenant actif.</p>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #10b981; margin-bottom: 15px;">
+      <p style="margin: 0 0 5px 0;"><strong>Plan:</strong> {plan_name}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Montant:</strong> {amount}€ / {billing_interval}</p>
+      <p style="margin: 0;"><strong>Email:</strong> {user_email}</p>
+    </div>
+    <div style="background: #fff3cd; border: 2px solid #ffc107; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+      <p style="margin: 0 0 10px 0; font-weight: bold; color: #856404; font-size: 16px;">🔐 Code PIN de votre profil par défaut</p>
+      <p style="margin: 0 0 10px 0; color: #856404; line-height: 1.6;">Votre code PIN par défaut pour accéder à votre profil est :</p>
+      <div style="background: white; padding: 12px; border-radius: 6px; text-align: center; margin: 10px 0;">
+        <p style="margin: 0; font-size: 28px; font-weight: bold; color: #333; letter-spacing: 4px;">0000</p>
+      </div>
+      <p style="margin: 10px 0 0 0; color: #856404; line-height: 1.6; font-size: 14px;">Vous pouvez toujours modifier ce code PIN dans les paramètres de votre compte.</p>
+    </div>
+    <p style="color: #555; margin: 15px 0 0 0; line-height: 1.5;">Vous avez maintenant accès à toutes les fonctionnalités de votre plan. Nous sommes ravis de vous avoir parmi nous !</p>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">Bienvenue dans l''équipe !<br>L''équipe {company_name}</p>
+  </div>
+</div>',
+  'Bienvenue chez {company_name} - Votre compte est prêt
+
+Bonjour {user_name},
+
+Félicitations ! Votre compte a été créé avec succès et votre abonnement est maintenant actif.
+
+Plan: {plan_name}
+Montant: {amount}€ / {billing_interval}
+Email: {user_email}
+
+🔐 CODE PIN DE VOTRE PROFIL PAR DÉFAUT
+
+Votre code PIN par défaut pour accéder à votre profil est : 0000
+
+Vous pouvez toujours modifier ce code PIN dans les paramètres de votre compte.
+
+Vous avez maintenant accès à toutes les fonctionnalités de votre plan. Nous sommes ravis de vous avoir parmi nous !
+
+Bienvenue dans l''équipe !
+L''équipe {company_name}',
+  '{"user_name": "string", "user_email": "string", "company_name": "string", "plan_name": "string", "amount": "string", "billing_interval": "string", "account_settings_url": "string"}',
+  true, true, 'fr'
+);
+
+-- English
+INSERT INTO public.email_templates (
+  template_type, template_name, subject, html_content, text_content, variables, is_active, is_default, language
+) VALUES (
+  'welcome_registration',
+  'Welcome - Registration Successful',
+  'Welcome to {company_name} - Your account is ready',
+  '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Welcome!</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">Your registration is complete</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Hello {user_name},</h2>
+    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">Congratulations! Your account has been successfully created and your subscription is now active.</p>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #10b981; margin-bottom: 15px;">
+      <p style="margin: 0 0 5px 0;"><strong>Plan:</strong> {plan_name}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Amount:</strong> {amount}€ / {billing_interval}</p>
+      <p style="margin: 0;"><strong>Email:</strong> {user_email}</p>
+    </div>
+    <div style="background: #fff3cd; border: 2px solid #ffc107; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+      <p style="margin: 0 0 10px 0; font-weight: bold; color: #856404; font-size: 16px;">🔐 Your Default Profile PIN Code</p>
+      <p style="margin: 0 0 10px 0; color: #856404; line-height: 1.6;">Your default PIN code to access your profile is:</p>
+      <div style="background: white; padding: 12px; border-radius: 6px; text-align: center; margin: 10px 0;">
+        <p style="margin: 0; font-size: 28px; font-weight: bold; color: #333; letter-spacing: 4px;">0000</p>
+      </div>
+      <p style="margin: 10px 0 0 0; color: #856404; line-height: 1.6; font-size: 14px;">You can always change this PIN code in your account settings.</p>
+    </div>
+    <p style="color: #555; margin: 15px 0 0 0; line-height: 1.5;">You now have access to all features of your plan. We are delighted to have you with us!</p>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">Welcome to the team!<br>The {company_name} Team</p>
+  </div>
+</div>',
+  'Welcome to {company_name} - Your account is ready
+
+Hello {user_name},
+
+Congratulations! Your account has been successfully created and your subscription is now active.
+
+Plan: {plan_name}
+Amount: {amount}€ / {billing_interval}
+Email: {user_email}
+
+🔐 YOUR DEFAULT PROFILE PIN CODE
+
+Your default PIN code to access your profile is: 0000
+
+You can always change this PIN code in your account settings.
+
+You now have access to all features of your plan. We are delighted to have you with us!
+
+Welcome to the team!
+The {company_name} Team',
+  '{"user_name": "string", "user_email": "string", "company_name": "string", "plan_name": "string", "amount": "string", "billing_interval": "string", "account_settings_url": "string"}',
+  true, false, 'en'
+);
+
+-- Dutch
+INSERT INTO public.email_templates (
+  template_type, template_name, subject, html_content, text_content, variables, is_active, is_default, language
+) VALUES (
+  'welcome_registration',
+  'Welkom - Registratie succesvol',
+  'Welkom bij {company_name} - Uw account is klaar',
+  '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Welkom!</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">Uw registratie is voltooid</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Hallo {user_name},</h2>
+    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">Gefeliciteerd! Uw account is succesvol aangemaakt en uw abonnement is nu actief.</p>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #10b981; margin-bottom: 15px;">
+      <p style="margin: 0 0 5px 0;"><strong>Plan:</strong> {plan_name}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Bedrag:</strong> {amount}€ / {billing_interval}</p>
+      <p style="margin: 0;"><strong>E-mail:</strong> {user_email}</p>
+    </div>
+    <div style="background: #fff3cd; border: 2px solid #ffc107; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+      <p style="margin: 0 0 10px 0; font-weight: bold; color: #856404; font-size: 16px;">🔐 Uw standaard profiel PIN-code</p>
+      <p style="margin: 0 0 10px 0; color: #856404; line-height: 1.6;">Uw standaard PIN-code om toegang te krijgen tot uw profiel is:</p>
+      <div style="background: white; padding: 12px; border-radius: 6px; text-align: center; margin: 10px 0;">
+        <p style="margin: 0; font-size: 28px; font-weight: bold; color: #333; letter-spacing: 4px;">0000</p>
+      </div>
+      <p style="margin: 10px 0 0 0; color: #856404; line-height: 1.6; font-size: 14px;">U kunt deze PIN-code altijd wijzigen in uw accountinstellingen.</p>
+    </div>
+    <p style="color: #555; margin: 15px 0 0 0; line-height: 1.5;">U heeft nu toegang tot alle functies van uw plan. We zijn verheugd u bij ons te hebben!</p>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">Welkom in het team!<br>Het {company_name} Team</p>
+  </div>
+</div>',
+  'Welkom bij {company_name} - Uw account is klaar
+
+Hallo {user_name},
+
+Gefeliciteerd! Uw account is succesvol aangemaakt en uw abonnement is nu actief.
+
+Plan: {plan_name}
+Bedrag: {amount}€ / {billing_interval}
+E-mail: {user_email}
+
+🔐 UW STANDAARD PROFIEL PIN-CODE
+
+Uw standaard PIN-code om toegang te krijgen tot uw profiel is: 0000
+
+U kunt deze PIN-code altijd wijzigen in uw accountinstellingen.
+
+U heeft nu toegang tot alle functies van uw plan. We zijn verheugd u bij ons te hebben!
+
+Welkom in het team!
+Het {company_name} Team',
+  '{"user_name": "string", "user_email": "string", "company_name": "string", "plan_name": "string", "amount": "string", "billing_interval": "string", "account_settings_url": "string"}',
+  true, false, 'nl'
+);
+
+-- =====================================================
 -- NOTE: invoice_to_accountant and expense_invoice_to_accountant templates
 -- already exist in the database. Only invoice_sent templates are added below.
 -- =====================================================

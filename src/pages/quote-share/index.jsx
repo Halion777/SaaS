@@ -252,8 +252,9 @@ const PublicQuoteShareViewer = () => {
     const taskPrice = parseFloat(task.total_price) || ((parseFloat(task.quantity) || 1) * (parseFloat(task.unit_price) || 0));
     
     // Materials total (ALWAYS included in calculation, regardless of display setting)
+    // Price is already total, no multiplication needed
     const taskMaterialsTotal = task.materials.reduce(
-      (matSum, mat) => matSum + ((parseFloat(mat.unit_price) || 0) * (parseFloat(mat.quantity) || 0)),
+      (matSum, mat) => matSum + (parseFloat(mat.unit_price || mat.price) || 0),
       0
     );
     
@@ -522,8 +523,9 @@ const PublicQuoteShareViewer = () => {
                   const taskPrice = parseFloat(task.total_price) || ((parseFloat(task.quantity) || 1) * (parseFloat(task.unit_price) || 0));
                   
                   // Materials total (ALWAYS included in calculation, regardless of display setting)
+                  // Price is already total, no multiplication needed
                   const taskMaterialsTotal = task.materials.reduce(
-                    (sum, mat) => sum + ((parseFloat(mat.unit_price) || 0) * (parseFloat(mat.quantity) || 0)),
+                    (sum, mat) => sum + (parseFloat(mat.unit_price || mat.price) || 0),
                     0
                   );
                   
@@ -561,10 +563,10 @@ const PublicQuoteShareViewer = () => {
                           <td className="py-1.5 sm:py-2 px-2 sm:px-3 text-center text-gray-600 text-xs">{material.quantity}</td>
                           <td className="py-1.5 sm:py-2 px-2 sm:px-3 text-center text-gray-600 text-xs">{material.unit || 'piece'}</td>
                           <td className="py-1.5 sm:py-2 px-2 sm:px-3 text-right text-gray-600 text-xs">
-                            {includeMaterialsPrices ? currency(material.unit_price || 0) : ''}
+                            {includeMaterialsPrices ? currency(parseFloat(material.unit_price || material.price) || 0) : ''}
                           </td>
                           <td className="py-1.5 sm:py-2 px-2 sm:px-3 text-right text-gray-600 text-xs">
-                            {includeMaterialsPrices ? currency((parseFloat(material.quantity) || 0) * (parseFloat(material.unit_price) || 0)) : ''}
+                            {includeMaterialsPrices ? currency(parseFloat(material.unit_price || material.price) || 0) : ''}
                           </td>
                         </tr>
                       ))}

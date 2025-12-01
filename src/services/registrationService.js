@@ -37,6 +37,9 @@ class RegistrationService {
       // 5. Send subscription notification email
       await this.sendRegistrationSubscriptionNotification(sessionData, userData, subscriptionId)
       
+      // 6. Send welcome registration email
+      await this.sendWelcomeRegistrationEmail(sessionData, userData, subscriptionId)
+      
       console.log('Registration completed successfully')
       return { success: true }
       
@@ -425,6 +428,81 @@ class RegistrationService {
     } catch (error) {
       console.error('Error sending registration subscription notification:', error)
       // Don't fail registration if notification fails
+    }
+  }
+
+  /**
+   * Send welcome registration email with PIN information
+   */
+  async sendWelcomeRegistrationEmail(sessionData, userData, subscriptionId) {
+    try {
+      // Get the created subscription data
+      const { data: subscriptionData, error: subscriptionError } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('id', subscriptionId)
+        .single()
+
+      if (subscriptionError || !subscriptionData) {
+        console.error('Error fetching subscription data for welcome email:', subscriptionError)
+        return // Don't fail registration if email fails
+      }
+
+      // Get user's language preference
+      let userLanguage = 'fr'
+      try {
+        const { data: userRecord } = await supabase
+          .from('users')
+          .select('language_preference')
+          .eq('id', userData.userId)
+          .maybeSingle()
+        
+        if (userRecord?.language_preference) {
+          userLanguage = userRecord.language_preference.split('-')[0] || 'fr'
+        }
+      } catch (error) {
+        console.warn('Error fetching user language preference:', error)
+      }
+
+      // Prepare email data
+      const welcomeEmailData = {
+        emailType: 'welcome_registration',
+        emailData: {
+          user_email: userData.email,
+          user_id: userData.userId,
+          language: userLanguage,
+          variables: {
+            user_name: `${userData.firstName} ${userData.lastName}`.trim() || userData.email,
+            user_email: userData.email,
+            plan_name: subscriptionData.plan_name || '',
+            amount: `${subscriptionData.amount}€`,
+            billing_interval: subscriptionData.interval === 'year' ? 'annuel' : subscriptionData.interval === 'month' ? 'mensuel' : subscriptionData.interval || 'mensuel',
+            account_settings_url: typeof window !== 'undefined' ? `${window.location.origin}/settings` : 'https://haliqo.com/settings',
+            company_name: 'Haliqo'
+          }
+        }
+      }
+
+      // Send email via edge function
+      const { data, error } = await supabase.functions.invoke('send-emails', {
+        body: welcomeEmailData
+      })
+
+      if (error) {
+        console.error('Error sending welcome registration email:', error)
+        return // Don't fail registration if email fails
+      }
+
+      if (!data || !data.success) {
+        console.error('Welcome registration email failed:', data?.error || 'Unknown error')
+        return // Don't fail registration if email fails
+      }
+
+      console.log('Welcome registration email sent successfully')
+      
+    } catch (error) {
+      console.error('Error sending welcome registration email:', error)
+      // Don't fail registration if email fails
     }
   }
 

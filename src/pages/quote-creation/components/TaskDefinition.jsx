@@ -1396,7 +1396,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
   };
 
   const totalPrice = tasks.reduce((sum, task) => {
-    const taskTotal = (parseFloat(task.price) || 0) + task.materials.reduce((matSum, mat) => matSum + ((parseFloat(mat.price) || 0) * (parseFloat(mat.quantity) || 0)), 0);
+    const taskTotal = (parseFloat(task.price) || 0) + task.materials.reduce((matSum, mat) => matSum + (parseFloat(mat.price) || 0), 0);
     return sum + taskTotal;
   }, 0);
 
@@ -1780,7 +1780,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                             )}
                           </div>
                           <span className="text-muted-foreground text-sm">
-                            {material.quantity} {material.unit} × {material.price}€ = {(material.quantity * material.price).toFixed(2)}€
+                            {material.quantity} {material.unit} = {parseFloat(material.price || 0).toFixed(2)}€
                           </span>
                         </div>
                         <div className="flex items-center space-x-1">
