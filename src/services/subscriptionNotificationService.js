@@ -12,25 +12,25 @@ export class SubscriptionNotificationService {
       const pricingResult = await AppSettingsService.getSetting('pricing_settings');
       
       if (!pricingResult.success || !pricingResult.data) {
-        console.warn('Pricing settings not found, using fallback values');
-        // Return default pricing structure
+        
+        // Fallback values for UI when database is unavailable
         return {
           success: true,
           data: {
             starter: {
               name: 'Starter Plan',
-              description: 'Perfect for beginners',
-              monthly: 29.99,
-              yearly: 24.99, // Monthly equivalent when billed yearly
-              yearlyTotal: 299.88, // 24.99 × 12
+              description: 'An intelligent entry-level plan for craftsmen who want clean, compliant quotes and invoices with a tool that is very easy to use.',
+              monthly: 39.99,
+              yearly: 31.99,
+              yearlyTotal: 383.88,
               popular: false
             },
             pro: {
               name: 'Pro Plan',
-              description: 'Complete solution with AI',
-              monthly: 49.99,
-              yearly: 41.66, // Monthly equivalent when billed yearly
-              yearlyTotal: 499.92, // 41.66 × 12
+              description: 'The premium version of your back-office: an intelligent tool focused on AI, automation and growth, still very easy to use for any craftsman.',
+              monthly: 69.99,
+              yearly: 55.99,
+              yearlyTotal: 671.88,
               popular: true
             }
           }
@@ -56,24 +56,24 @@ export class SubscriptionNotificationService {
       
     } catch (error) {
       console.error('Error getting all pricing data:', error);
-      // Return default pricing on error
+      // Fallback values for UI when there's a network/database error
       return {
         success: true,
         data: {
           starter: {
             name: 'Starter Plan',
-            description: 'Perfect for beginners',
-            monthly: 29.99,
-            yearly: 24.99,
-            yearlyTotal: 299.88,
+            description: 'An intelligent entry-level plan for craftsmen who want clean, compliant quotes and invoices with a tool that is very easy to use.',
+            monthly: 39.99,
+            yearly: 31.99,
+            yearlyTotal: 383.88,
             popular: false
           },
           pro: {
             name: 'Pro Plan',
-            description: 'Complete solution with AI',
-            monthly: 49.99,
-            yearly: 41.66,
-            yearlyTotal: 499.92,
+            description: 'The premium version of your back-office: an intelligent tool focused on AI, automation and growth, still very easy to use for any craftsman.',
+            monthly: 69.99,
+            yearly: 55.99,
+            yearlyTotal: 671.88,
             popular: true
           }
         }
@@ -90,11 +90,11 @@ export class SubscriptionNotificationService {
       const pricingResult = await AppSettingsService.getSetting('pricing_settings');
       
       if (!pricingResult.success || !pricingResult.data) {
-        console.warn('Pricing settings not found, using fallback values');
-        // Fallback to default values
+        
+        // Fallback values for UI when database is unavailable
         const defaultPricing = {
-          starter: { name: 'Starter Plan', monthly: 29.99, yearly: 24.99 },
-          pro: { name: 'Pro Plan', monthly: 49.99, yearly: 41.66 }
+          starter: { name: 'Starter Plan', monthly: 39.99, yearly: 31.99 },
+          pro: { name: 'Pro Plan', monthly: 69.99, yearly: 55.99 }
         };
         const plan = defaultPricing[planType] || defaultPricing.starter;
         return {
@@ -128,10 +128,10 @@ export class SubscriptionNotificationService {
       
     } catch (error) {
       console.error('Error getting pricing info:', error);
-      // Fallback to default values
+      // Fallback values for UI when there's a network/database error
       const defaultPricing = {
-        starter: { name: 'Starter Plan', monthly: 29.99, yearly: 24.99 },
-        pro: { name: 'Pro Plan', monthly: 49.99, yearly: 41.66 }
+        starter: { name: 'Starter Plan', monthly: 39.99, yearly: 31.99 },
+        pro: { name: 'Pro Plan', monthly: 69.99, yearly: 55.99 }
       };
       const plan = defaultPricing[planType] || defaultPricing.starter;
       return {

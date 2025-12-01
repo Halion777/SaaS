@@ -114,77 +114,39 @@ const SubscriptionManagement = () => {
   }, []);
 
   // Dynamic plans state - fetched from database
-  const [plans, setPlans] = useState([
-    {
-      id: 'starter',
-      name: 'Starter Plan',
-      price: {
-        monthly: 29.99,
-        yearly: 24.99,
-        yearlyTotal: 299.88
-      },
-      description: 'Perfect for beginners',
-      features: [
-        '15 quotes/invoices per month',
-        'Basic templates',
-        'Payment tracking',
-        'Email support',
-        'Basic client management'
-      ],
-      limitations: [
-        'Limited AI',
-        'No automatic reminders'
-      ],
-      current: false,
-      popular: false
-    },
-    {
-      id: 'pro',
-      name: 'Pro Plan',
-      price: {
-        monthly: 49.99,
-        yearly: 41.66,
-        yearlyTotal: 499.92
-      },
-      description: 'Complete solution with AI',
-      features: [
-        'Unlimited quotes/invoices',
-        'Complete AI and optimizations',
-        'Automatic reminders',
-        'Advanced analytics',
-        'Premium templates',
-        'Priority support',
-        'Signature predictions',
-        'Price optimization'
-      ],
-      limitations: [],
-      current: false,
-      popular: true
-    }
-  ]);
+  const [plans, setPlans] = useState([]);
+  const [pricingLoading, setPricingLoading] = useState(true);
 
   // Load pricing from database on mount
   useEffect(() => {
     const loadPricing = async () => {
-      const result = await SubscriptionNotificationService.getAllPricingData();
-      if (result.success && result.data) {
-        setPlans(prevPlans => prevPlans.map(plan => {
-          const dbPricing = result.data[plan.id];
-          if (dbPricing) {
-            return {
-              ...plan,
-              name: dbPricing.name || plan.name,
-              description: dbPricing.description || plan.description,
-              price: {
-                monthly: dbPricing.monthly,
-                yearly: dbPricing.yearly,
-                yearlyTotal: dbPricing.yearlyTotal
-              },
-              popular: dbPricing.popular
-            };
-          }
-          return plan;
-        }));
+      try {
+        setPricingLoading(true);
+        const result = await SubscriptionNotificationService.getAllPricingData();
+        if (result.success && result.data) {
+          // Convert database pricing to plans format
+          const plansData = Object.entries(result.data).map(([planId, planData]) => ({
+            id: planId,
+            name: planData.name || `${planId.charAt(0).toUpperCase() + planId.slice(1)} Plan`,
+            price: {
+              monthly: planData.monthly,
+              yearly: planData.yearly,
+              yearlyTotal: planData.yearlyTotal
+            },
+            description: planData.description || '',
+            features: planData.features || [],
+            limitations: planData.limitations || [],
+            current: false,
+            popular: planData.popular || false
+          }));
+          setPlans(plansData);
+        }
+        // Service returns fallback values on error, so we always have data
+      } catch (error) {
+        console.error('Error loading pricing:', error);
+        // Service will return fallback values, so plans will still be set
+      } finally {
+        setPricingLoading(false);
       }
     };
     loadPricing();

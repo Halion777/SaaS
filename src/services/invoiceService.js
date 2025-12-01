@@ -313,7 +313,7 @@ export class InvoiceService {
         total_amount: totalAmount,
         date: invoiceDate,
         company_name: companyName,
-        language: 'fr', // Can be made dynamic based on user preference
+        language: null, // Will be fetched from user's language_preference in edge function
         user_id: userId,
         attachments: [
           {

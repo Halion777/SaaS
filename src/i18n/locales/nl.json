@@ -325,11 +325,11 @@
         "question": "Hoeveel kost Haliqo?",
         "intro": "Haliqo biedt verschillende formules aan die aangepast zijn aan je behoeften:",
         "starter": {
-          "title": "Starter (€29,99/maand)",
+          "title": "Starter (€39,99/maand)",
           "description": "Essentiële functies om te beginnen"
         },
         "pro": {
-          "title": "Pro (€49,99/maand)",
+          "title": "Pro (€69,99/maand)",
           "description": "Geavanceerde functies + prioriteitsondersteuning"
         },
         "trial": "14 dagen gratis proefperiode",
@@ -1862,6 +1862,8 @@
     "filter": {
       "title": "Filters",
       "activeFilters": "{{count}} actieve filter(s)",
+      "quotesFound": "{{count}} offerte(s) gevonden",
+      "quotesFound_plural": "{{count}} offerte(s) gevonden",
       "clear": "Wissen",
       "showFilters": "Filters tonen",
       "hideFilters": "Filters verbergen",

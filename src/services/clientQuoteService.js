@@ -344,13 +344,13 @@ class ClientQuoteService {
       if (quoteError) throw quoteError;
 
       // Prepare variables for template rendering
-      const variables = {
-        client_name: clientData.client_name || 'Madame, Monsieur',
-        quote_number: quote.quote_number,
-        quote_amount: `${quote.final_amount || quote.total_amount}€`,
-        quote_link: quote.share_token ? `${window.location.origin}/quote-share/${quote.share_token}` : '#',
-        company_name: quote.company_profiles?.company_name || 'Notre équipe'
-      };
+        const variables = {
+          client_name: clientData.client_name || 'Madame, Monsieur',
+          quote_number: quote.quote_number,
+          quote_amount: `${quote.final_amount || quote.total_amount}€`,
+          quote_link: quote.share_token ? `${window.location.origin}/quote-share/${quote.share_token}` : '#',
+          company_name: quote.company_profiles?.company_name || 'Notre équipe'
+        };
 
       // Prepare fallback templates (only used if edge function can't find database template)
       let fallbackSubject, fallbackHtml, fallbackText;
@@ -376,8 +376,9 @@ class ClientQuoteService {
           emailType: 'quote_status_update',
           emailData: {
             to: clientData.client_email,
+            client_id: quote.client_id || null, // Pass client_id so edge function can fetch language if needed
             user_id: quote.user_id,
-            language: (quote.client?.language_preference || 'fr').split('-')[0] || 'fr',
+            language: (quote.client?.language_preference || 'fr').split('-')[0] || 'fr', // Pass language, but edge function will fetch from client_id if not provided
             subject: fallbackSubject, // Fallback subject (only used if template not found)
             html: fallbackHtml, // Fallback HTML (only used if template not found)
             text: fallbackText, // Fallback text (only used if template not found)

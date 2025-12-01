@@ -326,11 +326,11 @@
         "question": "Combien coûte Haliqo ?",
         "intro": "Haliqo propose deux formules simples et sans engagement :",
         "starter": {
-          "title": "Starter (29,99€/mois)",
+          "title": "Starter (€39,99/mois)",
           "description": "Fonctionnalités essentielles pour débuter"
         },
         "pro": {
-          "title": "Pro (49,99€/mois)",
+          "title": "Pro (€69,99/mois)",
           "description": "Fonctionnalités avancées + support prioritaire"
         },
         "trial": "Essai gratuit de 14 jours",
@@ -1691,6 +1691,8 @@
     "filter": {
       "title": "Filtres",
       "activeFilters": "{{count}} filtre(s) actif(s)",
+      "quotesFound": "{{count}} devis trouvé(s)",
+      "quotesFound_plural": "{{count}} devis trouvé(s)",
       "clear": "Effacer",
       "showFilters": "Afficher les filtres",
       "hideFilters": "Masquer les filtres",

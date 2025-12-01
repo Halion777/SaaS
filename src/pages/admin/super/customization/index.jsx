@@ -135,16 +135,16 @@ const Customization = () => {
   const [pricingSettings, setPricingSettings] = useState({
     starter: {
       name: 'Starter Plan',
-      description: 'Perfect for beginners',
-      monthly: 29.99,
-      yearly: 24.99,
+      description: 'An intelligent entry-level plan for craftsmen who want clean, compliant quotes and invoices with a tool that is very easy to use.',
+      monthly: 39.99,
+      yearly: 31.99, // 20% discount: €39,99 × 0.8 = €31,99/month when billed yearly
       popular: false
     },
     pro: {
       name: 'Pro Plan',
-      description: 'Complete solution with AI',
-      monthly: 49.99,
-      yearly: 41.66,
+      description: 'The premium version of your back-office: an intelligent tool focused on AI, automation and growth, still very easy to use for any craftsman.',
+      monthly: 69.99,
+      yearly: 55.99, // 20% discount: €69,99 × 0.8 = €55,99/month when billed yearly
       popular: true
     }
   });
@@ -838,6 +838,12 @@ const Customization = () => {
       console.error('❌ Error saving pricing settings:', error);
       return false;
     }
+  };
+
+  // Helper function to calculate yearly price with 20% discount
+  const calculateYearlyPrice = (monthlyPrice) => {
+    if (!monthlyPrice || monthlyPrice <= 0) return 0;
+    return parseFloat((monthlyPrice * 0.8).toFixed(2)); // 20% discount
   };
 
   // Debounced auto-save for pricing settings
@@ -2548,15 +2554,20 @@ const Customization = () => {
                               step="0.01"
                               min="0"
                               value={pricingSettings.starter?.monthly || ''}
-                              onChange={(e) => handlePricingSettingsChange({
-                                ...pricingSettings,
-                                starter: {
-                                  ...pricingSettings.starter,
-                                  monthly: parseFloat(e.target.value) || 0
-                                }
-                              })}
+                              onChange={(e) => {
+                                const monthlyPrice = parseFloat(e.target.value) || 0;
+                                const calculatedYearly = calculateYearlyPrice(monthlyPrice);
+                                handlePricingSettingsChange({
+                                  ...pricingSettings,
+                                  starter: {
+                                    ...pricingSettings.starter,
+                                    monthly: monthlyPrice,
+                                    yearly: calculatedYearly
+                                  }
+                                });
+                              }}
                               className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                              placeholder="29.99"
+                              placeholder="39,99"
                             />
                           </div>
                           <div className="bg-card rounded-lg p-4 border border-border">
@@ -2577,9 +2588,23 @@ const Customization = () => {
                                 }
                               })}
                               className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                              placeholder="24.99"
+                              placeholder="31,99"
                             />
-                            <p className="text-xs text-muted-foreground mt-1">Price per month when billed yearly</p>
+                            <div className="mt-1 space-y-0.5">
+                              <p className="text-xs text-muted-foreground">Price per month when billed yearly</p>
+                              {pricingSettings.starter?.yearly && pricingSettings.starter?.yearly > 0 && (
+                                <>
+                                  <p className="text-xs text-green-600 font-medium">
+                                    Yearly total: €{(pricingSettings.starter.yearly * 12).toFixed(2)} (20% off)
+                                  </p>
+                                  {pricingSettings.starter?.monthly && pricingSettings.starter?.monthly > 0 && (
+                                    <p className="text-xs text-muted-foreground">
+                                      Save €{((pricingSettings.starter.monthly * 12) - (pricingSettings.starter.yearly * 12)).toFixed(2)} per year
+                                    </p>
+                                  )}
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -2653,15 +2678,20 @@ const Customization = () => {
                               step="0.01"
                               min="0"
                               value={pricingSettings.pro?.monthly || ''}
-                              onChange={(e) => handlePricingSettingsChange({
-                                ...pricingSettings,
-                                pro: {
-                                  ...pricingSettings.pro,
-                                  monthly: parseFloat(e.target.value) || 0
-                                }
-                              })}
+                              onChange={(e) => {
+                                const monthlyPrice = parseFloat(e.target.value) || 0;
+                                const calculatedYearly = calculateYearlyPrice(monthlyPrice);
+                                handlePricingSettingsChange({
+                                  ...pricingSettings,
+                                  pro: {
+                                    ...pricingSettings.pro,
+                                    monthly: monthlyPrice,
+                                    yearly: calculatedYearly
+                                  }
+                                });
+                              }}
                               className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                              placeholder="49.99"
+                              placeholder="69,99"
                             />
                           </div>
                           <div className="bg-card rounded-lg p-4 border border-border">
@@ -2682,9 +2712,23 @@ const Customization = () => {
                                 }
                               })}
                               className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                              placeholder="41.66"
+                              placeholder="55,99"
                             />
-                            <p className="text-xs text-muted-foreground mt-1">Price per month when billed yearly</p>
+                            <div className="mt-1 space-y-0.5">
+                              <p className="text-xs text-muted-foreground">Price per month when billed yearly</p>
+                              {pricingSettings.pro?.yearly && pricingSettings.pro?.yearly > 0 && (
+                                <>
+                                  <p className="text-xs text-green-600 font-medium">
+                                    Yearly total: €{(pricingSettings.pro.yearly * 12).toFixed(2)} (20% off)
+                                  </p>
+                                  {pricingSettings.pro?.monthly && pricingSettings.pro?.monthly > 0 && (
+                                    <p className="text-xs text-muted-foreground">
+                                      Save €{((pricingSettings.pro.monthly * 12) - (pricingSettings.pro.yearly * 12)).toFixed(2)} per year
+                                    </p>
+                                  )}
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>

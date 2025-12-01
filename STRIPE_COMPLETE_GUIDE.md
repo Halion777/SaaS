@@ -16,10 +16,10 @@
 ```bash
 STRIPE_SECRET_KEY=sk_live_xxx
 STRIPE_WEBHOOK_SECRET=whsec_xxx
-STRIPE_STARTER_MONTHLY_PRICE_ID=price_xxx     # €29.99/month
-STRIPE_STARTER_YEARLY_PRICE_ID=price_xxx      # €299.88/year
-STRIPE_PRO_MONTHLY_PRICE_ID=price_xxx         # €49.99/month
-STRIPE_PRO_YEARLY_PRICE_ID=price_xxx          # €499.92/year
+STRIPE_STARTER_MONTHLY_PRICE_ID=price_xxx     # €39,99/month
+STRIPE_STARTER_YEARLY_PRICE_ID=price_xxx      # €383,88/year (€31,99/month)
+STRIPE_PRO_MONTHLY_PRICE_ID=price_xxx         # €69,99/month
+STRIPE_PRO_YEARLY_PRICE_ID=price_xxx          # €671,88/year (€55,99/month)
 SITE_URL=https://yourdomain.com
 ```
 

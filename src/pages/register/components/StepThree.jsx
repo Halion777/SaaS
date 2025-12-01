@@ -1,39 +1,61 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
+import { SubscriptionNotificationService } from '../../../services/subscriptionNotificationService';
 
 const StepThree = ({ formData, updateFormData, errors }) => {
   const { t } = useTranslation();
   const [billingCycle, setBillingCycle] = useState('monthly');
-  
-  const plans = [
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load pricing from database
+  useEffect(() => {
+    const loadPricing = async () => {
+      try {
+        setLoading(true);
+        const result = await SubscriptionNotificationService.getAllPricingData();
+        if (result.success && result.data) {
+          const plansData = [
     {
       id: 'starter',
-      name: t('registerForm.step3.plans.starter.name'),
+              name: result.data.starter?.name || t('registerForm.step3.plans.starter.name'),
       price: {
-        monthly: '29.99',
-        yearly: '24.99'
+                monthly: result.data.starter?.monthly?.toString().replace('.', ',') || '0,00',
+                yearly: result.data.starter?.yearly?.toString().replace('.', ',') || '0,00'
       },
       period: billingCycle === 'monthly' ? t('registerForm.step3.perMonth') : t('registerForm.step3.perYear'),
-      description: t('registerForm.step3.plans.starter.description'),
+              description: result.data.starter?.description || t('registerForm.step3.plans.starter.description'),
       features: t('registerForm.step3.plans.starter.features', { returnObjects: true }),
       limitations: t('registerForm.step3.plans.starter.limitations', { returnObjects: true }),
-      popular: false
+              popular: result.data.starter?.popular || false
     },
     {
       id: 'pro',
-      name: t('registerForm.step3.plans.pro.name'),
+              name: result.data.pro?.name || t('registerForm.step3.plans.pro.name'),
       price: {
-        monthly: '49.99',
-        yearly: '41.66'
+                monthly: result.data.pro?.monthly?.toString().replace('.', ',') || '0,00',
+                yearly: result.data.pro?.yearly?.toString().replace('.', ',') || '0,00'
       },
       period: billingCycle === 'monthly' ? t('registerForm.step3.perMonth') : t('registerForm.step3.perYear'),
-      description: t('registerForm.step3.plans.pro.description'),
+              description: result.data.pro?.description || t('registerForm.step3.plans.pro.description'),
       features: t('registerForm.step3.plans.pro.features', { returnObjects: true }),
       limitations: t('registerForm.step3.plans.pro.limitations', { returnObjects: true }),
-      popular: true
+              popular: result.data.pro?.popular || true
     }
   ];
+          setPlans(plansData);
+        }
+        // Service returns fallback values on error, so we always have data
+      } catch (error) {
+        console.error('Error loading pricing:', error);
+        // Service will return fallback values, so plans will still be set
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadPricing();
+  }, [t]);
 
   const handlePlanSelect = (planId) => {
     updateFormData('selectedPlan', planId);
@@ -44,6 +66,28 @@ const StepThree = ({ formData, updateFormData, errors }) => {
     setBillingCycle(cycle);
     updateFormData('billingCycle', cycle);
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading pricing information...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (plans.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-12">
+          <Icon name="AlertCircle" size={48} className="text-red-500 mx-auto mb-4" />
+          <p className="text-muted-foreground">Unable to load pricing information. Please try again later.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -110,7 +154,7 @@ const StepThree = ({ formData, updateFormData, errors }) => {
               <div className="flex items-baseline justify-center mb-2">
                 <span className="text-3xl font-bold text-foreground">
                   €{billingCycle === 'yearly' 
-                    ? (parseFloat(plan.price.yearly) * 12).toFixed(2)
+                    ? (parseFloat(plan.price.yearly.replace(',', '.')) * 12).toFixed(2).replace('.', ',')
                     : plan.price[billingCycle]
                   }
                 </span>
@@ -129,7 +173,7 @@ const StepThree = ({ formData, updateFormData, errors }) => {
               {billingCycle === 'yearly' && (
                 <p className="text-sm text-green-600 font-medium mt-2">
                   {t('registerForm.step3.saveAnnual', { 
-                    amount: ((parseFloat(plan.price.monthly) * 12) - (parseFloat(plan.price.yearly) * 12)).toFixed(2) 
+                    amount: ((parseFloat(plan.price.monthly.replace(',', '.')) * 12) - (parseFloat(plan.price.yearly.replace(',', '.')) * 12)).toFixed(2).replace('.', ',') 
                   })}
                 </p>
               )}

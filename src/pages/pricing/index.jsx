@@ -11,28 +11,36 @@ import { SubscriptionNotificationService } from '../../services/subscriptionNoti
 const PricingPage = () => {
   const { t, i18n } = useTranslation();
   const [billingCycle, setBillingCycle] = useState('monthly');
-  const [pricing, setPricing] = useState({
-    starter: { monthly: 29.99, yearly: 24.99, yearlyTotal: 299.88 },
-    pro: { monthly: 49.99, yearly: 41.66, yearlyTotal: 499.92 }
-  });
+  const [pricing, setPricing] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Load pricing from database on mount
   useEffect(() => {
     const loadPricing = async () => {
-      const result = await SubscriptionNotificationService.getAllPricingData();
-      if (result.success && result.data) {
-        setPricing({
-          starter: {
-            monthly: result.data.starter?.monthly || 29.99,
-            yearly: result.data.starter?.yearly || 24.99,
-            yearlyTotal: result.data.starter?.yearlyTotal || 299.88
-          },
-          pro: {
-            monthly: result.data.pro?.monthly || 49.99,
-            yearly: result.data.pro?.yearly || 41.66,
-            yearlyTotal: result.data.pro?.yearlyTotal || 499.92
-          }
-        });
+      try {
+        setLoading(true);
+        setError(null);
+        const result = await SubscriptionNotificationService.getAllPricingData();
+        if (result.success && result.data) {
+          setPricing(result.data);
+        } else {
+          // Service will return fallback values on error, but we still show error state
+          setError('Using default pricing due to connection issue');
+          setPricing(result.data); // Fallback data is still available
+        }
+      } catch (err) {
+        console.error('Error loading pricing:', err);
+        // Service will return fallback values, so we can still show pricing
+        const result = await SubscriptionNotificationService.getAllPricingData();
+        if (result.success && result.data) {
+          setPricing(result.data);
+          setError('Using default pricing due to connection issue');
+        } else {
+          setError('Failed to load pricing information');
+        }
+      } finally {
+        setLoading(false);
       }
     };
     loadPricing();
@@ -44,7 +52,9 @@ const PricingPage = () => {
   };
 
   // Get plans data
-  const getPlans = () => [
+  const getPlans = () => {
+    if (!pricing) return [];
+    return [
     {
       name: t('pricing.plans.starter.name'),
       description: t('pricing.plans.starter.description'),
@@ -89,11 +99,12 @@ const PricingPage = () => {
       ],
       limitations: [],
       cta: t('pricing.plans.pro.cta'),
-      popular: true
+      popular: pricing.pro?.popular || true
     }
   ];
+  };
 
-  const plans = getPlans();
+  const plans = pricing ? getPlans() : [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -124,8 +135,28 @@ const PricingPage = () => {
       
       {/* Main Content */}
       <main>
-        {/* Pricing Header */}
-        <section className="py-20 bg-gradient-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden">
+        {loading && (
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0036ab] mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading pricing information...</p>
+            </div>
+          </div>
+        )}
+        
+        {error && pricing && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+            <div className="flex">
+              <Icon name="AlertCircle" size={20} className="text-yellow-400 mr-2" />
+              <p className="text-sm text-yellow-700">{error}</p>
+            </div>
+          </div>
+        )}
+        
+        {!loading && pricing && (
+          <>
+            {/* Pricing Header */}
+            <section className="py-20 bg-gradient-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden">
           {/* Animated Background Elements */}
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute top-20 left-10 w-72 h-72 bg-[#0036ab]/10 rounded-full blur-3xl animate-pulse"></div>
@@ -444,6 +475,8 @@ const PricingPage = () => {
             </div>
           </div>
         </section>
+          </>
+        )}
       </main>
       
       {/* Footer */}

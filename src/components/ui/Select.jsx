@@ -32,6 +32,7 @@ const Select = React.forwardRef(({
     const [keyboardFilter, setKeyboardFilter] = useState("");
     const keyboardFilterTimeoutRef = useRef(null);
     const selectRef = useRef(null);
+    const dropdownRef = useRef(null);
     const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
     const [openUpward, setOpenUpward] = useState(false);
 
@@ -41,7 +42,11 @@ const Select = React.forwardRef(({
     // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (selectRef.current && !selectRef.current.contains(event.target)) {
+            // Check if click is outside both the select trigger and the dropdown (portal)
+            const isClickInSelect = selectRef.current && selectRef.current.contains(event.target);
+            const isClickInDropdown = dropdownRef.current && dropdownRef.current.contains(event.target);
+            
+            if (!isClickInSelect && !isClickInDropdown) {
                 setIsOpen(false);
                 setKeyboardFilter("");
                 onOpenChange?.(false);
@@ -49,12 +54,16 @@ const Select = React.forwardRef(({
         };
 
         if (isOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
+            // Use a small delay to ensure the dropdown is rendered before checking clicks
+            const timeoutId = setTimeout(() => {
+                document.addEventListener('mousedown', handleClickOutside);
+            }, 0);
+            
+            return () => {
+                clearTimeout(timeoutId);
+                document.removeEventListener('mousedown', handleClickOutside);
+            };
         }
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
     }, [isOpen, onOpenChange]);
 
     // Calculate dropdown position for portal mode
@@ -429,6 +438,7 @@ const Select = React.forwardRef(({
                     
                     const dropdownContent = (
                         <div 
+                            ref={dropdownRef}
                             className={cn(
                                 "bg-popover text-popover-foreground border border-border rounded-md shadow-lg max-h-[200px] overflow-auto",
                                 usePortal ? "fixed" : "absolute w-full"
@@ -465,7 +475,13 @@ const Select = React.forwardRef(({
                                                 !isSelected(option.value) && "text-foreground",
                                                 option.disabled && "pointer-events-none opacity-50"
                                             )}
-                                            onClick={() => !option.disabled && handleOptionSelect(option)}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                if (!option.disabled) {
+                                                    handleOptionSelect(option);
+                                                }
+                                            }}
                                         >
                                             {option.icon && (
                                                 <div className={`w-6 h-6 rounded flex items-center justify-center mr-3 ${

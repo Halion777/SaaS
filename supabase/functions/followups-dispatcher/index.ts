@@ -181,10 +181,64 @@ serve(async (req)=>{
       };
     }
     // Get client's language preference (default to 'fr')
-    // Note: Templates are already stored in follow-up record, but we capture language for logging
     const clientLanguage = (client.language_preference || 'fr').split('-')[0] || 'fr';
+    
     // ========================================
-    // 2. PREPARE EMAIL CONTENT WITH VARIABLE REPLACEMENT
+    // 2. FETCH TEMPLATE FROM DATABASE USING CLIENT LANGUAGE PREFERENCE
+    // ========================================
+    // Get template type from follow-up meta or default to general_followup
+    const templateType = followUp.meta?.template_type || followUp.meta?.follow_up_type || 'general_followup';
+    
+    // Fetch template from database using client's current language preference
+    let { data: template, error: templateError } = await admin
+      .from('email_templates')
+      .select('subject, html_content, text_content')
+      .eq('template_type', templateType)
+      .eq('language', clientLanguage)
+      .eq('is_active', true)
+      .maybeSingle();
+    
+    // If template not found in client language, try French as fallback
+    if (templateError || !template) {
+      if (clientLanguage !== 'fr') {
+        const { data: frenchTemplate, error: frenchError } = await admin
+          .from('email_templates')
+          .select('subject, html_content, text_content')
+          .eq('template_type', templateType)
+          .eq('language', 'fr')
+          .eq('is_active', true)
+          .maybeSingle();
+        
+        if (!frenchError && frenchTemplate) {
+          template = frenchTemplate;
+          templateError = null;
+        }
+      }
+    }
+    
+    // If still no template, try any active template as final fallback
+    if (templateError || !template) {
+      const { data: fallbackTemplate, error: fallbackError } = await admin
+        .from('email_templates')
+        .select('subject, html_content, text_content')
+        .eq('template_type', templateType)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+      
+      if (!fallbackError && fallbackTemplate) {
+        template = fallbackTemplate;
+        templateError = null;
+      }
+    }
+    
+    // If no template found, use stored templates from follow-up record as last resort
+    if (templateError || !template) {
+      console.warn(`Template ${templateType} not found in database for language ${clientLanguage}, using stored template from follow-up record`);
+    }
+    
+    // ========================================
+    // 3. PREPARE EMAIL CONTENT WITH VARIABLE REPLACEMENT
     // ========================================
     // Calculate additional template variables
     const daysSinceSent = (()=>{
@@ -203,13 +257,22 @@ serve(async (req)=>{
     const siteUrl = Deno.env.get('SITE_URL') || 'https://www.haliqo.com';
     const quoteLink = `${siteUrl}/quote-share/${quote.share_token || quote.id}`;
     const companyName = 'Haliqo'; // This should come from user settings or company table
+    
     // Replace template variables in all content
-    const replaceTemplateVariables = (content)=>{
-      return content.replace(/\{quote_number\}/g, quote.quote_number).replace(/\{client_name\}/g, client.name || 'Madame, Monsieur').replace(/\{quote_title\}/g, quote.title || 'votre projet').replace(/\{days_since_sent\}/g, daysSinceSent.toString()).replace(/\{quote_link\}/g, quoteLink).replace(/\{company_name\}/g, companyName);
+    const replaceTemplateVariables = (content: string)=>{
+      return content
+        .replace(/\{quote_number\}/g, quote.quote_number)
+        .replace(/\{client_name\}/g, client.name || 'Madame, Monsieur')
+        .replace(/\{quote_title\}/g, quote.title || 'votre projet')
+        .replace(/\{days_since_sent\}/g, daysSinceSent.toString())
+        .replace(/\{quote_link\}/g, quoteLink)
+        .replace(/\{company_name\}/g, companyName);
     };
-    const subject = replaceTemplateVariables(followUp.template_subject || `Relance devis ${quote.quote_number}`);
-    const text = replaceTemplateVariables(followUp.template_text || `Bonjour ${client.name || ''},\n\nAvez-vous eu le temps de consulter notre devis ${quote.quote_number} ?\n\nCordialement.`);
-    const html = replaceTemplateVariables(followUp.template_html || `<p>Bonjour ${client.name || ''},</p><p>Avez-vous eu le temps de consulter notre devis <strong>${quote.quote_number}</strong> ?</p><p>Cordialement.</p>`);
+    
+    // Use database template if available, otherwise fall back to stored template
+    const subject = replaceTemplateVariables(template?.subject || followUp.template_subject || `Relance devis ${quote.quote_number}`);
+    const text = replaceTemplateVariables(template?.text_content || followUp.template_text || `Bonjour ${client.name || ''},\n\nAvez-vous eu le temps de consulter notre devis ${quote.quote_number} ?\n\nCordialement.`);
+    const html = replaceTemplateVariables(template?.html_content || followUp.template_html || `<p>Bonjour ${client.name || ''},</p><p>Avez-vous eu le temps de consulter notre devis <strong>${quote.quote_number}</strong> ?</p><p>Cordialement.</p>`);
     // ========================================
     // 3. SEND EMAIL
     // ========================================

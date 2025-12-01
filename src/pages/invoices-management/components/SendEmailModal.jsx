@@ -164,6 +164,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
       // Send email to client using invoice_sent template from database
       const result = await EmailService.sendEmailViaEdgeFunction('invoice_sent', {
         client_email: emailData.clientEmail,
+        client_id: invoice.client?.id || null, // Pass client_id so edge function can fetch language if needed
         invoice_number: invoiceNumber,
         invoice_title: invoice.title || invoiceNumber,
         client_name: clientName,
@@ -172,7 +173,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
         due_date: dueDate || '',
         company_name: companyName,
         custom_message: emailData.message || (clientLanguage === 'fr' ? 'Veuillez trouver ci-joint notre facture.' : clientLanguage === 'nl' ? 'Gelieve onze factuur bijgevoegd te vinden.' : 'Please find attached our invoice.'),
-        language: clientLanguage,
+        language: clientLanguage, // Pass language, but edge function will fetch from client_id if not provided
         user_id: user?.id || null,
         attachments: [{
           filename: `facture-${invoiceNumber}.pdf`,

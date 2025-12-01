@@ -209,11 +209,66 @@ async function processFollowUp(admin: any, followUp: any) {
     const companyName = companyProfile?.company_name || 'Votre entreprise';
 
     // ========================================
-    // 2. PREPARE EMAIL CONTENT FROM DATABASE TEMPLATE
+    // 2. FETCH TEMPLATE FROM DATABASE USING CLIENT LANGUAGE PREFERENCE
     // ========================================
-    const subject = followUp.template_subject || 'Payment Reminder';
-    const html = followUp.template_html || '';
-    const text = followUp.template_text || '';
+    // Get template type from follow-up meta or default to invoice_overdue_reminder
+    const templateType = followUp.meta?.template_type || followUp.meta?.approaching_template || followUp.meta?.overdue_template || 'invoice_overdue_reminder';
+    
+    // Fetch template from database using client's current language preference
+    let { data: template, error: templateError } = await admin
+      .from('email_templates')
+      .select('subject, html_content, text_content')
+      .eq('template_type', templateType)
+      .eq('language', clientLanguage)
+      .eq('is_active', true)
+      .maybeSingle();
+    
+    // If template not found in client language, try French as fallback
+    if (templateError || !template) {
+      if (clientLanguage !== 'fr') {
+        const { data: frenchTemplate, error: frenchError } = await admin
+          .from('email_templates')
+          .select('subject, html_content, text_content')
+          .eq('template_type', templateType)
+          .eq('language', 'fr')
+          .eq('is_active', true)
+          .maybeSingle();
+        
+        if (!frenchError && frenchTemplate) {
+          template = frenchTemplate;
+          templateError = null;
+        }
+      }
+    }
+    
+    // If still no template, try any active template as final fallback
+    if (templateError || !template) {
+      const { data: fallbackTemplate, error: fallbackError } = await admin
+        .from('email_templates')
+        .select('subject, html_content, text_content')
+        .eq('template_type', templateType)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+      
+      if (!fallbackError && fallbackTemplate) {
+        template = fallbackTemplate;
+        templateError = null;
+      }
+    }
+    
+    // If no template found, use stored templates from follow-up record as last resort
+    if (templateError || !template) {
+      console.warn(`Template ${templateType} not found in database for language ${clientLanguage}, using stored template from follow-up record`);
+    }
+
+    // ========================================
+    // 3. PREPARE EMAIL CONTENT FROM DATABASE TEMPLATE
+    // ========================================
+    // Use database template if available, otherwise fall back to stored template
+    const subject = template?.subject || followUp.template_subject || 'Payment Reminder';
+    const html = template?.html_content || followUp.template_html || '';
+    const text = template?.text_content || followUp.template_text || '';
 
     // Replace dynamic variables that need real-time calculation
     const today = new Date();

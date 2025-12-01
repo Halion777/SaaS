@@ -9,6 +9,45 @@ export class EmailService {
   // ========================================
   
   /**
+   * Get client's language preference from database or client object
+   * Priority: database (if clientId provided) > client object properties > 'fr'
+   * @param {Object} client - Client object (can have id, value, client.id, language_preference, etc.)
+   * @returns {Promise<string>} - Normalized language code ('fr', 'en', or 'nl')
+   */
+  static async getClientLanguagePreference(client) {
+    try {
+      // Try to get client ID from various possible locations
+      const clientId = client?.id || client?.value || client?.client?.id;
+      
+      // If we have a client ID, try to fetch from database first
+      if (clientId) {
+        try {
+          const { supabase } = await import('./supabaseClient');
+          const { data: clientData } = await supabase
+            .from('clients')
+            .select('language_preference')
+            .eq('id', clientId)
+            .maybeSingle();
+          
+          if (clientData?.language_preference) {
+            return (clientData.language_preference.split('-')[0] || 'fr').toLowerCase();
+          }
+        } catch (error) {
+          console.warn('Error fetching client language preference from database, using fallback:', error);
+        }
+      }
+      
+      // Fallback to client object properties
+      const language = client?.language_preference || client?.languagePreference || client?.client?.language_preference || 'fr';
+      return (language.split('-')[0] || 'fr').toLowerCase();
+      
+    } catch (error) {
+      console.warn('Error in getClientLanguagePreference, defaulting to fr:', error);
+      return 'fr';
+    }
+  }
+  
+  /**
    * Get current user's company profile
    */
   static async getCurrentUserCompanyProfile(userId) {
@@ -343,12 +382,15 @@ export class EmailService {
         }
       }
       
+      // Get client's language preference using centralized helper
+      const clientLanguage = await this.getClientLanguagePreference(client);
+      
       // Use custom email data if provided, otherwise use defaults
       const emailSubject = customEmailData?.subject || `Devis ${quote.quote_number} - ${companyProfile?.company_name || 'Notre entreprise'}`;
       const emailMessage = customEmailData?.message || `Bonjour,\n\nVeuillez trouver ci-joint notre devis pour votre projet.\n\nCordialement,\n${companyProfile?.company_name || 'Votre équipe'}`;
       
       const variables = {
-        client_name: client.name || 'Madame, Monsieur',
+        client_name: client.name || client.client?.name || 'Madame, Monsieur',
         quote_number: quote.quote_number,
         quote_title: quote.title || quote.project_description || 'Votre projet',
         quote_amount: `${quote.final_amount || quote.total_amount || 0}€`,
@@ -359,10 +401,6 @@ export class EmailService {
         custom_message: emailMessage
       };
       
-      // Get client's language preference (default to 'fr')
-      // Priority: client.language_preference > client.languagePreference > 'fr'
-      const clientLanguage = (client.language_preference || client.languagePreference || 'fr').split('-')[0] || 'fr';
-      
       // Send email to client - always use custom quote email for better control
       // Use the email from customEmailData if provided (updated in modal), otherwise fall back to client.email
       const recipientEmail = customEmailData?.clientEmail || client.email;
@@ -370,14 +408,16 @@ export class EmailService {
       let clientEmailResult;
       if (customEmailData) {
         // Use provided custom email data
-        clientEmailResult = await this.sendCustomQuoteEmail(variables, recipientEmail, userId, customEmailData, clientLanguage);
+        const clientId = client?.id || client?.value || client?.client?.id;
+        clientEmailResult = await this.sendCustomQuoteEmail(variables, recipientEmail, userId, customEmailData, clientLanguage, clientId);
       } else {
         // Use default custom email format instead of templated email
         const defaultEmailData = {
           subject: emailSubject,
           message: emailMessage
         };
-        clientEmailResult = await this.sendCustomQuoteEmail(variables, recipientEmail, userId, defaultEmailData, clientLanguage);
+        const clientId = client?.id || client?.value || client?.client?.id;
+        clientEmailResult = await this.sendCustomQuoteEmail(variables, recipientEmail, userId, defaultEmailData, clientLanguage, clientId);
       }
       
       // If sendCopy is enabled, also send a copy to the current user
@@ -534,16 +574,17 @@ export class EmailService {
   /**
    * Send custom quote email with user-defined subject and message
    */
-  static async sendCustomQuoteEmail(variables, clientEmail, userId = null, customEmailData = null, language = 'fr') {
+  static async sendCustomQuoteEmail(variables, clientEmail, userId = null, customEmailData = null, language = 'fr', clientId = null) {
     try {
       const emailData = {
         to: clientEmail,
+        client_id: clientId || null, // Pass client_id so edge function can fetch language if needed
         subject: customEmailData?.subject || variables.custom_subject,
         message: customEmailData?.message || variables.custom_message,
         variables: variables,
         userId: userId,
         user_id: userId,
-        language: language || 'fr'
+        language: language || 'fr' // Pass language, but edge function will fetch from client_id if not provided
       };
       
       return await this.sendEmailViaEdgeFunction('quote_sent', emailData);
@@ -590,11 +631,10 @@ export class EmailService {
         company_name: companyProfile?.company_name || 'Notre entreprise'
       };
       
-      // Get client's language preference (default to 'fr')
-      // Priority: client.language_preference > client.languagePreference > 'fr'
-      const clientLanguage = (client.language_preference || client.languagePreference || 'fr').split('-')[0] || 'fr';
+      // Get client's language preference using centralized helper
+      const clientLanguage = await this.getClientLanguagePreference(client);
       
-      return await this.sendTemplatedEmail(followUpType, variables, client.email, userId, clientLanguage);
+      return await this.sendTemplatedEmail(followUpType, variables, client.email || client.client?.email, userId, clientLanguage);
       
     } catch (error) {
       console.error('Error sending follow-up email:', error);
@@ -636,11 +676,10 @@ export class EmailService {
         company_name: companyProfile?.company_name || 'Notre entreprise'
       };
       
-      // Get client's language preference (default to 'fr')
-      // Priority: client.language_preference > client.languagePreference > 'fr'
-      const clientLanguage = (client.language_preference || client.languagePreference || 'fr').split('-')[0] || 'fr';
+      // Get client's language preference using centralized helper
+      const clientLanguage = await this.getClientLanguagePreference(client);
       
-      return await this.sendTemplatedEmail('client_accepted', variables, client.email, userId, clientLanguage);
+      return await this.sendTemplatedEmail('client_accepted', variables, client.email || client.client?.email, userId, clientLanguage);
       
     } catch (error) {
       console.error('Error sending client accepted email:', error);
@@ -664,11 +703,10 @@ export class EmailService {
         company_name: companyProfile?.company_name || 'Notre entreprise'
       };
       
-      // Get client's language preference (default to 'fr')
-      // Priority: client.language_preference > client.languagePreference > 'fr'
-      const clientLanguage = (client.language_preference || client.languagePreference || 'fr').split('-')[0] || 'fr';
+      // Get client's language preference using centralized helper
+      const clientLanguage = await this.getClientLanguagePreference(client);
       
-      return await this.sendTemplatedEmail('client_rejected', variables, client.email, userId, clientLanguage);
+      return await this.sendTemplatedEmail('client_rejected', variables, client.email || client.client?.email, userId, clientLanguage);
       
     } catch (error) {
       console.error('Error sending client rejected email:', error);
@@ -691,9 +729,8 @@ export class EmailService {
         company_name: companyProfile?.company_name || 'Notre entreprise'
       };
       
-      // Get client's language preference (default to 'fr')
-      // Priority: clientData.language_preference > clientData.languagePreference > 'fr'
-      const clientLanguage = (clientData.language_preference || clientData.languagePreference || 'fr').split('-')[0] || 'fr';
+      // Get client's language preference using centralized helper
+      const clientLanguage = await this.getClientLanguagePreference(clientData);
       
       return await this.sendTemplatedEmail('welcome_client', variables, clientData.email, userId, clientLanguage);
       
@@ -773,9 +810,8 @@ export class EmailService {
         custom_message: emailMessage
       };
       
-      // Get client's language preference (default to 'fr')
-      // Priority: client.language_preference > client.languagePreference > 'fr'
-      const clientLanguage = (client.language_preference || client.languagePreference || 'fr').split('-')[0] || 'fr';
+      // Get client's language preference using centralized helper
+      const clientLanguage = await this.getClientLanguagePreference(client);
       
       // Send email to client using custom quote email
       return await this.sendCustomQuoteEmail(variables, client.email, userId, {

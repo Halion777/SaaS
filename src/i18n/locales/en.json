@@ -325,11 +325,11 @@
         "question": "How much does Haliqo cost?",
         "intro": "Haliqo offers several plans adapted to your needs:",
         "starter": {
-          "title": "Starter (€29.99/month)",
+          "title": "Starter (€39,99/month)",
           "description": "Essential features to get started"
         },
         "pro": {
-          "title": "Pro (€49.99/month)",
+          "title": "Pro (€69,99/month)",
           "description": "Advanced features + priority support"
         },
         "trial": "14-day free trial",

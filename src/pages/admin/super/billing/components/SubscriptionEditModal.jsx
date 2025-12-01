@@ -75,11 +75,14 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
       );
       
       let plan_name = `${formData.plan_type.charAt(0).toUpperCase() + formData.plan_type.slice(1)} Plan`;
-      let amount = formData.plan_type === 'pro' ? 49.99 : 29.99; // Fallback values
+      let amount = formData.plan_type === 'pro' ? 69.99 : 39.99; // Fallback values
       
       if (pricingResult.success && pricingResult.data) {
         plan_name = pricingResult.data.plan_name;
         amount = pricingResult.data.amount;
+      } else {
+        console.warn('Using fallback pricing due to database issue:', pricingResult.error);
+        // Continue with fallback values
       }
       
       // Determine what changed
