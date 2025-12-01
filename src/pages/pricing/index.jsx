@@ -59,22 +59,35 @@ const PricingPage = () => {
       name: t('pricing.plans.starter.name'),
       description: t('pricing.plans.starter.description'),
       price: {
-        monthly: pricing.starter.monthly.toString(),
-        annual: pricing.starter.yearly.toString(),
-        annualTotal: pricing.starter.yearlyTotal.toString()
+        monthly: pricing.starter.monthly.toString().replace('.', ','),
+        annual: pricing.starter.yearly.toString().replace('.', ','),
+        annualTotal: pricing.starter.yearlyTotal.toString().replace('.', ',')
       },
       features: [
         t('pricing.plans.starter.features.feature1'),
         t('pricing.plans.starter.features.feature2'),
         t('pricing.plans.starter.features.feature3'),
         t('pricing.plans.starter.features.feature4'),
-        t('pricing.plans.starter.features.feature5')
+        t('pricing.plans.starter.features.feature5'),
+        t('pricing.plans.starter.features.feature6'),
+        t('pricing.plans.starter.features.feature7'),
+        t('pricing.plans.starter.features.feature8'),
+        t('pricing.plans.starter.features.feature9'),
+        t('pricing.plans.starter.features.feature10'),
+        t('pricing.plans.starter.features.feature11'),
+        t('pricing.plans.starter.features.feature12'),
+        t('pricing.plans.starter.features.feature13'),
+        t('pricing.plans.starter.features.feature14'),
+        t('pricing.plans.starter.features.feature15'),
+        t('pricing.plans.starter.features.feature16'),
+        t('pricing.plans.starter.features.feature17')
       ],
       limitations: [
         t('pricing.plans.starter.limitations.limitation1'),
         t('pricing.plans.starter.limitations.limitation2'),
         t('pricing.plans.starter.limitations.limitation3'),
-        t('pricing.plans.starter.limitations.limitation4')
+        t('pricing.plans.starter.limitations.limitation4'),
+        t('pricing.plans.starter.limitations.limitation5')
       ],
       cta: t('pricing.plans.starter.cta'),
       popular: false
@@ -83,9 +96,9 @@ const PricingPage = () => {
       name: t('pricing.plans.pro.name'),
       description: t('pricing.plans.pro.description'),
       price: {
-        monthly: pricing.pro.monthly.toString(),
-        annual: pricing.pro.yearly.toString(),
-        annualTotal: pricing.pro.yearlyTotal.toString()
+        monthly: pricing.pro.monthly.toString().replace('.', ','),
+        annual: pricing.pro.yearly.toString().replace('.', ','),
+        annualTotal: pricing.pro.yearlyTotal.toString().replace('.', ',')
       },
       features: [
         t('pricing.plans.pro.features.feature1'),
@@ -95,7 +108,22 @@ const PricingPage = () => {
         t('pricing.plans.pro.features.feature5'),
         t('pricing.plans.pro.features.feature6'),
         t('pricing.plans.pro.features.feature7'),
-        t('pricing.plans.pro.features.feature8')
+        t('pricing.plans.pro.features.feature8'),
+        t('pricing.plans.pro.features.feature9'),
+        t('pricing.plans.pro.features.feature10'),
+        t('pricing.plans.pro.features.feature11'),
+        t('pricing.plans.pro.features.feature12'),
+        t('pricing.plans.pro.features.feature13'),
+        t('pricing.plans.pro.features.feature14'),
+        t('pricing.plans.pro.features.feature15'),
+        t('pricing.plans.pro.features.feature16'),
+        t('pricing.plans.pro.features.feature17'),
+        t('pricing.plans.pro.features.feature18'),
+        t('pricing.plans.pro.features.feature19'),
+        t('pricing.plans.pro.features.feature20'),
+        t('pricing.plans.pro.features.feature21'),
+        t('pricing.plans.pro.features.feature22'),
+        t('pricing.plans.pro.features.feature23')
       ],
       limitations: [],
       cta: t('pricing.plans.pro.cta'),
@@ -297,7 +325,7 @@ const PricingPage = () => {
                     </p>
                     {billingCycle === 'annual' && (
                       <p className="text-sm text-[#12bf23] font-medium mt-2">
-                        {t('pricing.savings', { amount: ((parseFloat(plan.price.monthly) * 12) - parseFloat(plan.price.annualTotal)).toFixed(2) })}
+                        {t('pricing.savings', { amount: ((parseFloat(plan.price.monthly.replace(',', '.')) * 12) - parseFloat(plan.price.annualTotal.replace(',', '.'))).toFixed(2).replace('.', ',') })}
                       </p>
                     )}
                   </div>

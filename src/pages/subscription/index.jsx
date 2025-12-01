@@ -124,21 +124,43 @@ const SubscriptionManagement = () => {
         setPricingLoading(true);
         const result = await SubscriptionNotificationService.getAllPricingData();
         if (result.success && result.data) {
-          // Convert database pricing to plans format
-          const plansData = Object.entries(result.data).map(([planId, planData]) => ({
-            id: planId,
-            name: planData.name || `${planId.charAt(0).toUpperCase() + planId.slice(1)} Plan`,
-            price: {
-              monthly: planData.monthly,
-              yearly: planData.yearly,
-              yearlyTotal: planData.yearlyTotal
-            },
-            description: planData.description || '',
-            features: planData.features || [],
-            limitations: planData.limitations || [],
-            current: false,
-            popular: planData.popular || false
-          }));
+          // Convert database pricing to plans format with features from translations
+          const plansData = Object.entries(result.data).map(([planId, planData]) => {
+            // Get features from translations based on plan type
+            const planFeatures = [];
+            const planLimitations = [];
+            
+            if (planId === 'starter') {
+              for (let i = 1; i <= 17; i++) {
+                const feature = t(`pricing.plans.starter.features.feature${i}`, { defaultValue: '' });
+                if (feature) planFeatures.push(feature);
+              }
+              for (let i = 1; i <= 5; i++) {
+                const limitation = t(`pricing.plans.starter.limitations.limitation${i}`, { defaultValue: '' });
+                if (limitation) planLimitations.push(limitation);
+              }
+            } else if (planId === 'pro') {
+              for (let i = 1; i <= 23; i++) {
+                const feature = t(`pricing.plans.pro.features.feature${i}`, { defaultValue: '' });
+                if (feature) planFeatures.push(feature);
+              }
+            }
+            
+            return {
+              id: planId,
+              name: planData.name || `${planId.charAt(0).toUpperCase() + planId.slice(1)} Plan`,
+              price: {
+                monthly: planData.monthly,
+                yearly: planData.yearly,
+                yearlyTotal: planData.yearlyTotal
+              },
+              description: planData.description || t(`pricing.plans.${planId}.description`, ''),
+              features: planFeatures.length > 0 ? planFeatures : (planData.features || []),
+              limitations: planLimitations.length > 0 ? planLimitations : (planData.limitations || []),
+              current: false,
+              popular: planData.popular || false
+            };
+          });
           setPlans(plansData);
         }
         // Service returns fallback values on error, so we always have data
@@ -150,7 +172,7 @@ const SubscriptionManagement = () => {
       }
     };
     loadPricing();
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (user) {
@@ -939,17 +961,17 @@ const SubscriptionManagement = () => {
                   {plan.description}
                 </p>
                 <div className="text-3xl font-bold text-foreground">
-                  €{billingCycle === 'yearly' ? plan.price.yearlyTotal : plan.price.monthly}
+                  €{billingCycle === 'yearly' ? plan.price.yearlyTotal.toString().replace('.', ',') : plan.price.monthly.toString().replace('.', ',')}
                   <span className="text-lg text-muted-foreground">/{billingCycle === 'monthly' ? 'month' : 'year'}</span>
                 </div>
                 {billingCycle === 'yearly' && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    {t('subscription.billingCycle.equivalent', 'Equivalent to €{{amount}}/month', { amount: plan.price.yearly })}
+                    {t('subscription.billingCycle.equivalent', 'Equivalent to €{{amount}}/month', { amount: plan.price.yearly.toString().replace('.', ',') })}
                   </p>
                 )}
                 {billingCycle === 'yearly' && (
                   <p className="text-sm text-success font-medium mt-2">
-                    {t('subscription.billingCycle.saveAmount', 'Save €{{amount}} per year', { amount: ((plan.price.monthly * 12) - plan.price.yearlyTotal).toFixed(2) })}
+                    {t('subscription.billingCycle.saveAmount', 'Save €{{amount}} per year', { amount: ((plan.price.monthly * 12) - plan.price.yearlyTotal).toFixed(2).replace('.', ',') })}
                   </p>
                 )}
               </div>

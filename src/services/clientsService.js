@@ -156,6 +156,21 @@ export async function createClient(clientData) {
       return { error: { message: 'User not authenticated', details: userError?.message } };
     }
 
+    // Check client quota limit
+    const { FeatureAccessService } = await import('./featureAccessService');
+    const featureAccessService = new FeatureAccessService();
+    const clientQuota = await featureAccessService.canCreateClient(user.id);
+    
+    if (!clientQuota.withinLimit && !clientQuota.unlimited) {
+      return { 
+        error: { 
+          message: `Client limit reached. You can have up to ${clientQuota.limit} active clients on your current plan. Please upgrade to Pro for unlimited clients.`,
+          code: 'CLIENT_LIMIT_REACHED',
+          limit: clientQuota.limit,
+          current: clientQuota.usage
+        } 
+      };
+    }
     
     // Map frontend fields to database fields
     const mappedData = {

@@ -64,15 +64,19 @@ export const FEATURES = {
 
 export const QUOTAS = {
   starter: {
-    quotesPerMonth: 15,
-    invoicesPerMonth: 15,
-    maxProfiles: 1,
+    quotesPerMonth: -1, // -1 = unlimited (quotes are unlimited)
+    invoicesPerMonth: -1, // -1 = unlimited (simple invoices are unlimited)
+    peppolInvoicesPerMonth: 50, // Up to 50 Peppol e-invoices per month (sent + received)
+    maxClients: 30, // Up to 30 active clients
+    maxProfiles: 1, // 1 user
     maxStorage: '10GB'
   },
   pro: {
     quotesPerMonth: -1, // -1 = unlimited
-    invoicesPerMonth: -1,
-    maxProfiles: 10,
+    invoicesPerMonth: -1, // -1 = unlimited
+    peppolInvoicesPerMonth: -1, // -1 = unlimited (normal usage)
+    maxClients: -1, // -1 = unlimited
+    maxProfiles: 10, // Multi-user access
     maxStorage: '100GB'
   }
 };
@@ -84,21 +88,21 @@ export const QUOTAS = {
 export const PLAN_FEATURES = {
   // Starter Plan Features
   starter: {
-    // Core Features - Limited
-    [FEATURES.QUOTES]: 'limited',        // 15/month
-    [FEATURES.INVOICES]: 'limited',      // 15/month
-    [FEATURES.CLIENTS]: 'full',
-    [FEATURES.TEMPLATES]: 'full',
+    // Core Features
+    [FEATURES.QUOTES]: 'full',           // Unlimited quotes
+    [FEATURES.INVOICES]: 'full',         // Unlimited simple invoices
+    [FEATURES.CLIENTS]: 'limited',       // Up to 30 active clients
+    [FEATURES.TEMPLATES]: 'full',         // Premium quote template
+    [FEATURES.PEPPOL]: 'limited',        // Up to 50 Peppol invoices/month (sent + received)
     
-    // Advanced Features - None
-    [FEATURES.LEAD_GENERATION]: 'none',
-    [FEATURES.AUTOMATIC_REMINDERS]: 'none',
-    [FEATURES.MULTI_USER]: 'none',
-    [FEATURES.ADVANCED_ANALYTICS]: 'none',
-    [FEATURES.AI_FEATURES]: 'limited',
+    // Advanced Features
+    [FEATURES.LEAD_GENERATION]: 'limited', // Qualified lead suggestions (BETA)
+    [FEATURES.AUTOMATIC_REMINDERS]: 'none', // Not available
+    [FEATURES.MULTI_USER]: 'none',        // 1 user only
+    [FEATURES.ADVANCED_ANALYTICS]: 'limited', // Basic statistics only
+    [FEATURES.AI_FEATURES]: 'full',       // AI-powered smart quotes, automatic suggestions
     [FEATURES.SIGNATURE_PREDICTIONS]: 'none',
     [FEATURES.PRICE_OPTIMIZATION]: 'none',
-    [FEATURES.PEPPOL]: 'full',           // Available for business users
     [FEATURES.CREDIT_INSURANCE]: 'full',
     [FEATURES.RECOVERY]: 'full',
     
@@ -111,19 +115,19 @@ export const PLAN_FEATURES = {
   pro: {
     // Core Features - Full
     [FEATURES.QUOTES]: 'full',           // Unlimited
-    [FEATURES.INVOICES]: 'full',         // Unlimited
-    [FEATURES.CLIENTS]: 'full',
-    [FEATURES.TEMPLATES]: 'full',
+    [FEATURES.INVOICES]: 'full',         // Unlimited simple invoices
+    [FEATURES.CLIENTS]: 'full',          // Unlimited clients
+    [FEATURES.TEMPLATES]: 'full',        // Customisable library, templates adapted to each job type
+    [FEATURES.PEPPOL]: 'full',           // Unlimited Peppol e-invoices (normal usage)
     
     // Advanced Features - Full
-    [FEATURES.LEAD_GENERATION]: 'full',
-    [FEATURES.AUTOMATIC_REMINDERS]: 'full',
-    [FEATURES.MULTI_USER]: 'full',
-    [FEATURES.ADVANCED_ANALYTICS]: 'full',
-    [FEATURES.AI_FEATURES]: 'full',
+    [FEATURES.LEAD_GENERATION]: 'full',   // Integrated prospecting/leads, client requests
+    [FEATURES.AUTOMATIC_REMINDERS]: 'full', // Automatic reminders for unsigned quotes and unpaid invoices
+    [FEATURES.MULTI_USER]: 'full',       // Multi-user access (owner, admin, site manager, etc.)
+    [FEATURES.ADVANCED_ANALYTICS]: 'full', // Detailed statistics: revenue, signed quotes, conversion rates, expenses, etc.
+    [FEATURES.AI_FEATURES]: 'full',       // All AI features
     [FEATURES.SIGNATURE_PREDICTIONS]: 'full',
     [FEATURES.PRICE_OPTIMIZATION]: 'full',
-    [FEATURES.PEPPOL]: 'full',
     [FEATURES.CREDIT_INSURANCE]: 'full',
     [FEATURES.RECOVERY]: 'full',
     
@@ -161,48 +165,48 @@ export const MODULE_FEATURE_MAP = {
 export const FEATURE_INFO = {
   [FEATURES.QUOTES]: {
     icon: 'FileText',
-    starterLimit: '15/month',
+    starterLimit: 'Unlimited',
     proLimit: 'Unlimited'
   },
   [FEATURES.INVOICES]: {
     icon: 'Receipt',
-    starterLimit: '15/month',
+    starterLimit: 'Unlimited (simple invoices)',
     proLimit: 'Unlimited'
   },
   [FEATURES.CLIENTS]: {
     icon: 'Users',
-    starterLimit: 'Unlimited',
+    starterLimit: 'Up to 30 active clients',
     proLimit: 'Unlimited'
   },
   [FEATURES.TEMPLATES]: {
     icon: 'Layout',
-    starterLimit: 'Basic',
-    proLimit: 'Premium'
+    starterLimit: 'Premium template',
+    proLimit: 'Customisable library, templates per job type'
   },
   [FEATURES.LEAD_GENERATION]: {
     icon: 'Target',
-    starterLimit: 'Not available',
-    proLimit: 'Full access'
+    starterLimit: 'Qualified lead suggestions (BETA)',
+    proLimit: 'Full lead generation (integrated prospecting)'
   },
   [FEATURES.AUTOMATIC_REMINDERS]: {
     icon: 'Bell',
     starterLimit: 'Not available',
-    proLimit: 'Full access'
+    proLimit: 'Automatic reminders for quotes & invoices'
   },
   [FEATURES.MULTI_USER]: {
     icon: 'UserPlus',
-    starterLimit: '1 profile',
-    proLimit: 'Up to 10'
+    starterLimit: '1 user',
+    proLimit: 'Multi-user access (owner, admin, site manager, etc.)'
   },
   [FEATURES.ADVANCED_ANALYTICS]: {
     icon: 'BarChart2',
-    starterLimit: 'Basic',
-    proLimit: 'Advanced'
+    starterLimit: 'Basic statistics',
+    proLimit: 'Detailed statistics & reporting'
   },
   [FEATURES.AI_FEATURES]: {
     icon: 'Cpu',
-    starterLimit: 'Limited',
-    proLimit: 'Complete'
+    starterLimit: 'AI-powered smart quotes & suggestions',
+    proLimit: 'Complete AI features'
   },
   [FEATURES.SIGNATURE_PREDICTIONS]: {
     icon: 'PenTool',
@@ -213,6 +217,11 @@ export const FEATURE_INFO = {
     icon: 'TrendingUp',
     starterLimit: 'Not available',
     proLimit: 'Full access'
+  },
+  [FEATURES.PEPPOL]: {
+    icon: 'FileCheck',
+    starterLimit: 'Up to 50/month (sent + received)',
+    proLimit: 'Unlimited (normal usage)'
   },
   [FEATURES.EMAIL_SUPPORT]: {
     icon: 'Mail',

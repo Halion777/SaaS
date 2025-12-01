@@ -355,6 +355,77 @@ class FeatureAccessService {
     return this.checkQuota(userId, 'invoicesPerMonth', usage);
   }
   
+  /**
+   * Get active clients count for user
+   */
+  async getActiveClientsCount(userId) {
+    try {
+      const { count, error } = await supabase
+        .from('clients')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('is_active', true);
+      
+      if (error) throw error;
+      return count || 0;
+    } catch (error) {
+      console.error('Error getting active clients count:', error);
+      return 0;
+    }
+  }
+  
+  /**
+   * Check if user can create more clients
+   */
+  async canCreateClient(userId) {
+    const currentCount = await this.getActiveClientsCount(userId);
+    return this.checkQuota(userId, 'maxClients', currentCount);
+  }
+  
+  /**
+   * Get monthly Peppol invoices usage (sent + received)
+   */
+  async getMonthlyPeppolInvoicesUsage(userId) {
+    try {
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      
+      // Count Peppol invoices sent (from invoices table)
+      const { count: sentCount, error: sentError } = await supabase
+        .from('invoices')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('peppol_enabled', true)
+        .gte('created_at', startOfMonth.toISOString());
+      
+      if (sentError) throw sentError;
+      
+      // Count Peppol invoices received (from expense_invoices table)
+      const { count: receivedCount, error: receivedError } = await supabase
+        .from('expense_invoices')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('source', 'peppol')
+        .gte('created_at', startOfMonth.toISOString());
+      
+      if (receivedError) throw receivedError;
+      
+      return (sentCount || 0) + (receivedCount || 0);
+    } catch (error) {
+      console.error('Error getting Peppol invoices usage:', error);
+      return 0;
+    }
+  }
+  
+  /**
+   * Check if user can send/receive more Peppol invoices this month
+   */
+  async canSendPeppolInvoice(userId) {
+    const usage = await this.getMonthlyPeppolInvoicesUsage(userId);
+    return this.checkQuota(userId, 'peppolInvoicesPerMonth', usage);
+  }
+  
   // ============================================
   // PROFILE LIMIT CHECKS
   // ============================================

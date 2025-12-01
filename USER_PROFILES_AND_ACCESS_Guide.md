@@ -29,25 +29,33 @@ The Haliqo platform uses a **two-layer access control** system:
 
 ## Subscription Plans
 
-### Starter Plan - €29.99/month
+### Starter Plan - €39,99/month
 | Feature | Limit |
 |---------|-------|
-| Profiles | 1 (admin only) |
-| Quotes/Invoices | 15/month |
-| Lead Generation | ❌ |
+| Users | 1 user |
+| Active Clients | Up to 30 |
+| Quotes | Unlimited |
+| Simple Invoices | Unlimited |
+| Peppol E-Invoices | Up to 50/month (sent + received) |
+| Lead Generation | Qualified lead suggestions (BETA) |
 | Automatic Reminders | ❌ |
-| Advanced Analytics | ❌ |
+| Advanced Analytics | Basic statistics only |
 | Multi-User | ❌ |
+| AI Features | ✅ AI-powered smart quotes & suggestions |
 
-### Pro Plan - €49.99/month
+### Pro Plan - €69,99/month
 | Feature | Limit |
 |---------|-------|
-| Profiles | Up to 10 |
-| Quotes/Invoices | Unlimited |
-| Lead Generation | ✅ |
-| Automatic Reminders | ✅ |
-| Advanced Analytics | ✅ |
-| Multi-User | ✅ |
+| Users | Multi-user access (owner, admin, site manager, etc.) |
+| Active Clients | Unlimited |
+| Quotes | Unlimited |
+| Simple Invoices | Unlimited |
+| Peppol E-Invoices | Unlimited (normal usage) |
+| Lead Generation | ✅ Full lead generation (integrated prospecting) |
+| Automatic Reminders | ✅ Automatic reminders for quotes & invoices |
+| Advanced Analytics | ✅ Detailed statistics & reporting |
+| Multi-User | ✅ Multi-user access |
+| AI Features | ✅ Complete AI features |
 
 ---
 

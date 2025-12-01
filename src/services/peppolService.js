@@ -728,16 +728,29 @@ export class PeppolService {
   // Send UBL invoice via Peppol - via edge function to avoid CORS
   async sendInvoice(invoiceData) {
     try {
+      // Get user first for quota check
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+      
       // Check if Peppol is disabled
       const isDisabled = await this.isPeppolDisabled();
       if (isDisabled) {
         throw new Error('Peppol functionality is currently disabled. Please enable it in Peppol settings to send invoices.');
       }
 
-      const xml = generatePEPPOLXML(invoiceData);
+      // Check Peppol invoice quota limit
+      const { FeatureAccessService } = await import('./featureAccessService');
+      const featureAccessService = new FeatureAccessService();
+      const peppolQuota = await featureAccessService.canSendPeppolInvoice(user.id);
       
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      if (!peppolQuota.withinLimit && !peppolQuota.unlimited) {
+        throw new Error(
+          `Peppol invoice limit reached. You can send/receive up to ${peppolQuota.limit} Peppol invoices per month on your current plan. ` +
+          `You have used ${peppolQuota.usage} of ${peppolQuota.limit}. Please upgrade to Pro for unlimited Peppol invoices.`
+        );
+      }
+
+      const xml = generatePEPPOLXML(invoiceData);
       
       const response = await supabase.functions.invoke('peppol-webhook-config', {
         body: {

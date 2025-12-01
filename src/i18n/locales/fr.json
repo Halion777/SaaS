@@ -562,34 +562,62 @@
     "plans": {
       "starter": {
         "name": "Starter",
-        "description": "Pour les débutants ou une utilisation à petite échelle",
+        "description": "Un plan d'entrée de gamme intelligent pour les artisans qui souhaitent des devis et factures propres, conformes, avec un outil très facile à utiliser.",
         "features": {
-          "feature1": "Jusqu'à 15 devis par mois",
-          "feature2": "Jusqu'à 15 factures par mois",
-          "feature3": "Gestion des clients",
-          "feature4": "Modèles professionnels",
-          "feature5": "Support par e-mail"
+          "feature1": "Devis illimités",
+          "feature2": "Factures simples illimitées",
+          "feature3": "Jusqu'à 30 clients actifs",
+          "feature4": "Jusqu'à 50 factures électroniques Peppol par mois (envoyées + reçues)",
+          "feature5": "Devis intelligents alimentés par l'IA (saisie vocale ou manuelle)",
+          "feature6": "Suggestions IA automatiques pour les tâches, prix et matériaux",
+          "feature7": "Modèle de devis premium avec votre logo et informations commerciales",
+          "feature8": "Suivi en direct du statut du devis",
+          "feature9": "Convertir devis → facture en 1 clic",
+          "feature10": "Envoyer des factures par e-mail + PDF",
+          "feature11": "Suivi des devis : envoyé / consulté / accepté / non ouvert",
+          "feature12": "Suivi des factures : payé / en attente / en retard",
+          "feature13": "Saisie des dépenses",
+          "feature14": "Stockage des factures de dépenses reçues via Peppol",
+          "feature15": "Statistiques de base : chiffre d'affaires, nombre de devis, taux de conversion, dépenses, etc.",
+          "feature16": "Suggestions de leads qualifiés (BETA)",
+          "feature17": "Support par e-mail"
         },
         "limitations": {
-          "limitation1": "Pas de génération de leads clients",
-          "limitation2": "Pas de rappels automatiques",
-          "limitation3": "Pas d'accès multi-utilisateurs",
-          "limitation4": "Pas d'analyses avancées"
+          "limitation1": "Pas d'accès multi-utilisateurs",
+          "limitation2": "Pas de clients illimités",
+          "limitation3": "Pas de factures Peppol illimitées",
+          "limitation4": "Pas de génération complète de leads (prospects)",
+          "limitation5": "Pas de rappels automatiques"
         },
         "cta": "Essai gratuit de 14 jours"
       },
       "pro": {
         "name": "Pro",
-        "description": "Pour les utilisateurs professionnels ou petites entreprises",
+        "description": "La version premium de votre back-office : un outil intelligent axé sur l'IA, l'automatisation et la croissance, toujours très facile à utiliser pour tout artisan.",
         "features": {
-          "feature1": "Devis et factures illimités",
-          "feature2": "Gestion des clients",
-          "feature3": "Modèles professionnels",
-          "feature4": "Génération de leads clients",
-          "feature5": "Rappels automatiques pour les factures impayées",
-          "feature6": "Support multi-utilisateurs",
-          "feature7": "Support prioritaire par e-mail et chat",
-          "feature8": "Outils d'analyse et de rapports avancés"
+          "feature1": "Devis illimités",
+          "feature2": "Factures simples illimitées",
+          "feature3": "Clients illimités",
+          "feature4": "Factures électroniques Peppol illimitées (usage normal)",
+          "feature5": "Devis intelligents alimentés par l'IA (saisie vocale ou manuelle)",
+          "feature6": "Suggestions IA automatiques pour les tâches, prix et matériaux",
+          "feature7": "Bibliothèque personnalisable de services / matériaux",
+          "feature8": "Modèles de devis adaptés à chaque type de travail",
+          "feature9": "Suivi en direct du statut du devis",
+          "feature10": "Convertir devis → facture en 1 clic",
+          "feature11": "Envoyer par e-mail, PDF + Peppol",
+          "feature12": "Workflow devis : créé → envoyé → consulté → suivi → accepté",
+          "feature13": "Workflow facture : envoyé → consulté → payé → en retard",
+          "feature14": "Rappels automatiques pour les devis non signés et factures impayées",
+          "feature15": "Saisie des dépenses + stockage des factures reçues via Peppol",
+          "feature16": "Vue d'ensemble : dépenses mensuelles, montants collectés, montants encore à collecter",
+          "feature17": "Statistiques détaillées : chiffre d'affaires, devis signés, taux de conversion, dépenses, etc.",
+          "feature18": "Prospection intégrée / leads",
+          "feature19": "Demandes clients basées sur votre région et spécialité",
+          "feature20": "Envoyer un devis en quelques clics en réponse",
+          "feature21": "Concurrence limitée (max 3 devis par demande)",
+          "feature22": "Accès multi-utilisateurs (propriétaire, admin, chef de chantier, etc.)",
+          "feature23": "Support prioritaire par e-mail et chat"
         },
         "cta": "Essai gratuit de 14 jours"
       }
@@ -916,31 +944,61 @@
       "plans": {
         "starter": {
           "name": "Starter",
-          "description": "Parfait pour débuter",
+          "description": "Un plan d'entrée de gamme intelligent pour les artisans qui souhaitent des devis et factures propres, conformes, avec un outil très facile à utiliser.",
           "features": [
-            "15 devis/factures par mois",
-            "Templates de base",
-            "Suivi des paiements",
-            "Support email",
-            "Gestion clients basique"
+            "Devis illimités",
+            "Factures simples illimitées",
+            "Jusqu'à 30 clients actifs",
+            "Jusqu'à 50 factures électroniques Peppol par mois (envoyées + reçues)",
+            "Devis intelligents alimentés par l'IA (saisie vocale ou manuelle)",
+            "Suggestions IA automatiques pour les tâches, prix et matériaux",
+            "Modèle de devis premium avec votre logo et informations commerciales",
+            "Suivi en direct du statut du devis",
+            "Convertir devis → facture en 1 clic",
+            "Envoyer des factures par e-mail + PDF",
+            "Suivi des devis : envoyé / consulté / accepté / non ouvert",
+            "Suivi des factures : payé / en attente / en retard",
+            "Saisie des dépenses",
+            "Stockage des factures de dépenses reçues via Peppol",
+            "Statistiques de base : chiffre d'affaires, nombre de devis, taux de conversion, dépenses, etc.",
+            "Suggestions de leads qualifiés (BETA)",
+            "Support par e-mail"
           ],
           "limitations": [
-            "IA limitée",
-            "Pas de relances automatiques"
+            "Pas d'accès multi-utilisateurs",
+            "Pas de clients illimités",
+            "Pas de factures Peppol illimitées",
+            "Pas de génération complète de leads (prospects)",
+            "Pas de rappels automatiques"
           ]
         },
         "pro": {
           "name": "Pro",
-          "description": "Solution complète avec IA",
+          "description": "La version premium de votre back-office : un outil intelligent axé sur l'IA, l'automatisation et la croissance, toujours très facile à utiliser pour tout artisan.",
           "features": [
-            "Devis/factures illimités",
-            "IA complète et optimisations",
-            "Relances automatiques",
-            "Analytics avancés",
-            "Templates premium",
-            "Support prioritaire",
-            "Prédictions de signature",
-            "Optimisation des prix"
+            "Devis illimités",
+            "Factures simples illimitées",
+            "Clients illimités",
+            "Factures électroniques Peppol illimitées (usage normal)",
+            "Devis intelligents alimentés par l'IA (saisie vocale ou manuelle)",
+            "Suggestions IA automatiques pour les tâches, prix et matériaux",
+            "Bibliothèque personnalisable de services / matériaux",
+            "Modèles de devis adaptés à chaque type de travail",
+            "Suivi en direct du statut du devis",
+            "Convertir devis → facture en 1 clic",
+            "Envoyer par e-mail, PDF + Peppol",
+            "Workflow devis : créé → envoyé → consulté → suivi → accepté",
+            "Workflow facture : envoyé → consulté → payé → en retard",
+            "Rappels automatiques pour les devis non signés et factures impayées",
+            "Saisie des dépenses + stockage des factures reçues via Peppol",
+            "Vue d'ensemble : dépenses mensuelles, montants collectés, montants encore à collecter",
+            "Statistiques détaillées : chiffre d'affaires, devis signés, taux de conversion, dépenses, etc.",
+            "Prospection intégrée / leads",
+            "Demandes clients basées sur votre région et spécialité",
+            "Envoyer un devis en quelques clics en réponse",
+            "Concurrence limitée (max 3 devis par demande)",
+            "Accès multi-utilisateurs (propriétaire, admin, chef de chantier, etc.)",
+            "Support prioritaire par e-mail et chat"
           ],
           "limitations": []
         }

@@ -561,34 +561,62 @@
     "plans": {
       "starter": {
         "name": "Starter",
-        "description": "Voor beginners of kleinschalig gebruik",
+        "description": "Een intelligente instapplan voor ambachtslieden die schone, conforme offertes en facturen willen met een zeer gebruiksvriendelijk hulpmiddel.",
         "features": {
-          "feature1": "Tot 15 offertes per maand",
-          "feature2": "Tot 15 facturen per maand",
-          "feature3": "Klantenbeheer",
-          "feature4": "Professionele sjablonen",
-          "feature5": "E-mail ondersteuning"
+          "feature1": "Onbeperkte offertes",
+          "feature2": "Onbeperkte eenvoudige facturen",
+          "feature3": "Tot 30 actieve klanten",
+          "feature4": "Tot 50 Peppol e-facturen per maand (verzonden + ontvangen)",
+          "feature5": "AI-aangedreven slimme offertes (spraak of handmatige invoer)",
+          "feature6": "Automatische AI-suggesties voor taken, prijzen en materialen",
+          "feature7": "Premium offertesjabloon met uw logo en bedrijfsinformatie",
+          "feature8": "Live tracking van offertestatus",
+          "feature9": "Converteer offerte → factuur in 1 klik",
+          "feature10": "Verstuur facturen per e-mail + PDF",
+          "feature11": "Offertetracking: verzonden / bekeken / geaccepteerd / niet geopend",
+          "feature12": "Factuurtracking: betaald / in behandeling / achterstallig",
+          "feature13": "Kosteninvoer",
+          "feature14": "Opslag van ontvangen kostenfacturen via Peppol",
+          "feature15": "Basisstatistieken: omzet, aantal offertes, conversiepercentage, kosten, etc.",
+          "feature16": "Gekwalificeerde lead suggesties (BETA)",
+          "feature17": "E-mail ondersteuning"
         },    
         "limitations": {
-          "limitation1": "Geen klant lead generatie",
-          "limitation2": "Geen automatische herinneringen",
-          "limitation3": "Geen multi-gebruiker toegang",
-          "limitation4": "Geen geavanceerde analyses"
+          "limitation1": "Geen multi-gebruiker toegang",
+          "limitation2": "Geen onbeperkte klanten",
+          "limitation3": "Geen onbeperkte Peppol facturen",
+          "limitation4": "Geen volledige lead generatie (prospects)",
+          "limitation5": "Geen automatische herinneringen"
         },
         "cta": "14 dagen gratis proefperiode"
       },
       "pro": {
         "name": "Pro",
-        "description": "Voor professionele gebruikers of kleine bedrijven",
+        "description": "De premium versie van uw back-office: een intelligent hulpmiddel gericht op AI, automatisering en groei, nog steeds zeer gebruiksvriendelijk voor elke ambachtsman.",
         "features": {
-          "feature1": "Onbeperkte offertes en facturen",
-          "feature2": "Klantenbeheer",
-          "feature3": "Professionele sjablonen",
-          "feature4": "Klant lead generatie",
-          "feature5": "Automatische herinneringen voor onbetaalde facturen",
-          "feature6": "Multi-gebruiker ondersteuning",
-          "feature7": "Prioriteit ondersteuning via e-mail en chat",
-          "feature8": "Geavanceerde analyse- en rapportagetools"
+          "feature1": "Onbeperkte offertes",
+          "feature2": "Onbeperkte eenvoudige facturen",
+          "feature3": "Onbeperkte klanten",
+          "feature4": "Onbeperkte Peppol e-facturen (normaal gebruik)",
+          "feature5": "AI-aangedreven slimme offertes (spraak of handmatige invoer)",
+          "feature6": "Automatische AI-suggesties voor taken, prijzen en materialen",
+          "feature7": "Aanpasbare bibliotheek van diensten / materialen",
+          "feature8": "Offertesjablonen aangepast aan elk type werk",
+          "feature9": "Live tracking van offertestatus",
+          "feature10": "Converteer offerte → factuur in 1 klik",
+          "feature11": "Verstuur per e-mail, PDF + Peppol",
+          "feature12": "Offerte workflow: aangemaakt → verzonden → bekeken → opgevolgd → geaccepteerd",
+          "feature13": "Factuur workflow: verzonden → bekeken → betaald → achterstallig",
+          "feature14": "Automatische herinneringen voor ongetekende offertes en onbetaalde facturen",
+          "feature15": "Kosteninvoer + opslag van facturen ontvangen via Peppol",
+          "feature16": "Overzichtsweergave: maandelijkse kosten, geïnde bedragen, nog te innen bedragen",
+          "feature17": "Gedetailleerde statistieken: omzet, ondertekende offertes, conversiepercentages, kosten, etc.",
+          "feature18": "Geïntegreerde prospectie / leads",
+          "feature19": "Klantaanvragen op basis van uw regio en specialiteit",
+          "feature20": "Stuur een offerte in een paar klikken als reactie",
+          "feature21": "Beperkte concurrentie (max 3 offertes per aanvraag)",
+          "feature22": "Multi-gebruiker toegang (eigenaar, admin, werfleider, etc.)",
+          "feature23": "Prioriteit ondersteuning via e-mail en chat"
         },
         "cta": "14 dagen gratis proefperiode"
       }
@@ -915,31 +943,61 @@
       "plans": {
         "starter": {
           "name": "Starter",
-          "description": "Perfect voor beginners",
+          "description": "Een intelligente instapplan voor ambachtslieden die schone, conforme offertes en facturen willen met een zeer gebruiksvriendelijk hulpmiddel.",
           "features": [
-            "15 offertes/facturen per maand",
-            "Basis sjablonen",
-            "Betalingstracking",
-            "E-mail ondersteuning",
-            "Basis klantenbeheer"
+            "Onbeperkte offertes",
+            "Onbeperkte eenvoudige facturen",
+            "Tot 30 actieve klanten",
+            "Tot 50 Peppol e-facturen per maand (verzonden + ontvangen)",
+            "AI-aangedreven slimme offertes (spraak of handmatige invoer)",
+            "Automatische AI-suggesties voor taken, prijzen en materialen",
+            "Premium offertesjabloon met uw logo en bedrijfsinformatie",
+            "Live tracking van offertestatus",
+            "Converteer offerte → factuur in 1 klik",
+            "Verstuur facturen per e-mail + PDF",
+            "Offertetracking: verzonden / bekeken / geaccepteerd / niet geopend",
+            "Factuurtracking: betaald / in behandeling / achterstallig",
+            "Kosteninvoer",
+            "Opslag van ontvangen kostenfacturen via Peppol",
+            "Basisstatistieken: omzet, aantal offertes, conversiepercentage, kosten, etc.",
+            "Gekwalificeerde lead suggesties (BETA)",
+            "E-mail ondersteuning"
           ],
           "limitations": [
-            "Beperkte AI",
-            "Geen automatische follow-ups"
+            "Geen multi-gebruiker toegang",
+            "Geen onbeperkte klanten",
+            "Geen onbeperkte Peppol facturen",
+            "Geen volledige lead generatie (prospects)",
+            "Geen automatische herinneringen"
           ]
         },
         "pro": {
           "name": "Pro",
-          "description": "Complete oplossing met AI",
+          "description": "De premium versie van uw back-office: een intelligent hulpmiddel gericht op AI, automatisering en groei, nog steeds zeer gebruiksvriendelijk voor elke ambachtsman.",
           "features": [
-            "Onbeperkte offertes/facturen",
-            "Complete AI en optimalisaties",
-            "Automatische follow-ups",
-            "Geavanceerde analytics",
-            "Premium sjablonen",
-            "Prioriteit ondersteuning",
-            "Handtekening voorspellingen",
-            "Prijsoptimalisatie"
+            "Onbeperkte offertes",
+            "Onbeperkte eenvoudige facturen",
+            "Onbeperkte klanten",
+            "Onbeperkte Peppol e-facturen (normaal gebruik)",
+            "AI-aangedreven slimme offertes (spraak of handmatige invoer)",
+            "Automatische AI-suggesties voor taken, prijzen en materialen",
+            "Aanpasbare bibliotheek van diensten / materialen",
+            "Offertesjablonen aangepast aan elk type werk",
+            "Live tracking van offertestatus",
+            "Converteer offerte → factuur in 1 klik",
+            "Verstuur per e-mail, PDF + Peppol",
+            "Offerte workflow: aangemaakt → verzonden → bekeken → opgevolgd → geaccepteerd",
+            "Factuur workflow: verzonden → bekeken → betaald → achterstallig",
+            "Automatische herinneringen voor ongetekende offertes en onbetaalde facturen",
+            "Kosteninvoer + opslag van facturen ontvangen via Peppol",
+            "Overzichtsweergave: maandelijkse kosten, geïnde bedragen, nog te innen bedragen",
+            "Gedetailleerde statistieken: omzet, ondertekende offertes, conversiepercentages, kosten, etc.",
+            "Geïntegreerde prospectie / leads",
+            "Klantaanvragen op basis van uw regio en specialiteit",
+            "Stuur een offerte in een paar klikken als reactie",
+            "Beperkte concurrentie (max 3 offertes per aanvraag)",
+            "Multi-gebruiker toegang (eigenaar, admin, werfleider, etc.)",
+            "Prioriteit ondersteuning via e-mail en chat"
           ],
           "limitations": []
         }
