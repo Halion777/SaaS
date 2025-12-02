@@ -42,6 +42,18 @@ export const MultiUserProvider = ({ children }) => {
     }
   }, [user, initialized]);
 
+  // Re-initialize if user changes (e.g., after registration)
+  useEffect(() => {
+    if (user && initialized) {
+      // If user changed, reset and re-initialize
+      const currentUserId = user.id;
+      if (currentUserId && (!userProfile || userProfile.id !== currentUserId)) {
+        setInitialized(false);
+        initializeMultiUser();
+      }
+    }
+  }, [user?.id]);
+
   // Initialize multi-user system
   const initializeMultiUser = useCallback(async () => {
     if (!user || initialized) return;
@@ -400,7 +412,8 @@ export const MultiUserProvider = ({ children }) => {
     getRoleLabel,
     
     // User info
-    userId: user?.id
+    userId: user?.id,
+    initialized
   }), [
     currentProfile,
     companyProfiles,
@@ -409,6 +422,7 @@ export const MultiUserProvider = ({ children }) => {
     loading,
     permissions,
     userProfile,
+    initialized,
     switchToProfile, // Renamed to avoid conflict with useState
     addProfile,
     updateProfile,

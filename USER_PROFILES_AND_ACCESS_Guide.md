@@ -37,9 +37,9 @@ The Haliqo platform uses a **two-layer access control** system:
 | Quotes | Unlimited |
 | Simple Invoices | Unlimited |
 | Peppol E-Invoices | Up to 50/month (sent + received) |
-| Lead Generation | Qualified lead suggestions (BETA) |
-| Automatic Reminders | ❌ |
-| Advanced Analytics | Basic statistics only |
+| Lead Generation | Limited access (qualified lead suggestions) |
+| Automatic Reminders | Manual follow-ups only (automatic email sending requires Pro) |
+| Advanced Analytics | Basic statistics only (KPI cards) |
 | Multi-User | ❌ |
 | AI Features | ✅ AI-powered smart quotes & suggestions |
 
@@ -98,6 +98,7 @@ src/config/subscriptionFeatures.js   - Feature access configuration
 ### Protection Components
 ```
 src/components/ProtectedRoute.jsx    - Auth + subscription + profile loading
+src/components/LimitedAccessGuard.jsx - Plan-based feature restrictions with upgrade prompt
 src/components/PermissionGuard.jsx   - Page-level permission checks
 src/components/SubscriptionGuard.jsx - Subscription validation (legacy)
 ```
@@ -145,6 +146,16 @@ For each nav item:
     ├── Map item to permission module
     ├── Check hasPermission(module, 'view_only')
     └── Hide item if no_access
+```
+
+### 4. Plan-Based Feature Restrictions
+```
+User accesses a Pro-only feature (e.g., Lead Generation)
+    ↓
+LimitedAccessGuard checks:
+    ├── Is user on Pro plan? → Allow full access
+    └── Is user on Starter plan? → Show banner with upgrade button
+        └── User can still access but with limited features
 ```
 
 ---
@@ -212,6 +223,45 @@ function MyComponent() {
 
 ---
 
+## Plan-Based Feature Restrictions
+
+### LimitedAccessGuard Component
+
+The `LimitedAccessGuard` component provides plan-based access control for features that are available on Starter plan but with limited functionality. Unlike `PermissionGuard` which blocks access, `LimitedAccessGuard` shows a banner with an upgrade button while still allowing access to the feature.
+
+**Usage:**
+```jsx
+<LimitedAccessGuard requiredPlan="pro" featureName="Lead Generation">
+  <LeadsManagementPage />
+</LimitedAccessGuard>
+```
+
+**Features:**
+- Shows banner at top for Starter plan users
+- Displays upgrade button linking to `/subscription`
+- Allows access to feature with limited functionality
+- Automatically hides banner for Pro plan users
+
+**Current Implementation:**
+- **Lead Generation** (`/leads-management`) - Limited access for Starter, full access for Pro
+
+### Automatic Reminders
+
+**Starter Plan:**
+- ✅ Manual follow-up creation allowed
+- ✅ Manual email sending allowed
+- ❌ Automatic email sending (requires Pro plan)
+
+**Pro Plan:**
+- ✅ Manual follow-up creation allowed
+- ✅ Manual email sending allowed
+- ✅ Automatic email sending enabled
+
+**Implementation:**
+- Follow-ups are marked with `automated: true` for automatic ones
+- Dispatcher functions check subscription before sending automatic emails
+- Manual follow-ups (created via UI) are always allowed
+
 ## Protected Pages
 
 The following pages are wrapped with `PermissionGuard`:
@@ -220,7 +270,7 @@ The following pages are wrapped with `PermissionGuard`:
 |------|--------|---------------------|
 | Dashboard | `dashboard` | view_only |
 | Analytics | `analytics` | view_only |
-| Leads Management | `leadsManagement` | view_only |
+| Leads Management | `leadsManagement` | view_only (with LimitedAccessGuard for Pro plan) |
 | Quote Creation | `quoteCreation` | full_access |
 | Quotes Management | `quotesManagement` | view_only |
 | Quotes Follow-Up | `quotesFollowUp` | view_only |

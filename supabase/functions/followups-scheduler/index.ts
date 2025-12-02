@@ -63,6 +63,8 @@ serve(async (req) => {
         });
       }
       
+      // Manual follow-up creation is allowed for all plans
+      // Only automatic email sending is restricted to Pro plan
       // Use hardcoded default rules (no database table needed)
       const globalRules = {
         max_stages: 3,
@@ -416,6 +418,23 @@ serve(async (req) => {
     if (qErr) throw qErr
 
     for (const quote of quotesNeedingFollowUp || []) {
+      // Check if user has Pro plan with automatic reminders feature
+      const { data: userData, error: userError } = await admin
+        .from('users')
+        .select('selected_plan, subscription_status')
+        .eq('id', quote.user_id)
+        .single();
+      
+      // Only create follow-ups for Pro plan users with active subscription
+      const hasAutomaticReminders = userData && 
+        userData.selected_plan === 'pro' && 
+        ['trial', 'trialing', 'active'].includes(userData.subscription_status);
+      
+      if (!hasAutomaticReminders) {
+        // Skip follow-up creation for Starter plan users
+        continue;
+      }
+      
       // Check if quote needs follow-up based on behavior rules
       const needsFollowUp = await checkIfQuoteNeedsFollowUp(admin, quote, globalRules)
       
@@ -753,6 +772,23 @@ async function processQuoteStatusUpdates(admin: any, rules: any) {
     for (const log of viewedQuotes || []) {
       const quote = log.quotes;
       
+      // Check if user has Pro plan with automatic reminders feature
+      const { data: userData, error: userError } = await admin
+        .from('users')
+        .select('selected_plan, subscription_status')
+        .eq('id', quote.user_id)
+        .single();
+      
+      // Only process follow-ups for Pro plan users with active subscription
+      const hasAutomaticReminders = userData && 
+        userData.selected_plan === 'pro' && 
+        ['trial', 'trialing', 'active'].includes(userData.subscription_status);
+      
+      if (!hasAutomaticReminders) {
+        // Skip follow-up creation for Starter plan users
+        continue;
+      }
+      
       // Update quote status to 'viewed'
       const { error: updateError } = await admin
         .from('quotes')
@@ -979,6 +1015,23 @@ async function progressFollowUpStages(admin: any, rules: any) {
     
     for (const followUp of followUps || []) {
       const quote = followUp.quotes;
+      
+      // Check if user has Pro plan with automatic reminders feature
+      const { data: userData, error: userError } = await admin
+        .from('users')
+        .select('selected_plan, subscription_status')
+        .eq('id', quote.user_id)
+        .single();
+      
+      // Only progress follow-ups for Pro plan users with active subscription
+      const hasAutomaticReminders = userData && 
+        userData.selected_plan === 'pro' && 
+        ['trial', 'trialing', 'active'].includes(userData.subscription_status);
+      
+      if (!hasAutomaticReminders) {
+        // Skip follow-up progression for Starter plan users
+        continue;
+      }
       
       // Check if quote is still valid for follow-up
       if (quote.status === 'accepted' || quote.status === 'rejected' || quote.status === 'expired') {
@@ -1222,6 +1275,23 @@ async function processNewlySentQuotes(admin: any, rules: any) {
     }
 
     for (const quote of newSentQuotes || []) {
+      // Check if user has Pro plan with automatic reminders feature
+      const { data: userData, error: userError } = await admin
+        .from('users')
+        .select('selected_plan, subscription_status')
+        .eq('id', quote.user_id)
+        .single();
+      
+      // Only create follow-ups for Pro plan users with active subscription
+      const hasAutomaticReminders = userData && 
+        userData.selected_plan === 'pro' && 
+        ['trial', 'trialing', 'active'].includes(userData.subscription_status);
+      
+      if (!hasAutomaticReminders) {
+        // Skip follow-up creation for Starter plan users
+        continue;
+      }
+      
       // Check if follow-up already exists for this quote
       const { data: existingFollowUp, error: checkError } = await admin
         .from('quote_follow_ups')
@@ -1452,6 +1522,29 @@ async function processScheduledFollowUps(admin: any) {
       if (followUp.attempts >= followUp.max_attempts) {
         console.log(`Follow-up ${followUp.id} for quote ${quote.quote_number} reached max attempts, will progress to next stage`);
         continue; // Let progressFollowUpStages handle this
+      }
+      
+      // Check if this is an automated follow-up (automatic email sending)
+      // Manual follow-ups (automated: false) are allowed for all plans
+      // Only automated follow-ups (automated: true) require Pro plan
+      if (followUp.meta?.automated === true) {
+        // Check if user has Pro plan with automatic reminders feature
+        const { data: userData, error: userError } = await admin
+          .from('users')
+          .select('selected_plan, subscription_status')
+          .eq('id', followUp.user_id)
+          .single();
+        
+        // Only send automatic emails for Pro plan users with active subscription
+        const hasAutomaticReminders = userData && 
+          userData.selected_plan === 'pro' && 
+          ['trial', 'trialing', 'active'].includes(userData.subscription_status);
+        
+        if (!hasAutomaticReminders) {
+          // Skip automatic email sending for Starter plan users
+          console.log(`Skipping automatic email for follow-up ${followUp.id} - Starter plan users must send manually`);
+          continue;
+        }
       }
       
       try {

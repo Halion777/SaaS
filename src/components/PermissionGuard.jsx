@@ -43,7 +43,22 @@ const PermissionGuard = ({
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { hasPermission, loading, currentProfile, isAdmin, companyProfiles } = useMultiUser();
+  const multiUserContext = useMultiUser();
+  const { 
+    hasPermission, 
+    loading, 
+    currentProfile, 
+    isAdmin, 
+    companyProfiles,
+    initialized
+  } = multiUserContext || {
+    hasPermission: () => false,
+    loading: true,
+    currentProfile: null,
+    isAdmin: () => false,
+    companyProfiles: [],
+    initialized: false
+  };
   
   // Sidebar offset state for responsive layout
   const [sidebarOffset, setSidebarOffset] = useState(288);
@@ -89,7 +104,17 @@ const PermissionGuard = ({
   }, []);
 
   // Don't show separate loader - parent already shows one
+  // But also wait for profile to be loaded if it should exist
   if (loading) {
+    return null;
+  }
+
+  // For new users, profile might not be loaded yet even if loading is false
+  // If no currentProfile but profiles exist or should exist, wait a bit more
+  // This handles the case where profile was just created but not yet loaded
+  if (!currentProfile && companyProfiles.length === 0 && !adminOnly) {
+    // Check if we're still initializing (profile might be created but not loaded)
+    // Return null to show nothing (parent loading will handle it)
     return null;
   }
 

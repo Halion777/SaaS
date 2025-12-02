@@ -2207,6 +2207,7 @@
       "availableProfiles": "Profils disponibles",
       "manageProfiles": "Gérer les profils",
       "createProfiles": "Créer des profils",
+      "profile": "Profils",
       "noProfiles": "Aucun profil",
       "logout": "Déconnexion"
     },
@@ -2661,6 +2662,22 @@
         "send": "Envoyer",
         "follow": "Suivre",
         "invoice": "Facturer"
+      },
+      "taskLabels": {
+        "overdueInvoice": "Facture {{invoiceNumber}} en retard",
+        "overdueExpenseInvoice": "Facture fournisseur {{invoiceNumber}} en retard",
+        "invoiceDueToday": "Facture {{invoiceNumber}} à échéance aujourd'hui",
+        "followUpQuote": "Relance pour devis {{quoteNumber}}",
+        "noResponseQuote": "Devis {{quoteNumber}} sans réponse",
+        "createInvoiceForQuote": "Créer facture pour devis {{quoteNumber}}",
+        "createInvoice": "Créer la facture",
+        "viewInvoice": "Voir la facture",
+        "scheduleFollowUp": "Planifier la relance",
+        "followUpClient": "Relancer le client",
+        "client": "Client",
+        "supplier": "Fournisseur",
+        "daysOverdue": "{{count}} jour{{count, plural, one {} other {s}}} de retard",
+        "daysNoResponse": "{{count}} jour{{count, plural, one {} other {s}}} sans réponse"
       },
       "tasks": [
         {

@@ -50,11 +50,12 @@ const TaskList = () => {
         setLoading(true);
         const allTasks = [];
 
-        // 1. Get overdue client invoices
+        // 1. Get overdue and due today client invoices
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+        const todayStr = today.toISOString().split('T')[0];
         
-        const { data: overdueClientInvoices } = await supabase
+        const { data: clientInvoices } = await supabase
           .from('invoices')
           .select(`
             id,
@@ -67,28 +68,31 @@ const TaskList = () => {
           `)
           .eq('user_id', user.id)
           .neq('status', 'paid')
-          .lt('due_date', today.toISOString().split('T')[0]);
+          .lte('due_date', todayStr);
 
-        if (overdueClientInvoices) {
-          overdueClientInvoices.forEach(invoice => {
+        if (clientInvoices) {
+          clientInvoices.forEach(invoice => {
             const daysOverdue = getDaysAgo(invoice.due_date);
+            const isDueToday = invoice.due_date === todayStr;
             allTasks.push({
               id: `invoice-${invoice.id}`,
               type: 'invoice',
-              title: `Facture ${invoice.invoice_number || 'N/A'} en retard`,
-              client: invoice.client?.name || 'Client',
-              priority: daysOverdue > 7 ? 'high' : daysOverdue > 3 ? 'medium' : 'low',
+              title: isDueToday 
+                ? t('dashboard.taskList.taskLabels.invoiceDueToday', { invoiceNumber: invoice.invoice_number || 'N/A' }, `Invoice ${invoice.invoice_number || 'N/A'} due today`)
+                : t('dashboard.taskList.taskLabels.overdueInvoice', { invoiceNumber: invoice.invoice_number || 'N/A' }, `Invoice ${invoice.invoice_number || 'N/A'} overdue`),
+              client: invoice.client?.name || t('dashboard.taskList.taskLabels.client', 'Client'),
+              priority: isDueToday ? 'high' : (daysOverdue > 7 ? 'high' : daysOverdue > 3 ? 'medium' : 'low'),
               dueDate: invoice.due_date,
-              action: 'Voir la facture',
+              action: t('dashboard.taskList.taskLabels.viewInvoice', 'View invoice'),
               amount: invoice.final_amount || invoice.amount || 0,
-              daysOverdue,
+              daysOverdue: isDueToday ? 0 : daysOverdue,
               link: `/invoices-management?invoice=${invoice.id}`
             });
           });
         }
 
-        // 2. Get overdue expense invoices
-        const { data: overdueExpenseInvoices } = await supabase
+        // 2. Get overdue and due today expense invoices
+        const { data: expenseInvoices } = await supabase
           .from('expense_invoices')
           .select(`
             id,
@@ -100,32 +104,43 @@ const TaskList = () => {
           `)
           .eq('user_id', user.id)
           .neq('status', 'paid')
-          .lt('due_date', today.toISOString().split('T')[0]);
+          .lte('due_date', todayStr);
 
-        if (overdueExpenseInvoices) {
-          overdueExpenseInvoices.forEach(invoice => {
+        if (expenseInvoices) {
+          expenseInvoices.forEach(invoice => {
             const daysOverdue = getDaysAgo(invoice.due_date);
+            const isDueToday = invoice.due_date === todayStr;
             allTasks.push({
               id: `expense-invoice-${invoice.id}`,
               type: 'invoice',
-              title: `Facture ${invoice.invoice_number || 'N/A'} en retard`,
-              client: invoice.supplier_name || 'Fournisseur',
-              priority: daysOverdue > 7 ? 'high' : daysOverdue > 3 ? 'medium' : 'low',
+              title: isDueToday
+                ? t('dashboard.taskList.taskLabels.invoiceDueToday', { invoiceNumber: invoice.invoice_number || 'N/A' }, `Expense invoice ${invoice.invoice_number || 'N/A'} due today`)
+                : t('dashboard.taskList.taskLabels.overdueExpenseInvoice', { invoiceNumber: invoice.invoice_number || 'N/A' }, `Expense invoice ${invoice.invoice_number || 'N/A'} overdue`),
+              client: invoice.supplier_name || t('dashboard.taskList.taskLabels.supplier', 'Supplier'),
+              priority: isDueToday ? 'high' : (daysOverdue > 7 ? 'high' : daysOverdue > 3 ? 'medium' : 'low'),
               dueDate: invoice.due_date,
-              action: 'Voir la facture',
+              action: t('dashboard.taskList.taskLabels.viewInvoice', 'View invoice'),
               amount: invoice.amount || 0,
-              daysOverdue,
+              daysOverdue: isDueToday ? 0 : daysOverdue,
               link: `/expense-invoices?invoice=${invoice.id}`
             });
           });
         }
 
-        // 3. Get pending follow-ups for quotes
+        // 3. Get pending follow-ups scheduled for today or overdue
         const { data: followUpsData } = await listScheduledFollowUps({ status: 'pending', limit: 50 });
         
         if (followUpsData?.data) {
+          // Filter follow-ups scheduled for today or overdue
+          const relevantFollowUps = followUpsData.data.filter(f => {
+            if (!f.scheduled_at) return false;
+            const scheduledDate = new Date(f.scheduled_at);
+            scheduledDate.setHours(0, 0, 0, 0);
+            return scheduledDate <= today;
+          });
+          
           // Get quotes for these follow-ups
-          const quoteIds = followUpsData.data.map(f => f.quote_id).filter(Boolean);
+          const quoteIds = relevantFollowUps.map(f => f.quote_id).filter(Boolean);
           
           if (quoteIds.length > 0) {
             const { data: quotes } = await supabase
@@ -143,17 +158,20 @@ const TaskList = () => {
 
             if (quotes) {
               quotes.forEach(quote => {
-                const followUp = followUpsData.data.find(f => f.quote_id === quote.id);
+                const followUp = relevantFollowUps.find(f => f.quote_id === quote.id);
                 if (followUp) {
                   const daysSinceSent = quote.sent_at ? getDaysAgo(quote.sent_at) : 0;
+                  const scheduledDate = new Date(followUp.scheduled_at);
+                  scheduledDate.setHours(0, 0, 0, 0);
+                  const isDueToday = scheduledDate.getTime() === today.getTime();
                   allTasks.push({
                     id: `followup-${followUp.id}`,
                     type: 'follow',
-                    title: `Relance pour devis ${quote.quote_number || 'N/A'}`,
-                    client: quote.client?.name || 'Client',
-                    priority: daysSinceSent > 5 ? 'high' : daysSinceSent > 3 ? 'medium' : 'low',
+                    title: t('dashboard.taskList.taskLabels.followUpQuote', { quoteNumber: quote.quote_number || 'N/A' }, `Follow-up for quote ${quote.quote_number || 'N/A'}`),
+                    client: quote.client?.name || t('dashboard.taskList.taskLabels.client', 'Client'),
+                    priority: isDueToday ? 'high' : (daysSinceSent > 5 ? 'high' : daysSinceSent > 3 ? 'medium' : 'low'),
                     dueDate: followUp.scheduled_at,
-                    action: 'Planifier la relance',
+                    action: t('dashboard.taskList.taskLabels.scheduleFollowUp', 'Schedule follow-up'),
                     link: `/quotes-management?quote=${quote.id}`
                   });
                 }
@@ -190,11 +208,11 @@ const TaskList = () => {
               allTasks.push({
                 id: `delayed-quote-${quote.id}`,
                 type: 'send',
-                title: `Devis ${quote.quote_number || 'N/A'} sans réponse`,
-                client: quote.client?.name || 'Client',
+                title: t('dashboard.taskList.taskLabels.noResponseQuote', { quoteNumber: quote.quote_number || 'N/A' }, `Quote ${quote.quote_number || 'N/A'} with no response`),
+                client: quote.client?.name || t('dashboard.taskList.taskLabels.client', 'Client'),
                 priority: daysSinceSent > 7 ? 'high' : 'medium',
                 dueDate: quote.sent_at,
-                action: 'Relancer le client',
+                action: t('dashboard.taskList.taskLabels.followUpClient', 'Follow up with client'),
                 daysSinceSent,
                 link: `/quotes-management?quote=${quote.id}`
               });
@@ -202,8 +220,12 @@ const TaskList = () => {
           });
         }
 
-        // 5. Get accepted quotes that need invoice creation
-        const { data: allAcceptedQuotes } = await supabase
+        // 5. Get accepted quotes that need invoice creation (only recent ones - last 7 days)
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+        
+        const { data: recentAcceptedQuotes } = await supabase
           .from('quotes')
           .select(`
             id,
@@ -214,11 +236,12 @@ const TaskList = () => {
             client:clients(id, name)
           `)
           .eq('user_id', user.id)
-          .eq('status', 'accepted');
+          .eq('status', 'accepted')
+          .gte('accepted_at', sevenDaysAgo.toISOString());
 
         // Filter quotes that don't have invoices
-        if (allAcceptedQuotes && allAcceptedQuotes.length > 0) {
-          const quoteIds = allAcceptedQuotes.map(q => q.id);
+        if (recentAcceptedQuotes && recentAcceptedQuotes.length > 0) {
+          const quoteIds = recentAcceptedQuotes.map(q => q.id);
           const { data: quotesWithInvoices } = await supabase
             .from('invoices')
             .select('quote_id')
@@ -226,18 +249,18 @@ const TaskList = () => {
             .eq('user_id', user.id);
 
           const invoiceQuoteIds = new Set(quotesWithInvoices?.map(inv => inv.quote_id) || []);
-          const acceptedQuotes = allAcceptedQuotes.filter(q => !invoiceQuoteIds.has(q.id));
+          const acceptedQuotes = recentAcceptedQuotes.filter(q => !invoiceQuoteIds.has(q.id));
 
           acceptedQuotes.forEach(quote => {
             const daysSinceAccepted = quote.accepted_at ? getDaysAgo(quote.accepted_at) : 0;
             allTasks.push({
               id: `invoice-creation-${quote.id}`,
               type: 'invoice',
-              title: `Créer facture pour devis ${quote.quote_number || 'N/A'}`,
-              client: quote.client?.name || 'Client',
+              title: t('dashboard.taskList.taskLabels.createInvoiceForQuote', { quoteNumber: quote.quote_number || 'N/A' }, `Create invoice for quote ${quote.quote_number || 'N/A'}`),
+              client: quote.client?.name || t('dashboard.taskList.taskLabels.client', 'Client'),
               priority: daysSinceAccepted > 3 ? 'high' : 'medium',
               dueDate: quote.accepted_at,
-              action: 'Créer la facture',
+              action: t('dashboard.taskList.taskLabels.createInvoice', 'Create invoice'),
               daysSinceAccepted,
               link: `/quotes-management?quote=${quote.id}&action=convert`
             });
@@ -322,7 +345,7 @@ const TaskList = () => {
         </div>
         <div className="text-center py-8">
           <Icon name="CheckCircle" size={48} className="text-muted-foreground mx-auto mb-4" />
-          <p className="text-sm text-muted-foreground">{t('dashboard.taskList.noTasks') || 'Aucune tâche en attente'}</p>
+          <p className="text-sm text-muted-foreground">{t('dashboard.taskList.noTasks', 'No pending tasks')}</p>
         </div>
       </div>
     );
@@ -353,8 +376,8 @@ const TaskList = () => {
               <p className="text-sm font-medium text-foreground truncate">{task.title}</p>
               <p className="text-xs text-muted-foreground">
                 {task.client} • {task.action}
-                {task.daysOverdue && ` • ${task.daysOverdue} jour${task.daysOverdue > 1 ? 's' : ''} de retard`}
-                {task.daysSinceSent && ` • ${task.daysSinceSent} jour${task.daysSinceSent > 1 ? 's' : ''} sans réponse`}
+                {task.daysOverdue && ` • ${t('dashboard.taskList.taskLabels.daysOverdue', { count: task.daysOverdue }, `${task.daysOverdue} day${task.daysOverdue > 1 ? 's' : ''} overdue`)}`}
+                {task.daysSinceSent && ` • ${t('dashboard.taskList.taskLabels.daysNoResponse', { count: task.daysSinceSent }, `${task.daysSinceSent} day${task.daysSinceSent > 1 ? 's' : ''} without response`)}`}
               </p>
             </div>
             <div className="flex items-center space-x-1.5 sm:space-x-2">

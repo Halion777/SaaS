@@ -31,7 +31,7 @@ const MultiUserProfilesPage = () => {
     deleteProfile,
     getCompanyProfiles,
     uploadAndUpdateAvatar,
-    
+    userProfile
   } = useMultiUser();
 
   const [showAddProfileModal, setShowAddProfileModal] = useState(false);
@@ -712,17 +712,27 @@ const MultiUserProfilesPage = () => {
                 </p>
               </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
-                {/* Show Add Profile button when:
+                {/* Show Add Profile button for:
                     1. Premium user AND admin with room for more profiles, OR
-                    2. No profiles exist yet (need to create first admin profile)
+                    2. No profiles exist yet (need to create first admin profile), OR
+                    3. Starter plan users (but disabled when profiles exist)
                 */}
                 {((isPremium && isAdmin() && companyProfiles.length < subscriptionLimits.maxProfiles) || 
-                  companyProfiles.length === 0) && (
-                  <Button onClick={() => {
-                    // Reset form with appropriate defaults based on whether this is the first profile
-                    setProfileForm(getDefaultProfileForm());
-                    setShowAddProfileModal(true);
-                  }}>
+                  companyProfiles.length === 0 ||
+                  (userProfile?.selected_plan === 'starter' && isAdmin() && companyProfiles.length >= 1)) && (
+                  <Button 
+                    onClick={() => {
+                      // Only allow if not Starter plan or if no profiles exist
+                      if (userProfile?.selected_plan === 'starter' && companyProfiles.length > 0) {
+                        return; // Disabled for Starter plan when profiles exist
+                      }
+                      // Reset form with appropriate defaults based on whether this is the first profile
+                      setProfileForm(getDefaultProfileForm());
+                      setShowAddProfileModal(true);
+                    }}
+                    disabled={userProfile?.selected_plan === 'starter' && companyProfiles.length > 0}
+                    title={userProfile?.selected_plan === 'starter' && companyProfiles.length > 0 ? t('limitedAccess.banner.message', { feature: t('multiUserProfiles.addProfile') }, 'Upgrade to Pro to add more profiles') : ''}
+                  >
                     <Icon name="Plus" size={16} className="mr-2" />
                     {t('multiUserProfiles.addProfile')}
                   </Button>
@@ -926,15 +936,22 @@ const MultiUserProfilesPage = () => {
                 <p className="text-muted-foreground mb-4">
                   {t('multiUserProfiles.noProfilesConfigured.description')}
                 </p>
-                {/* Always show create button when no profiles exist (need to create first admin profile) */}
+                {/* Always show create button when no profiles exist (need to create first admin profile)
+                    For Starter plan with existing profiles, show disabled button */}
                 <Button
                   onClick={() => {
+                    // Only allow if not Starter plan or if no profiles exist
+                    if (userProfile?.selected_plan === 'starter' && companyProfiles.length > 0) {
+                      return; // Disabled for Starter plan when profiles exist
+                    }
                     setProfileForm(getDefaultProfileForm());
                     setShowAddProfileModal(true);
                   }}
                   variant="default"
                   iconName="Plus"
                   iconPosition="left"
+                  disabled={userProfile?.selected_plan === 'starter' && companyProfiles.length > 0}
+                  title={userProfile?.selected_plan === 'starter' && companyProfiles.length > 0 ? t('limitedAccess.banner.message', { feature: t('multiUserProfiles.addProfile') }, 'Upgrade to Pro to add more profiles') : ''}
                 >
                   {t('multiUserProfiles.noProfilesConfigured.createFirst')}
                 </Button>

@@ -52,7 +52,8 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
     getRoleColor, 
     getRoleLabel,
     isAdmin,
-    updateProfile
+    updateProfile,
+    userProfile
   } = multiUserContext || {
     currentProfile: null,
     companyProfiles: [],
@@ -62,7 +63,8 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
     getRoleColor: () => '',
     getRoleLabel: () => '',
     isAdmin: () => false,
-    updateProfile: () => {}
+    updateProfile: () => {},
+    userProfile: null
   };
 
   // Get actual user data from AuthContext
@@ -1082,7 +1084,9 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                   <span>
                     {companyProfiles.length > 1 
                       ? t('profile.dropdown.manageProfiles') 
-                      : t('profile.dropdown.createProfiles')
+                      : (userProfile?.selected_plan === 'starter' 
+                          ? t('profile.dropdown.profile', 'Profile')
+                          : t('profile.dropdown.createProfiles'))
                     }
                   </span>
                 </button>

@@ -584,8 +584,15 @@ const MainSidebar = () => {
     return navigationCategories
       .map(category => ({
         ...category,
-        // Filter items based on user permissions
-        items: category.items.filter(item => canAccessNavItem(item.id))
+        // Filter items based on user permissions and plan restrictions
+        items: category.items.filter(item => {
+          // Hide items marked as hidden (e.g., for Starter plan)
+          if (item.hidden) {
+            return false;
+          }
+          // Check if item has permission requirement
+          return canAccessNavItem(item.id);
+        })
       }))
       .filter(category => {
         // Hide the services category if visibility not loaded yet, or if all services are hidden

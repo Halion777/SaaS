@@ -1824,6 +1824,7 @@
       "availableProfiles": "Beschikbare Profielen",
       "manageProfiles": "Profielen Beheren",
       "createProfiles": "Profielen Aanmaken",
+      "profile": "Profielen",
       "noProfiles": "Geen Profielen",
       "logout": "Uitloggen"
     },
@@ -2648,6 +2649,22 @@
         "send": "Verzenden",
         "follow": "Opvolgen",
         "invoice": "Factureren"
+      },
+      "taskLabels": {
+        "overdueInvoice": "Factuur {{invoiceNumber}} in achterstand",
+        "overdueExpenseInvoice": "Leveranciersfactuur {{invoiceNumber}} in achterstand",
+        "invoiceDueToday": "Factuur {{invoiceNumber}} vervalt vandaag",
+        "followUpQuote": "Opvolging voor offerte {{quoteNumber}}",
+        "noResponseQuote": "Offerte {{quoteNumber}} zonder reactie",
+        "createInvoiceForQuote": "Factuur voor offerte {{quoteNumber}} maken",
+        "createInvoice": "Factuur maken",
+        "viewInvoice": "Factuur bekijken",
+        "scheduleFollowUp": "Opvolging plannen",
+        "followUpClient": "Klant opvolgen",
+        "client": "Klant",
+        "supplier": "Leverancier",
+        "daysOverdue": "{{count}} dag{{count, plural, one {} other {s}}} in achterstand",
+        "daysNoResponse": "{{count}} dag{{count, plural, one {} other {s}}} zonder reactie"
       },
       "tasks": [
         {

@@ -181,6 +181,38 @@ async function processFollowUp(admin: any, followUp: any) {
       await stopFollowUpsForInvoice(admin, invoice.id);
       return { success: false, error: 'Invoice finalized' };
     }
+    
+    // Check if this is an automated follow-up (automatic email sending)
+    // Manual follow-ups (automated: false) are allowed for all plans
+    // Only automated follow-ups (automated: true) require Pro plan
+    if (followUp.meta?.automated === true) {
+      // Check if user has Pro plan with automatic reminders feature
+      const { data: userData, error: userError } = await admin
+        .from('users')
+        .select('selected_plan, subscription_status')
+        .eq('id', followUp.user_id)
+        .single();
+      
+      // Only send automatic emails for Pro plan users with active subscription
+      const hasAutomaticReminders = userData && 
+        userData.selected_plan === 'pro' && 
+        ['trial', 'trialing', 'active'].includes(userData.subscription_status);
+      
+      if (!hasAutomaticReminders) {
+        // Skip automatic email sending for Starter plan users
+        console.log(`Skipping automatic email for follow-up ${followUp.id} - Starter plan users must send manually`);
+        await admin.from('invoice_follow_ups').update({
+          status: 'stopped',
+          last_error: 'Automatic reminders require Pro plan',
+          meta: {
+            ...followUp.meta,
+            stopped_reason: 'starter_plan_restriction',
+            stopped_at: new Date().toISOString()
+          }
+        }).eq('id', followUp.id);
+        return { success: false, error: 'Automatic reminders require Pro plan' };
+      }
+    }
 
     const { data: clientData, error: cErr } = await admin
       .from('clients')

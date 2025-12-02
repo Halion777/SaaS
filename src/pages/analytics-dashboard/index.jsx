@@ -15,6 +15,7 @@ import ExportControls from './components/ExportControls';
 import DetailedAnalyticsPanel from './components/DetailedAnalyticsPanel';
 import { useScrollPosition } from '../../utils/useScrollPosition';
 import { useAuth } from '../../context/AuthContext';
+import { useMultiUser } from '../../context/MultiUserContext';
 import { fetchQuotes } from '../../services/quotesService';
 import { InvoiceService } from '../../services/invoiceService';
 import { fetchClients } from '../../services/clientsService';
@@ -24,7 +25,11 @@ import { getAnalyticsObjectives } from '../../services/authService';
 const AnalyticsDashboard = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const { userProfile } = useMultiUser();
   const [sidebarOffset, setSidebarOffset] = useState(288);
+  
+  // Check if user is on Pro plan for advanced analytics
+  const isProPlan = userProfile?.selected_plan === 'pro';
   const [isMobile, setIsMobile] = useState(false);
   const [dateRange, setDateRange] = useState('last30days');
   const [selectedSegment, setSelectedSegment] = useState('all');
@@ -535,68 +540,120 @@ const AnalyticsDashboard = () => {
               ))}
             </motion.div>
 
-            {/* Detailed Analytics Panel */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="mb-6 sm:mb-8"
-            >
-              <DetailedAnalyticsPanel data={detailedAnalyticsData} isLoading={isLoading} />
-            </motion.div>
-
-            {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
-              {/* Revenue Forecasting */}
+            {/* Detailed Analytics Panel - Pro only */}
+            {isProPlan && (
               <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="mb-6 sm:mb-8"
               >
-                <RevenueChart data={revenueData} isLoading={isLoading} />
+                <DetailedAnalyticsPanel data={detailedAnalyticsData} isLoading={isLoading} />
               </motion.div>
+            )}
 
-              {/* Conversion Analysis */}
+            {/* Charts Section - Pro only */}
+            {isProPlan && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
+                {/* Revenue Forecasting */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <RevenueChart data={revenueData} isLoading={isLoading} />
+                </motion.div>
+
+                {/* Conversion Analysis */}
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <ConversionChart data={conversionData} isLoading={isLoading} />
+                </motion.div>
+              </div>
+            )}
+            
+            {/* Starter plan message */}
+            {!isProPlan && (
               <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="mb-6 sm:mb-8 bg-muted border border-border rounded-lg p-6"
               >
-                <ConversionChart data={conversionData} isLoading={isLoading} />
+                <div className="flex items-center space-x-3">
+                  <Icon name="BarChart3" size={24} className="text-primary" />
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-1">
+                      {t('analyticsDashboard.upgrade.title', 'Upgrade to Pro for Advanced Analytics')}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {t('analyticsDashboard.upgrade.message', 'Get detailed statistics, revenue forecasting, conversion analysis, and more with Pro plan.')}
+                    </p>
+                  </div>
+                </div>
               </motion.div>
-            </div>
+            )}
           </>
         );
       case 'segments':
         return (
           <>
-            {/* Client Segments */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              className="mb-6 sm:mb-8"
-            >
-              <ClientSegmentChart data={clientSegmentData} isLoading={isLoading} />
-            </motion.div>
+            {/* Client Segments - Pro only */}
+            {isProPlan && (
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+                className="mb-6 sm:mb-8"
+              >
+                <ClientSegmentChart data={clientSegmentData} isLoading={isLoading} />
+              </motion.div>
+            )}
 
-            {/* Real-time Progress */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-              className="mb-6 sm:mb-8"
-            >
-              <MetricsProgress 
-                metrics={currentMetrics}
-                userObjectives={userObjectives}
-                isLoading={isLoading}
-                onUpdate={(objectives) => {
-                  setUserObjectives(objectives);
-                }}
-                canEdit={canEdit}
-              />
-            </motion.div>
+            {/* Real-time Progress - Pro only */}
+            {isProPlan && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+                className="mb-6 sm:mb-8"
+              >
+                <MetricsProgress 
+                  metrics={currentMetrics}
+                  userObjectives={userObjectives}
+                  isLoading={isLoading}
+                  onUpdate={(objectives) => {
+                    setUserObjectives(objectives);
+                  }}
+                  canEdit={canEdit}
+                />
+              </motion.div>
+            )}
+            
+            {/* Starter plan message */}
+            {!isProPlan && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="mb-6 sm:mb-8 bg-muted border border-border rounded-lg p-6"
+              >
+                <div className="flex items-center space-x-3">
+                  <Icon name="BarChart3" size={24} className="text-primary" />
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-1">
+                      {t('analyticsDashboard.upgrade.title', 'Upgrade to Pro for Advanced Analytics')}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {t('analyticsDashboard.upgrade.message', 'Get detailed statistics, revenue forecasting, conversion analysis, and more with Pro plan.')}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </>
         );
       default:

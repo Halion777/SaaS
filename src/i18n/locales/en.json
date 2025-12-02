@@ -1791,6 +1791,7 @@
       "availableProfiles": "Available Profiles",
       "manageProfiles": "Manage Profiles",
       "createProfiles": "Create Profiles",
+      "profile": "Profiles",
       "noProfiles": "No Profiles",
       "logout": "Logout"
     },
@@ -2598,6 +2599,22 @@
         "send": "Send",
         "follow": "Follow Up",
         "invoice": "Invoice"
+      },
+      "taskLabels": {
+        "overdueInvoice": "Invoice {{invoiceNumber}} overdue",
+        "overdueExpenseInvoice": "Expense invoice {{invoiceNumber}} overdue",
+        "invoiceDueToday": "Invoice {{invoiceNumber}} due today",
+        "followUpQuote": "Follow-up for quote {{quoteNumber}}",
+        "noResponseQuote": "Quote {{quoteNumber}} with no response",
+        "createInvoiceForQuote": "Create invoice for quote {{quoteNumber}}",
+        "createInvoice": "Create invoice",
+        "viewInvoice": "View invoice",
+        "scheduleFollowUp": "Schedule follow-up",
+        "followUpClient": "Follow up with client",
+        "client": "Client",
+        "supplier": "Supplier",
+        "daysOverdue": "{{count}} day{{count, plural, one {} other {s}}} overdue",
+        "daysNoResponse": "{{count}} day{{count, plural, one {} other {s}}} without response"
       },
       "tasks": [
         {

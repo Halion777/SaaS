@@ -66,6 +66,8 @@ serve(async (req) => {
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
       }
       
+      // Manual follow-up creation is allowed for all plans
+      // Only automatic email sending is restricted to Pro plan
       // Use hardcoded default rules
       const globalRules = {
         max_stages: 3,
@@ -696,6 +698,23 @@ async function progressFollowUpStages(admin: any, rules: any) {
     
     for (const followUp of followUps || []) {
       const invoice = followUp.invoices;
+      
+      // Check if user has Pro plan with automatic reminders feature
+      const { data: userData, error: userError } = await admin
+        .from('users')
+        .select('selected_plan, subscription_status')
+        .eq('id', invoice.user_id)
+        .single();
+      
+      // Only progress follow-ups for Pro plan users with active subscription
+      const hasAutomaticReminders = userData && 
+        userData.selected_plan === 'pro' && 
+        ['trial', 'trialing', 'active'].includes(userData.subscription_status);
+      
+      if (!hasAutomaticReminders) {
+        // Skip follow-up progression for Starter plan users
+        continue;
+      }
       
       // Check if invoice is still valid for follow-up
       if (invoice.status === 'paid' || invoice.status === 'cancelled') {

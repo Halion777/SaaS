@@ -68,16 +68,14 @@ export const QUOTAS = {
     invoicesPerMonth: -1, // -1 = unlimited (simple invoices are unlimited)
     peppolInvoicesPerMonth: 50, // Up to 50 Peppol e-invoices per month (sent + received)
     maxClients: 30, // Up to 30 active clients
-    maxProfiles: 1, // 1 user
-    maxStorage: '10GB'
+    maxProfiles: 1 // 1 user
   },
   pro: {
     quotesPerMonth: -1, // -1 = unlimited
     invoicesPerMonth: -1, // -1 = unlimited
     peppolInvoicesPerMonth: -1, // -1 = unlimited (normal usage)
     maxClients: -1, // -1 = unlimited
-    maxProfiles: 10, // Multi-user access
-    maxStorage: '100GB'
+    maxProfiles: 10 // Multi-user access
   }
 };
 

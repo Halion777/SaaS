@@ -4,11 +4,13 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import MainSidebar from '../../components/ui/MainSidebar';
 import PermissionGuard, { usePermissionCheck } from '../../components/PermissionGuard';
+import LimitedAccessGuard from '../../components/LimitedAccessGuard';
 import TableLoader from '../../components/ui/TableLoader';
 import LeadsFilterToolbar from './components/LeadsFilterToolbar';
 import { useScrollPosition } from '../../utils/useScrollPosition';
 import { LeadManagementService } from '../../services/leadManagementService';
 import { useAuth } from '../../context/AuthContext';
+import { useMultiUser } from '../../context/MultiUserContext';
 import { getCountryOptions, getRegionOptionsForCountry } from '../../constants/countriesAndRegions';
 import { useTranslation } from 'react-i18next';
 
@@ -24,7 +26,11 @@ const LeadsManagementPage = () => {
   const [selectedLeadForSpam, setSelectedLeadForSpam] = useState(null);
   const tabsScrollRef = useScrollPosition('leads-tabs-scroll');
   const { user } = useAuth();
+  const { userProfile } = useMultiUser();
   const { t } = useTranslation();
+  
+  // Check if user is on Pro plan for full lead generation
+  const isProPlan = userProfile?.selected_plan === 'pro';
   
   // State for leads and settings
   const [leads, setLeads] = useState([]);
@@ -578,8 +584,8 @@ const LeadsManagementPage = () => {
                     variant="outline"
                     size="sm"
                     className="text-red-600 border-red-200 hover:bg-red-50 w-full sm:w-auto"
-                    disabled={!canEdit}
-                    title={!canEdit ? t('permissions.noFullAccess') : ''}
+                    disabled={!canEdit || !isProPlan}
+                    title={!canEdit ? t('permissions.noFullAccess') : (!isProPlan ? t('limitedAccess.banner.message', { feature: t('leadsManagement.leadsTab.leadCard.reportSpam') }, 'Upgrade to Pro to report spam') : '')}
                   >
                     <Icon name="AlertTriangle" className="w-4 h-4 mr-1" />
                     <span className="hidden sm:inline">{t('leadsManagement.leadsTab.leadCard.reportSpam')}</span>
@@ -592,8 +598,8 @@ const LeadsManagementPage = () => {
                       variant="default"
                       size="default"
                       className="px-4 sm:px-6 py-2 font-semibold w-full sm:w-auto"
-                      disabled={!canEdit}
-                      title={!canEdit ? t('permissions.noFullAccess') : ''}
+                      disabled={!canEdit || !isProPlan}
+                      title={!canEdit ? t('permissions.noFullAccess') : (!isProPlan ? t('limitedAccess.banner.message', { feature: t('leadsManagement.leadsTab.leadCard.createQuote') }, 'Upgrade to Pro to create quotes from leads') : '')}
                     >
                       <Icon name="FileText" className="w-4 h-4 mr-2" />
                       {t('leadsManagement.leadsTab.leadCard.createQuote')}
@@ -995,6 +1001,7 @@ const LeadsManagementPage = () => {
 
   return (
     <PermissionGuard module="leadsManagement" requiredPermission="view_only">
+    <LimitedAccessGuard requiredPlan="pro" featureName={t('leadsManagement.title', 'Lead Generation')}>
     <div className="min-h-screen bg-background">
       <MainSidebar />
       
@@ -1144,6 +1151,7 @@ const LeadsManagementPage = () => {
         </div>
       )}
     </div>
+    </LimitedAccessGuard>
     </PermissionGuard>
   );
 };
