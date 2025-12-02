@@ -208,6 +208,7 @@ const PeppolNetworkPage = () => {
           return {
             ...prev,
             // Only update if loaded settings have values (preserve auto-filled values)
+            peppolId: loaded.peppolId || prev.peppolId, // Set peppolId from database
             name: loaded.name || prev.name,
             email: loaded.email || prev.email,
             countryCode: loaded.countryCode || prev.countryCode,
