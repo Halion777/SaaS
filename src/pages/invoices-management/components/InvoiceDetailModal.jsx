@@ -45,16 +45,17 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
 
   const getPeppolStatusBadge = (status) => {
     const statusConfig = {
-      not_sent: { label: t('invoicesManagement.peppolStatus.notSent'), color: 'bg-muted text-muted-foreground' },
-      sending: { label: t('invoicesManagement.peppolStatus.sending'), color: 'bg-warning text-warning-foreground' },
-      sent: { label: t('invoicesManagement.peppolStatus.sent'), color: 'bg-primary text-primary-foreground' },
-      delivered: { label: t('invoicesManagement.peppolStatus.delivered'), color: 'bg-success text-success-foreground' },
-      failed: { label: t('invoicesManagement.peppolStatus.failed'), color: 'bg-error text-error-foreground' }
+      not_sent: { label: t('invoicesManagement.peppolStatus.notSent'), color: 'bg-gray-100 text-gray-700 border border-gray-300', icon: 'Clock' },
+      sending: { label: t('invoicesManagement.peppolStatus.sending'), color: 'bg-warning text-warning-foreground', icon: 'Loader2' },
+      sent: { label: t('invoicesManagement.peppolStatus.sent'), color: 'bg-primary text-primary-foreground', icon: 'Send' },
+      delivered: { label: t('invoicesManagement.peppolStatus.delivered'), color: 'bg-success text-success-foreground', icon: 'CheckCircle' },
+      failed: { label: t('invoicesManagement.peppolStatus.failed'), color: 'bg-error text-error-foreground', icon: 'AlertCircle' }
     };
     const config = statusConfig[status] || statusConfig.not_sent;
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
-        {config.label}
+      <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${config.color}`}>
+        {config.icon && <Icon name={config.icon} size={12} />}
+        <span>{config.label}</span>
       </span>
     );
   };

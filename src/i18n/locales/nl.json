@@ -3995,7 +3995,8 @@
         "sending": "Verzenden",
         "sent": "Verzonden",
         "delivered": "Afgeleverd",
-        "failed": "Mislukt"
+        "failed": "Mislukt",
+        "notApplicable": "N/A"
       },
       "filter": {
         "title": "Filters",

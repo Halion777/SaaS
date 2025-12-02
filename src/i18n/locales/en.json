@@ -3945,7 +3945,8 @@
         "sending": "Sending",
         "sent": "Sent",
         "delivered": "Delivered",
-        "failed": "Failed"
+        "failed": "Failed",
+        "notApplicable": "N/A"
       },
       "filter": {
         "title": "Filters",

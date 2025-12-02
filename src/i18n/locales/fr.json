@@ -4009,7 +4009,8 @@
         "sending": "Envoi en cours",
         "sent": "Envoyée",
         "delivered": "Livrée",
-        "failed": "Échouée"
+        "failed": "Échouée",
+        "notApplicable": "N/A"
       },
       "filter": {
         "title": "Filtres",

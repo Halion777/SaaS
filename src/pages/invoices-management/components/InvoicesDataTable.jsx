@@ -80,7 +80,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
 
   const getPeppolStatusBadge = (status) => {
     const statusConfig = {
-      not_sent: { label: t('invoicesManagement.peppolStatus.notSent'), color: 'bg-muted text-muted-foreground', icon: 'X' },
+      not_sent: { label: t('invoicesManagement.peppolStatus.notSent'), color: 'bg-gray-100 text-gray-700 border border-gray-300', icon: 'Clock' },
       sending: { label: t('invoicesManagement.peppolStatus.sending'), color: 'bg-warning text-warning-foreground', icon: 'Loader2' },
       sent: { label: t('invoicesManagement.peppolStatus.sent'), color: 'bg-primary text-primary-foreground', icon: 'Send' },
       delivered: { label: t('invoicesManagement.peppolStatus.delivered'), color: 'bg-success text-success-foreground', icon: 'CheckCircle' },
@@ -410,7 +410,12 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                         return getPeppolStatusBadge(invoice.peppolStatus || 'not_sent');
                       }
                       // Individual clients don't use Peppol
-                      return <span className="text-xs text-muted-foreground">-</span>;
+                      return (
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200 flex items-center space-x-1">
+                          <Icon name="Minus" size={12} />
+                          <span>{t('invoicesManagement.peppolStatus.notApplicable', 'N/A')}</span>
+                        </span>
+                      );
                     })()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
