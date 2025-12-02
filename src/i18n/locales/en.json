@@ -1805,12 +1805,26 @@
       },
       "account": {
         "fullName": "Full Name",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "firstNamePlaceholder": "Enter first name",
+        "lastNamePlaceholder": "Enter last name",
         "email": "Email Address",
         "newEmail": "New Email Address",
         "newEmailPlaceholder": "Enter new email address",
         "companyName": "Company Name",
+        "companyNamePlaceholder": "Enter company name",
         "phone": "Phone Number",
+        "phonePlaceholder": "Enter phone number",
         "country": "Country",
+        "countryPlaceholder": "Enter country code",
+        "businessSize": "Company Size",
+        "businessSizePlaceholder": "Select company size",
+        "edit": "Edit",
+        "save": "Save",
+        "cancel": "Cancel",
+        "saving": "Saving...",
+        "saveError": "Failed to save account data. Please try again.",
         "pinSettings": {
           "title": "PIN Code",
           "configured": "PIN Code Configured",
@@ -3607,10 +3621,11 @@
         "peppolIdPlaceholder": "e.g., 0208:0630675588",
         "peppolSchemeCode": "Peppol Scheme Code",
         "peppolSchemeCodeHint": "4-digit scheme code (auto-filled from country)",
-        "belgiumScheme0208": "0208: Default",
+        "belgiumScheme0208": "0208",
         "belgiumScheme9925": "9925",
+        "belgiumAutoRegister": "Both scheme codes (0208 and 9925) will be automatically registered for Belgium",
         "selectScheme": "Select scheme",
-        "vatNumber": "VAT Number",
+        "vatNumber": "Company Number",
         "vatNumberPlaceholder": "e.g., 0630675588 or BE0630675588",
         "combinedPeppolId": "Combined Peppol ID"
       },
@@ -3995,6 +4010,7 @@
           "client": "Client",
           "amount": "Amount",
           "status": "Status",
+          "peppolStatus": "Peppol Status",
           "issueDate": "Issue Date",
           "dueDate": "Due Date",
           "actions": "Actions"
@@ -4104,6 +4120,7 @@
         "sendViaPeppolDescription": "Secure sending via Peppol network (requires Peppol ID)",
         "sendViaEmail": "Send via Email",
         "sendViaEmailDescription": "Send invoice via email with PDF attachment",
+        "sendViaEmailWarning": "This is not the actual invoice. You must send via Peppol to get paid.",
         "professionalInfo": "Professional clients can receive invoices via Peppol if they have a configured Peppol ID."
       },
       "sendEmailModal": {
@@ -4156,6 +4173,7 @@
         "notDefined": "Not defined",
         "edit": "Edit",
         "cancel": "Cancel",
+        "peppolIdValid": "Peppol ID is valid",
         "send": "Send",
         "sending": "Sending...",
         "configRequired": {
@@ -4175,8 +4193,12 @@
           "configMissing": "Peppol configuration missing. Please configure Peppol before sending invoices.",
           "peppolDisabled": "Peppol functionality is currently disabled. Please enable it in Peppol settings to send invoices.",
           "updateError": "Invoice sent but error updating",
-          "sendError": "Error sending"
-        }
+          "sendError": "Error sending",
+          "invalidPeppolId": "This Peppol ID does not exist in the Peppol network. Please verify the ID and try again.",
+          "validationError": "Unable to validate Peppol ID. Please check your connection and try again.",
+          "peppolIdNotValidated": "Please wait for Peppol ID validation to complete, or the ID is invalid."
+        },
+        "peppolIdValid": "Peppol ID is valid"
       },
       "sendToAccountant": {
         "title": "Send to Accountant",

@@ -11,7 +11,7 @@ import { generateInvoicePDF } from '../../../services/pdfService';
 import { supabase } from '../../../services/supabaseClient';
 import { translateTextWithAI } from '../../../services/googleAIService';
 
-const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
+const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalClient = false }) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -147,8 +147,8 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
         quote: invoice.quote || null
       };
 
-      // Generate PDF blob
-      const pdfBlob = await generateInvoicePDF(invoiceData, invoiceNumber);
+      // Generate PDF blob (hide bank info for professional clients)
+      const pdfBlob = await generateInvoicePDF(invoiceData, invoiceNumber, null, i18n.language, isProfessionalClient);
       
       // Convert PDF blob to base64 for email attachment
       const pdfBase64 = await new Promise((resolve, reject) => {

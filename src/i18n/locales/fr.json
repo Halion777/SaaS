@@ -2221,12 +2221,26 @@
       },
       "account": {
         "fullName": "Nom complet",
+        "firstName": "Prénom",
+        "lastName": "Nom de famille",
+        "firstNamePlaceholder": "Entrez le prénom",
+        "lastNamePlaceholder": "Entrez le nom de famille",
         "email": "Adresse e-mail",
         "newEmail": "Nouvelle adresse e-mail",
         "newEmailPlaceholder": "Entrez la nouvelle adresse e-mail",
         "companyName": "Nom de l'entreprise",
+        "companyNamePlaceholder": "Entrez le nom de l'entreprise",
         "phone": "Numéro de téléphone",
+        "phonePlaceholder": "Entrez le numéro de téléphone",
         "country": "Pays",
+        "countryPlaceholder": "Entrez le code pays",
+        "businessSize": "Taille de l'entreprise",
+        "businessSizePlaceholder": "Sélectionnez la taille de l'entreprise",
+        "edit": "Modifier",
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "saving": "Enregistrement...",
+        "saveError": "Échec de l'enregistrement des données du compte. Veuillez réessayer.",
         "pinSettings": {
           "title": "Code PIN",
           "configured": "Code PIN configuré",
@@ -3671,10 +3685,11 @@
         "peppolIdFormat": "Format: CODE_PAYS:NUMÉRO_TVA",
         "peppolSchemeCode": "Code de schéma Peppol",
         "peppolSchemeCodeHint": "Code de schéma à 4 chiffres (rempli automatiquement selon le pays)",
-        "belgiumScheme0208": "0208: Par défaut",
+        "belgiumScheme0208": "0208",
         "belgiumScheme9925": "9925",
+        "belgiumAutoRegister": "Les deux codes de schéma (0208 et 9925) seront automatiquement enregistrés pour la Belgique",
         "selectScheme": "Sélectionner le schéma",
-        "vatNumber": "Numéro de TVA",
+        "vatNumber": "Numéro de l'entreprise",
         "vatNumberPlaceholder": "ex: 0630675588 ou BE0630675588",
         "combinedPeppolId": "Identifiant Peppol combiné"
       },
@@ -4057,6 +4072,7 @@
           "client": "Client",
           "amount": "Montant",
           "status": "Statut",
+          "peppolStatus": "Statut Peppol",
           "issueDate": "Date émission",
           "dueDate": "Date échéance",
           "actions": "Actions"
@@ -4166,6 +4182,7 @@
         "sendViaPeppolDescription": "Envoi sécurisé via le réseau Peppol (nécessite un ID Peppol)",
         "sendViaEmail": "Envoyer par email",
         "sendViaEmailDescription": "Envoi de la facture par email avec PDF en pièce jointe",
+        "sendViaEmailWarning": "Ce n'est pas la facture réelle. Vous devez envoyer via Peppol pour être payé.",
         "professionalInfo": "Les clients professionnels peuvent recevoir des factures via Peppol s'ils ont un ID Peppol configuré."
       },
       "sendEmailModal": {
@@ -4237,8 +4254,12 @@
           "configMissing": "Configuration Peppol manquante. Veuillez configurer Peppol avant d'envoyer des factures.",
           "peppolDisabled": "La fonctionnalité Peppol est actuellement désactivée. Veuillez l'activer dans les paramètres Peppol pour envoyer des factures.",
           "updateError": "Facture envoyée mais erreur lors de la mise à jour",
-          "sendError": "Erreur lors de l'envoi"
-        }
+          "sendError": "Erreur lors de l'envoi",
+          "invalidPeppolId": "Cet ID Peppol n'existe pas dans le réseau Peppol. Veuillez vérifier l'ID et réessayer.",
+          "validationError": "Impossible de valider l'ID Peppol. Veuillez vérifier votre connexion et réessayer.",
+          "peppolIdNotValidated": "Veuillez attendre que la validation de l'ID Peppol soit terminée, ou l'ID est invalide."
+        },
+        "peppolIdValid": "L'ID Peppol est valide"
       },
       "sendToAccountant": {
         "title": "Envoyer au comptable",

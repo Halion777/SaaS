@@ -1838,12 +1838,26 @@
       },
       "account": {
         "fullName": "Volledige naam",
+        "firstName": "Voornaam",
+        "lastName": "Achternaam",
+        "firstNamePlaceholder": "Voer de voornaam in",
+        "lastNamePlaceholder": "Voer de achternaam in",
         "email": "E-mailadres",
         "newEmail": "Nieuw e-mailadres",
         "newEmailPlaceholder": "Voer nieuw e-mailadres in",
         "companyName": "Bedrijfsnaam",
+        "companyNamePlaceholder": "Voer de bedrijfsnaam in",
         "phone": "Telefoonnummer",
+        "phonePlaceholder": "Voer het telefoonnummer in",
         "country": "Land",
+        "countryPlaceholder": "Voer de landcode in",
+        "businessSize": "Bedrijfsgrootte",
+        "businessSizePlaceholder": "Selecteer bedrijfsgrootte",
+        "edit": "Bewerken",
+        "save": "Opslaan",
+        "cancel": "Annuleren",
+        "saving": "Opslaan...",
+        "saveError": "Opslaan van accountgegevens mislukt. Probeer het opnieuw.",
         "pinSettings": {
           "title": "PIN Code",
           "configured": "PIN Code Ingesteld",
@@ -3658,10 +3672,11 @@
         "peppolIdFormat": "Formaat: LANDCODE:BTW_NUMMER",
         "peppolSchemeCode": "Peppol Schema Code",
         "peppolSchemeCodeHint": "4-cijferige schemacode (automatisch ingevuld op basis van land)",
-        "belgiumScheme0208": "0208: Standaard",
+        "belgiumScheme0208": "0208",
         "belgiumScheme9925": "9925",
+        "belgiumAutoRegister": "Beide schemacodes (0208 en 9925) worden automatisch geregistreerd voor België",
         "selectScheme": "Selecteer schema",
-        "vatNumber": "BTW-nummer",
+        "vatNumber": "Bedrijfsnummer",
         "vatNumberPlaceholder": "bijv. 0630675588 of BE0630675588",
         "combinedPeppolId": "Gecombineerd Peppol ID"
       },
@@ -4043,6 +4058,7 @@
           "client": "Klant",
           "amount": "Bedrag",
           "status": "Status",
+          "peppolStatus": "Peppol Status",
           "issueDate": "Uitgiftedatum",
           "dueDate": "Vervaldatum",
           "actions": "Acties"
@@ -4152,6 +4168,7 @@
         "sendViaPeppolDescription": "Veilig verzenden via Peppol-netwerk (vereist Peppol ID)",
         "sendViaEmail": "Verzenden via E-mail",
         "sendViaEmailDescription": "Factuur verzenden via e-mail met PDF-bijlage",
+        "sendViaEmailWarning": "Dit is niet de werkelijke factuur. U moet via Peppol verzenden om betaald te worden.",
         "professionalInfo": "Professionele klanten kunnen facturen ontvangen via Peppol als ze een geconfigureerde Peppol ID hebben."
       },
       "sendEmailModal": {
@@ -4223,8 +4240,12 @@
           "configMissing": "Peppol-configuratie ontbreekt. Configureer Peppol voordat u facturen verzendt.",
           "peppolDisabled": "Peppol-functionaliteit is momenteel uitgeschakeld. Schakel deze in de Peppol-instellingen in om facturen te verzenden.",
           "updateError": "Factuur verzonden maar fout bij bijwerken",
-          "sendError": "Fout bij verzenden"
-        }
+          "sendError": "Fout bij verzenden",
+          "invalidPeppolId": "Dit Peppol ID bestaat niet in het Peppol-netwerk. Controleer het ID en probeer het opnieuw.",
+          "validationError": "Kan Peppol ID niet valideren. Controleer uw verbinding en probeer het opnieuw.",
+          "peppolIdNotValidated": "Wacht tot de Peppol ID-validatie is voltooid, of het ID is ongeldig."
+        },
+        "peppolIdValid": "Peppol ID is geldig"
       }
     },
     "expenseInvoices": {

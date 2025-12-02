@@ -20,12 +20,22 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
   const [companyInfo, setCompanyInfo] = useState(null);
   const [peppolSettings, setPeppolSettings] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+  const [isValid, setIsValid] = useState(false);
+  const [validationError, setValidationError] = useState('');
 
   useEffect(() => {
     if (isOpen && invoice) {
       loadData();
       setShowDropdown(false); // Reset dropdown state when modal opens
     }
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (window.peppolValidationTimeout) {
+        clearTimeout(window.peppolValidationTimeout);
+      }
+    };
   }, [isOpen, invoice]);
 
   const loadData = async () => {
@@ -59,6 +69,12 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
       // Use client's Peppol ID from client table if available
       if (invoice.client?.peppol_id) {
         setClientPeppolId(invoice.client.peppol_id);
+        // Validate the Peppol ID when loading
+        validatePeppolId(invoice.client.peppol_id);
+      } else {
+        // Reset validation state if no Peppol ID
+        setIsValid(false);
+        setValidationError('');
       }
     } catch (err) {
       console.error('Error loading data:', err);
@@ -82,6 +98,16 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
     // Check if Peppol is disabled
     if (peppolSettings.peppolDisabled) {
       setError(t('invoicesManagement.sendPeppolModal.errors.peppolDisabled'));
+      return;
+    }
+
+    // Validate Peppol ID before sending
+    if (!isValid) {
+      setError(t('invoicesManagement.sendPeppolModal.errors.peppolIdNotValidated', 'Please wait for Peppol ID validation to complete, or the ID is invalid.'));
+      // Trigger validation if not already validating
+      if (!isValidating) {
+        await validatePeppolId(clientPeppolId);
+      }
       return;
     }
 
@@ -312,6 +338,59 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
     }
   };
 
+  // Validate Peppol ID
+  const validatePeppolId = async (peppolId) => {
+    if (!peppolId || peppolId.trim() === '') {
+      setIsValid(false);
+      setValidationError('');
+      return;
+    }
+
+    setIsValidating(true);
+    setValidationError('');
+    setIsValid(false);
+
+    try {
+      const peppolService = new PeppolService(true);
+      const result = await peppolService.getDetailedParticipantInfo(peppolId.trim());
+
+      if (result.success && result.data) {
+        // Peppol ID exists and is valid
+        setIsValid(true);
+        setValidationError('');
+      } else {
+        // Peppol ID not found or invalid
+        setIsValid(false);
+        setValidationError(t('invoicesManagement.sendPeppolModal.errors.invalidPeppolId', 'This Peppol ID does not exist in the Peppol network. Please verify the ID and try again.'));
+      }
+    } catch (err) {
+      console.error('Error validating Peppol ID:', err);
+      setIsValid(false);
+      setValidationError(t('invoicesManagement.sendPeppolModal.errors.validationError', 'Unable to validate Peppol ID. Please check your connection and try again.'));
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  // Debounced validation handler
+  const handlePeppolIdChange = (value) => {
+    setClientPeppolId(value);
+    setIsValid(false);
+    setValidationError('');
+
+    // Clear any existing timeout
+    if (window.peppolValidationTimeout) {
+      clearTimeout(window.peppolValidationTimeout);
+    }
+
+    // Debounce validation - wait 800ms after user stops typing
+    if (value && value.trim() !== '') {
+      window.peppolValidationTimeout = setTimeout(() => {
+        validatePeppolId(value);
+      }, 800);
+    }
+  };
+
   // Check if client has Peppol ID from client table
   const clientHasPeppolId = invoice.client?.peppol_id;
 
@@ -414,10 +493,32 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
                 {!showDropdown ? (
                   // If client has Peppol ID from client table, show it directly with option to change
                   <div className="space-y-2">
-                    <div className="w-full px-3 py-2 border border-border rounded-lg bg-muted/30 text-foreground flex items-center justify-between">
-                      <div>
+                    <div className={`w-full px-3 py-2 border rounded-lg bg-muted/30 text-foreground flex items-center justify-between relative ${
+                      isValidating
+                        ? 'border-warning'
+                        : isValid && clientPeppolId
+                        ? 'border-green-500'
+                        : validationError && clientPeppolId
+                        ? 'border-error'
+                        : 'border-border'
+                    }`}>
+                      <div className="flex items-center flex-1">
                         <span className="text-sm font-medium">{clientPeppolId || t('invoicesManagement.sendPeppolModal.notDefined')}</span>
-                    
+                        {isValidating && (
+                          <div className="ml-2">
+                            <Icon name="Loader2" size={16} className="animate-spin text-warning" />
+                          </div>
+                        )}
+                        {!isValidating && isValid && clientPeppolId && (
+                          <div className="ml-2">
+                            <Icon name="CheckCircle" size={16} className="text-green-500" />
+                          </div>
+                        )}
+                        {!isValidating && validationError && clientPeppolId && (
+                          <div className="ml-2">
+                            <Icon name="XCircle" size={16} className="text-error" />
+                          </div>
+                        )}
                       </div>
                       <button
                         type="button"
@@ -427,20 +528,64 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
                         {t('invoicesManagement.sendPeppolModal.edit')}
                       </button>
                     </div>
+                    {validationError && clientPeppolId && (
+                      <p className="text-xs text-error mt-1">{validationError}</p>
+                    )}
+                    {isValid && !validationError && clientPeppolId && (
+                      <p className="text-xs text-green-600 mt-1">
+                        {t('invoicesManagement.sendPeppolModal.peppolIdValid', 'Peppol ID is valid')}
+                      </p>
+                    )}
                   </div>
                 ) : (
                   // Show input field for editing
                   <div className="space-y-2">
-                    <input
-                      type="text"
-                      value={clientPeppolId || ''}
-                      onChange={(e) => setClientPeppolId(e.target.value)}
-                      placeholder="0208:0630675588"
-                      className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={clientPeppolId || ''}
+                        onChange={(e) => handlePeppolIdChange(e.target.value)}
+                        placeholder="0208:0630675588"
+                        className={`w-full px-3 py-2 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:border-transparent ${
+                          isValidating
+                            ? 'border-warning focus:ring-warning'
+                            : isValid
+                            ? 'border-green-500 focus:ring-green-500'
+                            : validationError
+                            ? 'border-error focus:ring-error'
+                            : 'border-border focus:ring-primary'
+                        }`}
+                      />
+                      {isValidating && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <Icon name="Loader2" size={16} className="animate-spin text-warning" />
+                        </div>
+                      )}
+                      {!isValidating && isValid && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <Icon name="CheckCircle" size={16} className="text-green-500" />
+                        </div>
+                      )}
+                      {!isValidating && validationError && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <Icon name="XCircle" size={16} className="text-error" />
+                        </div>
+                      )}
+                    </div>
+                    {validationError && (
+                      <p className="text-xs text-error mt-1">{validationError}</p>
+                    )}
+                    {isValid && !validationError && (
+                      <p className="text-xs text-green-600 mt-1">
+                        {t('invoicesManagement.sendPeppolModal.peppolIdValid', 'Peppol ID is valid')}
+                      </p>
+                    )}
                     <button
                       type="button"
-                      onClick={() => setShowDropdown(false)}
+                      onClick={() => {
+                        setShowDropdown(false);
+                        // Don't reset validation state when canceling - keep it for read-only view
+                      }}
                       className="text-xs text-muted-foreground hover:text-foreground"
                     >
                       {t('invoicesManagement.sendPeppolModal.cancel')}
@@ -470,7 +615,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
                 </Button>
                 <Button
                   onClick={handleSend}
-                  disabled={isSending || !clientPeppolId}
+                  disabled={isSending || !clientPeppolId || isValidating || (!isValid && clientPeppolId.trim() !== '')}
                   iconName={isSending ? "Loader2" : "Send"}
                   iconPosition="left"
                 >

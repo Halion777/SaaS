@@ -36,9 +36,31 @@ const LimitedAccessGuard = ({
   const navigate = useNavigate();
   const { userProfile, loading } = useMultiUser();
   
+  // Calculate initial sidebar offset based on saved state and screen size
+  const calculateInitialOffset = () => {
+    const mobile = window.innerWidth < 768;
+    const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+    
+    if (mobile) {
+      return 0;
+    } else if (tablet) {
+      return 80;
+    } else {
+      // Check localStorage for saved sidebar state
+      try {
+        const savedCollapsed = localStorage.getItem('sidebar-collapsed');
+        const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
+        return isCollapsed ? 80 : 288;
+      } catch (e) {
+        // Default to expanded if localStorage read fails
+        return 288;
+      }
+    }
+  };
+
   // Sidebar offset state for responsive layout
-  const [sidebarOffset, setSidebarOffset] = useState(288);
-  const [isMobile, setIsMobile] = useState(false);
+  const [sidebarOffset, setSidebarOffset] = useState(() => calculateInitialOffset());
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
 
   // Handle sidebar toggle and responsive layout
   useEffect(() => {
@@ -66,12 +88,44 @@ const LimitedAccessGuard = ({
         setSidebarOffset(0);
       } else if (tablet) {
         setSidebarOffset(80);
+      } else {
+        // Re-check sidebar state on resize for desktop
+        try {
+          const savedCollapsed = localStorage.getItem('sidebar-collapsed');
+          const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
+          setSidebarOffset(isCollapsed ? 80 : 288);
+        } catch (e) {
+          setSidebarOffset(288);
+        }
       }
     };
 
+    // Initialize on mount - check current sidebar state
+    const initializeOffset = () => {
+      const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsMobile(mobile);
+      
+      if (mobile) {
+        setSidebarOffset(0);
+      } else if (tablet) {
+        setSidebarOffset(80);
+      } else {
+        try {
+          const savedCollapsed = localStorage.getItem('sidebar-collapsed');
+          const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
+          setSidebarOffset(isCollapsed ? 80 : 288);
+        } catch (e) {
+          setSidebarOffset(288);
+        }
+      }
+    };
+
+    // Initialize immediately
+    initializeOffset();
+
     window.addEventListener('sidebar-toggle', handleSidebarToggle);
     window.addEventListener('resize', handleResize);
-    handleResize();
 
     return () => {
       window.removeEventListener('sidebar-toggle', handleSidebarToggle);

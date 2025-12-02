@@ -43,8 +43,14 @@ serve(async (req) => {
       url = `${endpoint}/api/v1/peppol/public/supported-document-types`;
       fetchOptions.method = 'GET';
     } else if (action === 'get-participant' && peppolIdentifier) {
-      // Get detailed participant information (public API)
+      // Get detailed participant information (public API - no authentication required)
       url = `${endpoint}/api/v1/peppol/public/participants/${peppolIdentifier}`;
+      fetchOptions.method = 'GET';
+      // Remove auth headers for public endpoint
+      delete fetchOptions.headers['Authorization'];
+    } else if (action === 'get-participant-details' && peppolIdentifier) {
+      // Get detailed participant information (authenticated API - for registered participants)
+      url = `${endpoint}/api/v1/peppol/registered-participants/${peppolIdentifier}`;
       fetchOptions.method = 'GET';
     } else if (action === 'register-participant' && participantData) {
       // Register a new participant (POST)

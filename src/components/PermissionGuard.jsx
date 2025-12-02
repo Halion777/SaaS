@@ -105,16 +105,7 @@ const PermissionGuard = ({
 
   // Don't show separate loader - parent already shows one
   // But also wait for profile to be loaded if it should exist
-  if (loading) {
-    return null;
-  }
-
-  // For new users, profile might not be loaded yet even if loading is false
-  // If no currentProfile but profiles exist or should exist, wait a bit more
-  // This handles the case where profile was just created but not yet loaded
-  if (!currentProfile && companyProfiles.length === 0 && !adminOnly) {
-    // Check if we're still initializing (profile might be created but not loaded)
-    // Return null to show nothing (parent loading will handle it)
+  if (loading || !initialized) {
     return null;
   }
 
@@ -125,7 +116,14 @@ const PermissionGuard = ({
     // For admin-only pages: allow if no profiles exist (first time setup) or if user is admin
     hasAccess = companyProfiles.length === 0 || isAdmin();
   } else {
-    hasAccess = hasPermission(module, requiredPermission);
+    // For new users after registration, profile might not be loaded yet even if initialized is true
+    // Allow dashboard access even without profile (it's the landing page after registration)
+    if (!currentProfile && companyProfiles.length === 0 && module === 'dashboard') {
+      // Dashboard should be accessible even without profile (first profile is created during registration)
+      hasAccess = true;
+    } else {
+      hasAccess = hasPermission(module, requiredPermission);
+    }
   }
 
   // If user has access, render children

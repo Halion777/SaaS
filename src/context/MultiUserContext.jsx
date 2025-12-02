@@ -54,6 +54,31 @@ export const MultiUserProvider = ({ children }) => {
     }
   }, [user?.id]);
 
+  // Check for missing profile after initialization (for newly registered users)
+  useEffect(() => {
+    if (user && initialized && !loading && !currentProfile && companyProfiles.length === 0) {
+      // Profile should exist but doesn't - wait a bit and retry
+      const checkForProfile = setTimeout(async () => {
+        try {
+          const profiles = await multiUserService.getProfiles(user.id);
+          if (profiles && profiles.length > 0) {
+            // Found profiles, refresh the context
+            setCompanyProfiles(profiles);
+            const profile = await multiUserService.getCurrentProfile(user.id);
+            if (profile) {
+              setCurrentProfile(profile);
+              setPermissions(profile.permissions || {});
+            }
+          }
+        } catch (error) {
+          console.error('Error checking for profile:', error);
+        }
+      }, 2000); // Wait 2 seconds before checking
+
+      return () => clearTimeout(checkForProfile);
+    }
+  }, [user, initialized, loading, currentProfile, companyProfiles.length]);
+
   // Initialize multi-user system
   const initializeMultiUser = useCallback(async () => {
     if (!user || initialized) return;
@@ -72,12 +97,51 @@ export const MultiUserProvider = ({ children }) => {
       const isUserPremium = await multiUserService.isPremiumAccount(user.id);
       setIsPremium(isUserPremium);
       
-      // Get all profiles for this user
-      const profiles = await multiUserService.getProfiles(user.id);
+      // Get all profiles for this user with retry logic (for newly registered users)
+      let profiles = [];
+      let retryCount = 0;
+      const maxRetries = 3;
+      const retryDelay = 500; // 500ms delay between retries
+      
+      while (retryCount < maxRetries) {
+        try {
+          profiles = await multiUserService.getProfiles(user.id);
+          if (profiles && profiles.length > 0) {
+            break; // Found profiles, exit retry loop
+          }
+        } catch (error) {
+          console.error(`Error fetching profiles (attempt ${retryCount + 1}):`, error);
+        }
+        
+        if (retryCount < maxRetries - 1) {
+          // Wait before retrying (only if not the last attempt)
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+        retryCount++;
+      }
+      
       setCompanyProfiles(profiles);
       
-      // Get the current active profile
-      const currentProfile = await multiUserService.getCurrentProfile(user.id);
+      // Get the current active profile with retry logic
+      let currentProfile = null;
+      retryCount = 0;
+      
+      while (retryCount < maxRetries) {
+        try {
+          currentProfile = await multiUserService.getCurrentProfile(user.id);
+          if (currentProfile) {
+            break; // Found profile, exit retry loop
+          }
+        } catch (error) {
+          console.error(`Error fetching current profile (attempt ${retryCount + 1}):`, error);
+        }
+        
+        if (retryCount < maxRetries - 1) {
+          // Wait before retrying (only if not the last attempt)
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+        retryCount++;
+      }
       
       if (currentProfile) {
         setCurrentProfile(currentProfile);
@@ -254,21 +318,20 @@ export const MultiUserProvider = ({ children }) => {
     }
   };
 
+  // Refresh/Re-initialize the context (useful after profile creation)
+  const refreshContext = useCallback(async () => {
+    if (!user) return;
+    setInitialized(false);
+    await initializeMultiUser();
+  }, [user, initializeMultiUser]);
+
   const hasPermission = (module, requiredPermission = 'view') => {
     if (!currentProfile) {
       return false;
     }
 
-    // Special handling for Peppol - only available for business users
-    if (module === 'peppolAccessPoint') {
-      // Check if user is a business user (not solo/individual)
-      const businessSizes = ['small', 'medium', 'large'];
-      const isBusiness = businessSizes.includes(userProfile?.business_size);
-      
-      if (!isBusiness) {
-        return false; // Individual users cannot access Peppol
-      }
-    }
+    // Note: Peppol access is now allowed for all users (including solo)
+    // The Peppol page itself will handle business user restrictions for actual functionality
 
     // Admin has all permissions
     if (currentProfile.role === 'admin') {
@@ -394,6 +457,7 @@ export const MultiUserProvider = ({ children }) => {
     updateProfileAvatar,
     uploadAndUpdateAvatar,
     getCompanyProfiles,
+    refreshContext,
     
     // Permission checks
     hasPermission,

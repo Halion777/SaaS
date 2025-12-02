@@ -183,7 +183,7 @@ const generateQuoteHTML = (quoteData, quoteNumber) => {
  * @param {string} language - User's preferred language (fr, en, nl)
  * @returns {Promise<Blob>} PDF blob
  */
-export const generateInvoicePDF = async (invoiceData, invoiceNumber, elementToCapture = null, language = 'fr') => {
+export const generateInvoicePDF = async (invoiceData, invoiceNumber, elementToCapture = null, language = 'fr', hideBankInfo = false) => {
   try {
     let target = elementToCapture;
     
@@ -197,7 +197,7 @@ export const generateInvoicePDF = async (invoiceData, invoiceNumber, elementToCa
       tempDiv.style.backgroundColor = 'white';
       tempDiv.style.padding = '0';
       tempDiv.style.fontFamily = 'Arial, sans-serif';
-      tempDiv.innerHTML = generateInvoiceHTML(invoiceData, invoiceNumber, language);
+      tempDiv.innerHTML = generateInvoiceHTML(invoiceData, invoiceNumber, language, hideBankInfo);
       document.body.appendChild(tempDiv);
       target = tempDiv;
     }
@@ -284,7 +284,7 @@ export const generateInvoicePDF = async (invoiceData, invoiceNumber, elementToCa
 /**
  * Generate HTML content for the invoice (improved styling matching quote preview)
  */
-const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr') => {
+const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBankInfo = false) => {
   const { companyInfo, client, invoice, quote } = invoiceData;
   
   // Color scheme matching quote preview
@@ -464,7 +464,7 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr') => {
       </div>
       
       <!-- Payment Information -->
-      ${(companyInfo?.iban || companyInfo?.accountName || companyInfo?.bankName) ? `
+      ${!hideBankInfo && (companyInfo?.iban || companyInfo?.accountName || companyInfo?.bankName) ? `
       <div style="margin-bottom: 30px; padding: 12px; background-color: #f9fafb; border-radius: 6px; border: 1px solid #e5e7eb;">
         <h3 style="margin: 0 0 8px 0; font-size: 11px; color: ${primaryColor}; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">${t.paymentInfo}</h3>
         <div style="color: ${secondaryColor}; font-size: 10px; line-height: 1.5;">

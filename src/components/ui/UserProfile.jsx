@@ -4,12 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import Icon from '../AppIcon';
 import Image from '../AppImage';
 import Button from './Button';
+import Input from './Input';
+import Select from './Select';
 import PinModal from './PinModal';
 import ProcessingOverlay from './ProcessingOverlay';
 import { useMultiUser } from '../../context/MultiUserContext';
 import { useAuth } from '../../context/AuthContext';
 import emailVerificationService from '../../services/emailVerificationService';
 import { resetPassword } from '../../services/authService';
+import { supabase } from '../../services/supabaseClient';
 
 const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) => {
   const { t } = useTranslation();
@@ -40,6 +43,16 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
   const [isChangingEmail, setIsChangingEmail] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [changingEmail, setChangingEmail] = useState(false);
+  const [isEditingAccount, setIsEditingAccount] = useState(false);
+  const [editingAccountData, setEditingAccountData] = useState({
+    first_name: '',
+    last_name: '',
+    company_name: '',
+    phone: '',
+    country: '',
+    business_size: ''
+  });
+  const [savingAccountData, setSavingAccountData] = useState(false);
 
   // Get multi-user context with fallback
   const multiUserContext = useMultiUser();
@@ -284,11 +297,72 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
       }
 
       setUserAccountData(data);
+      // Initialize editing data
+      setEditingAccountData({
+        first_name: data.first_name || '',
+        last_name: data.last_name || '',
+        company_name: data.company_name || '',
+        phone: data.phone || '',
+        country: data.country || '',
+        business_size: data.business_size || ''
+      });
     } catch (error) {
       console.error('Error loading account data:', error);
     } finally {
       setLoadingAccountData(false);
     }
+  };
+
+  // Save account data
+  const saveAccountData = async () => {
+    if (!actualUser?.id) return;
+    
+    try {
+      setSavingAccountData(true);
+      
+      // Update user record in database
+      const { error } = await supabase
+        .from('users')
+        .update({
+          first_name: editingAccountData.first_name,
+          last_name: editingAccountData.last_name,
+          company_name: editingAccountData.company_name,
+          phone: editingAccountData.phone,
+          country: editingAccountData.country,
+          business_size: editingAccountData.business_size
+        })
+        .eq('id', actualUser.id);
+
+      if (error) {
+        console.error('Error saving account data:', error);
+        alert(t('profile.settings.account.saveError', 'Failed to save account data. Please try again.'));
+        return;
+      }
+
+      // Reload account data to reflect changes
+      await loadAccountData();
+      setIsEditingAccount(false);
+    } catch (error) {
+      console.error('Error saving account data:', error);
+      alert(t('profile.settings.account.saveError', 'Failed to save account data. Please try again.'));
+    } finally {
+      setSavingAccountData(false);
+    }
+  };
+
+  // Cancel editing
+  const cancelEditingAccount = () => {
+    if (userAccountData) {
+      setEditingAccountData({
+        first_name: userAccountData.first_name || '',
+        last_name: userAccountData.last_name || '',
+        company_name: userAccountData.company_name || '',
+        phone: userAccountData.phone || '',
+        country: userAccountData.country || '',
+        business_size: userAccountData.business_size || ''
+      });
+    }
+    setIsEditingAccount(false);
   };
 
   const loadSubscriptionData = async () => {
@@ -524,7 +598,16 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
 
   // Check if user can edit PIN (admin or own profile)
   const canEditPin = () => {
-    return isPremium && (isAdmin() || currentProfile?.id === user?.id);
+    // Admin can always edit PIN, or if user owns the current profile
+    if (isAdmin()) {
+      return true;
+    }
+    // Check if current profile belongs to the current user
+    if (currentProfile && user) {
+      // Profile belongs to user if user_id matches or if it's the user's own profile
+      return currentProfile.user_id === user.id || currentProfile.id === user.id;
+    }
+    return false;
   };
 
   const handleCancelPin = () => {
@@ -611,28 +694,56 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
         </div>
   );
 
-  const renderAccountSection = () => (
-          <div className="space-y-4">
-          {/* Account Information */}
-          {loadingAccountData ? (
-            <div className="flex items-center justify-center py-4">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
-            </div>
-          ) : userAccountData && (
-            <div className="pb-4 border-b border-border">
-              {/* Email - Always Visible */}
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  {userAccountData.email && (
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">{t('profile.settings.account.email')}</label>
-                      <p className="text-sm text-foreground mt-0.5">{userAccountData.email}</p>
-                    </div>
-                  )}
-                </div>
+  const renderAccountSection = () => {
+    const businessSizeOptions = [
+      { value: 'solo', label: t('registerForm.step2.solo', 'Solo') },
+      { value: 'small', label: t('registerForm.step2.small', 'Small') },
+      { value: 'medium', label: t('registerForm.step2.medium', 'Medium') },
+      { value: 'large', label: t('registerForm.step2.large', 'Large') }
+    ];
+
+    return (
+      <div className="space-y-4">
+        {/* Account Information */}
+        {loadingAccountData ? (
+          <div className="flex items-center justify-center py-4">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+          </div>
+        ) : userAccountData && (
+          <div className="pb-4 border-b border-border">
+            {/* Email - Always Visible */}
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                {userAccountData.email && (
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">{t('profile.settings.account.email')}</label>
+                    <p className="text-sm text-foreground mt-0.5">{userAccountData.email}</p>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {isAccountInfoExpanded && (
+                  <button
+                    onClick={() => {
+                      if (isEditingAccount) {
+                        cancelEditingAccount();
+                      } else {
+                        setIsEditingAccount(true);
+                      }
+                    }}
+                    className="p-1.5 hover:bg-muted rounded-md transition-colors"
+                    title={isEditingAccount ? t('profile.settings.account.cancel', 'Cancel') : t('profile.settings.account.edit', 'Edit')}
+                  >
+                    <Icon 
+                      name={isEditingAccount ? "X" : "Edit"} 
+                      size={18} 
+                      className="text-muted-foreground"
+                    />
+                  </button>
+                )}
                 <button
                   onClick={() => setIsAccountInfoExpanded(!isAccountInfoExpanded)}
-                  className="ml-3 p-1.5 hover:bg-muted rounded-md transition-colors"
+                  className="p-1.5 hover:bg-muted rounded-md transition-colors"
                 >
                   <Icon 
                     name={isAccountInfoExpanded ? "ChevronUp" : "ChevronDown"} 
@@ -641,48 +752,147 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                   />
                 </button>
               </div>
-              
-              {/* Expanded Information */}
-              {isAccountInfoExpanded && (
-                <div className="space-y-3 mt-3 pt-3 border-t border-border">
-                  {/* Full Name */}
-                  {userAccountData.full_name && (
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">{t('profile.settings.account.fullName')}</label>
-                      <p className="text-sm text-foreground mt-0.5">{userAccountData.full_name}</p>
-                    </div>
-                  )}
-                  
-                  {/* Company Name */}
-                  {userAccountData.company_name && (
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">{t('profile.settings.account.companyName')}</label>
-                      <p className="text-sm text-foreground mt-0.5">{userAccountData.company_name}</p>
-                    </div>
-                  )}
-                  
-                  {/* Phone */}
-                  {userAccountData.phone && (
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">{t('profile.settings.account.phone')}</label>
-                      <p className="text-sm text-foreground mt-0.5">{userAccountData.phone}</p>
-                    </div>
-                  )}
-                  
-                  {/* Country */}
-                  {userAccountData.country && (
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">{t('profile.settings.account.country')}</label>
-                      <p className="text-sm text-foreground mt-0.5">{userAccountData.country}</p>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
-          )}
-          
-          {/* PIN Settings */}
-          <div className="flex items-center justify-between">
+            
+            {/* Expanded Information */}
+            {isAccountInfoExpanded && (
+              <div className="space-y-3 mt-3 pt-3 border-t border-border">
+                {isEditingAccount ? (
+                  <>
+                    {/* Full Name - Split into First and Last */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <Input
+                        label={t('profile.settings.account.firstName', 'First Name')}
+                        value={editingAccountData.first_name}
+                        onChange={(e) => setEditingAccountData(prev => ({ ...prev, first_name: e.target.value }))}
+                        placeholder={t('profile.settings.account.firstNamePlaceholder', 'Enter first name')}
+                      />
+                      <Input
+                        label={t('profile.settings.account.lastName', 'Last Name')}
+                        value={editingAccountData.last_name}
+                        onChange={(e) => setEditingAccountData(prev => ({ ...prev, last_name: e.target.value }))}
+                        placeholder={t('profile.settings.account.lastNamePlaceholder', 'Enter last name')}
+                      />
+                    </div>
+                    
+                    {/* Company Name */}
+                    <Input
+                      label={t('profile.settings.account.companyName')}
+                      value={editingAccountData.company_name}
+                      onChange={(e) => setEditingAccountData(prev => ({ ...prev, company_name: e.target.value }))}
+                      placeholder={t('profile.settings.account.companyNamePlaceholder', 'Enter company name')}
+                    />
+                    
+                    {/* Phone */}
+                    <Input
+                      label={t('profile.settings.account.phone')}
+                      value={editingAccountData.phone}
+                      onChange={(e) => setEditingAccountData(prev => ({ ...prev, phone: e.target.value }))}
+                      placeholder={t('profile.settings.account.phonePlaceholder', 'Enter phone number')}
+                      type="tel"
+                    />
+                    
+                    {/* Country */}
+                    <Input
+                      label={t('profile.settings.account.country')}
+                      value={editingAccountData.country}
+                      onChange={(e) => setEditingAccountData(prev => ({ ...prev, country: e.target.value }))}
+                      placeholder={t('profile.settings.account.countryPlaceholder', 'Enter country code')}
+                    />
+                    
+                    {/* Business Size */}
+                    <Select
+                      label={t('profile.settings.account.businessSize', 'Company Size')}
+                      options={businessSizeOptions}
+                      value={editingAccountData.business_size}
+                      onChange={(e) => setEditingAccountData(prev => ({ ...prev, business_size: e.target.value }))}
+                      placeholder={t('profile.settings.account.businessSizePlaceholder', 'Select company size')}
+                    />
+                    
+                    {/* Save/Cancel Buttons */}
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        onClick={saveAccountData}
+                        disabled={savingAccountData}
+                        className="flex-1"
+                        size="sm"
+                      >
+                        {savingAccountData ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            {t('profile.settings.account.saving', 'Saving...')}
+                          </>
+                        ) : (
+                          <>
+                            <Icon name="Save" size={16} className="mr-2" />
+                            {t('profile.settings.account.save', 'Save')}
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        onClick={cancelEditingAccount}
+                        variant="outline"
+                        disabled={savingAccountData}
+                        className="flex-1"
+                        size="sm"
+                      >
+                        <Icon name="X" size={16} className="mr-2" />
+                        {t('profile.settings.account.cancel', 'Cancel')}
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Full Name */}
+                    {userAccountData.full_name && (
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground">{t('profile.settings.account.fullName')}</label>
+                        <p className="text-sm text-foreground mt-0.5">{userAccountData.full_name}</p>
+                      </div>
+                    )}
+                    
+                    {/* Company Name */}
+                    {userAccountData.company_name && (
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground">{t('profile.settings.account.companyName')}</label>
+                        <p className="text-sm text-foreground mt-0.5">{userAccountData.company_name}</p>
+                      </div>
+                    )}
+                    
+                    {/* Phone */}
+                    {userAccountData.phone && (
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground">{t('profile.settings.account.phone')}</label>
+                        <p className="text-sm text-foreground mt-0.5">{userAccountData.phone}</p>
+                      </div>
+                    )}
+                    
+                    {/* Country */}
+                    {userAccountData.country && (
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground">{t('profile.settings.account.country')}</label>
+                        <p className="text-sm text-foreground mt-0.5">{userAccountData.country}</p>
+                      </div>
+                    )}
+                    
+                    {/* Business Size */}
+                    {userAccountData.business_size && (
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground">{t('profile.settings.account.businessSize', 'Company Size')}</label>
+                        <p className="text-sm text-foreground mt-0.5 capitalize">
+                          {businessSizeOptions.find(opt => opt.value === userAccountData.business_size)?.label || userAccountData.business_size}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* PIN Settings */}
+        <div className="flex items-center justify-between">
             <div className="flex-1">
               <h4 className="text-sm font-medium text-foreground">{t('profile.settings.account.pinSettings.title')}</h4>
               <p className="text-xs text-muted-foreground mt-0.5">
@@ -746,9 +956,9 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                 </div>
               </div>
             )}
-
-          </div>
-  );
+      </div>
+    );
+  };
 
   const renderPreferencesSection = () => {
         // Get current language from localStorage

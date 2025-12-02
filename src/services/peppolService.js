@@ -1073,21 +1073,71 @@ export class PeppolService {
         console.log('Participant already exists in database, skipping Digiteal registration');
         registrationResult = { success: true, alreadyRegistered: true };
       } else {
-        // First, try to register participant with Digiteal
-        registrationResult = await this.registerParticipant({
-          peppolIdentifier: settings.peppolId,
-          name: settings.name,
-          countryCode: settings.countryCode,
-          contactPerson: {
-            firstName: settings.firstName,
-            lastName: settings.lastName,
-            email: settings.email,
-            phoneNumber: settings.phoneNumber,
-            language: settings.language
-          },
-          supportedDocumentTypes: PEPPOL_DOCUMENT_TYPES, // All document types enabled automatically
-          limitedToOutboundTraffic: settings.limitedToOutboundTraffic || false
-        });
+        // For Belgium: register both 0208 and 9925 schemes
+        // For other countries: register with the provided scheme
+        const isBelgium = settings.countryCode?.toUpperCase() === 'BE';
+        
+        if (isBelgium && settings.vatNumber) {
+          // Register both schemes for Belgium
+          const vatNumber = settings.vatNumber.replace(/^BE/i, ''); // Remove BE prefix if present
+          const id0208 = `0208:${vatNumber}`;
+          const id9925 = `9925:BE${vatNumber}`;
+          
+          // Register with 0208 (primary)
+          registrationResult = await this.registerParticipant({
+            peppolIdentifier: id0208,
+            name: settings.name,
+            countryCode: settings.countryCode,
+            contactPerson: {
+              firstName: settings.firstName,
+              lastName: settings.lastName,
+              email: settings.email,
+              phoneNumber: settings.phoneNumber,
+              language: settings.language
+            },
+            supportedDocumentTypes: PEPPOL_DOCUMENT_TYPES,
+            limitedToOutboundTraffic: settings.limitedToOutboundTraffic || false
+          });
+          
+          // Register with 9925 (secondary) - only if 0208 registration succeeded
+          if (registrationResult.success || registrationResult.alreadyRegistered) {
+            try {
+              await this.registerParticipant({
+                peppolIdentifier: id9925,
+                name: settings.name,
+                countryCode: settings.countryCode,
+                contactPerson: {
+                  firstName: settings.firstName,
+                  lastName: settings.lastName,
+                  email: settings.email,
+                  phoneNumber: settings.phoneNumber,
+                  language: settings.language
+                },
+                supportedDocumentTypes: PEPPOL_DOCUMENT_TYPES,
+                limitedToOutboundTraffic: settings.limitedToOutboundTraffic || false
+              });
+              // Note: We don't fail if 9925 registration fails, as 0208 is the primary
+            } catch (error) {
+              console.log('Secondary registration (9925) failed, but continuing with 0208:', error);
+            }
+          }
+        } else {
+          // For other countries, register with the provided scheme
+          registrationResult = await this.registerParticipant({
+            peppolIdentifier: settings.peppolId,
+            name: settings.name,
+            countryCode: settings.countryCode,
+            contactPerson: {
+              firstName: settings.firstName,
+              lastName: settings.lastName,
+              email: settings.email,
+              phoneNumber: settings.phoneNumber,
+              language: settings.language
+            },
+            supportedDocumentTypes: PEPPOL_DOCUMENT_TYPES, // All document types enabled automatically
+            limitedToOutboundTraffic: settings.limitedToOutboundTraffic || false
+          });
+        }
 
         // If registration failed but participant is already registered, continue to save settings
         if (!registrationResult.success && !registrationResult.alreadyRegistered) {

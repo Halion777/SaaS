@@ -56,25 +56,19 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
 
     const config = statusConfig[status] || statusConfig.unpaid;
     
-    // Show editable status dropdown only for individual clients (not professional clients who use Peppol)
+    // Show editable status dropdown for all clients (invoice status can be updated manually)
     if (onStatusUpdate && invoice && canEdit) {
-      const clientType = invoice.client?.client_type || invoice.client?.type;
-      const isIndividual = clientType === 'individual' || clientType === 'particulier';
-      
-      // Only show editable status for individual clients with edit permission
-      if (isIndividual) {
-        return (
-          <div className="relative inline-block">
-            <Select
-              value={status}
-              onValueChange={(newStatus) => onStatusUpdate(invoice.id, newStatus)}
-              options={statusOptions}
-              className="w-auto min-w-[120px]"
-              usePortal={true}
-            />
-          </div>
-        );
-      }
+      return (
+        <div className="relative inline-block">
+          <Select
+            value={status}
+            onValueChange={(newStatus) => onStatusUpdate(invoice.id, newStatus)}
+            options={statusOptions}
+            className="w-auto min-w-[120px]"
+            usePortal={true}
+          />
+        </div>
+      );
     }
     
     return (
@@ -190,21 +184,30 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
             {/* Status */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex flex-col space-y-1">
-                {getStatusBadge(invoice.status, invoice)}
-                {/* Show Peppol status only for professional clients who have sent via Peppol */}
-                {(() => {
-                  const clientType = invoice.client?.client_type || invoice.client?.type;
-                  const isProfessional = clientType === 'company' || clientType === 'professionnel';
-                  if (isProfessional && invoice.peppolEnabled && invoice.peppolStatus) {
-                    return getPeppolStatusBadge(invoice.peppolStatus);
-                  }
-                  return null;
-                })()}
-                      {daysOverdue && (
-                        <span className="text-xs text-error">+{daysOverdue} {t('invoicesManagement.table.days')}</span>
-                      )}
+                <div>
+                  <div className="text-xs text-muted-foreground mb-1">{t('invoicesManagement.table.headers.status')}</div>
+                  {getStatusBadge(invoice.status, invoice)}
+                </div>
+                {daysOverdue && (
+                  <span className="text-xs text-error">+{daysOverdue} {t('invoicesManagement.table.days')}</span>
+                )}
               </div>
             </div>
+
+            {/* Peppol Status */}
+            {(() => {
+              const clientType = invoice.client?.client_type || invoice.client?.type;
+              const isProfessional = clientType === 'company' || clientType === 'professionnel';
+              if (isProfessional) {
+                return (
+                  <div className="mb-3">
+                    <div className="text-xs text-muted-foreground mb-1">{t('invoicesManagement.table.headers.peppolStatus', 'Peppol Status')}</div>
+                    {getPeppolStatusBadge(invoice.peppolStatus || 'not_sent')}
+                  </div>
+                );
+              }
+              return null;
+            })()}
 
             {/* Dates */}
             <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-3">
@@ -352,6 +355,9 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 {t('invoicesManagement.table.headers.status')}
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                {t('invoicesManagement.table.headers.peppolStatus', 'Peppol Status')}
+              </th>
               <SortableHeader label={t('invoicesManagement.table.headers.issueDate')} sortKey="issueDate" />
               <SortableHeader label={t('invoicesManagement.table.headers.dueDate')} sortKey="dueDate" />
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -389,19 +395,23 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col space-y-1">
                       {getStatusBadge(invoice.status, invoice)}
-                      {/* Show Peppol status only for professional clients who have sent via Peppol */}
-                      {(() => {
-                        const clientType = invoice.client?.client_type || invoice.client?.type;
-                        const isProfessional = clientType === 'company' || clientType === 'professionnel';
-                        if (isProfessional && invoice.peppolEnabled && invoice.peppolStatus) {
-                          return getPeppolStatusBadge(invoice.peppolStatus);
-                        }
-                        return null;
-                      })()}
                       {daysOverdue && (
                         <span className="text-xs text-error">+{daysOverdue} {t('invoicesManagement.table.days')}</span>
                       )}
                     </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {/* Show Peppol status (read-only) for professional clients */}
+                    {(() => {
+                      const clientType = invoice.client?.client_type || invoice.client?.type;
+                      const isProfessional = clientType === 'company' || clientType === 'professionnel';
+                      if (isProfessional) {
+                        // Show Peppol status (read-only badge, cannot be modified by user)
+                        return getPeppolStatusBadge(invoice.peppolStatus || 'not_sent');
+                      }
+                      // Individual clients don't use Peppol
+                      return <span className="text-xs text-muted-foreground">-</span>;
+                    })()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                     {formatDate(invoice.issueDate)}

@@ -426,10 +426,9 @@ const PeppolNetworkPage = () => {
 
         setUserBusinessInfo({ ...userData, full_name: fullName });
 
-        // Check if user is a business (not solo/individual)
-        const businessSizes = ['small', 'medium', 'large'];
-        const isBusiness = businessSizes.includes(userData.business_size);
-        setIsBusinessUser(isBusiness);
+        // Allow all users to access Peppol regardless of business size
+        // (solo users may still have companies)
+        setIsBusinessUser(true);
 
         // Load company info from company_profiles table
         let companyInfo = null;
@@ -440,7 +439,8 @@ const PeppolNetworkPage = () => {
         }
 
         // Pre-fill Peppol settings from company info and user data if not already configured
-        if (isBusiness && !peppolSettings.isConfigured) {
+        // Allow all users regardless of business size
+        if (!peppolSettings.isConfigured) {
           // Use company info if available, otherwise fall back to user data
           const companyName = companyInfo?.name || userData.company_name || fullName || '';
           const companyEmail = companyInfo?.email || userData.email || '';
@@ -501,16 +501,14 @@ const PeppolNetworkPage = () => {
           }
         }
 
-        // Only load Peppol settings for configuration tab if user is a business
-        if (isBusiness) {
-          // Load Peppol settings after auto-filling (so auto-filled values are preserved)
-          await loadPeppolSettings();
-          setLoadedTabs(prev => ({ ...prev, setup: true }));
+        // Load Peppol settings for all users (no business size restriction)
+        // Load Peppol settings after auto-filling (so auto-filled values are preserved)
+        await loadPeppolSettings();
+        setLoadedTabs(prev => ({ ...prev, setup: true }));
 
-          // Load invoice data immediately to populate KPI cards and stats
-          await loadPeppolInvoices();
-          setLoadedTabs(prev => ({ ...prev, sent: true, received: true }));
-        }
+        // Load invoice data immediately to populate KPI cards and stats
+        await loadPeppolInvoices();
+        setLoadedTabs(prev => ({ ...prev, sent: true, received: true }));
 
         // Set loading to false only after we've determined the user type
         setLoading(false);
@@ -594,15 +592,27 @@ const PeppolNetworkPage = () => {
     setSuccessMessage(null);
     setErrorMessage(null);
     try {
-      // Combine scheme code, country code, and VAT number before saving
-      // Format: {SCHEME_ID}:{COUNTRY_CODE}{VAT_NUMBER} (e.g., 9925:BE1231231231)
-      const combinedPeppolId = combinePeppolIdWithCountry(peppolSchemeCode, peppolSettings.countryCode, peppolIdentifier);
+      // For Belgium: register both 0208 and 9925 schemes
+      // For other countries: use the selected scheme code
+      let combinedPeppolId;
+      const isBelgium = peppolSettings.countryCode?.toUpperCase() === 'BE';
+      
+      if (isBelgium) {
+        // For Belgium, use 0208 as the primary ID (default format)
+        // Backend will register both 0208 and 9925
+        combinedPeppolId = combinePeppolIdWithCountry('0208', peppolSettings.countryCode, peppolIdentifier);
+      } else {
+        // For other countries, use the selected scheme code
+        combinedPeppolId = combinePeppolIdWithCountry(peppolSchemeCode, peppolSettings.countryCode, peppolIdentifier);
+      }
 
       // Automatically set all document types before saving
       const settingsToSave = {
         ...peppolSettings,
         peppolId: combinedPeppolId, // Ensure combined ID is used
-        supportedDocumentTypes: ALL_DOCUMENT_TYPES
+        supportedDocumentTypes: ALL_DOCUMENT_TYPES,
+        isBelgium: isBelgium, // Flag to indicate Belgium for dual registration
+        vatNumber: peppolIdentifier // Pass VAT number separately for Belgium dual registration
       };
       const result = await peppolService.savePeppolSettings(settingsToSave);
       if (result.success) {
@@ -1285,61 +1295,91 @@ const PeppolNetworkPage = () => {
                               </div>
                             </div>
 
-                            {/* Peppol ID - Split into Scheme Code and Identifier */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
-                                  {t('peppol.setup.companyInfo.peppolSchemeCode', 'Peppol Scheme Code')} *
-                                </label>
-                                {peppolSettings.countryCode?.toUpperCase() === 'BE' ? (
-                                  <Select
-                                    value={peppolSchemeCode}
-                                    onChange={(e) => handleSchemeCodeChange(e.target.value)}
-                                    options={[
-                                      { value: '0208', label: t('peppol.setup.companyInfo.belgiumScheme0208', '0208: Company Number (without BE) - Default') },
-                                      { value: '9925', label: t('peppol.setup.companyInfo.belgiumScheme9925', '9925: BE + Company Number') }
-                                    ]}
-                                    placeholder={t('peppol.setup.companyInfo.selectScheme', 'Select scheme')}
-                                    required
-                                  />
-                                ) : (
+                            {/* Peppol ID - For Belgium: show combined ID only, for others: show scheme code and VAT */}
+                            {peppolSettings.countryCode?.toUpperCase() === 'BE' ? (
+                              <>
+                                {/* Belgium: Only show VAT Number input, scheme codes are auto-registered */}
+                                <div>
+                                  <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
+                                    {t('peppol.setup.companyInfo.vatNumber', 'VAT Number')} *
+                                  </label>
                                   <Input
-                                    value={peppolSchemeCode}
-                                    onChange={(e) => handleSchemeCodeChange(e.target.value)}
-                                    placeholder="0208"
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={peppolIdentifier}
+                                    onChange={(e) => handleIdentifierChange(e.target.value)}
+                                    placeholder={t('peppol.setup.companyInfo.vatNumberPlaceholder', 'e.g., 0630675588 or BE0630675588')}
                                     className="font-mono"
                                     required
-                                    maxLength={4}
                                   />
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {t('peppol.setup.companyInfo.belgiumAutoRegister', 'Both scheme codes (0208 and 9925) will be automatically registered for Belgium')}
+                                  </p>
+                                </div>
+
+                                {/* Combined Peppol ID Display for Belgium (read-only, showing both formats) */}
+                                {peppolIdentifier && (
+                                  <div className="bg-muted/30 border border-border rounded-lg p-3 space-y-2">
+                                    <label className="block text-xs font-medium text-muted-foreground mb-1">
+                                      {t('peppol.setup.companyInfo.combinedPeppolId', 'Peppol IDs (Both will be registered)')}
+                                    </label>
+                                    <div className="space-y-1">
+                                      <p className="text-sm font-mono text-foreground">
+                                        <span className="text-muted-foreground">0208:</span> {combinePeppolIdWithCountry('0208', 'BE', peppolIdentifier)}
+                                      </p>
+                                      <p className="text-sm font-mono text-foreground">
+                                        <span className="text-muted-foreground">9925:</span> {combinePeppolIdWithCountry('9925', 'BE', peppolIdentifier)}
+                                      </p>
+                                    </div>
+                                  </div>
                                 )}
-                              </div>
+                              </>
+                            ) : (
+                              <>
+                                {/* Other countries: Show scheme code and VAT number separately */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                    <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
+                                      {t('peppol.setup.companyInfo.peppolSchemeCode', 'Peppol Scheme Code')} *
+                                    </label>
+                                    <Input
+                                      value={peppolSchemeCode}
+                                      onChange={(e) => handleSchemeCodeChange(e.target.value)}
+                                      placeholder="0208"
+                                      className="font-mono"
+                                      required
+                                      maxLength={4}
+                                    />
+                                  </div>
 
-                              <div>
-                                <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
-                                  {t('peppol.setup.companyInfo.vatNumber', 'VAT Number')} *
-                                </label>
-                                <Input
-                                  type="text"
-                                  inputMode="numeric"
-                                  value={peppolIdentifier}
-                                  onChange={(e) => handleIdentifierChange(e.target.value)}
-                                  placeholder={t('peppol.setup.companyInfo.vatNumberPlaceholder', 'e.g., 0630675588')}
-                                  className="font-mono"
-                                  required
-                                />
-                              </div>
-                            </div>
+                                  <div>
+                                    <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
+                                      {t('peppol.setup.companyInfo.vatNumber', 'VAT Number')} *
+                                    </label>
+                                    <Input
+                                      type="text"
+                                      inputMode="numeric"
+                                      value={peppolIdentifier}
+                                      onChange={(e) => handleIdentifierChange(e.target.value)}
+                                      placeholder={t('peppol.setup.companyInfo.vatNumberPlaceholder', 'e.g., 0630675588')}
+                                      className="font-mono"
+                                      required
+                                    />
+                                  </div>
+                                </div>
 
-                            {/* Combined Peppol ID Display (read-only) */}
-                            {peppolSchemeCode && peppolSettings.countryCode && peppolIdentifier && (
-                              <div className="bg-muted/30 border border-border rounded-lg p-3">
-                                <label className="block text-xs font-medium text-muted-foreground mb-1">
-                                  {t('peppol.setup.companyInfo.combinedPeppolId', 'Combined Peppol ID')}
-                                </label>
-                                <p className="text-sm font-mono text-foreground">
-                                  {combinePeppolIdWithCountry(peppolSchemeCode, peppolSettings.countryCode, peppolIdentifier)}
-                                </p>
-                              </div>
+                                {/* Combined Peppol ID Display (read-only) */}
+                                {peppolSchemeCode && peppolSettings.countryCode && peppolIdentifier && (
+                                  <div className="bg-muted/30 border border-border rounded-lg p-3">
+                                    <label className="block text-xs font-medium text-muted-foreground mb-1">
+                                      {t('peppol.setup.companyInfo.combinedPeppolId', 'Combined Peppol ID')}
+                                    </label>
+                                    <p className="text-sm font-mono text-foreground">
+                                      {combinePeppolIdWithCountry(peppolSchemeCode, peppolSettings.countryCode, peppolIdentifier)}
+                                    </p>
+                                  </div>
+                                )}
+                              </>
                             )}
                           </div>
                         </div>
