@@ -411,9 +411,8 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                       }
                       // Individual clients don't use Peppol
                       return (
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200 flex items-center space-x-1">
-                          <Icon name="Minus" size={12} />
-                          <span>{t('invoicesManagement.peppolStatus.notApplicable', 'N/A')}</span>
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200">
+                          {t('invoicesManagement.peppolStatus.notApplicable', 'N/A')}
                         </span>
                       );
                     })()}
