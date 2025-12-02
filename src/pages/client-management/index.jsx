@@ -5,7 +5,9 @@ import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import MainSidebar from '../../components/ui/MainSidebar';
 import PermissionGuard, { usePermissionCheck } from '../../components/PermissionGuard';
+import LimitedAccessGuard from '../../components/LimitedAccessGuard';
 import TableLoader from '../../components/ui/TableLoader';
+import { useMultiUser } from '../../context/MultiUserContext';
 import ClientModal from './components/ClientModal';
 import ClientCard from './components/ClientCard';
 import FilterToolbar from './components/FilterToolbar';
@@ -437,9 +439,16 @@ const ClientManagement = () => {
 
   // Check permissions for actions
   const { canEdit, canCreate, canDelete } = usePermissionCheck('clientManagement');
+  
+  // Get user profile and subscription limits
+  const { userProfile, subscriptionLimits } = useMultiUser();
+  
+  // Check if client limit is reached for Starter plan
+  const isStarterPlan = userProfile?.selected_plan === 'starter';
+  const activeClientsCount = clients.filter(c => c.isActive).length;
+  const clientLimitReached = isStarterPlan && subscriptionLimits?.maxClients > 0 && activeClientsCount >= subscriptionLimits.maxClients;
 
-  return (
-    <PermissionGuard module="clientManagement" requiredPermission="view_only">
+  const renderContent = () => (
     <div className="min-h-screen bg-background">
       {/* Sidebar */}
       <MainSidebar />
@@ -872,6 +881,22 @@ const ClientManagement = () => {
         />
       )}
     </div>
+  );
+
+  return (
+    <PermissionGuard module="clientManagement" requiredPermission="view_only">
+      {clientLimitReached ? (
+        <LimitedAccessGuard
+          requiredPlan="pro"
+          featureName={t('clientManagement.title', 'Client Management')}
+          customMessage={t('clientManagement.limitReached', 'You have reached the maximum number of active clients ({{max}}) on your Starter plan. Upgrade to Pro for unlimited clients.', { max: subscriptionLimits?.maxClients || 30 })}
+          showBanner={true}
+        >
+          {renderContent()}
+        </LimitedAccessGuard>
+      ) : (
+        renderContent()
+      )}
     </PermissionGuard>
   );
 };

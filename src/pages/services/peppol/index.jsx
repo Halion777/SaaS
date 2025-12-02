@@ -5,7 +5,10 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import MainSidebar from '../../../components/ui/MainSidebar';
 import PermissionGuard, { usePermissionCheck } from '../../../components/PermissionGuard';
+import LimitedAccessGuard from '../../../components/LimitedAccessGuard';
 import TableLoader from '../../../components/ui/TableLoader';
+import { useMultiUser } from '../../../context/MultiUserContext';
+import { useAuth } from '../../../context/AuthContext';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import PeppolService from '../../../services/peppolService';
@@ -17,10 +20,13 @@ import { loadCompanyInfo } from '../../../services/companyInfoService';
 const PeppolNetworkPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { userProfile, subscriptionLimits } = useMultiUser();
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const [activeTab, setActiveTab] = useState('setup');
+  const [peppolUsage, setPeppolUsage] = useState({ usage: 0, limit: 0, withinLimit: true });
   // All Peppol document types - automatically enabled for all users
   // Document types valid for participant registration (MLR and APPLICATION_RESPONSE are response types, not registration types)
   const ALL_DOCUMENT_TYPES = ['INVOICE', 'CREDIT_NOTE', 'SELF_BILLING_INVOICE', 'SELF_BILLING_CREDIT_NOTE', 'INVOICE_RESPONSE'];
@@ -1015,8 +1021,40 @@ const PeppolNetworkPage = () => {
   // Check permissions for actions
   const { canEdit } = usePermissionCheck('peppolAccessPoint');
 
-  return (
-    <PermissionGuard module="peppolAccessPoint" requiredPermission="view_only">
+  // Check Peppol invoice usage for Starter plan users
+  useEffect(() => {
+    const checkPeppolUsage = async () => {
+      if (!user?.id || !userProfile) return;
+      
+      const isStarterPlan = userProfile.selected_plan === 'starter';
+      if (!isStarterPlan) {
+        setPeppolUsage({ usage: 0, limit: -1, withinLimit: true });
+        return;
+      }
+
+      try {
+        const { FeatureAccessService } = await import('../../../services/featureAccessService');
+        const featureAccessService = new FeatureAccessService();
+        const peppolQuota = await featureAccessService.canSendPeppolInvoice(user.id);
+        setPeppolUsage({
+          usage: peppolQuota.usage || 0,
+          limit: peppolQuota.limit || 50,
+          withinLimit: peppolQuota.withinLimit || false
+        });
+      } catch (error) {
+        console.error('Error checking Peppol usage:', error);
+        setPeppolUsage({ usage: 0, limit: 50, withinLimit: true });
+      }
+    };
+
+    checkPeppolUsage();
+  }, [user?.id, userProfile]);
+
+  // Check if Peppol limit is reached for Starter plan
+  const isStarterPlan = userProfile?.selected_plan === 'starter';
+  const peppolLimitReached = isStarterPlan && peppolUsage.limit > 0 && peppolUsage.usage >= peppolUsage.limit;
+
+  const renderContent = () => (
     <div className="min-h-screen bg-background">
       <MainSidebar />
 
@@ -2027,6 +2065,25 @@ const PeppolNetworkPage = () => {
         </main>
       </div>
     </div>
+  );
+
+  return (
+    <PermissionGuard module="peppolAccessPoint" requiredPermission="view_only">
+      {peppolLimitReached ? (
+        <LimitedAccessGuard
+          requiredPlan="pro"
+          featureName={t('peppol.header.title', 'Peppol Network')}
+          customMessage={t('peppol.limitReached', 'You have reached the maximum number of Peppol invoices ({{max}} per month) on your Starter plan. You have used {{used}} of {{max}}. Upgrade to Pro for unlimited Peppol invoices.', { 
+            max: peppolUsage.limit, 
+            used: peppolUsage.usage 
+          })}
+          showBanner={true}
+        >
+          {renderContent()}
+        </LimitedAccessGuard>
+      ) : (
+        renderContent()
+      )}
     </PermissionGuard>
   );
 };

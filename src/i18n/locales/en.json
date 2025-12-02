@@ -3565,6 +3565,7 @@
       "connected": "Connected",
       "configurationRequired": "Configuration required"
     },
+    "limitReached": "You have reached the maximum number of Peppol invoices ({{max}} per month) on your Starter plan. You have used {{used}} of {{max}}. Upgrade to Pro for unlimited Peppol invoices.",
     "stats": {
       "sentInvoices": "Sent Invoices",
       "receivedInvoices": "Received Invoices",
@@ -3722,6 +3723,7 @@
       "refresh": "Refresh",
       "newClient": "New Client",
       "loading": "Loading clients...",
+      "limitReached": "You have reached the maximum number of active clients ({{max}}) on your Starter plan. Upgrade to Pro for unlimited clients.",
       "stats": {
         "totalClients": "Total Clients",
         "individual": "Individual",
@@ -4577,6 +4579,7 @@
     "loading": "Loading profiles...",
     "addProfile": "Add Profile",
     "adminOnly": "Only administrators can manage user profiles.",
+    "limitReached": "You have reached the maximum number of profiles ({{max}}) on your Starter plan. Upgrade to Pro to add more profiles.",
     "premiumAccount": {
       "title": "Premium Account",
       "description": "You can create up to {{max}} user profiles",
@@ -4921,6 +4924,21 @@
           "value": "No fees if we don't recover your money"
         }
       }
+    }
+  },
+  "limitedAccess": {
+    "banner": {
+      "title": "Limited Access: {{feature}}",
+      "message": "{{feature}} is available with limited features on Starter plan. Upgrade to Pro for full access.",
+      "upgradeButton": "Upgrade to Pro"
+    },
+    "blocked": {
+      "title": "Upgrade Required",
+      "message": "{{feature}} requires {{plan}} plan. Please upgrade to access this feature.",
+      "currentPlan": "Current Plan",
+      "requiredPlan": "Required Plan",
+      "goBack": "Go Back",
+      "upgradeButton": "Upgrade to Pro"
     }
   }
 } 

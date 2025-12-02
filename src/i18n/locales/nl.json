@@ -3616,6 +3616,7 @@
       "connected": "Verbonden",
       "configurationRequired": "Configuratie vereist"
     },
+    "limitReached": "U heeft het maximum aantal Peppol-facturen ({{max}} per maand) bereikt op uw Starter-plan. U heeft {{used}} van {{max}} gebruikt. Upgrade naar Pro voor onbeperkte Peppol-facturen.",
     "stats": {
       "sentInvoices": "Verzonden facturen",
       "receivedInvoices": "Ontvangen facturen",
@@ -3772,6 +3773,7 @@
       "refresh": "Vernieuwen",
       "newClient": "Nieuwe Klant",
       "loading": "Klanten laden...",
+      "limitReached": "U heeft het maximum aantal actieve klanten ({{max}}) bereikt op uw Starter-plan. Upgrade naar Pro voor onbeperkte klanten.",
       "stats": {
         "totalClients": "Totaal Klanten",
         "individual": "Particulier",
@@ -4610,6 +4612,7 @@
     "loading": "Profielen laden...",
     "addProfile": "Profiel toevoegen",
     "adminOnly": "Alleen beheerders kunnen gebruikersprofielen beheren.",
+    "limitReached": "U heeft het maximum aantal profielen ({{max}}) bereikt op uw Starter-plan. Upgrade naar Pro om meer profielen toe te voegen.",
     "premiumAccount": {
       "title": "Premium Account",
       "description": "U kunt maximaal {{max}} gebruikersprofielen aanmaken",
@@ -4954,6 +4957,21 @@
           "value": "Geen kosten als we uw geld niet innen"
         }
       }
+    }
+  },
+  "limitedAccess": {
+    "banner": {
+      "title": "Beperkte toegang: {{feature}}",
+      "message": "{{feature}} is beschikbaar met beperkte functies op het Starter-plan. Upgrade naar Pro voor volledige toegang.",
+      "upgradeButton": "Upgrade naar Pro"
+    },
+    "blocked": {
+      "title": "Upgrade vereist",
+      "message": "{{feature}} vereist het {{plan}}-plan. Upgrade om toegang te krijgen tot deze functie.",
+      "currentPlan": "Huidig plan",
+      "requiredPlan": "Vereist plan",
+      "goBack": "Terug",
+      "upgradeButton": "Upgrade naar Pro"
     }
   }
 }

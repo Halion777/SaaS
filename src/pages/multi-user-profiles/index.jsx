@@ -11,6 +11,7 @@ import EnhancedSelect from '../../components/ui/EnhancedSelect';
 import MainSidebar from '../../components/ui/MainSidebar';
 import GlobalProfile from '../../components/ui/GlobalProfile';
 import PermissionGuard from '../../components/PermissionGuard';
+import LimitedAccessGuard from '../../components/LimitedAccessGuard';
 
 const MultiUserProfilesPage = () => {
   const { t } = useTranslation();
@@ -681,11 +682,11 @@ const MultiUserProfilesPage = () => {
     });
   };
 
-  return (
-    <PermissionGuard 
-      adminOnly 
-      customMessage={t('multiUserProfiles.adminOnly', 'Only administrators can manage user profiles.')}
-    >
+  // Check if profile limit is reached for Starter plan
+  const isStarterPlan = userProfile?.selected_plan === 'starter';
+  const profileLimitReached = isStarterPlan && companyProfiles.length >= subscriptionLimits.maxProfiles;
+
+  const renderContent = () => (
     <div className="min-h-screen bg-background">
       <MainSidebar />
       <GlobalProfile />
@@ -1465,6 +1466,25 @@ const MultiUserProfilesPage = () => {
         </div>
       </main>
     </div>
+  );
+
+  return (
+    <PermissionGuard 
+      adminOnly 
+      customMessage={t('multiUserProfiles.adminOnly', 'Only administrators can manage user profiles.')}
+    >
+      {profileLimitReached ? (
+        <LimitedAccessGuard
+          requiredPlan="pro"
+          featureName={t('multiUserProfiles.title', 'User Profile Management')}
+          customMessage={t('multiUserProfiles.limitReached', 'You have reached the maximum number of profiles ({{max}}) on your Starter plan. Upgrade to Pro to add more profiles.', { max: subscriptionLimits.maxProfiles })}
+          showBanner={true}
+        >
+          {renderContent()}
+        </LimitedAccessGuard>
+      ) : (
+        renderContent()
+      )}
     </PermissionGuard>
   );
 };
