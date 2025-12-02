@@ -386,8 +386,112 @@ const Peppol = () => {
     }
   };
 
+  // Cleanup all Peppol-related data for a user
+  const cleanupPeppolData = async (peppolIdentifier) => {
+    try {
+      // First, find the user_id from peppol_settings
+      const { data: peppolSettings, error: settingsError } = await supabase
+        .from('peppol_settings')
+        .select('user_id')
+        .eq('peppol_id', peppolIdentifier)
+        .single();
+
+      if (settingsError || !peppolSettings) {
+        console.warn(`No peppol_settings found for Peppol ID: ${peppolIdentifier}`);
+        return { success: false, message: 'User not found for this Peppol ID' };
+      }
+
+      const userId = peppolSettings.user_id;
+
+      // Delete from peppol_settings
+      const { error: deleteSettingsError } = await supabase
+        .from('peppol_settings')
+        .delete()
+        .eq('user_id', userId);
+
+      if (deleteSettingsError) {
+        console.error('Error deleting peppol_settings:', deleteSettingsError);
+      }
+
+      // Delete from peppol_participants
+      const { error: deleteParticipantsError } = await supabase
+        .from('peppol_participants')
+        .delete()
+        .eq('user_id', userId);
+
+      if (deleteParticipantsError) {
+        console.error('Error deleting peppol_participants:', deleteParticipantsError);
+      }
+
+      // Delete from peppol_invoices
+      const { error: deleteInvoicesError } = await supabase
+        .from('peppol_invoices')
+        .delete()
+        .eq('user_id', userId);
+
+      if (deleteInvoicesError) {
+        console.error('Error deleting peppol_invoices:', deleteInvoicesError);
+      }
+
+      // Clean up Peppol fields from invoices table
+      const { error: updateInvoicesError } = await supabase
+        .from('invoices')
+        .update({
+          peppol_enabled: false,
+          peppol_status: null,
+          peppol_message_id: null,
+          peppol_sent_at: null,
+          peppol_delivered_at: null,
+          peppol_error_message: null,
+          receiver_peppol_id: null,
+          ubl_xml: null,
+          peppol_metadata: null
+        })
+        .eq('user_id', userId);
+
+      if (updateInvoicesError) {
+        console.error('Error cleaning up invoices Peppol data:', updateInvoicesError);
+      }
+
+      // Clean up Peppol fields from expense_invoices table
+      const { error: updateExpenseInvoicesError } = await supabase
+        .from('expense_invoices')
+        .update({
+          peppol_enabled: false,
+          peppol_message_id: null,
+          peppol_received_at: null,
+          sender_peppol_id: null,
+          ubl_xml: null,
+          peppol_metadata: null
+        })
+        .eq('user_id', userId);
+
+      if (updateExpenseInvoicesError) {
+        console.error('Error cleaning up expense_invoices Peppol data:', updateExpenseInvoicesError);
+      }
+
+      // Clean up Peppol fields from clients table
+      const { error: updateClientsError } = await supabase
+        .from('clients')
+        .update({
+          peppol_id: null,
+          peppol_enabled: false
+        })
+        .eq('user_id', userId);
+
+      if (updateClientsError) {
+        console.error('Error cleaning up clients Peppol data:', updateClientsError);
+      }
+
+      return { success: true, message: 'All Peppol data cleaned up successfully' };
+    } catch (error) {
+      console.error('Error in cleanupPeppolData:', error);
+      return { success: false, message: error.message || 'Unknown error during cleanup' };
+    }
+  };
+
   const handleUnregisterParticipant = async (peppolIdentifier) => {
-    if (!window.confirm(`Are you sure you want to unregister participant "${peppolIdentifier}"? This action cannot be undone.`)) {
+    if (!window.confirm(`Are you sure you want to unregister participant "${peppolIdentifier}"? This will also delete all Peppol-related data from the database. This action cannot be undone.`)) {
       return;
     }
 
@@ -406,6 +510,7 @@ const Peppol = () => {
         ? 'https://test.digiteal.eu' 
         : settings.apiEndpoint;
 
+      // Step 1: Unregister from Peppol network
       const { data, error } = await supabase.functions.invoke('peppol-webhook-config', {
         body: {
           endpoint: endpoint,
@@ -422,15 +527,30 @@ const Peppol = () => {
           message: 'Failed to unregister participant',
           details: error.message || 'Unknown error occurred'
         });
-      } else {
-        setTestResult({
-          success: true,
-          message: 'Participant unregistered successfully',
-          details: `Participant "${peppolIdentifier}" has been removed from Peppol network`
-        });
-        // Refresh participants list
-        await fetchParticipants();
+        return;
       }
+
+      // Step 2: Clean up all Peppol data from database
+      const cleanupResult = await cleanupPeppolData(peppolIdentifier);
+      
+      if (!cleanupResult.success) {
+        setTestResult({
+          success: false,
+          message: 'Participant unregistered from Peppol, but cleanup failed',
+          details: cleanupResult.message || 'Some data may still remain in the database'
+        });
+        return;
+      }
+
+      // Success: Both unregistration and cleanup completed
+      setTestResult({
+        success: true,
+        message: 'Participant unregistered and all Peppol data deleted successfully',
+        details: `Participant "${peppolIdentifier}" has been removed from Peppol network and all related data has been deleted from the database`
+      });
+      
+      // Refresh participants list
+      await fetchParticipants();
     } catch (error) {
       console.error('Error unregistering participant:', error);
       setTestResult({

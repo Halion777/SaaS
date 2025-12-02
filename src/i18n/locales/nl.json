@@ -4190,6 +4190,10 @@
         "yourTeam": "Uw team",
         "defaultSubject": "Factuur {{invoiceNumber}} - {{companyName}}",
         "defaultMessage": "Hierbij vindt u onze factuur {{invoiceNumber}}.",
+        "defaultMessageWithWarning": "Hierbij vindt u onze factuur {{invoiceNumber}}.\n\n⚠️ BELANGRIJK: Deze e-mail is alleen ter referentie. U moet Peppol gebruiken om betaald te worden.",
+        "messageWarning": "⚠️ BELANGRIJK:",
+        "messageWarningText": "Deze e-mail is alleen ter referentie. U moet Peppol gebruiken om betaald te worden.",
+        "peppolWarningText": "⚠️ BELANGRIJK: Deze e-mail is alleen ter referentie. U moet Peppol gebruiken om betaald te worden.",
         "emailText": "Factuur {{invoiceNumber}} - Bedrag: {{amount}}",
         "preview": {
           "invoice": "Factuur",
@@ -4212,6 +4216,10 @@
           "subjectRequired": "Voer het e-mailonderwerp in",
           "updateError": "E-mail verzonden maar fout bij bijwerken",
           "sendError": "Fout bij het verzenden van e-mail"
+        },
+        "invalidPeppolWarning": {
+          "title": "Belangrijke Mededeling",
+          "message": "Deze e-mail is alleen ter referentie. U moet Peppol gebruiken om betaald te worden."
         }
       },
       "sendPeppolModal": {
@@ -4246,7 +4254,8 @@
           "validationError": "Kan Peppol ID niet valideren. Controleer uw verbinding en probeer het opnieuw.",
           "peppolIdNotValidated": "Wacht tot de Peppol ID-validatie is voltooid, of het ID is ongeldig."
         },
-        "peppolIdValid": "Peppol ID is geldig"
+        "peppolIdValid": "Peppol ID is geldig",
+        "notPeppolUser": "Geen Peppol-gebruiker?"
       }
     },
     "expenseInvoices": {

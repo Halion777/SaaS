@@ -10,6 +10,7 @@ const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [sendMethod, setSendMethod] = useState(null); // 'peppol' or 'email'
+  const [fromInvalidPeppolId, setFromInvalidPeppolId] = useState(false); // Track if email modal opened from invalid Peppol ID
   
   // Determine client type
   const clientType = invoice?.client?.client_type || invoice?.client?.type;
@@ -30,6 +31,8 @@ const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
         // Reset send method for individual clients or failed Peppol
         setSendMethod(null);
       }
+      // Reset fromInvalidPeppolId when modal opens
+      setFromInvalidPeppolId(false);
     }
   }, [isOpen, invoice, isProfessional, isPeppolFailed]);
 
@@ -39,7 +42,13 @@ const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
 
   const handleClose = () => {
     setSendMethod(null);
+    setFromInvalidPeppolId(false);
     onClose();
+  };
+
+  const handleOpenEmailModal = (isFromInvalidPeppolId = false) => {
+    setFromInvalidPeppolId(isFromInvalidPeppolId);
+    setSendMethod('email');
   };
 
   const handleSuccess = () => {
@@ -73,6 +82,7 @@ const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
         isOpen={true}
         onClose={handleClose}
         onSuccess={handleSuccess}
+        onOpenEmailModal={handleOpenEmailModal}
       />
     );
   }
@@ -85,6 +95,8 @@ const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
         onClose={handleClose}
         onSuccess={handleSuccess}
         isProfessionalClient={isProfessional}
+        fromInvalidPeppolId={fromInvalidPeppolId}
+        isPeppolFailed={isPeppolFailed}
       />
     );
   }

@@ -4204,6 +4204,10 @@
         "yourTeam": "Votre équipe",
         "defaultSubject": "Facture {{invoiceNumber}} - {{companyName}}",
         "defaultMessage": "Veuillez trouver ci-joint notre facture {{invoiceNumber}}.",
+        "defaultMessageWithWarning": "Veuillez trouver ci-joint notre facture {{invoiceNumber}}.\n\n⚠️ IMPORTANT: Cet email est uniquement à titre de référence. Vous devez utiliser Peppol pour être payé.",
+        "messageWarning": "⚠️ IMPORTANT:",
+        "messageWarningText": "Cet email est uniquement à titre de référence. Vous devez utiliser Peppol pour être payé.",
+        "peppolWarningText": "⚠️ IMPORTANT: Cet email est uniquement à titre de référence. Vous devez utiliser Peppol pour être payé.",
         "emailText": "Facture {{invoiceNumber}} - Montant: {{amount}}",
         "preview": {
           "invoice": "Facture",
@@ -4226,6 +4230,10 @@
           "subjectRequired": "Veuillez saisir l'objet de l'email",
           "updateError": "Email envoyé mais erreur lors de la mise à jour",
           "sendError": "Erreur lors de l'envoi de l'email"
+        },
+        "invalidPeppolWarning": {
+          "title": "Avis Important",
+          "message": "Cet email est uniquement à titre de référence. Vous devez utiliser Peppol pour être payé."
         }
       },
       "sendPeppolModal": {
@@ -4260,7 +4268,8 @@
           "validationError": "Impossible de valider l'ID Peppol. Veuillez vérifier votre connexion et réessayer.",
           "peppolIdNotValidated": "Veuillez attendre que la validation de l'ID Peppol soit terminée, ou l'ID est invalide."
         },
-        "peppolIdValid": "L'ID Peppol est valide"
+        "peppolIdValid": "L'ID Peppol est valide",
+        "notPeppolUser": "Pas un utilisateur Peppol ?"
       },
       "sendToAccountant": {
         "title": "Envoyer au comptable",

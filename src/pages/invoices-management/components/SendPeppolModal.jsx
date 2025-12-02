@@ -9,7 +9,7 @@ import { fetchClients } from '../../../services/clientsService';
 import { supabase } from '../../../services/supabaseClient';
 import { useAuth } from '../../../context/AuthContext';
 
-const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
+const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -529,7 +529,20 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
                       </button>
                     </div>
                     {validationError && clientPeppolId && (
-                      <p className="text-xs text-error mt-1">{validationError}</p>
+                      <div className="space-y-1">
+                        <p className="text-xs text-error mt-1">{validationError}</p>
+                        {onOpenEmailModal && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onOpenEmailModal(true); // Pass true to indicate it's from invalid Peppol ID
+                            }}
+                            className="text-xs text-primary hover:underline mt-1"
+                          >
+                            {t('invoicesManagement.sendPeppolModal.notPeppolUser', 'Not a Peppol user?')}
+                          </button>
+                        )}
+                      </div>
                     )}
                     {isValid && !validationError && clientPeppolId && (
                       <p className="text-xs text-green-600 mt-1">
@@ -573,7 +586,20 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess }) => {
                       )}
                     </div>
                     {validationError && (
-                      <p className="text-xs text-error mt-1">{validationError}</p>
+                      <div className="space-y-1">
+                        <p className="text-xs text-error mt-1">{validationError}</p>
+                        {onOpenEmailModal && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onOpenEmailModal(true); // Pass true to indicate it's from invalid Peppol ID
+                            }}
+                            className="text-xs text-primary hover:underline mt-1"
+                          >
+                            {t('invoicesManagement.sendPeppolModal.notPeppolUser', 'Not a Peppol user?')}
+                          </button>
+                        )}
+                      </div>
                     )}
                     {isValid && !validationError && (
                       <p className="text-xs text-green-600 mt-1">

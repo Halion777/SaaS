@@ -11,7 +11,7 @@ import { generateInvoicePDF } from '../../../services/pdfService';
 import { supabase } from '../../../services/supabaseClient';
 import { translateTextWithAI } from '../../../services/googleAIService';
 
-const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalClient = false }) => {
+const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalClient = false, fromInvalidPeppolId = false, isPeppolFailed = false }) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -31,7 +31,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
     if (isOpen && invoice) {
       loadData();
     }
-  }, [isOpen, invoice]);
+  }, [isOpen, invoice, fromInvalidPeppolId, isPeppolFailed]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -70,10 +70,17 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
         invoiceNumber: invoice.number || invoice.invoice_number || '',
         companyName: company?.name || t('invoicesManagement.sendEmailModal.yourCompany')
       });
-      const defaultMessage = t('invoicesManagement.sendEmailModal.defaultMessage', {
-        invoiceNumber: invoice.number || invoice.invoice_number || '',
-        companyName: company?.name || t('invoicesManagement.sendEmailModal.yourTeam')
-      });
+      
+      // Set default message - if from invalid Peppol ID or failed Peppol, only show warning
+      let defaultMessage;
+      if (fromInvalidPeppolId || isPeppolFailed) {
+        defaultMessage = t('invoicesManagement.sendEmailModal.peppolWarningText', '⚠️ IMPORTANT: This email is for reference only. You must use Peppol to get paid.');
+      } else {
+        defaultMessage = t('invoicesManagement.sendEmailModal.defaultMessage', {
+          invoiceNumber: invoice.number || invoice.invoice_number || '',
+          companyName: company?.name || t('invoicesManagement.sendEmailModal.yourTeam')
+        });
+      }
 
       // Only reset if this is a different invoice or first time opening
       // Preserve sendCopy toggle state when reopening the same invoice
@@ -147,8 +154,9 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
         quote: invoice.quote || null
       };
 
-      // Generate PDF blob (hide bank info for professional clients)
-      const pdfBlob = await generateInvoicePDF(invoiceData, invoiceNumber, null, i18n.language, isProfessionalClient);
+      // Generate PDF blob (hide bank info for professional clients, but show it if from invalid Peppol ID flow or Peppol failed)
+      const hideBankInfo = isProfessionalClient && !fromInvalidPeppolId && !isPeppolFailed;
+      const pdfBlob = await generateInvoicePDF(invoiceData, invoiceNumber, null, i18n.language, hideBankInfo);
       
       // Convert PDF blob to base64 for email attachment
       const pdfBase64 = await new Promise((resolve, reject) => {
@@ -320,6 +328,23 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
             </div>
           ) : (
             <>
+              {/* Warning for invalid Peppol ID flow or failed Peppol */}
+              {(fromInvalidPeppolId || isPeppolFailed) && (
+                <div className="bg-warning/10 border border-warning/20 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <Icon name="AlertTriangle" size={20} className="text-warning flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-foreground mb-1">
+                        {t('invoicesManagement.sendEmailModal.invalidPeppolWarning.title', 'Important Notice')}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {t('invoicesManagement.sendEmailModal.invalidPeppolWarning.message', 'This email is for reference only. You must use Peppol to get paid.')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Error Display */}
               {error && (
                 <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
