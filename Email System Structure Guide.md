@@ -61,22 +61,38 @@ The email system uses a **3-layer architecture**:
 **Purpose**: Frontend/Application layer that prepares email data
 
 **Responsibilities**:
-- Gets user language from `localStorage.getItem('i18nextLng')`
 - Prepares email data (variables, recipients, etc.)
+- Passes `client_id` or `user_id` to Edge Function for language preference lookup
 - Calls the Edge Function to send emails
 - Handles business logic for email sending
 
+**Language Preference Handling**:
+- **Client emails**: Pass `client_id` - Edge Function fetches `clients.language_preference` from database
+- **User emails**: Pass `user_id` - Edge Function fetches `users.language_preference` from database
+- **Non-logged in users** (quote share page): Pass `language` parameter from dropdown selection
+- **Registration**: Saves language from localStorage to `users.language_preference` in database
+
 **Example**:
 ```javascript
-// Get user language
-const language = localStorage.getItem('i18nextLng') || 'fr';
+// For client emails - pass client_id, edge function fetches language from database
+await EmailService.sendEmailViaEdgeFunction('quote_sent', {
+  client_id: quote.client_id, // Edge function will fetch client.language_preference
+  client_email: 'client@example.com',
+  variables: { ... }
+});
 
-// Call edge function
+// For user emails - pass user_id, edge function fetches language from database
 await EmailService.sendEmailViaEdgeFunction('new_lead_available', {
-  language: language,
+  user_id: userId, // Edge function will fetch user.language_preference
   artisan_email: 'artisan@example.com',
-  leadData: { ... },
-  artisanData: { ... }
+  variables: { ... }
+});
+
+// For non-logged in users (quote share page) - pass language from dropdown
+await EmailService.sendEmailViaEdgeFunction('quote_status_update', {
+  client_id: quote.client_id, // Try database first
+  language: localStorage.getItem('language') || 'fr', // Fallback if no client_id
+  variables: { ... }
 });
 ```
 
@@ -254,10 +270,26 @@ When an email needs to be sent, the system follows this priority order:
 5. **Any active template** (final fallback)
 6. **Error** - If no template found, throws error with clear message
 
-**Language Source:**
-- **Client emails**: Uses `client.language_preference` from `clients` table
-- **User emails**: Uses `user.language_preference` from `users` table
-- **Contact form**: Uses browser/i18n language
+**Language Source Priority:**
+
+1. **Client Emails** (quotes, invoices, follow-ups):
+   - Primary: `clients.language_preference` from database (fetched using `client_id`)
+   - Fallback: `language` parameter passed from frontend (for non-logged in users on quote share page)
+   - Final fallback: 'fr'
+
+2. **User/Artisan Emails** (subscriptions, lead notifications):
+   - Primary: `users.language_preference` from database (fetched using `user_id`)
+   - Final fallback: 'fr'
+
+3. **Contact Form**:
+   - Uses `language` parameter passed from frontend (browser/i18n language)
+
+4. **Registration**:
+   - Reads language from `localStorage.getItem('language')` during registration
+   - Saves to `users.language_preference` in database
+
+5. **Account Settings**:
+   - When user changes language via dropdown, updates `users.language_preference` in database
 
 ### Variable Replacement
 
@@ -301,22 +333,33 @@ Templates use variables in the format `{variable_name}` that are replaced with a
 **Language Priority System:**
 
 1. **For Client Emails** (quotes, invoices, follow-ups):
-   - Primary: `client.language_preference` (from database)
-   - Fallback: French template
-   - Final fallback: Any active template
+   - **Primary**: `clients.language_preference` from database (fetched using `client_id`)
+   - **Fallback**: `language` parameter passed from frontend (for non-logged in users on quote share page)
+   - **Final fallback**: 'fr' (French)
 
-2. **For User/Artisan Emails** (subscriptions, copy emails):
-   - Primary: `user.language_preference` (from database)
-   - Fallback: `localStorage.getItem('language')` or `localStorage.getItem('i18nextLng')`
-   - Final fallback: French template
+2. **For User/Artisan Emails** (subscriptions, lead notifications, copy emails):
+   - **Primary**: `users.language_preference` from database (fetched using `user_id`)
+   - **Final fallback**: 'fr' (French)
 
 3. **For Contact Form**:
-   - Primary: Language from i18n (`i18n.language`)
-   - Fallback: `localStorage.getItem('language')` or `localStorage.getItem('i18nextLng')`
-   - Final fallback: French template
+   - Uses `language` parameter passed from frontend (browser/i18n language)
+   - Final fallback: 'fr'
+
+4. **For Quote Share Page** (non-logged in users):
+   - **Primary**: `clients.language_preference` from database (if `client_id` available)
+   - **Fallback**: `language` parameter from dropdown selection (stored in localStorage)
+   - **Final fallback**: 'fr'
+
+**Important Notes:**
+- ✅ **Database is the source of truth** - `clients.language_preference` and `users.language_preference` are primary
+- ✅ **No localStorage fallbacks** - Only used during registration and quote share page for non-logged in users
+- ✅ **Registration saves language** - Language selected during registration is saved to `users.language_preference`
+- ✅ **Account settings update database** - Language changes via dropdown update `users.language_preference` in database
 
 **Template Selection Logic:**
-- First tries to find template in requested language
+- Edge Function fetches language preference from database using `client_id` or `user_id`
+- If no database preference found, uses `language` parameter from frontend
+- First tries to find template in determined language
 - Falls back to French if requested language not found
 - Falls back to any active template if French not found
 - Throws error if no template exists
@@ -333,19 +376,17 @@ Templates use variables in the format `{variable_name}` that are replaced with a
 2. Frontend calls: EmailService.sendQuoteSentEmail(quoteId)
    ↓
 3. emailService.js:
-   - Fetches client data including client.language_preference (e.g., 'en')
-   - Fetches quote data from database
+   - Fetches quote data including client_id
    - Prepares variables (client_name, quote_number, etc.)
-   - Uses client.language_preference for client email
-   - Calls Edge Function: sendEmailViaEdgeFunction('templated_email', {
-       language: 'en',  // From client.language_preference
-       template_type: 'quote_sent',
+   - Calls Edge Function: sendEmailViaEdgeFunction('quote_sent', {
+       client_id: quote.client_id,  // Edge function will fetch client.language_preference
        client_email: 'client@example.com',
        variables: { ... }
      })
    ↓
 4. Edge Function (send-emails/index.ts):
-   - Receives email request
+   - Receives email request with client_id
+   - Fetches client.language_preference from database using client_id (e.g., 'en')
    - Fetches template from email_templates table
      (template_type='quote_sent', language='en')
    - Renders template with variables
@@ -355,30 +396,60 @@ Templates use variables in the format `{variable_name}` that are replaced with a
 5. Frontend receives response and shows success message
 ```
 
-### Example 2: Quote Accepted (Automated via Database Trigger)
+### Example 2: Quote Accepted from Share Page (Non-logged in User)
 
 ```
-1. Client accepts quote (status changes to 'accepted')
+1. Client accepts quote on share page (non-logged in user)
    ↓
-2. Database Trigger: on_quote_status_accepted_rejected()
-   - Detects status change
-   - Fetches 'client_accepted' template from email_templates
-   - Renders template with quote data
-   - Inserts email into email_outbox (status: 'sending')
+2. Frontend (quote-share/index.jsx):
+   - User selected language from dropdown (e.g., 'en') - stored in localStorage
+   - Calls: ClientQuoteService.acceptQuote(quoteId, token, signatureData)
    ↓
-3. Cron Job (runs every 5 minutes):
-   - SELECT public.send_pending_emails()
-   - Finds emails in email_outbox with status 'sending'
-   - Calls Edge Function to send each email
-   - Updates status to 'sent' or 'failed'
+3. clientQuoteService.js:
+   - Updates quote status to 'accepted'
+   - Gets language from localStorage (user's dropdown selection)
+   - Calls: sendQuoteStatusEmail(quoteId, 'accepted', {
+       client_id: quote.client_id,  // Try database first
+       language: 'en',  // From dropdown selection (fallback if no client_id)
+       variables: { ... }
+     })
+   ↓
+4. Edge Function (send-emails/index.ts):
+   - Receives email request with client_id and language parameter
+   - Tries to fetch client.language_preference from database using client_id
+   - If no database preference found, uses language parameter ('en')
+   - Fetches template from email_templates table
+     (template_type='client_accepted', language='en')
+   - Renders template with variables
+   - Sends email via Resend API
+   ↓
+5. Client receives email in their selected language
 ```
 
-### Example 3: Follow-up Email (Scheduled)
+### Example 3: User Registration
+
+```
+1. User completes registration form
+   - User selected language from dropdown (e.g., 'en') - stored in localStorage
+   ↓
+2. Registration Service (registrationService.js):
+   - Reads language from localStorage.getItem('language') (e.g., 'en')
+   - Creates user record with language_preference: 'en'
+   - Saves to users table: { ..., language_preference: 'en' }
+   ↓
+3. Welcome Email:
+   - Edge Function receives user_id
+   - Fetches user.language_preference from database ('en')
+   - Fetches 'welcome_registration' template in English
+   - Sends email in user's selected language
+```
+
+### Example 4: Follow-up Email (Scheduled)
 
 ```
 1. Follow-up Scheduler Edge Function (runs daily at 9 AM):
    - Checks quotes that need follow-ups
-   - Fetches client.language_preference from database
+   - Fetches client.language_preference from database using client_id
    - Fetches template filtered by client language
    - Creates follow-up records in quote_follow_ups table
      (with template content already rendered)
@@ -505,14 +576,16 @@ Add function in `src/services/emailService.js`:
 
 ```javascript
 static async sendNewTemplateEmail(data) {
-  const language = localStorage.getItem('i18nextLng') || 'fr';
-  
+  // For client emails - pass client_id, edge function fetches language from database
   return await this.sendEmailViaEdgeFunction('new_template_type', {
-    language: language,
+    client_id: data.client_id, // Edge function will fetch client.language_preference
+    user_id: data.user_id, // For user emails, edge function will fetch user.language_preference
     to: data.recipientEmail,
-    data: {
+    language: data.language, // Only for non-logged in users (quote share page)
+    variables: {
       value1: data.value1,
-      value2: data.value2
+      value2: data.value2,
+      company_name: 'Haliqo'
     }
   });
 }
@@ -566,10 +639,14 @@ const getTemplateTypeName = (type) => {
 ### Wrong language template loading
 
 **Check**:
-1. User language is correctly set in `localStorage.getItem('i18nextLng')`
-2. Template exists for that language in database
-3. Template is active
-4. Language code matches exactly ('fr', 'en', 'nl')
+1. **For client emails**: Verify `clients.language_preference` is set correctly in database
+2. **For user emails**: Verify `users.language_preference` is set correctly in database
+3. **During registration**: Language from localStorage is saved to `users.language_preference`
+4. **Account settings**: Language changes update `users.language_preference` in database
+5. Template exists for that language in database
+6. Template is active
+7. Language code matches exactly ('fr', 'en', 'nl')
+8. **For quote share page**: Language from dropdown is passed as `language` parameter
 
 ### Template not appearing in Super Admin UI
 
@@ -584,12 +661,15 @@ const getTemplateTypeName = (type) => {
 ## Key Files Reference
 
 ### Service Files
-- `src/services/emailService.js` - Main email service (uses client/user language preferences)
-- `src/services/subscriptionNotificationService.js` - Subscription emails (uses user language preference)
-- `src/services/contactService.js` - Contact form emails (uses browser/i18n language)
-- `src/services/leadManagementService.js` - Lead management emails (uses artisan/user language)
-- `src/services/invoiceFollowUpService.js` - Invoice follow-up service (uses client language)
-- `src/services/clientsService.js` - Client service (saves/loads language preference)
+- `src/services/emailService.js` - Main email service (passes client_id/user_id for language preference lookup)
+- `src/services/subscriptionNotificationService.js` - Subscription emails (passes user_id for language preference lookup)
+- `src/services/registrationService.js` - Registration service (saves language from localStorage to users.language_preference)
+- `src/services/clientQuoteService.js` - Quote status emails (passes language from dropdown for non-logged in users)
+- `src/services/contactService.js` - Contact form emails (passes language parameter)
+- `src/services/leadManagementService.js` - Lead management emails (passes user_id for language preference lookup)
+- `src/services/invoiceFollowUpService.js` - Invoice follow-up service (uses client_id for language preference lookup)
+- `src/services/clientsService.js` - Client service (saves/loads language preference to clients.language_preference)
+- `src/components/LanguageDropdown.jsx` - Language selector (updates users.language_preference in database when logged in)
 
 ### Edge Functions
 - `supabase/functions/send-emails/index.ts` - Email sending & template fetching (with language filtering)
@@ -621,6 +701,10 @@ const getTemplateTypeName = (type) => {
 - ✅ Supports user-specific templates (via `user_id` field)
 - ✅ Uses edge functions for secure email delivery
 - ✅ Includes retry mechanism via `email_outbox` table
+- ✅ **Database-driven language preferences** - Uses `clients.language_preference` and `users.language_preference` as primary source
+- ✅ **Registration saves language** - Language selected during registration is saved to database
+- ✅ **Account settings update database** - Language changes update `users.language_preference` in database
+- ✅ **Quote share page support** - Non-logged in users can select language from dropdown
 
 **Template Categories:**
 - **Quote Templates:** 7 types (quote_sent, client_accepted, client_rejected, followup_not_viewed, followup_viewed_no_action, general_followup, welcome_client)

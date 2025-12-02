@@ -5,6 +5,8 @@ import { useAuth } from '../../../context/AuthContext';
 import { generateQuotePDF } from '../../../services/pdfService';
 import { createProcessingOverlay } from '../../../components/ui/ProcessingOverlay';
 import { useTranslation } from 'react-i18next';
+import { supabase } from '../../../services/supabaseClient';
+import { translateTextWithAI } from '../../../services/googleAIService';
 
 const QuoteSendModal = ({ 
   isOpen, 
@@ -21,11 +23,12 @@ const QuoteSendModal = ({
   customization
 }) => {
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [step, setStep] = useState(1); // 1: options, 2: email form
   const [sendMethod, setSendMethod] = useState('email'); // 'email' or 'pdf'
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [clientLanguage, setClientLanguage] = useState('fr'); // Client's language preference
   const [emailData, setEmailData] = useState({
     clientEmail: '',
     sendCopy: false,
@@ -38,26 +41,54 @@ const QuoteSendModal = ({
   useEffect(() => {
     // Only initialize when transitioning to step 2 (not on every render)
     if (selectedClient && step === 2 && prevStepRef.current !== 2) {
-      const clientEmail = selectedClient.email || selectedClient.client?.email || '';
-      const projectDescription = projectInfo?.description || projectInfo?.title || t('quoteCreation.quoteSendModal.defaultProject', 'New project');
-      const defaultSubject = t('quoteCreation.quoteSendModal.defaultSubject', {
-        quoteNumber: quoteNumber || '',
-        projectDescription: projectDescription
-      });
-      const defaultMessage = t('quoteCreation.quoteSendModal.defaultMessage', {
-        quoteNumber: quoteNumber || ''
-      });
+      const loadClientLanguageAndDefaults = async () => {
+        const clientEmail = selectedClient.email || selectedClient.client?.email || '';
+        
+        // Get client's language preference for default messages and placeholders
+        let fetchedClientLanguage = 'fr'; // Default
+        const clientId = selectedClient.id || selectedClient.value || selectedClient.client?.id;
+        
+        if (clientId) {
+          try {
+            const { data: clientData } = await supabase
+              .from('clients')
+              .select('language_preference')
+              .eq('id', clientId)
+              .maybeSingle();
+            
+            if (clientData?.language_preference) {
+              fetchedClientLanguage = clientData.language_preference.split('-')[0] || 'fr';
+            }
+          } catch (error) {
+            console.warn('Error fetching client language preference:', error);
+          }
+        }
+        
+        setClientLanguage(fetchedClientLanguage);
+        
+        // Use user's language for UI (so user can understand and write the message)
+        const projectDescription = projectInfo?.description || projectInfo?.title || t('quoteCreation.quoteSendModal.defaultProject', 'New project');
+        const defaultSubject = t('quoteCreation.quoteSendModal.defaultSubject', {
+          quoteNumber: quoteNumber || '',
+          projectDescription: projectDescription
+        });
+        const defaultMessage = t('quoteCreation.quoteSendModal.defaultMessage', {
+          quoteNumber: quoteNumber || ''
+        });
 
-      setEmailData(prev => ({
-        clientEmail,
-        sendCopy: prev.sendCopy, // Always preserve existing sendCopy value
-        subject: prev.subject || defaultSubject,
-        message: prev.message || defaultMessage
-      }));
+        setEmailData(prev => ({
+          clientEmail,
+          sendCopy: prev.sendCopy, // Always preserve existing sendCopy value
+          subject: prev.subject || defaultSubject,
+          message: prev.message || defaultMessage
+        }));
+      };
+      
+      loadClientLanguageAndDefaults();
     }
     
     prevStepRef.current = step;
-  }, [selectedClient, step, projectInfo, companyInfo, quoteNumber, t]);
+  }, [selectedClient, step, projectInfo, companyInfo, quoteNumber, t, i18n]);
 
   const handleOptionSelect = async (method) => {
     setSendMethod(method);
@@ -134,10 +165,54 @@ const QuoteSendModal = ({
       const overlay = createProcessingOverlay(t('ui.processingOverlay.sending'), 'quote-email-overlay');
       overlay.show();
       
+      // Translate custom message to client's language if message exists and client language is different
+      let translatedMessage = emailData.message || '';
+      let translatedSubject = emailData.subject || '';
+      
+      if (clientLanguage && clientLanguage !== i18n.language.split('-')[0]) {
+        // Translate message if it exists
+        if (translatedMessage) {
+          try {
+            const messageTranslationResult = await translateTextWithAI(
+              translatedMessage,
+              clientLanguage,
+              i18n.language.split('-')[0]
+            );
+            if (messageTranslationResult.success && messageTranslationResult.data) {
+              translatedMessage = messageTranslationResult.data;
+            } else {
+              console.warn('Failed to translate custom message, using original:', messageTranslationResult.error);
+            }
+          } catch (translationError) {
+            console.warn('Error translating custom message, using original:', translationError);
+          }
+        }
+        
+        // Translate subject if it exists and is different from default
+        if (translatedSubject) {
+          try {
+            const subjectTranslationResult = await translateTextWithAI(
+              translatedSubject,
+              clientLanguage,
+              i18n.language.split('-')[0]
+            );
+            if (subjectTranslationResult.success && subjectTranslationResult.data) {
+              translatedSubject = subjectTranslationResult.data;
+            } else {
+              console.warn('Failed to translate custom subject, using original:', subjectTranslationResult.error);
+            }
+          } catch (translationError) {
+            console.warn('Error translating custom subject, using original:', translationError);
+          }
+        }
+      }
+      
       await onSend({ 
         method: 'email', 
         emailData: {
           ...emailData,
+          subject: translatedSubject, // Use translated subject
+          message: translatedMessage, // Use translated message
           quoteNumber,
           clientName: selectedClient?.name || selectedClient?.label || 'Client',
           // Include user's email if sendCopy is enabled

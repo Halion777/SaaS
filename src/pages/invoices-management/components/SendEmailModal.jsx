@@ -9,6 +9,7 @@ import { EmailService } from '../../../services/emailService';
 import { createProcessingOverlay } from '../../../components/ui/ProcessingOverlay';
 import { generateInvoicePDF } from '../../../services/pdfService';
 import { supabase } from '../../../services/supabaseClient';
+import { translateTextWithAI } from '../../../services/googleAIService';
 
 const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
   const { t, i18n } = useTranslation();
@@ -17,6 +18,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState('');
   const [companyInfo, setCompanyInfo] = useState(null);
+  const [clientLanguage, setClientLanguage] = useState('fr'); // Client's language preference
   const [emailData, setEmailData] = useState({
     clientEmail: '',
     sendCopy: false,
@@ -42,6 +44,28 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
 
       // Auto-fill email data
       const clientEmail = invoice.client?.email || invoice.clientEmail || '';
+      
+      // Get client's language preference (for translating custom message before sending)
+      let fetchedClientLanguage = 'fr'; // Default
+      if (invoice.client_id) {
+        try {
+          const { data: clientData } = await supabase
+            .from('clients')
+            .select('language_preference')
+            .eq('id', invoice.client_id)
+            .maybeSingle();
+          
+          if (clientData?.language_preference) {
+            fetchedClientLanguage = clientData.language_preference.split('-')[0] || 'fr';
+          }
+        } catch (error) {
+          console.warn('Error fetching client language preference:', error);
+        }
+      }
+      
+      setClientLanguage(fetchedClientLanguage);
+      
+      // Use user's language for UI (so user can understand and write the message)
       const defaultSubject = t('invoicesManagement.sendEmailModal.defaultSubject', {
         invoiceNumber: invoice.number || invoice.invoice_number || '',
         companyName: company?.name || t('invoicesManagement.sendEmailModal.yourCompany')
@@ -140,34 +164,59 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
       // Get client ID - use direct client_id field first, then fallback to client relation
       const clientId = invoice.client_id || invoice.client?.id || null;
       
-      // Get client's language preference
-      let clientLanguage = 'fr';
-      if (clientId) {
-        try {
-          const { data: clientData } = await supabase
-            .from('clients')
-            .select('language_preference')
-            .eq('id', clientId)
-            .maybeSingle();
-          
-          if (clientData?.language_preference) {
-            clientLanguage = clientData.language_preference.split('-')[0] || 'fr';
+      // Translate custom message and subject to client's language if they exist and client language is different
+      let translatedMessage = emailData.message || '';
+      let translatedSubject = emailData.subject || '';
+      
+      if (clientLanguage && clientLanguage !== i18n.language.split('-')[0]) {
+        // Translate message if it exists
+        if (translatedMessage) {
+          try {
+            const messageTranslationResult = await translateTextWithAI(
+              translatedMessage,
+              clientLanguage,
+              i18n.language.split('-')[0]
+            );
+            if (messageTranslationResult.success && messageTranslationResult.data) {
+              translatedMessage = messageTranslationResult.data;
+            } else {
+              console.warn('Failed to translate custom message, using original:', messageTranslationResult.error);
+            }
+          } catch (translationError) {
+            console.warn('Error translating custom message, using original:', translationError);
           }
-        } catch (error) {
-          console.warn('Error fetching client language preference:', error);
+        }
+        
+        // Translate subject if it exists and is different from default
+        if (translatedSubject) {
+          try {
+            const subjectTranslationResult = await translateTextWithAI(
+              translatedSubject,
+              clientLanguage,
+              i18n.language.split('-')[0]
+            );
+            if (subjectTranslationResult.success && subjectTranslationResult.data) {
+              translatedSubject = subjectTranslationResult.data;
+            } else {
+              console.warn('Failed to translate custom subject, using original:', subjectTranslationResult.error);
+            }
+          } catch (translationError) {
+            console.warn('Error translating custom subject, using original:', translationError);
+          }
         }
       }
       
-      // Format invoice amount
+      // Format invoice amount (edge function will fetch client's language preference from database)
       const formattedAmount = new Intl.NumberFormat(
-        clientLanguage === 'fr' ? 'fr-FR' : clientLanguage === 'nl' ? 'nl-NL' : 'en-US',
+        'fr-FR', // Default format, edge function will use client's language preference
         { style: 'currency', currency: 'EUR' }
       ).format(invoiceAmount);
       
       // Send email to client using invoice_sent template from database
+      // Edge function will fetch client's language preference from database using client_id
       const result = await EmailService.sendEmailViaEdgeFunction('invoice_sent', {
         client_email: emailData.clientEmail,
-        client_id: clientId, // Pass client_id so edge function can fetch language from database
+        client_id: clientId, // Pass client_id so edge function can fetch language preference from database
         invoice_number: invoiceNumber,
         invoice_title: invoice.title || invoiceNumber,
         client_name: clientName,
@@ -175,8 +224,8 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
         issue_date: invoiceDate,
         due_date: dueDate || '',
         company_name: companyName,
-        custom_message: emailData.message || (clientLanguage === 'fr' ? 'Veuillez trouver ci-joint notre facture.' : clientLanguage === 'nl' ? 'Gelieve onze factuur bijgevoegd te vinden.' : 'Please find attached our invoice.'),
-        language: clientLanguage, // Pass language, but edge function will fetch from client_id if not provided
+        custom_subject: translatedSubject, // Use translated subject
+        custom_message: translatedMessage, // Use translated message
         user_id: user?.id || null,
         attachments: [{
           filename: `facture-${invoiceNumber}.pdf`,
@@ -186,37 +235,13 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
 
       // If sendCopy is enabled, send a copy to the user with PDF attachment
       if (emailData.sendCopy && user?.email && result.success) {
-        // Get user's language preference for copy email
-        let userLanguage = 'fr';
-        if (user?.id) {
-          try {
-            const { data: userData } = await supabase
-              .from('users')
-              .select('language_preference')
-              .eq('id', user.id)
-              .maybeSingle();
-            
-            if (userData?.language_preference) {
-              userLanguage = userData.language_preference.split('-')[0] || 'fr';
-            } else if (typeof window !== 'undefined') {
-              const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
-              userLanguage = storedLang.split('-')[0] || 'fr';
-            }
-          } catch (error) {
-            console.warn('Error fetching user language preference:', error);
-            if (typeof window !== 'undefined') {
-              const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
-              userLanguage = storedLang.split('-')[0] || 'fr';
-            }
-          }
-        }
-        
-        // Format invoice amount for user copy
+        // Format invoice amount for user copy (edge function will fetch user's language preference from database)
         const userFormattedAmount = new Intl.NumberFormat(
-          userLanguage === 'fr' ? 'fr-FR' : userLanguage === 'nl' ? 'nl-NL' : 'en-US',
+          'fr-FR', // Default format, edge function will use user's language preference
           { style: 'currency', currency: 'EUR' }
         ).format(invoiceAmount);
         
+        // Send copy to user - edge function will fetch user's language preference from database using user_id
         await EmailService.sendEmailViaEdgeFunction('invoice_sent', {
           client_email: user.email,
           invoice_number: invoiceNumber,
@@ -226,9 +251,8 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess }) => {
           issue_date: invoiceDate,
           due_date: dueDate || '',
           company_name: companyName,
-          custom_message: emailData.message || (userLanguage === 'fr' ? 'Veuillez trouver ci-joint notre facture.' : userLanguage === 'nl' ? 'Gelieve onze factuur bijgevoegd te vinden.' : 'Please find attached our invoice.'),
-          language: userLanguage,
-          user_id: user?.id || null,
+          custom_message: emailData.message || '',
+          user_id: user?.id || null, // Pass user_id so edge function can fetch language preference from database
           attachments: [{
             filename: `facture-${invoiceNumber}.pdf`,
             content: pdfBase64,

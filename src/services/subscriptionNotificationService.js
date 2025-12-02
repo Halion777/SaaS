@@ -42,10 +42,8 @@ export class SubscriptionNotificationService {
       // Build response with calculated yearly totals
       const pricing = {};
       for (const [planType, plan] of Object.entries(pricingSettings)) {
-        // Get current language from localStorage or default to 'fr'
-        const currentLang = typeof window !== 'undefined' 
-          ? (localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr').split('-')[0] || 'fr'
-          : 'fr';
+        // Default to 'fr' for pricing display (this is just for UI display, not email sending)
+        const currentLang = 'fr';
         
         // Get description, features, and limitations for current language
         const description = typeof plan.description === 'object' 
@@ -196,146 +194,9 @@ export class SubscriptionNotificationService {
   }
 
   /**
-   * Get subscription email template by type
-   */
-  static async getSubscriptionEmailTemplate(templateType, userId = null, language = null) {
-    try {
-      // Get user's language preference if userId provided
-      let userLanguage = language || 'fr';
-      if (userId && !language) {
-        try {
-          const { data: userData } = await supabase
-            .from('users')
-            .select('language_preference')
-            .eq('id', userId)
-            .maybeSingle();
-          
-          if (userData?.language_preference) {
-            userLanguage = userData.language_preference.split('-')[0] || 'fr';
-          } else if (typeof window !== 'undefined') {
-            const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
-            userLanguage = storedLang.split('-')[0] || 'fr';
-          }
-        } catch (error) {
-          console.warn('Error fetching user language preference:', error);
-          // Fallback to localStorage
-          if (typeof window !== 'undefined') {
-            const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
-            userLanguage = storedLang.split('-')[0] || 'fr';
-          }
-        }
-      } else if (!language && typeof window !== 'undefined') {
-        const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
-        userLanguage = storedLang.split('-')[0] || 'fr';
-      }
-      
-      // Ensure language is base code (e.g., 'fr' from 'fr-FR')
-      const baseLanguage = userLanguage.split('-')[0] || 'fr';
-      
-      let query = supabase
-        .from('email_templates')
-        .select('*')
-        .eq('template_type', templateType)
-        .eq('language', baseLanguage)
-        .eq('is_active', true);
-      
-      if (userId) {
-        // Get user-specific template first
-        query = query.eq('user_id', userId);
-      }
-      
-      const { data: userTemplate, error: userError } = await query.maybeSingle();
-      
-      if (userTemplate) {
-        return { success: true, data: userTemplate };
-      }
-      
-      // Fallback to default template for the language
-      const { data: defaultTemplate, error: defaultError } = await supabase
-        .from('email_templates')
-        .select('*')
-        .eq('template_type', templateType)
-        .eq('language', baseLanguage)
-        .eq('is_default', true)
-        .eq('is_active', true)
-        .maybeSingle();
-      
-      if (defaultTemplate) {
-        return { success: true, data: defaultTemplate };
-      }
-      
-      // If no template found in requested language, try French as fallback
-      if (baseLanguage !== 'fr') {
-        const { data: frenchTemplate, error: frenchError } = await supabase
-          .from('email_templates')
-          .select('*')
-          .eq('template_type', templateType)
-          .eq('language', 'fr')
-          .eq('is_default', true)
-          .eq('is_active', true)
-          .maybeSingle();
-        
-        if (frenchTemplate) {
-          return { success: true, data: frenchTemplate };
-        }
-      }
-      
-      // If still no template found, try any active template for the type
-      const { data: anyTemplate, error: anyError } = await supabase
-        .from('email_templates')
-        .select('*')
-        .eq('template_type', templateType)
-        .eq('is_active', true)
-        .maybeSingle();
-      
-      if (anyTemplate) {
-        return { success: true, data: anyTemplate };
-      }
-      
-      throw new Error(`No email template found for type '${templateType}' and language '${baseLanguage}'`);
-      
-    } catch (error) {
-      console.error('Error getting subscription email template:', error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  /**
-   * Render subscription email template with variables
-   */
-  static renderSubscriptionEmailTemplate(template, variables) {
-    try {
-      let html = template.html_content;
-      let text = template.text_content;
-      let subject = template.subject;
-      
-      // Replace variables in content
-      Object.keys(variables).forEach(key => {
-        const regex = new RegExp(`{${key}}`, 'g');
-        const value = variables[key] || '';
-        
-        html = html.replace(regex, value);
-        text = text.replace(regex, value);
-        subject = subject.replace(regex, value);
-      });
-      
-      return {
-        success: true,
-        data: {
-          subject,
-          html,
-          text
-        }
-      };
-      
-    } catch (error) {
-      console.error('Error rendering subscription email template:', error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  /**
-   * Get user's language preference
+   * Get user's language preference from database only
+   * DEPRECATED: This function is kept for backward compatibility but should not be used.
+   * Edge function will fetch language preference directly from database.
    */
   static async getUserLanguagePreference(userId) {
     try {
@@ -351,19 +212,9 @@ export class SubscriptionNotificationService {
         }
       }
       
-      // Fallback to localStorage
-      if (typeof window !== 'undefined') {
-        const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
-        return storedLang.split('-')[0] || 'fr';
-      }
-      
       return 'fr';
     } catch (error) {
       console.warn('Error fetching user language preference:', error);
-      if (typeof window !== 'undefined') {
-        const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
-        return storedLang.split('-')[0] || 'fr';
-      }
       return 'fr';
     }
   }
@@ -374,15 +225,6 @@ export class SubscriptionNotificationService {
   static async sendSubscriptionUpgradeNotification(subscriptionData, userData) {
     try {
       const templateType = 'subscription_upgraded';
-      
-      // Get user's language preference
-      const userLanguage = await this.getUserLanguagePreference(userData.id);
-      
-      // Get the appropriate template
-      const templateResult = await this.getSubscriptionEmailTemplate(templateType, userData.id, userLanguage);
-      if (!templateResult.success) {
-        throw new Error(`Failed to get template: ${templateResult.error}`);
-      }
       
       // Get pricing info from database for old and new plans
       const billingInterval = subscriptionData.billing_interval || subscriptionData.interval || 'monthly';
@@ -404,39 +246,22 @@ export class SubscriptionNotificationService {
       const newPlanName = newPricing.success ? newPricing.data.plan_name : (subscriptionData.newPlanName || subscriptionData.plan_name);
       const newAmount = newPricing.success ? newPricing.data.amount : (subscriptionData.newAmount || subscriptionData.amount);
       
-      // Prepare variables
-      const variables = {
-        user_name: userData.full_name || (userData.first_name && userData.last_name ? `${userData.first_name} ${userData.last_name}` : null) || userData.email,
-        user_email: userData.email,
-        old_plan_name: oldPlanName,
-        new_plan_name: newPlanName,
-        old_amount: oldAmount ? `${oldAmount}€` : 'N/A',
-        new_amount: `${newAmount}€`,
-        billing_interval: billingInterval === 'yearly' ? 'yearly' : 'monthly',
-        effective_date: subscriptionData.effectiveDate || new Date().toLocaleDateString('fr-FR'),
-        support_email: 'support@haliqo.com',
-        company_name: 'Haliqo'
-      };
-      
-      // Render template with variables
-      const renderResult = this.renderSubscriptionEmailTemplate(templateResult.data, variables);
-      if (!renderResult.success) {
-        throw new Error(`Failed to render template: ${renderResult.error}`);
-      }
-      
-      // Send via edge function
-      // Pass variables and let edge function fetch template from database
-      // Keep pre-rendered HTML as fallback only
+      // Prepare variables - edge function will fetch template and render
       const emailData = {
         user_email: userData.email,
-        user_id: userData.id, // Pass user_id so edge function can fetch user-specific templates
-        subject: renderResult.data.subject, // Fallback subject
-        html: renderResult.data.html, // Fallback HTML
-        text: renderResult.data.text, // Fallback text
-        template_type: templateType,
-        variables, // Pass variables so edge function can render template
-        subscription_data: subscriptionData,
-        language: userLanguage
+        user_id: userData.id, // Pass user_id so edge function can fetch language preference and template from database
+        variables: {
+          user_name: userData.full_name || (userData.first_name && userData.last_name ? `${userData.first_name} ${userData.last_name}` : null) || userData.email,
+          user_email: userData.email,
+          old_plan_name: oldPlanName,
+          new_plan_name: newPlanName,
+          old_amount: oldAmount ? `${oldAmount}€` : 'N/A',
+          new_amount: `${newAmount}€`,
+          billing_interval: billingInterval === 'yearly' ? 'yearly' : 'monthly',
+          effective_date: subscriptionData.effectiveDate || new Date().toLocaleDateString('fr-FR'),
+          support_email: 'support@haliqo.com',
+          company_name: 'Haliqo'
+        }
       };
       
       const result = await this.sendSubscriptionNotificationEmail('subscription_upgraded', emailData);
@@ -462,15 +287,6 @@ export class SubscriptionNotificationService {
     try {
       const templateType = 'subscription_downgraded';
       
-      // Get user's language preference
-      const userLanguage = await this.getUserLanguagePreference(userData.id);
-      
-      // Get the appropriate template
-      const templateResult = await this.getSubscriptionEmailTemplate(templateType, userData.id, userLanguage);
-      if (!templateResult.success) {
-        throw new Error(`Failed to get template: ${templateResult.error}`);
-      }
-      
       // Get pricing info from database for old and new plans
       const billingInterval = subscriptionData.billing_interval || subscriptionData.interval || 'monthly';
       
@@ -491,38 +307,22 @@ export class SubscriptionNotificationService {
       const newPlanName = newPricing.success ? newPricing.data.plan_name : (subscriptionData.newPlanName || subscriptionData.plan_name);
       const newAmount = newPricing.success ? newPricing.data.amount : (subscriptionData.newAmount || subscriptionData.amount);
       
-      // Prepare variables
-      const variables = {
-        user_name: userData.full_name || (userData.first_name && userData.last_name ? `${userData.first_name} ${userData.last_name}` : null) || userData.email,
-        user_email: userData.email,
-        old_plan_name: oldPlanName,
-        new_plan_name: newPlanName,
-        old_amount: oldAmount ? `${oldAmount}€` : 'N/A',
-        new_amount: `${newAmount}€`,
-        billing_interval: billingInterval === 'yearly' ? 'yearly' : 'monthly',
-        effective_date: subscriptionData.effectiveDate || new Date().toLocaleDateString('fr-FR'),
-        support_email: 'support@haliqo.com',
-        company_name: 'Haliqo'
-      };
-      
-      // Render template with variables
-      const renderResult = this.renderSubscriptionEmailTemplate(templateResult.data, variables);
-      if (!renderResult.success) {
-        throw new Error(`Failed to render template: ${renderResult.error}`);
-      }
-      
-      // Send via edge function
-      // Pass variables and let edge function fetch template from database
+      // Prepare variables - edge function will fetch template and render
       const emailData = {
         user_email: userData.email,
-        user_id: userData.id, // Pass user_id so edge function can fetch user-specific templates
-        subject: renderResult.data.subject, // Fallback subject
-        html: renderResult.data.html, // Fallback HTML
-        text: renderResult.data.text, // Fallback text
-        template_type: templateType,
-        variables, // Pass variables so edge function can render template
-        subscription_data: subscriptionData,
-        language: userLanguage
+        user_id: userData.id, // Pass user_id so edge function can fetch language preference and template from database
+        variables: {
+          user_name: userData.full_name || (userData.first_name && userData.last_name ? `${userData.first_name} ${userData.last_name}` : null) || userData.email,
+          user_email: userData.email,
+          old_plan_name: oldPlanName,
+          new_plan_name: newPlanName,
+          old_amount: oldAmount ? `${oldAmount}€` : 'N/A',
+          new_amount: `${newAmount}€`,
+          billing_interval: billingInterval === 'yearly' ? 'yearly' : 'monthly',
+          effective_date: subscriptionData.effectiveDate || new Date().toLocaleDateString('fr-FR'),
+          support_email: 'support@haliqo.com',
+          company_name: 'Haliqo'
+        }
       };
       
       const result = await this.sendSubscriptionNotificationEmail('subscription_downgraded', emailData);
@@ -548,50 +348,27 @@ export class SubscriptionNotificationService {
     try {
       const templateType = 'subscription_cancelled';
       
-      // Get user's language preference
-      const userLanguage = await this.getUserLanguagePreference(userData.id);
-      
-      // Get the appropriate template
-      const templateResult = await this.getSubscriptionEmailTemplate(templateType, userData.id, userLanguage);
-      if (!templateResult.success) {
-        throw new Error(`Failed to get template: ${templateResult.error}`);
-      }
-      
       // Get pricing info from database for cancelled plan
       const planType = subscriptionData.plan_type || 'starter';
       const billingInterval = subscriptionData.billing_interval || subscriptionData.interval || 'monthly';
       const planPricing = await this.getPricingInfo(planType, billingInterval);
       const planName = planPricing.success ? planPricing.data.plan_name : (subscriptionData.plan_name || 'Plan actuel');
       
-      // Prepare variables
-      const variables = {
-        user_name: userData.full_name || (userData.first_name && userData.last_name ? `${userData.first_name} ${userData.last_name}` : null) || userData.email,
-        user_email: userData.email,
-        old_plan_name: planName,
-        effective_date: subscriptionData.effectiveDate || new Date().toLocaleDateString('fr-FR'),
-        cancellation_reason: cancellationReason,
-        support_email: 'support@haliqo.com',
-        company_name: 'Haliqo'
-      };
-      
-      // Render template with variables
-      const renderResult = this.renderSubscriptionEmailTemplate(templateResult.data, variables);
-      if (!renderResult.success) {
-        throw new Error(`Failed to render template: ${renderResult.error}`);
-      }
-      
-      // Send via edge function
+      // Prepare variables - edge function will fetch template and render
       const emailData = {
         user_email: userData.email,
-        user_id: userData.id, // Pass user_id so edge function can fetch user-specific templates
-        subject: renderResult.data.subject, // Fallback subject
-        html: renderResult.data.html, // Fallback HTML
-        text: renderResult.data.text, // Fallback text
-        template_type: templateType,
-        variables, // Pass variables so edge function can render template
-        subscription_data: subscriptionData,
-        cancellation_reason: cancellationReason,
-        language: userLanguage
+        user_id: userData.id, // Pass user_id so edge function can fetch language preference and template from database
+        variables: {
+          user_name: userData.full_name || (userData.first_name && userData.last_name ? `${userData.first_name} ${userData.last_name}` : null) || userData.email,
+          user_email: userData.email,
+          plan_name: planName,
+          old_plan_name: planName,
+          effective_date: subscriptionData.effectiveDate || new Date().toLocaleDateString('fr-FR'),
+          cancellation_date: subscriptionData.effectiveDate || new Date().toLocaleDateString('fr-FR'),
+          cancellation_reason: cancellationReason,
+          support_email: 'support@haliqo.com',
+          company_name: 'Haliqo'
+        }
       };
       
       const result = await this.sendSubscriptionNotificationEmail('subscription_cancelled', emailData);
@@ -617,15 +394,6 @@ export class SubscriptionNotificationService {
     try {
       const templateType = 'subscription_reactivated';
       
-      // Get user's language preference
-      const userLanguage = await this.getUserLanguagePreference(userData.id);
-      
-      // Get the appropriate template
-      const templateResult = await this.getSubscriptionEmailTemplate(templateType, userData.id, userLanguage);
-      if (!templateResult.success) {
-        throw new Error(`Failed to get template: ${templateResult.error}`);
-      }
-      
       // Get pricing info from database
       const planType = subscriptionData.plan_type || 'starter';
       const billingInterval = subscriptionData.billing_interval || subscriptionData.interval || 'monthly';
@@ -633,35 +401,20 @@ export class SubscriptionNotificationService {
       const planName = planPricing.success ? planPricing.data.plan_name : (subscriptionData.plan_name || 'Plan actuel');
       const planAmount = planPricing.success ? planPricing.data.amount : (subscriptionData.amount || 0);
       
-      // Prepare variables
-      const variables = {
-        user_name: userData.full_name || (userData.first_name && userData.last_name ? `${userData.first_name} ${userData.last_name}` : null) || userData.email,
-        user_email: userData.email,
-        plan_name: planName,
-        amount: `${planAmount}€`,
-        billing_interval: billingInterval === 'yearly' ? 'yearly' : 'monthly',
-        effective_date: subscriptionData.effectiveDate || new Date().toLocaleDateString('fr-FR'),
-        support_email: 'support@haliqo.com',
-        company_name: 'Haliqo'
-      };
-      
-      // Render template with variables
-      const renderResult = this.renderSubscriptionEmailTemplate(templateResult.data, variables);
-      if (!renderResult.success) {
-        throw new Error(`Failed to render template: ${renderResult.error}`);
-      }
-      
-      // Send via edge function
+      // Prepare variables - edge function will fetch template and render
       const emailData = {
         user_email: userData.email,
-        user_id: userData.id, // Pass user_id so edge function can fetch user-specific templates
-        subject: renderResult.data.subject, // Fallback subject
-        html: renderResult.data.html, // Fallback HTML
-        text: renderResult.data.text, // Fallback text
-        template_type: templateType,
-        variables, // Pass variables so edge function can render template
-        subscription_data: subscriptionData,
-        language: userLanguage
+        user_id: userData.id, // Pass user_id so edge function can fetch language preference and template from database
+        variables: {
+          user_name: userData.full_name || (userData.first_name && userData.last_name ? `${userData.first_name} ${userData.last_name}` : null) || userData.email,
+          user_email: userData.email,
+          plan_name: planName,
+          amount: `${planAmount}€`,
+          billing_interval: billingInterval === 'yearly' ? 'yearly' : 'monthly',
+          effective_date: subscriptionData.effectiveDate || new Date().toLocaleDateString('fr-FR'),
+          support_email: 'support@haliqo.com',
+          company_name: 'Haliqo'
+        }
       };
       
       const result = await this.sendSubscriptionNotificationEmail('subscription_reactivated', emailData);
@@ -687,15 +440,6 @@ export class SubscriptionNotificationService {
     try {
       const templateType = 'subscription_activated';
       
-      // Get user's language preference
-      const userLanguage = await this.getUserLanguagePreference(userData.id);
-      
-      // Get the appropriate template
-      const templateResult = await this.getSubscriptionEmailTemplate(templateType, userData.id, userLanguage);
-      if (!templateResult.success) {
-        throw new Error(`Failed to get template: ${templateResult.error}`);
-      }
-      
       // Get pricing info from database
       const planType = subscriptionData.plan_type || 'starter';
       const billingInterval = subscriptionData.billing_interval || subscriptionData.interval || 'monthly';
@@ -703,35 +447,22 @@ export class SubscriptionNotificationService {
       const planName = planPricing.success ? planPricing.data.plan_name : (subscriptionData.plan_name || subscriptionData.newPlanName);
       const planAmount = planPricing.success ? planPricing.data.amount : (subscriptionData.amount || subscriptionData.newAmount);
       
-      // Prepare variables
-      const variables = {
-        user_name: userData.full_name || (userData.first_name && userData.last_name ? `${userData.first_name} ${userData.last_name}` : null) || userData.email,
-        user_email: userData.email,
-        new_plan_name: planName,
-        new_amount: `${planAmount}€`,
-        billing_interval: billingInterval === 'yearly' ? 'yearly' : 'monthly',
-        effective_date: subscriptionData.effectiveDate || new Date().toLocaleDateString('fr-FR'),
-        support_email: 'support@haliqo.com',
-        company_name: 'Haliqo'
-      };
-      
-      // Render template with variables
-      const renderResult = this.renderSubscriptionEmailTemplate(templateResult.data, variables);
-      if (!renderResult.success) {
-        throw new Error(`Failed to render template: ${renderResult.error}`);
-      }
-      
-      // Send via edge function
+      // Prepare variables - edge function will fetch template and render
       const emailData = {
         user_email: userData.email,
-        user_id: userData.id, // Pass user_id so edge function can fetch user-specific templates
-        subject: renderResult.data.subject, // Fallback subject
-        html: renderResult.data.html, // Fallback HTML
-        text: renderResult.data.text, // Fallback text
-        template_type: templateType,
-        variables, // Pass variables so edge function can render template
-        subscription_data: subscriptionData,
-        language: userLanguage
+        user_id: userData.id, // Pass user_id so edge function can fetch language preference and template from database
+        variables: {
+          user_name: userData.full_name || (userData.first_name && userData.last_name ? `${userData.first_name} ${userData.last_name}` : null) || userData.email,
+          user_email: userData.email,
+          new_plan_name: planName,
+          plan_name: planName,
+          new_amount: `${planAmount}€`,
+          amount: `${planAmount}€`,
+          billing_interval: billingInterval === 'yearly' ? 'yearly' : 'monthly',
+          effective_date: subscriptionData.effectiveDate || new Date().toLocaleDateString('fr-FR'),
+          support_email: 'support@haliqo.com',
+          company_name: 'Haliqo'
+        }
       };
       
       const result = await this.sendSubscriptionNotificationEmail('subscription_activated', emailData);
@@ -757,15 +488,6 @@ export class SubscriptionNotificationService {
     try {
       const templateType = 'subscription_trial_ending';
       
-      // Get user's language preference
-      const userLanguage = await this.getUserLanguagePreference(userData.id);
-      
-      // Get the appropriate template
-      const templateResult = await this.getSubscriptionEmailTemplate(templateType, userData.id, userLanguage);
-      if (!templateResult.success) {
-        throw new Error(`Failed to get template: ${templateResult.error}`);
-      }
-      
       // Get pricing info from database
       const planType = subscriptionData.plan_type || 'starter';
       const billingInterval = subscriptionData.billing_interval || subscriptionData.interval || 'monthly';
@@ -773,35 +495,22 @@ export class SubscriptionNotificationService {
       const planName = planPricing.success ? planPricing.data.plan_name : (subscriptionData.plan_name || 'Plan d\'essai');
       const planAmount = planPricing.success ? planPricing.data.amount : (subscriptionData.amount || 0);
       
-      // Prepare variables
-      const variables = {
-        user_name: userData.full_name || (userData.first_name && userData.last_name ? `${userData.first_name} ${userData.last_name}` : null) || userData.email,
-        user_email: userData.email,
-        new_plan_name: planName,
-        trial_end_date: subscriptionData.trial_end ? new Date(subscriptionData.trial_end).toLocaleDateString('fr-FR') : 'Bientôt',
-        new_amount: `${planAmount}€`,
-        billing_interval: billingInterval === 'yearly' ? 'yearly' : 'monthly',
-        support_email: 'support@haliqo.com',
-        company_name: 'Haliqo'
-      };
-      
-      // Render template with variables
-      const renderResult = this.renderSubscriptionEmailTemplate(templateResult.data, variables);
-      if (!renderResult.success) {
-        throw new Error(`Failed to render template: ${renderResult.error}`);
-      }
-      
-      // Send via edge function
+      // Prepare variables - edge function will fetch template and render
       const emailData = {
         user_email: userData.email,
-        user_id: userData.id, // Pass user_id so edge function can fetch user-specific templates
-        subject: renderResult.data.subject, // Fallback subject
-        html: renderResult.data.html, // Fallback HTML
-        text: renderResult.data.text, // Fallback text
-        template_type: templateType,
-        variables, // Pass variables so edge function can render template
-        subscription_data: subscriptionData,
-        language: userLanguage
+        user_id: userData.id, // Pass user_id so edge function can fetch language preference and template from database
+        variables: {
+          user_name: userData.full_name || (userData.first_name && userData.last_name ? `${userData.first_name} ${userData.last_name}` : null) || userData.email,
+          user_email: userData.email,
+          new_plan_name: planName,
+          plan_name: planName,
+          trial_end_date: subscriptionData.trial_end ? new Date(subscriptionData.trial_end).toLocaleDateString('fr-FR') : 'Bientôt',
+          new_amount: `${planAmount}€`,
+          amount: `${planAmount}€`,
+          billing_interval: billingInterval === 'yearly' ? 'yearly' : 'monthly',
+          support_email: 'support@haliqo.com',
+          company_name: 'Haliqo'
+        }
       };
       
       const result = await this.sendSubscriptionNotificationEmail('subscription_trial_ending', emailData);

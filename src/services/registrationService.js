@@ -57,6 +57,14 @@ class RegistrationService {
     const subscriptionStatus = sessionData.subscription_status === 'trialing' ? 'trial' : 'active'
     const isTrial = sessionData.subscription_status === 'trialing'
     
+    // Get language preference from localStorage (user selected during registration)
+    // This is the language they selected from the website dropdown
+    let languagePreference = 'fr'; // Default to French
+    if (typeof window !== 'undefined') {
+      const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
+      languagePreference = storedLang.split('-')[0] || 'fr'; // Extract base language (e.g., 'fr' from 'fr-FR')
+    }
+    
     // Use upsert to create the record if it doesn't exist, or update if it does
     const userRecord = {
       id: userData.userId,
@@ -76,7 +84,8 @@ class RegistrationService {
       trial_start_date: sessionData.trial_start ? new Date(sessionData.trial_start * 1000).toISOString() : null,
       trial_end_date: sessionData.trial_end ? new Date(sessionData.trial_end * 1000).toISOString() : null,
       registration_completed: true,
-      has_used_trial: isTrial // Mark that user has used their free trial
+      has_used_trial: isTrial, // Mark that user has used their free trial
+      language_preference: languagePreference // Save language preference from localStorage
     }
 
     const { error } = await supabase
@@ -381,41 +390,12 @@ class RegistrationService {
         full_name: `${userData.firstName} ${userData.lastName}`
       }
 
-      // Determine notification type based on subscription status
-      const isTrial = subscriptionData.status === 'trial' || subscriptionData.status === 'trialing'
+      // During registration, we only send welcome_registration email (sent separately)
+      // Subscription activation and trial ending emails are sent later when status changes
+      // No need to send subscription notifications during registration
       
-      if (isTrial) {
-        // Send trial notification
-        const notificationData = {
-          plan_name: subscriptionData.plan_name,
-          plan_type: subscriptionData.plan_type,
-          amount: subscriptionData.amount,
-          billing_interval: subscriptionData.interval,
-          status: subscriptionData.status,
-          trial_end_date: subscriptionData.trial_end ? new Date(subscriptionData.trial_end).toLocaleDateString('fr-FR') : 'Bientôt',
-          new_amount: `${subscriptionData.amount}€`
-        }
-
-        await SubscriptionNotificationService.sendTrialEndingNotification(notificationData, userNotificationData)
-      } else {
-        // Send subscription activated notification (treat as upgrade from trial to active)
-        const notificationData = {
-          plan_name: subscriptionData.plan_name,
-          plan_type: subscriptionData.plan_type,
-          amount: subscriptionData.amount,
-          billing_interval: subscriptionData.interval,
-          status: subscriptionData.status,
-          oldPlanName: 'Trial',
-          newPlanName: subscriptionData.plan_name,
-          oldAmount: '0',
-          newAmount: `${subscriptionData.amount}€`,
-          effectiveDate: new Date().toLocaleDateString('fr-FR')
-        }
-
-        await SubscriptionNotificationService.sendSubscriptionActivationNotification(notificationData, userNotificationData)
-      }
-
       // Log the notification event
+      const isTrial = subscriptionData.status === 'trial' || subscriptionData.status === 'trialing';
       await SubscriptionNotificationService.logSubscriptionNotificationEvent(
         userData.userId,
         isTrial ? 'trial_started' : 'subscription_activated',
@@ -448,35 +428,18 @@ class RegistrationService {
         return // Don't fail registration if email fails
       }
 
-      // Get user's language preference
-      let userLanguage = 'fr'
-      try {
-        const { data: userRecord } = await supabase
-          .from('users')
-          .select('language_preference')
-          .eq('id', userData.userId)
-          .maybeSingle()
-        
-        if (userRecord?.language_preference) {
-          userLanguage = userRecord.language_preference.split('-')[0] || 'fr'
-        }
-      } catch (error) {
-        console.warn('Error fetching user language preference:', error)
-      }
-
-      // Prepare email data
+      // Prepare email data - edge function will fetch user's language preference from database
       const welcomeEmailData = {
         emailType: 'welcome_registration',
         emailData: {
           user_email: userData.email,
-          user_id: userData.userId,
-          language: userLanguage,
+          user_id: userData.userId, // Pass user_id so edge function can fetch language preference from database
           variables: {
             user_name: `${userData.firstName} ${userData.lastName}`.trim() || userData.email,
             user_email: userData.email,
             plan_name: subscriptionData.plan_name || '',
             amount: `${subscriptionData.amount}€`,
-            billing_interval: subscriptionData.interval === 'year' ? 'annuel' : subscriptionData.interval === 'month' ? 'mensuel' : subscriptionData.interval || 'mensuel',
+            billing_interval: subscriptionData.interval === 'year' ? 'yearly' : subscriptionData.interval === 'month' ? 'monthly' : subscriptionData.interval || 'monthly',
             account_settings_url: typeof window !== 'undefined' ? `${window.location.origin}/settings` : 'https://haliqo.com/settings',
             company_name: 'Haliqo'
           }

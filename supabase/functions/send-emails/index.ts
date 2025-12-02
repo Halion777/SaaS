@@ -230,97 +230,81 @@ serve(async (req) => {
     };
     
     switch (emailType) {
-      case 'invoice_sent':
+      case 'invoice_sent': {
         // Use database template for invoice sent emails
-        // Get language: client's database language_preference > provided language > 'fr'
+        // Get language: client's database language_preference only
         let invoiceLanguage: string | null = null;
         if (emailData.client_id) {
           invoiceLanguage = await getClientLanguagePreference(emailData.client_id);
         }
-        if (!invoiceLanguage && emailData.language) {
-          invoiceLanguage = emailData.language;
-        }
         invoiceLanguage = invoiceLanguage || 'fr';
         const invoiceTemplate = await getEmailTemplate('invoice_sent', invoiceLanguage, emailData.user_id || null);
-        if (invoiceTemplate.success) {
-          const invoiceDate = emailData.issue_date || new Date().toLocaleDateString(invoiceLanguage === 'fr' ? 'fr-FR' : invoiceLanguage === 'nl' ? 'nl-NL' : 'en-US');
-          const dueDate = emailData.due_date || '';
-          const invoiceAmount = emailData.invoice_amount || '0.00€';
-          const variables = {
-            invoice_number: emailData.invoice_number || '',
-            invoice_title: emailData.invoice_title || emailData.invoice_number || '',
-            client_name: emailData.client_name || 'Madame, Monsieur',
-            invoice_amount: invoiceAmount,
-            issue_date: invoiceDate,
-            due_date: dueDate,
-            company_name: emailData.company_name || 'Haliqo',
-            custom_message: emailData.custom_message || (invoiceLanguage === 'fr' ? 'Veuillez trouver ci-joint notre facture.' : invoiceLanguage === 'nl' ? 'Gelieve onze factuur bijgevoegd te vinden.' : 'Please find attached our invoice.')
-          };
-          const rendered = renderTemplate(invoiceTemplate.data, variables);
-          emailResult = await sendEmail({
-            from: fromEmail,
-            to: [emailData.client_email],
-            subject: rendered.subject,
-            html: rendered.html,
-            text: rendered.text,
-            attachments: emailData.attachments || undefined
-          });
-        } else {
-          // Fallback to templated_email if template not found
-          emailResult = await sendEmail({
-            from: fromEmail,
-            to: [emailData.client_email],
-            subject: emailData.subject,
-            html: emailData.html,
-            text: emailData.text,
-            attachments: emailData.attachments || undefined
-          });
+        if (!invoiceTemplate.success) {
+          throw new Error(`Email template 'invoice_sent' not found in database for language '${invoiceLanguage}'. Please create the template in the email_templates table.`);
         }
+        const invoiceDate = emailData.issue_date || new Date().toLocaleDateString(invoiceLanguage === 'fr' ? 'fr-FR' : invoiceLanguage === 'nl' ? 'nl-NL' : 'en-US');
+        const dueDate = emailData.due_date || '';
+        const invoiceAmount = emailData.invoice_amount || '0.00€';
+        const variables = {
+          invoice_number: emailData.invoice_number || '',
+          invoice_title: emailData.invoice_title || emailData.invoice_number || '',
+          client_name: emailData.client_name || 'Madame, Monsieur',
+          invoice_amount: invoiceAmount,
+          issue_date: invoiceDate,
+          due_date: dueDate,
+          company_name: emailData.company_name || 'Haliqo',
+          custom_message: emailData.custom_message || ''
+        };
+        const rendered = renderTemplate(invoiceTemplate.data, variables);
+        // Use custom_subject if provided, otherwise use template subject
+        const emailSubject = emailData.custom_subject || rendered.subject;
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [emailData.client_email],
+          subject: emailSubject,
+          html: rendered.html,
+          text: rendered.text,
+          attachments: emailData.attachments || undefined
+        });
         break;
+      }
         
       case 'templated_email':
-        // Fallback for pre-rendered emails (e.g., welcome_client)
-        // If client_id is provided, try to fetch template from database with correct language
+        // DEPRECATED: This case should not be used. All emails should use specific template types.
+        // Only kept for backward compatibility with welcome_client emails
+        // If client_id is provided, fetch template from database with correct language
         let templatedLanguage: string | null = null;
         if (emailData.client_id && emailData.template_type) {
           templatedLanguage = await getClientLanguagePreference(emailData.client_id);
-          if (templatedLanguage && emailData.template_type) {
-            // Try to fetch template from database
-            const dbTemplate = await getEmailTemplate(emailData.template_type, templatedLanguage, emailData.user_id || null);
-            if (dbTemplate.success) {
-              const rendered = renderTemplate(dbTemplate.data, emailData.variables || {});
-              emailResult = await sendEmail({
-                from: fromEmail,
-                to: [emailData.client_email || emailData.to],
-                subject: rendered.subject,
-                html: rendered.html,
-                text: rendered.text,
-                attachments: emailData.attachments || undefined
-              });
-              break;
-            }
+        } else if (emailData.user_id && emailData.template_type) {
+          templatedLanguage = await getUserLanguagePreference(emailData.user_id);
+        }
+        templatedLanguage = templatedLanguage || 'fr';
+        if (emailData.template_type) {
+          const dbTemplate = await getEmailTemplate(emailData.template_type, templatedLanguage, emailData.user_id || null);
+          if (dbTemplate.success) {
+            const rendered = renderTemplate(dbTemplate.data, emailData.variables || {});
+            emailResult = await sendEmail({
+              from: fromEmail,
+              to: [emailData.client_email || emailData.to],
+              subject: rendered.subject,
+              html: rendered.html,
+              text: rendered.text,
+              attachments: emailData.attachments || undefined
+            });
+            break;
           }
         }
-        // Fallback to pre-rendered content if template not found or no client_id
-        emailResult = await sendEmail({
-          from: fromEmail,
-          to: [emailData.client_email || emailData.to],
-          subject: emailData.subject,
-          html: emailData.html,
-          text: emailData.text,
-          attachments: emailData.attachments || undefined
-        });
+        // If template not found, throw error instead of using fallback
+        throw new Error(`Email template '${emailData.template_type || 'unknown'}' not found in database for language '${templatedLanguage}'. Please create the template in the email_templates table.`);
         break;
         
       case 'new_lead_available':
         // Use database template
-        // Get language: user's database language_preference > provided language > 'fr'
+        // Get language: user's database language_preference only
         let leadLanguage: string | null = null;
         if (emailData.user_id) {
           leadLanguage = await getUserLanguagePreference(emailData.user_id);
-        }
-        if (!leadLanguage && emailData.language) {
-          leadLanguage = emailData.language;
         }
         leadLanguage = leadLanguage || 'fr';
         const leadTemplate = await getEmailTemplate('new_lead_available', leadLanguage, emailData.user_id || null);
@@ -354,13 +338,10 @@ serve(async (req) => {
         
       case 'lead_assigned':
         // Use database template
-        // Get language: user's database language_preference > provided language > 'fr'
+        // Get language: user's database language_preference only
         let assignedLanguage: string | null = null;
         if (emailData.user_id) {
           assignedLanguage = await getUserLanguagePreference(emailData.user_id);
-        }
-        if (!assignedLanguage && emailData.language) {
-          assignedLanguage = emailData.language;
         }
         assignedLanguage = assignedLanguage || 'fr';
         const assignedTemplate = await getEmailTemplate('lead_assigned', assignedLanguage, emailData.user_id || null);
@@ -396,13 +377,10 @@ serve(async (req) => {
       case 'quote_sent':
       case 'custom_quote_sent': // Support both for backward compatibility
         // Use database template
-        // Get language: client's database language_preference > provided language > 'fr'
+        // Get language: client's database language_preference only
         let quoteLanguage: string | null = null;
         if (emailData.client_id) {
           quoteLanguage = await getClientLanguagePreference(emailData.client_id);
-        }
-        if (!quoteLanguage && emailData.language) {
-          quoteLanguage = emailData.language;
         }
         quoteLanguage = quoteLanguage || 'fr';
         const quoteTemplate = await getEmailTemplate('quote_sent', quoteLanguage, emailData.user_id || null);
@@ -431,68 +409,66 @@ serve(async (req) => {
         break;
 
       case 'quote_followup':
-        // Handle follow-up emails for quotes
-        emailResult = await sendEmail({
-          from: fromEmail,
-          to: [emailData.to],
-          subject: emailData.subject,
-          html: generateFollowUpEmail(emailData.html, emailData.variables),
-          text: emailData.text
-        });
+        // DEPRECATED: Follow-up emails should use specific template types (followup_not_viewed, followup_viewed_no_action, general_followup)
+        // This case is kept for backward compatibility but should be migrated to use database templates
+        throw new Error('quote_followup email type is deprecated. Please use specific follow-up template types (followup_not_viewed, followup_viewed_no_action, general_followup) with database templates.');
         break;
 
-      case 'quote_status_update':
+      case 'quote_status_update': {
         // Handle quote status update emails (accepted/rejected)
         // Determine template type based on status (accepted or rejected)
         const statusTemplateType = emailData.variables?.status === 'accepted' || emailData.variables?.quote_status === 'accepted' 
           ? 'client_accepted' 
           : 'client_rejected';
         
-        // Get language: client's database language_preference > provided language > 'fr'
+        // Get language priority:
+        // 1. Client's database language_preference (if client_id exists)
+        // 2. Language parameter from dropdown selection (for non-logged in users on quote share page)
+        // 3. Default to 'fr'
         let statusLanguage: string | null = null;
         if (emailData.client_id) {
           statusLanguage = await getClientLanguagePreference(emailData.client_id);
         }
+        // If no client_id or no database preference found, use language parameter from dropdown
         if (!statusLanguage && emailData.language) {
-          statusLanguage = emailData.language;
+          statusLanguage = emailData.language.split('-')[0] || 'fr';
         }
         statusLanguage = statusLanguage || 'fr';
         
         // Fetch template from database
         const statusTemplate = await getEmailTemplate(statusTemplateType, statusLanguage, emailData.user_id || null);
         
-        if (statusTemplate.success) {
-          const variables = {
-            client_name: emailData.variables?.client_name || 'Madame, Monsieur',
-            quote_number: emailData.variables?.quote_number || 'N/A',
-            quote_amount: emailData.variables?.quote_amount || '0€',
-            quote_link: emailData.variables?.quote_link || '#',
-            company_name: emailData.variables?.company_name || 'Notre équipe'
-          };
-          
-          const rendered = renderTemplate(statusTemplate.data, variables);
-          emailResult = await sendEmail({
-            from: fromEmail,
-            to: [emailData.to],
-            subject: emailData.subject || rendered.subject,
-            html: rendered.html,
-            text: emailData.text || rendered.text
-          });
-        } else {
-          // Fallback to pre-rendered HTML if template not found
-          emailResult = await sendEmail({
-            from: fromEmail,
-            to: [emailData.to],
-            subject: emailData.subject,
-            html: generateQuoteStatusEmail(emailData.html, emailData.variables),
-            text: emailData.text
-          });
+        if (!statusTemplate.success) {
+          throw new Error(`Email template '${statusTemplateType}' not found in database for language '${statusLanguage}'. Please create the template in the email_templates table.`);
         }
+        
+        const variables = {
+          client_name: emailData.variables?.client_name || 'Madame, Monsieur',
+          quote_number: emailData.variables?.quote_number || 'N/A',
+          quote_amount: emailData.variables?.quote_amount || '0€',
+          quote_link: emailData.variables?.quote_link || '#',
+          company_name: emailData.variables?.company_name || 'Notre équipe'
+        };
+        
+        const rendered = renderTemplate(statusTemplate.data, variables);
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [emailData.to],
+          subject: rendered.subject,
+          html: rendered.html,
+          text: rendered.text
+        });
         break;
+      }
         
       case 'credit_insurance_application':
         // Use database template
-        const applicationLanguage = emailData.language || 'fr';
+        // Get language: user's database language_preference only (if user_id provided)
+        let applicationLanguage: string | null = null;
+        if (emailData.user_id) {
+          applicationLanguage = await getUserLanguagePreference(emailData.user_id);
+        }
+        applicationLanguage = applicationLanguage || 'fr';
         const applicationTemplate = await getEmailTemplate('credit_insurance_application', applicationLanguage, null);
         if (applicationTemplate.success) {
           const submissionDate = new Date().toLocaleString(applicationLanguage === 'fr' ? 'fr-FR' : applicationLanguage === 'nl' ? 'nl-NL' : 'en-US');
@@ -524,13 +500,10 @@ serve(async (req) => {
         
       case 'credit_insurance_confirmation':
         // Use database template
-        // Get language: user's database language_preference > provided language > 'fr'
+        // Get language: user's database language_preference only
         let confirmationLanguage: string | null = null;
         if (emailData.user_id) {
           confirmationLanguage = await getUserLanguagePreference(emailData.user_id);
-        }
-        if (!confirmationLanguage && emailData.language) {
-          confirmationLanguage = emailData.language;
         }
         confirmationLanguage = confirmationLanguage || 'fr';
         const confirmationTemplate = await getEmailTemplate('credit_insurance_confirmation', confirmationLanguage, emailData.user_id || null);
@@ -558,321 +531,237 @@ serve(async (req) => {
         }
         break;
 
-      case 'subscription_upgraded':
+      case 'subscription_upgraded': {
         // Use database template for subscription upgrade emails
-        // Get language: user's database language_preference > provided language > 'fr'
+        // Get language: user's database language_preference only
         let upgradedLanguage: string | null = null;
         if (emailData.user_id) {
           upgradedLanguage = await getUserLanguagePreference(emailData.user_id);
         }
-        if (!upgradedLanguage && emailData.language) {
-          upgradedLanguage = emailData.language;
-        }
         upgradedLanguage = upgradedLanguage || 'fr';
         const upgradedTemplate = await getEmailTemplate('subscription_upgraded', upgradedLanguage, emailData.user_id || null);
-        if (upgradedTemplate.success) {
-          const variables = {
-            user_name: emailData.variables?.user_name || emailData.user_name || 'User',
-            old_plan_name: emailData.variables?.old_plan_name || emailData.old_plan_name || '',
-            new_plan_name: emailData.variables?.new_plan_name || emailData.new_plan_name || '',
-            new_amount: emailData.variables?.new_amount || emailData.new_amount || '',
-            old_amount: emailData.variables?.old_amount || emailData.old_amount || '',
-            billing_interval: emailData.variables?.billing_interval || emailData.billing_interval || 'monthly',
-            effective_date: emailData.variables?.effective_date || emailData.effective_date || new Date().toLocaleDateString('fr-FR'),
-            support_email: emailData.variables?.support_email || 'support@haliqo.com',
-            company_name: emailData.variables?.company_name || 'Haliqo'
-          };
-          const rendered = renderTemplate(upgradedTemplate.data, variables);
-          emailResult = await sendEmail({
-            from: fromEmail,
-            to: [emailData.user_email],
-            subject: emailData.subject || rendered.subject,
-            html: rendered.html,
-            text: emailData.text || rendered.text
-          });
-        } else {
-          // Fallback to pre-rendered HTML if template not found
-          if (emailData.html && emailData.subject) {
-            emailResult = await sendEmail({
-              from: fromEmail,
-              to: [emailData.user_email],
-              subject: emailData.subject,
-              html: emailData.html,
-              text: emailData.text
-            });
-          } else {
-            throw new Error(`Template 'subscription_upgraded' not found for language '${upgradedLanguage}'`);
-          }
+        if (!upgradedTemplate.success) {
+          throw new Error(`Email template 'subscription_upgraded' not found in database for language '${upgradedLanguage}'. Please create the template in the email_templates table.`);
         }
+        const variables = {
+          user_name: emailData.variables?.user_name || emailData.user_name || 'User',
+          old_plan_name: emailData.variables?.old_plan_name || emailData.old_plan_name || '',
+          new_plan_name: emailData.variables?.new_plan_name || emailData.new_plan_name || '',
+          new_amount: emailData.variables?.new_amount || emailData.new_amount || '',
+          old_amount: emailData.variables?.old_amount || emailData.old_amount || '',
+          billing_interval: emailData.variables?.billing_interval || emailData.billing_interval || 'monthly',
+          effective_date: emailData.variables?.effective_date || emailData.effective_date || new Date().toLocaleDateString('fr-FR'),
+          support_email: emailData.variables?.support_email || 'support@haliqo.com',
+          company_name: emailData.variables?.company_name || 'Haliqo'
+        };
+        const rendered = renderTemplate(upgradedTemplate.data, variables);
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [emailData.user_email],
+          subject: rendered.subject,
+          html: rendered.html,
+          text: rendered.text
+        });
         break;
+      }
 
-      case 'subscription_downgraded':
+      case 'subscription_downgraded': {
         // Use database template for subscription downgrade emails
-        // Get language: user's database language_preference > provided language > 'fr'
+        // Get language: user's database language_preference only
         let downgradedLanguage: string | null = null;
         if (emailData.user_id) {
           downgradedLanguage = await getUserLanguagePreference(emailData.user_id);
         }
-        if (!downgradedLanguage && emailData.language) {
-          downgradedLanguage = emailData.language;
-        }
         downgradedLanguage = downgradedLanguage || 'fr';
         const downgradedTemplate = await getEmailTemplate('subscription_downgraded', downgradedLanguage, emailData.user_id || null);
-        if (downgradedTemplate.success) {
-          const variables = {
-            user_name: emailData.variables?.user_name || emailData.user_name || 'User',
-            old_plan_name: emailData.variables?.old_plan_name || emailData.old_plan_name || '',
-            new_plan_name: emailData.variables?.new_plan_name || emailData.new_plan_name || '',
-            new_amount: emailData.variables?.new_amount || emailData.new_amount || '',
-            old_amount: emailData.variables?.old_amount || emailData.old_amount || '',
-            billing_interval: emailData.variables?.billing_interval || emailData.billing_interval || 'monthly',
-            effective_date: emailData.variables?.effective_date || emailData.effective_date || new Date().toLocaleDateString('fr-FR'),
-            support_email: emailData.variables?.support_email || 'support@haliqo.com',
-            company_name: emailData.variables?.company_name || 'Haliqo'
-          };
-          const rendered = renderTemplate(downgradedTemplate.data, variables);
-          emailResult = await sendEmail({
-            from: fromEmail,
-            to: [emailData.user_email],
-            subject: emailData.subject || rendered.subject,
-            html: rendered.html,
-            text: emailData.text || rendered.text
-          });
-        } else {
-          // Fallback to pre-rendered HTML if template not found
-          if (emailData.html && emailData.subject) {
-            emailResult = await sendEmail({
-              from: fromEmail,
-              to: [emailData.user_email],
-              subject: emailData.subject,
-              html: emailData.html,
-              text: emailData.text
-            });
-          } else {
-            throw new Error(`Template 'subscription_downgraded' not found for language '${downgradedLanguage}'`);
-          }
+        if (!downgradedTemplate.success) {
+          throw new Error(`Email template 'subscription_downgraded' not found in database for language '${downgradedLanguage}'. Please create the template in the email_templates table.`);
         }
+        const variables = {
+          user_name: emailData.variables?.user_name || emailData.user_name || 'User',
+          old_plan_name: emailData.variables?.old_plan_name || emailData.old_plan_name || '',
+          new_plan_name: emailData.variables?.new_plan_name || emailData.new_plan_name || '',
+          new_amount: emailData.variables?.new_amount || emailData.new_amount || '',
+          old_amount: emailData.variables?.old_amount || emailData.old_amount || '',
+          billing_interval: emailData.variables?.billing_interval || emailData.billing_interval || 'monthly',
+          effective_date: emailData.variables?.effective_date || emailData.effective_date || new Date().toLocaleDateString('fr-FR'),
+          support_email: emailData.variables?.support_email || 'support@haliqo.com',
+          company_name: emailData.variables?.company_name || 'Haliqo'
+        };
+        const rendered = renderTemplate(downgradedTemplate.data, variables);
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [emailData.user_email],
+          subject: rendered.subject,
+          html: rendered.html,
+          text: rendered.text
+        });
         break;
+      }
 
-      case 'subscription_cancelled':
+      case 'subscription_cancelled': {
         // Use database template for subscription cancellation emails
-        // Get language: user's database language_preference > provided language > 'fr'
+        // Get language: user's database language_preference only
         let cancelledLanguage: string | null = null;
         if (emailData.user_id) {
           cancelledLanguage = await getUserLanguagePreference(emailData.user_id);
         }
-        if (!cancelledLanguage && emailData.language) {
-          cancelledLanguage = emailData.language;
-        }
         cancelledLanguage = cancelledLanguage || 'fr';
         const cancelledTemplate = await getEmailTemplate('subscription_cancelled', cancelledLanguage, emailData.user_id || null);
-        if (cancelledTemplate.success) {
-          const variables = {
-            user_name: emailData.variables?.user_name || emailData.user_name || 'User',
-            plan_name: emailData.variables?.plan_name || emailData.plan_name || '',
-            cancellation_date: emailData.variables?.cancellation_date || emailData.cancellation_date || new Date().toLocaleDateString('fr-FR'),
-            cancellation_reason: emailData.variables?.cancellation_reason || emailData.cancellation_reason || 'User request',
-            support_email: emailData.variables?.support_email || 'support@haliqo.com',
-            company_name: emailData.variables?.company_name || 'Haliqo'
-          };
-          const rendered = renderTemplate(cancelledTemplate.data, variables);
-          emailResult = await sendEmail({
-            from: fromEmail,
-            to: [emailData.user_email],
-            subject: emailData.subject || rendered.subject,
-            html: rendered.html,
-            text: emailData.text || rendered.text
-          });
-        } else {
-          // Fallback to pre-rendered HTML if template not found
-          if (emailData.html && emailData.subject) {
-            emailResult = await sendEmail({
-              from: fromEmail,
-              to: [emailData.user_email],
-              subject: emailData.subject,
-              html: emailData.html,
-              text: emailData.text
-            });
-          } else {
-            throw new Error(`Template 'subscription_cancelled' not found for language '${cancelledLanguage}'`);
-          }
+        if (!cancelledTemplate.success) {
+          throw new Error(`Email template 'subscription_cancelled' not found in database for language '${cancelledLanguage}'. Please create the template in the email_templates table.`);
         }
+        const variables = {
+          user_name: emailData.variables?.user_name || emailData.user_name || 'User',
+          old_plan_name: emailData.variables?.plan_name || emailData.variables?.old_plan_name || emailData.plan_name || '',
+          effective_date: emailData.variables?.cancellation_date || emailData.variables?.effective_date || emailData.cancellation_date || new Date().toLocaleDateString('fr-FR'),
+          cancellation_reason: emailData.variables?.cancellation_reason || emailData.cancellation_reason || 'User request',
+          support_email: emailData.variables?.support_email || 'support@haliqo.com',
+          company_name: emailData.variables?.company_name || 'Haliqo'
+        };
+        const rendered = renderTemplate(cancelledTemplate.data, variables);
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [emailData.user_email],
+          subject: rendered.subject,
+          html: rendered.html,
+          text: rendered.text
+        });
         break;
+      }
 
-      case 'subscription_trial_ending':
+      case 'subscription_trial_ending': {
         // Use database template for trial ending emails
-        // Get language: user's database language_preference > provided language > 'fr'
+        // Get language: user's database language_preference only
         let trialLanguage: string | null = null;
         if (emailData.user_id) {
           trialLanguage = await getUserLanguagePreference(emailData.user_id);
         }
-        if (!trialLanguage && emailData.language) {
-          trialLanguage = emailData.language;
-        }
         trialLanguage = trialLanguage || 'fr';
         const trialTemplate = await getEmailTemplate('subscription_trial_ending', trialLanguage, emailData.user_id || null);
-        if (trialTemplate.success) {
-          const variables = {
-            user_name: emailData.variables?.user_name || emailData.user_name || 'User',
-            plan_name: emailData.variables?.plan_name || emailData.plan_name || '',
-            trial_end_date: emailData.variables?.trial_end_date || emailData.trial_end_date || new Date().toLocaleDateString('fr-FR'),
-            amount: emailData.variables?.amount || emailData.amount || emailData.new_amount || '',
-            support_email: emailData.variables?.support_email || 'support@haliqo.com',
-            company_name: emailData.variables?.company_name || 'Haliqo'
-          };
-          const rendered = renderTemplate(trialTemplate.data, variables);
-          emailResult = await sendEmail({
-            from: fromEmail,
-            to: [emailData.user_email],
-            subject: emailData.subject || rendered.subject,
-            html: rendered.html,
-            text: emailData.text || rendered.text
-          });
-        } else {
-          // Fallback to pre-rendered HTML if template not found
-          if (emailData.html && emailData.subject) {
-            emailResult = await sendEmail({
-              from: fromEmail,
-              to: [emailData.user_email],
-              subject: emailData.subject,
-              html: emailData.html,
-              text: emailData.text
-            });
-          } else {
-            throw new Error(`Template 'subscription_trial_ending' not found for language '${trialLanguage}'`);
-          }
+        if (!trialTemplate.success) {
+          throw new Error(`Email template 'subscription_trial_ending' not found in database for language '${trialLanguage}'. Please create the template in the email_templates table.`);
         }
+        const variables = {
+          user_name: emailData.variables?.user_name || emailData.user_name || 'User',
+          new_plan_name: emailData.variables?.new_plan_name || emailData.variables?.plan_name || emailData.plan_name || '',
+          trial_end_date: emailData.variables?.trial_end_date || emailData.trial_end_date || new Date().toLocaleDateString('fr-FR'),
+          new_amount: emailData.variables?.new_amount || emailData.variables?.amount || emailData.amount || emailData.new_amount || '',
+          billing_interval: emailData.variables?.billing_interval || emailData.billing_interval || 'monthly',
+          support_email: emailData.variables?.support_email || 'support@haliqo.com',
+          company_name: emailData.variables?.company_name || 'Haliqo'
+        };
+        const rendered = renderTemplate(trialTemplate.data, variables);
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [emailData.user_email],
+          subject: rendered.subject,
+          html: rendered.html,
+          text: rendered.text
+        });
         break;
+      }
 
-      case 'subscription_activated':
+      case 'subscription_activated': {
         // Use database template for subscription activation emails
-        // Get language: user's database language_preference > provided language > 'fr'
+        // Get language: user's database language_preference only
         let activatedLanguage: string | null = null;
         if (emailData.user_id) {
           activatedLanguage = await getUserLanguagePreference(emailData.user_id);
         }
-        if (!activatedLanguage && emailData.language) {
-          activatedLanguage = emailData.language;
-        }
         activatedLanguage = activatedLanguage || 'fr';
         const activatedTemplate = await getEmailTemplate('subscription_activated', activatedLanguage, emailData.user_id || null);
-        if (activatedTemplate.success) {
-          const variables = {
-            user_name: emailData.variables?.user_name || emailData.user_name || 'User',
-            plan_name: emailData.variables?.plan_name || emailData.plan_name || emailData.new_plan_name || '',
-            amount: emailData.variables?.amount || emailData.amount || emailData.new_amount || '',
-            billing_interval: emailData.variables?.billing_interval || emailData.billing_interval || 'monthly',
-            effective_date: emailData.variables?.effective_date || emailData.effective_date || new Date().toLocaleDateString('fr-FR'),
-            support_email: emailData.variables?.support_email || 'support@haliqo.com',
-            company_name: emailData.variables?.company_name || 'Haliqo'
-          };
-          const rendered = renderTemplate(activatedTemplate.data, variables);
-          emailResult = await sendEmail({
-            from: fromEmail,
-            to: [emailData.user_email],
-            subject: emailData.subject || rendered.subject,
-            html: rendered.html,
-            text: emailData.text || rendered.text
-          });
-        } else {
-          // Fallback to pre-rendered HTML if template not found
-          if (emailData.html && emailData.subject) {
-            emailResult = await sendEmail({
-              from: fromEmail,
-              to: [emailData.user_email],
-              subject: emailData.subject,
-              html: emailData.html,
-              text: emailData.text
-            });
-          } else {
-            throw new Error(`Template 'subscription_activated' not found for language '${activatedLanguage}'`);
-          }
+        if (!activatedTemplate.success) {
+          throw new Error(`Email template 'subscription_activated' not found in database for language '${activatedLanguage}'. Please create the template in the email_templates table.`);
         }
+        const variables = {
+          user_name: emailData.variables?.user_name || emailData.user_name || 'User',
+          new_plan_name: emailData.variables?.new_plan_name || emailData.variables?.plan_name || emailData.plan_name || emailData.new_plan_name || '',
+          new_amount: emailData.variables?.new_amount || emailData.variables?.amount || emailData.amount || emailData.new_amount || '',
+          billing_interval: emailData.variables?.billing_interval || emailData.billing_interval || 'monthly',
+          effective_date: emailData.variables?.effective_date || emailData.effective_date || new Date().toLocaleDateString('fr-FR'),
+          support_email: emailData.variables?.support_email || 'support@haliqo.com',
+          company_name: emailData.variables?.company_name || 'Haliqo'
+        };
+        const rendered = renderTemplate(activatedTemplate.data, variables);
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [emailData.user_email],
+          subject: rendered.subject,
+          html: rendered.html,
+          text: rendered.text
+        });
         break;
+      }
 
-      case 'subscription_reactivated':
+      case 'subscription_reactivated': {
         // Use database template for subscription reactivation emails
-        // Get language: user's database language_preference > provided language > 'fr'
+        // Get language: user's database language_preference only
         let reactivatedLanguage: string | null = null;
         if (emailData.user_id) {
           reactivatedLanguage = await getUserLanguagePreference(emailData.user_id);
         }
-        if (!reactivatedLanguage && emailData.language) {
-          reactivatedLanguage = emailData.language;
-        }
         reactivatedLanguage = reactivatedLanguage || 'fr';
         const reactivatedTemplate = await getEmailTemplate('subscription_reactivated', reactivatedLanguage, emailData.user_id || null);
-        if (reactivatedTemplate.success) {
-          const variables = {
-            user_name: emailData.variables?.user_name || emailData.user_name || 'User',
-            plan_name: emailData.variables?.plan_name || emailData.plan_name || '',
-            amount: emailData.variables?.amount || emailData.amount || '',
-            billing_interval: emailData.variables?.billing_interval || emailData.billing_interval || 'monthly',
-            effective_date: emailData.variables?.effective_date || emailData.effective_date || new Date().toLocaleDateString('fr-FR'),
-            support_email: emailData.variables?.support_email || 'support@haliqo.com',
-            company_name: emailData.variables?.company_name || 'Haliqo'
-          };
-          const rendered = renderTemplate(reactivatedTemplate.data, variables);
-          emailResult = await sendEmail({
-            from: fromEmail,
-            to: [emailData.user_email],
-            subject: emailData.subject || rendered.subject,
-            html: rendered.html,
-            text: emailData.text || rendered.text
-          });
-        } else {
-          // Fallback to pre-rendered HTML if template not found
-          if (emailData.html && emailData.subject) {
-            emailResult = await sendEmail({
-              from: fromEmail,
-              to: [emailData.user_email],
-              subject: emailData.subject,
-              html: emailData.html,
-              text: emailData.text
-            });
-          } else {
-            throw new Error(`Template 'subscription_reactivated' not found for language '${reactivatedLanguage}'`);
-          }
+        if (!reactivatedTemplate.success) {
+          throw new Error(`Email template 'subscription_reactivated' not found in database for language '${reactivatedLanguage}'. Please create the template in the email_templates table.`);
         }
+        const variables = {
+          user_name: emailData.variables?.user_name || emailData.user_name || 'User',
+          plan_name: emailData.variables?.plan_name || emailData.plan_name || '',
+          amount: emailData.variables?.amount || emailData.amount || '',
+          billing_interval: emailData.variables?.billing_interval || emailData.billing_interval || 'monthly',
+          effective_date: emailData.variables?.effective_date || emailData.effective_date || new Date().toLocaleDateString('fr-FR'),
+          support_email: emailData.variables?.support_email || 'support@haliqo.com',
+          company_name: emailData.variables?.company_name || 'Haliqo'
+        };
+        const rendered = renderTemplate(reactivatedTemplate.data, variables);
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [emailData.user_email],
+          subject: rendered.subject,
+          html: rendered.html,
+          text: rendered.text
+        });
         break;
+      }
 
-      case 'welcome_registration':
+      case 'welcome_registration': {
         // Use database template for welcome registration emails
-        // Get language: user's database language_preference > provided language > 'fr'
+        // Get language: user's database language_preference only
         let welcomeLanguage: string | null = null;
         if (emailData.user_id) {
           welcomeLanguage = await getUserLanguagePreference(emailData.user_id);
         }
-        if (!welcomeLanguage && emailData.language) {
-          welcomeLanguage = emailData.language;
-        }
         welcomeLanguage = welcomeLanguage || 'fr';
         const welcomeTemplate = await getEmailTemplate('welcome_registration', welcomeLanguage, emailData.user_id || null);
-        if (welcomeTemplate.success) {
-          const variables = {
-            user_name: emailData.variables?.user_name || emailData.user_name || 'User',
-            user_email: emailData.variables?.user_email || emailData.user_email || '',
-            plan_name: emailData.variables?.plan_name || emailData.plan_name || '',
-            amount: emailData.variables?.amount || emailData.amount || '',
-            billing_interval: emailData.variables?.billing_interval || emailData.billing_interval || 'monthly',
-            account_settings_url: emailData.variables?.account_settings_url || emailData.account_settings_url || 'https://haliqo.com/settings',
-            company_name: emailData.variables?.company_name || 'Haliqo'
-          };
-          const rendered = renderTemplate(welcomeTemplate.data, variables);
-          emailResult = await sendEmail({
-            from: fromEmail,
-            to: [emailData.user_email],
-            subject: emailData.subject || rendered.subject,
-            html: rendered.html,
-            text: emailData.text || rendered.text
-          });
-        } else {
-          throw new Error(`Template 'welcome_registration' not found for language '${welcomeLanguage}'`);
+        if (!welcomeTemplate.success) {
+          throw new Error(`Email template 'welcome_registration' not found in database for language '${welcomeLanguage}'. Please create the template in the email_templates table.`);
         }
+        const variables = {
+          user_name: emailData.variables?.user_name || emailData.user_name || 'User',
+          user_email: emailData.variables?.user_email || emailData.user_email || '',
+          plan_name: emailData.variables?.plan_name || emailData.plan_name || '',
+          amount: emailData.variables?.amount || emailData.amount || '',
+          billing_interval: emailData.variables?.billing_interval || emailData.billing_interval || 'monthly',
+          account_settings_url: emailData.variables?.account_settings_url || emailData.account_settings_url || 'https://haliqo.com/settings',
+          company_name: emailData.variables?.company_name || 'Haliqo'
+        };
+        const rendered = renderTemplate(welcomeTemplate.data, variables);
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [emailData.user_email],
+          subject: rendered.subject,
+          html: rendered.html,
+          text: rendered.text
+        });
         break;
+      }
 
       case 'contact_form':
         // Use database template
+        // For contact form, use provided language (from browser/i18n) or default to 'fr'
+        // Note: Contact form doesn't have user_id or client_id, so we use provided language
         const contactLanguage = emailData.language || 'fr';
         const contactTemplate = await getEmailTemplate('contact_form', contactLanguage, null);
         if (contactTemplate.success) {
@@ -922,44 +811,32 @@ serve(async (req) => {
       case 'invoice_to_accountant':
       case 'expense_invoice_to_accountant':
         // Use database template for invoice to accountant emails
-        // Get language: user's database language_preference > provided language > 'fr'
+        // Get language: user's database language_preference only
         let accountantLanguage: string | null = null;
         if (emailData.user_id) {
           accountantLanguage = await getUserLanguagePreference(emailData.user_id);
         }
-        if (!accountantLanguage && emailData.language) {
-          accountantLanguage = emailData.language;
-        }
         accountantLanguage = accountantLanguage || 'fr';
         const accountantTemplateType = emailType === 'expense_invoice_to_accountant' ? 'expense_invoice_to_accountant' : 'invoice_to_accountant';
         const accountantTemplate = await getEmailTemplate(accountantTemplateType, accountantLanguage, emailData.user_id || null);
-        if (accountantTemplate.success) {
-          const variables = {
-            invoice_count: emailData.invoice_count?.toString() || emailData.meta?.invoice_count?.toString() || '0',
-            total_amount: emailData.total_amount || emailData.meta?.total_amount || '0.00€',
-            date: emailData.date || new Date().toLocaleDateString(accountantLanguage === 'fr' ? 'fr-FR' : accountantLanguage === 'nl' ? 'nl-NL' : 'en-US'),
-            company_name: emailData.company_name || 'Haliqo'
-          };
-          const rendered = renderTemplate(accountantTemplate.data, variables);
-          emailResult = await sendEmail({
-            from: fromEmail,
-            to: [emailData.to_email],
-            subject: rendered.subject,
-            html: rendered.html,
-            text: rendered.text,
-            attachments: emailData.attachments || undefined
-          });
-        } else {
-          // Fallback to pre-rendered HTML if template not found
-          emailResult = await sendEmail({
-            from: fromEmail,
-            to: [emailData.to_email],
-            subject: emailData.subject,
-            html: emailData.html,
-            text: emailData.text,
-            attachments: emailData.attachments || undefined
-          });
+        if (!accountantTemplate.success) {
+          throw new Error(`Email template '${accountantTemplateType}' not found in database for language '${accountantLanguage}'. Please create the template in the email_templates table.`);
         }
+        const variables = {
+          invoice_count: emailData.invoice_count?.toString() || emailData.meta?.invoice_count?.toString() || '0',
+          total_amount: emailData.total_amount || emailData.meta?.total_amount || '0.00€',
+          date: emailData.date || new Date().toLocaleDateString(accountantLanguage === 'fr' ? 'fr-FR' : accountantLanguage === 'nl' ? 'nl-NL' : 'en-US'),
+          company_name: emailData.company_name || 'Haliqo'
+        };
+        const rendered = renderTemplate(accountantTemplate.data, variables);
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [emailData.to_email],
+          subject: rendered.subject,
+          html: rendered.html,
+          text: rendered.text,
+          attachments: emailData.attachments || undefined
+        });
         break;
         
       default:

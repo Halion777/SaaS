@@ -303,44 +303,33 @@ export class EmailService {
   
   /**
    * Send email using template system
-   * Now uses proper template types so edge function can fetch language preference from database
+   * Edge function will fetch language preference from database and render template
    */
   static async sendTemplatedEmail(templateType, variables, clientEmail, userId = null, language = null, clientId = null) {
     try {
-      // Send via edge function with proper template type
-      // Edge function will fetch language preference from database if client_id is provided
-      const emailData = {
-        to: clientEmail,
-        client_email: clientEmail,
-        client_id: clientId || null, // Pass client_id so edge function can fetch language from database
-        user_id: userId,
-        userId: userId,
-        language: language || null, // Fallback language, but edge function will prioritize database
-        variables: variables,
-        template_type: templateType
-      };
-      
       // Map template types to proper edge function email types
       let emailType = templateType;
       if (templateType === 'client_accepted' || templateType === 'client_rejected') {
         emailType = 'quote_status_update';
-        emailData.variables = {
+        variables = {
           ...variables,
           status: templateType === 'client_accepted' ? 'accepted' : 'rejected',
           quote_status: templateType === 'client_accepted' ? 'accepted' : 'rejected'
         };
       } else if (templateType === 'welcome_client') {
-        // welcome_client should use a proper template type if it exists, otherwise use templated_email as fallback
+        // welcome_client uses templated_email case which will fetch template from database
         emailType = 'templated_email';
-        // Get template on frontend as fallback for welcome_client
-        const templateResult = await this.getEmailTemplate(templateType, userId, language || 'fr');
-        if (templateResult.success) {
-          const renderResult = this.renderEmailTemplate(templateResult.data, variables);
-          emailData.subject = renderResult.data.subject;
-          emailData.html = renderResult.data.html;
-          emailData.text = renderResult.data.text;
-        }
       }
+      
+      // Send via edge function - edge function will fetch language preference from database
+      const emailData = {
+        to: clientEmail,
+        client_email: clientEmail,
+        client_id: clientId || null, // Pass client_id so edge function can fetch language from database
+        user_id: userId,
+        variables: variables,
+        template_type: templateType
+      };
       
       const result = await this.sendEmailViaEdgeFunction(emailType, emailData);
       
@@ -454,42 +443,14 @@ export class EmailService {
                 custom_message: copyMessage
               };
               
-              // Get user's language preference for copy email (default to 'fr')
-              // Priority: user's database language_preference > localStorage > 'fr'
-              let userLanguage = 'fr';
-              if (userId) {
-                try {
-                  const { data: userData } = await supabase
-                    .from('users')
-                    .select('language_preference')
-                    .eq('id', userId)
-                    .maybeSingle();
-                  
-                  if (userData?.language_preference) {
-                    userLanguage = userData.language_preference.split('-')[0] || 'fr';
-                  } else if (typeof window !== 'undefined') {
-                    const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
-                    userLanguage = storedLang.split('-')[0] || 'fr';
-                  }
-                } catch (error) {
-                  console.warn('Error fetching user language preference:', error);
-                  // Fallback to localStorage
-                  if (typeof window !== 'undefined') {
-                    const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
-                    userLanguage = storedLang.split('-')[0] || 'fr';
-                  }
-                }
-              } else if (typeof window !== 'undefined') {
-                const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
-                userLanguage = storedLang.split('-')[0] || 'fr';
-              }
-              
+              // Send copy to user - edge function will fetch user's language preference from database
               const copyEmailResult = await this.sendCustomQuoteEmail(
                 copyVariables, 
                 customEmailData.userEmail, 
                 userId, 
                 { subject: copySubject, message: copyMessage },
-                userLanguage
+                null, // Language will be fetched from database by edge function using user_id
+                null  // No client_id for user copy email
               );
               
               if (copyEmailResult.success) {
@@ -512,43 +473,14 @@ export class EmailService {
                 custom_message: copyMessage
               };
               
-              // Get user's language preference for copy email (default to 'fr')
-              // Priority: user's database language_preference > localStorage > 'fr'
-              let userLanguage = 'fr';
-              if (userId) {
-                try {
-                  const { data: userData } = await supabase
-                    .from('users')
-                    .select('language_preference')
-                    .eq('id', userId)
-                    .maybeSingle();
-                  
-                  if (userData?.language_preference) {
-                    userLanguage = userData.language_preference.split('-')[0] || 'fr';
-                  } else if (typeof window !== 'undefined') {
-                    const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
-                    userLanguage = storedLang.split('-')[0] || 'fr';
-                  }
-                } catch (error) {
-                  console.warn('Error fetching user language preference:', error);
-                  // Fallback to localStorage
-                  if (typeof window !== 'undefined') {
-                    const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
-                    userLanguage = storedLang.split('-')[0] || 'fr';
-                  }
-                }
-              } else if (typeof window !== 'undefined') {
-                const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
-                userLanguage = storedLang.split('-')[0] || 'fr';
-              }
-              
-              // Send copy to user
+              // Send copy to user - edge function will fetch user's language preference from database
               const copyEmailResult = await this.sendCustomQuoteEmail(
                 copyVariables, 
                 customEmailData.userEmail, 
                 userId, 
                 { subject: copySubject, message: copyMessage },
-                userLanguage
+                null, // Language will be fetched from database by edge function using user_id
+                null  // No client_id for user copy email
               );
               
               if (copyEmailResult.success) {
@@ -576,18 +508,17 @@ export class EmailService {
   
   /**
    * Send custom quote email with user-defined subject and message
+   * Edge function will fetch language preference from database using client_id or user_id
    */
-  static async sendCustomQuoteEmail(variables, clientEmail, userId = null, customEmailData = null, language = 'fr', clientId = null) {
+  static async sendCustomQuoteEmail(variables, clientEmail, userId = null, customEmailData = null, language = null, clientId = null) {
     try {
       const emailData = {
         to: clientEmail,
-        client_id: clientId || null, // Pass client_id so edge function can fetch language if needed
+        client_id: clientId || null, // Pass client_id so edge function can fetch language from database
         subject: customEmailData?.subject || variables.custom_subject,
         message: customEmailData?.message || variables.custom_message,
         variables: variables,
-        userId: userId,
-        user_id: userId,
-        language: language || 'fr' // Pass language, but edge function will fetch from client_id if not provided
+        user_id: userId // Pass user_id so edge function can fetch language from database for copy emails
       };
       
       return await this.sendEmailViaEdgeFunction('quote_sent', emailData);

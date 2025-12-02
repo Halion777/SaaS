@@ -163,10 +163,19 @@ class ClientQuoteService {
       }
 
       // Send acceptance email via Edge Function
+      // Get language from localStorage (user selected from dropdown on quote share page)
+      // This is important for non-logged in users who don't have a database record
+      let selectedLanguage = 'fr'; // Default
+      if (typeof window !== 'undefined') {
+        const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
+        selectedLanguage = storedLang.split('-')[0] || 'fr';
+      }
+      
       try {
         await this.sendQuoteStatusEmail(quoteId, 'accepted', {
           client_email: clientEmail,
-          client_name: clientName
+          client_name: clientName,
+          language: selectedLanguage // Pass language from dropdown selection
         });
       } catch (emailError) {
         console.warn('Failed to send acceptance email:', emailError);
@@ -272,11 +281,20 @@ class ClientQuoteService {
       }
 
       // Send rejection email via Edge Function
+      // Get language from localStorage (user selected from dropdown on quote share page)
+      // This is important for non-logged in users who don't have a database record
+      let selectedLanguage = 'fr'; // Default
+      if (typeof window !== 'undefined') {
+        const storedLang = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
+        selectedLanguage = storedLang.split('-')[0] || 'fr';
+      }
+      
       try {
         await this.sendQuoteStatusEmail(quoteId, 'rejected', {
           client_email: clientEmail,
           client_name: clientName,
-          rejection_reason: rejectionReason
+          rejection_reason: rejectionReason,
+          language: selectedLanguage // Pass language from dropdown selection
         });
       } catch (emailError) {
         console.warn('Failed to send rejection email:', emailError);

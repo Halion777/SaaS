@@ -70,13 +70,16 @@ const LanguageDropdown = () => {
     // Set HTML lang attribute
     document.documentElement.setAttribute('lang', languageCode);
     
-    // If user is logged in, update their profile
+    // If user is logged in, update their language_preference in database
     if (user) {
-      await updateUserProfile({ 
-        data: { 
-          language: languageCode 
-        } 
-      });
+      try {
+        await updateUserProfile({ 
+          language_preference: languageCode 
+        });
+      } catch (error) {
+        console.warn('Failed to update language preference in database:', error);
+        // Continue anyway - localStorage is already updated
+      }
     }
     
     // Close dropdown
