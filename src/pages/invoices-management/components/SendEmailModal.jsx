@@ -74,7 +74,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
       // Set default message - if from invalid Peppol ID or failed Peppol, only show warning
       let defaultMessage;
       if (fromInvalidPeppolId || isPeppolFailed) {
-        defaultMessage = t('invoicesManagement.sendEmailModal.peppolWarningText', '⚠️ IMPORTANT: This email is for reference only. You must use Peppol to get paid.');
+        defaultMessage = t('invoicesManagement.sendEmailModal.peppolWarningText', '⚠️IMPORTANT: This message serves as a payment notice. The invoice could not be delivered via PEPPOL because your identifier could not be found. Please update your PEPPOL registration. The PDF attached is only a proforma invoice, not an official invoice.');
       } else {
         defaultMessage = t('invoicesManagement.sendEmailModal.defaultMessage', {
           invoiceNumber: invoice.number || invoice.invoice_number || '',

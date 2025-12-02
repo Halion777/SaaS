@@ -4193,7 +4193,7 @@
         "defaultMessageWithWarning": "Hierbij vindt u onze factuur {{invoiceNumber}}.\n\n⚠️ BELANGRIJK: Deze e-mail is alleen ter referentie. U moet Peppol gebruiken om betaald te worden.",
         "messageWarning": "⚠️ BELANGRIJK:",
         "messageWarningText": "Deze e-mail is alleen ter referentie. U moet Peppol gebruiken om betaald te worden.",
-        "peppolWarningText": "⚠️ BELANGRIJK: Deze e-mail is alleen ter referentie. U moet Peppol gebruiken om betaald te worden.",
+        "peppolWarningText": "⚠️BELANGRIJK: Dit bericht dient als betalingskennisgeving. De factuur kon niet via PEPPOL worden afgeleverd omdat uw identifier niet kon worden gevonden. Werk alstublieft uw PEPPOL-registratie bij. De bijgevoegde PDF is alleen een proformafactuur, geen officiële factuur.",
         "emailText": "Factuur {{invoiceNumber}} - Bedrag: {{amount}}",
         "preview": {
           "invoice": "Factuur",

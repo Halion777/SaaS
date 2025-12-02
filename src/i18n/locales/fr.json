@@ -4207,7 +4207,7 @@
         "defaultMessageWithWarning": "Veuillez trouver ci-joint notre facture {{invoiceNumber}}.\n\n⚠️ IMPORTANT: Cet email est uniquement à titre de référence. Vous devez utiliser Peppol pour être payé.",
         "messageWarning": "⚠️ IMPORTANT:",
         "messageWarningText": "Cet email est uniquement à titre de référence. Vous devez utiliser Peppol pour être payé.",
-        "peppolWarningText": "⚠️ IMPORTANT: Cet email est uniquement à titre de référence. Vous devez utiliser Peppol pour être payé.",
+        "peppolWarningText": "⚠️IMPORTANT: Ce message sert d'avis de paiement. La facture n'a pas pu être livrée via PEPPOL car votre identifiant n'a pas pu être trouvé. Veuillez mettre à jour votre inscription PEPPOL. Le PDF joint n'est qu'une facture proforma, pas une facture officielle.",
         "emailText": "Facture {{invoiceNumber}} - Montant: {{amount}}",
         "preview": {
           "invoice": "Facture",
