@@ -265,9 +265,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
             {/* Status */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex flex-col space-y-1">
-                {invoice.source === 'peppol' && invoice.peppol_metadata?.documentTypeLabel && (
-                  <span className="text-xs text-blue-600">{invoice.peppol_metadata.documentTypeLabel}</span>
-                )}
+                {/* Document type label removed - not showing Self-Billing Invoice/Credit Note */}
               </div>
               <div className="flex flex-col items-end space-y-1">
                 {getStatusBadge(invoice.status, invoice.id)}
@@ -426,11 +424,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col space-y-1">
                     {getSourceBadge(invoice.source)}
-                      {invoice.source === 'peppol' && invoice.peppol_metadata?.documentTypeLabel && (
-                        <span className="text-xs text-muted-foreground">
-                          {invoice.peppol_metadata.documentTypeLabel}
-                        </span>
-                      )}
+                      {/* Document type label removed - not showing Self-Billing Invoice/Credit Note */}
                       {invoice.source === 'peppol' && invoice.peppol_received_at && (
                         <span className="text-xs text-muted-foreground">
                           {t('expenseInvoices.table.received', 'Received')}: {formatDate(invoice.peppol_received_at)}

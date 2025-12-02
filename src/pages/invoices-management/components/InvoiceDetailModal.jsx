@@ -7,14 +7,22 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState('details');
 
+  // Reset active tab when modal opens/closes or invoice changes
+  React.useEffect(() => {
+    if (isOpen && invoice) {
+      setActiveTab('details');
+    }
+  }, [isOpen, invoice?.id]);
+
   if (!isOpen || !invoice) return null;
 
   // Determine client type
   const clientType = invoice?.client?.client_type || invoice?.client?.type;
   const isProfessional = clientType === 'company' || clientType === 'professionnel';
   
-  // Show Peppol tab only for professional clients who have Peppol enabled
-  const showPeppolTab = isProfessional && invoice.peppolEnabled;
+  // Show Peppol tab for all professional clients (regardless of peppolEnabled)
+  // Professional clients can use Peppol, even if they haven't sent via Peppol yet
+  const showPeppolTab = isProfessional;
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US', {

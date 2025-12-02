@@ -54,12 +54,7 @@ const MainSidebar = () => {
     // If we have cached data, consider it loaded
     return !!localStorage.getItem('haliqo_service_visibility');
   });
-  const [overdueExpenseInvoicesCount, setOverdueExpenseInvoicesCount] = useState(0);
-  const [overdueClientInvoicesCount, setOverdueClientInvoicesCount] = useState(0);
-  const [pendingQuotesCount, setPendingQuotesCount] = useState(0);
-  const [pendingQuoteFollowUpsCount, setPendingQuoteFollowUpsCount] = useState(0);
-  const [pendingInvoiceFollowUpsCount, setPendingInvoiceFollowUpsCount] = useState(0);
-  const [newLeadsCount, setNewLeadsCount] = useState(0);
+  // Notification counts removed to reduce API load
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
@@ -207,235 +202,7 @@ const MainSidebar = () => {
     loadServiceVisibility();
   }, []);
 
-  // Fetch overdue expense invoices count
-  useEffect(() => {
-    const fetchOverdueCount = async () => {
-      if (!user) return;
-      
-      try {
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-        if (!currentUser) return;
-
-        // Get all expense invoices for the current user
-        const { data: invoices, error } = await supabase
-          .from('expense_invoices')
-          .select('id, due_date, status')
-          .eq('user_id', currentUser.id);
-
-        if (error) throw error;
-
-        // Count overdue invoices (due_date < today AND status != 'paid')
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        const overdueCount = invoices?.filter(invoice => {
-          if (invoice.status === 'paid') return false;
-          const dueDate = new Date(invoice.due_date);
-          dueDate.setHours(0, 0, 0, 0);
-          return dueDate < today;
-        }).length || 0;
-
-        setOverdueExpenseInvoicesCount(overdueCount);
-      } catch (error) {
-        console.error('Error fetching overdue expense invoices count:', error);
-        setOverdueExpenseInvoicesCount(0);
-      }
-    };
-
-    fetchOverdueCount();
-    
-    // Refresh every 5 minutes to keep count updated
-    const interval = setInterval(fetchOverdueCount, 300000);
-    
-    return () => clearInterval(interval);
-  }, [user]);
-
-  // Fetch overdue client invoices count
-  useEffect(() => {
-    const fetchOverdueClientCount = async () => {
-      if (!user) return;
-      
-      try {
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-        if (!currentUser) return;
-
-        // Get all client invoices for the current user
-        const { data: invoices, error } = await supabase
-          .from('invoices')
-          .select('id, due_date, status')
-          .eq('user_id', currentUser.id);
-
-        if (error) throw error;
-
-        // Count overdue invoices (due_date < today AND status != 'paid')
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        const overdueCount = invoices?.filter(invoice => {
-          if (invoice.status === 'paid') return false;
-          const dueDate = new Date(invoice.due_date);
-          dueDate.setHours(0, 0, 0, 0);
-          return dueDate < today;
-        }).length || 0;
-
-        setOverdueClientInvoicesCount(overdueCount);
-      } catch (error) {
-        console.error('Error fetching overdue client invoices count:', error);
-        setOverdueClientInvoicesCount(0);
-      }
-    };
-
-    fetchOverdueClientCount();
-    
-    // Refresh every 5 minutes to keep count updated
-    const interval = setInterval(fetchOverdueClientCount, 300000);
-    
-    return () => clearInterval(interval);
-  }, [user]);
-
-  // Fetch pending quotes count (quotes sent but not yet responded)
-  useEffect(() => {
-    const fetchPendingQuotesCount = async () => {
-      if (!user) return;
-      
-      try {
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-        if (!currentUser) return;
-
-        // Get pending quotes (status = 'sent' or 'viewed')
-        const { data: quotes, error } = await supabase
-          .from('quotes')
-          .select('id')
-          .eq('user_id', currentUser.id)
-          .in('status', ['sent', 'viewed']);
-
-        if (error) throw error;
-
-        setPendingQuotesCount(quotes?.length || 0);
-      } catch (error) {
-        console.error('Error fetching pending quotes count:', error);
-        setPendingQuotesCount(0);
-      }
-    };
-
-    fetchPendingQuotesCount();
-    const interval = setInterval(fetchPendingQuotesCount, 300000);
-    return () => clearInterval(interval);
-  }, [user]);
-
-  // Fetch pending quote follow-ups count
-  useEffect(() => {
-    const fetchPendingQuoteFollowUpsCount = async () => {
-      if (!user) return;
-      
-      try {
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-        if (!currentUser) return;
-
-        // Get active follow-ups that are due
-        const { data: followUps, error } = await supabase
-          .from('quote_follow_ups')
-          .select('id, next_attempt_at, scheduled_at')
-          .eq('user_id', currentUser.id)
-          .eq('status', 'active');
-
-        if (error) throw error;
-
-        // Count follow-ups that are due today or overdue
-        const today = new Date();
-        today.setHours(23, 59, 59, 999);
-        
-        const dueCount = followUps?.filter(followUp => {
-          const nextDate = followUp.next_attempt_at || followUp.scheduled_at;
-          if (!nextDate) return false;
-          const date = new Date(nextDate);
-          return date <= today;
-        }).length || 0;
-
-        setPendingQuoteFollowUpsCount(dueCount);
-      } catch (error) {
-        console.error('Error fetching pending quote follow-ups count:', error);
-        setPendingQuoteFollowUpsCount(0);
-      }
-    };
-
-    fetchPendingQuoteFollowUpsCount();
-    const interval = setInterval(fetchPendingQuoteFollowUpsCount, 300000);
-    return () => clearInterval(interval);
-  }, [user]);
-
-  // Fetch pending invoice follow-ups count
-  useEffect(() => {
-    const fetchPendingInvoiceFollowUpsCount = async () => {
-      if (!user) return;
-      
-      try {
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-        if (!currentUser) return;
-
-        // Get active invoice follow-ups that are due
-        const { data: followUps, error } = await supabase
-          .from('invoice_follow_ups')
-          .select('id, next_attempt_at, scheduled_at')
-          .eq('user_id', currentUser.id)
-          .eq('status', 'active');
-
-        if (error) throw error;
-
-        // Count follow-ups that are due today or overdue
-        const today = new Date();
-        today.setHours(23, 59, 59, 999);
-        
-        const dueCount = followUps?.filter(followUp => {
-          const nextDate = followUp.next_attempt_at || followUp.scheduled_at;
-          if (!nextDate) return false;
-          const date = new Date(nextDate);
-          return date <= today;
-        }).length || 0;
-
-        setPendingInvoiceFollowUpsCount(dueCount);
-      } catch (error) {
-        console.error('Error fetching pending invoice follow-ups count:', error);
-        setPendingInvoiceFollowUpsCount(0);
-      }
-    };
-
-    fetchPendingInvoiceFollowUpsCount();
-    const interval = setInterval(fetchPendingInvoiceFollowUpsCount, 300000);
-    return () => clearInterval(interval);
-  }, [user]);
-
-  // Fetch new leads count
-  useEffect(() => {
-    const fetchNewLeadsCount = async () => {
-      if (!user) return;
-      
-      try {
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-        if (!currentUser) return;
-
-        // Get new leads (status = 'new' or 'contacted' within last 7 days)
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-        const { data: leads, error } = await supabase
-          .from('lead_requests')
-          .select('id')
-          .eq('status', 'new');
-
-        if (error) throw error;
-
-        setNewLeadsCount(leads?.length || 0);
-      } catch (error) {
-        console.error('Error fetching new leads count:', error);
-        setNewLeadsCount(0);
-      }
-    };
-
-    fetchNewLeadsCount();
-    const interval = setInterval(fetchNewLeadsCount, 300000);
-    return () => clearInterval(interval);
-  }, [user]);
+  // All notification count fetching removed to reduce API load
 
   // Navigation items organized by categories with collapsible sections
   const navigationCategories = [
@@ -469,7 +236,7 @@ const MainSidebar = () => {
           label: t('sidebar.categories.main.items.leadsManagement'),
           path: '/leads-management',
           icon: 'Users',
-          notifications: newLeadsCount
+          notifications: 0
         }
       ]
     },
@@ -491,7 +258,7 @@ const MainSidebar = () => {
           label: t('sidebar.categories.quotes.items.quotesManagement'),
           path: '/quotes-management',
           icon: 'FolderOpen',
-          notifications: pendingQuotesCount
+          notifications: 0
         }
       ]
     },
@@ -506,14 +273,14 @@ const MainSidebar = () => {
           label: t('sidebar.categories.followUps.items.quotesFollowUp'),
           path: '/quotes-follow-up',
           icon: 'MessageCircle',
-          notifications: pendingQuoteFollowUpsCount
+          notifications: 0
         },
         {
           id: 'invoices-follow-up',
           label: t('sidebar.categories.followUps.items.invoicesFollowUp'),
           path: '/invoices-follow-up',
           icon: 'Bell',
-          notifications: pendingInvoiceFollowUpsCount
+          notifications: 0
         }
       ]
     },
@@ -528,14 +295,14 @@ const MainSidebar = () => {
           label: t('sidebar.categories.invoices.items.clientInvoices'),
           path: '/invoices-management',
           icon: 'Receipt',
-          notifications: overdueClientInvoicesCount
+          notifications: 0
         },
         {
           id: 'expense-invoices',
           label: t('sidebar.categories.invoices.items.expenseInvoices'),
           path: '/expense-invoices',
           icon: 'FileText',
-          notifications: overdueExpenseInvoicesCount
+          notifications: 0
         }
       ]
     },
