@@ -10,6 +10,7 @@ import { generateTaskSuggestionsWithGemini } from '../../../services/googleAISer
 import { enhanceTranscriptionWithAI } from '../../../services/googleAIService';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import { generateQuoteNumber } from '../../../services/quotesService';
+import { getPeppolVATSchemeId } from '../../../utils/peppolSchemes';
 
 const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjectInfoChange, onNext, leadId, userId }) => {
   const { t } = useTranslation();
@@ -699,8 +700,76 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
     }
   };
 
+  // Helper function to extract country code from VAT number
+  const extractCountryFromVAT = (vatNumber) => {
+    if (!vatNumber || vatNumber.length < 2) return null;
+    // Check if VAT number starts with country code (e.g., BE123456789)
+    const firstTwo = vatNumber.substring(0, 2).toUpperCase();
+    if (/^[A-Z]{2}$/.test(firstTwo)) {
+      return firstTwo;
+    }
+    return null;
+  };
+
+  // Helper function to clean VAT number (remove country prefix and non-alphanumeric)
+  const cleanVATNumber = (vatNumber) => {
+    if (!vatNumber) return '';
+    // Remove country prefix if present
+    let cleaned = vatNumber.replace(/^[A-Z]{2}/i, '');
+    // Remove all non-alphanumeric characters
+    cleaned = cleaned.replace(/[^A-Z0-9]/gi, '');
+    return cleaned.toUpperCase();
+  };
+
+  // Helper function to format Peppol ID from VAT number
+  const formatPeppolIdFromVAT = (vatNumber, countryCode) => {
+    if (!vatNumber || !vatNumber.trim()) return '';
+    
+    // Extract country from VAT number or use provided country code
+    let country = extractCountryFromVAT(vatNumber) || countryCode || 'BE';
+    country = country.toUpperCase();
+    
+    // Clean VAT number (remove country prefix and special characters)
+    const cleanedVAT = cleanVATNumber(vatNumber);
+    
+    if (!cleanedVAT) return '';
+    
+    // Get scheme ID for the country
+    const schemeId = getPeppolVATSchemeId(country);
+    if (!schemeId) return '';
+    
+    // Format: {SCHEME_ID}:{COUNTRY_CODE}{VAT_NUMBER}
+    // For Belgium: 9925:BE1009915101
+    // For other countries: {SCHEME_ID}:{COUNTRY_CODE}{VAT_NUMBER}
+    return `${schemeId}:${country}${cleanedVAT}`;
+  };
+
   const handleInputChange = (field, value) => {
-    setNewClient(prev => ({ ...prev, [field]: value }));
+    setNewClient(prev => {
+      const updated = { ...prev, [field]: value };
+      
+      // Auto-fill Peppol ID when VAT number is entered for professional clients
+      if (field === 'regNumber' && clientType === 'professionnel' && value && value.trim()) {
+        const countryCode = prev.country || 'BE';
+        const peppolId = formatPeppolIdFromVAT(value, countryCode);
+        
+        if (peppolId) {
+          updated.peppolId = peppolId;
+          updated.enablePeppol = true; // Auto-enable Peppol when VAT is entered
+        }
+      }
+      
+      // Update Peppol ID if country changes and VAT number exists
+      if (field === 'country' && clientType === 'professionnel' && prev.regNumber && prev.regNumber.trim()) {
+        const peppolId = formatPeppolIdFromVAT(prev.regNumber, value);
+        if (peppolId) {
+          updated.peppolId = peppolId;
+        }
+      }
+      
+      return updated;
+    });
+    
     // Clear any previous errors when user starts typing
     if (createError) setCreateError(null);
     if (createSuccess) setCreateSuccess(false);
@@ -1013,18 +1082,18 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
   };
 
   const countryOptions = [
-    { value: 'BE', label: 'Belgique' },
-    { value: 'FR', label: 'France' },
-    { value: 'CH', label: 'Suisse' },
-    { value: 'LU', label: 'Luxembourg' },
-    { value: 'CA', label: 'Canada' },
-    { value: 'US', label: 'États-Unis' },
-    { value: 'DE', label: 'Allemagne' },
-    { value: 'IT', label: 'Italie' },
-    { value: 'ES', label: 'Espagne' },
-    { value: 'NL', label: 'Pays-Bas' },
-    { value: 'GB', label: 'Royaume-Uni' },
-    { value: 'OTHER', label: 'Autre' }
+    { value: 'BE', label: t('clientManagement.countries.BE') },
+    { value: 'FR', label: t('clientManagement.countries.FR') },
+    { value: 'CH', label: t('clientManagement.countries.CH') },
+    { value: 'LU', label: t('clientManagement.countries.LU') },
+    { value: 'CA', label: t('clientManagement.countries.CA') },
+    { value: 'US', label: t('clientManagement.countries.US') },
+    { value: 'DE', label: t('clientManagement.countries.DE') },
+    { value: 'IT', label: t('clientManagement.countries.IT') },
+    { value: 'ES', label: t('clientManagement.countries.ES') },
+    { value: 'NL', label: t('clientManagement.countries.NL') },
+    { value: 'GB', label: t('clientManagement.countries.GB') },
+    { value: 'OTHER', label: t('clientManagement.countries.OTHER') }
   ];
 
   return (

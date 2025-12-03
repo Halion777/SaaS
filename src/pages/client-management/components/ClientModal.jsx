@@ -5,6 +5,7 @@ import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Icon from '../../../components/AppIcon';
 import { useTranslation } from 'react-i18next';
+import { getPeppolVATSchemeId } from '../../../utils/peppolSchemes';
 
 const ClientModal = ({ client, onSave, onClose }) => {
   const { t } = useTranslation();
@@ -99,8 +100,75 @@ const ClientModal = ({ client, onSave, onClose }) => {
     }
   }, [client]);
 
+  // Helper function to extract country code from VAT number
+  const extractCountryFromVAT = (vatNumber) => {
+    if (!vatNumber || vatNumber.length < 2) return null;
+    // Check if VAT number starts with country code (e.g., BE123456789)
+    const firstTwo = vatNumber.substring(0, 2).toUpperCase();
+    if (/^[A-Z]{2}$/.test(firstTwo)) {
+      return firstTwo;
+    }
+    return null;
+  };
+
+  // Helper function to clean VAT number (remove country prefix and non-alphanumeric)
+  const cleanVATNumber = (vatNumber) => {
+    if (!vatNumber) return '';
+    // Remove country prefix if present
+    let cleaned = vatNumber.replace(/^[A-Z]{2}/i, '');
+    // Remove all non-alphanumeric characters
+    cleaned = cleaned.replace(/[^A-Z0-9]/gi, '');
+    return cleaned.toUpperCase();
+  };
+
+  // Helper function to format Peppol ID from VAT number
+  const formatPeppolIdFromVAT = (vatNumber, countryCode) => {
+    if (!vatNumber || !vatNumber.trim()) return '';
+    
+    // Extract country from VAT number or use provided country code
+    let country = extractCountryFromVAT(vatNumber) || countryCode || 'BE';
+    country = country.toUpperCase();
+    
+    // Clean VAT number (remove country prefix and special characters)
+    const cleanedVAT = cleanVATNumber(vatNumber);
+    
+    if (!cleanedVAT) return '';
+    
+    // Get scheme ID for the country
+    const schemeId = getPeppolVATSchemeId(country);
+    if (!schemeId) return '';
+    
+    // Format: {SCHEME_ID}:{COUNTRY_CODE}{VAT_NUMBER}
+    // For Belgium: 9925:BE1009915101
+    // For other countries: {SCHEME_ID}:{COUNTRY_CODE}{VAT_NUMBER}
+    return `${schemeId}:${country}${cleanedVAT}`;
+  };
+
   const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      
+      // Auto-fill Peppol ID when VAT number is entered for professional clients
+      if (field === 'regNumber' && prev.type === 'professionnel' && value && value.trim()) {
+        const countryCode = prev.country || 'BE';
+        const peppolId = formatPeppolIdFromVAT(value, countryCode);
+        
+        if (peppolId) {
+          updated.peppolId = peppolId;
+          updated.enablePeppol = true; // Auto-enable Peppol when VAT is entered
+        }
+      }
+      
+      // Update Peppol ID if country changes and VAT number exists
+      if (field === 'country' && prev.type === 'professionnel' && prev.regNumber && prev.regNumber.trim()) {
+        const peppolId = formatPeppolIdFromVAT(prev.regNumber, value);
+        if (peppolId) {
+          updated.peppolId = peppolId;
+        }
+      }
+      
+      return updated;
+    });
   };
 
   const handlePreferenceToggle = (preference) => {

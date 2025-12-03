@@ -11,7 +11,8 @@ This document describes the complete user registration flow, including new regis
 3. [Data Persistence Strategy](#data-persistence-strategy)
 4. [Email Verification](#email-verification)
 5. [Payment Flow](#payment-flow)
-6. [Error Handling](#error-handling)
+6. [Login Flow with Canceled Subscription](#login-flow-with-canceled-subscription)
+7. [Error Handling](#error-handling)
 
 ---
 
@@ -339,6 +340,132 @@ This document describes the complete user registration flow, including new regis
 
 ---
 
+## Login Flow with Canceled Subscription
+
+### Overview
+
+When a user with a canceled or expired subscription attempts to log in, the system follows a specific flow to handle access control and provide options for subscription renewal.
+
+### Login Process
+
+**Step 1: Authentication**
+1. User enters email and password
+2. System authenticates via `supabase.auth.signInWithPassword`
+3. If credentials are invalid → Shows error message
+4. If credentials are valid → Proceeds to Step 2
+
+**Step 2: Registration Completion Check**
+1. System checks if user exists in `users` table
+2. If user doesn't exist → Signs out, shows "Registration incomplete" error
+3. If `registration_completed` is `false` → Signs out, shows "Registration incomplete" error with "Complete Registration" button
+4. If `registration_completed` is `true` → Proceeds to Step 3
+
+**Step 3: Subscription Status Check (ProtectedRoute)**
+1. User is redirected to dashboard (or role-based page)
+2. `ProtectedRoute` component checks subscription status:
+   - **Super Admin Check:** If `role === 'superadmin'` → Access granted (bypasses subscription check)
+   - **Lifetime Access Check:** If `has_lifetime_access === true` → Access granted (bypasses subscription check)
+   - **Support Email Check:** Special email gets lifetime access automatically
+   - **Subscription Fetch:** Queries `subscriptions` table for latest subscription
+
+**Step 4: Subscription Validation**
+1. System checks subscription data:
+   - **Status Check:** Must be `'active'`, `'trialing'`, or `'trial'`
+   - **Trial Expiration:** If `trial_end` has passed and status is `'trialing'` or `'trial'` → Expired
+   - **Period End:** If `current_period_end` has passed → Expired
+   - **Cancel Flag:** If `cancel_at_period_end === true`:
+     - Subscription remains active until `current_period_end`
+     - User can access app until period ends
+     - After period ends → Expired
+
+**Step 5: Access Control**
+1. **If Subscription is Active:**
+   - User gains full access to application
+   - Subscription status cached for 30 minutes
+   - Normal app usage continues
+
+2. **If Subscription is Canceled/Expired:**
+   - **Expired Modal Displayed:**
+     - Title: "Subscription Expired" or "No Active Subscription"
+     - Message: Explains subscription status
+     - Two action buttons:
+       - **"Manage Subscription"** → Navigates to `/subscription` page
+       - **"Logout"** → Signs out user and redirects to login
+
+### Canceled Subscription States
+
+**1. Canceled at Period End (`cancel_at_period_end: true`)**
+- Subscription status remains `'active'` until `current_period_end`
+- User retains access until billing period ends
+- After period ends → Status changes to `'expired'`
+- User can reactivate before period ends from subscription page
+
+**2. Immediately Canceled (`status: 'cancelled'`)**
+- Access is immediately blocked
+- Expired modal is shown
+- User must reactivate subscription to regain access
+
+**3. Expired Subscription**
+- `current_period_end` has passed
+- `trial_end` has passed (for trial subscriptions)
+- Access is blocked
+- Expired modal is shown
+
+**4. No Subscription Found**
+- No record in `subscriptions` table
+- Access is blocked
+- Shows "No Active Subscription" modal
+
+### Subscription Reactivation Flow
+
+**From Expired Modal:**
+1. User clicks "Manage Subscription" button
+2. Redirects to `/subscription` page
+3. User can:
+   - View current subscription status
+   - Select a new plan
+   - Reactivate subscription
+   - Update payment method
+
+**From Subscription Page:**
+1. User selects a plan (Starter/Pro)
+2. User selects billing cycle (Monthly/Yearly)
+3. User clicks "Subscribe" or "Reactivate"
+4. System creates Stripe checkout session
+5. User completes payment
+6. Subscription status updated to `'active'`
+7. User regains full access
+
+### Caching Strategy
+
+**Subscription Cache:**
+- Stored in `localStorage` with key `haliqo_subscription_cache`
+- Cache duration: 30 minutes
+- Cache includes:
+  - User ID
+  - Subscription status
+  - Subscription data (dates, status)
+  - Super admin flag
+  - Lifetime access flag
+  - Timestamp
+
+**Cache Usage:**
+- Primary: Always fetch fresh data from database
+- Fallback: Use cache only if network request fails
+- Expiration Check: Even with valid cache, system checks if subscription dates have passed
+- Cache Reset: Updated on every successful subscription check (resets 30-min timer)
+
+### Important Notes
+
+⚠️ **Critical Behaviors:**
+1. **Registration Must Be Complete:** Users with `registration_completed: false` cannot log in, even if subscription is active
+2. **Period End Access:** Users with `cancel_at_period_end: true` retain access until `current_period_end` date
+3. **Super Admin Bypass:** Super admins and lifetime access users bypass all subscription checks
+4. **Network Resilience:** System uses cached subscription data if network fails to prevent locking users out
+5. **Date Validation:** System checks both subscription status and date-based expiration (trial_end, current_period_end)
+
+---
+
 ## Error Handling
 
 ### Email Already Registered
@@ -369,6 +496,17 @@ This document describes the complete user registration flow, including new regis
 - Errors are logged but don't block registration
 - Data persistence is best-effort
 - `sessionStorage` serves as backup
+
+### Subscription Errors
+
+**Network Errors:**
+- System falls back to cached subscription data
+- If no cache available → Allows access (prevents locking users out)
+- Logs error for debugging
+
+**Subscription Not Found:**
+- Shows "No Active Subscription" modal
+- User can navigate to subscription page to subscribe
 
 ---
 
@@ -460,6 +598,21 @@ Stores OTP codes for email verification.
 - `expires_at` (TIMESTAMP, 10 minutes from creation)
 - `attempts` (INTEGER, max 5)
 - `created_at` (TIMESTAMP)
+
+### `subscriptions` Table
+Stores subscription information for users.
+
+**Key Fields:**
+- `id` (UUID, primary key)
+- `user_id` (foreign key to users)
+- `status` (ENUM: 'active', 'trialing', 'trial', 'cancelled', 'past_due', 'unpaid')
+- `cancel_at_period_end` (BOOLEAN) - If true, subscription will cancel at period end
+- `current_period_end` (TIMESTAMP) - End date of current billing period
+- `trial_end` (TIMESTAMP) - End date of trial period (if applicable)
+- `stripe_subscription_id` (string) - Stripe subscription ID
+- `stripe_customer_id` (string) - Stripe customer ID
+- `created_at` (TIMESTAMP)
+- `updated_at` (TIMESTAMP)
 
 ---
 
@@ -569,11 +722,24 @@ When resuming registration:
 - [ ] User can proceed through steps
 - [ ] Payment completes registration
 
+### Login with Canceled Subscription
+- [ ] User with canceled subscription can log in (authentication succeeds)
+- [ ] Registration completion check passes
+- [ ] User redirected to dashboard
+- [ ] ProtectedRoute checks subscription status
+- [ ] Expired modal is displayed for canceled/expired subscriptions
+- [ ] "Manage Subscription" button navigates to subscription page
+- [ ] "Logout" button signs out user
+- [ ] User can reactivate subscription from subscription page
+- [ ] After reactivation, user regains full access
+
 ### Error Cases
 - [ ] Email already registered (completed) → Error shown
 - [ ] Password mismatch on resume → Error with options shown
 - [ ] Payment failure → Data preserved, can resume
 - [ ] OTP expiration → Error shown, can resend
+- [ ] Canceled subscription → Expired modal shown, can reactivate
+- [ ] Network error during subscription check → Falls back to cache
 
 ---
 
@@ -599,15 +765,23 @@ When resuming registration:
 
 ## Related Files
 
+### Registration Flow
 - `src/pages/register/index.jsx` - Main registration component
 - `src/pages/register/components/StepOne.jsx` - Step 1 with email verification
 - `src/pages/register/components/StepTwo.jsx` - Step 2 with company info
 - `src/pages/register/components/StepThree.jsx` - Step 3 with plan selection
-- `src/services/authService.js` - Authentication service
+- `src/services/authService.js` - Authentication service (login, registration checks)
 - `src/services/emailVerificationService.js` - Email verification service
 - `src/services/registrationService.js` - Registration completion service
 - `supabase/functions/check-user-registration/index.ts` - Edge function for checking registration status
 - `supabase/functions/email-verification-otp/index.ts` - Edge function for OTP verification
+
+### Login & Subscription Management
+- `src/pages/login/index.jsx` - Login page component
+- `src/components/ProtectedRoute.jsx` - Route protection with subscription checks
+- `src/context/AuthContext.jsx` - Authentication context and state management
+- `src/pages/subscription/index.jsx` - Subscription management page
+- `src/services/stripeService.js` - Stripe integration service
 
 ---
 

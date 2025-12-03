@@ -275,10 +275,65 @@ const SuperAdminUsers = () => {
         // Removed suspend/activate actions since we don't use active/inactive status
         case 'delete':
           if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-            await supabase
-              .from('users')
-              .delete()
-              .eq('id', userId);
+            // First, delete from auth.users (this will cascade to public.users and then to peppol_settings)
+            // Note: This requires admin privileges, so we'll try both approaches
+            try {
+              // Try to delete from auth.users first (requires admin client)
+              const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+              if (authError) {
+                console.warn('Could not delete from auth.users (may require admin privileges):', authError);
+                // Fallback: Delete from public.users directly (CASCADE should handle peppol_settings)
+                const { error: publicError } = await supabase
+                  .from('users')
+                  .delete()
+                  .eq('id', userId);
+                
+                if (publicError) {
+                  console.error('Error deleting from public.users:', publicError);
+                  alert(`Error deleting user: ${publicError.message || 'Unknown error'}`);
+                  return;
+                }
+              }
+            } catch (error) {
+              console.error('Error in delete operation:', error);
+              // Fallback: Try deleting from public.users directly
+              const { error: publicError } = await supabase
+                .from('users')
+                .delete()
+                .eq('id', userId);
+              
+              if (publicError) {
+                console.error('Error deleting from public.users:', publicError);
+                alert(`Error deleting user: ${publicError.message || 'Unknown error'}`);
+                return;
+              }
+            }
+            
+            // Verify peppol_settings was deleted (CASCADE should have handled it)
+            const { data: remainingSettings } = await supabase
+              .from('peppol_settings')
+              .select('id')
+              .eq('user_id', userId)
+              .maybeSingle();
+            
+            if (remainingSettings) {
+              console.warn('Peppol settings still exist after user deletion. Using edge function to bypass RLS...');
+              // Use edge function with service role to bypass RLS
+              try {
+                const { data: deleteResult, error: deleteError } = await supabase.functions.invoke('admin-delete-user-peppol', {
+                  body: { userId }
+                });
+                
+                if (deleteError || !deleteResult?.success) {
+                  console.error('Error deleting Peppol data via edge function:', deleteError || deleteResult);
+                  // Continue anyway - user is deleted, Peppol data cleanup can be done manually
+                }
+              } catch (error) {
+                console.error('Error calling admin-delete-user-peppol edge function:', error);
+                // Continue anyway - user is deleted, Peppol data cleanup can be done manually
+              }
+            }
+            
             await loadUsers();
           }
           break;
@@ -314,10 +369,53 @@ const SuperAdminUsers = () => {
         // Removed bulk activate/suspend actions since we don't use active/inactive status
         case 'delete':
           if (confirm(`Are you sure you want to delete ${usersToProcess.length} user(s)? This action cannot be undone.`)) {
-            await supabase
-              .from('users')
-              .delete()
-              .in('id', userIdsToProcess);
+            // Delete users and handle CASCADE for peppol_settings
+            for (const userId of userIdsToProcess) {
+              try {
+                // Try to delete from auth.users first (requires admin privileges)
+                const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+                if (authError) {
+                  console.warn(`Could not delete user ${userId} from auth.users:`, authError);
+                  // Fallback: Delete from public.users directly (CASCADE should handle peppol_settings)
+                  const { error: publicError } = await supabase
+                    .from('users')
+                    .delete()
+                    .eq('id', userId);
+                  
+                  if (publicError) {
+                    console.error(`Error deleting user ${userId} from public.users:`, publicError);
+                    continue; // Skip to next user
+                  }
+                }
+                
+                // Verify peppol_settings was deleted (CASCADE should have handled it)
+                const { data: remainingSettings } = await supabase
+                  .from('peppol_settings')
+                  .select('id')
+                  .eq('user_id', userId)
+                  .maybeSingle();
+                
+                if (remainingSettings) {
+                  console.warn(`Peppol settings still exist for user ${userId}. Using edge function to bypass RLS...`);
+                  // Use edge function with service role to bypass RLS
+                  try {
+                    const { data: deleteResult, error: deleteError } = await supabase.functions.invoke('admin-delete-user-peppol', {
+                      body: { userId }
+                    });
+                    
+                    if (deleteError || !deleteResult?.success) {
+                      console.error(`Error deleting Peppol data for user ${userId} via edge function:`, deleteError || deleteResult);
+                      // Continue anyway - user is deleted, Peppol data cleanup can be done manually
+                    }
+                  } catch (error) {
+                    console.error(`Error calling admin-delete-user-peppol edge function for user ${userId}:`, error);
+                    // Continue anyway - user is deleted, Peppol data cleanup can be done manually
+                  }
+                }
+              } catch (error) {
+                console.error(`Error deleting user ${userId}:`, error);
+              }
+            }
           }
           break;
       default:
@@ -694,8 +792,8 @@ const SuperAdminUsers = () => {
                               </div>
                               <div className="ml-4">
                                 <div className="flex items-center gap-2">
-                                  <div className="text-sm font-medium text-foreground">
-                                    {user.full_name || 'No Name'}
+                                <div className="text-sm font-medium text-foreground">
+                                  {user.full_name || 'No Name'}
                                   </div>
                                   {user.has_lifetime_access && (
                                     <span className="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">
@@ -881,9 +979,9 @@ const SuperAdminUsers = () => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <h3 className="text-sm font-semibold text-foreground truncate">
-                                {user.full_name || 'No Name'}
-                              </h3>
+                            <h3 className="text-sm font-semibold text-foreground truncate">
+                              {user.full_name || 'No Name'}
+                            </h3>
                               {user.has_lifetime_access && (
                                 <span className="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800 flex-shrink-0">
                                   <Icon name="Gift" size={10} className="mr-1" />

@@ -387,106 +387,40 @@ const Peppol = () => {
   };
 
   // Cleanup all Peppol-related data for a user
+  // Uses edge function to bypass RLS
   const cleanupPeppolData = async (peppolIdentifier) => {
     try {
-      // First, find the user_id from peppol_settings
-      const { data: peppolSettings, error: settingsError } = await supabase
-        .from('peppol_settings')
-        .select('user_id')
-        .eq('peppol_id', peppolIdentifier)
-        .single();
+      // Use edge function with service role to bypass RLS
+      const { data: deleteResult, error: deleteError } = await supabase.functions.invoke('admin-delete-user-peppol', {
+        body: { peppolIdentifier }
+      });
 
-      if (settingsError || !peppolSettings) {
-        console.warn(`No peppol_settings found for Peppol ID: ${peppolIdentifier}`);
-        return { success: false, message: 'User not found for this Peppol ID' };
+      if (deleteError) {
+        console.error('Error deleting Peppol data via edge function:', deleteError);
+        return { 
+          success: false, 
+          message: deleteError.message || 'Failed to delete Peppol data' 
+        };
       }
 
-      const userId = peppolSettings.user_id;
-
-      // Delete from peppol_settings
-      const { error: deleteSettingsError } = await supabase
-        .from('peppol_settings')
-        .delete()
-        .eq('user_id', userId);
-
-      if (deleteSettingsError) {
-        console.error('Error deleting peppol_settings:', deleteSettingsError);
+      if (!deleteResult?.success) {
+        console.error('Peppol data deletion failed:', deleteResult);
+        return { 
+          success: false, 
+          message: deleteResult?.message || deleteResult?.error || 'Failed to delete Peppol data' 
+        };
       }
 
-      // Delete from peppol_participants
-      const { error: deleteParticipantsError } = await supabase
-        .from('peppol_participants')
-        .delete()
-        .eq('user_id', userId);
-
-      if (deleteParticipantsError) {
-        console.error('Error deleting peppol_participants:', deleteParticipantsError);
-      }
-
-      // Delete from peppol_invoices
-      const { error: deleteInvoicesError } = await supabase
-        .from('peppol_invoices')
-        .delete()
-        .eq('user_id', userId);
-
-      if (deleteInvoicesError) {
-        console.error('Error deleting peppol_invoices:', deleteInvoicesError);
-      }
-
-      // Clean up Peppol fields from invoices table
-      const { error: updateInvoicesError } = await supabase
-        .from('invoices')
-        .update({
-          peppol_enabled: false,
-          peppol_status: null,
-          peppol_message_id: null,
-          peppol_sent_at: null,
-          peppol_delivered_at: null,
-          peppol_error_message: null,
-          receiver_peppol_id: null,
-          ubl_xml: null,
-          peppol_metadata: null
-        })
-        .eq('user_id', userId);
-
-      if (updateInvoicesError) {
-        console.error('Error cleaning up invoices Peppol data:', updateInvoicesError);
-      }
-
-      // Clean up Peppol fields from expense_invoices table
-      const { error: updateExpenseInvoicesError } = await supabase
-        .from('expense_invoices')
-        .update({
-          peppol_enabled: false,
-          peppol_message_id: null,
-          peppol_received_at: null,
-          sender_peppol_id: null,
-          ubl_xml: null,
-          peppol_metadata: null
-        })
-        .eq('user_id', userId);
-
-      if (updateExpenseInvoicesError) {
-        console.error('Error cleaning up expense_invoices Peppol data:', updateExpenseInvoicesError);
-      }
-
-      // Clean up Peppol fields from clients table
-      const { error: updateClientsError } = await supabase
-        .from('clients')
-        .update({
-          peppol_id: null,
-          peppol_enabled: false
-        })
-        .eq('user_id', userId);
-
-      if (updateClientsError) {
-        console.error('Error cleaning up clients Peppol data:', updateClientsError);
-      }
-
-      return { success: true, message: 'All Peppol data cleaned up successfully' };
+      return { 
+        success: true, 
+        message: deleteResult.message || 'All Peppol data cleaned up successfully' 
+      };
     } catch (error) {
       console.error('Error in cleanupPeppolData:', error);
-      return { success: false, message: error.message || 'Unknown error during cleanup' };
+      return { 
+        success: false, 
+        message: error.message || 'Unknown error during cleanup' 
+      };
     }
   };
 

@@ -211,13 +211,13 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
         // If network error on subscription fetch, use cache as fallback
         if (error && error.code !== 'PGRST116') {
           if (cachedData) {
-          // Check if subscription expired based on cached dates
+            // Check if subscription expired based on cached dates
           if (cachedData.subscriptionExpired && !cachedData.hasLifetimeAccess) {
-            setShowExpiredModal(true);
-            setSubscriptionStatus('expired');
+              setShowExpiredModal(true);
+              setSubscriptionStatus('expired');
           } else if (cachedData.status === 'active' || cachedData.hasLifetimeAccess) {
-            setSubscriptionStatus('active');
-          } else {
+              setSubscriptionStatus('active');
+            } else {
               setShowExpiredModal(true);
               setSubscriptionStatus(cachedData.status);
             }
@@ -272,8 +272,8 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
             setShowExpiredModal(true);
             setSubscriptionStatus('expired');
             } else if (cachedData.status === 'active' || cachedData.isSuperAdmin || cachedData.hasLifetimeAccess) {
-              setSubscriptionStatus('active');
-            } else {
+            setSubscriptionStatus('active');
+          } else {
             setShowExpiredModal(true);
             setSubscriptionStatus(cachedData.status);
           }

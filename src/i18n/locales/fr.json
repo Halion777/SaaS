@@ -3460,7 +3460,9 @@
       "promotionalMessagePlaceholder": "Ex: -10% si signé avant 48h",
       "generalConditions": "Conditions générales",
       "predefinedTemplates": "Modèles prédéfinis par langue",
-      "enterConditions": "Entrez vos conditions générales..."
+      "enterConditions": "Entrez vos conditions générales...",
+      "materialPriceDisplay": "Afficher les prix des matériaux",
+      "materialPriceDisplayDesc": "Contrôle l'affichage des prix matériaux dans l'aperçu du devis"
     },
     "personalization": {
       "colorSchemes": "Schémas de couleurs",

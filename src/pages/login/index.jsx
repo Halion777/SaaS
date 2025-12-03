@@ -79,7 +79,7 @@ const Login = () => {
           setTimeout(() => {
             if (errorRef.current) {
               setError(errorRef.current);
-            }
+        }
           }, 50);
         }
         
@@ -159,13 +159,13 @@ const Login = () => {
             {/* Error Display */}
             {error && (
               <div className="mb-6">
-                <ErrorMessage 
-                  message={error}
+              <ErrorMessage 
+                message={error}
                   onClose={() => {
                     setError('');
                     errorRef.current = '';
                   }}
-                />
+              />
               </div>
             )}
             

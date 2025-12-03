@@ -430,7 +430,7 @@ const Register = () => {
     try {
       const isValid = await validateStep(currentStep);
       if (isValid) {
-        setCurrentStep(prev => prev + 1);
+      setCurrentStep(prev => prev + 1);
       }
     } finally {
       setIsValidatingEmail(false);
@@ -547,7 +547,7 @@ const Register = () => {
         // Save Step 2 fields to company_profiles table BEFORE payment
         // This ensures data is preserved even if payment fails
         await saveCompanyProfileBeforePayment(signInData.user.id, formData);
-
+        
         // Proceed directly to Stripe checkout with updated user data
         const { data: stripeData, error: stripeError } = await createCheckoutSession({
           planType: formData.selectedPlan,
@@ -593,8 +593,8 @@ const Register = () => {
           
           // Small delay to show message before redirect
           setTimeout(() => {
-            // Update registration pending with complete user data
-            sessionStorage.setItem('registration_pending', JSON.stringify({
+          // Update registration pending with complete user data
+          sessionStorage.setItem('registration_pending', JSON.stringify({
             userId: signInData.user.id,
             email: formData.email.toLowerCase().trim(),
           firstName: formData.firstName,

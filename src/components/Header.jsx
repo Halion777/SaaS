@@ -202,56 +202,56 @@ const Header = () => {
             </Link>
             
             {/* Desktop Navigation - Show for all users (authenticated users can access public pages) */}
-            <nav className="hidden lg:flex items-center space-x-8">
-              <Link 
-                to="/"
-                className={`text-gray-700 hover:text-[#0036ab] transition-colors font-medium ${
-                  isActive('/') ? 'text-[#0036ab]' : ''
-                }`}
-              >
-                {t('nav.home')}
-              </Link>
-              <Link 
-                to="/about"
-                className={`text-gray-700 hover:text-[#0036ab] transition-colors font-medium ${
-                  isActive('/about') ? 'text-[#0036ab]' : ''
-                }`}
-              >
-                {t('nav.about')}
-              </Link>
-              <Link 
-                to="/pricing"
-                className={`text-gray-700 hover:text-[#0036ab] transition-colors font-medium ${
-                  isActive('/pricing') ? 'text-[#0036ab]' : ''
-                }`}
-              >
-                {t('nav.pricing')}
-              </Link>
-              <Link 
-                to="/find-artisan"
-                className={`text-gray-700 hover:text-[#0036ab] transition-colors font-medium ${
-                  isActive('/find-artisan') ? 'text-[#0036ab]' : ''
-                }`}
-              >
-                {t('nav.findArtisan')}
-              </Link>
-              <Link 
-                to="/contact"
-                className={`text-gray-700 hover:text-[#0036ab] transition-colors font-medium ${
-                  isActive('/contact') ? 'text-[#0036ab]' : ''
-                }`}
-              >
-                {t('nav.contact')}
-              </Link>
-              <Link 
-                to="/blog"
-                className={`text-gray-700 hover:text-[#0036ab] transition-colors font-medium ${
-                  isActive('/blog') ? 'text-[#0036ab]' : ''
-                }`}
-              >
-                {t('nav.blog')}
-              </Link>
-            </nav>
+              <nav className="hidden lg:flex items-center space-x-8">
+                <Link 
+                  to="/"
+                  className={`text-gray-700 hover:text-[#0036ab] transition-colors font-medium ${
+                    isActive('/') ? 'text-[#0036ab]' : ''
+                  }`}
+                >
+                  {t('nav.home')}
+                </Link>
+                <Link 
+                  to="/about"
+                  className={`text-gray-700 hover:text-[#0036ab] transition-colors font-medium ${
+                    isActive('/about') ? 'text-[#0036ab]' : ''
+                  }`}
+                >
+                  {t('nav.about')}
+                </Link>
+                <Link 
+                  to="/pricing"
+                  className={`text-gray-700 hover:text-[#0036ab] transition-colors font-medium ${
+                    isActive('/pricing') ? 'text-[#0036ab]' : ''
+                  }`}
+                >
+                  {t('nav.pricing')}
+                </Link>
+                <Link 
+                  to="/find-artisan"
+                  className={`text-gray-700 hover:text-[#0036ab] transition-colors font-medium ${
+                    isActive('/find-artisan') ? 'text-[#0036ab]' : ''
+                  }`}
+                >
+                  {t('nav.findArtisan')}
+                </Link>
+                <Link 
+                  to="/contact"
+                  className={`text-gray-700 hover:text-[#0036ab] transition-colors font-medium ${
+                    isActive('/contact') ? 'text-[#0036ab]' : ''
+                  }`}
+                >
+                  {t('nav.contact')}
+                </Link>
+                <Link 
+                  to="/blog"
+                  className={`text-gray-700 hover:text-[#0036ab] transition-colors font-medium ${
+                    isActive('/blog') ? 'text-[#0036ab]' : ''
+                  }`}
+                >
+                  {t('nav.blog')}
+                </Link>
+              </nav>
             
             {/* Desktop Right Section */}
             <div className="hidden lg:flex items-center space-x-4">
@@ -313,71 +313,71 @@ const Header = () => {
           }`}>
             <div className="py-4 border-t border-gray-100">
               {/* Mobile Navigation Links - Show for all users */}
-              <nav className="flex flex-col space-y-1 mb-4">
-                <Link 
-                  to="/"
-                  className={`px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium ${
-                    isActive('/') ? 'bg-[#0036ab]/5 text-[#0036ab]' : ''
-                  }`}
-                >
-                  {t('nav.home')}
-                </Link>
-                <Link 
-                  to="/about"
-                  className={`px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium ${
-                    isActive('/about') ? 'bg-[#0036ab]/5 text-[#0036ab]' : ''
-                  }`}
-                >
-                  {t('nav.about')}
-                </Link>
-                <Link 
-                  to="/pricing"
-                  className={`px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium ${
-                    isActive('/pricing') ? 'bg-[#0036ab]/5 text-[#0036ab]' : ''
-                  }`}
-                >
-                  {t('nav.pricing')}
-                </Link>
-                <Link 
-                  to="/find-artisan"
-                  className={`px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium ${
-                    isActive('/find-artisan') ? 'bg-[#0036ab]/5 text-[#0036ab]' : ''
-                  }`}
-                >
-                  {t('nav.findArtisan')}
-                </Link>
-                <Link 
-                  to="/contact"
-                  className={`px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium ${
-                    isActive('/contact') ? 'bg-[#0036ab]/5 text-[#0036ab]' : ''
-                  }`}
-                >
-                  {t('nav.contact')}
-                </Link>
-                <Link 
-                  to="/blog"
-                  className={`px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium ${
-                    isActive('/blog') ? 'bg-[#0036ab]/5 text-[#0036ab]' : ''
-                  }`}
-                >
-                  {t('nav.blog')}
-                </Link>
-              </nav>
-              
-              {/* Mobile Dashboard and Authentication */}
+                  <nav className="flex flex-col space-y-1 mb-4">
+                    <Link 
+                      to="/"
+                      className={`px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium ${
+                        isActive('/') ? 'bg-[#0036ab]/5 text-[#0036ab]' : ''
+                      }`}
+                    >
+                      {t('nav.home')}
+                    </Link>
+                    <Link 
+                      to="/about"
+                      className={`px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium ${
+                        isActive('/about') ? 'bg-[#0036ab]/5 text-[#0036ab]' : ''
+                      }`}
+                    >
+                      {t('nav.about')}
+                    </Link>
+                    <Link 
+                      to="/pricing"
+                      className={`px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium ${
+                        isActive('/pricing') ? 'bg-[#0036ab]/5 text-[#0036ab]' : ''
+                      }`}
+                    >
+                      {t('nav.pricing')}
+                    </Link>
+                    <Link 
+                      to="/find-artisan"
+                      className={`px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium ${
+                        isActive('/find-artisan') ? 'bg-[#0036ab]/5 text-[#0036ab]' : ''
+                      }`}
+                    >
+                      {t('nav.findArtisan')}
+                    </Link>
+                    <Link 
+                      to="/contact"
+                      className={`px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium ${
+                        isActive('/contact') ? 'bg-[#0036ab]/5 text-[#0036ab]' : ''
+                      }`}
+                    >
+                      {t('nav.contact')}
+                    </Link>
+                    <Link 
+                      to="/blog"
+                      className={`px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium ${
+                        isActive('/blog') ? 'bg-[#0036ab]/5 text-[#0036ab]' : ''
+                      }`}
+                    >
+                      {t('nav.blog')}
+                    </Link>
+                  </nav>
+                  
+                  {/* Mobile Dashboard and Authentication */}
               {!isAuthenticated ? (
-                <div className="flex flex-col space-y-3 px-4">
-                  <div className="flex items-center justify-between">
-                    <Link to="/login" className="text-gray-700 hover:text-[#0036ab] transition-colors font-medium">
-                      {t('nav.login')}
+                  <div className="flex flex-col space-y-3 px-4">
+                    <div className="flex items-center justify-between">
+                      <Link to="/login" className="text-gray-700 hover:text-[#0036ab] transition-colors font-medium">
+                        {t('nav.login')}
+                      </Link>
+                    </div>
+                    <Link to="/register" className="w-full">
+                      <Button variant="primary" size="sm" className="w-full bg-[#0036ab] hover:bg-[#0036ab]/90 text-white font-medium">
+                        {t('nav.freeTrial')}
+                      </Button>
                     </Link>
                   </div>
-                  <Link to="/register" className="w-full">
-                    <Button variant="primary" size="sm" className="w-full bg-[#0036ab] hover:bg-[#0036ab]/90 text-white font-medium">
-                      {t('nav.freeTrial')}
-                    </Button>
-                  </Link>
-                </div>
               ) : (
                 /* Mobile Navigation for Authenticated Users */
                 <div className="flex flex-col space-y-3 px-4">

@@ -193,8 +193,8 @@ const FinancialConfig = ({
               <Icon name="Package" size={16} className="text-yellow-600" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">Afficher les prix des matériaux</h3>
-              <p className="text-xs text-gray-600">Contrôle l'affichage des prix matériaux dans l'aperçu du devis</p>
+              <h3 className="text-sm font-semibold text-gray-900">{t('quoteCreation.financialConfig.materialPriceDisplay', 'Display Material Prices')}</h3>
+              <p className="text-xs text-gray-600">{t('quoteCreation.financialConfig.materialPriceDisplayDesc', 'Controls the display of material prices in the quote preview')}</p>
             </div>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">

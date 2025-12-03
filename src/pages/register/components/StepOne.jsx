@@ -422,11 +422,11 @@ const StepOne = ({ formData, updateFormData, errors, onIncompleteRegistrationDet
           <div className="space-y-2">
             <div className="flex items-start gap-2">
               <div className="flex-1">
-                <Input
-                  label={t('registerForm.step1.email')}
-                  type="email"
-                  placeholder={t('registerForm.step1.emailPlaceholder')}
-                  value={formData.email}
+        <Input
+          label={t('registerForm.step1.email')}
+          type="email"
+          placeholder={t('registerForm.step1.emailPlaceholder')}
+          value={formData.email}
                   onChange={(e) => {
                     updateFormData('email', e.target.value);
                     setEmailVerified(false);
@@ -435,9 +435,9 @@ const StepOne = ({ formData, updateFormData, errors, onIncompleteRegistrationDet
                     setVerificationSuccess(false);
                     updateFormData('emailVerified', false);
                   }}
-                  error={errors.email}
-                  required
-                />
+          error={errors.email}
+          required
+        />
               </div>
               {formData.email && /\S+@\S+\.\S+/.test(formData.email) && (
                 <Button

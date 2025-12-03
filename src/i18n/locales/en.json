@@ -3406,7 +3406,9 @@
       "promotionalMessagePlaceholder": "Ex: -10% if signed within 48h",
       "generalConditions": "General Conditions",
       "predefinedTemplates": "Predefined templates by language",
-      "enterConditions": "Enter your general conditions..."
+      "enterConditions": "Enter your general conditions...",
+      "materialPriceDisplay": "Display Material Prices",
+      "materialPriceDisplayDesc": "Controls the display of material prices in the quote preview"
     },
     "errors": {
       "clientRequired": "Please select a client",

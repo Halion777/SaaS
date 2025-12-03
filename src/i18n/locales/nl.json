@@ -3447,7 +3447,9 @@
       "promotionalMessagePlaceholder": "Bijv: -10% indien getekend binnen 48 uur",
       "generalConditions": "Algemene Voorwaarden",
       "predefinedTemplates": "Voorgedefinieerde sjablonen per taal",
-      "enterConditions": "Voer uw algemene voorwaarden in..."
+      "enterConditions": "Voer uw algemene voorwaarden in...",
+      "materialPriceDisplay": "Toon materiaalprijzen",
+      "materialPriceDisplayDesc": "Bepaalt de weergave van materiaalprijzen in de offertevoorvertoning"
     },
     "personalization": {
       "colorSchemes": "Kleurenschema's",
