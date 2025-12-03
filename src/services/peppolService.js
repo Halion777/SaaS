@@ -952,22 +952,16 @@ export class PeppolService {
   }
 
   // Check if user is a business user
+  // Note: All users are allowed to use Peppol regardless of business size
+  // Solo users may still have companies and need Peppol services
   async isBusinessUser() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return false;
 
-      const { data: userData, error } = await supabase
-        .from('users')
-        .select('business_size')
-        .eq('id', user.id)
-        .single();
-
-      if (error) return false;
-
-      // Business sizes: small, medium, large (exclude 'solo' which is individual)
-      const businessSizes = ['small', 'medium', 'large'];
-      return businessSizes.includes(userData.business_size);
+      // Allow all authenticated users to use Peppol
+      // Business size check removed - solo users can also have companies
+      return true;
     } catch (error) {
       console.error('Failed to check business user:', error);
       return false;
@@ -980,14 +974,8 @@ export class PeppolService {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      // Check if user is a business user
-      const isBusiness = await this.isBusinessUser();
-      if (!isBusiness) {
-        return {
-          success: false,
-          error: 'Peppol is only available for business users. Individual users cannot use Peppol services.'
-        };
-      }
+      // Allow all users to access Peppol regardless of business size
+      // Solo users may still have companies and need Peppol services
 
       const { data, error } = await supabase
         .from('peppol_settings')
@@ -1050,14 +1038,8 @@ export class PeppolService {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      // Check if user is a business user
-      const isBusiness = await this.isBusinessUser();
-      if (!isBusiness) {
-      return {
-        success: false,
-          error: 'Peppol is only available for business users. Individual users cannot use Peppol services.'
-        };
-      }
+      // Allow all users to use Peppol regardless of business size
+      // Solo users may still have companies and need Peppol services
 
       // Check if this participant already exists in our database
       const { data: existingSettings, error: existingError } = await supabase

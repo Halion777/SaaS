@@ -27,18 +27,30 @@ const PublicRoute = ({ children }) => {
     );
   }
   
-  // Specific paths that should always be accessible
+  // Specific paths that should always be accessible (even when authenticated)
+  // These are public pages that everyone should be able to access
   const alwaysAccessiblePaths = [
     '/reset-password', 
     '/forgot-password', 
     '/login', 
-    '/register'
+    '/register',
+    '/', // Home page should be accessible to everyone
+    '/about',
+    '/pricing',
+    '/contact',
+    '/blog',
+    '/find-artisan',
+    '/features'
   ];
 
   // Check if the current path is in the always accessible list
-  const isAlwaysAccessible = alwaysAccessiblePaths.some(path => 
-    location.pathname.startsWith(path)
-  );
+  // For home page (/), use exact match. For others, use startsWith
+  const isAlwaysAccessible = alwaysAccessiblePaths.some(path => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  });
 
   // If authenticated and not on an always accessible path, redirect to dashboard
   if (isAuthenticated && !isAlwaysAccessible) {

@@ -9,7 +9,7 @@ import { supabase } from '../../../services/supabaseClient';
 import emailVerificationService from '../../../services/emailVerificationService';
 
 
-const StepOne = ({ formData, updateFormData, errors }) => {
+const StepOne = ({ formData, updateFormData, errors, onIncompleteRegistrationDetected }) => {
   const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
@@ -100,11 +100,22 @@ const StepOne = ({ formData, updateFormData, errors }) => {
         if (checkResult.data?.userExists) {
           // Check if registration is incomplete (can resume)
           if (checkResult.data.userExists && !checkResult.data.registrationComplete) {
-            // User exists with incomplete registration - allow verification to proceed
-            // The resuming message will be shown in the main Register component
+            // User exists with incomplete registration - skip verification requirement
+            // Email was already verified in previous registration attempt
+            setEmailVerified(true);
+            updateFormData('emailVerified', true);
+            setVerificationSent(false);
+            setVerificationSuccess(true);
+            setVerificationError('');
+            
+            // Notify parent component to auto-fill data and show resume message
+            if (onIncompleteRegistrationDetected) {
+              onIncompleteRegistrationDetected(formData.email.toLowerCase().trim());
+            }
+            return;
           }
           
-          // User exists, check if we can get their verification status
+          // User exists with completed registration, check if we can get their verification status
           try {
             const { data: userData } = await supabase
               .from('users')

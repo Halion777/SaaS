@@ -1114,7 +1114,7 @@
       "redirecting": "Doorverwijzen naar betaling"
     },
     "resumingRegistration": "Onvolledige registratie hervatten",
-    "resumingRegistrationDesc": "We hebben een onvolledige registratie gevonden voor dit e-mailadres. U wordt doorgestuurd om de betaling te voltooien.",
+    "resumingRegistrationDesc": "We hebben een onvolledige registratie gevonden voor dit e-mailadres. Uw gegevens zijn automatisch ingevuld. Controleer ze en ga verder om uw registratie te voltooien.",
     "passwordMismatch": "Dit e-mailadres is al geregistreerd maar de betaling is niet voltooid.\n\nGebruik alstublieft:\n1. Uw oorspronkelijke wachtwoord, of\n2. \"Wachtwoord vergeten\" om het te resetten, probeer dan opnieuw te registreren.",
     "resumeError": "Kan registratie niet hervatten. Neem contact op met de ondersteuning."
   },

@@ -139,6 +139,23 @@ serve(async (req) => {
     }
 
     // User exists but registration not complete
+    // Fetch company profile data for resume registration (bypasses RLS with service role)
+    let companyProfile = null;
+    try {
+      const { data: companyProfileData, error: companyProfileError } = await supabaseClient
+        .from('company_profiles')
+        .select('*')
+        .eq('user_id', authUser.id)
+        .maybeSingle();
+      
+      if (!companyProfileError && companyProfileData) {
+        companyProfile = companyProfileData;
+      }
+    } catch (error) {
+      // Silently fail - company profile is optional for resume
+      console.error('Error fetching company profile:', error);
+    }
+
     console.log('User exists but registration not complete - allowing registration');
     return new Response(
       JSON.stringify({ 
@@ -146,7 +163,8 @@ serve(async (req) => {
         userExists: true,
         registrationComplete: false,
         hasUsedTrial: hasUsedTrial || hasSubscriptionHistory,
-        userId: authUser.id
+        userId: authUser.id,
+        companyProfile: companyProfile // Include company profile data to bypass RLS
       }),
       { 
         status: 200, 

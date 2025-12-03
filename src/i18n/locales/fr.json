@@ -1115,7 +1115,7 @@
       "redirecting": "Redirection vers le paiement"
     },
     "resumingRegistration": "Reprise de l'inscription incomplète",
-    "resumingRegistrationDesc": "Nous avons trouvé une inscription incomplète pour cet email. Vous serez redirigé pour compléter le paiement.",
+    "resumingRegistrationDesc": "Nous avons trouvé une inscription incomplète pour cet email. Vos informations ont été pré-remplies. Veuillez les vérifier et continuer pour terminer votre inscription.",
     "passwordMismatch": "Cet email est déjà enregistré mais le paiement n'a pas été complété.\n\nVeuillez soit :\n1. Utiliser votre mot de passe original, ou\n2. Utiliser \"Mot de passe oublié\" pour le réinitialiser, puis réessayer de vous inscrire.",
     "resumeError": "Impossible de reprendre l'inscription. Veuillez contacter le support."
   },

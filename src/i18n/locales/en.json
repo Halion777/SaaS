@@ -104,7 +104,7 @@
       "badge": "Haliqo – Your Smart Digital Partner",
       "title": {
         "prefix": "The all-in-one solution for ",
-        "highlight": "craftsman professionals"
+        "highlight": "Tradesperson professionals"
       },
       "subtitle": "Save time, send your quotes, invoices and track your payments – stress-free.",
       "benefits": {
@@ -390,7 +390,7 @@
   },
   "about": {
     "hero": {
-      "badge": "About Us • Simplify Craftsmanship",
+      "badge": "About Us • Simplify tradesmanship",
       "title": {
         "prefix": "Haliqo, your ",
         "highlight": "digital partner",
@@ -592,7 +592,7 @@
       },
       "pro": {
         "name": "Pro",
-        "description": "The premium version of your back-office: an intelligent tool focused on AI, automation and growth, still very easy to use for any craftsman.",
+        "description": "The premium version of your back-office: an intelligent tool focused on AI, automation and growth, still very easy to use for any Tradesperson.",
         "features": {
           "feature1": "Unlimited quotes",
           "feature2": "Unlimited simple invoices",
@@ -807,7 +807,7 @@
     "title": "Login",
     "subtitle": "Connect to your Haliqo account",
     "welcome": "Welcome back!",
-    "welcomeSubtitle": "Connect to your craftsman space to manage your quotes and invoices",
+    "welcomeSubtitle": "Connect to your Tradesperson space to manage your quotes and invoices",
     "logoSubtitle": "Artisan Pro",
     "email": "Email address",
     "emailPlaceholder": "your@email.com",
@@ -981,7 +981,7 @@
         },
         "pro": {
           "name": "Pro",
-          "description": "The premium version of your back-office: an intelligent tool focused on AI, automation and growth, still very easy to use for any craftsman.",
+          "description": "The premium version of your back-office: an intelligent tool focused on AI, automation and growth, still very easy to use for any Tradesperson.",
           "features": [
             "Unlimited quotes",
             "Unlimited simple invoices",
@@ -1131,7 +1131,7 @@
       "redirecting": "Redirecting to payment"
     },
     "resumingRegistration": "Resuming incomplete registration",
-    "resumingRegistrationDesc": "We found an incomplete registration for this email. You will be redirected to complete payment.",
+    "resumingRegistrationDesc": "We found an incomplete registration for this email. Your information has been auto-filled. Please review and continue to complete your registration.",
     "passwordMismatch": "This email is already registered but payment was not completed.\n\nPlease either:\n1. Use your original password, or\n2. Use \"Forgot Password\" to reset it, then try registering again.",
     "resumeError": "Unable to resume registration. Please contact support."
   },

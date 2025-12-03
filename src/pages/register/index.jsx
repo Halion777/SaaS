@@ -38,7 +38,7 @@ const Register = () => {
     phone: '',
     companyName: '',
     vatNumber: '',
-    profession: '',
+    profession: [],
     country: 'BE',
     businessSize: '',
     selectedPlan: 'pro',
@@ -91,12 +91,31 @@ const Register = () => {
   // Save Step 2 fields to company_profiles table before payment
   const saveCompanyProfileBeforePayment = async (userId, formData) => {
     try {
+      console.log('=== Saving company profile before payment ===');
+      console.log('User ID:', userId);
+      console.log('Form data for company profile:', {
+        companyName: formData.companyName,
+        companyAddress: formData.companyAddress,
+        companyCity: formData.companyCity,
+        companyPostalCode: formData.companyPostalCode,
+        companyState: formData.companyState,
+        companyWebsite: formData.companyWebsite,
+        companyIban: formData.companyIban,
+        companyAccountName: formData.companyAccountName,
+        companyBankName: formData.companyBankName
+      });
+
       // Check if company profile already exists
-      const { data: existingCompany } = await supabase
+      const { data: existingCompany, error: checkError } = await supabase
         .from('company_profiles')
         .select('id')
         .eq('user_id', userId)
         .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking existing company profile:', checkError);
+      }
+      console.log('Existing company profile:', existingCompany);
 
       const companyProfile = {
         user_id: userId,
@@ -117,32 +136,56 @@ const Register = () => {
         is_default: true
       };
 
+      let result;
       if (existingCompany) {
         // Update existing company profile
-        await supabase
+        
+        result = await supabase
           .from('company_profiles')
           .update(companyProfile)
           .eq('id', existingCompany.id);
       } else {
         // Create new company profile
-        await supabase
+       
+        result = await supabase
           .from('company_profiles')
           .insert(companyProfile);
       }
+
+      if (result.error) {
+        console.error('Error saving company profile:', result.error);
+        throw result.error;
+      } 
     } catch (error) {
-      // Silently fail - don't block registration if company profile save fails
+      console.error('Failed to save company profile before payment:', error);
+      // Don't block registration if company profile save fails, but log it
     }
   };
 
   // Fetch and auto-fill user data when resuming registration
   const fetchUserDataForResume = async (email) => {
     try {
+      console.log('=== Auto-detecting incomplete registration ===');
+      console.log('Email:', email);
+      
       // First, use checkUserRegistration to get userId
       const checkResult = await checkUserRegistration(email.toLowerCase().trim());
+      console.log('Check result:', checkResult);
       
       if (!checkResult.data?.userExists || !checkResult.data?.userId) {
+        console.log('User does not exist or userId not found');
         return;
       }
+
+      // Check if registration is incomplete
+      if (checkResult.data.registrationComplete) {
+        console.log('Registration is complete, not resuming');
+        return;
+      }
+
+      // Set resuming flag
+      setIsResumingRegistration(true);
+      console.log('Incomplete registration detected, setting resume flag');
 
       const userId = checkResult.data.userId;
 
@@ -154,12 +197,44 @@ const Register = () => {
         .maybeSingle();
 
       // Get company profile data (contains Step 2 fields)
-      const { data: companyProfile, error: companyError } = await supabase
-        .from('company_profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
+      // Use data from checkUserRegistration edge function to bypass RLS
+      // The edge function uses service role and can access company_profiles
+      let companyProfile = checkResult.data?.companyProfile || null;
+      
+      // Fallback: try direct query if edge function didn't return it (for backward compatibility)
+      if (!companyProfile) {
+        const { data: companyProfileData, error: companyError } = await supabase
+          .from('company_profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle();
+        
+        if (!companyError && companyProfileData) {
+          companyProfile = companyProfileData;
+        }
+      }
 
+      // Parse profession from JSON string or array
+      let professionArray = [];
+      if (userData?.profession) {
+        try {
+          if (typeof userData.profession === 'string') {
+            // Try to parse as JSON string
+            professionArray = JSON.parse(userData.profession);
+          } else if (Array.isArray(userData.profession)) {
+            // Already an array
+            professionArray = userData.profession;
+          } else {
+            // Single value, convert to array
+            professionArray = [userData.profession];
+          }
+        } catch (e) {
+          // If parsing fails, treat as single value
+          console.warn('Failed to parse profession, treating as single value:', e);
+          professionArray = [userData.profession];
+        }
+      }
+      
       // Auto-fill form data from database
       const dataToFill = {
         email: email.toLowerCase().trim(),
@@ -169,9 +244,7 @@ const Register = () => {
         phone: userData?.phone || companyProfile?.phone || '',
         companyName: userData?.company_name || companyProfile?.company_name || '',
         vatNumber: userData?.vat_number || companyProfile?.vat_number || '',
-        profession: userData?.profession 
-          ? (Array.isArray(userData.profession) ? userData.profession[0] : userData.profession)
-          : '',
+        profession: professionArray, // Keep as array for multiple select
         country: userData?.country || 'BE',
         businessSize: userData?.business_size || '',
         selectedPlan: userData?.selected_plan || 'pro',
@@ -188,11 +261,16 @@ const Register = () => {
       };
 
       // Update form data
+      let filledCount = 0;
       Object.keys(dataToFill).forEach(key => {
-        if (dataToFill[key]) {
+        // For profession, always update even if empty array (to clear previous values)
+        // For other fields, only update if value exists
+        if (key === 'profession' || dataToFill[key]) {
           updateFormData(key, dataToFill[key]);
+          filledCount++;
         }
       });
+      console.log(`Filled ${filledCount} fields with data`);
 
       // Check if email is already verified
       if (userData?.email_verified) {
@@ -221,6 +299,14 @@ const Register = () => {
         fetchUserDataForResume(emailParam);
       }
     }
+    
+    // Expose fetchUserDataForResume to window for StepOne to call
+    window.fetchUserDataForResume = fetchUserDataForResume;
+    
+    return () => {
+      // Cleanup
+      delete window.fetchUserDataForResume;
+    };
   }, [searchParams]);
 
   // Clear email error when email is verified
@@ -271,9 +357,8 @@ const Register = () => {
       if (!formData.profession) newErrors.profession = t('errors.required');
       if (!formData.email.trim()) newErrors.email = t('errors.required');
       else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = t('errors.invalidEmail');
-      else if (!formData.emailVerified) newErrors.email = t('errors.emailNotVerified');
       else {
-        // Check if email already exists (only if email is valid and verified)
+        // Check if email already exists
         try {
           const { data: checkData, error: checkError } = await checkUserRegistration(formData.email.toLowerCase().trim());
           
@@ -285,10 +370,25 @@ const Register = () => {
           } else if (checkData && checkData.userExists && checkData.registrationComplete) {
             // User exists and has completed registration
             newErrors.email = checkData.message || t('errors.emailAlreadyExists');
+          } else if (checkData && checkData.userExists && !checkData.registrationComplete) {
+            // User exists with incomplete registration - skip email verification requirement
+            // Auto-fill data if not already filled
+            if (!isResumingRegistration) {
+              setIsResumingRegistration(true);
+              await fetchUserDataForResume(formData.email.toLowerCase().trim());
+            }
+            // Don't require email verification for incomplete registrations
+            // The email was already verified in the previous attempt
+          } else if (!formData.emailVerified) {
+            // New user - require email verification
+            newErrors.email = t('errors.emailNotVerified');
           }
         } catch (error) {
           console.error('Error checking email uniqueness:', error);
-          // Don't block on check error, but log it
+          // If check fails, still require email verification for new users
+          if (!formData.emailVerified) {
+            newErrors.email = t('errors.emailNotVerified');
+          }
         }
       }
       if (!formData.password) newErrors.password = t('errors.required');
@@ -652,7 +752,18 @@ const Register = () => {
 
     switch (currentStep) {
       case 1:
-        return <StepOne formData={formData} updateFormData={updateFormData} errors={errors} />;
+        return (
+          <StepOne 
+            formData={formData} 
+            updateFormData={updateFormData} 
+            errors={errors}
+            onIncompleteRegistrationDetected={async (email) => {
+              // Auto-detect incomplete registration and auto-fill data
+              setIsResumingRegistration(true);
+              await fetchUserDataForResume(email);
+            }}
+          />
+        );
       case 2:
         return <StepTwo formData={formData} updateFormData={updateFormData} errors={errors} />;
       case 3:
