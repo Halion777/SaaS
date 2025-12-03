@@ -227,7 +227,8 @@ const ElectronicSignatureModal = ({ isOpen, onClose, onSign, onComplete, quoteDa
           {/* Client Comment */}
           <div>
             <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
-              {t('quoteCreation.electronicSignatureModal.clientCommentRequired', 'Commentaire client (obligatoire)')}
+              {t('quoteCreation.electronicSignatureModal.clientComment', 'Commentaire client')}
+              <span className="text-red-500 ml-1">*</span>
             </label>
             <textarea
               value={clientComment}
@@ -238,7 +239,9 @@ const ElectronicSignatureModal = ({ isOpen, onClose, onSign, onComplete, quoteDa
             />
           </div>
 
-          {/* Signature Mode Selection */}
+          {/* Signature Mode Selection - Only show if comment is entered */}
+          {clientComment.trim() && (
+            <>
           <div>
             <label className="block text-xs sm:text-sm font-medium text-foreground mb-2 sm:mb-3">
               {t('quoteCreation.electronicSignatureModal.signatureMethod', 'Méthode de signature')}
@@ -278,6 +281,7 @@ const ElectronicSignatureModal = ({ isOpen, onClose, onSign, onComplete, quoteDa
             <div className="flex items-center justify-between mb-2">
               <label className="block text-xs sm:text-sm font-medium text-foreground">
                 {t('quoteCreation.electronicSignatureModal.signatureZone', 'Zone de signature')}
+                <span className="text-red-500 ml-1">*</span>
               </label>
               {signatureImage && (
                 <button
@@ -392,6 +396,8 @@ const ElectronicSignatureModal = ({ isOpen, onClose, onSign, onComplete, quoteDa
               </div>
             )}
           </div>
+            </>
+          )}
 
           {/* Legal Notice */}
           <div className="p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">

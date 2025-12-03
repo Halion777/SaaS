@@ -1229,27 +1229,54 @@ async function triggerFollowUpCreation(quoteId, quoteStatus) {
       // Check if there are already follow-ups for this quote
       const { data: existingFollowUps } = await supabase
         .from('quote_follow_ups')
-        .select('id, status')
+        .select('id, status, meta')
         .eq('quote_id', quoteId)
-        .in('status', ['pending', 'scheduled'])
         .order('created_at', { ascending: false });
       
       if (existingFollowUps && existingFollowUps.length > 0) {
-       
-        // First, mark all existing follow-ups as stopped
+        // Only stop active follow-ups (pending, scheduled, ready_for_dispatch)
+        // AND stopped follow-ups that were stopped due to expiration (quote_expired)
+        // Do NOT touch stopped follow-ups from other reasons (accepted, rejected, etc.)
         for (const followUp of existingFollowUps) {
-          await supabase
-            .from('quote_follow_ups')
-            .update({
-              status: 'stopped',
-              updated_at: new Date().toISOString(),
-              meta: {
-                stopped_reason: 'replaced_with_new_followup',
-                stopped_at: new Date().toISOString(),
-                reason: 'quote_status_change_to_sent'
-              }
-            })
-            .eq('id', followUp.id);
+          const meta = followUp.meta || {};
+          const stoppedReason = meta.stopped_reason;
+          
+          // Stop active follow-ups (they will be replaced)
+          if (['pending', 'scheduled', 'ready_for_dispatch'].includes(followUp.status)) {
+            await supabase
+              .from('quote_follow_ups')
+              .update({
+                status: 'stopped',
+                updated_at: new Date().toISOString(),
+                meta: {
+                  ...meta,
+                  stopped_reason: 'replaced_with_new_followup',
+                  stopped_at: new Date().toISOString(),
+                  reason: 'quote_status_change_to_sent',
+                  previous_status: followUp.status
+                }
+              })
+              .eq('id', followUp.id);
+          }
+          // Only replace stopped follow-ups that were stopped due to expiration
+          // Leave other stopped follow-ups (from accepted/rejected) alone
+          else if (followUp.status === 'stopped' && stoppedReason === 'quote_expired') {
+            // Update metadata to indicate this expired follow-up is being replaced
+            await supabase
+              .from('quote_follow_ups')
+              .update({
+                updated_at: new Date().toISOString(),
+                meta: {
+                  ...meta,
+                  stopped_reason: 'replaced_with_new_followup',
+                  reason: 'quote_resent_after_expiration',
+                  previous_stopped_reason: 'quote_expired',
+                  replaced_at: new Date().toISOString()
+                }
+              })
+              .eq('id', followUp.id);
+          }
+          // For other stopped follow-ups (accepted, rejected, etc.), leave them as-is
         }
       }
       

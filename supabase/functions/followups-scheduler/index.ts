@@ -44,6 +44,7 @@ serve(async (req) => {
     if (action === 'create_followup_for_quote' && quote_id && status === 'sent') {
       // Frontend request to create follow-up for specific quote
       // Process follow-up creation for quote
+      // This handles both new quotes and re-sent expired quotes
       
       // Get the quote details
       const { data: quote, error: quoteError } = await admin
@@ -61,6 +62,64 @@ serve(async (req) => {
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
+      }
+      
+      // Check for existing active follow-ups that need to be stopped
+      // Also check for stopped follow-ups that were stopped due to expiration
+      const { data: activeFollowUps, error: activeError } = await admin
+        .from('quote_follow_ups')
+        .select('id, status')
+        .eq('quote_id', quote_id)
+        .in('status', ['pending', 'scheduled', 'ready_for_dispatch']);
+      
+      // Check for stopped follow-ups that were stopped due to expiration
+      const { data: expiredFollowUps, error: expiredError } = await admin
+        .from('quote_follow_ups')
+        .select('id, status, meta')
+        .eq('quote_id', quote_id)
+        .eq('status', 'stopped');
+      
+      // Stop active follow-ups
+      if (!activeError && activeFollowUps && activeFollowUps.length > 0) {
+        for (const followUp of activeFollowUps) {
+          await admin
+            .from('quote_follow_ups')
+            .update({
+              status: 'stopped',
+              updated_at: new Date().toISOString(),
+              meta: {
+                stopped_reason: 'replaced_with_new_followup',
+                stopped_at: new Date().toISOString(),
+                reason: 'quote_resent',
+                previous_status: followUp.status
+              }
+            })
+            .eq('id', followUp.id);
+        }
+        console.log(`Stopped ${activeFollowUps.length} active follow-up(s) for quote ${quote.quote_number} before creating new one`);
+      }
+      
+      // Mark expired follow-ups as replaced (only if they were stopped due to expiration)
+      if (!expiredError && expiredFollowUps && expiredFollowUps.length > 0) {
+        for (const followUp of expiredFollowUps) {
+          const meta = followUp.meta || {};
+          // Only update if this follow-up was stopped due to expiration
+          if (meta.stopped_reason === 'quote_expired') {
+            await admin
+              .from('quote_follow_ups')
+              .update({
+                updated_at: new Date().toISOString(),
+                meta: {
+                  ...meta,
+                  stopped_reason: 'replaced_with_new_followup',
+                  reason: 'quote_resent_after_expiration',
+                  previous_stopped_reason: 'quote_expired',
+                  replaced_at: new Date().toISOString()
+                }
+              })
+              .eq('id', followUp.id);
+          }
+        }
       }
       
       // Manual follow-up creation is allowed for all plans
@@ -1322,6 +1381,25 @@ async function processNewlySentQuotes(admin: any, rules: any) {
  */
 async function createInitialFollowUpForSentQuote(admin: any, quote: any, rules: any) {
   try {
+    // Check if there's already an active follow-up for this quote
+    // This prevents duplicates when quote is re-sent after expiration
+    const { data: existingActiveFollowUp, error: checkError } = await admin
+      .from('quote_follow_ups')
+      .select('id, status')
+      .eq('quote_id', quote.id)
+      .in('status', ['pending', 'scheduled', 'ready_for_dispatch'])
+      .maybeSingle();
+    
+    if (checkError) {
+      console.warn('Error checking existing follow-up:', checkError);
+      // Continue anyway - better to create duplicate than miss a follow-up
+    }
+    
+    if (existingActiveFollowUp) {
+      console.log(`Active follow-up already exists for quote ${quote.quote_number}, skipping creation`);
+      return; // Don't create duplicate
+    }
+    
     // Get client details including language preference
     const { data: client, error: clientError } = await admin
       .from('clients')
