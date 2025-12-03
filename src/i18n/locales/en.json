@@ -1221,6 +1221,7 @@
       "updatePaymentMethod": "Update Payment Method",
       "contactSupport": "Contact Support",
       "changePlan": "Change Plan",
+      "choosePlan": "Choose Plan",
       "currentPlan": "Current Plan",
       "processing": "Processing...",
       "manageSubscription": "Manage Subscription",

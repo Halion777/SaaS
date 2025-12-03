@@ -60,6 +60,13 @@ const Register = () => {
     sessionStorage.removeItem('registration_complete');
   }, []);
 
+  // Clear email error when email is verified
+  useEffect(() => {
+    if (formData.emailVerified && errors.email === t('errors.emailNotVerified')) {
+      setErrors(prev => ({ ...prev, email: '' }));
+    }
+  }, [formData.emailVerified, errors.email, t]);
+
   const testimonials = [
     {
       id: 1,
@@ -85,6 +92,10 @@ const Register = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+    // Clear email error when email is verified
+    if (field === 'emailVerified' && value === true && errors.email) {
+      setErrors(prev => ({ ...prev, email: '' }));
     }
   };
 

@@ -71,21 +71,13 @@ serve(async (req) => {
       !subscriptionId.includes('temp_')
 
     if (!hasValidSubscription) {
-      // Return local database subscription data as fallback
-      const { data: localSub } = await supabaseClient
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
-
+      // No valid Stripe subscription found - return null
       return new Response(
         JSON.stringify({ 
           success: true, 
-          subscription: localSub || null,
-          source: 'database',
-          message: 'No Stripe subscription found, using database data'
+          subscription: null,
+          source: 'stripe',
+          message: 'No Stripe subscription found'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )

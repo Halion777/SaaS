@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../services/supabaseClient';
-import { createPortalSession } from '../../services/stripeService';
+import { createPortalSession, createCheckoutSession } from '../../services/stripeService';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import MainSidebar from '../../components/ui/MainSidebar';
@@ -189,58 +189,37 @@ const SubscriptionManagement = () => {
     try {
       setLoading(true);
       
-      // First, try to fetch real-time data from Stripe
-      try {
-        const { data: stripeData, error: stripeError } = await supabase.functions.invoke('get-subscription', {
-          body: { userId: user.id }
-        });
+      // Fetch subscription data ONLY from Stripe
+      const { data: stripeData, error: stripeError } = await supabase.functions.invoke('get-subscription', {
+        body: { userId: user.id }
+      });
 
-        if (!stripeError && stripeData?.success && stripeData?.subscription) {
-          const subscriptionData = stripeData.subscription;
-          
-          // Normalize status
-          if (subscriptionData.status === 'trial') {
-            subscriptionData.status = 'trialing';
-          }
-          
-          setSubscription(subscriptionData);
-          
-          // Set billing cycle based on current subscription
-          if (subscriptionData?.interval) {
-            setBillingCycle(subscriptionData.interval);
-          }
-          
-          // Mark current plan
-          plans.forEach(plan => {
-            plan.current = plan.id === subscriptionData.plan_type;
-          });
-
-          console.log('Subscription loaded from:', stripeData.source);
-          return;
-        }
-      } catch (stripeErr) {
-        console.warn('Could not fetch from Stripe, falling back to database:', stripeErr);
-      }
-
-      // Fallback: Load subscription data from local database
-      const { data: subscriptionData, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (error) {
-        console.error('Error loading subscription data:', error);
+      if (stripeError) {
+        console.error('Error fetching subscription from Stripe:', stripeError);
+        setSubscription(null);
         return;
       }
 
-      // Normalize status
-      if (subscriptionData?.status === 'trial') {
-        subscriptionData.status = 'trialing';
+      if (!stripeData?.success) {
+        console.error('Stripe returned unsuccessful response:', stripeData);
+        setSubscription(null);
+        return;
       }
 
+      if (!stripeData?.subscription) {
+        // No subscription found in Stripe
+        console.log('No subscription found in Stripe');
+        setSubscription(null);
+        return;
+      }
+
+      const subscriptionData = stripeData.subscription;
+      
+      // Normalize status
+      if (subscriptionData.status === 'trial') {
+        subscriptionData.status = 'trialing';
+      }
+      
       setSubscription(subscriptionData);
       
       // Set billing cycle based on current subscription
@@ -253,10 +232,11 @@ const SubscriptionManagement = () => {
         plan.current = plan.id === subscriptionData.plan_type;
       });
 
-      console.log('Subscription loaded from: database (fallback)');
+      console.log('Subscription loaded from Stripe');
 
     } catch (error) {
       console.error('Error loading subscription:', error);
+      setSubscription(null);
     } finally {
       setLoading(false);
     }
@@ -310,9 +290,43 @@ const SubscriptionManagement = () => {
   };
 
   const handlePlanChange = async (newPlanId) => {
-    if (isChangingPlan || !subscription) return;
+    if (isChangingPlan) return;
     
-    // Open confirmation modal
+    // If no subscription exists, create a new one via checkout
+    if (!subscription) {
+      try {
+        setIsChangingPlan(true);
+        setErrorMessage(null);
+        setErrorType(null);
+        
+        // Create checkout session for new subscription
+        const { data: checkoutData, error: checkoutError } = await createCheckoutSession({
+          planType: newPlanId,
+          billingCycle: billingCycle,
+          userId: user.id,
+          successUrl: `${window.location.origin}/subscription?success=true`,
+          cancelUrl: `${window.location.origin}/subscription?canceled=true`
+        });
+
+        if (checkoutError || !checkoutData?.url) {
+          setErrorMessage(checkoutError?.message || 'Failed to create checkout session. Please try again.');
+          setErrorType('upgrade');
+          setIsChangingPlan(false);
+          return;
+        }
+
+        // Redirect to Stripe checkout
+        window.location.href = checkoutData.url;
+      } catch (error) {
+        console.error('Error creating checkout session:', error);
+        setErrorMessage('An error occurred while creating checkout session. Please try again.');
+        setErrorType('upgrade');
+        setIsChangingPlan(false);
+      }
+      return;
+    }
+    
+    // If subscription exists, open confirmation modal for plan change
     setSelectedPlan(plans.find(p => p.id === newPlanId));
     setShowPlanChangeModal(true);
   };
@@ -385,29 +399,12 @@ const SubscriptionManagement = () => {
         return;
       }
 
-      // Update local subscription in database
-      // Use user_id instead of id since subscription.id might be Stripe subscription ID
-      const { error: updateError } = await supabase
-        .from('subscriptions')
-        .update({
-          plan_type: selectedPlan.id,
-          plan_name: planName,
-          interval: billingCycle,
-          amount: amount,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-
-      if (updateError) {
-        console.error('Error updating local subscription:', updateError);
-      }
-
-      // Update user's selected plan and subscription status
+      // Note: Database updates are handled by Stripe webhooks
+      // We only update user's selected_plan for UI consistency
       await supabase
         .from('users')
         .update({ 
-          selected_plan: selectedPlan.id,
-          subscription_status: 'active' // Plan change means active subscription
+          selected_plan: selectedPlan.id
         })
         .eq('id', user.id);
 
@@ -483,24 +480,8 @@ const SubscriptionManagement = () => {
         }));
       }
 
-      // Update local subscription in database
-      const newStatus = cancelAtPeriodEnd ? 'active' : 'cancelled';
-      await supabase
-        .from('subscriptions')
-        .update({
-          status: newStatus,
-          cancel_at_period_end: data?.data?.cancel_at_period_end ?? cancelAtPeriodEnd,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-
-      // Also update user's subscription status
-      await supabase
-        .from('users')
-        .update({ 
-          subscription_status: newStatus
-        })
-        .eq('id', user.id);
+      // Note: Database updates are handled by Stripe webhooks
+      // No need to manually update subscription table
 
       // Reload subscription data to ensure everything is in sync
       await loadSubscriptionData();
@@ -564,23 +545,8 @@ const SubscriptionManagement = () => {
         }));
       }
 
-      // Update local subscription in database
-      await supabase
-        .from('subscriptions')
-        .update({
-          cancel_at_period_end: false,
-          status: 'active',
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-
-      // Also update user's subscription status
-      await supabase
-        .from('users')
-        .update({ 
-          subscription_status: 'active'
-        })
-        .eq('id', user.id);
+      // Note: Database updates are handled by Stripe webhooks
+      // No need to manually update subscription table
 
       // Reload subscription data to ensure everything is in sync
       await loadSubscriptionData();
@@ -1012,7 +978,8 @@ const SubscriptionManagement = () => {
               >
                 {plan.current ? t('subscription.actions.currentPlan', 'Current Plan') : 
                  isChangingPlan ? t('subscription.actions.processing', 'Processing...') : 
-                 t('subscription.actions.changePlan', 'Change Plan')}
+                 subscription ? t('subscription.actions.changePlan', 'Change Plan') :
+                 t('subscription.actions.choosePlan', 'Choose Plan')}
               </Button>
             </div>
           ))}
