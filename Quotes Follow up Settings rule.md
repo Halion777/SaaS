@@ -27,6 +27,7 @@ The Quotes Follow-Up System is an automated email reminder system that sends fol
 - **Recent activity detection** to avoid sending unnecessary emails
 - **Automatic cleanup** when quotes are accepted/rejected/expired
 - **Manual follow-up trigger** from UI (doesn't affect automated workflow)
+- **Pro plan restrictions**: Automatic email sending is restricted to Pro plan users; Starter plan users must send follow-ups manually
 
 ---
 
@@ -223,6 +224,26 @@ CREATE TABLE public.email_outbox (
 
 ## Follow-Up Rules & Settings
 
+### Plan Restrictions
+
+**Pro Plan Users**:
+- Automatic follow-up creation enabled
+- Automatic email sending enabled
+- All 3 stages progress automatically
+- Follow-ups are created and sent automatically
+
+**Starter Plan Users**:
+- Follow-up records can be created (for manual use)
+- **Automatic email sending is disabled** - emails must be sent manually
+- Follow-ups are created but not automatically dispatched
+- Manual follow-up actions are allowed for all plans
+
+**Implementation**:
+- Pro plan check is performed in `processScheduledFollowUps()` before sending emails
+- Pro plan check is performed in `processNewlySentQuotes()` before creating follow-ups
+- Pro plan check is performed in `progressFollowUpStages()` before progressing stages
+- Only users with `selected_plan === 'pro'` and active subscription (`trial`, `trialing`, or `active`) get automatic reminders
+
 ### Global Rules (Hardcoded in Edge Functions)
 
 The follow-up system uses **hardcoded rules** in the edge functions (no database table needed):
@@ -293,6 +314,14 @@ Follow-ups are automatically stopped when:
 - Quote `valid_until` date has passed
 - Next scheduled date would be after quote expiration
 
+### Re-Sending Expired Quotes
+
+When an expired quote is edited and re-sent:
+- **Only expired follow-ups are replaced**: Follow-ups with `stopped_reason: 'quote_expired'` are replaced with new scheduled follow-ups
+- **Other stopped follow-ups remain unchanged**: Follow-ups stopped due to acceptance/rejection/conversion remain stopped and are not touched
+- **New follow-up created**: A fresh follow-up is created with `status: 'scheduled'` for the re-sent quote
+- **Active follow-ups stopped**: Any active follow-ups (pending, scheduled, ready_for_dispatch) are stopped before creating new ones
+
 ---
 
 ## Edge Functions
@@ -344,6 +373,9 @@ Follow-ups are automatically stopped when:
 
 **Frontend Actions Supported**:
 - `create_followup_for_quote` - Create follow-up for specific quote
+  - Handles re-sent expired quotes by replacing only expired follow-ups
+  - Stops active follow-ups before creating new ones
+  - Leaves other stopped follow-ups (accepted/rejected) unchanged
 - `sync_quote_status` - Sync quote status with backend
 - `mark_quote_viewed` - Mark quote as viewed and create delayed follow-up
 - `cleanup_finalized_quote` - Stop all follow-ups for finalized quote
@@ -866,6 +898,12 @@ Both edge functions can be triggered manually from frontend:
 - Check `valid_until` date before scheduling
 - Stop all pending/scheduled follow-ups when quote is finalized
 
+### 9. **Re-Sending Expired Quotes**
+- When expired quote is re-sent, only follow-ups with `stopped_reason: 'quote_expired'` are replaced
+- Other stopped follow-ups (from accepted/rejected quotes) remain unchanged
+- Active follow-ups are stopped before creating new ones
+- New follow-up is created with `status: 'scheduled'` for the re-sent quote
+
 ---
 
 ## Testing Checklist
@@ -895,6 +933,12 @@ Both edge functions can be triggered manually from frontend:
 - [ ] Follow-ups stopped when quote is rejected
 - [ ] Follow-ups stopped when quote is expired
 - [ ] Follow-ups stopped when valid_until date passed
+
+### Re-Sending Expired Quotes
+- [ ] Only expired follow-ups are replaced when quote is re-sent
+- [ ] Other stopped follow-ups (accepted/rejected) remain unchanged
+- [ ] Active follow-ups are stopped before creating new ones
+- [ ] New follow-up created with 'scheduled' status
 
 ### Priority System
 - [ ] Priority calculated correctly based on status and stage

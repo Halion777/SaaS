@@ -484,6 +484,17 @@ The follow-up system automatically sends reminder emails to clients based on:
 - Client behavior (email not opened, viewed but no action)
 - Time delays between stages
 
+### Plan Restrictions
+
+**Pro Plan Users**:
+- Automatic follow-up creation and email sending enabled
+- All 3 stages progress automatically
+
+**Starter Plan Users**:
+- Follow-up records can be created but automatic email sending is disabled
+- Emails must be sent manually from the UI
+- Manual follow-up actions are allowed for all plans
+
 ### Connection to Quote Lifecycle
 
 #### When Quote is Sent
@@ -508,6 +519,14 @@ The follow-up system automatically sends reminder emails to clients based on:
 1. **Quote Status**: Changes to `accepted` or `rejected`
 2. **Follow-Up Action**: All follow-ups stopped
 3. **Status Update**: All pending follow-ups set to `stopped`
+
+#### When Expired Quote is Re-Sent
+1. **Quote Status**: Changes from `expired` to `sent`
+2. **Follow-Up Action**: 
+   - Only follow-ups with `stopped_reason: 'quote_expired'` are replaced
+   - Other stopped follow-ups (from accepted/rejected) remain unchanged
+   - Active follow-ups are stopped before creating new ones
+3. **New Follow-Up Created**: Fresh follow-up with `status: 'scheduled'` is created
 
 ### Follow-Up Stages
 
@@ -589,6 +608,14 @@ Follow-ups are automatically stopped when:
 - Quote is rejected
 - Quote is expired
 - Quote is deleted
+
+### Re-Sending Expired Quotes
+
+When an expired quote is edited and re-sent:
+- **Selective Replacement**: Only follow-ups stopped due to expiration (`stopped_reason: 'quote_expired'`) are replaced with new scheduled follow-ups
+- **Preservation**: Follow-ups stopped due to acceptance/rejection/conversion remain stopped and are not modified
+- **Clean State**: Active follow-ups (pending, scheduled, ready_for_dispatch) are stopped before creating new ones
+- **Fresh Start**: A new follow-up is created with `status: 'scheduled'` for the re-sent quote
 
 ---
 
