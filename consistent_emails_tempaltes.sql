@@ -2282,8 +2282,8 @@ INSERT INTO public.email_templates (
       <p style="margin: 0;"><strong>Email:</strong> {user_email}</p>
     </div>
     <div style="background: #fff3cd; border: 2px solid #ffc107; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
-      <p style="margin: 0 0 10px 0; font-weight: bold; color: #856404; font-size: 16px;">🔐 Code PIN de votre profil par défaut</p>
-      <p style="margin: 0 0 10px 0; color: #856404; line-height: 1.6;">Votre code PIN par défaut pour accéder à votre profil est :</p>
+      <p style="margin: 0 0 10px 0; font-weight: bold; color: #856404; font-size: 16px;">Code PIN de votre profil</p>
+      <p style="margin: 0 0 10px 0; color: #856404; line-height: 1.6;">Votre code PIN de profil par défaut est <strong>0000</strong>. Ce code vous permet d''accéder à votre profil dans l''application.</p>
       <div style="background: white; padding: 12px; border-radius: 6px; text-align: center; margin: 10px 0;">
         <p style="margin: 0; font-size: 28px; font-weight: bold; color: #333; letter-spacing: 4px;">0000</p>
       </div>
@@ -2306,9 +2306,9 @@ Plan: {plan_name}
 Montant: {amount}€ / {billing_interval}
 Email: {user_email}
 
-🔐 CODE PIN DE VOTRE PROFIL PAR DÉFAUT
+CODE PIN DE VOTRE PROFIL
 
-Votre code PIN par défaut pour accéder à votre profil est : 0000
+Votre code PIN de profil par défaut est 0000. Ce code vous permet d''accéder à votre profil dans l''application.
 
 Vous pouvez toujours modifier ce code PIN dans les paramètres de votre compte.
 
@@ -2342,8 +2342,8 @@ INSERT INTO public.email_templates (
       <p style="margin: 0;"><strong>Email:</strong> {user_email}</p>
     </div>
     <div style="background: #fff3cd; border: 2px solid #ffc107; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
-      <p style="margin: 0 0 10px 0; font-weight: bold; color: #856404; font-size: 16px;">🔐 Your Default Profile PIN Code</p>
-      <p style="margin: 0 0 10px 0; color: #856404; line-height: 1.6;">Your default PIN code to access your profile is:</p>
+      <p style="margin: 0 0 10px 0; font-weight: bold; color: #856404; font-size: 16px;">Your Profile PIN Code</p>
+      <p style="margin: 0 0 10px 0; color: #856404; line-height: 1.6;">Your default profile PIN code is <strong>0000</strong>. This code allows you to access your profile in the application.</p>
       <div style="background: white; padding: 12px; border-radius: 6px; text-align: center; margin: 10px 0;">
         <p style="margin: 0; font-size: 28px; font-weight: bold; color: #333; letter-spacing: 4px;">0000</p>
       </div>
@@ -2366,9 +2366,9 @@ Plan: {plan_name}
 Amount: {amount}€ / {billing_interval}
 Email: {user_email}
 
-🔐 YOUR DEFAULT PROFILE PIN CODE
+YOUR PROFILE PIN CODE
 
-Your default PIN code to access your profile is: 0000
+Your default profile PIN code is 0000. This code allows you to access your profile in the application.
 
 You can always change this PIN code in your account settings.
 
@@ -2402,8 +2402,8 @@ INSERT INTO public.email_templates (
       <p style="margin: 0;"><strong>E-mail:</strong> {user_email}</p>
     </div>
     <div style="background: #fff3cd; border: 2px solid #ffc107; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
-      <p style="margin: 0 0 10px 0; font-weight: bold; color: #856404; font-size: 16px;">🔐 Uw standaard profiel PIN-code</p>
-      <p style="margin: 0 0 10px 0; color: #856404; line-height: 1.6;">Uw standaard PIN-code om toegang te krijgen tot uw profiel is:</p>
+      <p style="margin: 0 0 10px 0; font-weight: bold; color: #856404; font-size: 16px;">Uw profiel PIN-code</p>
+      <p style="margin: 0 0 10px 0; color: #856404; line-height: 1.6;">Uw standaard profiel PIN-code is <strong>0000</strong>. Deze code geeft u toegang tot uw profiel in de applicatie.</p>
       <div style="background: white; padding: 12px; border-radius: 6px; text-align: center; margin: 10px 0;">
         <p style="margin: 0; font-size: 28px; font-weight: bold; color: #333; letter-spacing: 4px;">0000</p>
       </div>
@@ -2426,9 +2426,9 @@ Plan: {plan_name}
 Bedrag: {amount}€ / {billing_interval}
 E-mail: {user_email}
 
-🔐 UW STANDAARD PROFIEL PIN-CODE
+UW PROFIEL PIN-CODE
 
-Uw standaard PIN-code om toegang te krijgen tot uw profiel is: 0000
+Uw standaard profiel PIN-code is 0000. Deze code geeft u toegang tot uw profiel in de applicatie.
 
 U kunt deze PIN-code altijd wijzigen in uw accountinstellingen.
 

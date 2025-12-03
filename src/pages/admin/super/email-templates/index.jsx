@@ -230,6 +230,7 @@ const EmailTemplatesManagement = () => {
       'subscription_reactivated': 'Subscription Reactivated',
       'subscription_trial_ending': 'Trial Ending',
       'welcome_registration': 'Welcome Registration',
+      'email_verification_otp': 'Email Verification OTP',
       'contact_form': 'Contact Form',
       'credit_insurance_application': 'Credit Insurance Application',
       'credit_insurance_confirmation': 'Credit Insurance Confirmation',
@@ -293,7 +294,7 @@ const EmailTemplatesManagement = () => {
       'invoice_payment_reminder': 'bg-yellow-100 text-yellow-800',
       'invoice_to_accountant': 'bg-indigo-100 text-indigo-800',
       'expense_invoice_to_accountant': 'bg-amber-100 text-amber-800',
-      'overdue': 'bg-red-200 text-red-900'
+      'email_verification_otp': 'bg-purple-100 text-purple-800'
     };
     return colors[type] || 'bg-gray-100 text-gray-800';
   };

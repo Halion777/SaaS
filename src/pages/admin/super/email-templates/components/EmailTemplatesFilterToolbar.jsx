@@ -49,6 +49,7 @@ const EmailTemplatesFilterToolbar = ({
     { value: 'subscription_reactivated', label: 'Subscription Reactivated' },
     { value: 'subscription_trial_ending', label: 'Trial Ending' },
     { value: 'welcome_registration', label: 'Welcome Registration' },
+    { value: 'email_verification_otp', label: 'Email Verification OTP' },
     { value: 'contact_form', label: 'Contact Form' },
     { value: 'credit_insurance_application', label: 'Credit Insurance Application' },
     { value: 'credit_insurance_confirmation', label: 'Credit Insurance Confirmation' },
