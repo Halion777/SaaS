@@ -241,7 +241,6 @@ const EmailTemplatesManagement = () => {
       'invoice_payment_reminder': 'Invoice Payment Reminder',
       'invoice_to_accountant': 'Invoice to Accountant',
       'expense_invoice_to_accountant': 'Expense Invoice to Accountant',
-      'overdue': 'Overdue'
     };
     return typeNames[type] || type;
   };
