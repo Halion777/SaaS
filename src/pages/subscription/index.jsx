@@ -125,7 +125,12 @@ const SubscriptionManagement = () => {
         const result = await SubscriptionNotificationService.getAllPricingData();
         if (result.success && result.data) {
           // Convert database pricing to plans format with features from translations
-          const plansData = Object.entries(result.data).map(([planId, planData]) => {
+          // Order: Starter first, then Pro (matching pricing page)
+          const planOrder = ['starter', 'pro'];
+          const plansData = planOrder.map((planId) => {
+            const planData = result.data[planId];
+            if (!planData) return null;
+            
             // Get features from translations based on plan type
             const planFeatures = [];
             const planLimitations = [];
@@ -160,7 +165,7 @@ const SubscriptionManagement = () => {
               current: false,
               popular: planData.popular || false
             };
-          });
+          }).filter(plan => plan !== null); // Remove any null entries
           setPlans(plansData);
         }
         // Service returns fallback values on error, so we always have data

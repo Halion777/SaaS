@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { supabase } from '../../services/supabaseClient';
 import emailVerificationService from '../../services/emailVerificationService';
@@ -9,52 +9,136 @@ import Button from '../../components/ui/Button';
 /**
  * Auth Confirmation Page
  * Handles email verification when user clicks the link in their email
+ * This page should NOT show navigation/header
  */
 const AuthConfirm = () => {
-  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const [status, setStatus] = useState('verifying'); // verifying, success, error
   const [message, setMessage] = useState('');
 
   useEffect(() => {
+    let subscription = null;
+    let timeoutId = null;
+
+    const handleVerificationSuccess = async (user) => {
+      // Update verification status in public.users table
+      try {
+        await emailVerificationService.updateVerificationStatus(user.id);
+      } catch (updateError) {
+        console.error('Error updating verification status:', updateError);
+        // Continue anyway - email is verified in auth
+      }
+
+      setStatus('success');
+      setMessage('Your email has been verified successfully!');
+
+      // Redirect based on registration status
+      timeoutId = setTimeout(async () => {
+        try {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('registration_completed')
+            .eq('id', user.id)
+            .single();
+
+          if (!userData || !userData.registration_completed) {
+            // Registration not complete, redirect to registration
+            navigate('/register');
+          } else {
+            // Registration complete, redirect to dashboard
+            navigate('/dashboard');
+          }
+        } catch (error) {
+          // If error checking, assume registration not complete
+          navigate('/register');
+        }
+      }, 2000);
+    };
+
     const confirmEmail = async () => {
       try {
-        // Get token from URL
-        const token = searchParams.get('token');
-        const type = searchParams.get('type');
-
-        if (!token) {
-          setStatus('error');
-          setMessage('Invalid verification link. Please try requesting a new verification email.');
-          return;
-        }
-
-        // Verify the email using Supabase
-        const { data, error } = await supabase.auth.verifyOtp({
-          token_hash: token,
-          type: type || 'signup'
+        // Extract hash from URL if present
+        const hash = location.hash;
+        
+        // Listen for auth state changes (Supabase processes hash fragments automatically)
+        const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+          console.log('Auth state change:', event, session?.user?.email);
+          
+          if (event === 'SIGNED_IN' && session?.user) {
+            const user = session.user;
+            console.log('User signed in:', user.email, 'Email confirmed:', user.email_confirmed_at);
+            
+            if (user.email_confirmed_at) {
+              handleVerificationSuccess(user);
+            } else {
+              // User signed in but email not confirmed - might be a different flow
+              console.log('User signed in but email not confirmed yet');
+            }
+          } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+            const user = session.user;
+            if (user.email_confirmed_at) {
+              handleVerificationSuccess(user);
+            }
+          }
         });
 
-        if (error) {
-          console.error('Verification error:', error);
-          setStatus('error');
-          setMessage(error.message || 'Failed to verify email. The link may have expired.');
+        subscription = authSubscription;
+
+        // Wait a bit for Supabase to process hash fragments
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Check current session (Supabase may have already processed hash)
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          // Don't fail immediately - wait for auth state change
+          setTimeout(() => {
+            if (status === 'verifying') {
+              setStatus('error');
+              setMessage('Invalid or expired verification link. Please try requesting a new verification email.');
+            }
+          }, 3000);
           return;
         }
 
-        if (data?.user) {
-          // Update verification status in public.users table
-          await emailVerificationService.updateVerificationStatus(data.user.id);
+        if (session?.user) {
+          const user = session.user;
+          console.log('Session found:', user.email, 'Email confirmed:', user.email_confirmed_at);
+          
+          if (user.email_confirmed_at) {
+            handleVerificationSuccess(user);
+            return;
+          } else {
+            // Session exists but email not confirmed - wait a bit more
+            console.log('Session exists but email not confirmed, waiting...');
+            setTimeout(async () => {
+              const { data: { session: retrySession } } = await supabase.auth.getSession();
+              if (retrySession?.user?.email_confirmed_at) {
+                handleVerificationSuccess(retrySession.user);
+              } else if (status === 'verifying') {
+                setStatus('error');
+                setMessage('Email verification failed. The link may have expired. Please try requesting a new verification email.');
+              }
+            }, 2000);
+            return;
+          }
         }
 
-        // Success!
-        setStatus('success');
-        setMessage('Your email has been verified successfully!');
-
-        // Redirect to dashboard after 3 seconds
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 3000);
+        // No session found - wait a bit more for Supabase to process hash
+        console.log('No session found, waiting for hash processing...');
+        setTimeout(async () => {
+          const { data: { session: retrySession } } = await supabase.auth.getSession();
+          console.log('Retry session:', retrySession?.user?.email, 'Email confirmed:', retrySession?.user?.email_confirmed_at);
+          
+          if (retrySession?.user && retrySession.user.email_confirmed_at) {
+            handleVerificationSuccess(retrySession.user);
+          } else if (!retrySession?.user && status === 'verifying') {
+            setStatus('error');
+            setMessage('Invalid or expired verification link. Please try requesting a new verification email.');
+          }
+        }, 2500);
 
       } catch (error) {
         console.error('Verification exception:', error);
@@ -64,7 +148,17 @@ const AuthConfirm = () => {
     };
 
     confirmEmail();
-  }, [searchParams, navigate]);
+
+    // Cleanup on unmount
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [navigate]);
 
   return (
     <>
@@ -91,7 +185,7 @@ const AuthConfirm = () => {
               <p className="text-muted-foreground mb-6">{message}</p>
               <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
                 <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                <span>Redirecting to dashboard...</span>
+                <span>Redirecting...</span>
               </div>
             </>
           )}
@@ -105,10 +199,10 @@ const AuthConfirm = () => {
               <p className="text-muted-foreground mb-6">{message}</p>
               <div className="space-y-3">
                 <Button 
-                  onClick={() => navigate('/dashboard')} 
+                  onClick={() => navigate('/register')} 
                   className="w-full"
                 >
-                  Go to Dashboard
+                  Go to Registration
                 </Button>
                 <Button 
                   onClick={() => navigate('/login')} 

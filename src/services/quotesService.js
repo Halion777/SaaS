@@ -1243,20 +1243,20 @@ async function triggerFollowUpCreation(quoteId, quoteStatus) {
           
           // Stop active follow-ups (they will be replaced)
           if (['pending', 'scheduled', 'ready_for_dispatch'].includes(followUp.status)) {
-            await supabase
-              .from('quote_follow_ups')
-              .update({
-                status: 'stopped',
-                updated_at: new Date().toISOString(),
-                meta: {
+          await supabase
+            .from('quote_follow_ups')
+            .update({
+              status: 'stopped',
+              updated_at: new Date().toISOString(),
+              meta: {
                   ...meta,
-                  stopped_reason: 'replaced_with_new_followup',
-                  stopped_at: new Date().toISOString(),
+                stopped_reason: 'replaced_with_new_followup',
+                stopped_at: new Date().toISOString(),
                   reason: 'quote_status_change_to_sent',
                   previous_status: followUp.status
-                }
-              })
-              .eq('id', followUp.id);
+              }
+            })
+            .eq('id', followUp.id);
           }
           // Only replace stopped follow-ups that were stopped due to expiration
           // Leave other stopped follow-ups (from accepted/rejected) alone

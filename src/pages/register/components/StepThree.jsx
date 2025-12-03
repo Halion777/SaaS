@@ -189,15 +189,15 @@ const StepThree = ({ formData, updateFormData, errors }) => {
 
             <div className="space-y-3 mb-6">
               {plan.features.map((feature, index) => (
-                <div key={index} className="flex items-center space-x-3">
-                  <Icon name="Check" size={16} color="var(--color-success)" />
-                  <span className="text-sm text-foreground">{feature}</span>
+                <div key={index} className="flex items-start space-x-3">
+                  <Icon name="Check" size={16} color="var(--color-success)" className="flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-foreground flex-1">{feature}</span>
                 </div>
               ))}
               {plan.limitations.map((limitation, index) => (
-                <div key={index} className="flex items-center space-x-3">
-                  <Icon name="X" size={16} color="var(--color-muted-foreground)" />
-                  <span className="text-sm text-muted-foreground">{limitation}</span>
+                <div key={index} className="flex items-start space-x-3">
+                  <Icon name="X" size={16} color="var(--color-muted-foreground)" className="flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-muted-foreground flex-1">{limitation}</span>
                 </div>
               ))}
             </div>

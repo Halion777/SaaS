@@ -91,6 +91,7 @@ const AppRoutes = () => {
               <ResetPasswordPage />
             </PublicRoute>
           } />
+          <Route path="/auth-confirm" element={<AuthConfirm />} />
           <Route path="/auth/confirm" element={<AuthConfirm />} />
           <Route path="/pricing" element={
             <PublicRoute>

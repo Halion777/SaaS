@@ -421,7 +421,7 @@ export async function completeRegistration(formData) {
     sessionStorage.removeItem('pendingRegistration');
     sessionStorage.removeItem('registration_complete');
     
-    // Step 1: Create auth user (will fail if user already exists with completed registration)
+    // Step 1: Create auth user (will fail if user already exists)
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: formData.email.toLowerCase().trim(),
       password: formData.password,
@@ -441,6 +441,53 @@ export async function completeRegistration(formData) {
     });
 
     if (authError) {
+      // If user already exists (created during email verification), try to sign in and update password
+      if (authError.message?.includes('already registered') || authError.message?.includes('already exists') || authError.code === 'user_already_registered') {
+        console.log('User already exists, attempting to sign in and update password');
+        
+        // Try to sign in with the provided password
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: formData.email.toLowerCase().trim(),
+          password: formData.password
+        });
+
+        if (signInError) {
+          // Password doesn't match - user might have used different password during verification
+          // Try to update password (requires user to be signed in)
+          // Since we can't sign in, we need to handle this differently
+          // For now, return error asking user to use the same password or reset
+          console.error('Cannot sign in with provided password:', signInError);
+          return { 
+            error: { 
+              message: 'The password you entered doesn\'t match. Please use the same password you used when verifying your email, or use "Forgot Password" to reset it.',
+              code: 'password_mismatch'
+            } 
+          };
+        }
+
+        // Successfully signed in, update user metadata
+        const { error: updateError } = await supabase.auth.updateUser({
+          data: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            company_name: formData.companyName,
+            vat_number: formData.vatNumber,
+            phone: formData.phone,
+            profession: formData.profession,
+            country: formData.country,
+            business_size: formData.businessSize,
+            selected_plan: formData.selectedPlan
+          }
+        });
+
+        if (updateError) {
+          console.error('Error updating user metadata:', updateError);
+        }
+
+        console.log('Using existing auth user:', signInData.user.id);
+        return { data: signInData, error: null };
+      }
+      
       console.error('Auth signup error:', authError);
       return { error: authError };
     }

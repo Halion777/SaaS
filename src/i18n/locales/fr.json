@@ -1143,7 +1143,7 @@
     "required": "Ce champ est requis",
     "invalidEmail": "Veuillez entrer une adresse email valide",
     "tooShort": "Le mot de passe doit contenir au moins 8 caractères",
-    "invalidPhone": "Veuillez entrer un numéro de téléphone valide (10-15 chiffres)",
+    "invalidPhone": "Veuillez entrer un numéro de téléphone valide (9-15 chiffres)",
     "emailNotConfirmed": "Veuillez vérifier votre email pour confirmation",
     "emailAlreadyExists": "Cette adresse email est déjà enregistrée",
     "registrationFailed": "L'inscription a échoué. Veuillez réessayer.",

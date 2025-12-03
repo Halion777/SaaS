@@ -317,6 +317,16 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
   const saveAccountData = async () => {
     if (!actualUser?.id) return;
     
+    // Validate phone number - should be between 9-15 digits with optional + prefix
+    if (editingAccountData.phone && editingAccountData.phone.trim()) {
+      const phoneRegex = /^\+?[0-9]{9,15}$/;
+      const phoneWithoutSpaces = editingAccountData.phone.replace(/\s/g, '');
+      if (!phoneRegex.test(phoneWithoutSpaces)) {
+        alert(t('errors.invalidPhone', 'Please enter a valid phone number (9-15 digits)'));
+        return;
+      }
+    }
+    
     try {
       setSavingAccountData(true);
       

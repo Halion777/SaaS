@@ -2,21 +2,21 @@ import { supabase } from './supabaseClient';
 
 /**
  * Email Verification Service
- * Handles all email verification related operations
+ * Handles all email verification related operations using OTP via Resend
  */
 class EmailVerificationService {
   /**
-   * Send verification email to user
+   * Send OTP verification email to user
    * @param {string} email - User's email address
-   * @returns {Promise<{success: boolean, error?: string}>}
+   * @returns {Promise<{success: boolean, error?: string, message?: string}>}
    */
   async sendVerificationEmail(email) {
     try {
-      // Supabase automatically sends verification email on signup
-      // This method triggers a re-send
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: email
+      const { data, error } = await supabase.functions.invoke('email-verification-otp', {
+        body: {
+          action: 'generate',
+          email: email.toLowerCase().trim()
+        }
       });
 
       if (error) {
@@ -27,9 +27,63 @@ class EmailVerificationService {
         };
       }
 
-      return { success: true };
+      if (data?.error) {
+        return {
+          success: false,
+          error: data.error
+        };
+      }
+
+      return { 
+        success: true,
+        message: data?.message || 'Verification code sent to your email'
+      };
     } catch (error) {
       console.error('Exception sending verification email:', error);
+      return { 
+        success: false, 
+        error: 'An unexpected error occurred' 
+      };
+    }
+  }
+
+  /**
+   * Verify OTP code
+   * @param {string} email - User's email address
+   * @param {string} otp - 6-digit OTP code
+   * @returns {Promise<{success: boolean, error?: string, message?: string}>}
+   */
+  async verifyOTP(email, otp) {
+    try {
+      const { data, error } = await supabase.functions.invoke('email-verification-otp', {
+        body: {
+          action: 'verify',
+          email: email.toLowerCase().trim(),
+          otp: otp
+        }
+      });
+
+      if (error) {
+        console.error('Error verifying OTP:', error);
+        return { 
+          success: false, 
+          error: error.message || 'Failed to verify code' 
+        };
+      }
+
+      if (data?.error) {
+        return {
+          success: false,
+          error: data.error
+        };
+      }
+
+      return { 
+        success: true,
+        message: data?.message || 'Email verified successfully'
+      };
+    } catch (error) {
+      console.error('Exception verifying OTP:', error);
       return { 
         success: false, 
         error: 'An unexpected error occurred' 
@@ -94,11 +148,31 @@ class EmailVerificationService {
 
   /**
    * Update email verification status in public.users
+   * Only updates if user exists in public.users - does NOT create user
    * @param {string} userId - User ID
    * @returns {Promise<{success: boolean}>}
    */
   async updateVerificationStatus(userId) {
     try {
+      // First check if user exists in public.users
+      const { data: existingUser, error: checkError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking user existence:', checkError);
+        return { success: false };
+      }
+
+      // Only update if user exists - don't create new user
+      if (!existingUser) {
+        console.log('User does not exist in public.users yet - skipping verification update. User will be created during registration.');
+        return { success: true }; // Return success since email is verified in auth.users
+      }
+
+      // Update verification status for existing user
       const { error } = await supabase
         .from('users')
         .update({

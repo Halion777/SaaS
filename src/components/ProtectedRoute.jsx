@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useMultiUser } from '../context/MultiUserContext';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../services/supabaseClient';
+import { SUPPORT_EMAIL } from '../config/appConfig';
 import TableLoader from './ui/TableLoader';
 import Button from './ui/Button';
 import Icon from './AppIcon';
@@ -41,7 +42,8 @@ const getCachedSubscription = (userId) => {
     
     // IMPORTANT: Even if cache is valid, check if subscription itself has expired
     // This prevents users from accessing app if subscription ended while using cached data
-    if (data.status === 'active' && data.subscriptionData && !data.isSuperAdmin) {
+    // Skip expiration check for lifetime access users
+    if (data.status === 'active' && data.subscriptionData && !data.isSuperAdmin && !data.hasLifetimeAccess) {
       const subData = data.subscriptionData;
       const currentTime = new Date();
       
@@ -79,12 +81,13 @@ const getCachedSubscription = (userId) => {
  * Save subscription data to localStorage cache
  * This resets the 30-minute timer every time it's called
  */
-const setCachedSubscription = (userId, status, isSuperAdmin = false, subscriptionData = null) => {
+const setCachedSubscription = (userId, status, isSuperAdmin = false, subscriptionData = null, hasLifetimeAccess = false) => {
   try {
     const cacheData = {
       userId,
       status,
       isSuperAdmin,
+      hasLifetimeAccess,
       subscriptionData,
       timestamp: Date.now() // Fresh timestamp on every save = resets 30-min timer
     };
@@ -138,10 +141,10 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
       
       try {
         // Always try to fetch fresh data from network
-        // Step 1: Check if user is a super admin
+        // Step 1: Check if user is a super admin or has lifetime access
         const { data: userData, error: userError } = await supabase
           .from('users')
-          .select('role')
+          .select('role, has_lifetime_access, email')
           .eq('id', user.id)
           .single();
 
@@ -152,7 +155,7 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
             if (cachedData.subscriptionExpired) {
               setShowExpiredModal(true);
               setSubscriptionStatus('expired');
-            } else if (cachedData.status === 'active' || cachedData.isSuperAdmin) {
+            } else if (cachedData.status === 'active' || cachedData.isSuperAdmin || cachedData.hasLifetimeAccess) {
               setSubscriptionStatus('active');
             } else {
               setShowExpiredModal(true);
@@ -174,6 +177,28 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
           return;
         }
 
+        // Check for lifetime access
+        if (userData?.has_lifetime_access === true) {
+          setSubscriptionStatus('active');
+          // Update cache with fresh timestamp (resets 30-min timer)
+          setCachedSubscription(user.id, 'active', false, null, true);
+          setSubscriptionLoading(false);
+          return;
+        }
+
+        // Special case: Support email gets lifetime access
+        if (userData?.email === SUPPORT_EMAIL) {
+          // Grant lifetime access to this email
+          await supabase
+            .from('users')
+            .update({ has_lifetime_access: true })
+            .eq('id', user.id);
+          setSubscriptionStatus('active');
+          setCachedSubscription(user.id, 'active', false, null, true);
+          setSubscriptionLoading(false);
+          return;
+        }
+
         // Step 2: Fetch subscription status from database
         const { data: subscriptionData, error } = await supabase
           .from('subscriptions')
@@ -186,13 +211,13 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
         // If network error on subscription fetch, use cache as fallback
         if (error && error.code !== 'PGRST116') {
           if (cachedData) {
-            // Check if subscription expired based on cached dates
-            if (cachedData.subscriptionExpired) {
-              setShowExpiredModal(true);
-              setSubscriptionStatus('expired');
-            } else if (cachedData.status === 'active') {
-              setSubscriptionStatus('active');
-            } else {
+          // Check if subscription expired based on cached dates
+          if (cachedData.subscriptionExpired && !cachedData.hasLifetimeAccess) {
+            setShowExpiredModal(true);
+            setSubscriptionStatus('expired');
+          } else if (cachedData.status === 'active' || cachedData.hasLifetimeAccess) {
+            setSubscriptionStatus('active');
+          } else {
               setShowExpiredModal(true);
               setSubscriptionStatus(cachedData.status);
             }
@@ -246,9 +271,9 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
           if (cachedData.subscriptionExpired) {
             setShowExpiredModal(true);
             setSubscriptionStatus('expired');
-          } else if (cachedData.status === 'active' || cachedData.isSuperAdmin) {
-            setSubscriptionStatus('active');
-          } else {
+            } else if (cachedData.status === 'active' || cachedData.isSuperAdmin || cachedData.hasLifetimeAccess) {
+              setSubscriptionStatus('active');
+            } else {
             setShowExpiredModal(true);
             setSubscriptionStatus(cachedData.status);
           }

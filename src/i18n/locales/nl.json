@@ -1143,7 +1143,7 @@
     "required": "Dit veld is verplicht",
     "invalidEmail": "Voer een geldig e-mailadres in",
     "tooShort": "Wachtwoord moet minimaal 8 tekens bevatten",
-    "invalidPhone": "Voer een geldig telefoonnummer in (10-15 cijfers)",
+    "invalidPhone": "Voer een geldig telefoonnummer in (9-15 cijfers)",
     "emailNotConfirmed": "Controleer uw e-mail voor bevestiging",
     "emailAlreadyExists": "Dit e-mailadres is al geregistreerd",
     "registrationFailed": "Registratie mislukt. Probeer het opnieuw.",

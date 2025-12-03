@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabaseClient';
+import { SUPPORT_EMAIL } from '../config/appConfig';
 import TableLoader from './ui/TableLoader';
 import Button from './ui/Button';
 import Icon from './AppIcon';
@@ -29,16 +30,35 @@ const SubscriptionGuard = ({ children }) => {
       }
 
       try {
-        // First, check if user is a super admin
+        // First, check if user is a super admin or has lifetime access
         const { data: userData, error: userError } = await supabase
           .from('users')
-          .select('role')
+          .select('role, has_lifetime_access, email')
           .eq('id', user.id)
           .single();
 
         // Super admin users are exempt from subscription checks
         if (userData?.role === 'superadmin') {
           setIsSuperAdmin(true);
+          setSubscriptionStatus('active');
+          setLoading(false);
+          return;
+        }
+
+        // Check for lifetime access
+        if (userData?.has_lifetime_access === true) {
+          setSubscriptionStatus('active');
+          setLoading(false);
+          return;
+        }
+
+        // Special case: Support email gets lifetime access
+        if (userData?.email === SUPPORT_EMAIL) {
+          // Grant lifetime access to this email
+          await supabase
+            .from('users')
+            .update({ has_lifetime_access: true })
+            .eq('id', user.id);
           setSubscriptionStatus('active');
           setLoading(false);
           return;

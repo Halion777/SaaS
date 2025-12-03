@@ -24,12 +24,14 @@ const Register = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isValidatingEmail, setIsValidatingEmail] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     password: '',
+    emailVerified: false,
     phone: '',
     companyName: '',
     vatNumber: '',
@@ -86,7 +88,7 @@ const Register = () => {
     }
   };
 
-  const validateStep = (step) => {
+  const validateStep = async (step) => {
     const newErrors = {};
 
     if (step === 1) {
@@ -95,12 +97,32 @@ const Register = () => {
       if (!formData.profession) newErrors.profession = t('errors.required');
       if (!formData.email.trim()) newErrors.email = t('errors.required');
       else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = t('errors.invalidEmail');
+      else if (!formData.emailVerified) newErrors.email = t('errors.emailNotVerified');
+      else {
+        // Check if email already exists (only if email is valid and verified)
+        try {
+          const { data: checkData, error: checkError } = await checkUserRegistration(formData.email.toLowerCase().trim());
+          
+          if (checkError) {
+            newErrors.email = t('errors.registrationFailed');
+          } else if (checkData && !checkData.canRegister) {
+            // Email already exists and registration is complete
+            newErrors.email = checkData.message || t('errors.emailAlreadyExists');
+          } else if (checkData && checkData.userExists && checkData.registrationComplete) {
+            // User exists and has completed registration
+            newErrors.email = checkData.message || t('errors.emailAlreadyExists');
+          }
+        } catch (error) {
+          console.error('Error checking email uniqueness:', error);
+          // Don't block on check error, but log it
+        }
+      }
       if (!formData.password) newErrors.password = t('errors.required');
       else if (formData.password.length < 8) newErrors.password = t('errors.tooShort');
       if (!formData.phone.trim()) newErrors.phone = t('errors.required');
       else {
-        // Phone number validation - should be between 10-15 digits with optional + prefix
-        const phoneRegex = /^\+?[0-9]{10,15}$/;
+        // Phone number validation - should be between 9-15 digits with optional + prefix
+        const phoneRegex = /^\+?[0-9]{9,15}$/;
         if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
           newErrors.phone = t('errors.invalidPhone');
         }
@@ -127,9 +149,17 @@ const Register = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNext = () => {
-    if (validateStep(currentStep)) {
-      setCurrentStep(prev => prev + 1);
+  const handleNext = async () => {
+    if (currentStep === 1) {
+      setIsValidatingEmail(true);
+    }
+    try {
+      const isValid = await validateStep(currentStep);
+      if (isValid) {
+        setCurrentStep(prev => prev + 1);
+      }
+    } finally {
+      setIsValidatingEmail(false);
     }
   };
 
@@ -554,10 +584,10 @@ const Register = () => {
                       onClick={currentStep === 3 ? handleSubmit : handleNext}
                       iconName={currentStep === 3 ? undefined : "ChevronRight"}
                       iconPosition="right"
-                      disabled={isLoading}
-                      isLoading={isLoading}
+                      disabled={isLoading || isValidatingEmail}
+                      isLoading={isLoading || isValidatingEmail}
                     >
-                      {isLoading ? t('ui.buttons.loading') : getButtonText()}
+                      {isLoading || isValidatingEmail ? t('ui.buttons.loading') : getButtonText()}
                     </Button>
                   </div>
                 </div>

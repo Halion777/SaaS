@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next';
 import Input from '../../../components/ui/Input';
 import Icon from '../../../components/AppIcon';
 import Select from '../../../components/ui/Select';
+import Button from '../../../components/ui/Button';
 import { COUNTRY_PHONE_CODES } from '../../../utils/countryCodes';
+import { supabase } from '../../../services/supabaseClient';
+import emailVerificationService from '../../../services/emailVerificationService';
 
 
 const StepOne = ({ formData, updateFormData, errors }) => {
@@ -13,6 +16,14 @@ const StepOne = ({ formData, updateFormData, errors }) => {
   const [phoneCountryCode, setPhoneCountryCode] = useState(
     COUNTRY_PHONE_CODES[formData.country] || '+32'
   );
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [verificationError, setVerificationError] = useState('');
+  const [verificationSuccess, setVerificationSuccess] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [isVerifyingOTP, setIsVerifyingOTP] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const calculatePasswordStrength = (password) => {
     let strength = 0;
@@ -41,6 +52,181 @@ const StepOne = ({ formData, updateFormData, errors }) => {
     if (passwordStrength < 50) return t('registerForm.step1.passwordMedium');
     if (passwordStrength < 75) return t('registerForm.step1.passwordGood');
     return t('registerForm.step1.passwordExcellent');
+  };
+
+  // Recalculate password strength when component mounts or password changes
+  useEffect(() => {
+    if (formData.password) {
+      setPasswordStrength(calculatePasswordStrength(formData.password));
+    } else {
+      setPasswordStrength(0);
+    }
+  }, [formData.password]);
+
+  // Check email verification status on mount and when email changes
+  useEffect(() => {
+    const checkEmailVerification = async () => {
+      if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
+        setEmailVerified(false);
+        setVerificationSent(false);
+        setVerificationError('');
+        setVerificationSuccess(false);
+        setResendCooldown(0);
+        updateFormData('emailVerified', false);
+        return;
+      }
+
+      try {
+        // Check if user exists in auth and email is verified
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        if (!error && user && user.email === formData.email.toLowerCase().trim()) {
+          // User is signed in and email matches
+          if (user.email_confirmed_at) {
+            // Email is verified in auth
+            setEmailVerified(true);
+            updateFormData('emailVerified', true);
+            setVerificationSent(false);
+            setVerificationSuccess(true);
+            setVerificationError('');
+            return;
+          }
+        }
+
+        // Check in public.users table if user exists
+        const { checkUserRegistration } = await import('../../../services/authService');
+        const checkResult = await checkUserRegistration(formData.email.toLowerCase().trim());
+        
+        if (checkResult.data?.userExists) {
+          // User exists, check if we can get their verification status
+          try {
+            const { data: userData } = await supabase
+              .from('users')
+              .select('email_verified, email_verified_at')
+              .eq('email', formData.email.toLowerCase().trim())
+              .maybeSingle();
+
+            if (userData?.email_verified) {
+              // Email is verified in public.users
+              setEmailVerified(true);
+              updateFormData('emailVerified', true);
+              setVerificationSent(false);
+              setVerificationSuccess(true);
+              setVerificationError('');
+              return;
+            }
+          } catch (error) {
+            // Continue to reset state if check fails
+          }
+        }
+
+        // Email not verified - reset state
+        setOtp('');
+        setEmailVerified(false);
+        setVerificationSent(false);
+        setVerificationError('');
+        setVerificationSuccess(false);
+        setResendCooldown(0);
+        updateFormData('emailVerified', false);
+      } catch (error) {
+        console.error('Error checking email verification:', error);
+        // On error, assume not verified
+        setEmailVerified(false);
+        updateFormData('emailVerified', false);
+      }
+    };
+
+    checkEmailVerification();
+  }, [formData.email]);
+
+  // Countdown timer for resend cooldown
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => {
+        setResendCooldown(resendCooldown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
+
+  // Handle send OTP verification email
+  const handleSendVerification = async () => {
+    if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
+      return;
+    }
+
+    setIsVerifying(true);
+    setVerificationError('');
+    setVerificationSuccess(false);
+    
+    try {
+      // First, check if email already exists with completed registration
+      const { checkUserRegistration } = await import('../../../services/authService');
+      const checkResult = await checkUserRegistration(formData.email.toLowerCase().trim());
+      const checkData = checkResult.data;
+      const checkError = checkResult.error;
+      
+      if (!checkError && checkData) {
+        // If user exists and registration is complete, don't allow verification
+        if (checkData.userExists && checkData.registrationComplete) {
+          setVerificationError(checkData.message || 'This email is already registered. Please log in instead.');
+          setIsVerifying(false);
+          setVerificationSuccess(false);
+          return;
+        }
+      }
+
+      // Send OTP via Resend
+      const result = await emailVerificationService.sendVerificationEmail(formData.email.toLowerCase().trim());
+
+      if (result.success) {
+        setVerificationSuccess(true);
+        setVerificationSent(true);
+        setVerificationError('');
+        setOtp(''); // Reset OTP input
+        // Start 30-second cooldown
+        setResendCooldown(30);
+      } else {
+        setVerificationError(result.error || 'Failed to send verification code. Please try again.');
+        setVerificationSuccess(false);
+      }
+    } catch (error) {
+      console.error('Error sending verification email:', error);
+      setVerificationError(t('registerForm.step1.verificationError') || 'Error sending verification email. Please try again.');
+      setVerificationSuccess(false);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // Handle OTP verification
+  const handleVerifyOTP = async () => {
+    if (!otp || otp.length !== 6) {
+      setVerificationError('Please enter a valid 6-digit code');
+      return;
+    }
+
+    setIsVerifyingOTP(true);
+    setVerificationError('');
+
+    try {
+      const result = await emailVerificationService.verifyOTP(formData.email.toLowerCase().trim(), otp);
+
+      if (result.success) {
+        setEmailVerified(true);
+        updateFormData('emailVerified', true);
+        setVerificationSuccess(true);
+        setVerificationError('');
+        setOtp('');
+      } else {
+        setVerificationError(result.error || 'Invalid verification code. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      setVerificationError('An error occurred while verifying the code. Please try again.');
+    } finally {
+      setIsVerifyingOTP(false);
+    }
   };
 
   // Update phone country code when country changes
@@ -215,15 +401,172 @@ const StepOne = ({ formData, updateFormData, errors }) => {
           required
         />
 
-        <Input
-          label={t('registerForm.step1.email')}
-          type="email"
-          placeholder={t('registerForm.step1.emailPlaceholder')}
-          value={formData.email}
-          onChange={(e) => updateFormData('email', e.target.value)}
-          error={errors.email}
-          required
-        />
+        <div className="space-y-2">
+          <div className="space-y-2">
+            <div className="flex items-start gap-2">
+              <div className="flex-1">
+                <Input
+                  label={t('registerForm.step1.email')}
+                  type="email"
+                  placeholder={t('registerForm.step1.emailPlaceholder')}
+                  value={formData.email}
+                  onChange={(e) => {
+                    updateFormData('email', e.target.value);
+                    setEmailVerified(false);
+                    setVerificationSent(false);
+                    setVerificationError('');
+                    setVerificationSuccess(false);
+                    updateFormData('emailVerified', false);
+                  }}
+                  error={errors.email}
+                  required
+                />
+              </div>
+              {formData.email && /\S+@\S+\.\S+/.test(formData.email) && (
+                <Button
+                  type="button"
+                  onClick={handleSendVerification}
+                  disabled={isVerifying || emailVerified || verificationSent}
+                  variant={
+                    emailVerified ? "success" : 
+                    verificationSuccess ? "success" : 
+                    verificationError ? "destructive" : 
+                    "outline"
+                  }
+                  size="sm"
+                  className="mt-[22px] h-10 flex-shrink-0"
+                >
+                {isVerifying ? (
+                  <>
+                    <Icon name="Loader" size={16} className="mr-2 animate-spin" />
+                    {t('registerForm.step1.verifying') || 'Sending...'}
+                  </>
+                ) : emailVerified ? (
+                  <>
+                    <Icon name="CheckCircle" size={16} className="mr-2" />
+                    {t('registerForm.step1.verified') || 'Verified'}
+                  </>
+                ) : verificationSuccess ? (
+                  <>
+                    <Icon name="CheckCircle" size={16} />
+                  </>
+                ) : verificationError ? (
+                  <>
+                    <Icon name="XCircle" size={16} className="mr-2" />
+                    {t('registerForm.step1.failed') || 'Failed'}
+                  </>
+                ) : (
+                  <>
+                    <Icon name="Mail" size={16} className="mr-2" />
+                    {t('registerForm.step1.verify') || 'Verify'}
+                  </>
+                )}
+                </Button>
+              )}
+            </div>
+          </div>
+          
+          {/* OTP Input - Show after verification email is sent */}
+          {verificationSent && !emailVerified && (
+            <div className="space-y-3 mt-3 p-4 bg-muted/50 rounded-lg border border-border">
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Input
+                    label={t('registerForm.step1.otpLabel') || 'Verification Code'}
+                    type="text"
+                    placeholder="000000"
+                    value={otp}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                      setOtp(value);
+                      setVerificationError('');
+                    }}
+                    maxLength={6}
+                    error={verificationError}
+                    className="text-center text-2xl tracking-widest font-mono"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  onClick={handleVerifyOTP}
+                  disabled={isVerifyingOTP || otp.length !== 6}
+                  variant="default"
+                  size="sm"
+                  className="mb-0 h-10"
+                >
+                  {isVerifyingOTP ? (
+                    <>
+                      <Icon name="Loader" size={16} className="mr-2 animate-spin" />
+                      {t('registerForm.step1.verifying') || 'Verifying...'}
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="Check" size={16} className="mr-2" />
+                      {t('registerForm.step1.confirm') || 'Confirm'}
+                    </>
+                  )}
+                </Button>
+              </div>
+              
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{t('registerForm.step1.otpExpires') || 'Code expires in 10 minutes'}</span>
+                <button
+                  type="button"
+                  onClick={handleSendVerification}
+                  disabled={isVerifying || resendCooldown > 0}
+                  className="text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isVerifying ? (
+                    t('registerForm.step1.verifying') || 'Sending...'
+                  ) : resendCooldown > 0 ? (
+                    t('registerForm.step1.resendIn', { seconds: resendCooldown }) || `Resend in ${resendCooldown}s`
+                  ) : (
+                    t('registerForm.step1.resendCode') || 'Resend code'
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Status Messages */}
+          {formData.email && /\S+@\S+\.\S+/.test(formData.email) && !verificationSent && (
+            <div className="flex items-start gap-2 text-sm mt-2">
+              {emailVerified ? (
+                <>
+                  <Icon name="CheckCircle" size={16} className="text-success mt-0.5 flex-shrink-0" />
+                  <span className="text-success">{t('registerForm.step1.emailVerified') || 'Email verified successfully'}</span>
+                </>
+              ) : verificationError ? (
+                <>
+                  <Icon name="XCircle" size={16} className="text-error mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <span className="text-error">{verificationError}</span>
+                    {/* Show resend option if there was an error */}
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        onClick={handleSendVerification}
+                        disabled={isVerifying || resendCooldown > 0}
+                        className="text-primary hover:underline text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isVerifying ? (
+                          <>
+                            <Icon name="Loader" size={12} className="inline mr-1 animate-spin" />
+                            {t('registerForm.step1.verifying') || 'Sending...'}
+                          </>
+                        ) : resendCooldown > 0 ? (
+                          t('registerForm.step1.resendIn', { seconds: resendCooldown }) || `Resend in ${resendCooldown}s`
+                        ) : (
+                          t('registerForm.step1.resendCode') || 'Resend code'
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : null}
+            </div>
+          )}
+        </div>
 
         <div className="space-y-2">
           <div className="relative">
@@ -329,9 +672,6 @@ const StepOne = ({ formData, updateFormData, errors }) => {
               />
             </div>
           </div>
-          {errors.phone && (
-            <p className="text-sm text-error mt-1">{errors.phone}</p>
-          )}
         </div>
       </div>
 

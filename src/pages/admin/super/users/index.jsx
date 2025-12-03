@@ -10,6 +10,8 @@ import Select from 'components/ui/Select';
 import SuperAdminSidebar from 'components/ui/SuperAdminSidebar';
 import TableLoader from 'components/ui/TableLoader';
 import UsersFilterToolbar from './components/UsersFilterToolbar';
+import AdminUserService from 'services/adminUserService';
+import { SUPPORT_EMAIL } from 'config/appConfig';
 
 const SuperAdminUsers = () => {
   const { t } = useTranslation();
@@ -31,9 +33,12 @@ const SuperAdminUsers = () => {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [showUserModal, setShowUserModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showLifetimeAccessModal, setShowLifetimeAccessModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
   const [expandedUsers, setExpandedUsers] = useState(new Set());
+  const [lifetimeAccessEmail, setLifetimeAccessEmail] = useState('');
+  const [isGrantingAccess, setIsGrantingAccess] = useState(false);
   const [userStats, setUserStats] = useState({
     total: 0,
     newThisMonth: 0,
@@ -138,6 +143,19 @@ const SuperAdminUsers = () => {
         `)
         .neq('role', 'superadmin')
         .order('created_at', { ascending: false });
+
+      // Grant lifetime access to support email if not already granted
+      if (usersData) {
+        const supportUser = usersData.find(u => u.email === SUPPORT_EMAIL);
+        if (supportUser && !supportUser.has_lifetime_access) {
+          await supabase
+            .from('users')
+            .update({ has_lifetime_access: true })
+            .eq('id', supportUser.id);
+          // Update in local data
+          supportUser.has_lifetime_access = true;
+        }
+      }
 
       if (error) throw error;
 
@@ -406,6 +424,35 @@ const SuperAdminUsers = () => {
     return t(`multiUserProfiles.roles.${role}.name`, role);
   };
 
+  // Grant lifetime access by email
+  const handleGrantLifetimeAccess = async () => {
+    if (!lifetimeAccessEmail || !lifetimeAccessEmail.includes('@')) {
+      alert('Please enter a valid email address');
+      return;
+    }
+
+    try {
+      setIsGrantingAccess(true);
+
+      const result = await AdminUserService.grantLifetimeAccessByEmail(lifetimeAccessEmail);
+
+      if (result.error) {
+        alert(result.error.message || 'Error granting lifetime access');
+        return;
+      }
+
+      alert(`Lifetime access granted to ${lifetimeAccessEmail}`);
+      setShowLifetimeAccessModal(false);
+      setLifetimeAccessEmail('');
+      await loadUsers();
+    } catch (error) {
+      console.error('Error granting lifetime access:', error);
+      alert(`Error granting lifetime access: ${error.message || 'Please try again.'}`);
+    } finally {
+      setIsGrantingAccess(false);
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -433,7 +480,16 @@ const SuperAdminUsers = () => {
                 </p>
               </div>
               <div className="flex items-center justify-between sm:justify-end space-x-2 sm:space-x-4 w-full sm:w-auto">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 flex-wrap gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowLifetimeAccessModal(true)}
+                    className="sm:h-9 sm:px-3 sm:w-auto"
+                  >
+                    <Icon name="Gift" size={16} className="mr-2" />
+                    Grant Lifetime Access
+                  </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -637,8 +693,16 @@ const SuperAdminUsers = () => {
                                 <Icon name="User" size={20} className="text-muted-foreground" />
                               </div>
                               <div className="ml-4">
-                                <div className="text-sm font-medium text-foreground">
-                                  {user.full_name || 'No Name'}
+                                <div className="flex items-center gap-2">
+                                  <div className="text-sm font-medium text-foreground">
+                                    {user.full_name || 'No Name'}
+                                  </div>
+                                  {user.has_lifetime_access && (
+                                    <span className="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                      <Icon name="Gift" size={12} className="mr-1" />
+                                      Lifetime
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="text-sm text-muted-foreground">{user.email}</div>
                                 {user.company_name && (
@@ -816,9 +880,17 @@ const SuperAdminUsers = () => {
                             <Icon name="User" size={24} className="text-muted-foreground" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-sm font-semibold text-foreground truncate">
-                              {user.full_name || 'No Name'}
-                            </h3>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="text-sm font-semibold text-foreground truncate">
+                                {user.full_name || 'No Name'}
+                              </h3>
+                              {user.has_lifetime_access && (
+                                <span className="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800 flex-shrink-0">
+                                  <Icon name="Gift" size={10} className="mr-1" />
+                                  Lifetime
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                             {user.company_name && (
                               <p className="text-xs text-muted-foreground truncate">{user.company_name}</p>
@@ -1317,6 +1389,68 @@ const SuperAdminUsers = () => {
                   Save Changes
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Grant Lifetime Access Modal */}
+      {showLifetimeAccessModal && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6 border-b border-border">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-foreground">Grant Lifetime Access</h2>
+                <button
+                  onClick={() => {
+                    setShowLifetimeAccessModal(false);
+                    setLifetimeAccessEmail('');
+                  }}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <Icon name="X" size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-sm text-green-800">
+                  <Icon name="Gift" size={16} className="inline mr-2" />
+                  Enter the user's email address to grant them lifetime access. They will be able to use the app for free without any charges.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Email Address <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="email"
+                  value={lifetimeAccessEmail}
+                  onChange={(e) => setLifetimeAccessEmail(e.target.value)}
+                  placeholder="user@example.com"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-border flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowLifetimeAccessModal(false);
+                  setLifetimeAccessEmail('');
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleGrantLifetimeAccess}
+                disabled={isGrantingAccess}
+              >
+                {isGrantingAccess ? 'Granting...' : 'Grant Lifetime Access'}
+              </Button>
             </div>
           </div>
         </div>
