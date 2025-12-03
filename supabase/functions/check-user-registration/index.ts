@@ -113,7 +113,13 @@ serve(async (req) => {
     
     const hasSubscriptionHistory = subscriptionHistory && subscriptionHistory.length > 0
 
-    if (userData.registration_completed) {
+    // Defensively check registration_completed (handle both boolean and string values)
+    // Convert to boolean: true if value is boolean true or string 'true', false otherwise
+    const isRegistrationCompleted = userData.registration_completed === true || 
+                                    userData.registration_completed === 'true' ||
+                                    (typeof userData.registration_completed === 'string' && userData.registration_completed.toLowerCase() === 'true')
+    
+    if (isRegistrationCompleted) {
       // User has completed registration - check if they can register again
       // They CANNOT register again (should login instead)
       console.log('User has completed registration - blocking registration');

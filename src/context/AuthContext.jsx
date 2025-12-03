@@ -210,16 +210,23 @@ export const AuthProvider = ({ children }) => {
           // Check if user is on password reset page (don't redirect)
           const isPasswordReset = window.location.pathname === '/reset-password';
           
-          if (!isRegistrationPending && !isPasswordReset) {
+          // Check if we're on login page with incomplete registration error (don't redirect)
+          const isLoginPage = window.location.pathname === '/login';
+          
+          if (!isRegistrationPending && !isPasswordReset && !isLoginPage) {
             // Redirect based on role after sign in (only if not during registration or password reset)
             if (session.user) {
               redirectBasedOnRole(session.user.id);
             }
           }
         } else if (event === 'SIGNED_OUT') {
+          // Don't clear state if we're on login page (might be showing error)
+          const isLoginPage = window.location.pathname === '/login';
+          if (!isLoginPage) {
           setUser(null);
           setSession(null);
           setIsProfileSelected(false);
+          }
         } else if (event === 'TOKEN_REFRESHED' && session) {
           setUser(prevUser => {
             if (prevUser?.id !== session.user?.id) {
@@ -372,7 +379,6 @@ export const AuthProvider = ({ children }) => {
           // Redirect based on role AFTER profile logic is complete
           redirectBasedOnRole(data.user.id);
         } catch (profileError) {
-          console.error('Error checking profiles during login:', profileError);
           setIsProfileSelected(false);
           // Redirect based on role even on error
           redirectBasedOnRole(data.user.id);
@@ -381,7 +387,6 @@ export const AuthProvider = ({ children }) => {
       
       return { data, error: null };
     } catch (error) {
-      console.error('Login error:', error);
       return { data: null, error };
     }
   };

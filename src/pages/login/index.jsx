@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
@@ -19,6 +19,8 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showCompleteRegistration, setShowCompleteRegistration] = useState(false);
+  const errorRef = useRef('');
 
   // Check if there's a redirect state from previous route
   const from = location.state?.from;
@@ -31,6 +33,16 @@ const Login = () => {
     }
   }, [isAuthenticated]);
 
+  // Persist error through rerenders
+  useEffect(() => {
+    if (error) {
+      errorRef.current = error;
+    } else if (errorRef.current && !error) {
+      // Restore error if it was cleared
+      setError(errorRef.current);
+    }
+  }, [error]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -40,6 +52,7 @@ const Login = () => {
       // Validate inputs
       if (!email || !password) {
         setError(t('errors.required'));
+        setIsLoading(false);
         return;
       }
 
@@ -49,20 +62,35 @@ const Login = () => {
       if (loginError) {
         // Handle specific error types
         if (loginError.code === 'registration_incomplete') {
-          setError(loginError.message);
-        } else if (loginError.message.includes('Invalid login credentials')) {
-          setError(t('errors.invalidCredentials'));
+          // Don't show error message, just show the complete registration info box
+          setShowCompleteRegistration(true);
+          setError('');
+          errorRef.current = '';
         } else {
-          setError(loginError.message || t('errors.loginFailed'));
+          // Show error for other types (invalid credentials, etc.)
+          const errorMessage = loginError.message?.includes('Invalid login credentials')
+            ? t('errors.invalidCredentials')
+            : loginError.message || t('errors.loginFailed');
+          
+          errorRef.current = errorMessage;
+          setError(errorMessage);
+          
+          // Ensure error persists after any auth state changes from signOut
+          setTimeout(() => {
+            if (errorRef.current) {
+              setError(errorRef.current);
+            }
+          }, 50);
         }
+        
+        setIsLoading(false);
       } else if (data) {
         // Successful login - navigation handled in AuthContext
         // No need to navigate here, AuthContext will handle role-based redirect
+        setIsLoading(false);
       }
     } catch (err) {
-      console.error('Login error:', err);
       setError(t('errors.loginFailed'));
-    } finally {
       setIsLoading(false);
     }
   };
@@ -130,10 +158,31 @@ const Login = () => {
             
             {/* Error Display */}
             {error && (
-              <ErrorMessage 
-                message={error}
-                onClose={() => setError('')}
-              />
+              <div className="mb-6">
+                <ErrorMessage 
+                  message={error}
+                  onClose={() => {
+                    setError('');
+                    errorRef.current = '';
+                  }}
+                />
+              </div>
+            )}
+            
+            {/* Complete Registration Info Box */}
+            {showCompleteRegistration && (
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-900 mb-3">
+                  {t('login.completeRegistrationMessage', 'Complete your registration to access your account.')}
+                </p>
+                <Link 
+                  to={`/register?email=${encodeURIComponent(email)}&resume=true`}
+                  className="inline-flex items-center justify-center w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
+                >
+                  <Icon name="CreditCard" size={16} className="mr-2" />
+                  {t('login.completeRegistration', 'Complete Registration')}
+                </Link>
+              </div>
             )}
             
             <form onSubmit={handleSubmit} className="space-y-6">

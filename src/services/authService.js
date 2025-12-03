@@ -48,11 +48,6 @@ export async function signIn(email, password) {
     });
 
     if (error) {
-      console.error('Login error:', {
-        code: error.code,
-        message: error.message,
-        details: error.details
-      });
       return { data: null, error };
     }
 
@@ -68,8 +63,6 @@ export async function signIn(email, password) {
 
         if (userError || !userData) {
           // User doesn't exist in public.users table - registration incomplete
-          console.log('User registration incomplete, blocking login');
-          
           // Sign out the user immediately
           await supabase.auth.signOut();
           
@@ -84,8 +77,6 @@ export async function signIn(email, password) {
 
         if (!userData.registration_completed) {
           // User exists but registration not completed
-          console.log('User registration not completed, blocking login');
-          
           // Sign out the user immediately
           await supabase.auth.signOut();
           
@@ -106,14 +97,12 @@ export async function signIn(email, password) {
         trackUserLogin(data.user.id);
         
       } catch (storageError) {
-        console.error('Error checking user registration status:', storageError);
         return { data: null, error: storageError };
       }
     }
 
     return { data, error: null };
   } catch (unexpectedError) {
-    console.error('Unexpected login error:', unexpectedError);
     return { data: null, error: unexpectedError };
   }
 }

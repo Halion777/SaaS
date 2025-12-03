@@ -834,7 +834,9 @@
       "setupTime": "Setup in 5 min"
     },
     "haveAccount": "Already have an account?",
-    "loginLink": "Log in"
+    "loginLink": "Log in",
+    "completeRegistration": "Complete Registration",
+    "completeRegistrationMessage": "Complete your registration to access your account."
   },
   "registerForm": {
     "step1": {
@@ -1127,7 +1129,11 @@
       "validating": "Validating email",
       "creating": "Creating account",
       "redirecting": "Redirecting to payment"
-    }
+    },
+    "resumingRegistration": "Resuming incomplete registration",
+    "resumingRegistrationDesc": "We found an incomplete registration for this email. You will be redirected to complete payment.",
+    "passwordMismatch": "This email is already registered but payment was not completed.\n\nPlease either:\n1. Use your original password, or\n2. Use \"Forgot Password\" to reset it, then try registering again.",
+    "resumeError": "Unable to resume registration. Please contact support."
   },
   "forgotPassword": {
     "rememberPassword": "Remember your password?",

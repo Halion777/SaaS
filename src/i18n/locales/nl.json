@@ -834,7 +834,9 @@
       "setupTime": "Setup in 5 min"
     },
     "haveAccount": "Heeft u al een account?",
-    "loginLink": "Inloggen"
+    "loginLink": "Inloggen",
+    "completeRegistration": "Registratie voltooien",
+    "completeRegistrationMessage": "Voltooi uw registratie om toegang te krijgen tot uw account."
   },
   "registerForm": {
     "step1": {
@@ -1110,7 +1112,11 @@
       "validating": "E-mail valideren",
       "creating": "Account aanmaken",
       "redirecting": "Doorverwijzen naar betaling"
-    }
+    },
+    "resumingRegistration": "Onvolledige registratie hervatten",
+    "resumingRegistrationDesc": "We hebben een onvolledige registratie gevonden voor dit e-mailadres. U wordt doorgestuurd om de betaling te voltooien.",
+    "passwordMismatch": "Dit e-mailadres is al geregistreerd maar de betaling is niet voltooid.\n\nGebruik alstublieft:\n1. Uw oorspronkelijke wachtwoord, of\n2. \"Wachtwoord vergeten\" om het te resetten, probeer dan opnieuw te registreren.",
+    "resumeError": "Kan registratie niet hervatten. Neem contact op met de ondersteuning."
   },
   "forgotPassword": {
     "rememberPassword": "Herinner je je wachtwoord?",

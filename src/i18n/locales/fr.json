@@ -835,7 +835,9 @@
       "setupTime": "Configuration en 5 min"
     },
     "haveAccount": "Vous avez déjà un compte ?",
-    "loginLink": "Connexion"
+    "loginLink": "Connexion",
+    "completeRegistration": "Compléter l'inscription",
+    "completeRegistrationMessage": "Complétez votre inscription pour accéder à votre compte."
   },
   "registerForm": {
     "step1": {
@@ -1111,7 +1113,11 @@
       "validating": "Validation de l'email",
       "creating": "Création du compte",
       "redirecting": "Redirection vers le paiement"
-    }
+    },
+    "resumingRegistration": "Reprise de l'inscription incomplète",
+    "resumingRegistrationDesc": "Nous avons trouvé une inscription incomplète pour cet email. Vous serez redirigé pour compléter le paiement.",
+    "passwordMismatch": "Cet email est déjà enregistré mais le paiement n'a pas été complété.\n\nVeuillez soit :\n1. Utiliser votre mot de passe original, ou\n2. Utiliser \"Mot de passe oublié\" pour le réinitialiser, puis réessayer de vous inscrire.",
+    "resumeError": "Impossible de reprendre l'inscription. Veuillez contacter le support."
   },
   "forgotPassword": {
     "rememberPassword": "Vous vous souvenez de votre mot de passe ?",

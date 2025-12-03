@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
 import { completeRegistration, checkUserRegistration } from '../../services/authService';
 import { createCheckoutSession } from '../../services/stripeService';
 import { optimizePaymentFlow } from '../../utils/paymentOptimization';
 import { supabase } from '../../services/supabaseClient';
+import { getCountryName } from '../../utils/countryCodes';
 import Button from '../../components/ui/Button';
 import { Checkbox } from '../../components/ui/Checkbox';
 import Icon from '../../components/AppIcon';
@@ -22,10 +23,12 @@ import Footer from '../../components/Footer';
 const Register = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isValidatingEmail, setIsValidatingEmail] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [isResumingRegistration, setIsResumingRegistration] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -53,12 +56,172 @@ const Register = () => {
   });
   const [errors, setErrors] = useState({});
 
+  // Save Step 1 fields to users table before payment
+  const saveUserDataBeforePayment = async (userId, formData) => {
+    try {
+      const userRecord = {
+        id: userId,
+        email: formData.email.toLowerCase().trim(),
+        first_name: formData.firstName || null,
+        last_name: formData.lastName || null,
+        company_name: formData.companyName || null,
+        vat_number: formData.vatNumber || null,
+        phone: formData.phone || null,
+        profession: formData.profession || null,
+        country: formData.country || 'BE',
+        business_size: formData.businessSize || null,
+        selected_plan: formData.selectedPlan || 'pro',
+        registration_completed: false, // Keep as false until payment succeeds
+        subscription_status: 'trial', // Will be updated after payment
+        email_verified: formData.emailVerified || false
+      };
+
+      // Use upsert to create or update user record
+      await supabase
+        .from('users')
+        .upsert(userRecord, {
+          onConflict: 'id',
+          ignoreDuplicates: false
+        });
+    } catch (error) {
+      // Silently fail - don't block registration if user data save fails
+    }
+  };
+
+  // Save Step 2 fields to company_profiles table before payment
+  const saveCompanyProfileBeforePayment = async (userId, formData) => {
+    try {
+      // Check if company profile already exists
+      const { data: existingCompany } = await supabase
+        .from('company_profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      const companyProfile = {
+        user_id: userId,
+        profile_id: null, // Will be set after user profile is created
+        company_name: formData.companyName || '',
+        vat_number: formData.vatNumber || null,
+        address: formData.companyAddress || null,
+        city: formData.companyCity || null,
+        postal_code: formData.companyPostalCode || null,
+        state: formData.companyState || null,
+        country: getCountryName(formData.country || 'BE'),
+        phone: formData.phone || null,
+        email: formData.email || null,
+        website: formData.companyWebsite || null,
+        iban: formData.companyIban || null,
+        account_name: formData.companyAccountName || null,
+        bank_name: formData.companyBankName || null,
+        is_default: true
+      };
+
+      if (existingCompany) {
+        // Update existing company profile
+        await supabase
+          .from('company_profiles')
+          .update(companyProfile)
+          .eq('id', existingCompany.id);
+      } else {
+        // Create new company profile
+        await supabase
+          .from('company_profiles')
+          .insert(companyProfile);
+      }
+    } catch (error) {
+      // Silently fail - don't block registration if company profile save fails
+    }
+  };
+
+  // Fetch and auto-fill user data when resuming registration
+  const fetchUserDataForResume = async (email) => {
+    try {
+      // First, use checkUserRegistration to get userId
+      const checkResult = await checkUserRegistration(email.toLowerCase().trim());
+      
+      if (!checkResult.data?.userExists || !checkResult.data?.userId) {
+        return;
+      }
+
+      const userId = checkResult.data.userId;
+
+      // Get user data from public.users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      // Get company profile data (contains Step 2 fields)
+      const { data: companyProfile, error: companyError } = await supabase
+        .from('company_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      // Auto-fill form data from database
+      const dataToFill = {
+        email: email.toLowerCase().trim(),
+        // Step 1 fields from users table
+        firstName: userData?.first_name || '',
+        lastName: userData?.last_name || '',
+        phone: userData?.phone || companyProfile?.phone || '',
+        companyName: userData?.company_name || companyProfile?.company_name || '',
+        vatNumber: userData?.vat_number || companyProfile?.vat_number || '',
+        profession: userData?.profession 
+          ? (Array.isArray(userData.profession) ? userData.profession[0] : userData.profession)
+          : '',
+        country: userData?.country || 'BE',
+        businessSize: userData?.business_size || '',
+        selectedPlan: userData?.selected_plan || 'pro',
+        billingCycle: 'monthly', // Default, as this isn't stored in users table
+        // Step 2 fields from company_profiles table
+        companyAddress: companyProfile?.address || '',
+        companyCity: companyProfile?.city || '',
+        companyPostalCode: companyProfile?.postal_code || '',
+        companyState: companyProfile?.state || '',
+        companyWebsite: companyProfile?.website || '',
+        companyIban: companyProfile?.iban || '',
+        companyAccountName: companyProfile?.account_name || '',
+        companyBankName: companyProfile?.bank_name || '',
+      };
+
+      // Update form data
+      Object.keys(dataToFill).forEach(key => {
+        if (dataToFill[key]) {
+          updateFormData(key, dataToFill[key]);
+        }
+      });
+
+      // Check if email is already verified
+      if (userData?.email_verified) {
+        updateFormData('emailVerified', true);
+      }
+    } catch (error) {
+      // Silently fail - don't block registration if we can't fetch data
+    }
+  };
+
   // Clear any existing session storage data when component mounts
   useEffect(() => {
     // Clear any pending registration data from previous attempts
     sessionStorage.removeItem('pendingRegistration');
     sessionStorage.removeItem('registration_complete');
-  }, []);
+    
+    // Check if email is provided in URL (from login page redirect)
+    const emailParam = searchParams.get('email');
+    const resumeParam = searchParams.get('resume');
+    
+    if (emailParam) {
+      updateFormData('email', emailParam);
+      if (resumeParam === 'true') {
+        setIsResumingRegistration(true);
+        // Fetch and auto-fill user data
+        fetchUserDataForResume(emailParam);
+      }
+    }
+  }, [searchParams]);
 
   // Clear email error when email is verified
   useEffect(() => {
@@ -211,6 +374,7 @@ const Register = () => {
       if (checkData.userExists && !checkData.registrationComplete) {
         // Resume incomplete registration
         console.log('Resuming incomplete registration for user:', checkData.userId);
+        setIsResumingRegistration(true);
         
         // Set registration pending flag BEFORE signing in to prevent dashboard redirect
         sessionStorage.setItem('registration_pending', JSON.stringify({
@@ -235,10 +399,11 @@ const Register = () => {
         if (signInError && (signInError.message?.includes('Invalid') || signInError.message?.includes('credentials'))) {
           // Show helpful error message with options
           setErrors({ 
-            general: `This email is already registered but payment was not completed.\n\nPlease either:\n1. Use your original password, or\n2. Use "Forgot Password" to reset it, then try registering again.`
+            general: t('register.passwordMismatch') || `This email is already registered but payment was not completed.\n\nPlease either:\n1. Use your original password, or\n2. Use "Forgot Password" to reset it, then try registering again.`
           });
           setIsLoading(false);
           cleanupOptimization();
+          setIsResumingRegistration(false);
           sessionStorage.removeItem('registration_pending');
           return;
         }
@@ -246,10 +411,11 @@ const Register = () => {
         // If other sign-in error occurred
         if (signInError) {
           setErrors({ 
-            general: signInError.message || 'Unable to resume registration. Please contact support.'
+            general: signInError.message || t('register.resumeError') || 'Unable to resume registration. Please contact support.'
           });
           setIsLoading(false);
           cleanupOptimization();
+          setIsResumingRegistration(false);
           sessionStorage.removeItem('registration_pending');
           return;
         }
@@ -274,6 +440,14 @@ const Register = () => {
           // Continue anyway - metadata update is not critical
         }
         
+        // Save Step 1 fields to users table BEFORE payment
+        // This ensures data is preserved even if payment fails
+        await saveUserDataBeforePayment(signInData.user.id, formData);
+        
+        // Save Step 2 fields to company_profiles table BEFORE payment
+        // This ensures data is preserved even if payment fails
+        await saveCompanyProfileBeforePayment(signInData.user.id, formData);
+
         // Proceed directly to Stripe checkout with updated user data
         const { data: stripeData, error: stripeError } = await createCheckoutSession({
           planType: formData.selectedPlan,
@@ -305,14 +479,22 @@ const Register = () => {
           setErrors({ general: t('errors.paymentFailed') });
           setIsLoading(false);
           cleanupOptimization();
+          setIsResumingRegistration(false);
           sessionStorage.removeItem('registration_pending');
           return;
         }
 
         // Redirect to Stripe checkout
         if (stripeData?.url) {
-          // Update registration pending with complete user data
-          sessionStorage.setItem('registration_pending', JSON.stringify({
+          // Show resuming message before redirect
+          setErrors({ 
+            general: t('register.resumingRegistration') || 'Resuming incomplete registration. Redirecting to payment...'
+          });
+          
+          // Small delay to show message before redirect
+          setTimeout(() => {
+            // Update registration pending with complete user data
+            sessionStorage.setItem('registration_pending', JSON.stringify({
             userId: signInData.user.id,
             email: formData.email.toLowerCase().trim(),
           firstName: formData.firstName,
@@ -339,10 +521,12 @@ const Register = () => {
           
           // Redirect to Stripe checkout
           window.location.href = stripeData.url;
+          }, 1500); // Show message for 1.5 seconds before redirect
         } else {
           setErrors({ general: t('errors.paymentFailed') });
           setIsLoading(false);
           cleanupOptimization();
+          setIsResumingRegistration(false);
         }
         
         return;
@@ -371,6 +555,14 @@ const Register = () => {
         sessionStorage.removeItem('registration_pending');
         return;
       }
+
+      // Step 1.5: Save Step 1 fields to users table BEFORE payment
+      // This ensures data is preserved even if payment fails
+      await saveUserDataBeforePayment(authData.user.id, formData);
+      
+      // Step 1.6: Save Step 2 fields to company_profiles table BEFORE payment
+      // This ensures data is preserved even if payment fails
+      await saveCompanyProfileBeforePayment(authData.user.id, formData);
 
       // Step 2: Create Stripe checkout session with 14-day trial
       const { data: stripeData, error: stripeError } = await createCheckoutSession({
@@ -546,8 +738,26 @@ const Register = () => {
                   {errors.general && (
                     <ErrorMessage 
                       message={errors.general} 
-                      onClose={() => setErrors(prev => ({ ...prev, general: '' }))}
+                      onClose={() => {
+                        setErrors(prev => ({ ...prev, general: '' }));
+                        setIsResumingRegistration(false);
+                      }}
                     />
+                  )}
+                  {isResumingRegistration && !errors.general && (
+                    <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <Icon name="Info" size={20} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-blue-900">
+                            {t('register.resumingRegistration') || 'Resuming incomplete registration'}
+                          </p>
+                          <p className="text-sm text-blue-700 mt-1">
+                            {t('register.resumingRegistrationDesc') || 'We found an incomplete registration for this email. You will be redirected to complete payment.'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   )}
                   {renderStep()}
 

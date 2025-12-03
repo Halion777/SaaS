@@ -98,6 +98,12 @@ const StepOne = ({ formData, updateFormData, errors }) => {
         const checkResult = await checkUserRegistration(formData.email.toLowerCase().trim());
         
         if (checkResult.data?.userExists) {
+          // Check if registration is incomplete (can resume)
+          if (checkResult.data.userExists && !checkResult.data.registrationComplete) {
+            // User exists with incomplete registration - allow verification to proceed
+            // The resuming message will be shown in the main Register component
+          }
+          
           // User exists, check if we can get their verification status
           try {
             const { data: userData } = await supabase
