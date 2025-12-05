@@ -14,6 +14,7 @@ const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
   const [fromInvalidPeppolId, setFromInvalidPeppolId] = useState(false); // Track if email modal opened from invalid Peppol ID
   const [isCheckingReceiver, setIsCheckingReceiver] = useState(false);
   const [receiverOnPeppol, setReceiverOnPeppol] = useState(null); // null = not checked, true = on Peppol, false = not on Peppol
+  const [foundPeppolIdentifier, setFoundPeppolIdentifier] = useState(null); // Store the found identifier from Check #1
   
   // Determine client type
   const clientType = invoice?.client?.client_type || invoice?.client?.type;
@@ -84,6 +85,8 @@ const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
       const capabilityCheck = await peppolService.checkReceiverCapability(receiverVatNumber, countryCode);
       
       setReceiverOnPeppol(capabilityCheck.found);
+      // Store the found identifier to reuse in SendPeppolModal (optimize Check #2)
+      setFoundPeppolIdentifier(capabilityCheck.found ? capabilityCheck.identifier : null);
       
       // Auto-select Peppol if receiver is on Peppol (regardless of invoice status)
       // The warning only applies when sending via email, not when blocking Peppol
@@ -123,6 +126,7 @@ const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
   const handleClose = () => {
     setSendMethod(null);
     setFromInvalidPeppolId(false);
+    setFoundPeppolIdentifier(null); // Reset when closing
     onClose();
   };
 
@@ -163,6 +167,7 @@ const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
         onClose={handleClose}
         onSuccess={handleSuccess}
         onOpenEmailModal={handleOpenEmailModal}
+        validatedPeppolIdentifier={foundPeppolIdentifier}
       />
     );
   }

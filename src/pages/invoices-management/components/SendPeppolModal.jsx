@@ -9,7 +9,7 @@ import { fetchClients } from '../../../services/clientsService';
 import { supabase } from '../../../services/supabaseClient';
 import { useAuth } from '../../../context/AuthContext';
 
-const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal }) => {
+const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal, validatedPeppolIdentifier = null }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -69,8 +69,16 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
       // Use client's Peppol ID from client table if available
       if (invoice.client?.peppol_id) {
         setClientPeppolId(invoice.client.peppol_id);
-        // Validate the Peppol ID when loading
-        validatePeppolId(invoice.client.peppol_id);
+        
+        // Optimize Check #2: Reuse result from Check #1 if identifier matches
+        if (validatedPeppolIdentifier && validatedPeppolIdentifier === invoice.client.peppol_id) {
+          // Identifier was already validated in SendInvoiceModal, skip redundant validation
+          setIsValid(true);
+          setValidationError('');
+        } else {
+          // Only validate if we don't have a matching validated identifier
+          validatePeppolId(invoice.client.peppol_id);
+        }
       } else {
         // Reset validation state if no Peppol ID
         setIsValid(false);
@@ -101,15 +109,9 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
       return;
     }
 
-    // Validate Peppol ID before sending
-    if (!isValid) {
-      setError(t('invoicesManagement.sendPeppolModal.errors.peppolIdNotValidated', 'Please wait for Peppol ID validation to complete, or the ID is invalid.'));
-      // Trigger validation if not already validating
-      if (!isValidating) {
-        await validatePeppolId(clientPeppolId);
-      }
-      return;
-    }
+    // Removed redundant Check #4: Validation before send
+    // The Peppol ID is already validated on load (Check #2) or on change (Check #3)
+    // If isValid is false, it means the ID is invalid and user should fix it before sending
 
     setIsSending(true);
     setError('');
