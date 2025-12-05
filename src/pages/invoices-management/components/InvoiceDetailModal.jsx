@@ -225,7 +225,7 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                       <label className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.modal.peppolInfo.clientId')}</label>
                       <p className="text-sm text-foreground mt-1 flex items-center">
                         <Icon name="Globe" size={14} className="mr-1 text-blue-600" />
-                        {invoice.receiverPeppolId || t('invoicesManagement.common.notAvailable')}
+                        {invoice.receiverPeppolId || invoice.client?.peppol_id || t('invoicesManagement.common.notAvailable')}
                       </p>
                     </div>
                     {invoice.peppolSentAt && (

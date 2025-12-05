@@ -214,3 +214,118 @@ export const getAvailableSchemesForCountry = (countryCode) => {
   return schemes;
 };
 
+/**
+ * Generate Peppol identifier from VAT number
+ * @param {string} vatNumber - VAT number (e.g., "BE0262465766")
+ * @returns {string} Peppol identifier (e.g., "9925:be0262465766")
+ */
+export const generatePeppolIdentifier = (vatNumber) => {
+  if (!vatNumber || typeof vatNumber !== 'string') {
+    throw new Error('VAT number is required');
+  }
+
+  // Extract country code from VAT number (first 2 characters)
+  const countryCode = vatNumber.substring(0, 2).toUpperCase();
+  const schemeId = PEPPOL_VAT_SCHEME_MAP[countryCode];
+  
+  if (!schemeId) {
+    throw new Error(`Unsupported country code: ${countryCode}`);
+  }
+  
+  // Return in format: schemeId:vatNumber (lowercase)
+  return `${schemeId}:${vatNumber.toLowerCase()}`;
+};
+
+/**
+ * Get Belgian company number identifier (special case)
+ * Belgian VAT numbers can also be looked up using company number scheme (0208)
+ * @param {string} vatNumber - Belgian VAT number (e.g., "BE0262465766")
+ * @returns {string|null} Company identifier (e.g., "0208:0262465766") or null if not Belgian
+ */
+export const getBelgianCompanyIdentifier = (vatNumber) => {
+  if (!vatNumber || typeof vatNumber !== 'string') {
+    return null;
+  }
+
+  // Check if it's a Belgian VAT number (starts with BE followed by 10 digits)
+  if (vatNumber.match(/^BE\d{10}$/i)) {
+    // Extract 10 digits after BE prefix
+    const companyNumber = vatNumber.substring(2, 12);
+    return `0208:${companyNumber}`;
+  }
+  
+  return null;
+};
+
+/**
+ * Normalize VAT number by adding country prefix if missing
+ * @param {string} vatNumber - VAT number (e.g., "1001463624" or "BE1001463624")
+ * @param {string} countryCode - Optional country code (e.g., "BE", "NL")
+ * @returns {string} Normalized VAT number with country prefix
+ */
+export const normalizeVATNumber = (vatNumber, countryCode = null) => {
+  if (!vatNumber || typeof vatNumber !== 'string') {
+    return vatNumber;
+  }
+
+  // Remove any whitespace
+  const cleaned = vatNumber.trim();
+
+  // Check if it already has a country prefix (first 2 chars are letters)
+  const firstTwo = cleaned.substring(0, 2).toUpperCase();
+  if (/^[A-Z]{2}$/.test(firstTwo) && PEPPOL_VAT_SCHEME_MAP[firstTwo]) {
+    // Already has valid country prefix
+    return cleaned;
+  }
+
+  // If no country prefix, try to add one
+  if (countryCode) {
+    const normalizedCountry = countryCode.toUpperCase();
+    if (PEPPOL_VAT_SCHEME_MAP[normalizedCountry]) {
+      return `${normalizedCountry}${cleaned}`;
+    }
+  }
+
+  // Default to BE (Belgium) if no country code provided and VAT looks Belgian (10 digits)
+  if (/^\d{10}$/.test(cleaned)) {
+    return `BE${cleaned}`;
+  }
+
+  // Return as-is if we can't normalize
+  return cleaned;
+};
+
+/**
+ * Get all possible Peppol identifiers for a VAT number
+ * Returns array of identifiers to try when checking receiver capability
+ * @param {string} vatNumber - VAT number (e.g., "BE0262465766" or "1001463624")
+ * @param {string} countryCode - Optional country code to use if VAT number lacks prefix
+ * @returns {string[]} Array of possible identifiers
+ */
+export const getAllPeppolIdentifiers = (vatNumber, countryCode = null) => {
+  if (!vatNumber || typeof vatNumber !== 'string') {
+    return [];
+  }
+
+  // Normalize VAT number (add country prefix if missing)
+  const normalizedVAT = normalizeVATNumber(vatNumber, countryCode);
+
+  const identifiers = [];
+  
+  // Always add VAT-based identifier
+  try {
+    const vatIdentifier = generatePeppolIdentifier(normalizedVAT);
+    identifiers.push(vatIdentifier);
+  } catch (error) {
+    console.warn('Failed to generate VAT-based Peppol identifier:', error);
+  }
+  
+  // Add Belgian company number if applicable
+  const companyId = getBelgianCompanyIdentifier(normalizedVAT);
+  if (companyId) {
+    identifiers.push(companyId);
+  }
+  
+  return identifiers;
+};
+

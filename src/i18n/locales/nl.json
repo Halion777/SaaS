@@ -3662,7 +3662,44 @@
     "messages": {
       "settingsSaved": "Instellingen succesvol opgeslagen!",
       "alreadyRegistered": "Deze deelnemer is al geregistreerd in Digiteal. Uw instellingen zijn succesvol opgeslagen.",
-      "saveError": "Fout bij het opslaan van instellingen"
+      "saveError": "Fout bij het opslaan van instellingen",
+      "success": {
+        "settingsSaved": "Instellingen succesvol opgeslagen!",
+        "participantRegistered": "Deelnemer succesvol geregistreerd!",
+        "participantUpdated": "Deelnemer succesvol bijgewerkt!",
+        "alreadyRegisteredDigiteal": "Bedrijf al geregistreerd in Digiteal. Instellingen opgeslagen.",
+        "alreadyRegisteredPeppol": "Bedrijf al geregistreerd in Peppol. Instellingen opgeslagen.",
+        "testSuccessful": "Integratietest geslaagd",
+        "testAlreadyRegisteredDigiteal": "Bedrijf al geregistreerd in Digiteal.",
+        "testAlreadyRegisteredPeppol": "Bedrijf al geregistreerd in Peppol.",
+        "invoiceSent": "Factuur succesvol verzonden via Peppol",
+        "invoiceReceived": "Factuur succesvol ontvangen",
+        "unregistered": "Deelnemer uitgeschreven en alle Peppol-gegevens succesvol verwijderd"
+      },
+      "errors": {
+        "saveError": "Fout bij het opslaan van instellingen",
+        "registrationError": "Fout bij het registreren van deelnemer",
+        "updateError": "Fout bij het bijwerken van instellingen",
+        "testError": "Integratietest mislukt",
+        "testConnectionError": "Fout bij integratietest",
+        "alreadyRegisteredAnotherAP": "Bedrijf geregistreerd bij een andere toegangspunt. Neem contact op met de provider om over te dragen.",
+        "receiverNotFound": "Ontvanger niet gevonden op Peppol-netwerk. Gebruik e-maillevering of zorg ervoor dat de ontvanger is geregistreerd op Peppol.",
+        "sendError": "Fout bij het verzenden van factuur via Peppol",
+        "receiveError": "Fout bij het ontvangen van factuur",
+        "validationError": "Documentvalidatie mislukt",
+        "networkError": "Netwerkfout. Controleer uw verbinding en probeer het opnieuw.",
+        "unauthorized": "Niet geautoriseerd. Controleer uw inloggegevens.",
+        "notFound": "Bron niet gevonden",
+        "serverError": "Serverfout. Probeer het later opnieuw.",
+        "timeout": "Time-out verzoek. Probeer het opnieuw.",
+        "unknownError": "Er is een onbekende fout opgetreden",
+        "peppolDisabled": "Peppol-functionaliteit is momenteel uitgeschakeld. Schakel deze in in Peppol-instellingen om facturen te verzenden.",
+        "quotaExceeded": "Peppol-factuurlijmiet bereikt. Upgrade naar Pro voor onbeperkte Peppol-facturen.",
+        "invalidPeppolId": "Ongeldig Peppol-ID-formaat",
+        "missingRequiredFields": "Ontbrekende verplichte velden",
+        "unregisterError": "Fout bij uitschrijven van deelnemer",
+        "cleanupError": "Fout bij opschonen van Peppol-gegevens"
+      }
     },
     "loading": {
       "configuration": "Configuratie laden...",

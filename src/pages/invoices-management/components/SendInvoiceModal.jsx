@@ -5,12 +5,15 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import SendPeppolModal from './SendPeppolModal';
 import SendEmailModal from './SendEmailModal';
+import PeppolService from '../../../services/peppolService';
 
 const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [sendMethod, setSendMethod] = useState(null); // 'peppol' or 'email'
   const [fromInvalidPeppolId, setFromInvalidPeppolId] = useState(false); // Track if email modal opened from invalid Peppol ID
+  const [isCheckingReceiver, setIsCheckingReceiver] = useState(false);
+  const [receiverOnPeppol, setReceiverOnPeppol] = useState(null); // null = not checked, true = on Peppol, false = not on Peppol
   
   // Determine client type
   const clientType = invoice?.client?.client_type || invoice?.client?.type;
@@ -20,21 +23,98 @@ const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
   // Check Peppol status for professional clients
   const peppolStatus = invoice?.peppol_status || invoice?.peppolStatus;
   const isPeppolFailed = peppolStatus === 'failed';
-  const showEmailOption = isIndividual || (isProfessional && isPeppolFailed);
+  const isPeppolNotSent = !peppolStatus || peppolStatus === 'not_sent';
+  // Show warning for both failed and not_sent invoices when sending via email
+  const shouldShowEmailWarning = isPeppolFailed || isPeppolNotSent;
 
+  // Check receiver capability when modal opens (for professional clients)
   useEffect(() => {
-    if (isOpen && invoice) {
-      // For professional clients, auto-select Peppol if not failed
-      if (isProfessional && !isPeppolFailed) {
+    if (isOpen && invoice && isProfessional) {
+      checkReceiverCapability();
+    } else if (isOpen && invoice && isIndividual) {
+      // For individual clients, no need to check
+      setReceiverOnPeppol(false);
+      setIsCheckingReceiver(false);
+    }
+  }, [isOpen, invoice, isProfessional]);
+
+  const checkReceiverCapability = async () => {
+    setIsCheckingReceiver(true);
+    setReceiverOnPeppol(null);
+    
+    try {
+      // Get receiver VAT number
+      const receiverVatNumber = invoice.client?.vat_number || invoice.client?.vatNumber;
+      
+      if (!receiverVatNumber) {
+        console.warn('No VAT number found for receiver, cannot check Peppol capability');
+        setReceiverOnPeppol(false);
+        setIsCheckingReceiver(false);
+        return;
+      }
+
+      // Get client's country code to help normalize VAT number if needed
+      const clientCountry = invoice.client?.country || null;
+      // Extract country code from country string (e.g., "Belgium" -> "BE", "BE" -> "BE")
+      let countryCode = null;
+      if (clientCountry) {
+        // If country is already a 2-letter code
+        if (/^[A-Z]{2}$/i.test(clientCountry.trim())) {
+          countryCode = clientCountry.trim().toUpperCase();
+        } else {
+          // Try to map country name to code (common cases)
+          const countryMap = {
+            'belgium': 'BE',
+            'belgique': 'BE',
+            'belgië': 'BE',
+            'netherlands': 'NL',
+            'pays-bas': 'NL',
+            'nederland': 'NL',
+            'france': 'FR',
+            'germany': 'DE',
+            'deutschland': 'DE',
+            'allemagne': 'DE'
+          };
+          countryCode = countryMap[clientCountry.toLowerCase().trim()] || null;
+        }
+      }
+
+      // Check if receiver is on Peppol
+      const peppolService = new PeppolService(true);
+      const capabilityCheck = await peppolService.checkReceiverCapability(receiverVatNumber, countryCode);
+      
+      setReceiverOnPeppol(capabilityCheck.found);
+      
+      // Auto-select Peppol if receiver is on Peppol (regardless of invoice status)
+      // The warning only applies when sending via email, not when blocking Peppol
+      if (capabilityCheck.found) {
         setSendMethod('peppol');
       } else {
-        // Reset send method for individual clients or failed Peppol
+        // If receiver not on Peppol, show email option
         setSendMethod(null);
       }
-      // Reset fromInvalidPeppolId when modal opens
-      setFromInvalidPeppolId(false);
+    } catch (error) {
+      console.error('Error checking receiver capability:', error);
+      // On error, assume receiver is not on Peppol to be safe
+      setReceiverOnPeppol(false);
+      setSendMethod(null);
+    } finally {
+      setIsCheckingReceiver(false);
     }
-  }, [isOpen, invoice, isProfessional, isPeppolFailed]);
+  };
+
+  // Determine if email option should be shown
+  // Show email option for:
+  // - Individual clients (always)
+  // - Professional clients not on Peppol
+  // - Professional clients on Peppol (as fallback option)
+  const showEmailOption = isIndividual || 
+    (isProfessional && (receiverOnPeppol === false || receiverOnPeppol === true));
+  
+  // Determine if Peppol option should be shown
+  // Show Peppol option if receiver is on Peppol (regardless of invoice status)
+  // The warning only applies when sending via email, not when blocking Peppol
+  const showPeppolOption = isProfessional && receiverOnPeppol === true;
 
   const handleMethodSelect = (method) => {
     setSendMethod(method);
@@ -97,6 +177,8 @@ const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
         isProfessionalClient={isProfessional}
         fromInvalidPeppolId={fromInvalidPeppolId}
         isPeppolFailed={isPeppolFailed}
+        isPeppolNotSent={isPeppolNotSent}
+        shouldShowEmailWarning={shouldShowEmailWarning}
       />
     );
   }
@@ -137,7 +219,27 @@ const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
 
           {/* Send Options */}
           <div className="space-y-3">
-            {isProfessional && (
+            {/* Show loading state while checking receiver capability */}
+            {isProfessional && isCheckingReceiver && (
+              <div className="w-full p-4 border-2 border-border rounded-lg bg-muted/30">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+                    <Icon name="Loader" size={20} className="text-muted-foreground animate-spin" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-foreground">
+                      {t('invoicesManagement.sendModal.checkingReceiver', 'Checking receiver...')}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {t('invoicesManagement.sendModal.checkingReceiverDescription', 'Verifying if receiver is registered on Peppol network')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Show Peppol option only if receiver is on Peppol */}
+            {isProfessional && !isCheckingReceiver && showPeppolOption && (
               <button
                 onClick={() => handleMethodSelect('peppol')}
                 className="w-full p-4 border-2 border-primary rounded-lg hover:bg-primary/5 transition-colors text-left"
@@ -157,28 +259,30 @@ const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
               </button>
             )}
 
-            {/* Show email option only for individual clients or professional clients with failed Peppol */}
-            {showEmailOption && (
+            {/* Show email option for individual clients or professional clients not on Peppol */}
+            {!isCheckingReceiver && showEmailOption && (
               <button
                 onClick={() => handleMethodSelect('email')}
                 className={`w-full p-4 border-2 rounded-lg transition-colors text-left ${
-                  isProfessional && isPeppolFailed
+                  isProfessional && (receiverOnPeppol === false || shouldShowEmailWarning)
                     ? 'border-warning hover:bg-warning/5'
                     : 'border-border hover:bg-muted/50'
                 }`}
               >
                 <div className="flex items-center space-x-3">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    isProfessional && isPeppolFailed
+                    isProfessional && (receiverOnPeppol === false || shouldShowEmailWarning)
                       ? 'bg-warning/10'
                       : 'bg-blue-100'
                   }`}>
-                    <Icon name="Mail" size={20} className={isProfessional && isPeppolFailed ? "text-warning" : "text-blue-600"} />
+                    <Icon name="Mail" size={20} className={isProfessional && (receiverOnPeppol === false || shouldShowEmailWarning) ? "text-warning" : "text-blue-600"} />
                   </div>
                   <div className="flex-1">
                     <h3 className="text-sm font-semibold text-foreground">{t('invoicesManagement.sendModal.sendViaEmail')}</h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {isProfessional && isPeppolFailed
+                      {isProfessional && receiverOnPeppol === false
+                        ? t('invoicesManagement.sendModal.receiverNotOnPeppol', 'Receiver is not registered on Peppol network. Please send via email.')
+                        : isProfessional && shouldShowEmailWarning
                         ? t('invoicesManagement.sendModal.sendViaEmailWarning', 'This is not the actual invoice. You must send via Peppol to get paid.')
                         : t('invoicesManagement.sendModal.sendViaEmailDescription')
                       }
@@ -191,12 +295,27 @@ const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
           </div>
 
           {/* Info Note */}
-          {isProfessional && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          {isProfessional && !isCheckingReceiver && (
+            <div className={`border rounded-lg p-3 ${
+              receiverOnPeppol === false
+                ? 'bg-warning/10 border-warning/20'
+                : 'bg-blue-50 border-blue-200'
+            }`}>
               <div className="flex items-start space-x-2">
-                <Icon name="Info" size={16} className="text-blue-600 flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-blue-800">
-                  {t('invoicesManagement.sendModal.professionalInfo')}
+                <Icon 
+                  name="Info" 
+                  size={16} 
+                  className={`flex-shrink-0 mt-0.5 ${
+                    receiverOnPeppol === false ? 'text-warning' : 'text-blue-600'
+                  }`} 
+                />
+                <p className={`text-xs ${
+                  receiverOnPeppol === false ? 'text-warning-foreground' : 'text-blue-800'
+                }`}>
+                  {receiverOnPeppol === false
+                    ? t('invoicesManagement.sendModal.receiverNotOnPeppolInfo', 'The receiver is not registered on the Peppol network. Please send the invoice via email. For professional clients, Peppol is the preferred method for invoice delivery.')
+                    : t('invoicesManagement.sendModal.professionalInfo')
+                  }
                 </p>
               </div>
             </div>

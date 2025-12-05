@@ -125,7 +125,37 @@ serve(async (req) => {
       errors.push(`invoices cleanup: ${updateInvoicesError.message}`);
     }
 
-    // 5. Clean up Peppol fields from expense_invoices table
+    // 5. Delete expense_invoices that were received for the unregistered Peppol ID
+    // First, find invoice numbers from peppol_invoices that have receiver_peppol_id matching the unregistered Peppol ID
+    if (peppolIdentifier) {
+      const { data: peppolInvoices, error: fetchError } = await supabaseAdmin
+        .from('peppol_invoices')
+        .select('invoice_number')
+        .eq('user_id', targetUserId)
+        .eq('direction', 'inbound')
+        .eq('receiver_peppol_id', peppolIdentifier);
+
+      if (!fetchError && peppolInvoices && peppolInvoices.length > 0) {
+        // Get invoice numbers to delete
+        const invoiceNumbers = peppolInvoices.map(pi => pi.invoice_number);
+        
+        // Delete expense_invoices that match these invoice numbers
+        const { error: deleteExpenseInvoicesError } = await supabaseAdmin
+          .from('expense_invoices')
+          .delete()
+          .eq('user_id', targetUserId)
+          .in('invoice_number', invoiceNumbers);
+
+        if (deleteExpenseInvoicesError) {
+          console.error('Error deleting expense_invoices:', deleteExpenseInvoicesError);
+          errors.push(`expense_invoices deletion: ${deleteExpenseInvoicesError.message}`);
+        } else {
+          console.log(`Deleted ${invoiceNumbers.length} expense invoices for Peppol ID: ${peppolIdentifier}`);
+        }
+      }
+    }
+
+    // Also clean up remaining Peppol fields from expense_invoices table (for any that weren't deleted)
     const { error: updateExpenseInvoicesError } = await supabaseAdmin
       .from('expense_invoices')
       .update({
@@ -136,7 +166,8 @@ serve(async (req) => {
         ubl_xml: null,
         peppol_metadata: null
       })
-      .eq('user_id', targetUserId);
+      .eq('user_id', targetUserId)
+      .eq('peppol_enabled', true); // Only update those that still have peppol_enabled = true
 
     if (updateExpenseInvoicesError) {
       console.error('Error cleaning up expense_invoices Peppol data:', updateExpenseInvoicesError);

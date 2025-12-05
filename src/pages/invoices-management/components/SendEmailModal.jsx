@@ -11,7 +11,7 @@ import { generateInvoicePDF } from '../../../services/pdfService';
 import { supabase } from '../../../services/supabaseClient';
 import { translateTextWithAI } from '../../../services/googleAIService';
 
-const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalClient = false, fromInvalidPeppolId = false, isPeppolFailed = false }) => {
+const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalClient = false, fromInvalidPeppolId = false, isPeppolFailed = false, isPeppolNotSent = false, shouldShowEmailWarning = false }) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -31,7 +31,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
     if (isOpen && invoice) {
       loadData();
     }
-  }, [isOpen, invoice, fromInvalidPeppolId, isPeppolFailed]);
+  }, [isOpen, invoice, fromInvalidPeppolId, isPeppolFailed, isPeppolNotSent, shouldShowEmailWarning]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -71,9 +71,9 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
         companyName: company?.name || t('invoicesManagement.sendEmailModal.yourCompany')
       });
       
-      // Set default message - if from invalid Peppol ID or failed Peppol, only show warning
+      // Set default message - if from invalid Peppol ID, failed Peppol, or not sent, show warning
       let defaultMessage;
-      if (fromInvalidPeppolId || isPeppolFailed) {
+      if (fromInvalidPeppolId || shouldShowEmailWarning) {
         defaultMessage = t('invoicesManagement.sendEmailModal.peppolWarningText', '⚠️IMPORTANT: This message serves as a payment notice. The invoice could not be delivered via PEPPOL because your identifier could not be found. Please update your PEPPOL registration. The PDF attached is only a proforma invoice, not an official invoice.');
       } else {
         defaultMessage = t('invoicesManagement.sendEmailModal.defaultMessage', {
@@ -154,8 +154,8 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
         quote: invoice.quote || null
       };
 
-      // Generate PDF blob (hide bank info for professional clients, but show it if from invalid Peppol ID flow or Peppol failed)
-      const hideBankInfo = isProfessionalClient && !fromInvalidPeppolId && !isPeppolFailed;
+      // Generate PDF blob (hide bank info for professional clients, but show it if from invalid Peppol ID flow or Peppol failed/not sent)
+      const hideBankInfo = isProfessionalClient && !fromInvalidPeppolId && !shouldShowEmailWarning;
       const pdfBlob = await generateInvoicePDF(invoiceData, invoiceNumber, null, i18n.language, hideBankInfo);
       
       // Convert PDF blob to base64 for email attachment
@@ -328,8 +328,8 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
             </div>
           ) : (
             <>
-              {/* Warning for invalid Peppol ID flow or failed Peppol */}
-              {(fromInvalidPeppolId || isPeppolFailed) && (
+              {/* Warning for invalid Peppol ID flow, failed Peppol, or not sent invoices */}
+              {(fromInvalidPeppolId || shouldShowEmailWarning) && (
                 <div className="bg-warning/10 border border-warning/20 rounded-lg p-4">
                   <div className="flex items-start space-x-3">
                     <Icon name="AlertTriangle" size={20} className="text-warning flex-shrink-0 mt-0.5" />

@@ -3628,7 +3628,44 @@
     "messages": {
       "settingsSaved": "Settings saved successfully!",
       "alreadyRegistered": "This participant is already registered in Digiteal. Your settings have been saved successfully.",
-      "saveError": "Error saving settings"
+      "saveError": "Error saving settings",
+      "success": {
+        "settingsSaved": "Settings saved successfully!",
+        "participantRegistered": "Participant registered successfully!",
+        "participantUpdated": "Participant updated successfully!",
+        "alreadyRegisteredDigiteal": "Company already registered in Digiteal. Settings saved.",
+        "alreadyRegisteredPeppol": "Company already registered in Peppol. Settings saved.",
+        "testSuccessful": "Integration test successful",
+        "testAlreadyRegisteredDigiteal": "Company already registered in Digiteal.",
+        "testAlreadyRegisteredPeppol": "Company already registered in Peppol.",
+        "invoiceSent": "Invoice sent successfully via Peppol",
+        "invoiceReceived": "Invoice received successfully",
+        "unregistered": "Participant unregistered and all Peppol data deleted successfully"
+      },
+      "errors": {
+        "saveError": "Error saving settings",
+        "registrationError": "Error registering participant",
+        "updateError": "Error updating settings",
+        "testError": "Integration test failed",
+        "testConnectionError": "Integration test error",
+        "alreadyRegisteredAnotherAP": "Company registered with another Access Point. Contact provider to transfer.",
+        "receiverNotFound": "Receiver not found on Peppol network. Please use email delivery or ensure the receiver is registered on Peppol.",
+        "sendError": "Error sending invoice via Peppol",
+        "receiveError": "Error receiving invoice",
+        "validationError": "Document validation failed",
+        "networkError": "Network error. Please check your connection and try again.",
+        "unauthorized": "Unauthorized. Please check your credentials.",
+        "notFound": "Resource not found",
+        "serverError": "Server error. Please try again later.",
+        "timeout": "Request timeout. Please try again.",
+        "unknownError": "An unknown error occurred",
+        "peppolDisabled": "Peppol functionality is currently disabled. Please enable it in Peppol settings to send invoices.",
+        "quotaExceeded": "Peppol invoice limit reached. Please upgrade to Pro for unlimited Peppol invoices.",
+        "invalidPeppolId": "Invalid Peppol ID format",
+        "missingRequiredFields": "Missing required fields",
+        "unregisterError": "Error unregistering participant",
+        "cleanupError": "Error cleaning up Peppol data"
+      }
     },
     "loading": {
       "configuration": "Loading configuration...",

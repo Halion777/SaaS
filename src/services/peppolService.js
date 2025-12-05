@@ -1,5 +1,6 @@
 // Peppol Service for Haliqo - Digiteal Integration
 import { supabase } from './supabaseClient';
+import { getAllPeppolIdentifiers } from '../utils/peppolSchemes';
 
 // Digiteal API Configuration
 const PEPPOL_CONFIG = {
@@ -181,6 +182,33 @@ const calculateTotals = (lines) => lines.reduce((totals, line) => ({
   taxAmount: 0,
   totalAmount: 0
 });
+
+// Extract payment delay in days from payment_terms text
+const extractPaymentDelay = (paymentTerms) => {
+  if (!paymentTerms || typeof paymentTerms !== 'string') {
+    return null;
+  }
+  
+  // Try to extract number of days from common patterns:
+  // "30 days", "net 30", "30 jours", "paiement à 30 jours", etc.
+  const patterns = [
+    /(\d+)\s*(?:days?|jours?|d)/i,
+    /net\s*(\d+)/i,
+    /(\d+)\s*(?:day|jour)/i
+  ];
+  
+  for (const pattern of patterns) {
+    const match = paymentTerms.match(pattern);
+    if (match && match[1]) {
+      const days = parseInt(match[1], 10);
+      if (days > 0 && days <= 365) {
+        return days;
+      }
+    }
+  }
+  
+  return null;
+};
 
 // Helper function to clean VAT number (remove Peppol scheme prefixes like "0208:", "9925:", etc.)
 const cleanVATNumber = (vatNumber) => {
@@ -416,16 +444,7 @@ const generatePartyInfo = (party, isSupplier = true) => {
   const formattedVAT = formatVATNumber(party.vatNumber, party.countryCode);
   const countryCode = normalizeCountryCode(party.countryCode);
   
-  // Log EndpointID and CompanyID for debugging
-  console.log(`[Peppol] ${isSupplier ? 'Supplier' : 'Receiver'} EndpointID:`, {
-    scheme: endpointScheme,
-    id: endpointId, // Should be digits only (e.g., "0630675508")
-    originalPeppolIdentifier: party.peppolIdentifier,
-    vatNumber: party.vatNumber,
-    countryCode: party.countryCode,
-    formattedVAT: formattedVAT // Should be BE + digits (e.g., "BE0630675508")
-  });
-  
+ 
   return `
     <cac:${partyType}>
       <cac:Party>
@@ -521,6 +540,28 @@ const generateTaxSubtotals = (taxCategories) => Object.values(taxCategories).map
   const calculatedTaxAmount = Math.round((category.taxableAmount * (category.taxPercentage / 100)) * 100) / 100;
   const taxAmount = category.taxPercentage === 0 ? 0 : calculatedTaxAmount;
   
+  // Map VAT codes to correct exemption reason codes for 0% VAT
+  const getTaxExemptionReasonCode = (vatCode, taxPercentage) => {
+    if (taxPercentage !== 0) {
+      return ''; // No exemption code for non-zero VAT
+    }
+    
+    // Map VAT codes to exemption codes according to Peppol BIS Billing 3.0
+    const exemptionCodeMap = {
+      'K': 'VATEX-EU-IC',  // Intra-community supply
+      'G': 'VATEX-EU-G',   // Export outside EU
+      'E': 'VATEX-EU-E',   // Exempt from tax
+      'AE': 'VATEX-EU-AE'  // Reverse charge
+    };
+    
+    return exemptionCodeMap[vatCode] || '';
+  };
+  
+  const exemptionCode = getTaxExemptionReasonCode(category.vatCode, category.taxPercentage);
+  const exemptionCodeXml = exemptionCode 
+    ? `<cbc:TaxExemptionReasonCode>${exemptionCode}</cbc:TaxExemptionReasonCode>` 
+    : '';
+  
   return `
       <cac:TaxSubtotal>
         <cbc:TaxableAmount currencyID="EUR">${category.taxableAmount.toFixed(2)}</cbc:TaxableAmount>
@@ -528,7 +569,7 @@ const generateTaxSubtotals = (taxCategories) => Object.values(taxCategories).map
         <cac:TaxCategory>
           <cbc:ID>${category.vatCode}</cbc:ID>
           <cbc:Percent>${category.taxPercentage}</cbc:Percent>
-          ${category.taxPercentage === 0 ? "<cbc:TaxExemptionReasonCode>VATEX-EU-IC</cbc:TaxExemptionReasonCode>" : ""}
+          ${exemptionCodeXml}
           <cac:TaxScheme>
             <cbc:ID>VAT</cbc:ID>
           </cac:TaxScheme>
@@ -553,7 +594,7 @@ const generateInvoiceLines = (lines) => lines.map((line, index) => `
         </cac:ClassifiedTaxCategory>
       </cac:Item>
       <cac:Price>
-        <cbc:PriceAmount currencyID="EUR">${line.unitPrice}</cbc:PriceAmount>
+        <cbc:PriceAmount currencyID="EUR">${parseFloat(line.unitPrice || 0).toFixed(2)}</cbc:PriceAmount>
       </cac:Price>
     </cac:InvoiceLine>
   `).join("");
@@ -699,6 +740,7 @@ export class PeppolService {
   }
 
   // Check if recipient supports Peppol - via edge function to avoid CORS
+  // This method checks a single identifier
   async checkRecipientSupport(recipientId) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -715,6 +757,10 @@ export class PeppolService {
       });
       
       if (response.error) {
+        // Check if it's a 404 (participant not found) - this is expected, not an error
+        if (response.error.status === 404 || response.error.message?.includes('404')) {
+          return null; // Return null instead of throwing for 404
+        }
         throw new Error(response.error.message);
       }
       
@@ -723,6 +769,211 @@ export class PeppolService {
       console.error('Failed to check recipient support:', error);
       throw error;
     }
+  }
+
+  /**
+   * Check receiver capability - tries all possible Peppol identifiers
+   * @param {string} receiverVatNumber - Receiver's VAT number (e.g., "BE0262465766" or "1001463624")
+   * @param {string} countryCode - Optional country code to use if VAT number lacks prefix (e.g., "BE", "NL")
+   * @returns {Promise<{found: boolean, identifier?: string, supportedDocuments?: string[]}>}
+   */
+  async checkReceiverCapability(receiverVatNumber, countryCode = null) {
+    if (!receiverVatNumber) {
+      return { found: false };
+    }
+
+    // Get all possible Peppol identifiers for this VAT number
+    const identifiers = getAllPeppolIdentifiers(receiverVatNumber, countryCode);
+    
+    if (identifiers.length === 0) {
+      console.warn('No Peppol identifiers generated for VAT number:', receiverVatNumber);
+      return { found: false };
+    }
+
+    // Try each identifier until one is found
+    for (const identifier of identifiers) {
+      try {
+        const result = await this.checkRecipientSupport(identifier);
+        
+        // If result is null, it means 404 (not found)
+        if (!result) {
+          continue;
+        }
+        
+        // If we get a successful response, receiver is on Peppol
+        // Check for various possible response formats from public Peppol API:
+        // - peppolIdentifier: "9925:be1001463624"
+        // - smpHostName: "peppol-smp-test.digiteal.eu" (indicates participant found)
+        // - supportedDocumentTypes: array of document types
+        // - name: participant name (from registered participants endpoint)
+        const hasPeppolIdentifier = result?.peppolIdentifier;
+        const hasSupportedDocuments = Array.isArray(result?.supportedDocumentTypes) && result.supportedDocumentTypes.length > 0;
+        const hasSmpHostName = result?.smpHostName; // This is a strong indicator of participant found
+        const hasName = result?.name; // From registered participants endpoint
+        const hasFoundFlag = result?.found === true;
+        
+        // If any of these indicators are present, participant is found
+        if (hasPeppolIdentifier || hasSupportedDocuments || hasSmpHostName || hasName || hasFoundFlag) {
+          return {
+            found: true,
+            identifier: identifier,
+            supportedDocuments: result.supportedDocumentTypes || [],
+            data: result
+          };
+        }
+      } catch (error) {
+        // Log but continue to next identifier
+        console.log(`Identifier ${identifier} not found, trying next...`, error.message);
+        continue;
+      }
+    }
+    
+    // None of the identifiers were found
+    return { found: false };
+  }
+
+  /**
+   * Validate UBL document before sending
+   * @param {string} xml - UBL XML string
+   * @returns {{valid: boolean, errors: string[]}}
+   */
+  validateDocument(xml) {
+    const errors = [];
+    
+    if (!xml || typeof xml !== 'string') {
+      errors.push('Document XML is required');
+      return { valid: false, errors };
+    }
+    
+    // Check mandatory document identifiers
+    const mandatoryFields = {
+      'cbc:CustomizationID': 'urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0',
+      'cbc:ProfileID': 'urn:fdc:peppol.eu:2017:poacc:billing:01:1.0',
+      'cbc:InvoiceTypeCode': '380'
+    };
+    
+    for (const [field, expectedValue] of Object.entries(mandatoryFields)) {
+      const fieldPattern = new RegExp(`<${field}[^>]*>${expectedValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</${field}>`);
+      if (!fieldPattern.test(xml)) {
+        errors.push(`Missing or incorrect ${field}`);
+      }
+    }
+    
+    // Check endpoint IDs have schemeID
+    if (!xml.includes('schemeID=')) {
+      errors.push('Missing schemeID attribute in EndpointID');
+    }
+    
+    // Check all amounts have currencyID
+    const amountFields = [
+      'TaxAmount', 'TaxableAmount', 'LineExtensionAmount',
+      'PriceAmount', 'PayableAmount'
+    ];
+    
+    for (const field of amountFields) {
+      const fieldPattern = new RegExp(`<cbc:${field}[^>]*>`, 'i');
+      if (fieldPattern.test(xml)) {
+        const currencyPattern = new RegExp(`<cbc:${field}[^>]*currencyID=`, 'i');
+        if (!currencyPattern.test(xml)) {
+          errors.push(`Missing currencyID in ${field}`);
+        }
+      }
+    }
+    
+    // Check for required sections
+    const requiredSections = [
+      'cbc:ID',
+      'cbc:IssueDate',
+      'cbc:DueDate',
+      'cac:AccountingSupplierParty',
+      'cac:AccountingCustomerParty',
+      'cac:TaxTotal',
+      'cac:LegalMonetaryTotal',
+      'cac:InvoiceLine'
+    ];
+    
+    for (const section of requiredSections) {
+      if (!xml.includes(`<${section}`)) {
+        errors.push(`Missing mandatory section: ${section}`);
+      }
+    }
+    
+    return {
+      valid: errors.length === 0,
+      errors: errors
+    };
+  }
+
+  /**
+   * Send invoice with retry logic for transient errors
+   * @param {object} invoiceData - Invoice data
+   * @param {number} maxRetries - Maximum number of retry attempts (default: 3)
+   * @returns {Promise<object>} Send result
+   */
+  async sendWithRetry(invoiceData, maxRetries = 3) {
+    let lastError;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Peppol send attempt ${attempt} of ${maxRetries}`);
+        
+        // Generate UBL XML
+        const xml = generatePEPPOLXML(invoiceData);
+        
+        // Validate document before sending
+        const validation = this.validateDocument(xml);
+        if (!validation.valid) {
+          throw new Error(`Document validation failed: ${validation.errors.join(', ')}`);
+        }
+        
+        // Send via edge function
+        const response = await supabase.functions.invoke('peppol-webhook-config', {
+          body: {
+            endpoint: this.config.baseUrl,
+            username: this.config.username,
+            password: this.config.password,
+            action: 'send-ubl-document',
+            xmlDocument: xml
+          }
+        });
+        
+        if (response.error) {
+          throw new Error(response.error.message);
+        }
+        
+        // Success
+        console.log(`✓ Invoice ${invoiceData.billName} sent successfully via PEPPOL`);
+        return {
+          success: true,
+          message: "Invoice sent successfully",
+          attempt: attempt
+        };
+        
+      } catch (error) {
+        lastError = error;
+        
+        // Don't retry for non-transient errors
+        const errorMessage = error.message || '';
+        if (errorMessage.includes('not found') || 
+            errorMessage.includes('validation') ||
+            errorMessage.includes('receiver not found') ||
+            errorMessage.includes('401') ||
+            errorMessage.includes('Unauthorized') ||
+            errorMessage.includes('404')) {
+          console.error('Non-transient error, not retrying:', errorMessage);
+          throw error;
+        }
+        
+        // Wait before retry (exponential backoff)
+        if (attempt < maxRetries) {
+          const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+          console.log(`Waiting ${delay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+    
+    throw new Error(`Failed after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
   }
 
   // Send UBL invoice via Peppol - via edge function to avoid CORS
@@ -750,27 +1001,29 @@ export class PeppolService {
         );
       }
 
-      const xml = generatePEPPOLXML(invoiceData);
-      
-      const response = await supabase.functions.invoke('peppol-webhook-config', {
-        body: {
-          endpoint: this.config.baseUrl,
-          username: this.config.username,
-          password: this.config.password,
-          action: 'send-ubl-document',
-          xmlDocument: xml
-        }
-      });
-      
-      if (response.error) {
-        throw new Error(response.error.message);
+      // CRITICAL: Check if receiver is on Peppol BEFORE sending
+      if (!invoiceData.receiver || !invoiceData.receiver.vatNumber) {
+        throw new Error('Receiver VAT number is required to check Peppol capability');
       }
 
-        console.log(`Invoice ${invoiceData.billName} sent successfully via PEPPOL`);
-        return {
-          success: true,
-          message: "Invoice sent successfully"
-        };
+      const receiverCheck = await this.checkReceiverCapability(invoiceData.receiver.vatNumber);
+      
+      if (!receiverCheck.found) {
+        throw new Error(
+          `Receiver ${invoiceData.receiver.vatNumber} not found on Peppol network. ` +
+          `Please use email delivery method or ensure the receiver is registered on Peppol.`
+        );
+      }
+
+      // Set receiver Peppol identifier from capability check result
+      if (receiverCheck.identifier && !invoiceData.receiver.peppolIdentifier) {
+        invoiceData.receiver.peppolIdentifier = receiverCheck.identifier;
+        console.log(`Using Peppol identifier from capability check: ${receiverCheck.identifier}`);
+      }
+
+      // Send with retry logic
+      return await this.sendWithRetry(invoiceData, 3);
+      
     } catch (error) {
       console.error("Failed to send PEPPOL invoice:", error);
       throw error;
@@ -782,11 +1035,16 @@ export class PeppolService {
   convertHaliqoInvoiceToPeppol(haliqoInvoice, senderInfo, receiverInfo) {
         return {
       billName: haliqoInvoice.invoice_number || `INV-${Date.now()}`,
-      issueDate: formatDate(haliqoInvoice.created_at || new Date(), "date"),
+      // Use issue_date from schema (invoices.issue_date), fallback to created_at if not available
+      issueDate: formatDate(haliqoInvoice.issue_date || haliqoInvoice.created_at || new Date(), "date"),
+      // Use due_date from schema (invoices.due_date)
       dueDate: formatDate(haliqoInvoice.due_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), "date"),
-      deliveryDate: formatDate(haliqoInvoice.delivery_date || haliqoInvoice.created_at || new Date(), "date"),
-      buyerReference: haliqoInvoice.reference || null,
-      paymentDelay: 30,
+      // delivery_date is not in invoices table, use issue_date as fallback (or created_at)
+      deliveryDate: formatDate(haliqoInvoice.delivery_date || haliqoInvoice.issue_date || haliqoInvoice.created_at || new Date(), "date"),
+      // buyerReference can be from invoice notes, description, or invoice number
+      buyerReference: haliqoInvoice.buyer_reference || haliqoInvoice.reference || haliqoInvoice.invoice_number || null,
+      // Extract payment delay from payment_terms if available, otherwise default to 30 days
+      paymentDelay: extractPaymentDelay(haliqoInvoice.payment_terms) || 30,
       paymentMeans: 31, // Debit transfer (code 31 = Credit transfer)
       sender: {
         vatNumber: cleanVATNumber(senderInfo.vat_number), // Clean VAT number (remove Peppol scheme prefixes)
@@ -1166,7 +1424,9 @@ export class PeppolService {
       // Determine success message based on registration result
       let successMessage = 'Settings saved successfully';
       if (registrationResult.alreadyRegistered) {
-        successMessage = 'Settings saved successfully. This participant is already registered in Digiteal.';
+        // Use the actual error message from API if available, otherwise use default
+        const apiMessage = registrationResult.error || 'This participant is already registered in Digiteal.';
+        successMessage = `Settings saved successfully. ${apiMessage}`;
       }
 
       return {
@@ -1230,8 +1490,81 @@ export class PeppolService {
       // Test 2: Validate document format (if we have a sample)
       const validationResult = await this.validateDocumentFormat();
       
-      // Test 3: Check if participant exists in Peppol network
+      // Test 3: Check if participant exists in global Peppol network (RECOMMENDED - Primary Check)
+      // This uses the public API to check the global Peppol network
       const participantTest = await this.getDetailedParticipantInfo(settings.peppolId);
+      
+      // If participant exists in global Peppol network, check which Access Point (SMP) they're registered with
+      if (participantTest.success && participantTest.data) {
+        const smpHostName = participantTest.data.smpHostName || participantTest.data.smp?.hostname || '';
+        const isRegisteredWithDigiteal = smpHostName.includes('digiteal');
+        
+        // Test 3.5: Check if participant is already registered in Digiteal's system
+        // This is critical - if already registered, test should indicate this
+        try {
+          const participantCheck = await this.getParticipant(settings.peppolId);
+          
+          // If we can get participant details from Digiteal, they're already registered
+          if (participantCheck.success && participantCheck.data) {
+            return {
+              success: false,
+              error: 'Company already registered in Digiteal.',
+              alreadyRegistered: true,
+              registeredWithDigiteal: true,
+              smpHostName: smpHostName
+            };
+          }
+        } catch (error) {
+          // If getParticipant fails, check if participant is registered with another Access Point
+          if (participantTest.success && !isRegisteredWithDigiteal && smpHostName) {
+            return {
+              success: false,
+              error: 'Company already registered in Peppol.',
+              alreadyRegistered: true,
+              registeredWithDigiteal: false,
+              smpHostName: smpHostName,
+              needsTransfer: true
+            };
+          }
+         
+        }
+      } else {
+        // Participant not found in global Peppol network
+        // Check if they're already registered with Digiteal (edge case)
+        try {
+          const participantCheck = await this.getParticipant(settings.peppolId);
+          if (participantCheck.success && participantCheck.data) {
+            return {
+              success: false,
+              error: 'Company already registered in Digiteal.',
+              alreadyRegistered: true,
+              registeredWithDigiteal: true
+            };
+          }
+        } catch (error) {
+          // Participant not found anywhere - this is OK, they can register
+        }
+      }
+      
+      // For Belgium, also check the 9925 identifier if we're testing with 0208
+      if (settings.countryCode?.toUpperCase() === 'BE' && settings.peppolId?.startsWith('0208:')) {
+        const vatNumber = settings.peppolId.split(':')[1];
+        const id9925 = `9925:BE${vatNumber}`;
+        
+        try {
+          const participantCheck9925 = await this.getParticipant(id9925);
+          if (participantCheck9925.success && participantCheck9925.data) {
+            return {
+              success: false,
+              error: 'Company already registered in Digiteal.',
+              alreadyRegistered: true,
+              registeredWithDigiteal: true
+            };
+          }
+        } catch (error) {
+          // Continue if check fails
+        }
+      }
       
       // Test 4: Test participant registration (dry run)
       const registrationTest = await this.testParticipantRegistration(settings);
@@ -1258,7 +1591,8 @@ export class PeppolService {
           readyForIntegration: isReadyForIntegration,
           supportedDocumentTypes: supportedDocsResult.data?.length || 0,
           validationPassed: validationResult.success,
-          registrationReady: registrationTest.success
+          registrationReady: registrationTest.success,
+          alreadyRegistered: false
         },
         message: this.generateTestResultMessage(supportedDocsResult, participantTest, registrationTest, responseTime)
       };
@@ -1454,15 +1788,50 @@ export class PeppolService {
           supportedDocumentTypes: supportedDocTypes
       };
 
-      const response = await supabase.functions.invoke('peppol-webhook-config', {
-        body: {
-          endpoint: this.config.baseUrl,
-          username: this.config.username,
-          password: this.config.password,
-          action: 'register-participant',
-          participantData: payload
+      let response;
+      try {
+        response = await supabase.functions.invoke('peppol-webhook-config', {
+          body: {
+            endpoint: this.config.baseUrl,
+            username: this.config.username,
+            password: this.config.password,
+            action: 'register-participant',
+            participantData: payload
+          }
+        });
+      } catch (invokeError) {
+        // If Supabase throws an error, try to extract error message from it
+        console.error('Edge function invocation error:', invokeError);
+        
+        // Try to extract error from various possible locations
+        let errorMessage = invokeError.message || 'Failed to invoke edge function';
+        let isAlreadyRegistered = false;
+        
+        // Check if error has response data in different possible locations
+        if (invokeError.context?.body) {
+          const errorBody = invokeError.context.body;
+          if (errorBody.error) {
+            errorMessage = errorBody.error;
+            isAlreadyRegistered = errorBody.error.toLowerCase().includes('already registered');
+          }
+        } else if (invokeError.data) {
+          const errorData = invokeError.data;
+          if (errorData.error) {
+            errorMessage = errorData.error;
+            isAlreadyRegistered = errorData.error.toLowerCase().includes('already registered');
+          }
+        } else if (invokeError.message && invokeError.message.includes('non-2xx')) {
+          // If it's the generic "non-2xx" error, try to get more details
+          // The actual error might be in the error object itself
+          errorMessage = 'Registration failed. Please check your participant details.';
         }
-      });
+        
+        return {
+          success: false,
+          error: errorMessage,
+          alreadyRegistered: isAlreadyRegistered
+        };
+      }
 
       // Check for errors in both response.error and response.data
       // When edge function returns non-2xx, error data is in response.data
@@ -1474,55 +1843,121 @@ export class PeppolService {
         let errorMessage = '';
         let isAlreadyRegistered = false;
         
-        if (errorData && errorData.error) {
+        // PRIORITY 1: Check errorData.error first (this is the main source from edge function)
+        if (errorData.error && typeof errorData.error === 'string') {
           errorMessage = errorData.error;
+          // Check if this is an "already registered" error
+          const errorTextLower = errorMessage.toLowerCase();
+          if (errorTextLower.includes('already_registered') || 
+              errorTextLower.includes('already registered') ||
+              errorTextLower.includes('already registered for reception')) {
+            isAlreadyRegistered = true;
+          }
+        }
+        
+        // PRIORITY 2: Try to parse the details field which contains the full API error response
+        if (!errorMessage && errorData.details) {
+          try {
+            const parsedDetails = JSON.parse(errorData.details);
+            
+            // Check if it's the Digiteal API error format
+            if (parsedDetails.status === 'ALREADY_REGISTERED_TO_DIGITEAL' || 
+                parsedDetails.errorCode === 'REGISTER_ALREADY_REGISTERED_TO_DIGITEAL') {
+              isAlreadyRegistered = true;
+              // Use the message from API response
+              errorMessage = parsedDetails.message || parsedDetails.errorMessage || errorData.error || 'Participant is already registered';
+            } else if (parsedDetails.message) {
+              // Use message from parsed details
+              errorMessage = parsedDetails.message;
+            } else if (parsedDetails.errorMessage) {
+              errorMessage = parsedDetails.errorMessage;
+            } else if (parsedDetails.error) {
+              errorMessage = parsedDetails.error;
+            }
+          } catch (e) {
+            // If parsing fails, continue to other error extraction methods
+            console.warn('Failed to parse error details:', e);
+          }
+        }
+        
+        // PRIORITY 3: Fallback to response.error if we still don't have an error message
+        // But skip generic Supabase error messages like "non-2xx" or "Edge Function returned"
+        if (!errorMessage && response.error) {
+          const responseErrorMsg = typeof response.error === 'string' 
+            ? response.error 
+            : (response.error.message || JSON.stringify(response.error));
           
-          // Parse details if available to check for ALREADY_REGISTERED status
+          // Skip generic Supabase error messages - we want the actual error from response.data
+          if (!responseErrorMsg.includes('non-2xx') && 
+              !responseErrorMsg.includes('Edge Function returned') &&
+              !responseErrorMsg.includes('Function returned')) {
+            errorMessage = responseErrorMsg;
+            
+            // Check again for already registered
+            const fallbackErrorLower = errorMessage.toLowerCase();
+            if (fallbackErrorLower.includes('already_registered') || 
+                fallbackErrorLower.includes('already registered') ||
+                fallbackErrorLower.includes('already registered for reception')) {
+              isAlreadyRegistered = true;
+            }
+          }
+        }
+        
+        // If still no error message, use a default
+        if (!errorMessage) {
+          errorMessage = 'Failed to register participant';
+        }
+        
+        // Make error message user-friendly and concise
+        if (isAlreadyRegistered) {
+          // Determine if registered in Digiteal or globally in Peppol
+          let isDigitealRegistration = false;
+          
+          // Check details field for Digiteal-specific status
           if (errorData.details) {
             try {
               const parsedDetails = JSON.parse(errorData.details);
-              if (parsedDetails.status === 'ALREADY_REGISTERED_TO_DIGITEAL') {
-                isAlreadyRegistered = true;
-                if (parsedDetails.message) {
-                  errorMessage = parsedDetails.message;
-                }
+              if (parsedDetails.status === 'ALREADY_REGISTERED_TO_DIGITEAL' || 
+                  parsedDetails.errorCode === 'REGISTER_ALREADY_REGISTERED_TO_DIGITEAL') {
+                isDigitealRegistration = true;
               }
             } catch (e) {
               // If parsing fails, check error message text
+              if (errorData.details.includes('ALREADY_REGISTERED_TO_DIGITEAL')) {
+                isDigitealRegistration = true;
+              }
             }
           }
           
-          // Also check error message text for "already registered" keywords
-          if (errorMessage.includes('ALREADY_REGISTERED') || 
-              errorMessage.includes('already registered') ||
-              errorMessage.includes('already registered for reception')) {
-            isAlreadyRegistered = true;
-          }
-        } else if (response.error) {
-          // Fallback to response.error if response.data doesn't have error
-          if (typeof response.error === 'string') {
-            errorMessage = response.error;
-          } else if (response.error.message) {
-            errorMessage = response.error.message;
-          } else {
-            errorMessage = JSON.stringify(response.error);
+          // Also check error message for Digiteal keywords
+          if (!isDigitealRegistration && errorMessage.toLowerCase().includes('digiteal')) {
+            isDigitealRegistration = true;
           }
           
-          if (errorMessage.includes('ALREADY_REGISTERED') || 
-              errorMessage.includes('already registered')) {
-            isAlreadyRegistered = true;
+          // If error mentions "for reception", it's likely Digiteal registration
+          if (!isDigitealRegistration && errorMessage.toLowerCase().includes('for reception')) {
+            isDigitealRegistration = true;
           }
-        }
-        
-        if (isAlreadyRegistered) {
+          
+          // Concise message based on registration location
+          const conciseMessage = isDigitealRegistration
+            ? 'Company already registered in Digiteal.'
+            : 'Company already registered in Peppol.';
+          
           return { 
             success: false, 
-            error: errorMessage,
-            alreadyRegistered: true
+            error: conciseMessage,
+            alreadyRegistered: true,
+            registeredWithDigiteal: isDigitealRegistration
           };
         }
         
-        return { success: false, error: errorMessage };
+        // For other errors, make them concise (max 100 chars)
+        const conciseError = errorMessage.length > 100 
+          ? errorMessage.substring(0, 100) + '...' 
+          : errorMessage;
+        
+        return { success: false, error: conciseError };
       }
 
       // Handle successful response

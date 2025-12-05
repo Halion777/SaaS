@@ -3675,7 +3675,44 @@
     "messages": {
       "settingsSaved": "Paramètres enregistrés avec succès !",
       "alreadyRegistered": "Ce participant est déjà enregistré dans Digiteal. Vos paramètres ont été enregistrés avec succès.",
-      "saveError": "Erreur lors de l'enregistrement des paramètres"
+      "saveError": "Erreur lors de l'enregistrement des paramètres",
+      "success": {
+        "settingsSaved": "Paramètres enregistrés avec succès !",
+        "participantRegistered": "Participant enregistré avec succès !",
+        "participantUpdated": "Participant mis à jour avec succès !",
+        "alreadyRegisteredDigiteal": "Entreprise déjà enregistrée dans Digiteal. Paramètres enregistrés.",
+        "alreadyRegisteredPeppol": "Entreprise déjà enregistrée dans Peppol. Paramètres enregistrés.",
+        "testSuccessful": "Test d'intégration réussi",
+        "testAlreadyRegisteredDigiteal": "Entreprise déjà enregistrée dans Digiteal.",
+        "testAlreadyRegisteredPeppol": "Entreprise déjà enregistrée dans Peppol.",
+        "invoiceSent": "Facture envoyée avec succès via Peppol",
+        "invoiceReceived": "Facture reçue avec succès",
+        "unregistered": "Participant désenregistré et toutes les données Peppol supprimées avec succès"
+      },
+      "errors": {
+        "saveError": "Erreur lors de l'enregistrement des paramètres",
+        "registrationError": "Erreur lors de l'enregistrement du participant",
+        "updateError": "Erreur lors de la mise à jour des paramètres",
+        "testError": "Échec du test d'intégration",
+        "testConnectionError": "Erreur lors du test d'intégration",
+        "alreadyRegisteredAnotherAP": "Entreprise enregistrée auprès d'un autre point d'accès. Contactez le fournisseur pour transférer.",
+        "receiverNotFound": "Destinataire introuvable sur le réseau Peppol. Veuillez utiliser la livraison par e-mail ou vous assurer que le destinataire est enregistré sur Peppol.",
+        "sendError": "Erreur lors de l'envoi de la facture via Peppol",
+        "receiveError": "Erreur lors de la réception de la facture",
+        "validationError": "Échec de la validation du document",
+        "networkError": "Erreur réseau. Veuillez vérifier votre connexion et réessayer.",
+        "unauthorized": "Non autorisé. Veuillez vérifier vos identifiants.",
+        "notFound": "Ressource introuvable",
+        "serverError": "Erreur serveur. Veuillez réessayer plus tard.",
+        "timeout": "Délai d'attente dépassé. Veuillez réessayer.",
+        "unknownError": "Une erreur inconnue s'est produite",
+        "peppolDisabled": "La fonctionnalité Peppol est actuellement désactivée. Veuillez l'activer dans les paramètres Peppol pour envoyer des factures.",
+        "quotaExceeded": "Limite de factures Peppol atteinte. Veuillez passer à Pro pour des factures Peppol illimitées.",
+        "invalidPeppolId": "Format d'identifiant Peppol invalide",
+        "missingRequiredFields": "Champs obligatoires manquants",
+        "unregisterError": "Erreur lors du désenregistrement du participant",
+        "cleanupError": "Erreur lors du nettoyage des données Peppol"
+      }
     },
     "loading": {
       "configuration": "Chargement de la configuration...",

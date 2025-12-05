@@ -309,30 +309,68 @@ const PeppolNetworkPage = () => {
         .eq('status', 'paid')
         .order('peppol_sent_at', { ascending: false });
 
-      // Load received invoices (from expense_invoices table where peppol_enabled = true)
-      const { data: receivedInvoicesData, error: receivedError } = await supabase
-        .from('expense_invoices')
-        .select(`
-          id,
-          invoice_number,
-          supplier_name,
-          supplier_email,
-          amount,
-          issue_date,
-          due_date,
-          peppol_message_id,
-          peppol_received_at,
-          sender_peppol_id
-        `)
+      // Get current user's Peppol ID to filter received invoices
+      // Only show invoices received for the current Peppol ID (not old IDs from previous registrations)
+      const { data: currentPeppolSettings } = await supabase
+        .from('peppol_settings')
+        .select('peppol_id')
         .eq('user_id', user.id)
-        .eq('peppol_enabled', true)
-        .order('peppol_received_at', { ascending: false });
+        .single();
+
+      const currentPeppolId = currentPeppolSettings?.peppol_id;
+
+      // Load received invoices (from expense_invoices table where peppol_enabled = true)
+      // Filter by matching receiver_peppol_id from peppol_invoices table with current user's peppol_id
+      let receivedInvoicesData = [];
+      
+      if (currentPeppolId) {
+        // First, get invoice numbers from peppol_invoices that match current Peppol ID
+        const { data: peppolInvoicesData } = await supabase
+          .from('peppol_invoices')
+          .select('invoice_number')
+          .eq('user_id', user.id)
+          .eq('direction', 'inbound')
+          .eq('receiver_peppol_id', currentPeppolId);
+
+        if (peppolInvoicesData && peppolInvoicesData.length > 0) {
+          // Get invoice numbers that match current Peppol ID
+          const matchingInvoiceNumbers = peppolInvoicesData.map(pi => pi.invoice_number);
+          
+          // Query expense_invoices for those invoice numbers
+          const { data: expenseInvoicesData, error: receivedError } = await supabase
+            .from('expense_invoices')
+            .select(`
+              id,
+              invoice_number,
+              supplier_name,
+              supplier_email,
+              amount,
+              issue_date,
+              due_date,
+              peppol_message_id,
+              peppol_received_at,
+              sender_peppol_id
+            `)
+            .eq('user_id', user.id)
+            .eq('peppol_enabled', true)
+            .in('invoice_number', matchingInvoiceNumbers)
+            .order('peppol_received_at', { ascending: false });
+
+          if (receivedError) {
+            console.error('Error loading received invoices:', receivedError);
+          } else {
+            receivedInvoicesData = expenseInvoicesData || [];
+          }
+        }
+        // If no matching invoices found, receivedInvoicesData remains empty array
+      } else {
+        // If user has no Peppol ID configured, don't show any received invoices
+        // (they need to register first)
+        receivedInvoicesData = [];
+      }
 
       if (sentError) {
         console.error('Error loading sent invoices:', sentError);
-      }
-      if (receivedError) {
-        console.error('Error loading received invoices:', receivedError);
       }
 
       // Transform sent invoices to match expected format
@@ -622,24 +660,41 @@ const PeppolNetworkPage = () => {
           isConfigured: result.data?.isConfigured || true,
           ...result.data
         }));
-        setSuccessMessage(result.message || t('peppol.messages.settingsSaved'));
+        setSuccessMessage(result.message || t('peppol.messages.success.settingsSaved'));
         // Clear success message after 5 seconds
         setTimeout(() => setSuccessMessage(null), 5000);
       } else {
         // Check if participant is already registered
         if (result.alreadyRegistered) {
-          setSuccessMessage(t('peppol.messages.alreadyRegistered'));
-          // Clear success message after 5 seconds
+          // Show different message based on where it's registered
+          const message = result.registeredWithDigiteal
+            ? t('peppol.messages.success.alreadyRegisteredDigiteal')
+            : t('peppol.messages.success.alreadyRegisteredPeppol');
+          setSuccessMessage(message);
           setTimeout(() => setSuccessMessage(null), 5000);
         } else {
-          setErrorMessage(result.error || t('peppol.messages.saveError'));
-          // Clear error message after 5 seconds
+          // Show the actual error message from API (concise)
+          const errorMsg = result.error || t('peppol.messages.errors.saveError');
+          // Extract just the main message if it's too long
+          const conciseError = errorMsg.length > 100 ? errorMsg.substring(0, 100) + '...' : errorMsg;
+          setErrorMessage(conciseError);
           setTimeout(() => setErrorMessage(null), 5000);
         }
       }
     } catch (error) {
-      setErrorMessage(t('peppol.messages.saveError') + ': ' + error.message);
-      // Clear error message after 5 seconds
+      // Extract user-friendly error message, skip generic Supabase errors
+      let errorMsg = error.message || t('peppol.messages.errors.saveError');
+      
+      // Skip generic error messages
+      if (errorMsg.includes('non-2xx') || 
+          errorMsg.includes('Edge Function returned') ||
+          errorMsg.includes('Function returned')) {
+        errorMsg = t('peppol.messages.errors.saveError');
+      }
+      
+      // Make error concise (max 100 chars)
+      const conciseError = errorMsg.length > 100 ? errorMsg.substring(0, 100) + '...' : errorMsg;
+      setErrorMessage(conciseError);
       setTimeout(() => setErrorMessage(null), 5000);
     } finally {
       setIsSaving(false);
@@ -648,6 +703,8 @@ const PeppolNetworkPage = () => {
 
   const handleTestConnection = async () => {
     setIsTesting(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
     try {
       // Combine scheme code, country code, and VAT number before testing
       // Format: {SCHEME_ID}:{COUNTRY_CODE}{VAT_NUMBER} (e.g., 9925:BE1231231231)
@@ -658,13 +715,33 @@ const PeppolNetworkPage = () => {
       };
       const result = await peppolService.testConnection(testSettings);
       if (result.success) {
-        // Show detailed test results
-        alert(result.message);
+        setSuccessMessage(result.message || t('peppol.messages.success.testSuccessful'));
+        setTimeout(() => setSuccessMessage(null), 5000);
       } else {
-        alert(`❌ Integration Test Failed:\n\n${result.error}`);
+        // Check if participant is already registered - this is actually OK
+        if (result.alreadyRegistered) {
+          if (result.registeredWithDigiteal) {
+            // Already registered with Digiteal
+            setSuccessMessage(t('peppol.messages.success.testAlreadyRegisteredDigiteal'));
+            setTimeout(() => setSuccessMessage(null), 5000);
+          } else if (result.needsTransfer) {
+            // Registered with another Access Point - needs transfer
+            setErrorMessage(t('peppol.messages.errors.alreadyRegisteredAnotherAP'));
+            setTimeout(() => setErrorMessage(null), 5000);
+          } else {
+            // Already registered in Peppol (global)
+            setSuccessMessage(t('peppol.messages.success.testAlreadyRegisteredPeppol'));
+            setTimeout(() => setSuccessMessage(null), 5000);
+          }
+        } else {
+          // Actual test failure
+          setErrorMessage(result.error || t('peppol.messages.errors.testError'));
+          setTimeout(() => setErrorMessage(null), 5000);
+        }
       }
     } catch (error) {
-      alert(`❌ Integration Test Error:\n\n${error.message}`);
+      setErrorMessage(error.message || t('peppol.messages.errors.testConnectionError'));
+      setTimeout(() => setErrorMessage(null), 5000);
     } finally {
       setIsTesting(false);
     }
