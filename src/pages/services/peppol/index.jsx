@@ -16,6 +16,8 @@ import { supabase } from '../../../services/supabaseClient';
 import { COUNTRY_CODES, searchCountries } from '../../../utils/countryCodes';
 import { getPeppolVATSchemeId, parsePeppolId, combinePeppolId, PEPPOL_COUNTRY_LANGUAGE_MAP } from '../../../utils/peppolSchemes';
 import { loadCompanyInfo } from '../../../services/companyInfoService';
+import { validateVATNumber, getExpectedFormat, VAT_VALIDATION_RULES } from '../../../utils/vatNumberValidation';
+import { getClientCountryOptions } from '../../../utils/countryList';
 
 const PeppolNetworkPage = () => {
   const { t, i18n } = useTranslation();
@@ -88,6 +90,7 @@ const PeppolNetworkPage = () => {
     sent: false,
     received: false
   });
+  const [vatValidationError, setVatValidationError] = useState('');
 
   // Create PeppolService instance - will be recreated when sandboxMode changes
   const peppolService = React.useMemo(() => new PeppolService(peppolSettings.sandboxMode), [peppolSettings.sandboxMode]);
@@ -98,16 +101,17 @@ const PeppolNetworkPage = () => {
   }, [countrySearchQuery]);
 
   // Auto-fill scheme code when country is set
-  // For Belgium: default to 0208 (company number without BE) - mandatory format
+  // For Belgium: prefer 9925 (VAT scheme) to avoid MOD97 validation issues, but allow 0208
   // For other countries: use VAT scheme
   useEffect(() => {
     if (peppolSettings.countryCode) {
       const countryCode = peppolSettings.countryCode.toUpperCase();
       if (countryCode === 'BE') {
-        // Belgium: default to 0208 (company number without BE) - mandatory format
+        // Belgium: prefer 9925 (VAT scheme) as default to avoid MOD97-0208 validation issues
+        // Both 0208 and 9925 will be registered, but we save 9925 as primary
         // Only set if not already one of the valid Belgium schemes
         if (!peppolSchemeCode || (peppolSchemeCode !== '0208' && peppolSchemeCode !== '9925')) {
-          setPeppolSchemeCode('0208');
+          setPeppolSchemeCode('9925'); // Default to 9925 for Belgium
         }
       } else {
         // Other countries: use VAT scheme ID
@@ -262,7 +266,7 @@ const PeppolNetworkPage = () => {
         }
       }
     } catch (error) {
-      console.error('Error loading Peppol settings:', error);
+      // Error loading Peppol settings
     }
   };
 
@@ -274,7 +278,7 @@ const PeppolNetworkPage = () => {
       // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
-        console.error('User not authenticated');
+        // User not authenticated
         return;
       }
 
@@ -338,26 +342,26 @@ const PeppolNetworkPage = () => {
           
           // Query expense_invoices for those invoice numbers
           const { data: expenseInvoicesData, error: receivedError } = await supabase
-            .from('expense_invoices')
-            .select(`
-              id,
-              invoice_number,
-              supplier_name,
-              supplier_email,
-              amount,
-              issue_date,
-              due_date,
-              peppol_message_id,
-              peppol_received_at,
-              sender_peppol_id
-            `)
-            .eq('user_id', user.id)
-            .eq('peppol_enabled', true)
+        .from('expense_invoices')
+        .select(`
+          id,
+          invoice_number,
+          supplier_name,
+          supplier_email,
+          amount,
+          issue_date,
+          due_date,
+          peppol_message_id,
+          peppol_received_at,
+          sender_peppol_id
+        `)
+        .eq('user_id', user.id)
+        .eq('peppol_enabled', true)
             .in('invoice_number', matchingInvoiceNumbers)
-            .order('peppol_received_at', { ascending: false });
+        .order('peppol_received_at', { ascending: false });
 
-          if (receivedError) {
-            console.error('Error loading received invoices:', receivedError);
+      if (receivedError) {
+        // Error loading received invoices
           } else {
             receivedInvoicesData = expenseInvoicesData || [];
           }
@@ -370,7 +374,7 @@ const PeppolNetworkPage = () => {
       }
 
       if (sentError) {
-        console.error('Error loading sent invoices:', sentError);
+        // Error loading sent invoices
       }
 
       // Transform sent invoices to match expected format
@@ -423,7 +427,7 @@ const PeppolNetworkPage = () => {
         totalReceivedAmount
       });
     } catch (error) {
-      console.error('Error loading Peppol invoices:', error);
+      // Error loading Peppol invoices
     } finally {
       setLoadingInvoices(false);
     }
@@ -453,7 +457,7 @@ const PeppolNetworkPage = () => {
           .single();
 
         if (userDataError) {
-          console.error('Error fetching user data:', userDataError);
+          // Error fetching user data
           return;
         }
 
@@ -473,7 +477,7 @@ const PeppolNetworkPage = () => {
         try {
           companyInfo = await loadCompanyInfo(user.id);
         } catch (error) {
-          console.error('Error loading company info:', error);
+          // Error loading company info
         }
 
         // Pre-fill Peppol settings from company info and user data if not already configured
@@ -518,8 +522,8 @@ const PeppolNetworkPage = () => {
           if (companyCountry && !peppolSchemeCode) {
             const countryCodeUpper = companyCountry.toUpperCase();
             if (countryCodeUpper === 'BE') {
-              // Belgium: default to 0208 (company number without BE) - mandatory format
-              setPeppolSchemeCode('0208');
+              // Belgium: prefer 9925 (VAT scheme) to avoid MOD97 validation issues
+              setPeppolSchemeCode('9925');
             } else {
               // Other countries: use VAT scheme
               const schemeId = getPeppolVATSchemeId(companyCountry);
@@ -552,7 +556,7 @@ const PeppolNetworkPage = () => {
         setLoading(false);
         setIsInitialized(true);
       } catch (error) {
-        console.error('Error checking business user:', error);
+        // Error checking business user
         setLoading(false);
         setIsInitialized(true);
       }
@@ -625,20 +629,81 @@ const PeppolNetworkPage = () => {
     }
   };
 
+  // Helper function to extract VAT number from Peppol ID
+  // Examples: "9957:fr1001464622" -> "FR1001464622", "9925:be0630675588" -> "BE0630675588", "0208:0630675588" -> "BE0630675588"
+  const extractVATFromPeppolId = (peppolId) => {
+    if (!peppolId) return '';
+    const parts = peppolId.split(':');
+    if (parts.length !== 2) return '';
+    
+    const scheme = parts[0];
+    const identifier = parts[1];
+    
+    // For Belgian enterprise number (0208), add BE prefix
+    if (scheme === '0208') {
+      return `BE${identifier}`;
+    }
+    
+    // For VAT-based schemes (9925, 9957, etc.), identifier already contains country code
+    // Extract country code and VAT number
+    if (/^[a-z]{2}\d+/i.test(identifier)) {
+      return identifier.toUpperCase();
+    }
+    
+    // If no country code in identifier, return as-is (shouldn't happen for valid IDs)
+    return identifier;
+  };
+
+  // Helper function to normalize VAT numbers for comparison (remove country prefix, spaces, etc.)
+  const normalizeVATForComparison = (vatNumber) => {
+    if (!vatNumber) return '';
+    // Remove country prefix if present
+    let cleaned = vatNumber.replace(/^[A-Z]{2}/i, '');
+    // Remove all non-numeric characters
+    cleaned = cleaned.replace(/\D/g, '');
+    return cleaned;
+  };
+
   const handleSaveSettings = async () => {
     setIsSaving(true);
     setSuccessMessage(null);
     setErrorMessage(null);
     try {
+      // Validate VAT number matches company info if Peppol is already configured
+      if (peppolSettings.isConfigured && peppolSettings.peppolId) {
+        try {
+          const companyInfo = await loadCompanyInfo(user?.id);
+          if (companyInfo?.vatNumber) {
+            // Extract VAT from existing Peppol ID
+            const existingPeppolVAT = extractVATFromPeppolId(peppolSettings.peppolId);
+            const existingPeppolVATNormalized = normalizeVATForComparison(existingPeppolVAT);
+            const companyVATNormalized = normalizeVATForComparison(companyInfo.vatNumber);
+            
+            // Check if new VAT number matches company VAT
+            const newVATNormalized = normalizeVATForComparison(peppolIdentifier);
+            
+            // If company has VAT and it doesn't match the new Peppol VAT, show warning
+            if (companyVATNormalized && newVATNormalized && companyVATNormalized !== newVATNormalized) {
+              setErrorMessage(t('peppol.messages.errors.vatMismatch', 'VAT number does not match company information. Please update your company profile VAT number to match Peppol registration.'));
+              setIsSaving(false);
+              return;
+            }
+          }
+        } catch (error) {
+          // If we can't load company info, continue anyway
+        }
+      }
+
       // For Belgium: register both 0208 and 9925 schemes
       // For other countries: use the selected scheme code
       let combinedPeppolId;
       const isBelgium = peppolSettings.countryCode?.toUpperCase() === 'BE';
       
       if (isBelgium) {
-        // For Belgium, use 0208 as the primary ID (default format)
-        // Backend will register both 0208 and 9925
-        combinedPeppolId = combinePeppolIdWithCountry('0208', peppolSettings.countryCode, peppolIdentifier);
+        // For Belgium, prefer 9925 (VAT scheme) as the primary ID to save
+        // Backend will register both 0208 and 9925, but we save 9925 to avoid MOD97 validation issues
+        // 9925 scheme doesn't require MOD97-0208 validation, making it more reliable
+        combinedPeppolId = combinePeppolIdWithCountry('9925', peppolSettings.countryCode, peppolIdentifier);
       } else {
         // For other countries, use the selected scheme code
         combinedPeppolId = combinePeppolIdWithCountry(peppolSchemeCode, peppolSettings.countryCode, peppolIdentifier);
@@ -652,7 +717,34 @@ const PeppolNetworkPage = () => {
         isBelgium: isBelgium, // Flag to indicate Belgium for dual registration
         vatNumber: peppolIdentifier // Pass VAT number separately for Belgium dual registration
       };
+      
+      // After successful save, update company info VAT number to match if needed
       const result = await peppolService.savePeppolSettings(settingsToSave);
+      
+      // If Peppol registration succeeded, sync VAT number to company info
+      if (result.success) {
+        try {
+          const companyInfo = await loadCompanyInfo(user?.id);
+          if (companyInfo) {
+            // Extract VAT from Peppol ID
+            const peppolVAT = extractVATFromPeppolId(combinedPeppolId);
+            const peppolVATNormalized = normalizeVATForComparison(peppolVAT);
+            const companyVATNormalized = normalizeVATForComparison(companyInfo.vatNumber || '');
+            
+            // If VAT numbers don't match, update company info
+            if (peppolVATNormalized && companyVATNormalized !== peppolVATNormalized) {
+              const { saveCompanyInfo } = await import('../../../services/companyInfoService');
+              await saveCompanyInfo({
+                ...companyInfo,
+                vatNumber: peppolVAT // Use the VAT from Peppol ID
+              }, user?.id);
+            }
+          }
+        } catch (error) {
+          // If sync fails, don't block the success - just log it
+        }
+      }
+      
       if (result.success) {
         // Update local settings from result instead of reloading
         setPeppolSettings(prev => ({
@@ -754,11 +846,11 @@ const PeppolNetworkPage = () => {
     if (field === 'countryCode') {
       const countryCodeUpper = value.toUpperCase();
       if (countryCodeUpper === 'BE') {
-        // Belgium: default to 0208 (company number without BE) - mandatory format
-        setPeppolSchemeCode('0208');
+        // Belgium: prefer 9925 (VAT scheme) to avoid MOD97 validation issues
+        setPeppolSchemeCode('9925');
         // Update combined Peppol ID when country changes
         if (peppolIdentifier) {
-          const combined = combinePeppolIdWithCountry('0208', value, peppolIdentifier);
+          const combined = combinePeppolIdWithCountry('9925', value, peppolIdentifier);
           setPeppolSettings(prev => ({ ...prev, peppolId: combined }));
         }
       } else {
@@ -773,6 +865,18 @@ const PeppolNetworkPage = () => {
           }
         }
       }
+      
+      // Re-validate VAT number when country changes (only check count)
+      if (peppolIdentifier && peppolIdentifier.trim()) {
+        const isCompanyNumber = peppolSchemeCode === '0208' && countryCodeUpper === 'BE';
+        const validation = validatePeppolIdentifierCount(peppolIdentifier, countryCodeUpper, isCompanyNumber);
+        
+        if (!validation.isValid) {
+          setVatValidationError(validation.error || 'Invalid count');
+        } else {
+          setVatValidationError('');
+        }
+      }
     }
   };
 
@@ -782,6 +886,19 @@ const PeppolNetworkPage = () => {
     // Update combined Peppol ID with format: {SCHEME_ID}:{COUNTRY_CODE}{VAT_NUMBER}
     const combined = combinePeppolIdWithCountry(value, peppolSettings.countryCode, peppolIdentifier);
     setPeppolSettings(prev => ({ ...prev, peppolId: combined }));
+    
+    // Re-validate VAT number when scheme changes (only check count)
+    if (peppolIdentifier && peppolIdentifier.trim()) {
+      const countryCode = peppolSettings.countryCode?.toUpperCase() || 'BE';
+      const isCompanyNumber = value === '0208' && countryCode === 'BE';
+      const validation = validatePeppolIdentifierCount(peppolIdentifier, countryCode, isCompanyNumber);
+      
+      if (!validation.isValid) {
+        setVatValidationError(validation.error || 'Invalid count');
+      } else {
+        setVatValidationError('');
+      }
+    }
   };
 
   // Combine scheme code, country code, and VAT number into full Peppol ID
@@ -789,13 +906,15 @@ const PeppolNetworkPage = () => {
   //   - 0208: Company Number without BE (e.g., 0208:0630675588)
   //   - 9925: BE + company Number (e.g., 9925:BE0630675588)
   // For other countries:
-  //   - Format: {SCHEME_ID}:{COUNTRY_CODE}{VAT_NUMBER} (e.g., 9925:BE1231231231)
+  //   - Format: {SCHEME_ID}:{COUNTRY_CODE_LOWERCASE}{VAT_NUMBER} (e.g., 9957:fr12345678901)
+  //   - Digiteal API requires lowercase country code in identifier
   const combinePeppolIdWithCountry = (schemeCode, countryCode, vatNumber) => {
     if (!schemeCode || !countryCode || !vatNumber) {
       return '';
     }
     
     const countryCodeUpper = countryCode.toUpperCase();
+    const countryCodeLower = countryCode.toLowerCase();
     
     // Belgium-specific handling
     if (countryCodeUpper === 'BE') {
@@ -803,22 +922,132 @@ const PeppolNetworkPage = () => {
         // 0208: Company Number without BE prefix
         return `${schemeCode}:${vatNumber}`;
       } else if (schemeCode === '9925') {
-        // 9925: BE + company Number
-        return `${schemeCode}:BE${vatNumber}`;
+        // 9925: BE + company Number (lowercase for Digiteal API)
+        return `${schemeCode}:${countryCodeLower}${vatNumber}`;
       }
     }
     
-    // Default format for other countries: {SCHEME_ID}:{COUNTRY_CODE}{VAT_NUMBER}
-    return `${schemeCode}:${countryCodeUpper}${vatNumber}`;
+    // Default format for other countries: {SCHEME_ID}:{COUNTRY_CODE_LOWERCASE}{VAT_NUMBER}
+    // Digiteal API requires lowercase country code (e.g., 9957:fr12345678901, not 9957:FR12345678901)
+    return `${schemeCode}:${countryCodeLower}${vatNumber}`;
   };
 
-  // Handle Peppol identifier change - only allow numbers
+  // Simple validation for Peppol page - only checks digit/character count, not format
+  // Users don't need to enter country codes - we just check the count
+  const validatePeppolIdentifierCount = (identifier, countryCode, isCompanyNumber) => {
+    if (!identifier || !identifier.trim()) {
+      return { isValid: true, error: '', expectedCount: null };
+    }
+    
+    const country = countryCode?.toUpperCase() || 'BE';
+    const rules = VAT_VALIDATION_RULES[country];
+    
+    if (!rules) {
+      return { isValid: true, error: '', expectedCount: null };
+    }
+    
+    // For Belgium company number (0208 scheme), check only digit count
+    if (country === 'BE' && isCompanyNumber && rules.companyNumber) {
+      const digitsOnly = identifier.replace(/\D/g, '');
+      const expectedDigits = rules.companyNumber.minLength;
+      
+      if (digitsOnly.length !== expectedDigits) {
+        return {
+          isValid: false,
+          error: `You entered ${digitsOnly.length} digit(s), but ${expectedDigits} digit(s) are required.`,
+          expectedCount: expectedDigits
+        };
+      }
+      return { isValid: true, error: '', expectedCount: expectedDigits };
+    }
+    
+    // For VAT numbers, check digit/character count only (ignore any prefixes or format)
+    // Just count digits/characters - don't check format
+    if (rules.vatNumber) {
+      // Calculate expected count (without country prefix)
+      let expectedCount;
+      let isAlphanumeric = false;
+      
+      if (country === 'CH') {
+        // Switzerland: 6 digits
+        expectedCount = 6;
+        isAlphanumeric = false;
+      } else if (country === 'AT') {
+        // Austria: 8 digits
+        expectedCount = 8;
+        isAlphanumeric = false;
+      } else if (country === 'NL') {
+        // Netherlands: 9 digits
+        expectedCount = 9;
+        isAlphanumeric = false;
+      } else if (country === 'ES') {
+        // Spain: 9 alphanumeric characters
+        expectedCount = 9;
+        isAlphanumeric = true;
+      } else if (country === 'IE') {
+        // Ireland: 8-9 characters total (7 digits + 1-2 alphanumeric)
+        expectedCount = 8;
+        isAlphanumeric = true;
+      } else {
+        // Standard: just count digits (country prefix will be added automatically)
+        expectedCount = rules.vatNumber.minLength - 2;
+        isAlphanumeric = false;
+      }
+      
+      // Count digits/characters in the entire input (ignore prefixes/suffixes)
+      const count = isAlphanumeric 
+        ? identifier.replace(/[^A-Z0-9]/gi, '').length 
+        : identifier.replace(/\D/g, '').length;
+      
+      if (country === 'IE') {
+        // Ireland: 8-9 characters total
+        if (count < 8 || count > 9) {
+          return {
+            isValid: false,
+            error: `You entered ${count} character(s), but 8-9 characters are required.`,
+            expectedCount: expectedCount
+          };
+        }
+      } else if (count !== expectedCount) {
+        return {
+          isValid: false,
+          error: `You entered ${count} ${isAlphanumeric ? 'character(s)' : 'digit(s)'}, but ${expectedCount} ${isAlphanumeric ? 'characters' : 'digits'} are required.`,
+          expectedCount: expectedCount
+        };
+      }
+      
+      return { isValid: true, error: '', expectedCount: expectedCount };
+    }
+    
+    return { isValid: true, error: '', expectedCount: null };
+  };
+
   const handleIdentifierChange = (value) => {
-    // Remove all non-numeric characters
-    const numericOnly = value.replace(/\D/g, '');
-    setPeppolIdentifier(numericOnly);
+    // For Belgium 0208 scheme, only allow digits
+    const countryCode = peppolSettings.countryCode?.toUpperCase() || 'BE';
+    const isCompanyNumber = peppolSchemeCode === '0208' && countryCode === 'BE';
+    
+    let cleanedValue = value;
+    if (isCompanyNumber) {
+      cleanedValue = cleanedValue.replace(/\D/g, '');
+    }
+    
+    // Simple validation - only check count, not format
+    if (cleanedValue && cleanedValue.trim()) {
+      const validation = validatePeppolIdentifierCount(cleanedValue, countryCode, isCompanyNumber);
+      
+      if (!validation.isValid) {
+        setVatValidationError(validation.error || 'Invalid count');
+      } else {
+        setVatValidationError('');
+      }
+    } else {
+      setVatValidationError('');
+    }
+    
+    setPeppolIdentifier(cleanedValue);
     // Update combined Peppol ID with format: {SCHEME_ID}:{COUNTRY_CODE}{VAT_NUMBER}
-    const combined = combinePeppolIdWithCountry(peppolSchemeCode, peppolSettings.countryCode, numericOnly);
+    const combined = combinePeppolIdWithCountry(peppolSchemeCode, peppolSettings.countryCode, cleanedValue);
     setPeppolSettings(prev => ({ ...prev, peppolId: combined }));
   };
 
@@ -1130,7 +1359,7 @@ const PeppolNetworkPage = () => {
           withinLimit: peppolQuota.withinLimit || false
         });
       } catch (error) {
-        console.error('Error checking Peppol usage:', error);
+        // Error checking Peppol usage
         setPeppolUsage({ usage: 0, limit: 50, withinLimit: true });
       }
     };
@@ -1363,10 +1592,7 @@ const PeppolNetworkPage = () => {
                                 <Select
                                   value={peppolSettings.countryCode}
                                   onChange={(e) => handleInputChange('countryCode', e.target.value)}
-                                  options={COUNTRY_CODES.map(country => ({
-                                    value: country.code,
-                                    label: `${country.code} - ${country.name}`
-                                  }))}
+                                  options={getClientCountryOptions(t)}
                                   required
                                 />
                               </div>
@@ -1392,6 +1618,20 @@ const PeppolNetworkPage = () => {
                                   <p className="text-xs text-muted-foreground mt-1">
                                     {t('peppol.setup.companyInfo.belgiumAutoRegister', 'Both scheme codes (0208 and 9925) will be automatically registered for Belgium')}
                                   </p>
+                                  {vatValidationError && (
+                                    <div className="text-xs text-error mt-2">
+                                      <p className="flex items-center gap-1">
+                                        <Icon name="AlertCircle" size={14} />
+                                        {vatValidationError}
+                                      </p>
+                                    </div>
+                                  )}
+                                  {!vatValidationError && peppolIdentifier && (
+                                    <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1 mt-2">
+                                      <Icon name="CheckCircle" size={14} />
+                                      {t('clientManagement.modal.vatNumberValid', 'VAT number format is valid')}
+                                    </p>
+                                  )}
                                 </div>
 
                                 {/* Combined Peppol ID Display for Belgium (read-only, showing both formats) */}
@@ -1439,9 +1679,23 @@ const PeppolNetworkPage = () => {
                                       value={peppolIdentifier}
                                       onChange={(e) => handleIdentifierChange(e.target.value)}
                                       placeholder={t('peppol.setup.companyInfo.vatNumberPlaceholder', 'e.g., 0630675588')}
-                                      className="font-mono"
+                                      className={`font-mono ${vatValidationError ? 'border-error' : ''}`}
                                       required
                                     />
+                                    {vatValidationError && (
+                                      <div className="text-xs text-error mt-2">
+                                        <p className="flex items-center gap-1">
+                                          <Icon name="AlertCircle" size={14} />
+                                          {vatValidationError}
+                                        </p>
+                                      </div>
+                                    )}
+                                    {!vatValidationError && peppolIdentifier && (
+                                      <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1 mt-2">
+                                        <Icon name="CheckCircle" size={14} />
+                                        {t('clientManagement.modal.vatNumberValid', 'VAT number format is valid')}
+                                      </p>
+                                    )}
                                   </div>
                                 </div>
 

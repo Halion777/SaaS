@@ -172,6 +172,28 @@ export async function createClient(clientData) {
       };
     }
     
+    // Validate: Check for duplicate email (globally unique per user)
+    if (clientData.email) {
+      const { data: existingEmail } = await supabase
+        .from('clients')
+        .select('id, name, client_type')
+        .eq('user_id', user.id)
+        .eq('email', clientData.email.trim().toLowerCase())
+        .maybeSingle();
+      
+      if (existingEmail) {
+        const clientTypeLabel = existingEmail.client_type === 'company' ? 'professional' : 'individual';
+        return { 
+          error: { 
+            message: `A client with email "${clientData.email}" already exists (${existingEmail.name})`,
+            code: 'DUPLICATE_EMAIL'
+          } 
+        };
+      }
+    }
+    
+    // Note: Peppol ID uniqueness check removed - clients can share the same Peppol ID
+    
     // Map frontend fields to database fields
     const mappedData = {
       user_id: user.id, // Add the current user's ID
@@ -221,6 +243,35 @@ export async function createClient(clientData) {
  */
 export async function updateClient(id, clientData) {
   try {
+    // Get current user ID for validation
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      return { error: { message: 'User not authenticated', details: userError?.message } };
+    }
+    
+    // Validate: Check for duplicate email (globally unique per user, excluding current client)
+    if (clientData.email) {
+      const { data: existingEmail } = await supabase
+        .from('clients')
+        .select('id, name, client_type')
+        .eq('user_id', user.id)
+        .eq('email', clientData.email.trim().toLowerCase())
+        .neq('id', id) // Exclude current client
+        .maybeSingle();
+      
+      if (existingEmail) {
+        return { 
+          error: { 
+            message: `A client with email "${clientData.email}" already exists (${existingEmail.name})`,
+            code: 'DUPLICATE_EMAIL'
+          } 
+        };
+      }
+    }
+    
+    // Note: Peppol ID uniqueness check removed - clients can share the same Peppol ID
+    
     // Map frontend fields to database fields
     const mappedData = {
       name: clientData.name,

@@ -11,7 +11,7 @@ import SuperAdminSidebar from 'components/ui/SuperAdminSidebar';
 import TableLoader from 'components/ui/TableLoader';
 import UsersFilterToolbar from './components/UsersFilterToolbar';
 import AdminUserService from 'services/adminUserService';
-import { SUPPORT_EMAIL } from 'config/appConfig';
+import { SUPPORT_EMAIL, SUPER_ADMIN_EMAIL } from 'config/appConfig';
 
 const SuperAdminUsers = () => {
   const { t } = useTranslation();
@@ -145,8 +145,8 @@ const SuperAdminUsers = () => {
         .order('created_at', { ascending: false });
 
       // Grant lifetime access to support email if not already granted
-      if (usersData) {
-        const supportUser = usersData.find(u => u.email === SUPPORT_EMAIL);
+      if (usersData && SUPPORT_EMAIL) {
+        const supportUser = usersData.find(u => u.email?.toLowerCase().trim() === SUPPORT_EMAIL.toLowerCase());
         if (supportUser && !supportUser.has_lifetime_access) {
           await supabase
             .from('users')
@@ -154,6 +154,44 @@ const SuperAdminUsers = () => {
             .eq('id', supportUser.id);
           // Update in local data
           supportUser.has_lifetime_access = true;
+        }
+      }
+      
+      // Grant superadmin role and lifetime access to super admin email if not already granted
+      if (usersData && SUPER_ADMIN_EMAIL) {
+        const superAdminUser = usersData.find(u => u.email?.toLowerCase().trim() === SUPER_ADMIN_EMAIL.toLowerCase());
+        if (superAdminUser) {
+          const updates = {};
+          if (superAdminUser.role !== 'superadmin') {
+            updates.role = 'superadmin';
+          }
+          if (!superAdminUser.has_lifetime_access) {
+            updates.has_lifetime_access = true;
+          }
+          if (Object.keys(updates).length > 0) {
+            await supabase
+              .from('users')
+              .update(updates)
+              .eq('id', superAdminUser.id);
+            // Update in local data
+            superAdminUser.role = 'superadmin';
+            superAdminUser.has_lifetime_access = true;
+          }
+        }
+      }
+      
+      // Ensure all superadmins have lifetime access
+      if (usersData) {
+        const superAdmins = usersData.filter(u => u.role === 'superadmin' && !u.has_lifetime_access);
+        if (superAdmins.length > 0) {
+          for (const superAdmin of superAdmins) {
+            await supabase
+              .from('users')
+              .update({ has_lifetime_access: true })
+              .eq('id', superAdmin.id);
+            // Update in local data
+            superAdmin.has_lifetime_access = true;
+          }
         }
       }
 

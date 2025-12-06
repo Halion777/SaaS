@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabaseClient';
-import { SUPPORT_EMAIL } from '../config/appConfig';
+import { SUPPORT_EMAIL, SUPER_ADMIN_EMAIL } from '../config/appConfig';
 import TableLoader from './ui/TableLoader';
 import Button from './ui/Button';
 import Icon from './AppIcon';
@@ -37,8 +37,32 @@ const SubscriptionGuard = ({ children }) => {
           .eq('id', user.id)
           .single();
 
-        // Super admin users are exempt from subscription checks
+        // Super admin users are exempt from subscription checks and always have lifetime access
+        const emailLower = userData?.email?.toLowerCase().trim();
         if (userData?.role === 'superadmin') {
+          // Ensure superadmin always has lifetime access
+          if (!userData.has_lifetime_access) {
+            await supabase
+              .from('users')
+              .update({ has_lifetime_access: true })
+              .eq('id', user.id);
+          }
+          setIsSuperAdmin(true);
+          setSubscriptionStatus('active');
+          setLoading(false);
+          return;
+        }
+
+        // Special case: Super admin email gets superadmin role and lifetime access
+        if (emailLower === SUPER_ADMIN_EMAIL.toLowerCase()) {
+          // Grant superadmin role and lifetime access
+          await supabase
+            .from('users')
+            .update({ 
+              role: 'superadmin',
+              has_lifetime_access: true
+            })
+            .eq('id', user.id);
           setIsSuperAdmin(true);
           setSubscriptionStatus('active');
           setLoading(false);
@@ -53,7 +77,7 @@ const SubscriptionGuard = ({ children }) => {
         }
 
         // Special case: Support email gets lifetime access
-        if (userData?.email === SUPPORT_EMAIL) {
+        if (emailLower === SUPPORT_EMAIL.toLowerCase()) {
           // Grant lifetime access to this email
           await supabase
             .from('users')

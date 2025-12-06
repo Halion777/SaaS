@@ -11,6 +11,7 @@ import { enhanceTranscriptionWithAI } from '../../../services/googleAIService';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import { generateQuoteNumber } from '../../../services/quotesService';
 import { getPeppolVATSchemeId } from '../../../utils/peppolSchemes';
+import { getClientCountryOptions } from '../../../utils/countryList';
 
 const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjectInfoChange, onNext, leadId, userId }) => {
   const { t } = useTranslation();
@@ -629,7 +630,17 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         
         if (error) {
           console.error('Error creating client:', error);
-          setCreateError(error.message || 'Erreur lors de la création du client');
+          
+          // Handle duplicate validation errors with user-friendly messages
+          let errorMessage = t('clientManagement.errors.createFailed', { defaultValue: 'Erreur lors de la création du client' });
+          if (error.code === 'DUPLICATE_EMAIL') {
+            errorMessage = t('clientManagement.errors.duplicateEmail', { email: clientData.email, defaultValue: `A client with email "${clientData.email}" already exists. Please use a different email address.` });
+          } else {
+            // Note: Peppol ID uniqueness check removed - clients can share the same Peppol ID
+            errorMessage = error.message || errorMessage;
+          }
+          
+          setCreateError(errorMessage);
           return;
         }
         
@@ -749,13 +760,19 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       const updated = { ...prev, [field]: value };
       
       // Auto-fill Peppol ID when VAT number is entered for professional clients
-      if (field === 'regNumber' && clientType === 'professionnel' && value && value.trim()) {
-        const countryCode = prev.country || 'BE';
-        const peppolId = formatPeppolIdFromVAT(value, countryCode);
-        
-        if (peppolId) {
-          updated.peppolId = peppolId;
-          updated.enablePeppol = true; // Auto-enable Peppol when VAT is entered
+      if (field === 'regNumber' && clientType === 'professionnel') {
+        if (value && value.trim()) {
+          const countryCode = prev.country || 'BE';
+          const peppolId = formatPeppolIdFromVAT(value, countryCode);
+          
+          if (peppolId) {
+            updated.peppolId = peppolId;
+            updated.enablePeppol = true; // Auto-enable Peppol when VAT is entered
+          }
+        } else {
+          // Clear Peppol ID if VAT is cleared
+          updated.peppolId = '';
+          updated.enablePeppol = false;
         }
       }
       
@@ -764,6 +781,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         const peppolId = formatPeppolIdFromVAT(prev.regNumber, value);
         if (peppolId) {
           updated.peppolId = peppolId;
+          updated.enablePeppol = true; // Auto-enable Peppol when country changes and VAT exists
         }
       }
       
@@ -805,8 +823,18 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       });
       
       if (error) {
-        console.error('Error creating client:', error);
-        setCreateError(error.message || 'Erreur lors de la création du client');
+        console.error('Error creating client from lead:', error);
+        
+        // Handle duplicate validation errors with user-friendly messages
+        let errorMessage = t('clientManagement.errors.createFailed', { defaultValue: 'Erreur lors de la création du client' });
+        if (error.code === 'DUPLICATE_EMAIL') {
+          errorMessage = t('clientManagement.errors.duplicateEmail', { email: selectedClient.email, defaultValue: `A client with email "${selectedClient.email}" already exists. Please use a different email address.` });
+        } else {
+          // Note: Peppol ID uniqueness check removed - clients can share the same Peppol ID
+          errorMessage = error.message || errorMessage;
+        }
+        
+        setCreateError(errorMessage);
         return;
       }
       
@@ -1081,20 +1109,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
     return isClientValid && isProjectValid && isCustomCategoryValid;
   };
 
-  const countryOptions = [
-    { value: 'BE', label: t('clientManagement.countries.BE') },
-    { value: 'FR', label: t('clientManagement.countries.FR') },
-    { value: 'CH', label: t('clientManagement.countries.CH') },
-    { value: 'LU', label: t('clientManagement.countries.LU') },
-    { value: 'CA', label: t('clientManagement.countries.CA') },
-    { value: 'US', label: t('clientManagement.countries.US') },
-    { value: 'DE', label: t('clientManagement.countries.DE') },
-    { value: 'IT', label: t('clientManagement.countries.IT') },
-    { value: 'ES', label: t('clientManagement.countries.ES') },
-    { value: 'NL', label: t('clientManagement.countries.NL') },
-    { value: 'GB', label: t('clientManagement.countries.GB') },
-    { value: 'OTHER', label: t('clientManagement.countries.OTHER') }
-  ];
+  const countryOptions = getClientCountryOptions(t);
 
   return (
     <div className="space-y-4 sm:space-y-6">

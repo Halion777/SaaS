@@ -185,10 +185,67 @@ export const saveCompanyInfo = async (companyInfo, userId) => {
 
     // existingProfile is already fetched above
 
+    // Validate VAT number matches Peppol registration if Peppol is configured
+    let vatNumberToSave = companyInfo.vatNumber || '';
+    if (vatNumberToSave) {
+      try {
+        // Check if user has Peppol configured
+        const { data: peppolSettings } = await supabase
+          .from('peppol_settings')
+          .select('peppol_id, is_configured')
+          .eq('user_id', userId)
+          .eq('is_configured', true)
+          .maybeSingle();
+        
+        if (peppolSettings?.peppol_id) {
+          // Extract VAT from Peppol ID
+          const extractVATFromPeppolId = (peppolId) => {
+            if (!peppolId) return '';
+            const parts = peppolId.split(':');
+            if (parts.length !== 2) return '';
+            
+            const scheme = parts[0];
+            const identifier = parts[1];
+            
+            // For Belgian enterprise number (0208), add BE prefix
+            if (scheme === '0208') {
+              return `BE${identifier}`;
+            }
+            
+            // For VAT-based schemes (9925, 9957, etc.), identifier already contains country code
+            if (/^[a-z]{2}\d+/i.test(identifier)) {
+              return identifier.toUpperCase();
+            }
+            
+            return identifier;
+          };
+          
+          // Normalize VAT numbers for comparison (remove country prefix, spaces, etc.)
+          const normalizeVAT = (vat) => {
+            if (!vat) return '';
+            let cleaned = vat.replace(/^[A-Z]{2}/i, '');
+            cleaned = cleaned.replace(/\D/g, '');
+            return cleaned;
+          };
+          
+          const peppolVAT = extractVATFromPeppolId(peppolSettings.peppol_id);
+          const peppolVATNormalized = normalizeVAT(peppolVAT);
+          const companyVATNormalized = normalizeVAT(vatNumberToSave);
+          
+          // If VAT numbers don't match, use Peppol VAT (Peppol is the source of truth)
+          if (peppolVATNormalized && companyVATNormalized !== peppolVATNormalized) {
+            vatNumberToSave = peppolVAT;
+          }
+        }
+      } catch (error) {
+        // If Peppol check fails, continue with provided VAT number
+      }
+    }
+
     const companyData = {
       user_id: userId,
       company_name: companyInfo.name || '',
-      vat_number: companyInfo.vatNumber || '',
+      vat_number: vatNumberToSave,
       address: companyInfo.address || '',
       postal_code: companyInfo.postalCode || '',
       city: companyInfo.city || '',

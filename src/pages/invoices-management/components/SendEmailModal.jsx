@@ -59,7 +59,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
             fetchedClientLanguage = clientData.language_preference.split('-')[0] || 'fr';
           }
         } catch (error) {
-          console.warn('Error fetching client language preference:', error);
+          // Error fetching client language preference
         }
       }
       
@@ -95,7 +95,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
       
       prevInvoiceIdRef.current = invoice.id;
     } catch (err) {
-      console.error('Error loading data:', err);
+      // Error loading data
       setError(t('invoicesManagement.sendEmailModal.errors.loadDataError'));
     } finally {
       setIsLoading(false);
@@ -188,10 +188,10 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
             if (messageTranslationResult.success && messageTranslationResult.data) {
               translatedMessage = messageTranslationResult.data;
             } else {
-              console.warn('Failed to translate custom message, using original:', messageTranslationResult.error);
+              // Failed to translate custom message, using original
             }
           } catch (translationError) {
-            console.warn('Error translating custom message, using original:', translationError);
+            // Error translating custom message, using original
           }
         }
         
@@ -206,10 +206,10 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
             if (subjectTranslationResult.success && subjectTranslationResult.data) {
               translatedSubject = subjectTranslationResult.data;
             } else {
-              console.warn('Failed to translate custom subject, using original:', subjectTranslationResult.error);
+              // Failed to translate custom subject, using original
             }
           } catch (translationError) {
-            console.warn('Error translating custom subject, using original:', translationError);
+            // Error translating custom subject, using original
           }
         }
       }
@@ -281,7 +281,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
           .eq('id', invoice.id);
 
         if (updateError) {
-          console.error('Error updating invoice:', updateError);
+          // Error updating invoice
           setError(t('invoicesManagement.sendEmailModal.errors.updateError') + ': ' + updateError.message);
         } else {
           overlay.hide();
@@ -295,7 +295,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
         setError(result.error || t('invoicesManagement.sendEmailModal.errors.sendError'));
       }
     } catch (err) {
-      console.error('Error sending invoice via email:', err);
+      // Error sending invoice via email
       setError(err.message || t('invoicesManagement.sendEmailModal.errors.sendError'));
     } finally {
       setIsSending(false);

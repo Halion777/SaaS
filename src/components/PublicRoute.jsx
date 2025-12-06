@@ -29,12 +29,12 @@ const PublicRoute = ({ children }) => {
   
   // Specific paths that should always be accessible (even when authenticated)
   // These are public pages that everyone should be able to access
+  // Note: Home page (/) is NOT in this list - authenticated users will be redirected to dashboard
   const alwaysAccessiblePaths = [
     '/reset-password', 
     '/forgot-password', 
     '/login', 
     '/register',
-    '/', // Home page should be accessible to everyone
     '/about',
     '/pricing',
     '/contact',

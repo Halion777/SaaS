@@ -133,6 +133,13 @@ create index IF not exists idx_clients_user_id on public.clients using btree (us
 
 create index IF not exists idx_clients_email on public.clients using btree (email) TABLESPACE pg_default;
 
+-- Unique constraint: Each user cannot have duplicate email addresses
+-- Allows NULL emails but prevents duplicate non-NULL emails per user
+-- Case-insensitive and whitespace-insensitive
+create unique index IF not exists idx_clients_user_email_unique 
+on public.clients (user_id, LOWER(TRIM(email)))
+where email IS NOT NULL AND TRIM(email) != '';
+
 create index IF not exists idx_clients_name on public.clients using btree (name) TABLESPACE pg_default;
 
 create index IF not exists idx_clients_client_type on public.clients using btree (client_type) TABLESPACE pg_default;

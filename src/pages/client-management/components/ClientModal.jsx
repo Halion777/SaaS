@@ -6,6 +6,8 @@ import Select from '../../../components/ui/Select';
 import Icon from '../../../components/AppIcon';
 import { useTranslation } from 'react-i18next';
 import { getPeppolVATSchemeId } from '../../../utils/peppolSchemes';
+import { validateVATNumber } from '../../../utils/vatNumberValidation';
+import { getClientCountryOptions } from '../../../utils/countryList';
 
 const ClientModal = ({ client, onSave, onClose }) => {
   const { t } = useTranslation();
@@ -29,6 +31,9 @@ const ClientModal = ({ client, onSave, onClose }) => {
     enablePeppol: false,
     languagePreference: 'fr'
   });
+  const [vatValidationError, setVatValidationError] = useState('');
+  const [saveError, setSaveError] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const typeOptions = [
     { value: 'particulier', label: t('clientManagement.types.individual') },
@@ -42,20 +47,7 @@ const ClientModal = ({ client, onSave, onClose }) => {
     { value: 'GE', label: t('clientManagement.companySizes.GE') }
   ];
 
-  const countryOptions = [
-    { value: 'BE', label: t('clientManagement.countries.BE') },
-    { value: 'FR', label: t('clientManagement.countries.FR') },
-    { value: 'CH', label: t('clientManagement.countries.CH') },
-    { value: 'LU', label: t('clientManagement.countries.LU') },
-    { value: 'CA', label: t('clientManagement.countries.CA') },
-    { value: 'US', label: t('clientManagement.countries.US') },
-    { value: 'DE', label: t('clientManagement.countries.DE') },
-    { value: 'IT', label: t('clientManagement.countries.IT') },
-    { value: 'ES', label: t('clientManagement.countries.ES') },
-    { value: 'NL', label: t('clientManagement.countries.NL') },
-    { value: 'GB', label: t('clientManagement.countries.GB') },
-    { value: 'OTHER', label: t('clientManagement.countries.OTHER') }
-  ];
+  const countryOptions = getClientCountryOptions(t);
 
   const preferenceOptions = [
     { value: 'email', label: t('clientManagement.preferences.email') },
@@ -148,22 +140,57 @@ const ClientModal = ({ client, onSave, onClose }) => {
     setFormData(prev => {
       const updated = { ...prev, [field]: value };
       
-      // Auto-fill Peppol ID when VAT number is entered for professional clients
-      if (field === 'regNumber' && prev.type === 'professionnel' && value && value.trim()) {
-        const countryCode = prev.country || 'BE';
-        const peppolId = formatPeppolIdFromVAT(value, countryCode);
+      // Clear validation errors when switching client types
+      if (field === 'type') {
+        setVatValidationError('');
+      }
+      
+      // Validate VAT number when entered or country changes
+      if ((field === 'regNumber' || field === 'country') && (field === 'type' ? value : prev.type) === 'professionnel') {
+        const countryCode = field === 'country' ? value : (prev.country || 'BE');
+        const vatNumber = field === 'regNumber' ? value : prev.regNumber;
         
-        if (peppolId) {
-          updated.peppolId = peppolId;
-          updated.enablePeppol = true; // Auto-enable Peppol when VAT is entered
+        if (vatNumber && vatNumber.trim()) {
+          const validation = validateVATNumber(vatNumber, countryCode, false);
+          
+          if (!validation.isValid) {
+            setVatValidationError(validation.error || 'Invalid VAT number format');
+            // Still try to auto-fill Peppol ID even if validation fails (user might be typing)
+            const peppolId = formatPeppolIdFromVAT(vatNumber, countryCode);
+            if (peppolId) {
+              updated.peppolId = peppolId;
+              updated.enablePeppol = true; // Auto-enable Peppol when VAT is entered
+            }
+          } else {
+            setVatValidationError('');
+            
+            // Auto-fill Peppol ID when VAT number is valid
+            const peppolId = formatPeppolIdFromVAT(vatNumber, countryCode);
+            if (peppolId) {
+              updated.peppolId = peppolId;
+              updated.enablePeppol = true; // Auto-enable Peppol when VAT is entered
+            }
+          }
+        } else {
+          setVatValidationError('');
+          // Clear Peppol ID if VAT is cleared
+          if (field === 'regNumber') {
+            updated.peppolId = '';
+            updated.enablePeppol = false;
+          }
         }
       }
       
       // Update Peppol ID if country changes and VAT number exists
       if (field === 'country' && prev.type === 'professionnel' && prev.regNumber && prev.regNumber.trim()) {
+        const validation = validateVATNumber(prev.regNumber, value, false);
+        // Always try to update Peppol ID when country changes, even if validation fails
         const peppolId = formatPeppolIdFromVAT(prev.regNumber, value);
         if (peppolId) {
           updated.peppolId = peppolId;
+          if (validation.isValid) {
+            updated.enablePeppol = true;
+          }
         }
       }
       
@@ -186,16 +213,29 @@ const ClientModal = ({ client, onSave, onClose }) => {
     return peppolRegex.test(peppolId);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate VAT number for professional clients
+    if (formData.type === 'professionnel' && formData.regNumber && formData.regNumber.trim()) {
+      const validation = validateVATNumber(formData.regNumber, formData.country || 'BE', false);
+      if (!validation.isValid) {
+        setVatValidationError(validation.error || t('clientManagement.modal.invalidVatNumber'));
+        return;
+      }
+    }
     
     // Validate Peppol ID if enabled
     if (formData.enablePeppol && formData.peppolId.trim()) {
       if (!validatePeppolId(formData.peppolId.trim())) {
-        alert(t('clientManagement.modal.invalidPeppolId'));
+        setSaveError(t('clientManagement.modal.invalidPeppolId'));
         return;
       }
     }
+    
+    // Clear previous errors and success messages
+    setSaveError('');
+    setSaveSuccess(false);
     
     // Prepare data for saving - combine firstName and lastName for individual clients
     const dataToSave = { ...formData };
@@ -205,7 +245,22 @@ const ClientModal = ({ client, onSave, onClose }) => {
       dataToSave.name = fullName || formData.name; // Fallback to existing name if both are empty
     }
     
-    onSave(dataToSave);
+    // Call onSave - it should handle errors and throw them
+    try {
+      await onSave(dataToSave);
+      // Show success message
+      setSaveSuccess(true);
+      setSaveError(''); // Clear any previous errors
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        setSaveSuccess(false);
+        onClose();
+      }, 2000);
+    } catch (error) {
+      // Show error message
+      setSaveError(error.message || t('clientManagement.modal.saveError'));
+      setSaveSuccess(false); // Clear success if there was an error
+    }
   };
 
   // Validation: for individual clients, check firstName and lastName; for professional, check name
@@ -593,14 +648,31 @@ const ClientModal = ({ client, onSave, onClose }) => {
                         required
                     />
                     
-                    <Input
-                      label={t('clientManagement.modal.vatNumber')}
-                      type="text"
-                      value={formData.regNumber}
-                      onChange={(e) => handleChange('regNumber', e.target.value)}
-                      placeholder={t('clientManagement.modal.vatNumberPlaceholder')}
+                    <div className="space-y-2">
+                      <Input
+                        label={t('clientManagement.modal.vatNumber')}
+                        type="text"
+                        value={formData.regNumber}
+                        onChange={(e) => handleChange('regNumber', e.target.value)}
+                        placeholder={t('clientManagement.modal.vatNumberPlaceholder')}
                         required
-                    />
+                        className={vatValidationError ? 'border-error' : ''}
+                      />
+                      {vatValidationError && (
+                        <div className="text-xs text-error">
+                          <p className="flex items-center gap-1">
+                            <Icon name="AlertCircle" size={14} />
+                            {vatValidationError}
+                          </p>
+                        </div>
+                      )}
+                      {!vatValidationError && formData.regNumber && formData.country && (
+                        <p className="text-xs text-green-600 flex items-center gap-1">
+                          <Icon name="CheckCircle" size={14} />
+                          {t('clientManagement.modal.vatNumberValid', 'VAT number format is valid')}
+                        </p>
+                      )}
+                    </div>
                     </div>
                   </div>
                 </div>
@@ -688,6 +760,45 @@ const ClientModal = ({ client, onSave, onClose }) => {
               </div>
             )}
 
+            {/* Error and Success Messages */}
+            {saveError && (
+              <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-lg p-4 mb-4 animate-in slide-in-from-top-2">
+                <div className="flex items-start gap-3">
+                  <div className="p-1 bg-red-100 dark:bg-red-900/40 rounded-full flex-shrink-0">
+                    <Icon name="AlertCircle" size={18} className="text-red-600 dark:text-red-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-red-900 dark:text-red-100 mb-1">
+                      {client ? t('clientManagement.modal.updateFailed', 'Failed to update client') : t('clientManagement.modal.createFailed', 'Failed to create client')}
+                    </p>
+                    <p className="text-sm text-red-700 dark:text-red-300 break-words">{saveError}</p>
+                  </div>
+                  <button
+                    onClick={() => setSaveError('')}
+                    className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200 transition-colors flex-shrink-0"
+                    aria-label="Dismiss error"
+                  >
+                    <Icon name="X" size={18} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {saveSuccess && (
+              <div className="bg-green-50 dark:bg-green-900/20 border-2 border-green-300 dark:border-green-700 rounded-lg p-4 mb-4 animate-in slide-in-from-top-2">
+                <div className="flex items-center gap-3">
+                  <div className="p-1 bg-green-100 dark:bg-green-900/40 rounded-full flex-shrink-0">
+                    <Icon name="CheckCircle" size={18} className="text-green-600 dark:text-green-400" />
+                  </div>
+                  <p className="text-sm font-semibold text-green-800 dark:text-green-200">
+                    {client 
+                      ? t('clientManagement.modal.updateSuccess', 'Client updated successfully!')
+                      : t('clientManagement.modal.createSuccess', 'Client created successfully!')
+                    }
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Form Actions */}
             <div className="flex justify-end space-x-3 pt-6 border-t border-border">

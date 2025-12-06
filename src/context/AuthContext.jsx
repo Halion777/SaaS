@@ -169,6 +169,16 @@ export const AuthProvider = ({ children }) => {
           return;
         }
         
+        // Redirect authenticated users from home page to dashboard
+        if (currentPath === '/') {
+          if (userData.role === 'superadmin') {
+            navigateRef.current('/admin/super/dashboard');
+          } else {
+            navigateRef.current('/dashboard');
+          }
+          return;
+        }
+        
         // Only redirect if user is on a public page or wrong role page
         if (userData.role === 'superadmin' && !currentPath.startsWith('/admin/super') && publicPaths.includes(currentPath)) {
           navigateRef.current('/admin/super/dashboard');

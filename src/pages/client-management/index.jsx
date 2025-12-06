@@ -249,8 +249,14 @@ const ClientManagement = () => {
         
         if (error) {
           console.error('Error updating client:', error);
-          alert('Failed to update client: ' + (error.message || 'Unknown error'));
-          return;
+          
+          // Handle duplicate validation errors
+          if (error.code === 'DUPLICATE_EMAIL') {
+            throw new Error(t('clientManagement.errors.duplicateEmail', { email: clientData.email }));
+          }
+          // Note: Peppol ID uniqueness check removed - clients can share the same Peppol ID
+          
+          throw new Error(error.message || t('clientManagement.errors.updateFailed'));
         }
         
         setClients(prev => prev.map(client => 
@@ -262,8 +268,14 @@ const ClientManagement = () => {
         
         if (error) {
           console.error('Error creating client:', error);
-          alert('Failed to create client: ' + (error.message || 'Unknown error'));
-          return;
+          
+          // Handle duplicate validation errors
+          if (error.code === 'DUPLICATE_EMAIL') {
+            throw new Error(t('clientManagement.errors.duplicateEmail', { email: clientData.email }));
+          }
+          // Note: Peppol ID uniqueness check removed - clients can share the same Peppol ID
+          
+          throw new Error(error.message || t('clientManagement.errors.createFailed'));
         }
         
         const newClient = {
@@ -410,19 +422,7 @@ const ClientManagement = () => {
   // Helper functions for CSV export
   const getCountryLabel = (countryCode) => {
     if (!countryCode) return '';
-    const countries = {
-      'FR': t('clientManagement.countries.FR'),
-      'BE': t('clientManagement.countries.BE'),
-      'CH': t('clientManagement.countries.CH'),
-      'CA': t('clientManagement.countries.CA'),
-      'US': t('clientManagement.countries.US'),
-      'GB': t('clientManagement.countries.GB'),
-      'DE': t('clientManagement.countries.DE'),
-      'IT': t('clientManagement.countries.IT'),
-      'ES': t('clientManagement.countries.ES'),
-      'NL': t('clientManagement.countries.NL')
-    };
-    return countries[countryCode] || countryCode;
+    return t(`clientManagement.countries.${countryCode}`, { defaultValue: countryCode });
   };
 
   const getCompanySizeLabel = (size) => {

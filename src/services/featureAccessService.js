@@ -37,7 +37,7 @@ class FeatureAccessService {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('selected_plan, subscription_status, business_size')
+        .select('selected_plan, subscription_status, business_size, role, has_lifetime_access')
         .eq('id', userId)
         .single();
       
@@ -45,7 +45,7 @@ class FeatureAccessService {
       return data;
     } catch (error) {
       console.error('Error getting user subscription:', error);
-      return { selected_plan: 'starter', subscription_status: 'cancelled', business_size: null };
+      return { selected_plan: 'starter', subscription_status: 'cancelled', business_size: null, role: 'admin', has_lifetime_access: false };
     }
   }
   
@@ -75,9 +75,14 @@ class FeatureAccessService {
   
   /**
    * Check if user has active subscription
+   * Super admin and users with lifetime access always have active subscription
    */
   async hasActiveSubscription(userId) {
     const subscription = await this.getUserSubscription(userId);
+    // Super admin and lifetime access users always have active subscription
+    if (subscription.role === 'superadmin' || subscription.has_lifetime_access === true) {
+      return true;
+    }
     return isActiveSubscription(subscription.subscription_status);
   }
   
@@ -113,10 +118,21 @@ class FeatureAccessService {
   /**
    * Check if user can access a feature based on subscription
    * Returns: { allowed: boolean, accessLevel: string, reason?: string }
+   * Super admin and users with lifetime access always have full access
    */
   async checkFeatureAccess(userId, feature) {
     const subscription = await this.getUserSubscription(userId);
-    const { selected_plan, subscription_status } = subscription;
+    const { selected_plan, subscription_status, role, has_lifetime_access } = subscription;
+    
+    // Super admin and lifetime access users always have full access
+    if (role === 'superadmin' || has_lifetime_access === true) {
+      return {
+        allowed: true,
+        accessLevel: 'full',
+        plan: 'pro',
+        reason: null
+      };
+    }
     
     // Check if subscription is active
     if (!isActiveSubscription(subscription_status)) {
@@ -171,7 +187,15 @@ class FeatureAccessService {
     try {
       // Step 1: Check subscription status
       const subscription = await this.getUserSubscription(userId);
-      if (!isActiveSubscription(subscription.subscription_status)) {
+      
+      // Super admin and lifetime access users always have access
+      if (subscription.role === 'superadmin' || subscription.has_lifetime_access === true) {
+        // Still need to check profile permissions for non-superadmin users
+        if (subscription.role === 'superadmin') {
+          return { allowed: true };
+        }
+        // For lifetime access users, continue to profile permission check below
+      } else if (!isActiveSubscription(subscription.subscription_status)) {
         return {
           allowed: false,
           reason: 'subscription_inactive',
@@ -275,8 +299,16 @@ class FeatureAccessService {
   
   /**
    * Check if user is within quota
+   * Super admin and users with lifetime access have unlimited quotas
    */
   async checkQuota(userId, quotaKey, currentUsage) {
+    const subscription = await this.getUserSubscription(userId);
+    
+    // Super admin and lifetime access users have unlimited quotas
+    if (subscription.role === 'superadmin' || subscription.has_lifetime_access === true) {
+      return { withinLimit: true, limit: -1, usage: currentUsage, unlimited: true };
+    }
+    
     const limit = await this.getQuotaLimit(userId, quotaKey);
     
     // -1 means unlimited

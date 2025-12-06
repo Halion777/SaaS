@@ -48,7 +48,7 @@ const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
       const receiverVatNumber = invoice.client?.vat_number || invoice.client?.vatNumber;
       
       if (!receiverVatNumber) {
-        console.warn('No VAT number found for receiver, cannot check Peppol capability');
+        // No VAT number found for receiver, cannot check Peppol capability
         setReceiverOnPeppol(false);
         setIsCheckingReceiver(false);
         return;
@@ -97,7 +97,7 @@ const SendInvoiceModal = ({ invoice, isOpen, onClose, onSuccess }) => {
         setSendMethod(null);
       }
     } catch (error) {
-      console.error('Error checking receiver capability:', error);
+      // Error checking receiver capability
       // On error, assume receiver is not on Peppol to be safe
       setReceiverOnPeppol(false);
       setSendMethod(null);

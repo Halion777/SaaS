@@ -15,21 +15,8 @@ const ClientCard = ({ client, onSelect, onDelete, onStatusToggle, getStatusColor
   };
 
   const getCountryLabel = (countryCode) => {
-    const countries = {
-      'FR': t('clientManagement.countries.FR'),
-      'BE': t('clientManagement.countries.BE'),
-      'CH': t('clientManagement.countries.CH'),
-      'LU': t('clientManagement.countries.LU'),
-      'CA': t('clientManagement.countries.CA'),
-      'US': t('clientManagement.countries.US'),
-      'DE': t('clientManagement.countries.DE'),
-      'IT': t('clientManagement.countries.IT'),
-      'ES': t('clientManagement.countries.ES'),
-      'NL': t('clientManagement.countries.NL'),
-      'GB': t('clientManagement.countries.GB'),
-      'OTHER': t('clientManagement.countries.OTHER')
-    };
-    return countries[countryCode] || countryCode;
+    if (!countryCode) return '';
+    return t(`clientManagement.countries.${countryCode}`, { defaultValue: countryCode });
   };
 
   const getCompanySizeLabel = (size) => {

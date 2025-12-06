@@ -3,6 +3,7 @@ import Select from '../../../components/ui/Select';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import { useTranslation } from 'react-i18next';
+import { getClientCountryOptions } from '../../../utils/countryList';
 
 const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
   const { t } = useTranslation();
@@ -20,20 +21,10 @@ const FilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
     { value: 'inactive', label: t('clientManagement.status.inactive') }
   ];
 
+  const allCountryOptions = getClientCountryOptions(t);
   const locationOptions = [
     { value: 'all', label: t('clientManagement.filter.location.all') },
-    { value: 'BE', label: t('clientManagement.countries.BE') },
-    { value: 'FR', label: t('clientManagement.countries.FR') },
-    { value: 'CH', label: t('clientManagement.countries.CH') },
-    { value: 'LU', label: t('clientManagement.countries.LU') },
-    { value: 'CA', label: t('clientManagement.countries.CA') },
-    { value: 'US', label: t('clientManagement.countries.US') },
-    { value: 'DE', label: t('clientManagement.countries.DE') },
-    { value: 'IT', label: t('clientManagement.countries.IT') },
-    { value: 'ES', label: t('clientManagement.countries.ES') },
-    { value: 'NL', label: t('clientManagement.countries.NL') },
-    { value: 'GB', label: t('clientManagement.countries.GB') },
-    { value: 'OTHER', label: t('clientManagement.countries.OTHER') }
+    ...allCountryOptions
   ];
 
   const handleFilterChange = (key, value) => {

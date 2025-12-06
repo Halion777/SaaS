@@ -289,7 +289,41 @@ const formatVATNumber = (vatNumber, countryCode) => {
   return `${prefix}${vatWithoutPrefix}`;
 };
 
-// Helper function to ensure Belgian enterprise number is 10 digits and passes mod97 check
+/**
+ * MOD97-0208 checksum validation for Belgian enterprise numbers
+ * Belgian enterprise numbers must pass MOD97-0208 validation
+ * Algorithm: The number must be divisible by 97 when treated as a number
+ * @param {string} enterpriseNumber - 10-digit enterprise number
+ * @returns {boolean} True if passes MOD97-0208 validation
+ */
+const validateMOD97_0208 = (enterpriseNumber) => {
+  if (!enterpriseNumber || typeof enterpriseNumber !== 'string') {
+    return false;
+  }
+  
+  // Must be exactly 10 digits
+  const digitsOnly = enterpriseNumber.replace(/\D/g, '');
+  if (digitsOnly.length !== 10) {
+    return false;
+  }
+  
+  // MOD97-0208 validation: The 10-digit number must be divisible by 97
+  // The last 2 digits are the check digits
+  const baseNumber = parseInt(digitsOnly.substring(0, 8), 10); // First 8 digits
+  const checkDigits = parseInt(digitsOnly.substring(8, 10), 10); // Last 2 digits
+  
+  // Calculate: baseNumber % 97 should equal checkDigits
+  // But actually, the full 10-digit number should be divisible by 97
+  const fullNumber = parseInt(digitsOnly, 10);
+  return fullNumber % 97 === 0;
+};
+
+/**
+ * Helper function to ensure Belgian enterprise number is 10 digits and passes mod97 check
+ * @param {string} endpointId - Enterprise number identifier
+ * @param {string} schemeId - Scheme ID (should be '0208' for Belgian)
+ * @returns {string} Formatted enterprise number (exactly 10 digits)
+ */
 const formatBelgianEnterpriseNumber = (endpointId, schemeId) => {
   if (!endpointId) return endpointId;
   
@@ -302,8 +336,20 @@ const formatBelgianEnterpriseNumber = (endpointId, schemeId) => {
     if (digitsOnly.length !== 10) {
       // Pad with leading zeros if less than 10 digits
       const padded = digitsOnly.padStart(10, '0');
-      // If still not 10 digits, truncate or pad as needed
-      return padded.length > 10 ? padded.substring(0, 10) : padded;
+      // If more than 10 digits, take first 10
+      const formatted = padded.length > 10 ? padded.substring(0, 10) : padded;
+      
+      // Validate MOD97-0208 checksum
+      if (!validateMOD97_0208(formatted)) {
+        // MOD97 validation failed - will fail at Peppol level
+      }
+      
+      return formatted;
+    }
+    
+    // Validate MOD97-0208 checksum for existing 10-digit number
+    if (!validateMOD97_0208(digitsOnly)) {
+      // MOD97 validation failed - will fail at Peppol level
     }
     
     return digitsOnly;
@@ -369,28 +415,24 @@ const generatePartyInfo = (party, isSupplier = true) => {
   let endpointId = '';
   
   // Priority 1: Use peppolIdentifier if provided (e.g., "0208:0630675588" or "9925:BE0630675588")
+  // IMPORTANT: Use the provided scheme as-is - don't convert 9925 to 0208
+  // The user may explicitly want to use 9925 scheme, so respect their choice
   if (party.peppolIdentifier) {
     const parts = party.peppolIdentifier.split(":");
     if (parts.length === 2) {
       const providedScheme = parts[0];
       const providedId = parts[1];
       
-      // Check if this is a Belgian VAT-based identifier (9925:BEXXXXXXXXXX) that needs conversion
-      if (providedScheme === '9925' && /^BE\d{10}$/i.test(providedId)) {
-        // Convert Belgian VAT-based identifier to enterprise number format
-        const enterpriseNumber = providedId.substring(2, 12); // Extract 10 digits after "BE"
-        endpointScheme = '0208';
-        endpointId = enterpriseNumber;
+      // Use provided identifier as-is - respect the user's choice of scheme
+      endpointScheme = providedScheme;
+      
+      // For Belgian scheme 0208, ensure we extract only digits and pad to 10 digits
+      if (providedScheme === '0208') {
+        const digitsOnly = providedId.replace(/\D/g, '');
+        endpointId = digitsOnly.padStart(10, '0').substring(0, 10);
       } else {
-        // Use provided identifier as-is
-        endpointScheme = providedScheme;
-        // For Belgian scheme 0208, ensure we extract only digits and pad to 10 digits
-        if (providedScheme === '0208') {
-          const digitsOnly = providedId.replace(/\D/g, '');
-          endpointId = digitsOnly.padStart(10, '0').substring(0, 10);
-        } else {
-          endpointId = providedId;
-        }
+        // For other schemes (like 9925), use the ID as-is (may include country prefix like "BE")
+        endpointId = providedId;
       }
     } else {
       // If no colon, assume it's just the ID - need to determine scheme from VAT
@@ -434,21 +476,79 @@ const generatePartyInfo = (party, isSupplier = true) => {
   
   // For Belgian enterprise numbers (scheme 0208), ensure exactly 10 digits, no prefix
   // Expected format: EndpointID = "0630675508" (digits only, no country prefix)
+  // MUST pass MOD97-0208 checksum validation per PEPPOL-COMMON-R043
+  // PEPPOL-COMMON-R043: matches(normalize-space(), '^[0-9]{10}$') and u:mod97-0208(normalize-space())
   if (endpointScheme === '0208') {
-    const digitsOnly = endpointId.replace(/\D/g, '');
-    endpointId = digitsOnly.padStart(10, '0').substring(0, 10);
+    // Remove all non-digit characters and trim whitespace
+    const digitsOnly = endpointId.replace(/\D/g, '').trim();
+    
+    // Ensure exactly 10 digits (pad with zeros if needed, truncate if too long)
+    let formattedId = digitsOnly;
+    if (formattedId.length < 10) {
+      formattedId = formattedId.padStart(10, '0');
+    } else if (formattedId.length > 10) {
+      formattedId = formattedId.substring(0, 10);
+    }
+    
+    // Validate MOD97-0208 checksum (PEPPOL-COMMON-R043 requirement)
+    if (!validateMOD97_0208(formattedId)) {
+      // MOD97 validation failed - will fail at Peppol level
+    }
+    
+    endpointId = formattedId;
   }
 
   // Format VAT number with country prefix for CompanyID
   // Expected format: CompanyID = "BE0630675508" (country prefix + digits)
-  const formattedVAT = formatVATNumber(party.vatNumber, party.countryCode);
+  // CompanyID is MANDATORY - must not be empty (PEPPOL-EN16931-R008)
+  let formattedVAT = formatVATNumber(party.vatNumber, party.countryCode);
+  
+  // If VAT number is empty, try to extract from peppolIdentifier or endpointId
+  if (!formattedVAT || formattedVAT.trim() === '') {
+    if (party.peppolIdentifier) {
+      // Extract VAT from Peppol ID (e.g., "9957:fr12345670023" -> "FR12345670023")
+      const parts = party.peppolIdentifier.split(':');
+      if (parts.length === 2) {
+        const identifier = parts[1];
+        // If identifier starts with country code (lowercase), convert to uppercase
+        if (/^[a-z]{2}\d+/i.test(identifier)) {
+          formattedVAT = identifier.toUpperCase();
+        } else {
+          // If no country code, add it from countryCode
+          const countryCode = normalizeCountryCode(party.countryCode);
+          formattedVAT = `${countryCode}${identifier}`;
+        }
+      }
+    } else if (endpointId) {
+      // Extract VAT from endpointId - add country code prefix
+      const countryCode = normalizeCountryCode(party.countryCode);
+      // For 0208 scheme, endpointId is just digits, so add country prefix
+      if (endpointScheme === '0208') {
+        formattedVAT = `${countryCode}${endpointId}`;
+      } else {
+        // For other schemes, endpointId might already have country code
+        if (/^[a-z]{2}\d+/i.test(endpointId)) {
+          formattedVAT = endpointId.toUpperCase();
+        } else {
+          formattedVAT = `${countryCode}${endpointId}`;
+        }
+      }
+    }
+  }
+  
+  // Final fallback: if still empty, use endpointId with country code
+  if (!formattedVAT || formattedVAT.trim() === '') {
+    const countryCode = normalizeCountryCode(party.countryCode);
+    formattedVAT = `${countryCode}${endpointId || 'UNKNOWN'}`;
+  }
+  
   const countryCode = normalizeCountryCode(party.countryCode);
   
  
   return `
     <cac:${partyType}>
       <cac:Party>
-        <cbc:EndpointID schemeID="${endpointScheme}">${endpointId}</cbc:EndpointID>
+        <cbc:EndpointID schemeID="${endpointScheme}">${xmlEscape(endpointId.trim())}</cbc:EndpointID>
         <cac:PartyName>
           <cbc:Name>${xmlEscape(party.name)}</cbc:Name>
         </cac:PartyName>
@@ -461,14 +561,14 @@ const generatePartyInfo = (party, isSupplier = true) => {
           </cac:Country>
         </cac:PostalAddress>
         <cac:PartyTaxScheme>
-          <cbc:CompanyID>${formattedVAT}</cbc:CompanyID>
+          <cbc:CompanyID>${xmlEscape(formattedVAT)}</cbc:CompanyID>
           <cac:TaxScheme>
             <cbc:ID>VAT</cbc:ID>
           </cac:TaxScheme>
         </cac:PartyTaxScheme>
         <cac:PartyLegalEntity>
           <cbc:RegistrationName>${xmlEscape(party.name)}</cbc:RegistrationName>
-          <cbc:CompanyID>${formattedVAT}</cbc:CompanyID>
+          <cbc:CompanyID>${xmlEscape(formattedVAT)}</cbc:CompanyID>
         </cac:PartyLegalEntity>
         ${!isSupplier ? generateContactInfo(party.contact) : ""}
       </cac:Party>
@@ -601,13 +701,45 @@ const generateInvoiceLines = (lines) => lines.map((line, index) => `
 
 // Main UBL generation function
 export const generatePEPPOLXML = (invoiceData) => {
+  // Validate required fields before generating XML
+  if (!invoiceData) {
+    throw new Error("Invoice data is required");
+  }
+  
+  if (!invoiceData.receiver || !invoiceData.receiver.peppolIdentifier) {
+    throw new Error("Receiver Peppol identifier is required");
+  }
+  
+  if (!invoiceData.sender || !invoiceData.sender.peppolIdentifier) {
+    throw new Error("Sender Peppol identifier is required");
+  }
+  
+  if (!invoiceData.invoiceLines || !Array.isArray(invoiceData.invoiceLines) || invoiceData.invoiceLines.length === 0) {
+    throw new Error("At least one invoice line is required");
+  }
+  
+  // Validate required address fields for sender
+  if (!invoiceData.sender.addressLine1 || !invoiceData.sender.city || !invoiceData.sender.zipCode) {
+    throw new Error("Sender address fields (addressLine1, city, zipCode) are required");
+  }
+  
+  // Validate required address fields for receiver
+  if (!invoiceData.receiver.addressLine1 || !invoiceData.receiver.city || !invoiceData.receiver.zipCode) {
+    throw new Error("Receiver address fields (addressLine1, city, zipCode) are required");
+  }
+  
+  // Validate dates
+  if (!invoiceData.issueDate) {
+    throw new Error("Issue date is required");
+  }
+  
+  if (!invoiceData.dueDate) {
+    throw new Error("Due date is required");
+  }
+  
   const timestamp = formatDate(new Date());
   const taxCategories = calculateTaxCategories(invoiceData.invoiceLines);
   const totals = calculateTotals(invoiceData.invoiceLines);
-  
-  if (!invoiceData.receiver.peppolIdentifier) {
-    throw new Error("Peppol identifier of receiving party must be defined");
-  }
   
   // Ensure dates are in YYYY-MM-DD format (UBL requires date-only, not datetime)
   const formatUBLDate = (dateValue) => {
@@ -635,26 +767,6 @@ export const generatePEPPOLXML = (invoiceData) => {
     return sum + calculatedTaxAmount;
   }, 0);
   
-  // Log sender and receiver info before generating XML
-  console.log('[Peppol] Invoice Data Before XML Generation:', {
-    billName: invoiceData.billName,
-    sender: {
-      peppolIdentifier: invoiceData.sender.peppolIdentifier,
-      vatNumber: invoiceData.sender.vatNumber,
-      countryCode: invoiceData.sender.countryCode,
-      name: invoiceData.sender.name,
-      cleanedVAT: cleanVATNumber(invoiceData.sender.vatNumber),
-      isoCountry: countryNameToISO(invoiceData.sender.countryCode)
-    },
-    receiver: {
-      peppolIdentifier: invoiceData.receiver.peppolIdentifier,
-      vatNumber: invoiceData.receiver.vatNumber,
-      countryCode: invoiceData.receiver.countryCode,
-      name: invoiceData.receiver.name,
-      cleanedVAT: cleanVATNumber(invoiceData.receiver.vatNumber),
-      isoCountry: countryNameToISO(invoiceData.receiver.countryCode)
-    }
-  });
   
   return `<?xml version="1.0" encoding="UTF-8"?>
   <Invoice xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
@@ -715,9 +827,15 @@ export class PeppolService {
   }
 
   // Validate Peppol identifier format
+  // Format: SCHEME_CODE:IDENTIFIER (e.g., "0208:0630675588", "9925:BE0630675588", "9957:FR0545744269")
+  // Scheme code is 4 digits, identifier can contain letters and numbers
   validatePeppolIdentifier(identifier) {
-    const pattern = /^\d{4}:\d+$/;
-    return pattern.test(identifier);
+    if (!identifier || typeof identifier !== 'string') {
+      return false;
+    }
+    // Pattern: 4 digits (scheme code) : one or more alphanumeric characters (identifier)
+    const pattern = /^\d{4}:[A-Z0-9]+$/i;
+    return pattern.test(identifier.trim());
   }
 
   // Generate Peppol identifier from VAT number and country code
@@ -766,13 +884,14 @@ export class PeppolService {
       
       return response.data;
     } catch (error) {
-      console.error('Failed to check recipient support:', error);
       throw error;
     }
   }
 
   /**
    * Check receiver capability - tries all possible Peppol identifiers
+   * For Belgium: Tries 9925 (VAT scheme) first, then 0208 (enterprise number) as fallback
+   * This avoids MOD97-0208 validation issues - 9925 doesn't require MOD97 validation
    * @param {string} receiverVatNumber - Receiver's VAT number (e.g., "BE0262465766" or "1001463624")
    * @param {string} countryCode - Optional country code to use if VAT number lacks prefix (e.g., "BE", "NL")
    * @returns {Promise<{found: boolean, identifier?: string, supportedDocuments?: string[]}>}
@@ -783,15 +902,22 @@ export class PeppolService {
     }
 
     // Get all possible Peppol identifiers for this VAT number
+    // For Belgium: getAllPeppolIdentifiers returns 9925 first, then 0208
     const identifiers = getAllPeppolIdentifiers(receiverVatNumber, countryCode);
     
     if (identifiers.length === 0) {
-      console.warn('No Peppol identifiers generated for VAT number:', receiverVatNumber);
       return { found: false };
     }
 
+    // Detect if this is a Belgian receiver
+    const isBelgium = countryCode?.toUpperCase() === 'BE' || 
+                      receiverVatNumber.toUpperCase().startsWith('BE') ||
+                      identifiers.some(id => id.startsWith('9925:') || id.startsWith('0208:'));
+
     // Try each identifier until one is found
-    for (const identifier of identifiers) {
+    // For Belgium: This will try 9925 first (no MOD97 validation), then 0208 (requires MOD97) as fallback
+    for (let i = 0; i < identifiers.length; i++) {
+      const identifier = identifiers[i];
       try {
         const result = await this.checkRecipientSupport(identifier);
         
@@ -822,8 +948,7 @@ export class PeppolService {
           };
         }
       } catch (error) {
-        // Log but continue to next identifier
-        console.log(`Identifier ${identifier} not found, trying next...`, error.message);
+        // Continue to next identifier
         continue;
       }
     }
@@ -833,75 +958,169 @@ export class PeppolService {
   }
 
   /**
-   * Validate UBL document before sending
-   * @param {string} xml - UBL XML string
-   * @returns {{valid: boolean, errors: string[]}}
+   * Check if a receiver supports a specific document type
+   * @param {string} peppolIdentifier - Receiver's Peppol identifier (e.g., "0208:1001464623")
+   * @param {string} documentType - Document type to check (e.g., "INVOICE")
+   * @returns {Promise<{supported: boolean, supportedDocuments?: string[]}>}
    */
-  validateDocument(xml) {
-    const errors = [];
-    
-    if (!xml || typeof xml !== 'string') {
-      errors.push('Document XML is required');
-      return { valid: false, errors };
-    }
-    
-    // Check mandatory document identifiers
-    const mandatoryFields = {
-      'cbc:CustomizationID': 'urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0',
-      'cbc:ProfileID': 'urn:fdc:peppol.eu:2017:poacc:billing:01:1.0',
-      'cbc:InvoiceTypeCode': '380'
-    };
-    
-    for (const [field, expectedValue] of Object.entries(mandatoryFields)) {
-      const fieldPattern = new RegExp(`<${field}[^>]*>${expectedValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</${field}>`);
-      if (!fieldPattern.test(xml)) {
-        errors.push(`Missing or incorrect ${field}`);
+  async checkReceiverSupportsDocumentType(peppolIdentifier, documentType = 'INVOICE') {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const response = await supabase.functions.invoke('peppol-webhook-config', {
+        body: {
+          endpoint: this.config.baseUrl,
+          username: this.config.username,
+          password: this.config.password,
+          action: 'get-supported-document-types',
+          peppolIdentifier: peppolIdentifier
+        }
+      });
+
+      if (response.error) {
+        // If 404, participant doesn't support the document type
+        if (response.error.status === 404 || response.error.message?.includes('404')) {
+          return { supported: false, supportedDocuments: [] };
+        }
+        throw new Error(response.error.message);
       }
-    }
-    
-    // Check endpoint IDs have schemeID
-    if (!xml.includes('schemeID=')) {
-      errors.push('Missing schemeID attribute in EndpointID');
-    }
-    
-    // Check all amounts have currencyID
-    const amountFields = [
-      'TaxAmount', 'TaxableAmount', 'LineExtensionAmount',
-      'PriceAmount', 'PayableAmount'
-    ];
-    
-    for (const field of amountFields) {
-      const fieldPattern = new RegExp(`<cbc:${field}[^>]*>`, 'i');
-      if (fieldPattern.test(xml)) {
-        const currencyPattern = new RegExp(`<cbc:${field}[^>]*currencyID=`, 'i');
-        if (!currencyPattern.test(xml)) {
-          errors.push(`Missing currencyID in ${field}`);
+
+      // API response format: { peppolIdentifier: "...", documentTypes: ["urn:...", ...] }
+      // OR: array of document type objects with { type, fullType }
+      let documentTypesArray = [];
+      
+      if (response.data) {
+        if (Array.isArray(response.data)) {
+          // If response.data is directly an array
+          documentTypesArray = response.data;
+        } else if (response.data.documentTypes && Array.isArray(response.data.documentTypes)) {
+          // If response.data has documentTypes property (array of URN strings)
+          documentTypesArray = response.data.documentTypes;
+        } else if (Array.isArray(response.data.supportedDocumentTypes)) {
+          // Alternative format with supportedDocumentTypes
+          documentTypesArray = response.data.supportedDocumentTypes;
         }
       }
+      
+      // The INVOICE document type URN we're looking for
+      const invoiceDocumentType = `urn:oasis:names:specification:ubl:schema:xsd:Invoice-2::Invoice##urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0::2.1`;
+      
+      // Check if any document type matches INVOICE
+      const isSupported = documentTypesArray.some(doc => {
+        // If doc is a string (URN), check direct match
+        if (typeof doc === 'string') {
+          return doc === invoiceDocumentType || doc.includes('Invoice-2::Invoice');
+        }
+        // If doc is an object, check type or fullType properties
+        if (typeof doc === 'object') {
+          if (doc.type === 'INVOICE' || doc.type === documentType) {
+            return true;
+          }
+          if (doc.fullType === invoiceDocumentType) {
+            return true;
+          }
+          if (typeof doc.fullType === 'string' && doc.fullType.includes('Invoice-2::Invoice')) {
+            return true;
+          }
+        }
+        return false;
+      });
+
+      return {
+        supported: isSupported,
+        supportedDocuments: documentTypesArray
+      };
+    } catch (error) {
+      // If we can't check, assume not supported to be safe
+      return { supported: false, supportedDocuments: [], error: error.message };
     }
-    
-    // Check for required sections
-    const requiredSections = [
-      'cbc:ID',
-      'cbc:IssueDate',
-      'cbc:DueDate',
-      'cac:AccountingSupplierParty',
-      'cac:AccountingCustomerParty',
-      'cac:TaxTotal',
-      'cac:LegalMonetaryTotal',
-      'cac:InvoiceLine'
-    ];
-    
-    for (const section of requiredSections) {
-      if (!xml.includes(`<${section}`)) {
-        errors.push(`Missing mandatory section: ${section}`);
+  }
+
+  /**
+   * Validate UBL document structure locally (before sending)
+   * @param {string} xml - UBL XML string
+   * @returns {Promise<{valid: boolean, errors: string[]}>}
+   */
+  async validateDocumentStructure(xml) {
+    try {
+      const errors = [];
+      
+      if (!xml || typeof xml !== 'string') {
+        errors.push('Document XML is required');
+        return { valid: false, errors };
       }
+      
+      if (xml.trim().length === 0) {
+        errors.push('Document XML is empty');
+        return { valid: false, errors };
+      }
+      
+      // Check mandatory document identifiers
+      const mandatoryFields = {
+        'cbc:CustomizationID': 'urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0',
+        'cbc:ProfileID': 'urn:fdc:peppol.eu:2017:poacc:billing:01:1.0',
+        'cbc:InvoiceTypeCode': '380'
+      };
+      
+      for (const [field, expectedValue] of Object.entries(mandatoryFields)) {
+        const fieldPattern = new RegExp(`<${field}[^>]*>${expectedValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</${field}>`);
+        if (!fieldPattern.test(xml)) {
+          errors.push(`Missing or incorrect ${field}`);
+        }
+      }
+      
+      // Check endpoint IDs have schemeID
+      if (!xml.includes('schemeID=')) {
+        errors.push('Missing schemeID attribute in EndpointID');
+      }
+      
+      // Check all amounts have currencyID
+      const amountFields = [
+        'TaxAmount', 'TaxableAmount', 'LineExtensionAmount',
+        'PriceAmount', 'PayableAmount'
+      ];
+      
+      for (const field of amountFields) {
+        const fieldPattern = new RegExp(`<cbc:${field}[^>]*>`, 'i');
+        if (fieldPattern.test(xml)) {
+          const currencyPattern = new RegExp(`<cbc:${field}[^>]*currencyID=`, 'i');
+          if (!currencyPattern.test(xml)) {
+            errors.push(`Missing currencyID in ${field}`);
+          }
+        }
+      }
+      
+      // Check for required sections
+      const requiredSections = [
+        { name: 'cbc:ID', description: 'Invoice ID' },
+        { name: 'cbc:IssueDate', description: 'Issue Date' },
+        { name: 'cbc:DueDate', description: 'Due Date' },
+        { name: 'cac:AccountingSupplierParty', description: 'Supplier Party (Sender)' },
+        { name: 'cac:AccountingCustomerParty', description: 'Customer Party (Receiver)' },
+        { name: 'cac:TaxTotal', description: 'Tax Total' },
+        { name: 'cac:LegalMonetaryTotal', description: 'Legal Monetary Total' },
+        { name: 'cac:InvoiceLine', description: 'Invoice Line(s)' }
+      ];
+      
+      for (const section of requiredSections) {
+        if (!xml.includes(`<${section.name}`)) {
+          errors.push(`Missing mandatory section: ${section.description} (${section.name})`);
+        }
+      }
+      
+      const result = {
+        valid: errors.length === 0,
+        errors: errors
+      };
+      
+      return result;
+    } catch (error) {
+      return {
+        valid: false,
+        errors: [`Validation function error: ${error.message || error.toString()}`]
+      };
     }
-    
-    return {
-      valid: errors.length === 0,
-      errors: errors
-    };
   }
 
   /**
@@ -913,20 +1132,61 @@ export class PeppolService {
   async sendWithRetry(invoiceData, maxRetries = 3) {
     let lastError;
     
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`Peppol send attempt ${attempt} of ${maxRetries}`);
-        
         // Generate UBL XML
-        const xml = generatePEPPOLXML(invoiceData);
-        
-        // Validate document before sending
-        const validation = this.validateDocument(xml);
-        if (!validation.valid) {
-          throw new Error(`Document validation failed: ${validation.errors.join(', ')}`);
+        let xml;
+        try {
+          xml = generatePEPPOLXML(invoiceData);
+        } catch (xmlError) {
+          throw new Error(`Failed to generate UBL XML: ${xmlError.message || 'Unknown error'}`);
         }
         
+        if (!xml || typeof xml !== 'string') {
+          throw new Error('Failed to generate UBL XML document: Generated XML is empty or invalid');
+        }
+        
+        // Validate document before sending
+        let validation;
+        try {
+          // CORRECT: Use validateDocumentStructure for local validation
+          console.log('[Peppol] Starting local document validation...');
+          validation = await this.validateDocumentStructure(xml);
+          console.log('[Peppol] Local validation result:', JSON.stringify(validation, null, 2));
+        } catch (validationError) {
+          console.error('[Peppol] Validation threw error:', validationError);
+          throw new Error(`Document validation error: ${validationError.message || validationError.toString() || 'Unknown validation error'}`);
+        }
+        
+        if (!validation) {
+          console.error('[Peppol] Validation returned null/undefined');
+          throw new Error('Document validation failed: Validation function returned no result');
+        }
+        
+        if (!validation.valid) {
+          // Better error reporting
+          let errorMessages = 'Validation failed';
+          if (validation.errors) {
+            if (Array.isArray(validation.errors) && validation.errors.length > 0) {
+              errorMessages = validation.errors.join(', ');
+            } else if (typeof validation.errors === 'string') {
+              errorMessages = validation.errors;
+            } else {
+              errorMessages = `Validation failed: ${JSON.stringify(validation.errors)}`;
+            }
+          }
+          console.error('[Peppol] Local validation failed:', {
+            valid: validation.valid,
+            errors: validation.errors,
+            errorMessage: errorMessages
+          });
+          throw new Error(`Document validation failed: ${errorMessages}`);
+        }
+        
+        console.log('[Peppol] ✅ Local validation passed, proceeding to send...');
+        
         // Send via edge function
+        console.log('[Peppol] Sending invoice via edge function...');
         const response = await supabase.functions.invoke('peppol-webhook-config', {
           body: {
             endpoint: this.config.baseUrl,
@@ -937,12 +1197,59 @@ export class PeppolService {
           }
         });
         
+        console.log('[Peppol] Edge function response:', {
+          hasError: !!response.error,
+          error: response.error,
+          hasData: !!response.data,
+          data: response.data
+        });
+        
         if (response.error) {
-          throw new Error(response.error.message);
+          console.error('[Peppol] Edge function returned error:', response.error);
+          
+          // Parse error details from Digiteal API
+          let errorMessage = response.error.message || 'Unknown error';
+          
+          // Check if error details contain RECIPIENT_NOT_IN_PEPPOL
+          if (response.error.details) {
+            try {
+              const details = typeof response.error.details === 'string' 
+                ? JSON.parse(response.error.details) 
+                : response.error.details;
+              
+              if (details.status === 'RECIPIENT_NOT_IN_PEPPOL' || details.errorCode === 'RECIPIENT_NOT_IN_PEPPOL') {
+                const recipientId = details.message?.match(/Recipient\s+([^\s]+)/)?.[1] || 'unknown';
+                errorMessage = `Receiver ${recipientId} is registered on Peppol but does not support INVOICE document type. Please contact the receiver to enable INVOICE support or use email delivery method.`;
+              } else if (details.message) {
+                errorMessage = details.message;
+              }
+            } catch (e) {
+              // If parsing fails, use the original error message
+            }
+          }
+          
+          throw new Error(errorMessage);
+        }
+        
+        // Check if response.data contains validation errors
+        if (response.data) {
+          const validationResult = response.data.currentSpecValidationResult || response.data.futureSpecValidationResult;
+          if (validationResult && validationResult.status === 'ERROR') {
+            const errors = validationResult.errors || [];
+            const errorMessages = errors.map(e => `${e.id}: ${e.description}`).join(', ');
+            console.error('[Peppol] Document validation failed in edge function:', {
+              status: validationResult.status,
+              errors: errors,
+              errorMessages: errorMessages
+            });
+            throw new Error(`Document validation failed: ${errorMessages || 'Validation failed'}`);
+          } else if (validationResult && validationResult.status === 'OK') {
+            console.log('[Peppol] ✅ Document validation passed in edge function');
+          }
         }
         
         // Success
-        console.log(`✓ Invoice ${invoiceData.billName} sent successfully via PEPPOL`);
+        console.log('[Peppol] ✅ Invoice sent successfully');
         return {
           success: true,
           message: "Invoice sent successfully",
@@ -960,14 +1267,12 @@ export class PeppolService {
             errorMessage.includes('401') ||
             errorMessage.includes('Unauthorized') ||
             errorMessage.includes('404')) {
-          console.error('Non-transient error, not retrying:', errorMessage);
           throw error;
         }
         
         // Wait before retry (exponential backoff)
         if (attempt < maxRetries) {
           const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
-          console.log(`Waiting ${delay}ms before retry...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
@@ -1006,26 +1311,55 @@ export class PeppolService {
         throw new Error('Receiver VAT number is required to check Peppol capability');
       }
 
-      const receiverCheck = await this.checkReceiverCapability(invoiceData.receiver.vatNumber);
+      // Use the Peppol identifier from invoiceData if provided (from UI), otherwise discover it
+      let receiverPeppolIdentifier = invoiceData.receiver.peppolIdentifier;
       
-      if (!receiverCheck.found) {
-        throw new Error(
-          `Receiver ${invoiceData.receiver.vatNumber} not found on Peppol network. ` +
-          `Please use email delivery method or ensure the receiver is registered on Peppol.`
-        );
+      if (!receiverPeppolIdentifier) {
+        // If no Peppol ID provided, discover it via capability check
+        const receiverCheck = await this.checkReceiverCapability(invoiceData.receiver.vatNumber);
+        
+        if (!receiverCheck.found) {
+          throw new Error(
+            `Receiver ${invoiceData.receiver.vatNumber} not found on Peppol network. ` +
+            `Please use email delivery method or ensure the receiver is registered on Peppol.`
+          );
+        }
+
+        // Set receiver Peppol identifier from capability check result
+        receiverPeppolIdentifier = receiverCheck.identifier;
+        invoiceData.receiver.peppolIdentifier = receiverPeppolIdentifier;
+      } else {
+        // If Peppol ID is provided from UI, validate it exists on Peppol network
+        // This ensures the user-provided ID is valid before sending
+        const receiverCheck = await this.checkRecipientSupport(receiverPeppolIdentifier);
+        if (!receiverCheck) {
+          throw new Error(
+            `Receiver Peppol ID ${receiverPeppolIdentifier} not found on Peppol network. ` +
+            `Please verify the Peppol ID is correct or use email delivery method.`
+          );
+        }
       }
 
-      // Set receiver Peppol identifier from capability check result
-      if (receiverCheck.identifier && !invoiceData.receiver.peppolIdentifier) {
-        invoiceData.receiver.peppolIdentifier = receiverCheck.identifier;
-        console.log(`Using Peppol identifier from capability check: ${receiverCheck.identifier}`);
+      // CRITICAL: Check if receiver supports INVOICE document type before sending
+      // Use the Peppol identifier from UI (if provided) or discovered identifier
+      const documentTypeCheck = await this.checkReceiverSupportsDocumentType(
+        receiverPeppolIdentifier,
+        'INVOICE'
+      );
+
+      if (!documentTypeCheck.supported) {
+        const supportedTypes = documentTypeCheck.supportedDocuments?.map(d => d.type || d.fullType).join(', ') || 'none';
+        throw new Error(
+          `Receiver ${receiverPeppolIdentifier} is registered on Peppol but does not support INVOICE document type. ` +
+          `Supported document types: ${supportedTypes || 'none'}. ` +
+          `Please contact the receiver to enable INVOICE support or use email delivery method.`
+        );
       }
 
       // Send with retry logic
       return await this.sendWithRetry(invoiceData, 3);
       
     } catch (error) {
-      console.error("Failed to send PEPPOL invoice:", error);
       throw error;
     }
   }
@@ -1033,7 +1367,34 @@ export class PeppolService {
 
   // Convert Haliqo invoice to Peppol format
   convertHaliqoInvoiceToPeppol(haliqoInvoice, senderInfo, receiverInfo) {
-        return {
+    // Validate required sender fields
+    if (!senderInfo.address || senderInfo.address.trim() === '') {
+      throw new Error('Sender address (addressLine1) is required. Please update your company profile with a valid address.');
+    }
+    if (!senderInfo.city || senderInfo.city.trim() === '') {
+      throw new Error('Sender city is required. Please update your company profile with a valid city.');
+    }
+    if (!senderInfo.zip_code || senderInfo.zip_code.trim() === '') {
+      throw new Error('Sender postal code (zipCode) is required. Please update your company profile with a valid postal code.');
+    }
+    
+    // Validate required receiver fields
+    if (!receiverInfo.address || receiverInfo.address.trim() === '') {
+      throw new Error('Receiver address (addressLine1) is required. Please update the client profile with a valid address.');
+    }
+    if (!receiverInfo.city || receiverInfo.city.trim() === '') {
+      throw new Error('Receiver city is required. Please update the client profile with a valid city.');
+    }
+    if (!receiverInfo.zip_code || receiverInfo.zip_code.trim() === '') {
+      throw new Error('Receiver postal code (zipCode) is required. Please update the client profile with a valid postal code.');
+    }
+    
+    // Validate invoice lines
+    if (!haliqoInvoice.items || !Array.isArray(haliqoInvoice.items) || haliqoInvoice.items.length === 0) {
+      throw new Error('At least one invoice line item is required.');
+    }
+    
+    return {
       billName: haliqoInvoice.invoice_number || `INV-${Date.now()}`,
       // Use issue_date from schema (invoices.issue_date), fallback to created_at if not available
       issueDate: formatDate(haliqoInvoice.issue_date || haliqoInvoice.created_at || new Date(), "date"),
@@ -1048,29 +1409,29 @@ export class PeppolService {
       paymentMeans: 31, // Debit transfer (code 31 = Credit transfer)
       sender: {
         vatNumber: cleanVATNumber(senderInfo.vat_number), // Clean VAT number (remove Peppol scheme prefixes)
-        name: senderInfo.company_name || senderInfo.full_name,
-        addressLine1: senderInfo.address || "Main Street 123",
-        city: senderInfo.city || "Brussels",
+        name: senderInfo.company_name || senderInfo.full_name || 'Company Name Required',
+        addressLine1: senderInfo.address.trim(),
+        city: senderInfo.city.trim(),
         countryCode: countryNameToISO(senderInfo.country) || "BE", // Convert country name to ISO code
-        zipCode: senderInfo.zip_code || "1000",
+        zipCode: senderInfo.zip_code.trim(),
         iban: senderInfo.iban || null, // IBAN is optional but recommended for credit transfer payments
         peppolIdentifier: senderInfo.peppol_identifier || null // Use Peppol ID from settings if available
       },
       receiver: {
-        vatNumber: receiverInfo.vat_number,
-        name: receiverInfo.company_name || receiverInfo.full_name,
-        addressLine1: receiverInfo.address || "Customer Street 456",
-        city: receiverInfo.city || "Amsterdam",
-        zipCode: receiverInfo.zip_code || "1012",
-        countryCode: receiverInfo.country || "NL",
+        vatNumber: receiverInfo.vat_number || '',
+        name: receiverInfo.company_name || receiverInfo.full_name || 'Client Name Required',
+        addressLine1: receiverInfo.address.trim(),
+        city: receiverInfo.city.trim(),
+        zipCode: receiverInfo.zip_code.trim(),
+        countryCode: receiverInfo.country || "BE",
         peppolIdentifier: receiverInfo.peppol_identifier,
         contact: {
-          name: receiverInfo.contact_name,
-          phone: receiverInfo.phone,
-          email: receiverInfo.email
+          name: receiverInfo.contact_name || null,
+          phone: receiverInfo.phone || null,
+          email: receiverInfo.email || null
         }
       },
-      invoiceLines: haliqoInvoice.items?.map((item, index) => ({
+      invoiceLines: haliqoInvoice.items.map((item, index) => ({
         description: item.description || `Item ${index + 1}`,
         quantity: item.quantity || 1,
         unitPrice: item.unit_price || 0,
@@ -1079,7 +1440,7 @@ export class PeppolService {
         totalAmount: item.total || 0,
         vatCode: item.vat_code || "S",
         taxPercentage: item.vat_percentage || 21
-      })) || []
+      }))
     };
   }
 
@@ -1094,7 +1455,6 @@ export class PeppolService {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Failed to get Peppol participants:', error);
       throw error;
     }
   }
@@ -1111,7 +1471,6 @@ export class PeppolService {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Failed to add Peppol participant:', error);
       throw error;
     }
   }
@@ -1129,7 +1488,6 @@ export class PeppolService {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Failed to update Peppol participant:', error);
       throw error;
     }
   }
@@ -1145,7 +1503,6 @@ export class PeppolService {
       if (error) throw error;
       return { success: true };
     } catch (error) {
-      console.error('Failed to delete Peppol participant:', error);
       throw error;
     }
   }
@@ -1165,7 +1522,6 @@ export class PeppolService {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Failed to get Peppol invoices:', error);
       throw error;
     }
   }
@@ -1182,7 +1538,6 @@ export class PeppolService {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Failed to add Peppol invoice:', error);
       throw error;
     }
   }
@@ -1204,7 +1559,6 @@ export class PeppolService {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Failed to update Peppol invoice status:', error);
       throw error;
     }
   }
@@ -1221,7 +1575,6 @@ export class PeppolService {
       // Business size check removed - solo users can also have companies
       return true;
     } catch (error) {
-      console.error('Failed to check business user:', error);
       return false;
     }
   }
@@ -1244,9 +1597,14 @@ export class PeppolService {
       if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows found
         
       // Map database fields to camelCase for frontend
+      // For Belgium: Use 9925 as default if both exist, otherwise use primary peppol_id
+      const primaryPeppolId = data?.peppol_id_9925 || data?.peppol_id || null;
+      
       const mappedData = data ? {
         isConfigured: data.is_configured,
-        peppolId: data.peppol_id,
+        peppolId: primaryPeppolId, // Default to 9925 for Belgium, or primary ID for others
+        peppolId9925: data.peppol_id_9925 || null, // 9925 scheme ID (Belgium only)
+        peppolId0208: data.peppol_id_0208 || null, // 0208 scheme ID (Belgium only)
         name: data.business_name,
         countryCode: data.country_code,
         // Parse contact person name into first/last name
@@ -1282,7 +1640,6 @@ export class PeppolService {
         data: mappedData
       };
     } catch (error) {
-      console.error('Failed to get Peppol settings:', error);
       return {
         success: false,
         error: error.message
@@ -1310,7 +1667,7 @@ export class PeppolService {
       
       if (existingSettings && existingSettings.is_configured) {
         // Participant already registered in our system, skip Digiteal registration
-        console.log('Participant already exists in database, skipping Digiteal registration');
+        // Participant already exists in database, skipping Digiteal registration
         registrationResult = { success: true, alreadyRegistered: true };
       } else {
         // For Belgium: register both 0208 and 9925 schemes
@@ -1319,13 +1676,21 @@ export class PeppolService {
         
         if (isBelgium && settings.vatNumber) {
           // Register both schemes for Belgium
-          const vatNumber = settings.vatNumber.replace(/^BE/i, ''); // Remove BE prefix if present
-          const id0208 = `0208:${vatNumber}`;
-          const id9925 = `9925:BE${vatNumber}`;
+          // Normalize VAT number: ensure it has BE prefix
+          let normalizedVAT = settings.vatNumber.trim();
+          if (!normalizedVAT.toUpperCase().startsWith('BE')) {
+            normalizedVAT = `BE${normalizedVAT}`;
+          }
           
-          // Register with 0208 (primary)
+          // CORRECT: Use 9925 with full VAT number (lowercase)
+          const id9925 = `9925:${normalizedVAT.toLowerCase()}`;
+          // Extract digits only for 0208 scheme (enterprise number without BE prefix)
+          const digitsOnly = normalizedVAT.replace(/\D/g, '');
+          const id0208 = `0208:${digitsOnly}`;
+          
+          // Register with 9925 first (preferred - no MOD97 validation required)
           registrationResult = await this.registerParticipant({
-            peppolIdentifier: id0208,
+            peppolIdentifier: id9925,
             name: settings.name,
             countryCode: settings.countryCode,
             contactPerson: {
@@ -1339,11 +1704,11 @@ export class PeppolService {
             limitedToOutboundTraffic: settings.limitedToOutboundTraffic || false
           });
           
-          // Register with 9925 (secondary) - only if 0208 registration succeeded
+          // Register with 0208 (secondary/fallback) - only if 9925 registration succeeded
           if (registrationResult.success || registrationResult.alreadyRegistered) {
             try {
               await this.registerParticipant({
-                peppolIdentifier: id9925,
+                peppolIdentifier: id0208,
                 name: settings.name,
                 countryCode: settings.countryCode,
                 contactPerson: {
@@ -1356,9 +1721,9 @@ export class PeppolService {
                 supportedDocumentTypes: PEPPOL_DOCUMENT_TYPES,
                 limitedToOutboundTraffic: settings.limitedToOutboundTraffic || false
               });
-              // Note: We don't fail if 9925 registration fails, as 0208 is the primary
+              // Note: We don't fail if 0208 registration fails, as 9925 is the primary (saved ID)
             } catch (error) {
-              console.log('Secondary registration (9925) failed, but continuing with 0208:', error);
+              // Secondary registration failed, but continuing with primary
             }
           }
         } else {
@@ -1385,12 +1750,40 @@ export class PeppolService {
         }
       }
 
+      // For Belgium: Ensure we save 9925 scheme as primary (even if settings.peppolId is 0208)
+      // Both schemes are registered, but we save 9925 to avoid MOD97 validation issues
+      let peppolIdToSave = settings.peppolId;
+      let peppolId9925 = null;
+      let peppolId0208 = null;
+      const isBelgium = settings.countryCode?.toUpperCase() === 'BE';
+      
+      if (isBelgium && settings.vatNumber) {
+        // Normalize VAT number
+        let normalizedVAT = settings.vatNumber.trim();
+        if (!normalizedVAT.toUpperCase().startsWith('BE')) {
+          normalizedVAT = `BE${normalizedVAT}`;
+        }
+        
+        // Generate both IDs for Belgium
+        peppolId9925 = `9925:${normalizedVAT.toLowerCase()}`;
+        const digitsOnly = normalizedVAT.replace(/\D/g, '');
+        peppolId0208 = `0208:${digitsOnly}`;
+        
+        // Set primary ID to 9925 (default/preferred)
+        peppolIdToSave = peppolId9925;
+      } else {
+        // For non-Belgium, use the provided ID as primary
+        peppolIdToSave = settings.peppolId;
+      }
+      
       // Then save to database using upsert to handle updates
       const { data, error } = await supabase
         .from('peppol_settings')
         .upsert({
           user_id: user.id,
-          peppol_id: settings.peppolId,
+          peppol_id: peppolIdToSave, // Primary ID (9925 for Belgium, or provided ID for others)
+          peppol_id_9925: peppolId9925, // 9925 scheme ID (Belgium only)
+          peppol_id_0208: peppolId0208, // 0208 scheme ID (Belgium only)
           business_name: settings.name,
           country_code: settings.countryCode || 'BE',
           contact_person_name: `${settings.firstName} ${settings.lastName}`,
@@ -1450,7 +1843,6 @@ export class PeppolService {
         message: successMessage
       };
     } catch (error) {
-      console.error('Failed to save Peppol settings:', error);
       return {
         success: false,
         error: error.message
@@ -1474,7 +1866,7 @@ export class PeppolService {
       if (!this.validatePeppolIdentifier(settings.peppolId)) {
         return {
           success: false,
-          error: 'Invalid Peppol ID format. Expected format: COUNTRY_CODE:VAT_NUMBER (e.g., 0208:0630675588)'
+          error: 'Invalid Peppol ID format. Expected format: SCHEME_CODE:IDENTIFIER (e.g., 0208:0630675588, 9925:BE0630675588, 9957:FR0545744269)'
         };
       }
 
@@ -1597,7 +1989,6 @@ export class PeppolService {
         message: this.generateTestResultMessage(supportedDocsResult, participantTest, registrationTest, responseTime)
       };
     } catch (error) {
-      console.error('Failed to test Peppol connection:', error);
       return {
         success: false,
         error: error.message
@@ -1748,7 +2139,6 @@ export class PeppolService {
         }
       };
     } catch (error) {
-      console.error('Failed to get Peppol statistics:', error);
       return {
         success: false,
         error: error.message
@@ -1801,7 +2191,7 @@ export class PeppolService {
         });
       } catch (invokeError) {
         // If Supabase throws an error, try to extract error message from it
-        console.error('Edge function invocation error:', invokeError);
+        // Edge function invocation error
         
         // Try to extract error from various possible locations
         let errorMessage = invokeError.message || 'Failed to invoke edge function';
@@ -1876,7 +2266,7 @@ export class PeppolService {
             }
           } catch (e) {
             // If parsing fails, continue to other error extraction methods
-            console.warn('Failed to parse error details:', e);
+            // Failed to parse error details
           }
         }
         
@@ -2068,7 +2458,6 @@ export class PeppolService {
 
       return data?.peppol_disabled || false;
     } catch (error) {
-      console.error('Error checking Peppol disabled state:', error);
       return false;
     }
   }

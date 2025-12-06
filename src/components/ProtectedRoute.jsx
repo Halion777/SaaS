@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useMultiUser } from '../context/MultiUserContext';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../services/supabaseClient';
-import { SUPPORT_EMAIL } from '../config/appConfig';
+import { SUPPORT_EMAIL, SUPER_ADMIN_EMAIL } from '../config/appConfig';
 import TableLoader from './ui/TableLoader';
 import Button from './ui/Button';
 import Icon from './AppIcon';
@@ -168,10 +168,34 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
           throw new Error('Network error and no cache available');
         }
 
-        // Super admin users are exempt from subscription checks
+        // Super admin users are exempt from subscription checks and always have lifetime access
+        const emailLower = userData?.email?.toLowerCase().trim();
         if (userData?.role === 'superadmin') {
+          // Ensure superadmin always has lifetime access
+          if (!userData.has_lifetime_access) {
+            await supabase
+              .from('users')
+              .update({ has_lifetime_access: true })
+              .eq('id', user.id);
+          }
           setSubscriptionStatus('active');
           // Update cache with fresh timestamp (resets 30-min timer)
+          setCachedSubscription(user.id, 'active', true);
+          setSubscriptionLoading(false);
+          return;
+        }
+
+        // Special case: Super admin email gets superadmin role and lifetime access
+        if (emailLower === SUPER_ADMIN_EMAIL.toLowerCase()) {
+          // Grant superadmin role and lifetime access
+          await supabase
+            .from('users')
+            .update({ 
+              role: 'superadmin',
+              has_lifetime_access: true
+            })
+            .eq('id', user.id);
+          setSubscriptionStatus('active');
           setCachedSubscription(user.id, 'active', true);
           setSubscriptionLoading(false);
           return;
@@ -187,7 +211,7 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
         }
 
         // Special case: Support email gets lifetime access
-        if (userData?.email === SUPPORT_EMAIL) {
+        if (emailLower === SUPPORT_EMAIL.toLowerCase()) {
           // Grant lifetime access to this email
           await supabase
             .from('users')

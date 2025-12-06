@@ -62,7 +62,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
         const company = await loadCompanyInfo(user?.id);
         setCompanyInfo(company);
       } catch (companyErr) {
-        console.warn('Company info not available, will use Peppol settings only:', companyErr);
+        // Company info not available, will use Peppol settings only
         // Continue without company info - we'll use Peppol settings for most fields
       }
 
@@ -77,7 +77,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
           setValidationError('');
         } else {
           // Only validate if we don't have a matching validated identifier
-          validatePeppolId(invoice.client.peppol_id);
+        validatePeppolId(invoice.client.peppol_id);
         }
       } else {
         // Reset validation state if no Peppol ID
@@ -85,7 +85,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
         setValidationError('');
       }
     } catch (err) {
-      console.error('Error loading data:', err);
+      // Error loading data
       setError(t('invoicesManagement.sendPeppolModal.errors.loadDataError'));
     } finally {
       setIsLoading(false);
@@ -294,6 +294,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
         const messageId = result.messageId || result.data?.messageId || null;
 
         // Update invoice with Peppol status and UBL XML
+        // Clear error message on successful send
         const { error: updateError } = await supabase
           .from('invoices')
           .update({
@@ -302,12 +303,13 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
             receiver_peppol_id: clientPeppolId,
             peppol_sent_at: new Date().toISOString(),
             peppol_message_id: messageId,
-            ubl_xml: ublXml
+            ubl_xml: ublXml,
+            peppol_error_message: null // Clear any previous error messages
           })
           .eq('id', invoice.id);
 
         if (updateError) {
-          console.error('Error updating invoice:', updateError);
+          // Error updating invoice
           setError(t('invoicesManagement.sendPeppolModal.errors.updateError') + ': ' + updateError.message);
         } else {
           if (onSuccess) {
@@ -316,10 +318,16 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
           onClose();
         }
       } else {
+        console.error('[SendPeppolModal] Send failed:', result);
         setError(result.error || t('invoicesManagement.sendPeppolModal.errors.sendError'));
       }
     } catch (err) {
-      console.error('Error sending invoice via Peppol:', err);
+      // Error sending invoice via Peppol
+      console.error('[SendPeppolModal] Error caught:', {
+        message: err.message,
+        stack: err.stack,
+        error: err
+      });
       setError(err.message || t('invoicesManagement.sendPeppolModal.errors.sendError'));
 
       // Update invoice with failed status
@@ -333,7 +341,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
           })
           .eq('id', invoice.id);
       } catch (updateErr) {
-        console.error('Error updating invoice status:', updateErr);
+        // Error updating invoice status
       }
     } finally {
       setIsSending(false);
@@ -366,7 +374,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
         setValidationError(t('invoicesManagement.sendPeppolModal.errors.invalidPeppolId', 'This Peppol ID does not exist in the Peppol network. Please verify the ID and try again.'));
       }
     } catch (err) {
-      console.error('Error validating Peppol ID:', err);
+      // Error validating Peppol ID
       setIsValid(false);
       setValidationError(t('invoicesManagement.sendPeppolModal.errors.validationError', 'Unable to validate Peppol ID. Please check your connection and try again.'));
     } finally {

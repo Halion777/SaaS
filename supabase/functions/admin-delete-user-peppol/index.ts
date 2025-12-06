@@ -33,13 +33,15 @@ serve(async (req) => {
     const { userId, peppolIdentifier } = await req.json();
 
     let targetUserId = userId;
+    let allPeppolIdentifiers: string[] = [];
 
     // If peppolIdentifier is provided instead of userId, find the user_id first
     if (!targetUserId && peppolIdentifier) {
+      // Try to find by primary peppol_id, peppol_id_9925, or peppol_id_0208
       const { data: peppolSettings, error: findError } = await supabaseAdmin
         .from('peppol_settings')
-        .select('user_id')
-        .eq('peppol_id', peppolIdentifier)
+        .select('user_id, peppol_id, peppol_id_9925, peppol_id_0208')
+        .or(`peppol_id.eq.${peppolIdentifier},peppol_id_9925.eq.${peppolIdentifier},peppol_id_0208.eq.${peppolIdentifier}`)
         .maybeSingle();
 
       if (findError || !peppolSettings) {
@@ -56,6 +58,50 @@ serve(async (req) => {
       }
 
       targetUserId = peppolSettings.user_id;
+      
+      // Collect all Peppol identifiers for this user (for Belgium, both 9925 and 0208)
+      if (peppolSettings.peppol_id) allPeppolIdentifiers.push(peppolSettings.peppol_id);
+      if (peppolSettings.peppol_id_9925) allPeppolIdentifiers.push(peppolSettings.peppol_id_9925);
+      if (peppolSettings.peppol_id_0208) allPeppolIdentifiers.push(peppolSettings.peppol_id_0208);
+      
+      // For Belgium: If we have one ID, generate the other
+      // Extract company number from the provided ID
+      if (peppolIdentifier.startsWith('9925:') || peppolIdentifier.startsWith('0208:')) {
+        const parts = peppolIdentifier.split(':');
+        if (parts.length === 2) {
+          const scheme = parts[0];
+          const identifier = parts[1];
+          
+          if (scheme === '9925' && identifier.toLowerCase().startsWith('be')) {
+            // Extract 10 digits from BEXXXXXXXXXX
+            const digitsOnly = identifier.replace(/\D/g, '').substring(2); // Remove 'be' prefix
+            const id0208 = `0208:${digitsOnly}`;
+            if (!allPeppolIdentifiers.includes(id0208)) {
+              allPeppolIdentifiers.push(id0208);
+            }
+          } else if (scheme === '0208') {
+            // Generate 9925 ID from 0208
+            const digitsOnly = identifier.replace(/\D/g, '');
+            const id9925 = `9925:be${digitsOnly}`;
+            if (!allPeppolIdentifiers.includes(id9925)) {
+              allPeppolIdentifiers.push(id9925);
+            }
+          }
+        }
+      }
+    } else if (targetUserId) {
+      // If userId is provided, fetch all Peppol identifiers for this user
+      const { data: peppolSettings } = await supabaseAdmin
+        .from('peppol_settings')
+        .select('peppol_id, peppol_id_9925, peppol_id_0208')
+        .eq('user_id', targetUserId)
+        .maybeSingle();
+      
+      if (peppolSettings) {
+        if (peppolSettings.peppol_id) allPeppolIdentifiers.push(peppolSettings.peppol_id);
+        if (peppolSettings.peppol_id_9925) allPeppolIdentifiers.push(peppolSettings.peppol_id_9925);
+        if (peppolSettings.peppol_id_0208) allPeppolIdentifiers.push(peppolSettings.peppol_id_0208);
+      }
     }
 
     if (!targetUserId) {
@@ -69,6 +115,8 @@ serve(async (req) => {
     }
 
     // Delete all Peppol-related data for the user (bypassing RLS with service role)
+    // Note: Unregistering from Digiteal is handled in the frontend (super admin panel)
+    // This function only handles database cleanup
     const errors = [];
 
     // 1. Delete from peppol_settings

@@ -3,6 +3,7 @@
 import { supabase } from './supabaseClient';
 import SubscriptionNotificationService from './subscriptionNotificationService';
 import { COUNTRY_CODES } from '../utils/countryCodes';
+import { SUPPORT_EMAIL, SUPER_ADMIN_EMAIL } from '../config/appConfig';
 
 // Helper function to convert country code to country name
 const getCountryName = (countryCode) => {
@@ -65,6 +66,16 @@ class RegistrationService {
       languagePreference = storedLang.split('-')[0] || 'fr'; // Extract base language (e.g., 'fr' from 'fr-FR')
     }
     
+    // Check if email is super admin email or support email
+    const emailLower = userData.email.toLowerCase().trim();
+    const isSuperAdmin = emailLower === SUPER_ADMIN_EMAIL.toLowerCase();
+    const isSupportEmail = emailLower === SUPPORT_EMAIL.toLowerCase();
+    
+    // Super admin gets superadmin role and lifetime access
+    // Support email gets lifetime access (but not superadmin role unless it's the same email)
+    const userRole = isSuperAdmin ? 'superadmin' : 'admin';
+    const hasLifetimeAccess = isSuperAdmin || isSupportEmail;
+    
     // Use upsert to create the record if it doesn't exist, or update if it does
     const userRecord = {
       id: userData.userId,
@@ -85,7 +96,15 @@ class RegistrationService {
       trial_end_date: sessionData.trial_end ? new Date(sessionData.trial_end * 1000).toISOString() : null,
       registration_completed: true,
       has_used_trial: isTrial, // Mark that user has used their free trial
-      language_preference: languagePreference // Save language preference from localStorage
+      language_preference: languagePreference, // Save language preference from localStorage
+      role: userRole, // Set role (superadmin for support@haliqo.com, admin for others)
+      has_lifetime_access: hasLifetimeAccess // Grant lifetime access to super admin and support email
+    }
+    
+    if (isSuperAdmin) {
+      console.log('Super admin email detected - granting superadmin role and lifetime access');
+    } else if (isSupportEmail) {
+      console.log('Support email detected - granting lifetime access');
     }
 
     const { error } = await supabase

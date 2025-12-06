@@ -21,6 +21,10 @@ const Peppol = () => {
   const [loadingParticipants, setLoadingParticipants] = useState(false);
   const [unregisteringId, setUnregisteringId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showUnregisterModal, setShowUnregisterModal] = useState(false);
+  const [selectedParticipant, setSelectedParticipant] = useState(null);
+  const [relatedIds, setRelatedIds] = useState([]);
+  const [idsToDelete, setIdsToDelete] = useState(new Set());
   
   // Filter participants based on search term
   const filteredParticipants = useMemo(() => {
@@ -424,8 +428,61 @@ const Peppol = () => {
     }
   };
 
-  const handleUnregisterParticipant = async (peppolIdentifier) => {
-    if (!window.confirm(`Are you sure you want to unregister participant "${peppolIdentifier}"? This will also delete all Peppol-related data from the database. This action cannot be undone.`)) {
+  // Helper function to find related Belgian IDs
+  const findRelatedBelgianIds = (peppolIdentifier) => {
+    const related = [peppolIdentifier];
+    
+    if (peppolIdentifier.startsWith('9925:') || peppolIdentifier.startsWith('0208:')) {
+      const parts = peppolIdentifier.split(':');
+      if (parts.length === 2) {
+        const scheme = parts[0];
+        const identifier = parts[1];
+        
+        if (scheme === '9925' && identifier.toLowerCase().startsWith('be')) {
+          // Extract 10 digits from BEXXXXXXXXXX
+          const digitsOnly = identifier.replace(/\D/g, '').substring(2);
+          const id0208 = `0208:${digitsOnly}`;
+          // Check if this ID exists in participants
+          const exists = participants.some(p => (p.peppolIdentifier || p.id) === id0208);
+          if (exists) {
+            related.push(id0208);
+          }
+        } else if (scheme === '0208') {
+          // Generate 9925 ID from 0208
+          const digitsOnly = identifier.replace(/\D/g, '');
+          const id9925 = `9925:be${digitsOnly}`;
+          // Check if this ID exists in participants
+          const exists = participants.some(p => (p.peppolIdentifier || p.id) === id9925);
+          if (exists) {
+            related.push(id9925);
+          }
+        }
+      }
+    }
+    
+    return related;
+  };
+
+  // Open unregister modal with participant info
+  const openUnregisterModal = (peppolIdentifier) => {
+    const participant = participants.find(p => (p.peppolIdentifier || p.id) === peppolIdentifier);
+    if (!participant) return;
+    
+    const related = findRelatedBelgianIds(peppolIdentifier);
+    setSelectedParticipant(participant);
+    setRelatedIds(related);
+    setIdsToDelete(new Set(related)); // Default: select all related IDs
+    setShowUnregisterModal(true);
+  };
+
+  // Handle unregister with selected IDs
+  const handleUnregisterParticipant = async (selectedIds) => {
+    if (!selectedIds || selectedIds.length === 0) {
+      setTestResult({
+        success: false,
+        message: 'No IDs selected for deletion',
+        details: 'Please select at least one Peppol ID to unregister'
+      });
       return;
     }
 
@@ -439,33 +496,52 @@ const Peppol = () => {
     }
 
     try {
-      setUnregisteringId(peppolIdentifier);
+      // Use the first selected ID for tracking
+      const primaryId = selectedIds[0];
+      setUnregisteringId(primaryId);
       const endpoint = settings.isTestMode 
         ? 'https://test.digiteal.eu' 
         : settings.apiEndpoint;
 
-      // Step 1: Unregister from Peppol network
-      const { data, error } = await supabase.functions.invoke('peppol-webhook-config', {
-        body: {
-          endpoint: endpoint,
-          username: settings.apiUsername,
-          password: settings.apiPassword,
-          action: 'unregister-participant',
-          peppolIdentifier: peppolIdentifier
-        }
-      });
+      // Use the selected IDs
+      const identifiersToUnregister = selectedIds;
 
-      if (error) {
+      // Step 1: Unregister all identifiers from Peppol network
+      const unregisterResults = [];
+      for (const id of identifiersToUnregister) {
+        const { data, error } = await supabase.functions.invoke('peppol-webhook-config', {
+          body: {
+            endpoint: endpoint,
+            username: settings.apiUsername,
+            password: settings.apiPassword,
+            action: 'unregister-participant',
+            peppolIdentifier: id
+          }
+        });
+        
+        if (error) {
+          // Log error but continue with other IDs
+          console.warn(`Failed to unregister ${id}:`, error);
+          unregisterResults.push({ id, success: false, error: error.message });
+        } else {
+          unregisterResults.push({ id, success: true });
+        }
+      }
+
+      // Check if at least one unregistration succeeded
+      const hasSuccess = unregisterResults.some(r => r.success);
+      if (!hasSuccess) {
         setTestResult({
           success: false,
-          message: 'Failed to unregister participant',
-          details: error.message || 'Unknown error occurred'
+          message: 'Failed to unregister participant(s)',
+          details: unregisterResults.map(r => `${r.id}: ${r.error || 'Unknown error'}`).join('; ')
         });
+        setUnregisteringId(null);
         return;
       }
 
-      // Step 2: Clean up all Peppol data from database
-      const cleanupResult = await cleanupPeppolData(peppolIdentifier);
+      // Step 2: Clean up all Peppol data from database (edge function handles all related IDs)
+      const cleanupResult = await cleanupPeppolData(primaryId);
       
       if (!cleanupResult.success) {
         setTestResult({
@@ -473,15 +549,24 @@ const Peppol = () => {
           message: 'Participant unregistered from Peppol, but cleanup failed',
           details: cleanupResult.message || 'Some data may still remain in the database'
         });
+        setUnregisteringId(null);
         return;
       }
 
       // Success: Both unregistration and cleanup completed
+      // Refresh the participants table
+      await fetchParticipants();
       setTestResult({
         success: true,
-        message: 'Participant unregistered and all Peppol data deleted successfully',
-        details: `Participant "${peppolIdentifier}" has been removed from Peppol network and all related data has been deleted from the database`
+        message: 'Participant(s) unregistered and all Peppol data deleted successfully',
+        details: `Selected participant(s) have been removed from Peppol network and all related data has been deleted from the database`
       });
+      
+      // Close modal
+      setShowUnregisterModal(false);
+      setSelectedParticipant(null);
+      setRelatedIds([]);
+      setIdsToDelete(new Set());
       
       // Refresh participants list
       await fetchParticipants();
@@ -982,8 +1067,8 @@ const Peppol = () => {
                           </td>
                           <td className="py-3 px-4 text-right">
                             <Button
-                              onClick={() => handleUnregisterParticipant(participant.peppolIdentifier || participant.id)}
-                              disabled={unregisteringId === (participant.peppolIdentifier || participant.id)}
+                              onClick={() => openUnregisterModal(participant.peppolIdentifier || participant.id)}
+                              disabled={unregisteringId === (participant.peppolIdentifier || participant.id) || showUnregisterModal}
                               variant="outline"
                               size="sm"
                               className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
@@ -1011,6 +1096,175 @@ const Peppol = () => {
           </div>
         </main>
       </div>
+
+      {/* Unregister Confirmation Modal */}
+      {showUnregisterModal && selectedParticipant && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card border border-border rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-border">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-red-100 rounded-lg">
+                    <Icon name="AlertTriangle" size={24} className="text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-foreground">Unregister Peppol Participant</h3>
+                    <p className="text-sm text-muted-foreground mt-1">This action cannot be undone</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowUnregisterModal(false);
+                    setSelectedParticipant(null);
+                    setRelatedIds([]);
+                    setIdsToDelete(new Set());
+                  }}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Icon name="X" size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Participant Info */}
+              <div className="bg-muted/50 rounded-lg p-4">
+                <p className="text-sm font-semibold text-foreground mb-2">Participant Information</p>
+                <div className="space-y-1 text-sm">
+                  <p><span className="text-muted-foreground">Name:</span> <span className="font-medium">{selectedParticipant.name || 'N/A'}</span></p>
+                  <p><span className="text-muted-foreground">Country:</span> <span className="font-medium">{selectedParticipant.countryCode || 'N/A'}</span></p>
+                </div>
+              </div>
+
+              {/* Related IDs for Belgium */}
+              {relatedIds.length > 1 && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <div className="flex items-start gap-2 mb-3">
+                    <Icon name="Info" size={18} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">Belgian Peppol IDs Detected</p>
+                      <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                        This participant has multiple Peppol IDs registered. Select which ones you want to unregister.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 mt-3">
+                    {relatedIds.map((id) => {
+                      const participant = participants.find(p => (p.peppolIdentifier || p.id) === id);
+                      const isChecked = idsToDelete.has(id);
+                      return (
+                        <label
+                          key={id}
+                          className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${
+                            isChecked
+                              ? 'bg-blue-100 dark:bg-blue-900/40 border-blue-400 dark:border-blue-600'
+                              : 'bg-white dark:bg-muted border-border hover:border-blue-300 dark:hover:border-blue-700'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              const newSet = new Set(idsToDelete);
+                              if (e.target.checked) {
+                                newSet.add(id);
+                              } else {
+                                newSet.delete(id);
+                              }
+                              setIdsToDelete(newSet);
+                            }}
+                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <code className="text-sm font-mono bg-muted px-2 py-1 rounded">{id}</code>
+                              <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded">
+                                {id.startsWith('9925:') ? 'VAT-based' : 'Company Number'}
+                              </span>
+                            </div>
+                            {participant && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {participant.name || 'N/A'} • {participant.countryCode || 'N/A'}
+                              </p>
+                            )}
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Single ID */}
+              {relatedIds.length === 1 && (
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <p className="text-sm font-semibold text-foreground mb-2">Peppol ID to Unregister</p>
+                  <code className="text-sm font-mono bg-muted px-2 py-1 rounded">{relatedIds[0]}</code>
+                </div>
+              )}
+
+              {/* Warning */}
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                <div className="flex items-start gap-2">
+                  <Icon name="AlertCircle" size={18} className="text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-red-900 dark:text-red-100">
+                    <p className="font-semibold mb-1">Warning: This will permanently:</p>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li>Unregister the selected Peppol ID(s) from the Peppol network</li>
+                      <li>Delete all Peppol-related data from the database</li>
+                      <li>Remove all associated invoices and settings</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-border flex items-center justify-end gap-3">
+              <Button
+                onClick={() => {
+                  setShowUnregisterModal(false);
+                  setSelectedParticipant(null);
+                  setRelatedIds([]);
+                  setIdsToDelete(new Set());
+                }}
+                variant="outline"
+                disabled={unregisteringId !== null}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={async () => {
+                  const selectedArray = Array.from(idsToDelete);
+                  if (selectedArray.length === 0) {
+                    setTestResult({
+                      success: false,
+                      message: 'No IDs selected',
+                      details: 'Please select at least one Peppol ID to unregister'
+                    });
+                    return;
+                  }
+                  await handleUnregisterParticipant(selectedArray);
+                }}
+                disabled={idsToDelete.size === 0 || unregisteringId !== null}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {unregisteringId ? (
+                  <>
+                    <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
+                    Unregistering...
+                  </>
+                ) : (
+                  <>
+                    <Icon name="Trash2" size={16} className="mr-2" />
+                    Unregister Selected ({idsToDelete.size})
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

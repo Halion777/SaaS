@@ -493,6 +493,8 @@ CREATE TABLE public.peppol_settings (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL UNIQUE,
   peppol_id character varying NOT NULL UNIQUE,
+  peppol_id_9925 character varying,
+  peppol_id_0208 character varying,
   business_name character varying NOT NULL,
   country_code character varying NOT NULL DEFAULT 'BE'::character varying,
   contact_person_name character varying,

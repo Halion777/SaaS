@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import { SUPPORT_EMAIL } from '../config/appConfig';
+import { SUPPORT_EMAIL, SUPER_ADMIN_EMAIL } from '../config/appConfig';
 
 /**
  * Admin User Service
@@ -91,9 +91,39 @@ class AdminUserService {
         return { data: null, error };
       }
 
-      // Special case: Support email
-      if (data.email === SUPPORT_EMAIL && !data.has_lifetime_access) {
+      // Special case: Super admin email - always has lifetime access and superadmin role
+      const emailLower = data.email.toLowerCase().trim();
+      if (emailLower === SUPER_ADMIN_EMAIL.toLowerCase()) {
+        // Ensure superadmin has lifetime access and superadmin role
+        await supabase
+          .from('users')
+          .update({ 
+            has_lifetime_access: true,
+            role: 'superadmin'
+          })
+          .eq('id', userId);
+        return { data: { has_lifetime_access: true }, error: null };
+      }
+      
+      // Special case: Support email - always has lifetime access
+      if (emailLower === SUPPORT_EMAIL.toLowerCase() && !data.has_lifetime_access) {
         // Grant lifetime access
+        await supabase
+          .from('users')
+          .update({ has_lifetime_access: true })
+          .eq('id', userId);
+        return { data: { has_lifetime_access: true }, error: null };
+      }
+      
+      // Super admin role always has lifetime access
+      const { data: userRoleData } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', userId)
+        .single();
+      
+      if (userRoleData?.role === 'superadmin' && !data.has_lifetime_access) {
+        // Grant lifetime access to superadmin
         await supabase
           .from('users')
           .update({ has_lifetime_access: true })

@@ -317,7 +317,7 @@ export const getAllPeppolIdentifiers = (vatNumber, countryCode = null) => {
     const vatIdentifier = generatePeppolIdentifier(normalizedVAT);
     identifiers.push(vatIdentifier);
   } catch (error) {
-    console.warn('Failed to generate VAT-based Peppol identifier:', error);
+    // Failed to generate VAT-based Peppol identifier
   }
   
   // Add Belgian company number if applicable
