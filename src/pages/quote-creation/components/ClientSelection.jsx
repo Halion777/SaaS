@@ -762,12 +762,12 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       // Auto-fill Peppol ID when VAT number is entered for professional clients
       if (field === 'regNumber' && clientType === 'professionnel') {
         if (value && value.trim()) {
-          const countryCode = prev.country || 'BE';
-          const peppolId = formatPeppolIdFromVAT(value, countryCode);
-          
-          if (peppolId) {
-            updated.peppolId = peppolId;
-            updated.enablePeppol = true; // Auto-enable Peppol when VAT is entered
+        const countryCode = prev.country || 'BE';
+        const peppolId = formatPeppolIdFromVAT(value, countryCode);
+        
+        if (peppolId) {
+          updated.peppolId = peppolId;
+          updated.enablePeppol = true; // Auto-enable Peppol when VAT is entered
           }
         } else {
           // Clear Peppol ID if VAT is cleared

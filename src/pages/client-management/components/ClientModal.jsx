@@ -166,9 +166,9 @@ const ClientModal = ({ client, onSave, onClose }) => {
             
             // Auto-fill Peppol ID when VAT number is valid
             const peppolId = formatPeppolIdFromVAT(vatNumber, countryCode);
-            if (peppolId) {
-              updated.peppolId = peppolId;
-              updated.enablePeppol = true; // Auto-enable Peppol when VAT is entered
+        if (peppolId) {
+          updated.peppolId = peppolId;
+          updated.enablePeppol = true; // Auto-enable Peppol when VAT is entered
             }
           }
         } else {
@@ -649,12 +649,12 @@ const ClientModal = ({ client, onSave, onClose }) => {
                     />
                     
                     <div className="space-y-2">
-                      <Input
-                        label={t('clientManagement.modal.vatNumber')}
-                        type="text"
-                        value={formData.regNumber}
-                        onChange={(e) => handleChange('regNumber', e.target.value)}
-                        placeholder={t('clientManagement.modal.vatNumberPlaceholder')}
+                    <Input
+                      label={t('clientManagement.modal.vatNumber')}
+                      type="text"
+                      value={formData.regNumber}
+                      onChange={(e) => handleChange('regNumber', e.target.value)}
+                      placeholder={t('clientManagement.modal.vatNumberPlaceholder')}
                         required
                         className={vatValidationError ? 'border-error' : ''}
                       />
