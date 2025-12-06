@@ -492,7 +492,13 @@ const generatePartyInfo = (party, isSupplier = true) => {
     
     // Validate MOD97-0208 checksum (PEPPOL-COMMON-R043 requirement)
     if (!validateMOD97_0208(formattedId)) {
-      // MOD97 validation failed - will fail at Peppol level
+      // MOD97 validation failed - suggest trying 9925 scheme instead
+      // Extract country code from party data or default to BE
+      const countryCode = (party.countryCode || 'BE').toUpperCase();
+      const suggestedId = `9925:${countryCode}${formattedId}`;
+      throw new Error(
+        `Failed to Send. Please try this formatted Peppol ID: ${suggestedId}`
+      );
     }
     
     endpointId = formattedId;
@@ -979,8 +985,13 @@ export class PeppolService {
       });
 
       if (response.error) {
-        // If 404, participant doesn't support the document type
+        // If 404, check if it's a webhook config error vs participant not found
         if (response.error.status === 404 || response.error.message?.includes('404')) {
+          // Webhook config errors are transient - don't block sending
+          if (response.error.message?.includes('webhook') || response.error.message?.includes('Failed to configure')) {
+            return { supported: false, supportedDocuments: [], error: 'Webhook configuration error (transient)' };
+          }
+          // Participant not found or doesn't support document type
           return { supported: false, supportedDocuments: [] };
         }
         throw new Error(response.error.message);
@@ -1261,14 +1272,19 @@ export class PeppolService {
         
         // Don't retry for non-transient errors
         const errorMessage = error.message || '';
+        // Webhook config errors (404) are transient and should be retried
+        const isWebhookError = errorMessage.includes('webhook') || errorMessage.includes('Failed to configure');
+        
         if (errorMessage.includes('not found') || 
-            errorMessage.includes('validation') ||
+            (errorMessage.includes('validation') && !isWebhookError) ||
             errorMessage.includes('receiver not found') ||
             errorMessage.includes('401') ||
             errorMessage.includes('Unauthorized') ||
-            errorMessage.includes('404')) {
+            (errorMessage.includes('404') && !isWebhookError)) {
           throw error;
         }
+        
+        // For webhook errors, continue retrying (don't throw immediately)
         
         // Wait before retry (exponential backoff)
         if (attempt < maxRetries) {
@@ -1348,12 +1364,32 @@ export class PeppolService {
       );
 
       if (!documentTypeCheck.supported) {
-        const supportedTypes = documentTypeCheck.supportedDocuments?.map(d => d.type || d.fullType).join(', ') || 'none';
-        throw new Error(
-          `Receiver ${receiverPeppolIdentifier} is registered on Peppol but does not support INVOICE document type. ` +
-          `Supported document types: ${supportedTypes || 'none'}. ` +
-          `Please contact the receiver to enable INVOICE support or use email delivery method.`
-        );
+        // If webhook error, don't block sending - let the actual send handle it
+        if (documentTypeCheck.error && documentTypeCheck.error.includes('webhook')) {
+          // Continue with sending - webhook errors are transient
+        } else {
+          // Format supported document types for display
+          let supportedTypesDisplay = 'none';
+          if (documentTypeCheck.supportedDocuments && documentTypeCheck.supportedDocuments.length > 0) {
+            const types = documentTypeCheck.supportedDocuments.map(doc => {
+              if (typeof doc === 'string') {
+                // Extract type from URN (e.g., "Invoice-2::Invoice" -> "INVOICE")
+                if (doc.includes('Invoice-2::Invoice')) return 'INVOICE';
+                if (doc.includes('CreditNote-2::CreditNote')) return 'CREDIT_NOTE';
+                if (doc.includes('ApplicationResponse')) return 'APPLICATION_RESPONSE';
+                return doc.split('::')[1] || doc;
+              }
+              return doc.type || doc.fullType || doc;
+            });
+            supportedTypesDisplay = types.join(', ');
+          }
+          
+          throw new Error(
+            `Receiver ${receiverPeppolIdentifier} is registered on Peppol but does not support INVOICE document type. ` +
+            `Supported document types: ${supportedTypesDisplay}. ` +
+            `Please contact the receiver to enable INVOICE support or use email delivery method.`
+          );
+        }
       }
 
       // Send with retry logic

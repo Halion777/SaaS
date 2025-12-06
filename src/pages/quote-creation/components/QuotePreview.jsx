@@ -441,6 +441,38 @@ const QuotePreview = ({
   const laborWord = lang.startsWith('en') ? 'Labor' : lang.startsWith('nl') ? 'Arbeid' : t('quoteCreation.quotePreview.labor', "Main d'œuvre");
   const materialWord = lang.startsWith('en') ? 'Material' : lang.startsWith('nl') ? 'Materiaal' : t('quoteCreation.quotePreview.material', 'Matériau');
 
+  // Helper function to format VAT number with country prefix
+  const formatVATWithCountry = (vatNumber, countryCode) => {
+    if (!vatNumber) return '';
+    
+    // Convert country code to ISO format if needed
+    let isoCountry = countryCode;
+    if (countryCode && countryCode.length > 2) {
+      const countryMap = {
+        'belgique': 'BE', 'belgium': 'BE', 'france': 'FR', 'nederland': 'NL',
+        'netherlands': 'NL', 'deutschland': 'DE', 'germany': 'DE'
+      };
+      const normalized = countryCode.trim().toLowerCase();
+      isoCountry = countryMap[normalized] || (countryCode.length === 2 ? countryCode.toUpperCase() : 'BE');
+    } else if (countryCode) {
+      isoCountry = countryCode.toUpperCase();
+    } else {
+      isoCountry = 'BE';
+    }
+    
+    // Clean VAT number (remove any existing country prefix)
+    let cleanVAT = vatNumber.replace(/^[A-Z]{2}/i, '').trim();
+    
+    // If VAT already has country prefix, return as is (uppercase)
+    if (/^[A-Z]{2}\d+$/i.test(vatNumber.trim())) {
+      return vatNumber.trim().toUpperCase();
+    }
+    
+    // Add country prefix
+    const countryPrefix = isoCountry === 'GR' ? 'EL' : isoCountry;
+    return `${countryPrefix}${cleanVAT}`;
+  };
+
   // Formatting helpers
   const numberLocale = lang.startsWith('en') ? 'en-GB' : lang.startsWith('nl') ? 'nl-NL' : 'fr-FR';
   const formatNumber = (value) => {
@@ -720,7 +752,10 @@ const QuotePreview = ({
                   {/* Show VAT for professional clients - similar to company section */}
                   {/* Handle both normalized (flat) and non-normalized (nested) client structures */}
                   {((selectedClient?.type === 'professionnel') || (selectedClient?.client_type === 'company') || (selectedClient?.client?.client_type === 'company') || (selectedClient?.client?.type === 'professionnel')) && (selectedClient?.regNumber || selectedClient?.vat_number || selectedClient?.client?.regNumber || selectedClient?.client?.vat_number) && (
-                    <p>{t('quoteCreation.quotePreview.vatLabel', 'VAT:')} {selectedClient?.regNumber || selectedClient?.vat_number || selectedClient?.client?.regNumber || selectedClient?.client?.vat_number}</p>
+                    <p>{t('quoteCreation.quotePreview.vatLabel', 'VAT:')} {formatVATWithCountry(
+                      selectedClient?.regNumber || selectedClient?.vat_number || selectedClient?.client?.regNumber || selectedClient?.client?.vat_number,
+                      selectedClient?.country || selectedClient?.client?.country || 'BE'
+                    )}</p>
                   )}
                 </div>
               </div>
