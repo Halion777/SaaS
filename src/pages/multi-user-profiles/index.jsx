@@ -41,7 +41,7 @@ const MultiUserProfilesPage = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(null); // Track which profile is uploading (profile ID)
   const [pinModal, setPinModal] = useState({
     isOpen: false,
     targetProfileId: null,
@@ -587,14 +587,15 @@ const MultiUserProfilesPage = () => {
 
   const handleAvatarUpload = async (profileId, file) => {
     try {
-      setUploadingAvatar(true);
+      setUploadingAvatar(profileId); // Set the specific profile ID that's uploading
       await uploadAndUpdateAvatar(profileId, file);
-      alert(t('multiUserProfiles.messages.avatarUpdated'));
+      // Refresh profiles after successful upload
+      await getCompanyProfiles();
     } catch (error) {
       console.error('Error uploading avatar:', error);
       alert(t('multiUserProfiles.messages.avatarUpdateError'));
     } finally {
-      setUploadingAvatar(false);
+      setUploadingAvatar(null); // Clear the uploading state
     }
   };
 
@@ -908,18 +909,18 @@ const MultiUserProfilesPage = () => {
                     )}
                   </div>
 
-                  {/* Avatar Upload for own profile */}
-                  {profile.id === currentProfile?.id && (
+                  {/* Avatar Upload - allow for own profile or if admin */}
+                  {(profile.id === currentProfile?.id || isAdmin()) && (
                     <div className="mt-4 pt-4 border-t border-border">
                       <label className="block text-sm font-medium text-foreground mb-3">
                         {t('multiUserProfiles.changeAvatar')}
                       </label>
                       <FileUpload
                         accept="image/*"
-                        maxSize={5 * 1024 * 1024} // 5MB
+                        maxSize={20 * 1024 * 1024} // 20MB
                         onFileSelect={(file) => handleAvatarUpload(profile.id, file)}
-                        disabled={uploadingAvatar}
-                        loading={uploadingAvatar}
+                        disabled={uploadingAvatar !== null} // Disable all when any profile is uploading
+                        loading={uploadingAvatar === profile.id} // Only show loader for this specific profile
                         label={t('multiUserProfiles.selectImage')}
                         description={t('multiUserProfiles.imageDescription')}
                         id={`avatar-upload-${profile.id}`}

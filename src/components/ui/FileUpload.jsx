@@ -74,13 +74,13 @@ const FileUpload = ({
         return fileType === type;
       });
       
-      // Check file size
-      const isValidSize = fileSize <= maxSize;
+      // Check file size (skip if maxSize is Infinity or not provided)
+      const isValidSize = maxSize === Infinity || maxSize === Number.MAX_SAFE_INTEGER || !maxSize ? true : fileSize <= maxSize;
       
       if (!isValidType) {
         console.warn(`File type not accepted: ${file.name}`);
       }
-      if (!isValidSize) {
+      if (!isValidSize && maxSize !== Infinity && maxSize !== Number.MAX_SAFE_INTEGER && maxSize) {
         console.warn(`File too large: ${file.name}`);
       }
       
