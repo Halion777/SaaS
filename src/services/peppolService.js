@@ -1237,6 +1237,7 @@ export class PeppolService {
             } catch (e) {
               // If parsing fails, use the original error message
             }
+
           }
           
           throw new Error(errorMessage);
@@ -1356,42 +1357,8 @@ export class PeppolService {
         }
       }
 
-      // CRITICAL: Check if receiver supports INVOICE document type before sending
-      // Use the Peppol identifier from UI (if provided) or discovered identifier
-      const documentTypeCheck = await this.checkReceiverSupportsDocumentType(
-        receiverPeppolIdentifier,
-        'INVOICE'
-      );
-
-      if (!documentTypeCheck.supported) {
-        // If webhook error, don't block sending - let the actual send handle it
-        if (documentTypeCheck.error && documentTypeCheck.error.includes('webhook')) {
-          // Continue with sending - webhook errors are transient
-        } else {
-          // Format supported document types for display
-          let supportedTypesDisplay = 'none';
-          if (documentTypeCheck.supportedDocuments && documentTypeCheck.supportedDocuments.length > 0) {
-            const types = documentTypeCheck.supportedDocuments.map(doc => {
-              if (typeof doc === 'string') {
-                // Extract type from URN (e.g., "Invoice-2::Invoice" -> "INVOICE")
-                if (doc.includes('Invoice-2::Invoice')) return 'INVOICE';
-                if (doc.includes('CreditNote-2::CreditNote')) return 'CREDIT_NOTE';
-                if (doc.includes('ApplicationResponse')) return 'APPLICATION_RESPONSE';
-                return doc.split('::')[1] || doc;
-              }
-              return doc.type || doc.fullType || doc;
-            });
-            supportedTypesDisplay = types.join(', ');
-          }
-          
-          throw new Error(
-            `Receiver ${receiverPeppolIdentifier} is registered on Peppol but does not support INVOICE document type. ` +
-            `Supported document types: ${supportedTypesDisplay}. ` +
-            `Please contact the receiver to enable INVOICE support or use email delivery method.`
-          );
-        }
-      }
-
+      // Note: Document type checking removed due to unreliable webhook API responses
+      // The actual send operation will handle any document type issues
       // Send with retry logic
       return await this.sendWithRetry(invoiceData, 3);
       

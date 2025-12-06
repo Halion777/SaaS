@@ -1099,17 +1099,18 @@ const Peppol = () => {
 
       {/* Unregister Confirmation Modal */}
       {showUnregisterModal && selectedParticipant && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-card border border-border rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-border">
+            {/* Header */}
+            <div className="p-6 border-b border-border bg-gradient-to-r from-destructive/5 to-destructive/10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-red-100 rounded-lg">
-                    <Icon name="AlertTriangle" size={24} className="text-red-600" />
+                  <div className="p-2.5 bg-destructive/10 rounded-lg border border-destructive/20">
+                    <Icon name="AlertTriangle" size={24} className="text-destructive" />
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-foreground">Unregister Peppol Participant</h3>
-                    <p className="text-sm text-muted-foreground mt-1">This action cannot be undone</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">This action cannot be undone</p>
                   </div>
                 </div>
                 <button
@@ -1119,7 +1120,7 @@ const Peppol = () => {
                     setRelatedIds([]);
                     setIdsToDelete(new Set());
                   }}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 >
                   <Icon name="X" size={20} />
                 </button>
@@ -1128,38 +1129,49 @@ const Peppol = () => {
 
             <div className="p-6 space-y-4">
               {/* Participant Info */}
-              <div className="bg-muted/50 rounded-lg p-4">
-                <p className="text-sm font-semibold text-foreground mb-2">Participant Information</p>
-                <div className="space-y-1 text-sm">
-                  <p><span className="text-muted-foreground">Name:</span> <span className="font-medium">{selectedParticipant.name || 'N/A'}</span></p>
-                  <p><span className="text-muted-foreground">Country:</span> <span className="font-medium">{selectedParticipant.countryCode || 'N/A'}</span></p>
+              <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                <div className="flex items-center gap-2 mb-3">
+                  <Icon name="User" size={16} className="text-primary" />
+                  <p className="text-sm font-semibold text-foreground">Participant Information</p>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground min-w-[80px]">Name:</span>
+                    <span className="font-medium text-foreground">{selectedParticipant.name || 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground min-w-[80px]">Country:</span>
+                    <span className="font-medium text-foreground">{selectedParticipant.countryCode || 'N/A'}</span>
+                  </div>
                 </div>
               </div>
 
               {/* Related IDs for Belgium */}
               {relatedIds.length > 1 && (
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                  <div className="flex items-start gap-2 mb-3">
-                    <Icon name="Info" size={18} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">Belgian Peppol IDs Detected</p>
-                      <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="p-1.5 bg-primary/10 rounded-lg border border-primary/20 flex-shrink-0">
+                      <Icon name="Info" size={18} className="text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-foreground mb-1">Belgian Peppol IDs Detected</p>
+                      <p className="text-xs text-muted-foreground">
                         This participant has multiple Peppol IDs registered. Select which ones you want to unregister.
                       </p>
                     </div>
                   </div>
                   
-                  <div className="space-y-2 mt-3">
+                  <div className="space-y-2">
                     {relatedIds.map((id) => {
                       const participant = participants.find(p => (p.peppolIdentifier || p.id) === id);
                       const isChecked = idsToDelete.has(id);
                       return (
                         <label
                           key={id}
-                          className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${
+                          className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
                             isChecked
-                              ? 'bg-blue-100 dark:bg-blue-900/40 border-blue-400 dark:border-blue-600'
-                              : 'bg-white dark:bg-muted border-border hover:border-blue-300 dark:hover:border-blue-700'
+                              ? 'bg-primary/10 border-primary/40 shadow-sm'
+                              : 'bg-card border-border hover:border-primary/30 hover:bg-muted/50'
                           }`}
                         >
                           <input
@@ -1174,17 +1186,22 @@ const Peppol = () => {
                               }
                               setIdsToDelete(newSet);
                             }}
-                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                            className="w-4 h-4 text-primary rounded focus:ring-2 focus:ring-primary focus:ring-offset-2 cursor-pointer"
                           />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <code className="text-sm font-mono bg-muted px-2 py-1 rounded">{id}</code>
-                              <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <code className="text-sm font-mono bg-muted px-2.5 py-1 rounded border border-border">{id}</code>
+                              <span className={`text-xs px-2 py-1 rounded font-medium ${
+                                id.startsWith('9925:') 
+                                  ? 'bg-accent/10 text-accent border border-accent/20' 
+                                  : 'bg-secondary/10 text-secondary border border-secondary/20'
+                              }`}>
                                 {id.startsWith('9925:') ? 'VAT-based' : 'Company Number'}
                               </span>
                             </div>
                             {participant && (
-                              <p className="text-xs text-muted-foreground mt-1">
+                              <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                                <Icon name="Building" size={12} />
                                 {participant.name || 'N/A'} • {participant.countryCode || 'N/A'}
                               </p>
                             )}
@@ -1198,29 +1215,44 @@ const Peppol = () => {
 
               {/* Single ID */}
               {relatedIds.length === 1 && (
-                <div className="bg-muted/50 rounded-lg p-4">
-                  <p className="text-sm font-semibold text-foreground mb-2">Peppol ID to Unregister</p>
-                  <code className="text-sm font-mono bg-muted px-2 py-1 rounded">{relatedIds[0]}</code>
+                <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Icon name="Hash" size={16} className="text-primary" />
+                    <p className="text-sm font-semibold text-foreground">Peppol ID to Unregister</p>
+                  </div>
+                  <code className="text-sm font-mono bg-muted px-2.5 py-1.5 rounded border border-border inline-block">{relatedIds[0]}</code>
                 </div>
               )}
 
               {/* Warning */}
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                <div className="flex items-start gap-2">
-                  <Icon name="AlertCircle" size={18} className="text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm text-red-900 dark:text-red-100">
-                    <p className="font-semibold mb-1">Warning: This will permanently:</p>
-                    <ul className="list-disc list-inside space-y-1 text-xs">
-                      <li>Unregister the selected Peppol ID(s) from the Peppol network</li>
-                      <li>Delete all Peppol-related data from the database</li>
-                      <li>Remove all associated invoices and settings</li>
+              <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-1.5 bg-destructive/10 rounded-lg border border-destructive/20 flex-shrink-0">
+                    <Icon name="AlertCircle" size={18} className="text-destructive" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-foreground mb-2">Warning: This will permanently:</p>
+                    <ul className="space-y-1.5 text-xs text-muted-foreground">
+                      <li className="flex items-start gap-2">
+                        <Icon name="X" size={12} className="text-destructive mt-0.5 flex-shrink-0" />
+                        <span>Unregister the selected Peppol ID(s) from the Peppol network</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Icon name="X" size={12} className="text-destructive mt-0.5 flex-shrink-0" />
+                        <span>Delete all Peppol-related data from the database</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Icon name="X" size={12} className="text-destructive mt-0.5 flex-shrink-0" />
+                        <span>Remove all associated invoices and settings</span>
+                      </li>
                     </ul>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="p-6 border-t border-border flex items-center justify-end gap-3">
+            {/* Footer */}
+            <div className="p-6 border-t border-border bg-muted/30 flex items-center justify-end gap-3">
               <Button
                 onClick={() => {
                   setShowUnregisterModal(false);
@@ -1230,6 +1262,7 @@ const Peppol = () => {
                 }}
                 variant="outline"
                 disabled={unregisteringId !== null}
+                size="lg"
               >
                 Cancel
               </Button>
@@ -1247,7 +1280,8 @@ const Peppol = () => {
                   await handleUnregisterParticipant(selectedArray);
                 }}
                 disabled={idsToDelete.size === 0 || unregisteringId !== null}
-                className="bg-red-600 hover:bg-red-700 text-white"
+                variant="destructive"
+                size="lg"
               >
                 {unregisteringId ? (
                   <>
