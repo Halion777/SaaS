@@ -298,24 +298,44 @@ const formatVATNumber = (vatNumber, countryCode) => {
  */
 const validateMOD97_0208 = (enterpriseNumber) => {
   if (!enterpriseNumber || typeof enterpriseNumber !== 'string') {
+    console.warn('[Peppol] MOD97 validation failed: enterpriseNumber is not a string', { enterpriseNumber, type: typeof enterpriseNumber });
     return false;
   }
   
   // Must be exactly 10 digits
   const digitsOnly = enterpriseNumber.replace(/\D/g, '');
   if (digitsOnly.length !== 10) {
+    console.warn('[Peppol] MOD97 validation failed: not exactly 10 digits', { 
+      original: enterpriseNumber, 
+      digitsOnly, 
+      length: digitsOnly.length 
+    });
     return false;
   }
   
   // MOD97-0208 validation: The 10-digit number must be divisible by 97
-  // The last 2 digits are the check digits
-  const baseNumber = parseInt(digitsOnly.substring(0, 8), 10); // First 8 digits
-  const checkDigits = parseInt(digitsOnly.substring(8, 10), 10); // Last 2 digits
-  
-  // Calculate: baseNumber % 97 should equal checkDigits
-  // But actually, the full 10-digit number should be divisible by 97
+  // The full 10-digit number must be divisible by 97
   const fullNumber = parseInt(digitsOnly, 10);
-  return fullNumber % 97 === 0;
+  const remainder = fullNumber % 97;
+  const isValid = remainder === 0;
+  
+  if (!isValid) {
+    console.warn('[Peppol] MOD97 validation failed: not divisible by 97', { 
+      enterpriseNumber: digitsOnly, 
+      fullNumber, 
+      remainder,
+      expected: 0,
+      calculation: `${fullNumber} % 97 = ${remainder}`
+    });
+  } else {
+    console.log('[Peppol] MOD97 validation passed:', { 
+      enterpriseNumber: digitsOnly, 
+      fullNumber,
+      calculation: `${fullNumber} % 97 = ${remainder}`
+    });
+  }
+  
+  return isValid;
 };
 
 /**
@@ -478,9 +498,11 @@ const generatePartyInfo = (party, isSupplier = true) => {
   // Expected format: EndpointID = "0630675508" (digits only, no country prefix)
   // MUST pass MOD97-0208 checksum validation per PEPPOL-COMMON-R043
   // PEPPOL-COMMON-R043: matches(normalize-space(), '^[0-9]{10}$') and u:mod97-0208(normalize-space())
+  // CRITICAL: The value must be exactly 10 digits with NO whitespace (leading, trailing, or internal)
   if (endpointScheme === '0208') {
-    // Remove all non-digit characters and trim whitespace
-    const digitsOnly = endpointId.replace(/\D/g, '').trim();
+    // Remove ALL non-digit characters (including whitespace, newlines, etc.)
+    // Use replace with global flag to remove all non-digits
+    const digitsOnly = endpointId.replace(/[^\d]/g, '');
     
     // Ensure exactly 10 digits (pad with zeros if needed, truncate if too long)
     let formattedId = digitsOnly;
@@ -488,6 +510,13 @@ const generatePartyInfo = (party, isSupplier = true) => {
       formattedId = formattedId.padStart(10, '0');
     } else if (formattedId.length > 10) {
       formattedId = formattedId.substring(0, 10);
+    }
+    
+    // Final validation: Must be exactly 10 digits (no whitespace, no special chars)
+    if (!/^\d{10}$/.test(formattedId)) {
+      throw new Error(
+        `Invalid Belgian enterprise number format. Expected exactly 10 digits, got: ${formattedId}`
+      );
     }
     
     // Validate MOD97-0208 checksum (PEPPOL-COMMON-R043 requirement)
@@ -501,6 +530,7 @@ const generatePartyInfo = (party, isSupplier = true) => {
       );
     }
     
+    // Assign the clean, validated ID (guaranteed to be exactly 10 digits, no whitespace)
     endpointId = formattedId;
   }
 
@@ -551,10 +581,49 @@ const generatePartyInfo = (party, isSupplier = true) => {
   const countryCode = normalizeCountryCode(party.countryCode);
   
  
+  // For 0208 scheme, ensure EndpointID has absolutely no whitespace
+  // PEPPOL-COMMON-R043 requires: matches(normalize-space(), '^[0-9]{10}$')
+  // This means the value must be exactly 10 digits with no whitespace
+  let finalEndpointId = endpointId;
+  if (endpointScheme === '0208') {
+    // Remove any potential whitespace (should already be clean, but double-check)
+    finalEndpointId = endpointId.replace(/[^\d]/g, '');
+    // Ensure exactly 10 digits
+    if (finalEndpointId.length !== 10) {
+      console.error('[Peppol] Invalid 0208 EndpointID length:', {
+        original: endpointId,
+        cleaned: finalEndpointId,
+        length: finalEndpointId.length,
+        partyType: isSupplier ? 'sender' : 'receiver'
+      });
+      throw new Error(`Invalid 0208 EndpointID: must be exactly 10 digits, got ${finalEndpointId.length} digits`);
+    }
+    // Final validation: Must match regex ^[0-9]{10}$ (exactly 10 digits, no whitespace)
+    if (!/^\d{10}$/.test(finalEndpointId)) {
+      console.error('[Peppol] Invalid 0208 EndpointID format:', {
+        original: endpointId,
+        cleaned: finalEndpointId,
+        partyType: isSupplier ? 'sender' : 'receiver'
+      });
+      throw new Error(`Invalid 0208 EndpointID format: must be exactly 10 digits (no whitespace), got: "${finalEndpointId}"`);
+    }
+    // Log for debugging
+    console.log('[Peppol] 0208 EndpointID formatted:', {
+      original: endpointId,
+      final: finalEndpointId,
+      length: finalEndpointId.length,
+      partyType: isSupplier ? 'sender' : 'receiver',
+      mod97Valid: validateMOD97_0208(finalEndpointId)
+    });
+  } else {
+    // For other schemes, just trim whitespace
+    finalEndpointId = endpointId.trim();
+  }
+  
   return `
     <cac:${partyType}>
       <cac:Party>
-        <cbc:EndpointID schemeID="${endpointScheme}">${xmlEscape(endpointId.trim())}</cbc:EndpointID>
+        <cbc:EndpointID schemeID="${endpointScheme}">${xmlEscape(finalEndpointId)}</cbc:EndpointID>
         <cac:PartyName>
           <cbc:Name>${xmlEscape(party.name)}</cbc:Name>
         </cac:PartyName>

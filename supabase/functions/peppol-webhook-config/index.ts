@@ -87,6 +87,56 @@ serve(async (req) => {
       // Send UBL document (POST with form-data)
       url = `${endpoint}/api/v1/peppol/outbound-ubl-documents`;
       
+      // Log XML document preview and extract EndpointIDs for debugging
+      console.log('[Edge Function] XML document preview (first 500 chars):', xmlDocument.substring(0, 500));
+      
+      // Extract sender and receiver Peppol IDs from XML for logging
+      try {
+        // Extract sender EndpointID (AccountingSupplierParty)
+        const senderMatch = xmlDocument.match(/<cac:AccountingSupplierParty[^>]*>[\s\S]*?<cbc:EndpointID\s+schemeID="([^"]+)"[^>]*>([^<]+)<\/cbc:EndpointID>/i);
+        if (senderMatch) {
+          const senderScheme = senderMatch[1];
+          const senderId = senderMatch[2].trim();
+          console.log(`[Edge Function] Sender Peppol ID: ${senderScheme}:${senderId}`);
+          console.log(`[Edge Function] Sender EndpointID value: "${senderId}" (length: ${senderId.length}, is 0208: ${senderScheme === '0208'})`);
+          if (senderScheme === '0208') {
+            // Validate 0208 format
+            const is10Digits = /^\d{10}$/.test(senderId);
+            const mod97Valid = is10Digits && (parseInt(senderId, 10) % 97 === 0);
+            console.log(`[Edge Function] Sender 0208 validation: 10 digits=${is10Digits}, MOD97=${mod97Valid}`);
+          }
+        }
+        
+        // Extract receiver EndpointID (AccountingCustomerParty)
+        const receiverMatch = xmlDocument.match(/<cac:AccountingCustomerParty[^>]*>[\s\S]*?<cbc:EndpointID\s+schemeID="([^"]+)"[^>]*>([^<]+)<\/cbc:EndpointID>/i);
+        if (receiverMatch) {
+          const receiverScheme = receiverMatch[1];
+          const receiverId = receiverMatch[2].trim();
+          console.log(`[Edge Function] Receiver Peppol ID: ${receiverScheme}:${receiverId}`);
+          console.log(`[Edge Function] Receiver EndpointID value: "${receiverId}" (length: ${receiverId.length}, is 0208: ${receiverScheme === '0208'})`);
+          if (receiverScheme === '0208') {
+            // Validate 0208 format
+            const is10Digits = /^\d{10}$/.test(receiverId);
+            const mod97Valid = is10Digits && (parseInt(receiverId, 10) % 97 === 0);
+            console.log(`[Edge Function] Receiver 0208 validation: 10 digits=${is10Digits}, MOD97=${mod97Valid}`);
+            if (!is10Digits || !mod97Valid) {
+              console.error(`[Edge Function] ⚠️ Receiver 0208 EndpointID validation failed!`, {
+                value: receiverId,
+                length: receiverId.length,
+                hasWhitespace: /\s/.test(receiverId),
+                is10Digits,
+                mod97Valid,
+                remainder: is10Digits ? (parseInt(receiverId, 10) % 97) : 'N/A'
+              });
+            }
+          }
+        }
+      } catch (extractError) {
+        console.warn('[Edge Function] Could not extract EndpointIDs from XML:', extractError);
+      }
+      
+      console.log('[Edge Function] Sending UBL document to:', url);
+      
       fetchOptions.method = 'POST';
       const formData = new FormData();
       
@@ -140,8 +190,17 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       
+      // Enhanced error logging for debugging
+      console.error('[Edge Function] Digiteal API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorText: errorText.substring(0, 2000), // First 2000 chars
+        action: action || 'unknown'
+      });
+      
       // Try to parse the error details from Digiteal
       let errorMessage = 'Failed to configure/fetch webhook';
+      let parsedDetails = {};
       try {
         const errorJson = JSON.parse(errorText);
         if (errorJson.message) {
@@ -149,15 +208,39 @@ serve(async (req) => {
         } else if (errorJson.error) {
           errorMessage = errorJson.error;
         }
+        parsedDetails = errorJson;
       } catch {
         errorMessage = errorText || errorMessage;
+        parsedDetails = { raw: errorText };
       }
+      
+      // Check if it's a PEPPOL-COMMON-R043 error (0208 validation)
+      const isR043Error = errorMessage.includes('PEPPOL-COMMON-R043') || 
+                         errorMessage.includes('Belgian enterprise number') ||
+                         errorMessage.includes('mod97-0208');
+      
+      if (isR043Error && action === 'send-ubl-document') {
+        console.error('[Edge Function] ⚠️ PEPPOL-COMMON-R043 error detected - 0208 EndpointID validation failed');
+        console.error('[Edge Function] This usually means the 0208 EndpointID is not exactly 10 digits or fails MOD97 validation');
+      }
+      
+      // Check if it's a sender or receiver issue based on error message
+      const isSenderIssue = errorMessage.toLowerCase().includes('sender') || 
+                           errorMessage.toLowerCase().includes('supplier') ||
+                           errorMessage.toLowerCase().includes('accounting supplier');
+      const isReceiverIssue = errorMessage.toLowerCase().includes('receiver') || 
+                             errorMessage.toLowerCase().includes('recipient') ||
+                             errorMessage.toLowerCase().includes('customer') ||
+                             errorMessage.toLowerCase().includes('accounting customer');
       
       return new Response(
         JSON.stringify({
           error: errorMessage,
           details: errorText,
           status: response.status,
+          isSenderIssue,
+          isReceiverIssue,
+          parsedDetails
         }),
         {
           status: response.status,
