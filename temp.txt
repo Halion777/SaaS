@@ -1,0 +1,13 @@
+[Webhook] Found user for receiver Peppol ID: { receiverId: "9925:be1001464622", matchedPeppolId: "9925:be1001464622", userId: "efb9aa18-ac6b-4728-bbc6-90fd1e8ea048", eventType: "PEPPOL_TRANSPORT_ACK_RECEIVED" }
+[Peppol Webhook] Event Type: PEPPOL_TRANSPORT_ACK_RECEIVED
+[Peppol Webhook] Has UBL XML: true
+[Peppol Webhook] Normalized payload: { eventType: "PEPPOL_TRANSPORT_ACK_RECEIVED", receiverPeppolId: "9925:be1001464622", hasUblXml: true, messageId: "N/A", ublXmlLength: 17105 }
+[Peppol Webhook] Receiver Peppol ID: 9925:be1001464622
+[Peppol Webhook] Failed to extract message ID from XML: ReferenceError: DOMParser is not defined at Server.<anonymous> (file:///var/tmp/sb-compile-edge-runtime/source/index.ts:91:24) at eventLoopTick (ext:core/01_core.js:175:7) at async Server.#respond (https://deno.land/std@0.168.0/http/server.ts:221:18)
+Listening on http://localhost:9999/
+booted (time: 31ms)
+[Webhook] Found user for receiver Peppol ID: { receiverId: "9925:be0545744269", matchedPeppolId: "9925:be0545744269", userId: "0549d79e-9d7c-49f3-af9b-e7aa3a6196e7", eventType: "PEPPOL_INVOICE_RECEIVED" }
+[Peppol Webhook] Has UBL XML: true
+[Peppol Webhook] Normalized payload: { eventType: "PEPPOL_INVOICE_RECEIVED", receiverPeppolId: "9925:be0545744269", hasUblXml: true, messageId: "N/A", ublXmlLength: 7896 }
+[Peppol Webhook] Receiver Peppol ID: 9925:be0545744269
+[Peppol Webhook] Event Type: PEPPOL_INVOICE_RECEIVED

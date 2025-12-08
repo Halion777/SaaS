@@ -34,6 +34,17 @@ const PEPPOL_EVENT_TYPES = {
   AUTOPAY_CONFIGURATION_ACTIVATED: 'AUTOPAY_CONFIGURATION_ACTIVATED'
 };
 
+// Digiteal webhook payload structure (actual format)
+interface DigitealWebhookPayload {
+  recipientPeppolIdentifier: string;
+  changeType: string;
+  peppolFileContent: string; // Base64 encoded UBL XML
+  integratorVAT?: string;
+  executionTimestamp?: string;
+  [key: string]: any;
+}
+
+// Internal normalized payload structure
 interface WebhookPayload {
   eventType: string;
   timestamp: string;
@@ -86,8 +97,91 @@ serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Parse webhook payload
-    const payload: WebhookPayload = await req.json();
+    // Parse webhook payload (Digiteal format)
+    const digitealPayload: DigitealWebhookPayload = await req.json();
+    
+    // Normalize Digiteal payload to internal format
+    // Map changeType to eventType
+    const changeTypeToEventType: { [key: string]: string } = {
+      'INVOICE_RECEIVED': PEPPOL_EVENT_TYPES.INVOICE_RECEIVED,
+      'CREDIT_NOTE_RECEIVED': PEPPOL_EVENT_TYPES.CREDIT_NOTE_RECEIVED,
+      'SELF_BILLING_INVOICE_RECEIVED': PEPPOL_EVENT_TYPES.SELF_BILLING_INVOICE_RECEIVED,
+      'SELF_BILLING_CREDIT_NOTE_RECEIVED': PEPPOL_EVENT_TYPES.SELF_BILLING_CREDIT_NOTE_RECEIVED,
+      'TRANSPORT_ACK_RECEIVED': PEPPOL_EVENT_TYPES.TRANSPORT_ACK_RECEIVED,
+      'MLR_RECEIVED': PEPPOL_EVENT_TYPES.MLR_RECEIVED,
+      'SEND_PROCESSING_OUTCOME': PEPPOL_EVENT_TYPES.SEND_PROCESSING_OUTCOME,
+      'INVOICE_RESPONSE_RECEIVED': PEPPOL_EVENT_TYPES.INVOICE_RESPONSE_RECEIVED,
+      'FUTURE_VALIDATION_FAILED': PEPPOL_EVENT_TYPES.FUTURE_VALIDATION_FAILED,
+      'AUTOPAY_CONFIGURATION_ACTIVATED': PEPPOL_EVENT_TYPES.AUTOPAY_CONFIGURATION_ACTIVATED
+    };
+    
+    const eventType = changeTypeToEventType[digitealPayload.changeType] || digitealPayload.changeType;
+    
+    // Decode base64 peppolFileContent to get UBL XML
+    let ublXml = '';
+    if (digitealPayload.peppolFileContent) {
+      try {
+        ublXml = atob(digitealPayload.peppolFileContent);
+      } catch (decodeError) {
+        console.error('[Peppol Webhook] Failed to decode base64 peppolFileContent:', decodeError);
+      }
+    }
+    
+    // Extract message ID from XML for acknowledgment events
+    let messageId = '';
+    if (ublXml && (eventType === PEPPOL_EVENT_TYPES.TRANSPORT_ACK_RECEIVED || 
+                   eventType === PEPPOL_EVENT_TYPES.MLR_RECEIVED ||
+                   eventType === PEPPOL_EVENT_TYPES.SEND_PROCESSING_OUTCOME)) {
+      try {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(ublXml, 'text/xml');
+        
+        // Check for parsing errors
+        const parserError = xmlDoc.querySelector('parsererror');
+        if (parserError) {
+          console.error('[Peppol Webhook] XML parsing error:', parserError.textContent);
+        } else {
+          // Try to find UAMessageIdentifier (for transport acks) or MessageIdentifier
+          const uaMessageId = xmlDoc.getElementsByTagName('UAMessageIdentifier')[0];
+          if (uaMessageId && uaMessageId.textContent) {
+            messageId = uaMessageId.textContent.trim();
+            console.log('[Peppol Webhook] Extracted UAMessageIdentifier from XML:', messageId);
+          } else {
+            const messageIdEl = xmlDoc.getElementsByTagName('MessageIdentifier')[0];
+            if (messageIdEl && messageIdEl.textContent) {
+              messageId = messageIdEl.textContent.trim();
+              console.log('[Peppol Webhook] Extracted MessageIdentifier from XML:', messageId);
+            } else {
+              console.warn('[Peppol Webhook] Could not find UAMessageIdentifier or MessageIdentifier in XML');
+            }
+          }
+        }
+      } catch (parseError) {
+        console.error('[Peppol Webhook] Failed to extract message ID from XML:', parseError);
+      }
+    }
+    
+    // Normalize to internal payload format
+    const payload: WebhookPayload = {
+      eventType: eventType,
+      timestamp: digitealPayload.executionTimestamp || new Date().toISOString(),
+      data: {
+        receiverPeppolId: digitealPayload.recipientPeppolIdentifier,
+        peppolIdentifier: digitealPayload.recipientPeppolIdentifier,
+        ublXml: ublXml,
+        messageId: messageId || undefined,
+        // Additional fields will be extracted from UBL XML if needed
+      }
+    };
+    
+    // Log for debugging
+    console.log('[Peppol Webhook] Normalized payload:', {
+      eventType: payload.eventType,
+      receiverPeppolId: payload.data.receiverPeppolId,
+      hasUblXml: !!payload.data.ublXml,
+      messageId: payload.data.messageId || 'N/A',
+      ublXmlLength: payload.data.ublXml?.length || 0
+    });
 
     // Validate webhook authentication (basic validation)
     const authHeader = req.headers.get('authorization');
@@ -112,7 +206,39 @@ serve(async (req: Request) => {
     }
 
     // Determine user based on Peppol identifier
-    const receiverPeppolId = payload.data?.receiverPeppolId || payload.data?.peppolIdentifier;
+    // Get receiver Peppol ID from normalized payload (from recipientPeppolIdentifier)
+    let receiverPeppolId = payload.data?.receiverPeppolId || payload.data?.peppolIdentifier;
+    
+    // If not in payload, try to extract from UBL XML for inbound invoices
+    if (!receiverPeppolId && payload.data?.ublXml) {
+      try {
+        // Parse UBL XML to extract receiver (customer) Peppol ID
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(payload.data.ublXml, 'text/xml');
+        
+        const accountingCustomerParty = xmlDoc.getElementsByTagName('AccountingCustomerParty')[0];
+        if (accountingCustomerParty) {
+          const party = accountingCustomerParty.getElementsByTagName('Party')[0];
+          if (party) {
+            const endpointId = party.getElementsByTagName('EndpointID')[0];
+            if (endpointId) {
+              const schemeId = endpointId.getAttribute('schemeID') || '';
+              const idValue = endpointId.textContent?.trim() || '';
+              if (schemeId && idValue) {
+                receiverPeppolId = `${schemeId}:${idValue}`;
+              }
+            }
+          }
+        }
+      } catch (parseError) {
+        // If XML parsing fails, continue with other methods
+      }
+    }
+    
+    // Log for debugging
+    console.log('[Peppol Webhook] Receiver Peppol ID:', receiverPeppolId || 'NOT FOUND');
+    console.log('[Peppol Webhook] Event Type:', eventType);
+    console.log('[Peppol Webhook] Has UBL XML:', !!ublXml);
     
     if (!receiverPeppolId) {
       return new Response(
@@ -121,19 +247,136 @@ serve(async (req: Request) => {
       );
     }
 
-    // Find user by Peppol ID
-    const { data: peppolSettings, error: settingsError } = await supabase
+    // Parse Peppol ID to extract scheme and VAT number for flexible matching
+    // Format: "SCHEME:VATNUMBER" (e.g., "9925:BE0545744269" or "0208:1000000063")
+    const parsePeppolId = (peppolId: string) => {
+      const parts = peppolId.split(':');
+      if (parts.length === 2) {
+        const scheme = parts[0].trim();
+        const vatNumber = parts[1].trim();
+        // Normalize VAT number to uppercase for comparison (remove country prefix if present, then add it back)
+        let normalizedVat = vatNumber.toUpperCase();
+        // If VAT doesn't start with country code, try to infer from scheme
+        if (!normalizedVat.match(/^[A-Z]{2}/)) {
+          // For Belgian schemes, add BE prefix if missing
+          if (scheme === '0208' || scheme === '9925') {
+            normalizedVat = 'BE' + normalizedVat;
+          }
+        }
+        return { scheme, vatNumber: normalizedVat, originalVat: vatNumber };
+      }
+      return null;
+    };
+
+    const parsedId = parsePeppolId(receiverPeppolId);
+    
+    if (!parsedId) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid Peppol ID format. Expected format: SCHEME:VATNUMBER' }), 
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Find user by matching scheme and VAT number (flexible matching)
+    // Check multiple fields: peppol_id, peppol_id_9925, peppol_id_0208
+    // Match based on scheme + normalized VAT number
+    let peppolSettings = null;
+    let settingsError = null;
+
+    // First, try exact match (case-insensitive)
+    const normalizedReceiverIdLower = receiverPeppolId.toLowerCase();
+    const normalizedReceiverIdUpper = receiverPeppolId.toUpperCase();
+    
+    const { data: exactMatch, error: exactError } = await supabase
       .from('peppol_settings')
-      .select('user_id, peppol_id')
-      .eq('peppol_id', receiverPeppolId)
-      .single();
+      .select('user_id, peppol_id, peppol_id_9925, peppol_id_0208')
+      .or(`peppol_id.eq.${normalizedReceiverIdLower},peppol_id.eq.${normalizedReceiverIdUpper},peppol_id.eq.${receiverPeppolId}`)
+      .maybeSingle();
+
+    if (exactMatch) {
+      peppolSettings = exactMatch;
+    } else {
+      // If no exact match, try matching by scheme + VAT number
+      // Get all peppol_settings and match manually
+      const { data: allSettings, error: allError } = await supabase
+        .from('peppol_settings')
+        .select('user_id, peppol_id, peppol_id_9925, peppol_id_0208');
+
+      if (!allError && allSettings) {
+        // Find matching setting by comparing scheme and VAT number
+        for (const setting of allSettings) {
+          // Check primary peppol_id
+          if (setting.peppol_id) {
+            const settingParsed = parsePeppolId(setting.peppol_id);
+            if (settingParsed && settingParsed.scheme === parsedId.scheme) {
+              // Compare VAT numbers (case-insensitive, with or without country prefix)
+              const settingVat = settingParsed.vatNumber.toUpperCase().replace(/^BE/, '');
+              const incomingVat = parsedId.vatNumber.toUpperCase().replace(/^BE/, '');
+              if (settingVat === incomingVat) {
+                peppolSettings = setting;
+                break;
+              }
+            }
+          }
+          
+          // Check peppol_id_9925 (for Belgian VAT scheme)
+          if (parsedId.scheme === '9925' && setting.peppol_id_9925) {
+            const settingParsed = parsePeppolId(setting.peppol_id_9925);
+            if (settingParsed) {
+              const settingVat = settingParsed.vatNumber.toUpperCase().replace(/^BE/, '');
+              const incomingVat = parsedId.vatNumber.toUpperCase().replace(/^BE/, '');
+              if (settingVat === incomingVat) {
+                peppolSettings = setting;
+                break;
+              }
+            }
+          }
+          
+          // Check peppol_id_0208 (for Belgian enterprise number)
+          if (parsedId.scheme === '0208' && setting.peppol_id_0208) {
+            const settingParsed = parsePeppolId(setting.peppol_id_0208);
+            if (settingParsed) {
+              const settingVat = settingParsed.vatNumber.toUpperCase().replace(/^BE/, '');
+              const incomingVat = parsedId.vatNumber.toUpperCase().replace(/^BE/, '');
+              if (settingVat === incomingVat) {
+                peppolSettings = setting;
+                break;
+              }
+            }
+          }
+        }
+      } else {
+        settingsError = allError;
+      }
+    }
 
     if (settingsError || !peppolSettings) {
+      // Log the attempted match for debugging
+      console.log('[Webhook] Failed to find user for receiver Peppol ID:', {
+        attemptedId: receiverPeppolId,
+        normalizedLower: normalizedReceiverIdLower,
+        normalizedUpper: normalizedReceiverIdUpper,
+        error: settingsError?.message,
+        eventType: payload.eventType
+      });
+      
       return new Response(
-        JSON.stringify({ error: 'User not found for this Peppol identifier' }), 
+        JSON.stringify({ 
+          error: 'User not found for this Peppol identifier',
+          attemptedId: receiverPeppolId,
+          details: 'Make sure your Peppol ID is registered in Peppol settings. The receiver ID in the invoice must match the Peppol ID in your settings.'
+        }), 
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Log successful match
+    console.log('[Webhook] Found user for receiver Peppol ID:', {
+      receiverId: receiverPeppolId,
+      matchedPeppolId: peppolSettings.peppol_id,
+      userId: peppolSettings.user_id,
+      eventType: payload.eventType
+    });
 
     const userId = peppolSettings.user_id;
 
@@ -826,14 +1069,16 @@ async function processAcknowledgment(supabase: any, userId: string, payload: Web
       return { success: false, error: 'No message ID provided' };
     }
 
-    // Check if MLR indicates successful delivery
-    // MLR_RECEIVED typically indicates successful delivery of the invoice
+    // Check if this acknowledgment indicates successful delivery
+    // TRANSPORT_ACK_RECEIVED and MLR_RECEIVED both indicate successful delivery
     const isMLR = payload.eventType === PEPPOL_EVENT_TYPES.MLR_RECEIVED;
-    const isDelivered = isMLR && (data.status === 'delivered' || data.status === 'success' || !data.status || data.status === 'accepted');
+    const isTransportAck = payload.eventType === PEPPOL_EVENT_TYPES.TRANSPORT_ACK_RECEIVED;
+    const isDelivered = (isMLR || isTransportAck) && 
+                       (data.status === 'delivered' || data.status === 'success' || !data.status || data.status === 'accepted');
 
     // Find invoice in invoices table (client invoices) by messageId
     let clientInvoice = null;
-    if (isMLR && isDelivered) {
+    if ((isMLR || isTransportAck) && isDelivered) {
       const { data: invoice, error: findInvoiceError } = await supabase
         .from('invoices')
         .select('id, peppol_status')
@@ -880,8 +1125,8 @@ async function processAcknowledgment(supabase: any, userId: string, payload: Web
         data: data
       });
 
-      // If MLR indicates delivery, also update status in peppol_invoices
-      if (isMLR && isDelivered) {
+      // If MLR or Transport ACK indicates delivery, also update status in peppol_invoices
+      if ((isMLR || isTransportAck) && isDelivered) {
         metadata.deliveredAt = new Date().toISOString();
         metadata.status = 'delivered';
       }
@@ -890,8 +1135,8 @@ async function processAcknowledgment(supabase: any, userId: string, payload: Web
         .from('peppol_invoices')
         .update({ 
           metadata,
-          status: isMLR && isDelivered ? 'delivered' : peppolInvoice.status,
-          delivered_at: isMLR && isDelivered ? new Date().toISOString() : peppolInvoice.delivered_at,
+          status: (isMLR || isTransportAck) && isDelivered ? 'delivered' : peppolInvoice.status,
+          delivered_at: (isMLR || isTransportAck) && isDelivered ? new Date().toISOString() : peppolInvoice.delivered_at,
           updated_at: new Date().toISOString()
         })
         .eq('id', peppolInvoice.id);

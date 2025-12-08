@@ -284,7 +284,7 @@ const PeppolNetworkPage = () => {
 
       // Load sent invoices (from invoices table where peppol_enabled = true)
       // Only show invoices for professional clients (client_type = 'company')
-      // Only show paid invoices (status = 'paid')
+      // Show all invoices sent via Peppol, regardless of payment status
       const { data: sentInvoicesData, error: sentError } = await supabase
         .from('invoices')
         .select(`
@@ -310,7 +310,7 @@ const PeppolNetworkPage = () => {
         `)
         .eq('user_id', user.id)
         .eq('peppol_enabled', true)
-        .eq('status', 'paid')
+        .not('peppol_sent_at', 'is', null) // Only show invoices that have been sent via Peppol
         .order('peppol_sent_at', { ascending: false });
 
       // Get current user's Peppol ID to filter received invoices
@@ -324,24 +324,8 @@ const PeppolNetworkPage = () => {
       const currentPeppolId = currentPeppolSettings?.peppol_id;
 
       // Load received invoices (from expense_invoices table where peppol_enabled = true)
-      // Filter by matching receiver_peppol_id from peppol_invoices table with current user's peppol_id
-      let receivedInvoicesData = [];
-      
-      if (currentPeppolId) {
-        // First, get invoice numbers from peppol_invoices that match current Peppol ID
-        const { data: peppolInvoicesData } = await supabase
-          .from('peppol_invoices')
-          .select('invoice_number')
-          .eq('user_id', user.id)
-          .eq('direction', 'inbound')
-          .eq('receiver_peppol_id', currentPeppolId);
-
-        if (peppolInvoicesData && peppolInvoicesData.length > 0) {
-          // Get invoice numbers that match current Peppol ID
-          const matchingInvoiceNumbers = peppolInvoicesData.map(pi => pi.invoice_number);
-          
-          // Query expense_invoices for those invoice numbers
-          const { data: expenseInvoicesData, error: receivedError } = await supabase
+      // Directly query expense_invoices - invoices received via Peppol are stored here with user_id = current user
+      const { data: expenseInvoicesData, error: receivedError } = await supabase
         .from('expense_invoices')
         .select(`
           id,
@@ -351,27 +335,18 @@ const PeppolNetworkPage = () => {
           amount,
           issue_date,
           due_date,
+          status,
           peppol_message_id,
           peppol_received_at,
           sender_peppol_id
         `)
         .eq('user_id', user.id)
         .eq('peppol_enabled', true)
-            .in('invoice_number', matchingInvoiceNumbers)
+        .eq('source', 'peppol') // Only show invoices received via Peppol
+        .not('peppol_received_at', 'is', null) // Only show invoices that were actually received
         .order('peppol_received_at', { ascending: false });
 
-      if (receivedError) {
-        // Error loading received invoices
-          } else {
-            receivedInvoicesData = expenseInvoicesData || [];
-          }
-        }
-        // If no matching invoices found, receivedInvoicesData remains empty array
-      } else {
-        // If user has no Peppol ID configured, don't show any received invoices
-        // (they need to register first)
-        receivedInvoicesData = [];
-      }
+      const receivedInvoicesData = receivedError ? [] : (expenseInvoicesData || []);
 
       if (sentError) {
         // Error loading sent invoices
@@ -379,9 +354,9 @@ const PeppolNetworkPage = () => {
 
       // Transform sent invoices to match expected format
       // Filter to only include invoices for professional clients (client_type = 'company')
-      // And only paid invoices (status = 'paid')
+      // Show all invoices sent via Peppol, regardless of payment status
       const sent = (sentInvoicesData || [])
-        .filter(inv => inv.clients?.client_type === 'company' && inv.status === 'paid') // Only professional clients and paid invoices
+        .filter(inv => inv.clients?.client_type === 'company') // Only professional clients
         .map(inv => ({
           id: inv.id,
           invoice_number: inv.invoice_number,
@@ -391,9 +366,7 @@ const PeppolNetworkPage = () => {
           total_amount: parseFloat(inv.final_amount || inv.amount || 0),
           issue_date: inv.issue_date,
           due_date: inv.due_date,
-          status: inv.peppol_status === 'delivered' ? 'delivered' :
-            inv.peppol_status === 'sent' ? 'pending' :
-              inv.peppol_status === 'failed' ? 'failed' : 'pending',
+          status: inv.status || 'unpaid', // Use invoice status (unpaid, paid, overdue, etc.) instead of peppol_status
           peppol_message_id: inv.peppol_message_id,
           created_at: inv.peppol_sent_at || inv.issue_date
         }));
@@ -408,7 +381,7 @@ const PeppolNetworkPage = () => {
         total_amount: parseFloat(inv.amount || 0),
         issue_date: inv.issue_date,
         due_date: inv.due_date,
-        status: 'received',
+        status: inv.status || 'pending', // Use expense invoice status (pending, paid, overdue)
         peppol_message_id: inv.peppol_message_id,
         created_at: inv.peppol_received_at || inv.issue_date
       }));
@@ -603,6 +576,15 @@ const PeppolNetworkPage = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
+      case 'paid':
+        return 'bg-success/10 text-success';
+      case 'unpaid':
+        return 'bg-warning/10 text-warning';
+      case 'overdue':
+        return 'bg-error/10 text-error';
+      case 'cancelled':
+        return 'bg-purple-500/10 text-purple-600';
+      // For received invoices, keep the old statuses
       case 'delivered':
       case 'received':
       case 'processed':
@@ -616,16 +598,26 @@ const PeppolNetworkPage = () => {
 
   const getStatusText = (status) => {
     switch (status) {
+      // Invoice statuses (for sent invoices)
+      case 'paid':
+        return t('invoicesManagement.status.paid', 'Paid');
+      case 'unpaid':
+        return t('invoicesManagement.status.unpaid', 'Unpaid');
+      case 'overdue':
+        return t('invoicesManagement.status.overdue', 'Overdue');
+      case 'cancelled':
+        return t('invoicesManagement.status.cancelled', 'Cancelled');
+      // Peppol statuses (for received invoices)
       case 'delivered':
-        return t('peppol.status.delivered');
+        return t('peppol.status.delivered', 'Delivered');
       case 'received':
-        return t('peppol.status.received');
+        return t('peppol.status.received', 'Received');
       case 'processed':
-        return t('peppol.status.processed');
+        return t('peppol.status.processed', 'Processed');
       case 'pending':
-        return t('peppol.status.pending');
+        return t('peppol.status.pending', 'Pending');
       default:
-        return t('peppol.status.unknown');
+        return t('peppol.status.unknown', 'Unknown');
     }
   };
 
