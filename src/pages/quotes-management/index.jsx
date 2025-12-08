@@ -101,59 +101,27 @@ const QuotesManagement = () => {
   }, [quotes, filters, searchTerm]);
 
   // Helper function to calculate draft amount with robust fallbacks
+  // Note: This calculates the BALANCE (total with VAT minus deposit)
+  // The displayed total should show after subtracting deposit
   const calculateDraftAmount = (draftData) => {
     if (!draftData) return 0;
+    
+    let totalWithVAT = 0;
     
     // First, check if we have pre-calculated amounts from the auto-save
     if (draftData.finalAmount !== undefined) {
       // Get the final amount with VAT included
-      let amount = parseFloat(draftData.finalAmount);
-      
-      // Subtract deposit if it exists
-      if (draftData.depositAmount !== undefined && draftData.depositAmount > 0) {
-        amount -= parseFloat(draftData.depositAmount);
-      }
-      
-      return amount;
-    }
-    
-    if (draftData.projectInfo?.finalAmount !== undefined) {
+      totalWithVAT = parseFloat(draftData.finalAmount);
+    } else if (draftData.projectInfo?.finalAmount !== undefined) {
       // Get the final amount with VAT included
-      let amount = parseFloat(draftData.projectInfo.finalAmount);
-      
-      // Subtract deposit if it exists
-      if (draftData.projectInfo?.depositAmount !== undefined && draftData.projectInfo.depositAmount > 0) {
-        amount -= parseFloat(draftData.projectInfo.depositAmount);
-      }
-      
-      return amount;
-    }
-    
-    // If we have totalAmount and taxAmount, calculate final amount
-    if (draftData.totalAmount !== undefined && draftData.taxAmount !== undefined) {
+      totalWithVAT = parseFloat(draftData.projectInfo.finalAmount);
+    } else if (draftData.totalAmount !== undefined && draftData.taxAmount !== undefined) {
       // Calculate total with VAT
-      let amount = parseFloat(draftData.totalAmount) + parseFloat(draftData.taxAmount);
-      
-      // Subtract deposit if it exists
-      if (draftData.depositAmount !== undefined && draftData.depositAmount > 0) {
-        amount -= parseFloat(draftData.depositAmount);
-      }
-      
-      return amount;
-    }
-    
-    if (draftData.projectInfo?.totalAmount !== undefined && draftData.projectInfo?.taxAmount !== undefined) {
+      totalWithVAT = parseFloat(draftData.totalAmount) + parseFloat(draftData.taxAmount);
+    } else if (draftData.projectInfo?.totalAmount !== undefined && draftData.projectInfo?.taxAmount !== undefined) {
       // Calculate total with VAT
-      let amount = parseFloat(draftData.projectInfo.totalAmount) + parseFloat(draftData.projectInfo.taxAmount);
-      
-      // Subtract deposit if it exists
-      if (draftData.projectInfo?.depositAmount !== undefined && draftData.projectInfo.depositAmount > 0) {
-        amount -= parseFloat(draftData.projectInfo.depositAmount);
-      }
-      
-      return amount;
-    }
-    
+      totalWithVAT = parseFloat(draftData.projectInfo.totalAmount) + parseFloat(draftData.projectInfo.taxAmount);
+    } else {
     // Fall back to calculating from tasks and materials
     let total = 0;
     
@@ -180,16 +148,25 @@ const QuotesManagement = () => {
     // Apply VAT if enabled in financialConfig
     if (draftData.financialConfig?.vatConfig?.display && total > 0) {
       const vatRate = parseFloat(draftData.financialConfig.vatConfig.rate || 20);
-      total = total * (1 + vatRate / 100);
+        totalWithVAT = total * (1 + vatRate / 100);
+      } else {
+        totalWithVAT = total;
+      }
     }
     
-    // Subtract deposit amount if enabled in financialConfig
+    // Subtract deposit from displayed amount (show balance)
     if (draftData.financialConfig?.advanceConfig?.enabled && draftData.financialConfig?.advanceConfig?.amount > 0) {
       const depositAmount = parseFloat(draftData.financialConfig.advanceConfig.amount);
-      total = total - depositAmount;
+      totalWithVAT = totalWithVAT - depositAmount;
+    } else if (draftData.depositAmount !== undefined && draftData.depositAmount > 0) {
+      const depositAmount = parseFloat(draftData.depositAmount);
+      totalWithVAT = totalWithVAT - depositAmount;
+    } else if (draftData.projectInfo?.depositAmount !== undefined && draftData.projectInfo.depositAmount > 0) {
+      const depositAmount = parseFloat(draftData.projectInfo.depositAmount);
+      totalWithVAT = totalWithVAT - depositAmount;
     }
     
-    return total;
+    return totalWithVAT;
   };
 
   // Fetch quotes data from backend
@@ -361,30 +338,46 @@ const QuotesManagement = () => {
         // Transform backend data to match frontend structure
           const transformedQuotes = (quotesData || []).map(quote => {
             // Calculate the final amount including VAT if enabled
-            let finalAmount = parseFloat(quote.final_amount || quote.total_amount || 0);
+            // Use the same calculation logic as QuotePreview for consistency
             
-            // If VAT is enabled, make sure we include it in the displayed amount
-            if (quote.tax_amount && quote.tax_amount > 0) {
-              finalAmount = parseFloat(quote.final_amount || (parseFloat(quote.total_amount || 0) + parseFloat(quote.tax_amount || 0)));
+            // First, try to recalculate from tasks and materials (most accurate)
+            let calculatedTotal = 0;
+            if (quote.quote_tasks && quote.quote_tasks.length > 0) {
+              calculatedTotal = quote.quote_tasks.reduce((sum, task) => {
+                // Task price (labor)
+                const taskPrice = parseFloat(task.total_price) || ((parseFloat(task.quantity) || 1) * (parseFloat(task.unit_price) || 0));
+                
+                // Materials total (price is already total, no multiplication needed)
+                const taskMaterials = quote.quote_materials?.filter(m => m.quote_task_id === task.id) || [];
+                const taskMaterialsTotal = taskMaterials.reduce((matSum, mat) => 
+                  matSum + (parseFloat(mat.unit_price || mat.price) || 0), 0);
+                
+                return sum + taskPrice + taskMaterialsTotal;
+              }, 0);
             }
             
-            // Subtract deposit amount if it exists in financial configs
-            let depositAmount = 0;
-            
-            // Check if there are financial configs with advance_config
-            if (quote.quote_financial_configs && quote.quote_financial_configs.length > 0) {
-              const financialConfig = quote.quote_financial_configs[0];
-              if (financialConfig.advance_config && financialConfig.advance_config.enabled) {
-                depositAmount = parseFloat(financialConfig.advance_config.amount || 0);
+            // If we have a calculated total, use it with VAT
+            let finalAmount = 0;
+            if (calculatedTotal > 0) {
+              // Get VAT rate from financial config
+              const financialConfig = quote.quote_financial_configs?.[0];
+              const vatRate = financialConfig?.vat_config?.display ? (financialConfig.vat_config.rate || 0) : 0;
+              const vatAmount = calculatedTotal * (vatRate / 100);
+              finalAmount = calculatedTotal + vatAmount;
+            } else {
+              // Fallback: Use final_amount if available, otherwise calculate from total_amount + tax_amount
+              finalAmount = parseFloat(quote.final_amount || 0);
+              if (!finalAmount || finalAmount === 0) {
+                const totalAmount = parseFloat(quote.total_amount || 0);
+                const taxAmount = parseFloat(quote.tax_amount || 0);
+                finalAmount = totalAmount + taxAmount;
               }
             }
             
-            // Fallback to advance_payment_amount if it exists
-            if (depositAmount === 0) {
-              depositAmount = parseFloat(quote.advance_payment_amount || 0);
-            }
-            
-            if (depositAmount > 0) {
+            // Subtract deposit from displayed amount (show balance)
+            const financialConfig = quote.quote_financial_configs?.[0];
+            if (financialConfig?.advance_config?.enabled && financialConfig.advance_config.amount > 0) {
+              const depositAmount = parseFloat(financialConfig.advance_config.amount || 0);
               finalAmount = finalAmount - depositAmount;
             }
             
@@ -1107,9 +1100,12 @@ const QuotesManagement = () => {
 
   // Helper functions
   const formatCurrency = (amount) => {
+    // Use comma as decimal separator (fr-FR format)
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
-      currency: 'EUR'
+      currency: 'EUR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(amount);
   };
 

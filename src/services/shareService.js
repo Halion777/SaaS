@@ -96,7 +96,7 @@ export const getQuoteByShareToken = async (shareToken) => {
       .from('quotes')
       .select(`
         *,
-        client:clients(id, name, email, phone, address, city, postal_code, country),
+        client:clients(id, name, email, phone, address, city, postal_code, country, vat_number, client_type),
         company_profile:company_profiles(
           id, company_name, logo_path, logo_filename, logo_size, logo_mime_type,
           signature_path, signature_filename, signature_size, signature_mime_type,
@@ -133,7 +133,7 @@ export const getQuoteByShareToken = async (shareToken) => {
         .from('quotes')
         .select(`
           *,
-          client:clients(id, name, email, phone, address, city, postal_code, country),
+          client:clients(id, name, email, phone, address, city, postal_code, country, vat_number, client_type),
           company_profile:company_profiles(
             id, company_name, logo_path, logo_filename, logo_size, logo_mime_type,
             signature_path, signature_filename, signature_size, signature_mime_type,

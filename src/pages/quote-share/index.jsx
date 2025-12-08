@@ -263,6 +263,40 @@ const PublicQuoteShareViewer = () => {
 
   const vatAmount = financialConfig.vatConfig?.display ? (totalPrice * financialConfig.vatConfig.rate / 100) : 0;
   const totalWithVAT = totalPrice + vatAmount;
+  const advanceAmount = financialConfig.advanceConfig?.enabled ? (parseFloat(financialConfig.advanceConfig.amount) || 0) : 0;
+  const balanceAmount = totalWithVAT - advanceAmount;
+
+  // Helper function to format VAT number with country prefix
+  const formatVATWithCountry = (vatNumber, countryCode) => {
+    if (!vatNumber) return '';
+    
+    // Convert country code to ISO format if needed
+    let isoCountry = countryCode;
+    if (countryCode && countryCode.length > 2) {
+      const countryMap = {
+        'belgique': 'BE', 'belgium': 'BE', 'france': 'FR', 'nederland': 'NL',
+        'netherlands': 'NL', 'deutschland': 'DE', 'germany': 'DE'
+      };
+      const normalized = countryCode.trim().toLowerCase();
+      isoCountry = countryMap[normalized] || (countryCode.length === 2 ? countryCode.toUpperCase() : 'BE');
+    } else if (countryCode) {
+      isoCountry = countryCode.toUpperCase();
+    } else {
+      isoCountry = 'BE';
+    }
+    
+    // Clean VAT number (remove any existing country prefix)
+    let cleanVAT = vatNumber.replace(/^[A-Z]{2}/i, '').trim();
+    
+    // If VAT already has country prefix, return as is (uppercase)
+    if (/^[A-Z]{2}\d+$/i.test(vatNumber.trim())) {
+      return vatNumber.trim().toUpperCase();
+    }
+    
+    // Add country prefix
+    const countryPrefix = isoCountry === 'GR' ? 'EL' : isoCountry;
+    return `${countryPrefix}${cleanVAT}`;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -427,36 +461,72 @@ const PublicQuoteShareViewer = () => {
                     <span className="text-sm text-gray-700 font-medium">{quote.company_profile.email}</span>
                   </div>
                 )}
+                {quote?.company_profile?.vat_number && (
+                  <div className="flex items-center space-x-2">
+                    <Icon name="FileText" size={14} className="text-blue-500 flex-shrink-0" />
+                    <span className="text-sm text-gray-700 font-medium">
+                      {t('quoteShare.company.vat', 'VAT')}: {formatVATWithCountry(quote.company_profile.vat_number, quote.company_profile.country)}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Client Information */}
                           <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-3 sm:p-4 lg:p-6 border border-green-100">
-              <div className="mb-3 sm:mb-4">
-                <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">{t('quoteShare.client.client')}</h3>
+              <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-lg p-2 shadow-sm border border-green-200 flex items-center justify-center flex-shrink-0">
+                  <Icon 
+                    name={quote?.client?.client_type === 'company' ? 'Building' : 'User'} 
+                    size={20} 
+                    className="text-green-600" 
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">
+                    {quote?.client?.client_type === 'company' 
+                      ? (quote?.client?.name || t('quoteShare.client.client'))
+                      : quote?.client?.client_type === 'individual'
+                      ? t('quoteShare.client.individual', 'Individual')
+                      : (quote?.client?.name || t('quoteShare.client.client'))}
+                  </h3>
                 <p className="text-green-600 font-medium text-xs sm:text-sm">{t('quoteShare.client.recipient')}</p>
               </div>
-              <div className="space-y-2 sm:space-y-3">
-                <div className="flex items-center space-x-2">
-                  <Icon name="User" size={14} className="text-green-500 flex-shrink-0" />
-                  <p className="text-sm sm:text-base font-semibold text-gray-800 truncate">{quote?.client?.name || t('quoteShare.client.client')}</p>
                 </div>
-                <div className="bg-white rounded-lg p-2 sm:p-3 border border-green-200">
-                  <p className="font-medium text-xs text-green-700 mb-2 flex items-center">
-                    <Icon name="MapPin" size={12} className="mr-1" />
-                    {t('quoteShare.client.billingAddress')}
-                  </p>
-                  <div className="space-y-1 text-gray-700">
-                    <p className="text-xs sm:text-sm font-medium">{quote?.client?.address || t('quoteShare.company.address')}</p>
+              <div className="space-y-2">
+                <div className="flex items-start space-x-2">
+                  <Icon name="MapPin" size={14} className="text-green-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">{quote?.client?.address || t('quoteShare.company.address')}</p>
                   {quote?.client?.city && quote.client.city !== 'N/A' && (
-                      <p className="text-xs sm:text-sm">{quote.client.city}</p>
+                      <p className="text-sm text-gray-600">{quote.client.city}</p>
                   )}
-                    <p className="text-xs sm:text-sm">{quote?.client?.postal_code || t('quoteShare.company.postalCode')}</p>
-                    <p className="text-xs sm:text-sm">{quote?.client?.country || t('quoteShare.company.country')}</p>
+                    <p className="text-sm text-gray-600">{quote?.client?.postal_code || t('quoteShare.company.postalCode')}</p>
+                    <p className="text-sm text-gray-600">{quote?.client?.country || t('quoteShare.company.country')}</p>
                   </div>
                 </div>
+                {quote?.client?.phone && (
+                  <div className="flex items-center space-x-2">
+                    <Icon name="Phone" size={14} className="text-green-500 flex-shrink-0" />
+                    <span className="text-sm text-gray-700 font-medium">{quote.client.phone}</span>
+                  </div>
+                )}
+                {quote?.client?.email && (
+                  <div className="flex items-center space-x-2">
+                    <Icon name="Mail" size={14} className="text-green-500 flex-shrink-0" />
+                    <span className="text-sm text-gray-700 font-medium">{quote.client.email}</span>
+                  </div>
+                )}
+                {quote?.client?.vat_number && (
+                  <div className="flex items-center space-x-2">
+                    <Icon name="FileText" size={14} className="text-green-500 flex-shrink-0" />
+                    <span className="text-sm text-gray-700 font-medium">
+                      {t('quoteShare.client.vat', 'VAT')}: {formatVATWithCountry(quote.client.vat_number, quote.client.country)}
+                    </span>
+                  </div>
+                )}
                 {quote?.client?.delivery_address && (
-                  <div className="bg-white rounded-lg p-2 sm:p-3 border border-green-200">
+                  <div className="bg-white rounded-lg p-2 sm:p-3 border border-green-200 mt-2">
                     <p className="font-medium text-xs text-green-700 mb-2 flex items-center">
                       <Icon name="Truck" size={12} className="mr-1" />
                     {t('quoteShare.client.deliveryAddress')}
@@ -494,7 +564,7 @@ const PublicQuoteShareViewer = () => {
                   <Icon name="DollarSign" size={14} className="sm:w-4 sm:h-4 text-green-600" />
                 </div>
                 <p className="text-xs text-gray-500 mb-1">{t('quoteShare.quoteDetails.totalAmount')}</p>
-                <p className="text-lg sm:text-xl font-bold text-green-600">{currency(totalWithVAT)}</p>
+                <p className="text-lg sm:text-xl font-bold text-green-600">{currency(balanceAmount)}</p>
               </div>
             </div>
           </div>
@@ -593,20 +663,25 @@ const PublicQuoteShareViewer = () => {
                   <span className="font-medium">{currency(vatAmount)}</span>
                 </div>
               )}
-                <div className="flex justify-between text-base sm:text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
-                  <span>{t('quoteShare.financial.total')}:</span>
-                  <span className="text-blue-600">{currency(totalWithVAT)}</span>
+                {financialConfig.advanceConfig?.enabled && financialConfig.advanceConfig.amount > 0 ? (
+                  <>
+                    <div className="flex justify-between text-gray-600 text-xs sm:text-sm">
+                      <span>{t('quoteShare.financial.totalInclTax', 'Total TTC')}:</span>
+                      <span className="font-medium">{currency(totalWithVAT)}</span>
                 </div>
-                {financialConfig.advanceConfig?.enabled && financialConfig.advanceConfig.amount > 0 && (
                   <div className="flex justify-between text-gray-600 text-xs sm:text-sm">
                     <span>{t('quoteShare.financial.advancePayment')}:</span>
                   <span className="font-medium">{currency(financialConfig.advanceConfig.amount)}</span>
                 </div>
-              )}
-                {financialConfig.advanceConfig?.enabled && financialConfig.advanceConfig.amount > 0 && (
                   <div className="flex justify-between text-base sm:text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
-                    <span>{t('quoteShare.financial.balanceOnDelivery')}:</span>
-                    <span className="text-green-600">{currency(totalWithVAT - financialConfig.advanceConfig.amount)}</span>
+                      <span>{t('quoteShare.financial.total')}:</span>
+                      <span className="text-blue-600">{currency(balanceAmount)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex justify-between text-base sm:text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
+                    <span>{t('quoteShare.financial.total')}:</span>
+                    <span className="text-blue-600">{currency(totalWithVAT)}</span>
                   </div>
                 )}
                 {!includeMaterialsPrices && (

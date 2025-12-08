@@ -1360,6 +1360,15 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
     }
   };
 
+  // Helper function to format currency with comma as decimal separator (fr-FR format)
+  const formatCurrency = (amount) => {
+    const numAmount = parseFloat(amount || 0);
+    return new Intl.NumberFormat('fr-FR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(numAmount) + '€';
+  };
+  
   // Helper function to format duration based on unit
   const formatDuration = (duration, unit = 'minutes') => {
     if (!duration || isNaN(duration)) return '0';
@@ -1780,7 +1789,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                             )}
                           </div>
                           <span className="text-muted-foreground text-sm">
-                            {material.quantity} {material.unit} = {parseFloat(material.price || 0).toFixed(2)}€
+                            {material.quantity} {material.unit} = {formatCurrency(material.price || 0)}
                           </span>
                         </div>
                         <div className="flex items-center space-x-1">
@@ -1838,7 +1847,8 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
               </h3>
               <div className="space-y-3">
                 {tasks.map((task) => {
-                  const taskMaterialsTotal = task.materials.reduce((sum, mat) => sum + (parseFloat(mat.price) || 0) * (parseFloat(mat.quantity) || 0), 0);
+                  // Note: material.price is already the total price (user enters multiplied amount)
+                  const taskMaterialsTotal = task.materials.reduce((sum, mat) => sum + (parseFloat(mat.price) || 0), 0);
                   const taskTotal = (parseFloat(task.price) || 0) + (parseFloat(taskMaterialsTotal) || 0);
                   
                   return (
@@ -1867,10 +1877,10 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
                             {taskMaterialsTotal > 0 && (
                               <span className="flex items-center space-x-1">
                                 <Icon name="Package" size={14} />
-                                <span>{t('quoteCreation.taskDefinition.materials', 'Matériaux')}: {Number(taskMaterialsTotal || 0).toFixed(2)}€</span>
+                                <span>{t('quoteCreation.taskDefinition.materials', 'Matériaux')}: {formatCurrency(taskMaterialsTotal || 0)}</span>
                               </span>
                             )}
-                            <span className="font-medium text-foreground">{t('common.total', 'Total')}: {Number(taskTotal || 0).toFixed(2)}€</span>
+                            <span className="font-medium text-foreground">{t('common.total', 'Total')}: {formatCurrency(taskTotal || 0)}</span>
                           </div>
                           {task.materials.length > 0 && (
                             <div className="mt-2">
@@ -1908,7 +1918,7 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
               <div className="mt-4 p-4 bg-primary/10 border border-primary/20 rounded-lg">
                 <div className="flex justify-between items-center">
                   <span className="font-semibold text-foreground">{t('quoteCreation.taskDefinition.quoteTotal', 'Total du devis')}:</span>
-                  <span className="text-xl font-bold text-primary">{totalPrice.toFixed(2)}€</span>
+                  <span className="text-xl font-bold text-primary">{formatCurrency(totalPrice)}</span>
                 </div>
               </div>
             </div>

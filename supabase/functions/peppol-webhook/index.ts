@@ -87,34 +87,11 @@ serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Parse webhook payload
-    let payload: WebhookPayload;
-    try {
-      payload = await req.json();
-    } catch (parseError) {
-      console.error('Failed to parse webhook payload:', parseError);
-      console.log('Received Peppol webhook: undefined');
-      return new Response(
-        JSON.stringify({ error: 'Invalid JSON payload' }), 
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Validate payload structure
-    if (!payload) {
-      console.error('Webhook payload is null or undefined');
-      return new Response(
-        JSON.stringify({ error: 'Invalid payload: payload is null or undefined' }), 
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('Received Peppol webhook:', payload.eventType || 'unknown');
-    console.log('Webhook payload data:', payload.data ? 'present' : 'undefined');
+    const payload: WebhookPayload = await req.json();
 
     // Validate webhook authentication (basic validation)
     const authHeader = req.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Basic ')) {
-      console.error('Missing or invalid authorization header');
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }), 
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -128,7 +105,6 @@ serve(async (req: Request) => {
     
     // Basic credential check (replace with your actual validation)
     if (username !== 'haliqo-test' || password !== 'Haliqo123') {
-      console.error('Invalid credentials');
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }), 
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -136,21 +112,9 @@ serve(async (req: Request) => {
     }
 
     // Determine user based on Peppol identifier
-    // Handle case where payload.data might be undefined
-    if (!payload.data) {
-      console.error('Webhook payload.data is undefined');
-      console.error('Full payload:', JSON.stringify(payload, null, 2));
-      return new Response(
-        JSON.stringify({ error: 'Invalid payload: missing data object' }), 
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const receiverPeppolId = payload.data.receiverPeppolId || payload.data.peppolIdentifier;
+    const receiverPeppolId = payload.data?.receiverPeppolId || payload.data?.peppolIdentifier;
     
     if (!receiverPeppolId) {
-      console.error('No receiver Peppol identifier in payload');
-      console.error('Payload data:', JSON.stringify(payload.data, null, 2));
       return new Response(
         JSON.stringify({ error: 'Invalid payload: missing receiver identifier' }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -165,14 +129,6 @@ serve(async (req: Request) => {
       .single();
 
     if (settingsError || !peppolSettings) {
-      console.error('No user found for Peppol ID:', receiverPeppolId);
-      console.error('Webhook event failed:', {
-        eventType: payload.eventType,
-        receiverPeppolId,
-        error: 'User not found for this Peppol identifier',
-        messageId: payload.data.messageId
-      });
-      
       return new Response(
         JSON.stringify({ error: 'User not found for this Peppol identifier' }), 
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -216,23 +172,12 @@ serve(async (req: Request) => {
 
       // Configuration events
       case PEPPOL_EVENT_TYPES.AUTOPAY_CONFIGURATION_ACTIVATED:
-        console.log('ℹ️ AutoPay configuration activated:', payload.data);
         processResult = { success: true, message: 'AutoPay configuration event logged' };
         break;
 
       default:
-        console.log('ℹ️ Unhandled event type:', payload.eventType);
         processResult = { success: true, message: 'Event logged but not processed' };
     }
-
-    // Log webhook event to console (for debugging)
-    console.log('📝 Webhook event processed:', {
-      eventType: payload.eventType,
-      userId,
-      success: processResult.success,
-      invoiceId: processResult.invoiceId,
-      messageId: payload.data.messageId
-    });
 
     // Return success response
     return new Response(
@@ -246,8 +191,6 @@ serve(async (req: Request) => {
     );
 
   } catch (error) {
-    console.error('Webhook processing error:', error);
-    
     return new Response(
       JSON.stringify({
         error: 'Internal server error',
@@ -279,7 +222,7 @@ function parseUBLInvoice(ublXml: string): any {
 
     // Helper function to get text content by local name (works with namespaces)
     // UBL XML uses namespaces, so we search by local name
-    const getTextByLocalName = (localName: string, parent?: Element | null): string => {
+    const getTextByLocalName = (localName: string, parent?: any): string => {
       const searchRoot = parent || xmlDoc;
       const elements = searchRoot.getElementsByTagName(localName);
       if (elements.length > 0) {
@@ -290,7 +233,7 @@ function parseUBLInvoice(ublXml: string): any {
       return prefixed?.textContent?.trim() || '';
     };
 
-    const getAttributeByLocalName = (localName: string, attr: string, parent?: Element | null): string => {
+    const getAttributeByLocalName = (localName: string, attr: string, parent?: any): string => {
       const searchRoot = parent || xmlDoc;
       const elements = searchRoot.getElementsByTagName(localName);
       if (elements.length > 0) {
@@ -301,23 +244,23 @@ function parseUBLInvoice(ublXml: string): any {
     };
 
     // Helper to find element by local name within parent
-    const findElement = (localName: string, parent?: Element | null): Element | null => {
+    const findElement = (localName: string, parent?: any): any => {
       const searchRoot = parent || xmlDoc;
       const elements = searchRoot.getElementsByTagName(localName);
       return elements.length > 0 ? elements[0] : null;
     };
     
-    const findAllElements = (localName: string, parent?: Element | null): Element[] => {
+    const findAllElements = (localName: string, parent?: any): any[] => {
       const searchRoot = parent || xmlDoc;
       return Array.from(searchRoot.getElementsByTagName(localName));
     };
 
     // Helper for simple text extraction (tries both approaches)
-    const getText = (localName: string, parent?: Element | null): string => {
+    const getText = (localName: string, parent?: any): string => {
       return getTextByLocalName(localName, parent);
     };
 
-    const getAttribute = (localName: string, attr: string, parent?: Element | null): string => {
+    const getAttribute = (localName: string, attr: string, parent?: any): string => {
       return getAttributeByLocalName(localName, attr, parent);
     };
 
@@ -538,7 +481,6 @@ function parseUBLInvoice(ublXml: string): any {
       salesOrderId
     };
   } catch (error) {
-    console.error('Error parsing UBL XML:', error);
     throw error;
   }
 }
@@ -568,9 +510,7 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
     if (data.ublXml) {
       try {
         parsedInvoice = parseUBLInvoice(data.ublXml);
-        console.log(`✅ Successfully parsed UBL XML for ${documentTypeLabel}`);
       } catch (parseError) {
-        console.error('⚠️ Failed to parse UBL XML, using webhook payload data:', parseError);
         // Fallback to webhook payload data if parsing fails
       }
     }
@@ -689,7 +629,6 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
       
       if (existingInvoice) {
         // Invoice already exists - append timestamp to make unique
-        console.log('Invoice number already exists:', baseInvoiceNumber);
         invoiceNumber = `${baseInvoiceNumber}-${Date.now()}`;
       }
     }
@@ -742,7 +681,6 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
       .single();
 
     if (expenseError) {
-      console.error('Failed to create expense invoice:', expenseError);
       return { success: false, error: expenseError.message };
     }
 
@@ -792,15 +730,12 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
       .single();
 
     if (peppolError) {
-      console.log('Warning: Could not create peppol_invoices record:', peppolError.message);
       // Don't fail the whole process if this fails
     }
 
-    console.log(`Expense invoice created successfully (${documentTypeLabel}):`, expenseInvoice.id);
     return { success: true, invoiceId: expenseInvoice.id, peppolInvoiceId: peppolInvoice?.id, documentType: documentType };
 
   } catch (error) {
-    console.error('Error processing inbound invoice:', error);
     return { success: false, error: error.message };
   }
 }
@@ -827,7 +762,6 @@ async function processSendOutcome(supabase: any, userId: string, payload: Webhoo
       .single();
 
     if (findError || !invoice) {
-      console.error('Invoice not found for message ID:', messageId);
       return { success: false, error: 'Invoice not found' };
     }
 
@@ -853,7 +787,6 @@ async function processSendOutcome(supabase: any, userId: string, payload: Webhoo
       .eq('id', invoice.id);
 
     if (updateError) {
-      console.error('Failed to update invoice:', updateError);
       return { success: false, error: updateError.message };
     }
 
@@ -871,15 +804,12 @@ async function processSendOutcome(supabase: any, userId: string, payload: Webhoo
       .eq('user_id', userId);
 
     if (peppolUpdateError) {
-      console.log('Warning: Could not update peppol_invoices:', peppolUpdateError.message);
       // Don't fail if this update fails
     }
 
-    console.log('Invoice status updated:', invoice.id, peppolStatus);
     return { success: true, invoiceId: invoice.id };
 
   } catch (error) {
-    console.error('Error processing send outcome:', error);
     return { success: false, error: error.message };
   }
 }
@@ -926,9 +856,7 @@ async function processAcknowledgment(supabase: any, userId: string, payload: Web
             .eq('id', invoice.id);
 
           if (updateInvoiceError) {
-            console.error('Failed to update invoice status:', updateInvoiceError);
-          } else {
-            console.log('Invoice status updated to delivered:', invoice.id);
+            // Failed to update invoice status
           }
         }
       }
@@ -969,13 +897,10 @@ async function processAcknowledgment(supabase: any, userId: string, payload: Web
         .eq('id', peppolInvoice.id);
 
       if (updateError) {
-        console.error('Failed to update peppol_invoices metadata:', updateError);
-      } else {
-        console.log('Acknowledgment processed:', peppolInvoice.id);
+        // Failed to update peppol_invoices metadata
       }
     } else if (!clientInvoice && !peppolInvoice) {
       // Neither invoice nor peppol_invoice found
-      console.log('Invoice not found for acknowledgment:', messageId);
       return { success: false, error: 'Invoice not found' };
     }
 
@@ -986,7 +911,6 @@ async function processAcknowledgment(supabase: any, userId: string, payload: Web
     };
 
   } catch (error) {
-    console.error('Error processing acknowledgment:', error);
     return { success: false, error: error.message };
   }
 }
@@ -1012,7 +936,6 @@ async function processInvoiceResponse(supabase: any, userId: string, payload: We
       .single();
 
     if (findError || !invoice) {
-      console.log('Invoice not found for invoice response:', messageId);
       return { success: true, message: 'Invoice response logged but invoice not found' };
     }
 
@@ -1030,15 +953,12 @@ async function processInvoiceResponse(supabase: any, userId: string, payload: We
       .eq('id', invoice.id);
 
     if (updateError) {
-      console.error('Failed to update invoice response:', updateError);
       return { success: false, error: updateError.message };
     }
 
-    console.log('Invoice response processed:', invoice.id);
     return { success: true, invoiceId: invoice.id };
 
   } catch (error) {
-    console.error('Error processing invoice response:', error);
     return { success: false, error: error.message };
   }
 }
@@ -1089,8 +1009,6 @@ async function processFutureValidationFailed(supabase: any, userId: string, payl
     }
 
     if (invoice) {
-      console.log(`Future validation failed for ${invoiceType} invoice:`, invoice.id);
-      
       // Update invoice metadata with validation warning
       const metadata = invoice.peppol_metadata || {};
       metadata.futureValidationFailed = {
@@ -1132,14 +1050,9 @@ async function processFutureValidationFailed(supabase: any, userId: string, payl
       return { success: true, invoiceId: invoice.id, type: invoiceType };
     }
 
-    console.log('Future validation failed - invoice not found:', messageId);
     return { success: true, message: 'Validation warning logged but invoice not found' };
 
   } catch (error) {
-    console.error('Error processing future validation failed:', error);
     return { success: false, error: error.message };
   }
 }
-
-console.log('🚀 Peppol webhook handler is running');
-

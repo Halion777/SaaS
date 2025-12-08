@@ -1685,15 +1685,43 @@ export async function convertQuoteToInvoice(quote, userId) {
     // Extract description - check both project_description and description fields
     const description = quoteData.project_description || quoteData.description || quote.description || '';
 
-    // Extract amounts - use final_amount, total_amount, tax_amount, net_amount from quote
-    const totalAmount = parseFloat(quoteData.total_amount || 0);
-    const taxAmount = parseFloat(quoteData.tax_amount || 0);
+    // Extract amounts - recalculate from tasks and materials for accuracy (same as QuotePreview)
+    // This ensures consistency even if the stored amounts are incorrect
+    let calculatedTotal = 0;
+    if (quoteData.quote_tasks && quoteData.quote_tasks.length > 0) {
+      calculatedTotal = quoteData.quote_tasks.reduce((sum, task) => {
+        // Task price (labor)
+        const taskPrice = parseFloat(task.total_price) || ((parseFloat(task.quantity) || 1) * (parseFloat(task.unit_price) || 0));
+        
+        // Materials total (price is already total, no multiplication needed)
+        const taskMaterials = quoteData.quote_materials?.filter(m => m.quote_task_id === task.id) || [];
+        const taskMaterialsTotal = taskMaterials.reduce((matSum, mat) => 
+          matSum + (parseFloat(mat.unit_price || mat.price) || 0), 0);
+        
+        return sum + taskPrice + taskMaterialsTotal;
+      }, 0);
+    }
+    
+    // Use calculated total if available, otherwise use stored amounts
+    const totalAmount = calculatedTotal > 0 ? calculatedTotal : parseFloat(quoteData.total_amount || 0);
+    
+    // Get VAT from financial config or stored tax_amount
+    const financialConfig = quoteData.quote_financial_configs?.[0];
+    const vatRate = financialConfig?.vat_config?.display ? (financialConfig.vat_config.rate || 0) : 0;
+    const taxAmount = calculatedTotal > 0 && vatRate > 0 
+      ? (calculatedTotal * (vatRate / 100))
+      : parseFloat(quoteData.tax_amount || 0);
+    
     const discountAmount = parseFloat(quoteData.discount_amount || 0);
-    const finalAmount = parseFloat(quoteData.final_amount || quoteData.total_amount || 0);
-    // Calculate net amount if not present
-    const netAmount = quoteData.net_amount 
-      ? parseFloat(quoteData.net_amount) 
-      : (totalAmount - discountAmount);
+    const finalAmount = totalAmount + taxAmount; // Total with VAT (do NOT subtract deposit)
+    
+    // Calculate net amount (HT)
+    const netAmount = totalAmount - discountAmount;
+
+    // Extract deposit information from financial config
+    const depositAmount = financialConfig?.advance_config?.enabled && financialConfig.advance_config.amount > 0
+      ? parseFloat(financialConfig.advance_config.amount || 0)
+      : 0;
 
     // Prepare invoice data with all necessary fields
     const invoiceData = {
@@ -1715,7 +1743,14 @@ export async function convertQuoteToInvoice(quote, userId) {
       payment_method: 'À définir',
       payment_terms: 'Paiement à 30 jours',
       notes: `Facture générée automatiquement depuis le devis ${quoteData.quote_number}`,
-      converted_from_quote_at: new Date().toISOString()
+      converted_from_quote_at: new Date().toISOString(),
+      // Store deposit information in metadata if invoices table doesn't have a deposit field
+      peppol_metadata: {
+        deposit_amount: depositAmount,
+        deposit_enabled: financialConfig?.advance_config?.enabled || false,
+        converted_from_quote: true,
+        original_quote_number: quoteData.quote_number
+      }
     };
 
     // Insert the invoice

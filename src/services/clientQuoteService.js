@@ -342,7 +342,7 @@ class ClientQuoteService {
    */
   static async sendQuoteStatusEmail(quoteId, status, clientData) {
     try {
-      // Get quote details with client language preference
+      // Get quote details with client language preference, tasks, materials, and financial config
       const { data: quote, error: quoteError } = await supabase
         .from('quotes')
         .select(`
@@ -350,23 +350,79 @@ class ClientQuoteService {
           quote_number,
           title,
           total_amount,
+          tax_amount,
           final_amount,
           share_token,
           user_id,
           client_id,
           company_profiles!quotes_company_profile_id_fkey(company_name),
-          client:clients(id, language_preference)
+          client:clients(id, language_preference),
+          quote_tasks(id, total_price, quantity, unit_price, quote_id),
+          quote_materials(id, unit_price, price, quote_task_id),
+          quote_financial_configs(vat_config, advance_config)
         `)
         .eq('id', quoteId)
         .single();
 
       if (quoteError) throw quoteError;
 
+      // Format amount with comma as decimal separator (fr-FR format)
+      const formatAmount = (amount) => {
+        const numAmount = parseFloat(amount || 0);
+        return new Intl.NumberFormat('fr-FR', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(numAmount) + '€';
+      };
+      
+      // Calculate final amount using the same logic as QuotePreview and EmailService
+      // First, try to recalculate from tasks and materials (most accurate)
+      let calculatedTotal = 0;
+      if (quote.quote_tasks && quote.quote_tasks.length > 0) {
+        calculatedTotal = quote.quote_tasks.reduce((sum, task) => {
+          // Task price (labor)
+          const taskPrice = parseFloat(task.total_price) || ((parseFloat(task.quantity) || 1) * (parseFloat(task.unit_price) || 0));
+          
+          // Materials total (price is already total, no multiplication needed)
+          const taskMaterials = quote.quote_materials?.filter(m => m.quote_task_id === task.id) || [];
+          const taskMaterialsTotal = taskMaterials.reduce((matSum, mat) => 
+            matSum + (parseFloat(mat.unit_price || mat.price) || 0), 0);
+          
+          return sum + taskPrice + taskMaterialsTotal;
+        }, 0);
+      }
+      
+      // If we have a calculated total, use it with VAT
+      let totalWithVAT = 0;
+      if (calculatedTotal > 0) {
+        // Get VAT rate from financial config
+        const financialConfig = quote.quote_financial_configs?.[0];
+        const vatRate = financialConfig?.vat_config?.display ? (financialConfig.vat_config.rate || 0) : 0;
+        const vatAmount = calculatedTotal * (vatRate / 100);
+        totalWithVAT = calculatedTotal + vatAmount;
+      } else {
+        // Fallback: Use final_amount if available, otherwise calculate from total_amount + tax_amount
+        totalWithVAT = parseFloat(quote.final_amount || 0);
+        if (!totalWithVAT || totalWithVAT === 0) {
+          const totalAmount = parseFloat(quote.total_amount || 0);
+          const taxAmount = parseFloat(quote.tax_amount || 0);
+          totalWithVAT = totalAmount + taxAmount;
+        }
+      }
+      
+      // Subtract deposit from displayed amount (show balance)
+      const financialConfig = quote.quote_financial_configs?.[0];
+      let quoteAmount = totalWithVAT;
+      if (financialConfig?.advance_config?.enabled && financialConfig.advance_config.amount > 0) {
+        const depositAmount = parseFloat(financialConfig.advance_config.amount || 0);
+        quoteAmount = totalWithVAT - depositAmount;
+      }
+
       // Prepare variables for template rendering
         const variables = {
           client_name: clientData.client_name || 'Madame, Monsieur',
           quote_number: quote.quote_number,
-          quote_amount: `${quote.final_amount || quote.total_amount}€`,
+          quote_amount: formatAmount(quoteAmount),
           quote_link: quote.share_token ? `${window.location.origin}/quote-share/${quote.share_token}` : '#',
           company_name: quote.company_profiles?.company_name || 'Notre équipe'
         };

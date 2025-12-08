@@ -9,6 +9,70 @@ export class EmailService {
   // ========================================
   
   /**
+   * Format amount with comma as decimal separator (fr-FR format)
+   * @param {number|string} amount - Amount to format
+   * @returns {string} - Formatted amount with € symbol (e.g., "730,84€")
+   */
+  static formatAmount(amount) {
+    const numAmount = parseFloat(amount || 0);
+    return new Intl.NumberFormat('fr-FR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(numAmount) + '€';
+  }
+  
+  /**
+   * Calculate final quote amount correctly
+   * Uses the same calculation logic as QuotePreview for consistency
+   * @param {Object} quote - Quote object (should have quote_tasks and quote_materials)
+   * @returns {number} - Balance amount (total with VAT minus deposit)
+   */
+  static calculateFinalAmount(quote) {
+    // First, try to recalculate from tasks and materials (most accurate, matches QuotePreview)
+    let calculatedTotal = 0;
+    if (quote.quote_tasks && quote.quote_tasks.length > 0) {
+      calculatedTotal = quote.quote_tasks.reduce((sum, task) => {
+        // Task price (labor)
+        const taskPrice = parseFloat(task.total_price) || ((parseFloat(task.quantity) || 1) * (parseFloat(task.unit_price) || 0));
+        
+        // Materials total (price is already total, no multiplication needed)
+        const taskMaterials = quote.quote_materials?.filter(m => m.quote_task_id === task.id) || [];
+        const taskMaterialsTotal = taskMaterials.reduce((matSum, mat) => 
+          matSum + (parseFloat(mat.unit_price || mat.price) || 0), 0);
+        
+        return sum + taskPrice + taskMaterialsTotal;
+      }, 0);
+    }
+    
+    // If we have a calculated total, use it with VAT
+    let totalWithVAT = 0;
+    if (calculatedTotal > 0) {
+      // Get VAT rate from financial config
+      const financialConfig = quote.quote_financial_configs?.[0];
+      const vatRate = financialConfig?.vat_config?.display ? (financialConfig.vat_config.rate || 0) : 0;
+      const vatAmount = calculatedTotal * (vatRate / 100);
+      totalWithVAT = calculatedTotal + vatAmount;
+    } else {
+      // Fallback: Use final_amount if available, otherwise calculate from total_amount + tax_amount
+      totalWithVAT = parseFloat(quote.final_amount || 0);
+      if (!totalWithVAT || totalWithVAT === 0) {
+        const totalAmount = parseFloat(quote.total_amount || 0);
+        const taxAmount = parseFloat(quote.tax_amount || 0);
+        totalWithVAT = totalAmount + taxAmount;
+      }
+    }
+    
+    // Subtract deposit from displayed amount (show balance)
+    const financialConfig = quote.quote_financial_configs?.[0];
+    if (financialConfig?.advance_config?.enabled && financialConfig.advance_config.amount > 0) {
+      const depositAmount = parseFloat(financialConfig.advance_config.amount || 0);
+      totalWithVAT = totalWithVAT - depositAmount;
+    }
+    
+    return totalWithVAT;
+  }
+  
+  /**
    * Get client's language preference from database or client object
    * Priority: database (if clientId provided) > client object properties > 'fr'
    * @param {Object} client - Client object (can have id, value, client.id, language_preference, etc.)
@@ -352,6 +416,20 @@ export class EmailService {
    */
   static async sendQuoteSentEmail(quote, client, companyProfile, userId = null, customEmailData = null) {
     try {
+      // Ensure quote has all necessary relations for price calculation
+      // If quote doesn't have quote_tasks, quote_materials, or quote_financial_configs, fetch them
+      if (!quote.quote_tasks || !quote.quote_materials || !quote.quote_financial_configs) {
+        try {
+          const { fetchQuoteById } = await import('./quotesService');
+          const { data: fullQuote } = await fetchQuoteById(quote.id);
+          if (fullQuote) {
+            quote = { ...quote, ...fullQuote };
+          }
+        } catch (fetchError) {
+          console.warn('Failed to fetch full quote data for email, using provided quote:', fetchError);
+        }
+      }
+      
       // If no company profile provided, try to get it from the current user
       if (!companyProfile && userId) {
         companyProfile = await this.getCurrentUserCompanyProfile(userId);
@@ -376,18 +454,21 @@ export class EmailService {
       // Get client's language preference using centralized helper
       const clientLanguage = await this.getClientLanguagePreference(client);
       
+      // Get company name - check both company_name and name fields for compatibility
+      const companyName = companyProfile?.company_name || companyProfile?.name || 'Notre entreprise';
+      
       // Use custom email data if provided, otherwise use defaults
-      const emailSubject = customEmailData?.subject || `Devis ${quote.quote_number} - ${companyProfile?.company_name || 'Notre entreprise'}`;
-      const emailMessage = customEmailData?.message || `Bonjour,\n\nVeuillez trouver ci-joint notre devis pour votre projet.\n\nCordialement,\n${companyProfile?.company_name || 'Votre équipe'}`;
+      const emailSubject = customEmailData?.subject || `Devis ${quote.quote_number} - ${companyName}`;
+      const emailMessage = customEmailData?.message || `Bonjour,\n\nVeuillez trouver ci-joint notre devis pour votre projet.\n\nCordialement,\n${companyName}`;
       
       const variables = {
         client_name: client.name || client.client?.name || 'Madame, Monsieur',
         quote_number: quote.quote_number,
         quote_title: quote.title || quote.project_description || 'Votre projet',
-        quote_amount: `${quote.final_amount || quote.total_amount || 0}€`,
+        quote_amount: this.formatAmount(this.calculateFinalAmount(quote)),
         quote_link: shareToken ? `${BASE_URL}/quote-share/${shareToken}` : '#',
         valid_until: quote.valid_until ? new Date(quote.valid_until).toLocaleDateString('fr-FR') : '30 jours',
-        company_name: companyProfile?.company_name || 'Notre entreprise',
+        company_name: companyName,
         custom_subject: emailSubject,
         custom_message: emailMessage
       };
@@ -534,6 +615,19 @@ export class EmailService {
    */
   static async sendFollowUpEmail(quote, client, companyProfile, followUpType, userId = null, daysSinceSent = null) {
     try {
+      // Ensure quote has all necessary relations for price calculation
+      if (!quote.quote_tasks || !quote.quote_materials || !quote.quote_financial_configs) {
+        try {
+          const { fetchQuoteById } = await import('./quotesService');
+          const { data: fullQuote } = await fetchQuoteById(quote.id);
+          if (fullQuote) {
+            quote = { ...quote, ...fullQuote };
+          }
+        } catch (fetchError) {
+          console.warn('Failed to fetch full quote data for follow-up email, using provided quote:', fetchError);
+        }
+      }
+      
       // If no company profile provided, try to get it from the current user
       if (!companyProfile && userId) {
         companyProfile = await this.getCurrentUserCompanyProfile(userId);
@@ -559,10 +653,10 @@ export class EmailService {
         client_name: client.name || 'Madame, Monsieur',
         quote_number: quote.quote_number,
         quote_title: quote.title || quote.project_description || 'Votre projet',
-        quote_amount: `${quote.final_amount || quote.total_amount || quote.amount || quote.final_amount || 0}€`,
+        quote_amount: this.formatAmount(this.calculateFinalAmount(quote)),
         quote_link: shareToken ? `${BASE_URL}/quote-share/${shareToken}` : '#',
         days_since_sent: daysSinceSent || 'quelques',
-        company_name: companyProfile?.company_name || 'Notre entreprise'
+        company_name: companyProfile?.company_name || companyProfile?.name || 'Notre entreprise'
       };
       
       // Get client ID - check quote.client_id first, then client object
@@ -584,6 +678,19 @@ export class EmailService {
    */
   static async sendClientAcceptedEmail(quote, client, companyProfile, userId = null) {
     try {
+      // Ensure quote has all necessary relations for price calculation
+      if (!quote.quote_tasks || !quote.quote_materials || !quote.quote_financial_configs) {
+        try {
+          const { fetchQuoteById } = await import('./quotesService');
+          const { data: fullQuote } = await fetchQuoteById(quote.id);
+          if (fullQuote) {
+            quote = { ...quote, ...fullQuote };
+          }
+        } catch (fetchError) {
+          console.warn('Failed to fetch full quote data for accepted email, using provided quote:', fetchError);
+        }
+      }
+      
       // If no company profile provided, try to get it from the current user
       if (!companyProfile && userId) {
         companyProfile = await this.getCurrentUserCompanyProfile(userId);
@@ -608,9 +715,9 @@ export class EmailService {
       const variables = {
         client_name: client.name || 'Madame, Monsieur',
         quote_number: quote.quote_number,
-        quote_amount: `${quote.final_amount || quote.total_amount || 0}€`,
+        quote_amount: this.formatAmount(this.calculateFinalAmount(quote)),
         quote_link: shareToken ? `${BASE_URL}/quote-share/${shareToken}` : '#',
-        company_name: companyProfile?.company_name || 'Notre entreprise'
+        company_name: companyProfile?.company_name || companyProfile?.name || 'Notre entreprise'
       };
       
       // Get client ID - check quote.client_id first, then client object
@@ -632,6 +739,19 @@ export class EmailService {
    */
   static async sendClientRejectedEmail(quote, client, companyProfile, userId = null) {
     try {
+      // Ensure quote has all necessary relations for price calculation (if needed)
+      if (!quote.quote_tasks || !quote.quote_materials || !quote.quote_financial_configs) {
+        try {
+          const { fetchQuoteById } = await import('./quotesService');
+          const { data: fullQuote } = await fetchQuoteById(quote.id);
+          if (fullQuote) {
+            quote = { ...quote, ...fullQuote };
+          }
+        } catch (fetchError) {
+          console.warn('Failed to fetch full quote data for rejected email, using provided quote:', fetchError);
+        }
+      }
+      
       // If no company profile provided, try to get it from the current user
       if (!companyProfile && userId) {
         companyProfile = await this.getCurrentUserCompanyProfile(userId);
@@ -640,7 +760,7 @@ export class EmailService {
       const variables = {
         client_name: client.name || 'Madame, Monsieur',
         quote_number: quote.quote_number,
-        company_name: companyProfile?.company_name || 'Notre entreprise'
+        company_name: companyProfile?.company_name || companyProfile?.name || 'Notre entreprise'
       };
       
       // Get client ID - check quote.client_id first, then client object
@@ -669,7 +789,7 @@ export class EmailService {
       
       const variables = {
         client_name: clientData.name || 'Madame, Monsieur',
-        company_name: companyProfile?.company_name || 'Notre entreprise'
+        company_name: companyProfile?.company_name || companyProfile?.name || 'Notre entreprise'
       };
       
       // Get client ID from clientData
@@ -691,6 +811,19 @@ export class EmailService {
    */
   static async sendDraftQuoteMarkedAsSentEmail(quote, client, companyProfile, userId = null) {
     try {
+      // Ensure quote has all necessary relations for price calculation
+      if (!quote.quote_tasks || !quote.quote_materials || !quote.quote_financial_configs) {
+        try {
+          const { fetchQuoteById } = await import('./quotesService');
+          const { data: fullQuote } = await fetchQuoteById(quote.id);
+          if (fullQuote) {
+            quote = { ...quote, ...fullQuote };
+          }
+        } catch (fetchError) {
+          console.warn('Failed to fetch full quote data for draft sent email, using provided quote:', fetchError);
+        }
+      }
+      
       // If no company profile provided, try to get it from the current user
       if (!companyProfile && userId) {
         companyProfile = await this.getCurrentUserCompanyProfile(userId);
@@ -740,18 +873,21 @@ export class EmailService {
         }
       }
       
+      // Get company name - check both company_name and name fields for compatibility
+      const companyName = companyProfile?.company_name || companyProfile?.name || 'Notre entreprise';
+      
       // Use default email content for draft quotes marked as sent
-      const emailSubject = `Devis ${quote.quote_number} - ${companyProfile?.company_name || 'Notre entreprise'}`;
-      const emailMessage = `Bonjour,\n\nVeuillez trouver ci-joint notre devis pour votre projet.\n\nCordialement,\n${companyProfile?.company_name || 'Votre équipe'}`;
+      const emailSubject = `Devis ${quote.quote_number} - ${companyName}`;
+      const emailMessage = `Bonjour,\n\nVeuillez trouver ci-joint notre devis pour votre projet.\n\nCordialement,\n${companyName}`;
       
       const variables = {
         client_name: client.name || 'Madame, Monsieur',
         quote_number: quote.quote_number,
         quote_title: quote.title || quote.description || 'Votre projet',
-        quote_amount: `${quote.final_amount || quote.total_amount || 0}€`,
+        quote_amount: this.formatAmount(this.calculateFinalAmount(quote)),
         quote_link: shareToken ? `${BASE_URL}/quote-share/${shareToken}` : '#',
         valid_until: quote.valid_until ? new Date(quote.valid_until).toLocaleDateString('fr-FR') : '30 jours',
-        company_name: companyProfile?.company_name || 'Notre entreprise',
+        company_name: companyProfile?.company_name || companyProfile?.name || 'Notre entreprise',
         custom_subject: emailSubject,
         custom_message: emailMessage
       };

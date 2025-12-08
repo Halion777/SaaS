@@ -1070,7 +1070,7 @@ const QuoteCreation = () => {
         // Calculate total amount and final amount with VAT for correct price display in quotes management
         const totalAmount = tasks.reduce((sum, task) => {
           const taskMaterialsTotal = task.materials.reduce((matSum, mat) =>
-            matSum + (mat.price * parseFloat(mat.quantity || 1)), 0);
+            matSum + (parseFloat(mat.price) || 0), 0);
           return sum + (task.price || 0) + taskMaterialsTotal;
         }, 0);
 
@@ -1175,7 +1175,7 @@ const QuoteCreation = () => {
               // Update the existing quote directly instead of creating a draft
               const totalAmount = tasks.reduce((sum, task) => {
                 const taskMaterialsTotal = task.materials.reduce((matSum, mat) =>
-                  matSum + (mat.price * parseFloat(mat.quantity || 1)), 0);
+                  matSum + (parseFloat(mat.price) || 0), 0);
                 return sum + (task.price || 0) + taskMaterialsTotal;
               }, 0);
 
@@ -1966,7 +1966,7 @@ const QuoteCreation = () => {
 
           const taskMaterialsTotal = task.materials.reduce((matSum, mat) =>
 
-            matSum + (mat.price * parseFloat(mat.quantity || 1)), 0);
+            matSum + (parseFloat(mat.price) || 0), 0);
 
           return sum + (task.price || 0) + taskMaterialsTotal;
 
@@ -2144,7 +2144,7 @@ const QuoteCreation = () => {
 
         const taskMaterialsTotal = task.materials.reduce((matSum, mat) =>
 
-          matSum + (mat.price * parseFloat(mat.quantity || 1)), 0);
+          matSum + (parseFloat(mat.price) || 0), 0);
 
         return sum + (task.price || 0) + taskMaterialsTotal;
 
@@ -2978,7 +2978,7 @@ const QuoteCreation = () => {
 
           const taskMaterialsTotal = task.materials.reduce((matSum, mat) =>
 
-            matSum + (mat.price * parseFloat(mat.quantity || 1)), 0);
+            matSum + (parseFloat(mat.price) || 0), 0);
 
           return sum + (task.price || 0) + taskMaterialsTotal;
 
@@ -3155,7 +3155,7 @@ const QuoteCreation = () => {
 
         const taskMaterialsTotal = task.materials.reduce((matSum, mat) =>
 
-          matSum + (mat.price * parseFloat(mat.quantity || 1)), 0);
+          matSum + (parseFloat(mat.price) || 0), 0);
 
         return sum + (task.price || 0) + taskMaterialsTotal;
 

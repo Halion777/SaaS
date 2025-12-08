@@ -826,7 +826,7 @@ const QuotePreview = ({
                             <td className={`border border-gray-300 font-semibold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{buildConciseTaskLabel(task.description, index)}</td>
                             <td className={`border border-gray-300 text-center ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}></td>
                             <td className={`border border-gray-300 text-right ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}></td>
-                            <td className={`border border-gray-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{taskSubtotal.toFixed(2)}€</td>
+                            <td className={`border border-gray-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{formatMoney(taskSubtotal)}</td>
                           </tr>
 
                           {/* Labor row */}

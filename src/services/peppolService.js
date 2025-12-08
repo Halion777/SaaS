@@ -298,44 +298,24 @@ const formatVATNumber = (vatNumber, countryCode) => {
  */
 const validateMOD97_0208 = (enterpriseNumber) => {
   if (!enterpriseNumber || typeof enterpriseNumber !== 'string') {
-    console.warn('[Peppol] MOD97 validation failed: enterpriseNumber is not a string', { enterpriseNumber, type: typeof enterpriseNumber });
     return false;
   }
   
   // Must be exactly 10 digits
   const digitsOnly = enterpriseNumber.replace(/\D/g, '');
   if (digitsOnly.length !== 10) {
-    console.warn('[Peppol] MOD97 validation failed: not exactly 10 digits', { 
-      original: enterpriseNumber, 
-      digitsOnly, 
-      length: digitsOnly.length 
-    });
     return false;
   }
   
   // MOD97-0208 validation: The 10-digit number must be divisible by 97
-  // The full 10-digit number must be divisible by 97
+  // The last 2 digits are the check digits
+  const baseNumber = parseInt(digitsOnly.substring(0, 8), 10); // First 8 digits
+  const checkDigits = parseInt(digitsOnly.substring(8, 10), 10); // Last 2 digits
+  
+  // Calculate: baseNumber % 97 should equal checkDigits
+  // But actually, the full 10-digit number should be divisible by 97
   const fullNumber = parseInt(digitsOnly, 10);
-  const remainder = fullNumber % 97;
-  const isValid = remainder === 0;
-  
-  if (!isValid) {
-    console.warn('[Peppol] MOD97 validation failed: not divisible by 97', { 
-      enterpriseNumber: digitsOnly, 
-      fullNumber, 
-      remainder,
-      expected: 0,
-      calculation: `${fullNumber} % 97 = ${remainder}`
-    });
-  } else {
-    console.log('[Peppol] MOD97 validation passed:', { 
-      enterpriseNumber: digitsOnly, 
-      fullNumber,
-      calculation: `${fullNumber} % 97 = ${remainder}`
-    });
-  }
-  
-  return isValid;
+  return fullNumber % 97 === 0;
 };
 
 /**
@@ -444,15 +424,15 @@ const generatePartyInfo = (party, isSupplier = true) => {
       const providedId = parts[1];
       
       // Use provided identifier as-is - respect the user's choice of scheme
-      endpointScheme = providedScheme;
+        endpointScheme = providedScheme;
       
-      // For Belgian scheme 0208, ensure we extract only digits and pad to 10 digits
-      if (providedScheme === '0208') {
-        const digitsOnly = providedId.replace(/\D/g, '');
-        endpointId = digitsOnly.padStart(10, '0').substring(0, 10);
-      } else {
+        // For Belgian scheme 0208, ensure we extract only digits and pad to 10 digits
+        if (providedScheme === '0208') {
+          const digitsOnly = providedId.replace(/\D/g, '');
+          endpointId = digitsOnly.padStart(10, '0').substring(0, 10);
+        } else {
         // For other schemes (like 9925), use the ID as-is (may include country prefix like "BE")
-        endpointId = providedId;
+          endpointId = providedId;
       }
     } else {
       // If no colon, assume it's just the ID - need to determine scheme from VAT
@@ -498,11 +478,9 @@ const generatePartyInfo = (party, isSupplier = true) => {
   // Expected format: EndpointID = "0630675508" (digits only, no country prefix)
   // MUST pass MOD97-0208 checksum validation per PEPPOL-COMMON-R043
   // PEPPOL-COMMON-R043: matches(normalize-space(), '^[0-9]{10}$') and u:mod97-0208(normalize-space())
-  // CRITICAL: The value must be exactly 10 digits with NO whitespace (leading, trailing, or internal)
   if (endpointScheme === '0208') {
-    // Remove ALL non-digit characters (including whitespace, newlines, etc.)
-    // Use replace with global flag to remove all non-digits
-    const digitsOnly = endpointId.replace(/[^\d]/g, '');
+    // Remove all non-digit characters and trim whitespace
+    const digitsOnly = endpointId.replace(/\D/g, '').trim();
     
     // Ensure exactly 10 digits (pad with zeros if needed, truncate if too long)
     let formattedId = digitsOnly;
@@ -512,25 +490,11 @@ const generatePartyInfo = (party, isSupplier = true) => {
       formattedId = formattedId.substring(0, 10);
     }
     
-    // Final validation: Must be exactly 10 digits (no whitespace, no special chars)
-    if (!/^\d{10}$/.test(formattedId)) {
-      throw new Error(
-        `Invalid Belgian enterprise number format. Expected exactly 10 digits, got: ${formattedId}`
-      );
-    }
-    
     // Validate MOD97-0208 checksum (PEPPOL-COMMON-R043 requirement)
     if (!validateMOD97_0208(formattedId)) {
-      // MOD97 validation failed - suggest trying 9925 scheme instead
-      // Extract country code from party data or default to BE
-      const countryCode = (party.countryCode || 'BE').toUpperCase();
-      const suggestedId = `9925:${countryCode}${formattedId}`;
-      throw new Error(
-        `Failed to Send. Please try this formatted Peppol ID: ${suggestedId}`
-      );
+      // MOD97 validation failed - will fail at Peppol level
     }
     
-    // Assign the clean, validated ID (guaranteed to be exactly 10 digits, no whitespace)
     endpointId = formattedId;
   }
 
@@ -551,7 +515,7 @@ const generatePartyInfo = (party, isSupplier = true) => {
           formattedVAT = identifier.toUpperCase();
         } else {
           // If no country code, add it from countryCode
-          const countryCode = normalizeCountryCode(party.countryCode);
+  const countryCode = normalizeCountryCode(party.countryCode);
           formattedVAT = `${countryCode}${identifier}`;
         }
       }
@@ -580,50 +544,34 @@ const generatePartyInfo = (party, isSupplier = true) => {
   
   const countryCode = normalizeCountryCode(party.countryCode);
   
- 
-  // For 0208 scheme, ensure EndpointID has absolutely no whitespace
-  // PEPPOL-COMMON-R043 requires: matches(normalize-space(), '^[0-9]{10}$')
-  // This means the value must be exactly 10 digits with no whitespace
-  let finalEndpointId = endpointId;
+  // PartyIdentification block is required for certain schemes:
+  // - 0208 (Belgian enterprise number): Requires PartyIdentification WITHOUT schemeID attribute (causes R043 if included)
+  // - 9925 (Belgian VAT number): Requires PartyIdentification with schemeID="9925"
+  let partyIdentificationBlock = '';
+  
   if (endpointScheme === '0208') {
-    // Remove any potential whitespace (should already be clean, but double-check)
-    finalEndpointId = endpointId.replace(/[^\d]/g, '');
-    // Ensure exactly 10 digits
-    if (finalEndpointId.length !== 10) {
-      console.error('[Peppol] Invalid 0208 EndpointID length:', {
-        original: endpointId,
-        cleaned: finalEndpointId,
-        length: finalEndpointId.length,
-        partyType: isSupplier ? 'sender' : 'receiver'
-      });
-      throw new Error(`Invalid 0208 EndpointID: must be exactly 10 digits, got ${finalEndpointId.length} digits`);
-    }
-    // Final validation: Must match regex ^[0-9]{10}$ (exactly 10 digits, no whitespace)
-    if (!/^\d{10}$/.test(finalEndpointId)) {
-      console.error('[Peppol] Invalid 0208 EndpointID format:', {
-        original: endpointId,
-        cleaned: finalEndpointId,
-        partyType: isSupplier ? 'sender' : 'receiver'
-      });
-      throw new Error(`Invalid 0208 EndpointID format: must be exactly 10 digits (no whitespace), got: "${finalEndpointId}"`);
-    }
-    // Log for debugging
-    console.log('[Peppol] 0208 EndpointID formatted:', {
-      original: endpointId,
-      final: finalEndpointId,
-      length: finalEndpointId.length,
-      partyType: isSupplier ? 'sender' : 'receiver',
-      mod97Valid: validateMOD97_0208(finalEndpointId)
-    });
-  } else {
-    // For other schemes, just trim whitespace
-    finalEndpointId = endpointId.trim();
+    // For 0208: PartyIdentification/cbc:ID should NOT have schemeID attribute (will cause R043 error if included)
+    // Only the EndpointID has schemeID="0208", PartyIdentification/cbc:ID should be plain
+    partyIdentificationBlock = `
+        <cac:PartyIdentification>
+          <cbc:ID>${xmlEscape(endpointId.trim())}</cbc:ID>
+        </cac:PartyIdentification>`;
+  } else if (endpointScheme === '9925') {
+    // For 9925: PartyIdentification/cbc:ID should NOT have schemeID attribute (BR-CL-10 error if included)
+    // Only the EndpointID has schemeID="9925", PartyIdentification/cbc:ID should be plain
+    // The schemeID="9925" in PartyIdentification/cbc:ID is NOT valid per ISO 6523 ICD list (BR-CL-10)
+    partyIdentificationBlock = `
+        <cac:PartyIdentification>
+          <cbc:ID>${xmlEscape(endpointId.trim())}</cbc:ID>
+        </cac:PartyIdentification>`;
   }
+  // For other schemes, PartyIdentification is optional - can be added if needed in the future
   
   return `
     <cac:${partyType}>
       <cac:Party>
-        <cbc:EndpointID schemeID="${endpointScheme}">${xmlEscape(finalEndpointId)}</cbc:EndpointID>
+        <cbc:EndpointID schemeID="${endpointScheme}">${xmlEscape(endpointId.trim())}</cbc:EndpointID>
+        ${partyIdentificationBlock}
         <cac:PartyName>
           <cbc:Name>${xmlEscape(party.name)}</cbc:Name>
         </cac:PartyName>
@@ -690,7 +638,9 @@ const generateDelivery = (invoiceConfig) => {
 const generatePaymentMeansAndTerms = (invoiceConfig) => {
   // IBAN is required for credit transfer payments (PaymentMeansCode 30, 31, 58)
   // But we'll make it optional to handle cases where it's not provided
-  const hasIBAN = invoiceConfig.sender.iban && invoiceConfig.sender.iban.trim() !== '';
+  // Remove all spaces from IBAN before adding to XML
+  const cleanedIBAN = invoiceConfig.sender.iban ? invoiceConfig.sender.iban.replace(/\s+/g, '') : '';
+  const hasIBAN = cleanedIBAN && cleanedIBAN.trim() !== '';
   
   return `
 <cac:PaymentMeans>
@@ -698,7 +648,7 @@ const generatePaymentMeansAndTerms = (invoiceConfig) => {
   <cbc:PaymentID>${xmlEscape(invoiceConfig.billName)}</cbc:PaymentID>
   ${hasIBAN ? `
   <cac:PayeeFinancialAccount>
-    <cbc:ID>${xmlEscape(invoiceConfig.sender.iban)}</cbc:ID>
+    <cbc:ID>${xmlEscape(cleanedIBAN)}</cbc:ID>
     <cbc:Name>${xmlEscape(invoiceConfig.sender.name)}</cbc:Name>
   </cac:PayeeFinancialAccount>
   ` : ''}
@@ -1054,13 +1004,8 @@ export class PeppolService {
       });
 
       if (response.error) {
-        // If 404, check if it's a webhook config error vs participant not found
+        // If 404, participant doesn't support the document type
         if (response.error.status === 404 || response.error.message?.includes('404')) {
-          // Webhook config errors are transient - don't block sending
-          if (response.error.message?.includes('webhook') || response.error.message?.includes('Failed to configure')) {
-            return { supported: false, supportedDocuments: [], error: 'Webhook configuration error (transient)' };
-          }
-          // Participant not found or doesn't support document type
           return { supported: false, supportedDocuments: [] };
         }
         throw new Error(response.error.message);
@@ -1230,16 +1175,12 @@ export class PeppolService {
         let validation;
         try {
           // CORRECT: Use validateDocumentStructure for local validation
-          console.log('[Peppol] Starting local document validation...');
           validation = await this.validateDocumentStructure(xml);
-          console.log('[Peppol] Local validation result:', JSON.stringify(validation, null, 2));
         } catch (validationError) {
-          console.error('[Peppol] Validation threw error:', validationError);
           throw new Error(`Document validation error: ${validationError.message || validationError.toString() || 'Unknown validation error'}`);
         }
         
         if (!validation) {
-          console.error('[Peppol] Validation returned null/undefined');
           throw new Error('Document validation failed: Validation function returned no result');
         }
         
@@ -1255,18 +1196,10 @@ export class PeppolService {
               errorMessages = `Validation failed: ${JSON.stringify(validation.errors)}`;
             }
           }
-          console.error('[Peppol] Local validation failed:', {
-            valid: validation.valid,
-            errors: validation.errors,
-            errorMessage: errorMessages
-          });
           throw new Error(`Document validation failed: ${errorMessages}`);
         }
         
-        console.log('[Peppol] ✅ Local validation passed, proceeding to send...');
-        
         // Send via edge function
-        console.log('[Peppol] Sending invoice via edge function...');
         const response = await supabase.functions.invoke('peppol-webhook-config', {
           body: {
             endpoint: this.config.baseUrl,
@@ -1277,16 +1210,7 @@ export class PeppolService {
           }
         });
         
-        console.log('[Peppol] Edge function response:', {
-          hasError: !!response.error,
-          error: response.error,
-          hasData: !!response.data,
-          data: response.data
-        });
-        
         if (response.error) {
-          console.error('[Peppol] Edge function returned error:', response.error);
-          
           // Parse error details from Digiteal API
           let errorMessage = response.error.message || 'Unknown error';
           
@@ -1306,7 +1230,6 @@ export class PeppolService {
             } catch (e) {
               // If parsing fails, use the original error message
             }
-
           }
           
           throw new Error(errorMessage);
@@ -1318,19 +1241,9 @@ export class PeppolService {
           if (validationResult && validationResult.status === 'ERROR') {
             const errors = validationResult.errors || [];
             const errorMessages = errors.map(e => `${e.id}: ${e.description}`).join(', ');
-            console.error('[Peppol] Document validation failed in edge function:', {
-              status: validationResult.status,
-              errors: errors,
-              errorMessages: errorMessages
-            });
             throw new Error(`Document validation failed: ${errorMessages || 'Validation failed'}`);
-          } else if (validationResult && validationResult.status === 'OK') {
-            console.log('[Peppol] ✅ Document validation passed in edge function');
           }
         }
-        
-        // Success
-        console.log('[Peppol] ✅ Invoice sent successfully');
         return {
           success: true,
           message: "Invoice sent successfully",
@@ -1342,19 +1255,14 @@ export class PeppolService {
         
         // Don't retry for non-transient errors
         const errorMessage = error.message || '';
-        // Webhook config errors (404) are transient and should be retried
-        const isWebhookError = errorMessage.includes('webhook') || errorMessage.includes('Failed to configure');
-        
         if (errorMessage.includes('not found') || 
-            (errorMessage.includes('validation') && !isWebhookError) ||
+            errorMessage.includes('validation') ||
             errorMessage.includes('receiver not found') ||
             errorMessage.includes('401') ||
             errorMessage.includes('Unauthorized') ||
-            (errorMessage.includes('404') && !isWebhookError)) {
+            errorMessage.includes('404')) {
           throw error;
         }
-        
-        // For webhook errors, continue retrying (don't throw immediately)
         
         // Wait before retry (exponential backoff)
         if (attempt < maxRetries) {
@@ -1423,11 +1331,25 @@ export class PeppolService {
             `Receiver Peppol ID ${receiverPeppolIdentifier} not found on Peppol network. ` +
             `Please verify the Peppol ID is correct or use email delivery method.`
           );
-        }
+      }
       }
 
-      // Note: Document type checking removed due to unreliable webhook API responses
-      // The actual send operation will handle any document type issues
+      // CRITICAL: Check if receiver supports INVOICE document type before sending
+      // Use the Peppol identifier from UI (if provided) or discovered identifier
+      const documentTypeCheck = await this.checkReceiverSupportsDocumentType(
+        receiverPeppolIdentifier,
+        'INVOICE'
+      );
+
+      if (!documentTypeCheck.supported) {
+        const supportedTypes = documentTypeCheck.supportedDocuments?.map(d => d.type || d.fullType).join(', ') || 'none';
+        throw new Error(
+          `Receiver ${receiverPeppolIdentifier} is registered on Peppol but does not support INVOICE document type. ` +
+          `Supported document types: ${supportedTypes || 'none'}. ` +
+          `Please contact the receiver to enable INVOICE support or use email delivery method.`
+        );
+      }
+
       // Send with retry logic
       return await this.sendWithRetry(invoiceData, 3);
       
@@ -1466,7 +1388,7 @@ export class PeppolService {
       throw new Error('At least one invoice line item is required.');
     }
     
-    return {
+        return {
       billName: haliqoInvoice.invoice_number || `INV-${Date.now()}`,
       // Use issue_date from schema (invoices.issue_date), fallback to created_at if not available
       issueDate: formatDate(haliqoInvoice.issue_date || haliqoInvoice.created_at || new Date(), "date"),
@@ -1847,7 +1769,7 @@ export class PeppolService {
         // For non-Belgium, use the provided ID as primary
         peppolIdToSave = settings.peppolId;
       }
-      
+
       // Then save to database using upsert to handle updates
       const { data, error } = await supabase
         .from('peppol_settings')
@@ -2253,14 +2175,14 @@ export class PeppolService {
       let response;
       try {
         response = await supabase.functions.invoke('peppol-webhook-config', {
-          body: {
-            endpoint: this.config.baseUrl,
-            username: this.config.username,
-            password: this.config.password,
-            action: 'register-participant',
-            participantData: payload
-          }
-        });
+        body: {
+          endpoint: this.config.baseUrl,
+          username: this.config.username,
+          password: this.config.password,
+          action: 'register-participant',
+          participantData: payload
+        }
+      });
       } catch (invokeError) {
         // If Supabase throws an error, try to extract error message from it
         // Edge function invocation error
@@ -2319,29 +2241,29 @@ export class PeppolService {
         
         // PRIORITY 2: Try to parse the details field which contains the full API error response
         if (!errorMessage && errorData.details) {
-          try {
-            const parsedDetails = JSON.parse(errorData.details);
+            try {
+              const parsedDetails = JSON.parse(errorData.details);
             
             // Check if it's the Digiteal API error format
             if (parsedDetails.status === 'ALREADY_REGISTERED_TO_DIGITEAL' || 
                 parsedDetails.errorCode === 'REGISTER_ALREADY_REGISTERED_TO_DIGITEAL') {
-              isAlreadyRegistered = true;
+                isAlreadyRegistered = true;
               // Use the message from API response
               errorMessage = parsedDetails.message || parsedDetails.errorMessage || errorData.error || 'Participant is already registered';
             } else if (parsedDetails.message) {
               // Use message from parsed details
-              errorMessage = parsedDetails.message;
+                  errorMessage = parsedDetails.message;
             } else if (parsedDetails.errorMessage) {
               errorMessage = parsedDetails.errorMessage;
             } else if (parsedDetails.error) {
               errorMessage = parsedDetails.error;
-            }
-          } catch (e) {
+              }
+            } catch (e) {
             // If parsing fails, continue to other error extraction methods
             // Failed to parse error details
+            }
           }
-        }
-        
+          
         // PRIORITY 3: Fallback to response.error if we still don't have an error message
         // But skip generic Supabase error messages like "non-2xx" or "Edge Function returned"
         if (!errorMessage && response.error) {
@@ -2360,16 +2282,16 @@ export class PeppolService {
             if (fallbackErrorLower.includes('already_registered') || 
                 fallbackErrorLower.includes('already registered') ||
                 fallbackErrorLower.includes('already registered for reception')) {
-              isAlreadyRegistered = true;
-            }
+            isAlreadyRegistered = true;
+          }
           }
         }
         
         // If still no error message, use a default
         if (!errorMessage) {
           errorMessage = 'Failed to register participant';
-        }
-        
+          }
+          
         // Make error message user-friendly and concise
         if (isAlreadyRegistered) {
           // Determine if registered in Digiteal or globally in Peppol
