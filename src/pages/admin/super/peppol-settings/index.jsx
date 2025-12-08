@@ -112,6 +112,17 @@ const Peppol = () => {
     fetchParticipants();
   }, []);
 
+  // Auto-hide testResult messages after 10 seconds
+  useEffect(() => {
+    if (testResult) {
+      const timer = setTimeout(() => {
+        setTestResult(null);
+      }, 10000); // 10 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [testResult]);
+
   const checkWebhookStatus = async () => {
     try {
       const { count } = await supabase
@@ -429,6 +440,8 @@ const Peppol = () => {
   };
 
   // Helper function to find related Belgian IDs
+  // For Belgian participants, always generate both 0208 and 9925 IDs
+  // to ensure both are shown and can be deleted together
   const findRelatedBelgianIds = (peppolIdentifier) => {
     const related = [peppolIdentifier];
     
@@ -441,20 +454,26 @@ const Peppol = () => {
         if (scheme === '9925' && identifier.toLowerCase().startsWith('be')) {
           // Extract 10 digits from BEXXXXXXXXXX
           const digitsOnly = identifier.replace(/\D/g, '').substring(2);
-          const id0208 = `0208:${digitsOnly}`;
-          // Check if this ID exists in participants
-          const exists = participants.some(p => (p.peppolIdentifier || p.id) === id0208);
-          if (exists) {
-            related.push(id0208);
+          if (digitsOnly.length === 10) {
+            const id0208 = `0208:${digitsOnly}`;
+            // Always include 0208 ID for Belgian participants
+            // Check if it exists in participants, but include it anyway
+            const exists = participants.some(p => (p.peppolIdentifier || p.id) === id0208);
+            if (!related.includes(id0208)) {
+              related.push(id0208);
+            }
           }
         } else if (scheme === '0208') {
           // Generate 9925 ID from 0208
           const digitsOnly = identifier.replace(/\D/g, '');
-          const id9925 = `9925:be${digitsOnly}`;
-          // Check if this ID exists in participants
-          const exists = participants.some(p => (p.peppolIdentifier || p.id) === id9925);
-          if (exists) {
-            related.push(id9925);
+          if (digitsOnly.length === 10) {
+            const id9925 = `9925:be${digitsOnly}`;
+            // Always include 9925 ID for Belgian participants
+            // Check if it exists in participants, but include it anyway
+            const exists = participants.some(p => (p.peppolIdentifier || p.id) === id9925);
+            if (!related.includes(id9925)) {
+              related.push(id9925);
+            }
           }
         }
       }
@@ -683,12 +702,19 @@ const Peppol = () => {
 
           {/* Status Alert */}
           {testResult && (
-            <div className={`p-5 rounded-xl border-2 shadow-lg ${
+            <div className={`p-5 rounded-xl border-2 shadow-lg relative ${
               testResult.success 
                 ? 'bg-white border-green-300 shadow-green-200/50' 
                 : 'bg-white border-red-300 shadow-red-200/50'
             }`}>
-              <div className="flex items-start gap-4">
+              <button
+                onClick={() => setTestResult(null)}
+                className="absolute top-3 right-3 p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                aria-label="Close message"
+              >
+                <Icon name="X" size={18} />
+              </button>
+              <div className="flex items-start gap-4 pr-6">
                 <div className={`p-2 rounded-lg flex-shrink-0 ${
                   testResult.success 
                     ? 'bg-green-100' 
@@ -1147,71 +1173,116 @@ const Peppol = () => {
               </div>
 
               {/* Related IDs for Belgium */}
-              {relatedIds.length > 1 && (
-                <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-                  <div className="flex items-start gap-3 mb-4">
-                    <div className="p-1.5 bg-primary/10 rounded-lg border border-primary/20 flex-shrink-0">
-                      <Icon name="Info" size={18} className="text-primary" />
+              {relatedIds.length > 1 && (() => {
+                const hasBothBelgianIds = relatedIds.length === 2 && 
+                  relatedIds.some(rid => rid.startsWith('0208:')) && 
+                  relatedIds.some(rid => rid.startsWith('9925:'));
+                
+                return (
+                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="p-1.5 bg-primary/10 rounded-lg border border-primary/20 flex-shrink-0">
+                        <Icon name="Info" size={18} className="text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-foreground mb-1">Belgian Peppol IDs Detected</p>
+                        <p className="text-xs text-muted-foreground">
+                          This Belgian participant has both 0208 (Company Number) and 9925 (VAT-based) IDs. 
+                          <strong className="text-foreground"> Both IDs must be unregistered together</strong> to prevent data inconsistencies.
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-foreground mb-1">Belgian Peppol IDs Detected</p>
-                      <p className="text-xs text-muted-foreground">
-                        This participant has multiple Peppol IDs registered. Select which ones you want to unregister.
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    {relatedIds.map((id) => {
-                      const participant = participants.find(p => (p.peppolIdentifier || p.id) === id);
-                      const isChecked = idsToDelete.has(id);
-                      return (
-                        <label
-                          key={id}
-                          className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                            isChecked
-                              ? 'bg-primary/10 border-primary/40 shadow-sm'
-                              : 'bg-card border-border hover:border-primary/30 hover:bg-muted/50'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={(e) => {
-                              const newSet = new Set(idsToDelete);
-                              if (e.target.checked) {
-                                newSet.add(id);
-                              } else {
-                                newSet.delete(id);
-                              }
-                              setIdsToDelete(newSet);
-                            }}
-                            className="w-4 h-4 text-primary rounded focus:ring-2 focus:ring-primary focus:ring-offset-2 cursor-pointer"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <code className="text-sm font-mono bg-muted px-2.5 py-1 rounded border border-border">{id}</code>
-                              <span className={`text-xs px-2 py-1 rounded font-medium ${
-                                id.startsWith('9925:') 
-                                  ? 'bg-accent/10 text-accent border border-accent/20' 
-                                  : 'bg-secondary/10 text-secondary border border-secondary/20'
-                              }`}>
-                                {id.startsWith('9925:') ? 'VAT-based' : 'Company Number'}
-                              </span>
+                    
+                    <div className="space-y-2">
+                      {relatedIds.map((id) => {
+                        const participant = participants.find(p => (p.peppolIdentifier || p.id) === id);
+                        const isChecked = idsToDelete.has(id);
+                        const isBelgianId = id.startsWith('9925:') || id.startsWith('0208:');
+                        
+                        return (
+                          <label
+                            key={id}
+                            className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                              isChecked
+                                ? 'bg-primary/10 border-primary/40 shadow-sm'
+                                : 'bg-card border-border hover:border-primary/30 hover:bg-muted/50'
+                            } ${hasBothBelgianIds && !isChecked ? 'border-destructive/30 bg-destructive/5' : ''}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                const newSet = new Set(idsToDelete);
+                                if (e.target.checked) {
+                                  newSet.add(id);
+                                } else {
+                                  // Warn if trying to uncheck one of the Belgian IDs when both should be deleted
+                                  if (hasBothBelgianIds && isBelgianId) {
+                                    const otherId = relatedIds.find(rid => rid !== id);
+                                    if (otherId && newSet.has(otherId)) {
+                                      // If the other Belgian ID is still checked, warn but allow
+                                      // In practice, we should keep both checked for Belgian participants
+                                      const confirmUncheck = window.confirm(
+                                        'Warning: This Belgian participant has both 0208 and 9925 IDs. ' +
+                                        'Unchecking one ID may cause data inconsistencies. ' +
+                                        'Are you sure you want to uncheck this ID?'
+                                      );
+                                      if (!confirmUncheck) {
+                                        return; // Don't uncheck if user cancels
+                                      }
+                                    }
+                                  }
+                                  newSet.delete(id);
+                                }
+                                setIdsToDelete(newSet);
+                              }}
+                              className="w-4 h-4 text-primary rounded focus:ring-2 focus:ring-primary focus:ring-offset-2 cursor-pointer"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <code className="text-sm font-mono bg-muted px-2.5 py-1 rounded border border-border">{id}</code>
+                                <span className={`text-xs px-2 py-1 rounded font-medium ${
+                                  id.startsWith('9925:') 
+                                    ? 'bg-accent/10 text-accent border border-accent/20' 
+                                    : 'bg-secondary/10 text-secondary border border-secondary/20'
+                                }`}>
+                                  {id.startsWith('9925:') ? 'VAT-based' : 'Company Number'}
+                                </span>
+                                {!participant && (
+                                  <span className="text-xs px-2 py-1 rounded font-medium bg-muted/50 text-muted-foreground border border-border">
+                                    Generated ID
+                                  </span>
+                                )}
+                              </div>
+                              {participant ? (
+                                <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                                  <Icon name="Building" size={12} />
+                                  {participant.name || 'N/A'} • {participant.countryCode || 'N/A'}
+                                </p>
+                              ) : (
+                                <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                                  <Icon name="Info" size={12} />
+                                  Related ID (may exist in database or Peppol network)
+                                </p>
+                              )}
                             </div>
-                            {participant && (
-                              <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
-                                <Icon name="Building" size={12} />
-                                {participant.name || 'N/A'} • {participant.countryCode || 'N/A'}
-                              </p>
-                            )}
-                          </div>
-                        </label>
-                      );
-                    })}
+                          </label>
+                        );
+                      })}
+                    </div>
+                    
+                    {/* Warning if not all Belgian IDs are selected */}
+                    {hasBothBelgianIds && idsToDelete.size < relatedIds.length && (
+                      <div className="mt-3 p-2.5 bg-destructive/5 border border-destructive/20 rounded-lg">
+                        <p className="text-xs text-destructive flex items-center gap-1.5">
+                          <Icon name="AlertTriangle" size={14} />
+                          <strong>Warning:</strong> Not all Belgian IDs are selected. Both 0208 and 9925 IDs should be unregistered together.
+                        </p>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Single ID */}
               {relatedIds.length === 1 && (
