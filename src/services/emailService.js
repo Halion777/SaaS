@@ -493,11 +493,18 @@ export class EmailService {
       // Calculate financial breakdown for email variables
       const financialBreakdown = this.calculateFinancialBreakdown(quote);
       
+      // Prefer total with VAT if available, otherwise fall back to total before VAT or stored amounts
+      const displayAmount = this.formatAmount(
+        financialBreakdown.totalWithVAT ||
+        financialBreakdown.totalBeforeVAT ||
+        parseFloat(quote.final_amount || quote.total_amount || 0)
+      );
+      
       const variables = {
         client_name: client.name || client.client?.name || 'Madame, Monsieur',
         quote_number: quote.quote_number,
         quote_title: quote.title || quote.project_description || 'Votre projet',
-        quote_amount: this.formatAmount(financialBreakdown.balanceAmount),
+        quote_amount: displayAmount,
         quote_link: shareToken ? `${BASE_URL}/quote-share/${shareToken}` : '#',
         valid_until: quote.valid_until ? new Date(quote.valid_until).toLocaleDateString('fr-FR') : '30 jours',
         company_name: companyName,

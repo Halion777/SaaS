@@ -4378,9 +4378,21 @@
         "pending": "In behandeling",
         "overdue": "Achterstallig"
       },
+      "paymentMethods": {
+        "creditTransfer": "Overschrijving",
+        "paymentCard": "Betaalkaart",
+        "directDebit": "Automatische incasso",
+        "paypal": "PayPal",
+        "creditCard": "Creditcard",
+        "code": "Code"
+      },
       "source": {
         "manual": "Handmatig",
         "peppol": "Peppol"
+      },
+      "peppolInfo": {
+        "messageId": "Bericht-ID",
+        "messageIdAndBuyerReference": "Bericht-ID / Klantreferentie"
       },
       "categories": {
         "fuel": "Brandstof",

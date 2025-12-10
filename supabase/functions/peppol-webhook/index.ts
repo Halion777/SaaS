@@ -5,6 +5,8 @@
 // @ts-ignore
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 // @ts-ignore
+import { XMLParser } from 'npm:fast-xml-parser';
+// @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 // Peppol webhook event types from Digiteal API
@@ -127,34 +129,28 @@ serve(async (req: Request) => {
       }
     }
     
-    // Extract message ID from XML for acknowledgment events
-    let messageId = '';
-    if (ublXml && (eventType === PEPPOL_EVENT_TYPES.TRANSPORT_ACK_RECEIVED || 
-                   eventType === PEPPOL_EVENT_TYPES.MLR_RECEIVED ||
-                   eventType === PEPPOL_EVENT_TYPES.SEND_PROCESSING_OUTCOME)) {
+    // Extract message ID (for all events). Fallbacks: payload field -> UBL message identifiers -> instance identifier
+    let messageId = digitealPayload?.messageId || digitealPayload?.peppolMessageId || '';
+    if (ublXml) {
       try {
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(ublXml, 'text/xml');
-        
-        // Check for parsing errors
-        const parserError = xmlDoc.querySelector('parsererror');
-        if (parserError) {
-          console.error('[Peppol Webhook] XML parsing error:', parserError.textContent);
-        } else {
-          // Try to find UAMessageIdentifier (for transport acks) or MessageIdentifier
-          const uaMessageId = xmlDoc.getElementsByTagName('UAMessageIdentifier')[0];
-          if (uaMessageId && uaMessageId.textContent) {
-            messageId = uaMessageId.textContent.trim();
-            console.log('[Peppol Webhook] Extracted UAMessageIdentifier from XML:', messageId);
-          } else {
-            const messageIdEl = xmlDoc.getElementsByTagName('MessageIdentifier')[0];
-            if (messageIdEl && messageIdEl.textContent) {
-              messageId = messageIdEl.textContent.trim();
-              console.log('[Peppol Webhook] Extracted MessageIdentifier from XML:', messageId);
-            } else {
-              console.warn('[Peppol Webhook] Could not find UAMessageIdentifier or MessageIdentifier in XML');
-            }
+        const parser = new XMLParser({ ignoreAttributes: false, removeNSPrefix: true, trimValues: true });
+        const obj = parser.parse(ublXml);
+        const findKey = (node: any, key: string): string => {
+          if (!node || typeof node !== 'object') return '';
+          if (key in node && node[key]) return String(node[key]).trim();
+          for (const val of Object.values(node)) {
+            const found = findKey(val, key);
+            if (found) return found;
           }
+          return '';
+        };
+        // Try known identifiers
+        const fromUAMessageId = findKey(obj?.StandardBusinessDocument || obj, 'UAMessageIdentifier');
+        const fromMessageId = findKey(obj?.StandardBusinessDocument || obj, 'MessageIdentifier');
+        const fromInstanceId = findKey(obj?.StandardBusinessDocument?.StandardBusinessDocumentHeader?.DocumentIdentification || obj?.StandardBusinessDocument?.DocumentIdentification || obj, 'InstanceIdentifier');
+        messageId = messageId || fromUAMessageId || fromMessageId || fromInstanceId || '';
+        if (!messageId) {
+          console.warn('[Peppol Webhook] Could not find message ID in XML');
         }
       } catch (parseError) {
         console.error('[Peppol Webhook] Failed to extract message ID from XML:', parseError);
@@ -174,15 +170,7 @@ serve(async (req: Request) => {
       }
     };
     
-    // Log for debugging
-    console.log('[Peppol Webhook] Normalized payload:', {
-      eventType: payload.eventType,
-      receiverPeppolId: payload.data.receiverPeppolId,
-      hasUblXml: !!payload.data.ublXml,
-      messageId: payload.data.messageId || 'N/A',
-      ublXmlLength: payload.data.ublXml?.length || 0
-    });
-
+    
     // Validate webhook authentication (basic validation)
     const authHeader = req.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Basic ')) {
@@ -212,34 +200,34 @@ serve(async (req: Request) => {
     // If not in payload, try to extract from UBL XML for inbound invoices
     if (!receiverPeppolId && payload.data?.ublXml) {
       try {
-        // Parse UBL XML to extract receiver (customer) Peppol ID
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(payload.data.ublXml, 'text/xml');
-        
-        const accountingCustomerParty = xmlDoc.getElementsByTagName('AccountingCustomerParty')[0];
-        if (accountingCustomerParty) {
-          const party = accountingCustomerParty.getElementsByTagName('Party')[0];
-          if (party) {
-            const endpointId = party.getElementsByTagName('EndpointID')[0];
-            if (endpointId) {
-              const schemeId = endpointId.getAttribute('schemeID') || '';
-              const idValue = endpointId.textContent?.trim() || '';
-              if (schemeId && idValue) {
-                receiverPeppolId = `${schemeId}:${idValue}`;
-              }
-            }
-          }
+        const parser = new XMLParser({ ignoreAttributes: false, removeNSPrefix: true, trimValues: true });
+        const obj = parser.parse(payload.data.ublXml);
+        const invoiceNode = obj?.StandardBusinessDocument?.Invoice || obj?.Invoice;
+        const accCustomer = invoiceNode?.AccountingCustomerParty;
+        const party = accCustomer?.Party;
+        const endpoint = party?.EndpointID;
+        // endpoint may be object with attributes or string
+        const endpointValue = (() => {
+          if (!endpoint) return '';
+          if (typeof endpoint === 'string') return endpoint;
+          if (Array.isArray(endpoint)) return endpoint[0];
+          if (endpoint['#text']) return endpoint['#text'];
+          return '';
+        })().trim();
+        const schemeId = (() => {
+          if (!endpoint || typeof endpoint !== 'object') return '';
+          if (endpoint['@_schemeID']) return endpoint['@_schemeID'];
+          return '';
+        })();
+        if (schemeId && endpointValue) {
+          receiverPeppolId = `${schemeId}:${endpointValue}`;
         }
       } catch (parseError) {
         // If XML parsing fails, continue with other methods
       }
     }
     
-    // Log for debugging
-    console.log('[Peppol Webhook] Receiver Peppol ID:', receiverPeppolId || 'NOT FOUND');
-    console.log('[Peppol Webhook] Event Type:', eventType);
-    console.log('[Peppol Webhook] Has UBL XML:', !!ublXml);
-    
+  
     if (!receiverPeppolId) {
       return new Response(
         JSON.stringify({ error: 'Invalid payload: missing receiver identifier' }), 
@@ -351,14 +339,6 @@ serve(async (req: Request) => {
     }
 
     if (settingsError || !peppolSettings) {
-      // Log the attempted match for debugging
-      console.log('[Webhook] Failed to find user for receiver Peppol ID:', {
-        attemptedId: receiverPeppolId,
-        normalizedLower: normalizedReceiverIdLower,
-        normalizedUpper: normalizedReceiverIdUpper,
-        error: settingsError?.message,
-        eventType: payload.eventType
-      });
       
       return new Response(
         JSON.stringify({ 
@@ -370,13 +350,7 @@ serve(async (req: Request) => {
       );
     }
 
-    // Log successful match
-    console.log('[Webhook] Found user for receiver Peppol ID:', {
-      receiverId: receiverPeppolId,
-      matchedPeppolId: peppolSettings.peppol_id,
-      userId: peppolSettings.user_id,
-      eventType: payload.eventType
-    });
+   
 
     const userId = peppolSettings.user_id;
 
@@ -453,370 +427,123 @@ serve(async (req: Request) => {
  */
 function parseUBLInvoice(ublXml: string): any {
   try {
-    // Parse XML using DOMParser (Deno environment)
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(ublXml, 'text/xml');
-    
-    // Check for parsing errors
-    const parserError = xmlDoc.querySelector('parsererror');
-    if (parserError) {
-      throw new Error('Invalid XML format: ' + parserError.textContent);
+    // Parse XML using fast-xml-parser (Deno-friendly)
+    const parser = new XMLParser({ ignoreAttributes: false, removeNSPrefix: true, trimValues: true });
+    const obj = parser.parse(ublXml);
+    const invoice = obj?.StandardBusinessDocument?.Invoice || obj?.Invoice;
+    if (!invoice) {
+      throw new Error('Invoice node not found in UBL XML');
     }
 
-    // Helper function to get text content by local name (works with namespaces)
-    // UBL XML uses namespaces, so we search by local name
-    // Try namespace-aware methods first, then fallback to prefix-based selectors
-    const getTextByLocalName = (localName: string, parent?: any): string => {
-      const searchRoot = parent || xmlDoc;
-      
-      // Method 1: Try getElementsByTagNameNS with UBL namespaces
-      const ublNamespaces = [
-        'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2',
-        'urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2',
-        'urn:oasis:names:specification:ubl:schema:xsd:Invoice-2'
-      ];
-      
-      for (const ns of ublNamespaces) {
-        try {
-          const elements = searchRoot.getElementsByTagNameNS(ns, localName);
-          if (elements.length > 0 && elements[0].textContent) {
-            return elements[0].textContent.trim();
-          }
-        } catch (e) {
-          // Namespace method not supported, continue to next method
-        }
+    // Helpers for safe extraction from parsed object
+    const asArray = (v: any) => (Array.isArray(v) ? v : [v]).filter(Boolean);
+    const pickRaw = (node: any, key: string) => {
+      if (!node) return undefined;
+      const v = node[key];
+      if (Array.isArray(v)) return v[0];
+      return v;
+    };
+    const scalar = (val: any) => {
+      if (val && typeof val === 'object') {
+        if ('#text' in val) return val['#text'];
       }
-      
-      // Method 2: Try getElementsByTagName (works if namespaces are ignored)
-      try {
-        const elements = searchRoot.getElementsByTagName(localName);
-        if (elements.length > 0 && elements[0].textContent) {
-          return elements[0].textContent.trim();
-        }
-      } catch (e) {
-        // Continue to next method
-      }
-      
-      // Method 3: Try querySelector with namespace prefixes
-      try {
-        const prefixed = searchRoot.querySelector(`cbc\\:${localName}, cac\\:${localName}, Invoice > ${localName}`);
-        if (prefixed && prefixed.textContent) {
-          return prefixed.textContent.trim();
-        }
-      } catch (e) {
-        // Continue to next method
-      }
-      
-      // Method 4: Try XPath-like search (find by local name in all namespaces)
-      try {
-        const allElements = searchRoot.getElementsByTagName('*');
-        for (let i = 0; i < allElements.length; i++) {
-          const el = allElements[i];
-          if (el.localName === localName && el.textContent) {
-            return el.textContent.trim();
-          }
-        }
-      } catch (e) {
-        // Last resort
-      }
-      
-      return '';
+      return val;
+    };
+    const txt = (node: any, key: string) => {
+      const v = scalar(pickRaw(node, key));
+      return v === undefined || v === null ? '' : String(v).trim();
+    };
+    const num = (node: any, key: string) => {
+      const v = txt(node, key);
+      const n = parseFloat(v.replace(',', '.'));
+      return isNaN(n) ? 0 : n;
+    };
+    const attrCurrency = (node: any, key: string, fallback: string) => {
+      const raw = pickRaw(node, key);
+      if (raw && typeof raw === 'object' && raw['@_currencyID']) return raw['@_currencyID'];
+      return fallback;
     };
 
-    const getAttributeByLocalName = (localName: string, attr: string, parent?: any): string => {
-      const searchRoot = parent || xmlDoc;
-      
-      // Method 1: Try namespace-aware methods
-      const ublNamespaces = [
-        'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2',
-        'urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2',
-        'urn:oasis:names:specification:ubl:schema:xsd:Invoice-2'
-      ];
-      
-      for (const ns of ublNamespaces) {
-        try {
-          const elements = searchRoot.getElementsByTagNameNS(ns, localName);
-          if (elements.length > 0 && elements[0].hasAttribute(attr)) {
-            return elements[0].getAttribute(attr) || '';
-          }
-        } catch (e) {
-          // Continue
-        }
-      }
-      
-      // Method 2: Try getElementsByTagName
-      try {
-        const elements = searchRoot.getElementsByTagName(localName);
-        if (elements.length > 0 && elements[0].hasAttribute(attr)) {
-          return elements[0].getAttribute(attr) || '';
-        }
-      } catch (e) {
-        // Continue
-      }
-      
-      // Method 3: Try querySelector
-      try {
-        const prefixed = searchRoot.querySelector(`cbc\\:${localName}, cac\\:${localName}`);
-        if (prefixed && prefixed.hasAttribute(attr)) {
-          return prefixed.getAttribute(attr) || '';
-        }
-      } catch (e) {
-        // Continue
-      }
-      
-      // Method 4: Search by local name
-      try {
-        const allElements = searchRoot.getElementsByTagName('*');
-        for (let i = 0; i < allElements.length; i++) {
-          const el = allElements[i];
-          if (el.localName === localName && el.hasAttribute(attr)) {
-            return el.getAttribute(attr) || '';
-          }
-        }
-      } catch (e) {
-        // Last resort
-      }
-      
-      return '';
-    };
-
-    // Helper to find element by local name within parent (namespace-aware)
-    const findElement = (localName: string, parent?: any): any => {
-      const searchRoot = parent || xmlDoc;
-      
-      // Try namespace-aware methods first
-      const ublNamespaces = [
-        'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2',
-        'urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2',
-        'urn:oasis:names:specification:ubl:schema:xsd:Invoice-2'
-      ];
-      
-      for (const ns of ublNamespaces) {
-        try {
-          const elements = searchRoot.getElementsByTagNameNS(ns, localName);
-          if (elements.length > 0) {
-            return elements[0];
-          }
-        } catch (e) {
-          // Continue
-        }
-      }
-      
-      // Fallback to getElementsByTagName
-      try {
-        const elements = searchRoot.getElementsByTagName(localName);
-        if (elements.length > 0) {
-          return elements[0];
-        }
-      } catch (e) {
-        // Continue
-      }
-      
-      // Fallback to querySelector
-      try {
-        const prefixed = searchRoot.querySelector(`cbc\\:${localName}, cac\\:${localName}`);
-        if (prefixed) {
-          return prefixed;
-        }
-      } catch (e) {
-        // Continue
-      }
-      
-      // Last resort: search by local name
-      try {
-        const allElements = searchRoot.getElementsByTagName('*');
-        for (let i = 0; i < allElements.length; i++) {
-          const el = allElements[i];
-          if (el.localName === localName) {
-            return el;
-          }
-        }
-      } catch (e) {
-        // Return null if nothing found
-      }
-      
-      return null;
-    };
-    
-    const findAllElements = (localName: string, parent?: any): any[] => {
-      const searchRoot = parent || xmlDoc;
-      const results: any[] = [];
-      
-      // Try namespace-aware methods first
-      const ublNamespaces = [
-        'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2',
-        'urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2',
-        'urn:oasis:names:specification:ubl:schema:xsd:Invoice-2'
-      ];
-      
-      for (const ns of ublNamespaces) {
-        try {
-          const elements = searchRoot.getElementsByTagNameNS(ns, localName);
-          if (elements.length > 0) {
-            return Array.from(elements);
-          }
-        } catch (e) {
-          // Continue
-        }
-      }
-      
-      // Fallback to getElementsByTagName
-      try {
-        const elements = searchRoot.getElementsByTagName(localName);
-        if (elements.length > 0) {
-          return Array.from(elements);
-        }
-      } catch (e) {
-        // Continue
-      }
-      
-      // Last resort: search by local name
-      try {
-        const allElements = searchRoot.getElementsByTagName('*');
-        for (let i = 0; i < allElements.length; i++) {
-          const el = allElements[i];
-          if (el.localName === localName) {
-            results.push(el);
-          }
-        }
-      } catch (e) {
-        // Return empty array
-      }
-      
-      return results;
-    };
-
-    // Helper for simple text extraction (tries both approaches)
-    const getText = (localName: string, parent?: any): string => {
-      return getTextByLocalName(localName, parent);
-    };
-
-    const getAttribute = (localName: string, attr: string, parent?: any): string => {
-      return getAttributeByLocalName(localName, attr, parent);
-    };
-
-    // Helper to get elements
-    const querySelector = (selectors: string[] | string) => {
-      const selectorList = Array.isArray(selectors) ? selectors : [selectors];
-      for (const selector of selectorList) {
-        try {
-          const element = xmlDoc.querySelector(selector);
-          if (element) return element;
-        } catch (e) {
-          // Invalid selector, try next
-        }
-      }
-      return null;
-    };
-    
-    const querySelectorAll = (selectors: string[] | string) => {
-      const selectorList = Array.isArray(selectors) ? selectors : [selectors];
-      for (const selector of selectorList) {
-        try {
-          const elements = xmlDoc.querySelectorAll(selector);
-          if (elements.length > 0) return Array.from(elements);
-        } catch (e) {
-          // Invalid selector, try next
-        }
-      }
-      return [];
-    };
+    // Helpers below replaced by fast-xml-parser extraction (txt/num/asArray above)
 
     // Extract Document Identifiers (Mandatory)
-    const invoiceId = getText('ID');
-    const issueDate = getText('IssueDate');
-    const dueDate = getText('DueDate');
-    const invoiceTypeCode = getText('InvoiceTypeCode');
-    const documentCurrencyCode = getText('DocumentCurrencyCode');
-    const buyerReference = getText('BuyerReference');
+    const invoiceId = txt(invoice, 'ID');
+    const issueDate = txt(invoice, 'IssueDate');
+    const dueDate = txt(invoice, 'DueDate');
+    const invoiceTypeCode = txt(invoice, 'InvoiceTypeCode');
+    const documentCurrencyCode = txt(invoice, 'DocumentCurrencyCode');
+    const buyerReference = txt(invoice, 'BuyerReference');
 
-    // Extract Supplier Party (AccountingSupplierParty) - Mandatory
-    const accountingSupplierParty = findElement('AccountingSupplierParty');
-    const supplierParty = accountingSupplierParty ? findElement('Party', accountingSupplierParty) : null;
-    
-    const supplierEndpointId = supplierParty ? getText('EndpointID', supplierParty) : '';
-    const supplierEndpointScheme = supplierParty ? getAttribute('EndpointID', 'schemeID', supplierParty) : '';
-    
-    const partyName = supplierParty ? findElement('PartyName', supplierParty) : null;
-    const supplierName = partyName ? getText('Name', partyName) : '';
-    
-    const partyTaxScheme = supplierParty ? findElement('PartyTaxScheme', supplierParty) : null;
-    const supplierVatNumber = partyTaxScheme ? getText('CompanyID', partyTaxScheme) : '';
-    
-    const partyLegalEntity = supplierParty ? findElement('PartyLegalEntity', supplierParty) : null;
-    const supplierCompanyId = partyLegalEntity ? getText('CompanyID', partyLegalEntity) : '';
-    
-    const postalAddress = supplierParty ? findElement('PostalAddress', supplierParty) : null;
-    const supplierStreet = postalAddress ? getText('StreetName', postalAddress) : '';
-    const supplierCity = postalAddress ? getText('CityName', postalAddress) : '';
-    const supplierPostalCode = postalAddress ? getText('PostalZone', postalAddress) : '';
-    const country = postalAddress ? findElement('Country', postalAddress) : null;
-    const supplierCountry = country ? getText('IdentificationCode', country) : '';
-    
-    const contact = supplierParty ? findElement('Contact', supplierParty) : null;
-    const supplierEmail = contact ? getText('ElectronicMail', contact) : '';
+    // Extract Supplier Party
+    const supplierParty = pickRaw(pickRaw(invoice, 'AccountingSupplierParty'), 'Party');
+    const supplierEndpointId = txt(supplierParty, 'EndpointID');
+    const supplierEndpointScheme = (() => {
+      const raw = pickRaw(supplierParty, 'EndpointID');
+      if (raw && typeof raw === 'object' && raw['@_schemeID']) return raw['@_schemeID'];
+      return '';
+    })();
+    const supplierName = txt(pickRaw(supplierParty, 'PartyName'), 'Name') || txt(supplierParty, 'Name');
+    const supplierVatNumber = txt(pickRaw(supplierParty, 'PartyTaxScheme'), 'CompanyID');
+    const supplierCompanyId = txt(pickRaw(supplierParty, 'PartyLegalEntity'), 'CompanyID');
+    const supplierAddressNode = pickRaw(supplierParty, 'PostalAddress');
+    const supplierStreet = txt(supplierAddressNode, 'StreetName');
+    const supplierCity = txt(supplierAddressNode, 'CityName');
+    const supplierPostalCode = txt(supplierAddressNode, 'PostalZone');
+    const supplierCountry = txt(pickRaw(supplierAddressNode, 'Country'), 'IdentificationCode');
+    const supplierEmail = txt(pickRaw(supplierParty, 'Contact'), 'ElectronicMail');
 
-    // Extract Customer Party (AccountingCustomerParty) - Mandatory
-    const accountingCustomerParty = findElement('AccountingCustomerParty');
-    const customerParty = accountingCustomerParty ? findElement('Party', accountingCustomerParty) : null;
-    
-    const customerEndpointId = customerParty ? getText('EndpointID', customerParty) : '';
-    const customerEndpointScheme = customerParty ? getAttribute('EndpointID', 'schemeID', customerParty) : '';
-    
-    const customerPartyName = customerParty ? findElement('PartyName', customerParty) : null;
-    const customerName = customerPartyName ? getText('Name', customerPartyName) : '';
-    
-    const customerPartyTaxScheme = customerParty ? findElement('PartyTaxScheme', customerParty) : null;
-    const customerVatNumber = customerPartyTaxScheme ? getText('CompanyID', customerPartyTaxScheme) : '';
+    // Extract Customer Party
+    const customerParty = pickRaw(pickRaw(invoice, 'AccountingCustomerParty'), 'Party');
+    const customerEndpointId = txt(customerParty, 'EndpointID');
+    const customerEndpointScheme = (() => {
+      const raw = pickRaw(customerParty, 'EndpointID');
+      if (raw && typeof raw === 'object' && raw['@_schemeID']) return raw['@_schemeID'];
+      return '';
+    })();
+    const customerName = txt(pickRaw(customerParty, 'PartyName'), 'Name') || txt(customerParty, 'Name');
+    const customerVatNumber = txt(pickRaw(customerParty, 'PartyTaxScheme'), 'CompanyID');
 
-    // Extract Tax Information (Mandatory)
-    const taxTotal = findElement('TaxTotal');
-    const totalTaxAmount = taxTotal ? parseFloat(getText('TaxAmount', taxTotal)) || 0 : 0;
-    const taxCurrency = taxTotal ? (getAttribute('TaxAmount', 'currencyID', taxTotal) || documentCurrencyCode) : documentCurrencyCode;
+    // Extract Tax Information
+    const taxTotal = pickRaw(invoice, 'TaxTotal');
+    const totalTaxAmount = num(taxTotal, 'TaxAmount');
+    const taxCurrency = attrCurrency(taxTotal, 'TaxAmount', documentCurrencyCode);
+    const taxSubtotals = asArray(pickRaw(taxTotal, 'TaxSubtotal')).map((subtotal: any) => {
+      const taxCategoryId = txt(pickRaw(subtotal, 'TaxCategory'), 'ID');
+      const taxPercent = num(pickRaw(subtotal, 'TaxCategory'), 'Percent');
+      return {
+        taxableAmount: num(subtotal, 'TaxableAmount'),
+        taxAmount: num(subtotal, 'TaxAmount'),
+        taxCategoryId,
+        taxPercent,
+        // UI-friendly fields
+        category: taxCategoryId,
+        percent: taxPercent
+      };
+    });
 
-    // Extract tax subtotals
-    const taxSubtotals: any[] = [];
-    if (taxTotal) {
-      const taxSubtotalElements = findAllElements('TaxSubtotal', taxTotal);
-      taxSubtotalElements.forEach((subtotal) => {
-        const taxableAmount = parseFloat(getText('TaxableAmount', subtotal)) || 0;
-        const taxAmount = parseFloat(getText('TaxAmount', subtotal)) || 0;
-        const taxCategory = findElement('TaxCategory', subtotal);
-        const taxCategoryId = taxCategory ? getText('ID', taxCategory) : '';
-        const taxPercent = taxCategory ? parseFloat(getText('Percent', taxCategory)) || 0 : 0;
-        taxSubtotals.push({ taxableAmount, taxAmount, taxCategoryId, taxPercent });
-      });
-    }
+    // Extract Monetary Totals
+    const monetaryTotal = pickRaw(invoice, 'LegalMonetaryTotal');
+    const lineExtensionAmount = num(monetaryTotal, 'LineExtensionAmount');
+    const taxExclusiveAmount = num(monetaryTotal, 'TaxExclusiveAmount');
+    const taxInclusiveAmount = num(monetaryTotal, 'TaxInclusiveAmount');
+    const payableAmount = num(monetaryTotal, 'PayableAmount');
+    const payableCurrency = attrCurrency(monetaryTotal, 'PayableAmount', documentCurrencyCode);
 
-    // Extract Monetary Totals (Mandatory)
-    const monetaryTotal = findElement('LegalMonetaryTotal');
-    const lineExtensionAmount = monetaryTotal ? parseFloat(getText('LineExtensionAmount', monetaryTotal)) || 0 : 0;
-    const taxExclusiveAmount = monetaryTotal ? parseFloat(getText('TaxExclusiveAmount', monetaryTotal)) || 0 : 0;
-    const taxInclusiveAmount = monetaryTotal ? parseFloat(getText('TaxInclusiveAmount', monetaryTotal)) || 0 : 0;
-    const payableAmount = monetaryTotal ? parseFloat(getText('PayableAmount', monetaryTotal)) || 0 : 0;
-    const payableCurrency = monetaryTotal ? (getAttribute('PayableAmount', 'currencyID', monetaryTotal) || documentCurrencyCode) : documentCurrencyCode;
-
-    // Extract Invoice Lines (Mandatory)
-    const invoiceLines: any[] = [];
-    const lineElements = findAllElements('InvoiceLine');
-    lineElements.forEach((line, index) => {
-      const lineId = getText('ID', line) || String(index + 1);
-      const invoicedQuantity = findElement('InvoicedQuantity', line);
-      const quantity = invoicedQuantity ? parseFloat(invoicedQuantity.textContent?.trim() || '0') : 0;
-      const unitCode = invoicedQuantity ? (invoicedQuantity.getAttribute('unitCode') || '') : '';
-      const lineExtensionAmount = parseFloat(getText('LineExtensionAmount', line)) || 0;
-      
-      const item = findElement('Item', line);
-      const itemName = item ? getText('Name', item) : '';
-      
-      const classifiedTaxCategory = item ? findElement('ClassifiedTaxCategory', item) : null;
-      const taxCategoryId = classifiedTaxCategory ? getText('ID', classifiedTaxCategory) : '';
-      const taxPercent = classifiedTaxCategory ? parseFloat(getText('Percent', classifiedTaxCategory)) || 0 : 0;
-      
-      const price = findElement('Price', line);
-      const priceAmount = price ? parseFloat(getText('PriceAmount', price)) || 0 : 0;
-      
-      invoiceLines.push({
+    // Extract Invoice Lines
+    const invoiceLines = asArray(invoice.InvoiceLine).map((line: any, index: number) => {
+      const lineId = txt(line, 'ID') || String(index + 1);
+      const quantity = num(line, 'InvoicedQuantity');
+      const unitCode = (() => {
+        const raw = pickRaw(line, 'InvoicedQuantity');
+        if (raw && typeof raw === 'object' && raw['@_unitCode']) return raw['@_unitCode'];
+        return '';
+      })();
+      const lineExtensionAmount = num(line, 'LineExtensionAmount');
+      const itemName = txt(pickRaw(line, 'Item'), 'Name');
+      const priceAmount = num(pickRaw(line, 'Price'), 'PriceAmount');
+      const taxCategoryId = txt(pickRaw(pickRaw(line, 'Item'), 'ClassifiedTaxCategory'), 'ID');
+      const taxPercent = num(pickRaw(pickRaw(line, 'Item'), 'ClassifiedTaxCategory'), 'Percent');
+      return {
         lineId,
         quantity,
         unitCode,
@@ -824,29 +551,72 @@ function parseUBLInvoice(ublXml: string): any {
         itemName,
         priceAmount,
         taxCategoryId,
-        taxPercent
-      });
+        taxPercent,
+        // UI-friendly fields
+        id: lineId,
+        description: itemName,
+        unit_price: priceAmount,
+        unitPrice: priceAmount,
+        amount: lineExtensionAmount
+      };
     });
 
-    // Extract Payment Information (Optional but important)
-    const paymentMeans = findElement('PaymentMeans');
-    const paymentMeansCode = paymentMeans ? getText('PaymentMeansCode', paymentMeans) : '';
-    const paymentId = paymentMeans ? getText('PaymentID', paymentMeans) : '';
-    const payeeFinancialAccount = paymentMeans ? findElement('PayeeFinancialAccount', paymentMeans) : null;
-    const iban = payeeFinancialAccount ? getText('ID', payeeFinancialAccount) : '';
+    // Extract Payment Information
+    const paymentMeans = pickRaw(invoice, 'PaymentMeans');
+    const paymentMeansCode = txt(paymentMeans, 'PaymentMeansCode');
+    const paymentMeansName = (() => {
+      const raw = pickRaw(paymentMeans, 'PaymentMeansCode');
+      if (raw && typeof raw === 'object' && raw['@_name']) return raw['@_name'];
+      return '';
+    })();
+    const paymentId = txt(paymentMeans, 'PaymentID');
+    const payeeFinancialAccount = pickRaw(paymentMeans, 'PayeeFinancialAccount');
+    const iban = txt(payeeFinancialAccount, 'ID');
 
     // Extract Payment Terms
-    const paymentTerms = findElement('PaymentTerms');
-    const paymentTermsNote = paymentTerms ? getText('Note', paymentTerms) : '';
+    const paymentTermsNote = txt(pickRaw(invoice, 'PaymentTerms'), 'Note');
 
-    // Extract Delivery Information (Optional)
-    const delivery = findElement('Delivery');
-    const deliveryDate = delivery ? getText('ActualDeliveryDate', delivery) : '';
+    // Extract Delivery Information
+    const deliveryDate = txt(pickRaw(invoice, 'Delivery'), 'ActualDeliveryDate');
 
-    // Extract Order Reference (Optional)
-    const orderReference = findElement('OrderReference');
-    const orderRefId = orderReference ? getText('ID', orderReference) : '';
-    const salesOrderId = orderReference ? getText('SalesOrderID', orderReference) : '';
+    // Extract Order Reference
+    const orderReference = pickRaw(invoice, 'OrderReference');
+    const orderRefId = txt(orderReference, 'ID');
+    const salesOrderId = txt(orderReference, 'SalesOrderID');
+
+    // If monetary totals are all zero, attempt a regex fallback to extract key amounts and supplier name
+    const numbersAreZero = (val: number | undefined | null) => !val || Math.abs(val) < 1e-9;
+    const allTotalsZero = numbersAreZero(payableAmount) && numbersAreZero(taxInclusiveAmount) && numbersAreZero(taxExclusiveAmount) && numbersAreZero(totalTaxAmount);
+
+    const regexValue = (tag: string): number => {
+      const re = new RegExp(`<[^>]*${tag}[^>]*>([^<]+)</[^>]*${tag}>`, 'i');
+      const m = ublXml.match(re);
+      if (m && m[1]) {
+        const parsed = parseFloat(m[1].replace(',', '.'));
+        return isNaN(parsed) ? 0 : parsed;
+      }
+      return 0;
+    };
+
+    const regexText = (tag: string): string => {
+      const re = new RegExp(`<[^>]*${tag}[^>]*>([^<]+)</[^>]*${tag}>`, 'i');
+      const m = ublXml.match(re);
+      return m?.[1]?.trim() || '';
+    };
+
+    const fallbackPayable = allTotalsZero ? regexValue('PayableAmount') : payableAmount;
+    const fallbackTaxInclusive = allTotalsZero ? regexValue('TaxInclusiveAmount') : taxInclusiveAmount;
+    const fallbackTaxExclusive = allTotalsZero ? regexValue('TaxExclusiveAmount') : taxExclusiveAmount;
+    const fallbackTax = allTotalsZero ? regexValue('TaxAmount') : totalTaxAmount;
+
+    const fallbackSupplierName = (() => {
+      if (!supplierName || supplierName.toLowerCase().includes('unknown')) {
+        // Prefer PartyName > Name near Supplier block
+        const nameFromRegex = regexText('Name');
+        if (nameFromRegex) return nameFromRegex;
+      }
+      return supplierName;
+    })();
 
     return {
       // Document Identifiers
@@ -860,7 +630,7 @@ function parseUBLInvoice(ublXml: string): any {
       // Supplier Information
       supplier: {
         peppolId: supplierEndpointScheme && supplierEndpointId ? `${supplierEndpointScheme}:${supplierEndpointId}` : '',
-        name: supplierName,
+        name: fallbackSupplierName || supplierName,
         vatNumber: supplierVatNumber || supplierCompanyId,
         companyId: supplierCompanyId,
         address: {
@@ -881,7 +651,7 @@ function parseUBLInvoice(ublXml: string): any {
       
       // Tax Information
       tax: {
-        totalTaxAmount,
+        totalTaxAmount: fallbackTax,
         taxCurrency,
         subtotals: taxSubtotals
       },
@@ -889,9 +659,9 @@ function parseUBLInvoice(ublXml: string): any {
       // Monetary Totals
       totals: {
         lineExtensionAmount,
-        taxExclusiveAmount,
-        taxInclusiveAmount,
-        payableAmount,
+        taxExclusiveAmount: fallbackTaxExclusive || taxExclusiveAmount,
+        taxInclusiveAmount: fallbackTaxInclusive || taxInclusiveAmount,
+        payableAmount: fallbackPayable || payableAmount,
         currency: payableCurrency
       },
       
@@ -901,6 +671,7 @@ function parseUBLInvoice(ublXml: string): any {
       // Payment Information
       payment: {
         meansCode: paymentMeansCode,
+        meansName: paymentMeansName,
         paymentId,
         iban,
         terms: paymentTermsNote
@@ -941,12 +712,7 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
     if (data.ublXml) {
       try {
         parsedInvoice = parseUBLInvoice(data.ublXml);
-        console.log('[Peppol Webhook] Successfully parsed invoice:', {
-          invoiceId: parsedInvoice?.invoiceId,
-          payableAmount: parsedInvoice?.totals?.payableAmount,
-          taxAmount: parsedInvoice?.tax?.totalTaxAmount,
-          supplierName: parsedInvoice?.supplier?.name
-        });
+        
       } catch (parseError: any) {
         console.error('[Peppol Webhook] Failed to parse UBL XML:', parseError?.message || parseError);
         console.error('[Peppol Webhook] XML snippet:', data.ublXml?.substring(0, 500));
@@ -1005,16 +771,7 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
       ? (parsedInvoice.totals?.taxExclusiveAmount || parsedInvoice.totals?.lineExtensionAmount || (totalAmount - taxAmount))
       : (invoiceData.totals?.taxExclusiveAmount || invoiceData.totals?.lineExtensionAmount || (totalAmount - taxAmount));
     
-    // Log amounts for debugging
-    console.log('[Peppol Webhook] Calculated amounts:', {
-      parsedInvoice: !!parsedInvoice,
-      totalAmount,
-      taxAmount,
-      netAmount,
-      totals: invoiceData.totals,
-      tax: invoiceData.tax
-    });
-
+   
     // Extract supplier Peppol ID (format: schemeID:identifier)
     const supplierPeppolId = invoiceData.supplier?.peppolId || data.senderPeppolId || '';
     const supplierVatNumber = invoiceData.supplier?.vatNumber || data.senderVatNumber || (supplierPeppolId ? supplierPeppolId.split(':')[1] || '' : '');
@@ -1091,51 +848,63 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
     }
 
     // Create expense invoice record (supplier invoice) with all extracted mandatory fields
+    const insertPayload = {
+      user_id: userId,
+      invoice_number: invoiceNumber,
+      supplier_name: supplierName,
+      supplier_email: invoiceData.supplier.email || data.senderEmail || '',
+      supplier_vat_number: supplierVatNumber,
+      amount: totalAmount,
+      net_amount: netAmount,
+      vat_amount: taxAmount,
+      status: 'pending',
+      category: data.category || 'General',
+      source: 'peppol',
+      issue_date: invoiceData.issueDate || data.issueDate || new Date().toISOString().split('T')[0],
+      due_date: invoiceData.dueDate || data.dueDate || new Date().toISOString().split('T')[0],
+      payment_method: invoiceData.payment?.meansName || invoiceData.payment?.meansCode || '',
+      notes: notes,
+      peppol_enabled: true,
+      peppol_message_id: data.messageId,
+      peppol_received_at: new Date().toISOString().replace('T', ' ').replace('Z', '').slice(0, 19), // Format: YYYY-MM-DD HH:mm:ss
+      sender_peppol_id: supplierPeppolId,
+      ubl_xml: data.ublXml,
+      // Store additional parsed data in metadata
+      peppol_metadata: {
+        documentType: documentType,
+        documentTypeLabel: documentTypeLabel,
+        isSelfBilling: isSelfBilling,
+        isCreditNote: isCreditNote,
+        webhookEventType: payload.eventType,
+        invoiceTypeCode: invoiceData.invoiceTypeCode,
+        documentCurrencyCode: invoiceData.documentCurrencyCode,
+        buyerReference: invoiceData.buyerReference,
+        orderReference: invoiceData.orderReference,
+        salesOrderId: invoiceData.salesOrderId,
+        deliveryDate: invoiceData.deliveryDate,
+        payment: invoiceData.payment || {},
+        taxSubtotals: invoiceData.tax?.subtotals || [],
+        invoiceLines: invoiceData.invoiceLines || [],
+        messageId: data.messageId || null,
+        supplierName,
+        supplierVatNumber,
+        supplierAddress: invoiceData.supplier?.address || {},
+        totals: invoiceData.totals || {}
+      }
+    };
+
+    console.log('[Peppol Webhook] Inserting expense invoice payload:', {
+      invoice_number: insertPayload.invoice_number,
+      amount: insertPayload.amount,
+      net_amount: insertPayload.net_amount,
+      vat_amount: insertPayload.vat_amount,
+      supplier_name: insertPayload.supplier_name,
+      supplier_vat_number: insertPayload.supplier_vat_number
+    });
+
     const { data: expenseInvoice, error: expenseError } = await supabase
       .from('expense_invoices')
-      .insert({
-        user_id: userId,
-        invoice_number: invoiceNumber,
-        supplier_name: supplierName,
-        supplier_email: invoiceData.supplier.email || data.senderEmail || '',
-        supplier_vat_number: supplierVatNumber,
-        amount: totalAmount,
-        net_amount: netAmount,
-        vat_amount: taxAmount,
-        status: 'pending',
-        category: data.category || 'General',
-        source: 'peppol',
-        issue_date: invoiceData.issueDate || data.issueDate || new Date().toISOString().split('T')[0],
-        due_date: invoiceData.dueDate || data.dueDate || new Date().toISOString().split('T')[0],
-        payment_method: invoiceData.payment?.meansCode || '',
-        notes: notes,
-        peppol_enabled: true,
-        peppol_message_id: data.messageId,
-        peppol_received_at: new Date().toISOString().replace('T', ' ').replace('Z', '').slice(0, 19), // Format: YYYY-MM-DD HH:mm:ss
-        sender_peppol_id: supplierPeppolId,
-        ubl_xml: data.ublXml,
-        // Store additional parsed data in metadata
-        peppol_metadata: {
-          documentType: documentType,
-          documentTypeLabel: documentTypeLabel,
-          isSelfBilling: isSelfBilling,
-          isCreditNote: isCreditNote,
-          webhookEventType: payload.eventType,
-          invoiceTypeCode: invoiceData.invoiceTypeCode,
-          documentCurrencyCode: invoiceData.documentCurrencyCode,
-          buyerReference: invoiceData.buyerReference,
-          orderReference: invoiceData.orderReference,
-          salesOrderId: invoiceData.salesOrderId,
-          deliveryDate: invoiceData.deliveryDate,
-          payment: invoiceData.payment || {},
-          taxSubtotals: invoiceData.tax?.subtotals || [],
-          invoiceLines: invoiceData.invoiceLines || [],
-          supplierName,
-          supplierVatNumber,
-          supplierAddress: invoiceData.supplier?.address || {},
-          totals: invoiceData.totals || {}
-        }
-      })
+      .insert(insertPayload)
       .select('id')
       .single();
 
@@ -1151,6 +920,7 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
         invoice_number: invoiceNumber,
         document_type: data.documentType || documentType || invoiceData.invoiceTypeCode || 'INVOICE',
         direction: 'inbound',
+        reference_number: invoiceData.buyerReference || invoiceNumber,
         sender_id: senderId,
         sender_peppol_id: supplierPeppolId,
         sender_name: invoiceData.supplier.name || data.senderName,
@@ -1170,7 +940,7 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
         total_amount: totalAmount,
         ubl_xml: data.ublXml,
         status: 'received',
-        peppol_message_id: data.messageId,
+        peppol_message_id: data.messageId || invoiceData.invoiceId || invoiceNumber,
         received_at: new Date().toISOString(),
         supplier_invoice_id: expenseInvoice.id,
         metadata: {

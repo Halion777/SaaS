@@ -593,13 +593,13 @@ const generatePartyInfo = (party, isSupplier = true) => {
           <cbc:RegistrationName>${xmlEscape(party.name)}</cbc:RegistrationName>
           <cbc:CompanyID>${xmlEscape(formattedVAT)}</cbc:CompanyID>
         </cac:PartyLegalEntity>
-        ${!isSupplier ? generateContactInfo(party.contact) : ""}
+        ${generateContactInfo(party.contact)}
       </cac:Party>
     </cac:${partyType}>
   `;
 };
 
-const generateContactInfo = ({ name, phone, email }) => {
+const generateContactInfo = ({ name, phone, email } = {}) => {
   if (!name && !phone && !email) return "";
   return `
     <cac:Contact>

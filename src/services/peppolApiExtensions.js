@@ -345,7 +345,18 @@ async sendInvoiceWithTracking(invoiceData, clientInfo) {
     }
 
     const result = await response.text();
-    const messageId = result.includes('messageId') ? result.split('messageId:')[1]?.split(',')[0]?.trim() : null;
+    let parsedResult = null;
+    try {
+      parsedResult = JSON.parse(result);
+    } catch (_) {
+      // response is plain text
+    }
+    const messageId =
+      parsedResult?.messageId ||
+      parsedResult?.peppolMessageId ||
+      (result.includes('messageId') ? result.split('messageId:')[1]?.split(/[,\n]/)[0]?.trim() : null) ||
+      null;
+    const transmissionId = parsedResult?.transmissionId || parsedResult?.id || null;
 
     // Save invoice to database
     const { data: invoice, error: invoiceError } = await supabase
@@ -353,20 +364,36 @@ async sendInvoiceWithTracking(invoiceData, clientInfo) {
       .insert({
         user_id: user.id,
         invoice_number: invoiceData.billName,
+        reference_number: invoiceData.referenceNumber || invoiceData.buyerReference || invoiceData.billName,
         document_type: 'INVOICE',
         direction: 'outbound',
+        sender_peppol_id: invoiceData.sender?.peppolIdentifier || '',
+        sender_name: invoiceData.sender?.name || '',
+        sender_vat_number: invoiceData.sender?.vatNumber || '',
+        sender_email: invoiceData.sender?.contact?.email || '',
         receiver_peppol_id: invoiceData.receiver.peppolIdentifier,
         receiver_name: invoiceData.receiver.name,
         receiver_vat_number: invoiceData.receiver.vatNumber,
+        receiver_email: invoiceData.receiver?.contact?.email || '',
         issue_date: invoiceData.issueDate,
         due_date: invoiceData.dueDate,
         delivery_date: invoiceData.deliveryDate,
+        payment_terms: invoiceData.paymentTerms || invoiceData.payment?.terms || '',
+        buyer_reference: invoiceData.buyerReference || invoiceData.billName,
+        subtotal_amount: invoiceData.invoiceLines.reduce((sum, line) => sum + line.taxableAmount, 0),
+        tax_amount: invoiceData.invoiceLines.reduce((sum, line) => sum + (line.taxAmount || 0), 0),
         total_amount: invoiceData.invoiceLines.reduce((sum, line) => sum + line.totalAmount, 0),
         currency: 'EUR',
         ubl_xml: xml,
         status: 'sent',
         peppol_message_id: messageId,
-        sent_at: new Date().toISOString()
+        transmission_id: transmissionId,
+        sent_at: new Date().toISOString(),
+        metadata: {
+          response: parsedResult || result,
+          payment: invoiceData.payment || {},
+          buyerReference: invoiceData.buyerReference || invoiceData.billName || null
+        }
       })
       .select('id')
       .single();

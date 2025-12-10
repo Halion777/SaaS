@@ -4345,9 +4345,21 @@
         "pending": "Pending",
         "overdue": "Overdue"
       },
+      "paymentMethods": {
+        "creditTransfer": "Credit transfer",
+        "paymentCard": "Payment card",
+        "directDebit": "Direct debit",
+        "paypal": "PayPal",
+        "creditCard": "Credit card",
+        "code": "Code"
+      },
       "source": {
         "manual": "Manual",
         "peppol": "Peppol"
+      },
+      "peppolInfo": {
+        "messageId": "Message ID",
+        "messageIdAndBuyerReference": "Message ID / Buyer Reference"
       },
       "categories": {
         "fuel": "Fuel",

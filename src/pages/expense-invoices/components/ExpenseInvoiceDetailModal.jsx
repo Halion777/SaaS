@@ -37,6 +37,32 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
   };
 
 
+  const mapPaymentMethod = (code) => {
+    const mappings = {
+      '31': t('expenseInvoices.paymentMethods.creditTransfer', 'Credit transfer'),
+      '42': t('expenseInvoices.paymentMethods.paymentCard', 'Payment card'),
+      '48': t('expenseInvoices.paymentMethods.directDebit', 'Direct debit'),
+      '49': t('expenseInvoices.paymentMethods.directDebit', 'Direct debit'),
+      'DD': t('expenseInvoices.paymentMethods.directDebit', 'Direct debit'),
+      'PP': t('expenseInvoices.paymentMethods.paypal', 'PayPal'),
+      'CC': t('expenseInvoices.paymentMethods.creditCard', 'Credit card')
+    };
+    return mappings[code] || `${t('expenseInvoices.paymentMethods.code', 'Code')}: ${code}`;
+  };
+
+  const computeTaxPercent = (tax) => {
+    if (tax?.percent && Number.isFinite(tax.percent)) return tax.percent;
+    const taxable = parseFloat(tax?.taxableAmount || 0);
+    const taxAmt = parseFloat(tax?.taxAmount || 0);
+    if (taxable > 0 && taxAmt >= 0) {
+      return Math.round((taxAmt / taxable) * 10000) / 100; // two decimals
+    }
+    return 0;
+  };
+
+  const buyerRef = invoice?.peppol_metadata?.buyerReference;
+  const messageId = invoice?.peppol_message_id || invoice?.peppol_metadata?.messageId;
+
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-card border border-border rounded-lg shadow-xl max-w-2xl w-full overflow-hidden">
@@ -130,10 +156,15 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                     <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.invoiceInfo.dueDate', 'Due Date')}</label>
                     <p className="text-sm text-foreground mt-1">{formatDate(invoice.due_date)}</p>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.invoiceInfo.paymentMethod', 'Payment Method')}</label>
-                    <p className="text-sm text-foreground mt-1">{invoice.payment_method || t('expenseInvoices.common.notAvailable', 'N/A')}</p>
-                  </div>
+          <div>
+            <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.invoiceInfo.paymentMethod', 'Payment Method')}</label>
+            <p className="text-sm text-foreground mt-1">
+              {invoice.payment_method
+                || invoice.peppol_metadata?.payment?.meansName
+                || (invoice.peppol_metadata?.payment?.meansCode ? mapPaymentMethod(invoice.peppol_metadata.payment.meansCode) : t('expenseInvoices.common.notAvailable', 'N/A'))
+              }
+            </p>
+          </div>
                 </div>
               </div>
 
@@ -188,7 +219,15 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
               {invoice.notes && (
                 <div>
                   <h3 className="text-lg font-semibold text-foreground mb-4">{t('expenseInvoices.modal.notes', 'Notes')}</h3>
-                  <p className="text-sm text-foreground bg-muted/30 p-4 rounded-lg">{invoice.notes}</p>
+                  <ul className="text-sm text-foreground bg-muted/30 p-4 rounded-lg list-disc list-inside space-y-1">
+                    {invoice.notes
+                      .split(/\r?\n/)
+                      .map((noteLine, idx) => noteLine.trim())
+                      .filter(Boolean)
+                      .map((noteLine, idx) => (
+                        <li key={idx}>{noteLine}</li>
+                      ))}
+                  </ul>
                 </div>
               )}
             </div>
@@ -206,18 +245,6 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.selfBilling', 'Self-billing')}</label>
-                    <p className="text-sm text-foreground mt-1">
-                      {invoice.peppol_metadata?.isSelfBilling ? t('expenseInvoices.common.yes', 'Yes') : t('expenseInvoices.common.no', 'No')}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.creditNote', 'Credit Note')}</label>
-                    <p className="text-sm text-foreground mt-1">
-                      {invoice.peppol_metadata?.isCreditNote ? t('expenseInvoices.common.yes', 'Yes') : t('expenseInvoices.common.no', 'No')}
-                    </p>
-                  </div>
-                  <div>
                     <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.receivedDate', 'Receipt Date')}</label>
                     <p className="text-sm text-foreground mt-1">
                       {invoice.peppol_received_at ? formatDate(invoice.peppol_received_at) : t('expenseInvoices.common.notAvailable', 'N/A')}
@@ -227,14 +254,26 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
               </div>
 
               {/* Additional Peppol Metadata */}
-              {invoice.peppol_metadata && (
+                {invoice.peppol_metadata && (
                 <div>
                   <h3 className="text-lg font-semibold text-foreground mb-4">{t('expenseInvoices.modal.peppolInfo.additionalMetadata', 'Additional Metadata')}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {invoice.peppol_metadata.buyerReference && (
+                    {(messageId && buyerRef && messageId === buyerRef) && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.messageIdAndBuyerReference', 'Message ID / Buyer Reference')}</label>
+                        <p className="text-sm text-foreground mt-1">{messageId}</p>
+                      </div>
+                    )}
+                    {(messageId && (!buyerRef || messageId !== buyerRef)) && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.messageId', 'Message ID')}</label>
+                        <p className="text-sm text-foreground mt-1">{messageId}</p>
+                      </div>
+                    )}
+                    {(buyerRef && (!messageId || messageId !== buyerRef)) && (
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.buyerReference', 'Buyer Reference')}</label>
-                        <p className="text-sm text-foreground mt-1">{invoice.peppol_metadata.buyerReference}</p>
+                        <p className="text-sm text-foreground mt-1">{buyerRef}</p>
                       </div>
                     )}
                     {invoice.peppol_metadata.orderReference && (
@@ -284,10 +323,10 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                         {invoice.peppol_metadata.invoiceLines.map((line, index) => (
                           <tr key={index}>
                             <td className="px-4 py-2 text-sm text-foreground">{line.id || t('expenseInvoices.common.notAvailable', 'N/A')}</td>
-                            <td className="px-4 py-2 text-sm text-foreground">{line.description || t('expenseInvoices.common.notAvailable', 'N/A')}</td>
+                            <td className="px-4 py-2 text-sm text-foreground">{line.description || line.itemName || t('expenseInvoices.common.notAvailable', 'N/A')}</td>
                             <td className="px-4 py-2 text-sm text-foreground">{line.quantity || t('expenseInvoices.common.notAvailable', 'N/A')}</td>
-                            <td className="px-4 py-2 text-sm text-foreground">{formatCurrency(line.unitPrice || 0)}</td>
-                            <td className="px-4 py-2 text-sm text-foreground">{formatCurrency(line.lineExtensionAmount || 0)}</td>
+                            <td className="px-4 py-2 text-sm text-foreground">{formatCurrency(line.unit_price || line.unitPrice || line.priceAmount || 0)}</td>
+                            <td className="px-4 py-2 text-sm text-foreground">{formatCurrency(line.amount || line.lineExtensionAmount || 0)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -304,7 +343,6 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                     <table className="min-w-full divide-y divide-border">
                       <thead className="bg-muted/30">
                         <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.table.category', 'Category')}</th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.table.rate', 'Rate (%)')}</th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.table.taxableAmount', 'Taxable Amount')}</th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.table.vatAmount', 'VAT Amount')}</th>
@@ -313,8 +351,7 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                       <tbody className="divide-y divide-border">
                         {invoice.peppol_metadata.taxSubtotals.map((tax, index) => (
                           <tr key={index}>
-                            <td className="px-4 py-2 text-sm text-foreground">{tax.category || t('expenseInvoices.common.notAvailable', 'N/A')}</td>
-                            <td className="px-4 py-2 text-sm text-foreground">{tax.percent || 0}%</td>
+                            <td className="px-4 py-2 text-sm text-foreground">{computeTaxPercent(tax)}%</td>
                             <td className="px-4 py-2 text-sm text-foreground">{formatCurrency(tax.taxableAmount || 0)}</td>
                             <td className="px-4 py-2 text-sm text-foreground">{formatCurrency(tax.taxAmount || 0)}</td>
                           </tr>

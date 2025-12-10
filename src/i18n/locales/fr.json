@@ -4405,9 +4405,21 @@
         "pending": "En attente",
         "overdue": "En retard"
       },
+      "paymentMethods": {
+        "creditTransfer": "Virement bancaire",
+        "paymentCard": "Carte de paiement",
+        "directDebit": "Prélèvement",
+        "paypal": "PayPal",
+        "creditCard": "Carte de crédit",
+        "code": "Code"
+      },
       "source": {
         "manual": "Manuel",
         "peppol": "Peppol"
+      },
+      "peppolInfo": {
+        "messageId": "Identifiant de message",
+        "messageIdAndBuyerReference": "ID de message / Référence acheteur"
       },
       "categories": {
         "fuel": "Fuel",
