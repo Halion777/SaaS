@@ -1276,11 +1276,14 @@ export class PeppolService {
   }
 
   // Send UBL invoice via Peppol - via edge function to avoid CORS
-  async sendInvoice(invoiceData) {
+  async sendInvoice(invoiceData, options = {}) {
     try {
       // Get user first for quota check
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
+      
+      // Extract optional parameters
+      const { clientInvoiceId, ublXml } = options;
       
       // Check if Peppol is disabled
       const isDisabled = await this.isPeppolDisabled();
@@ -1351,7 +1354,95 @@ export class PeppolService {
       }
 
       // Send with retry logic
-      return await this.sendWithRetry(invoiceData, 3);
+      const result = await this.sendWithRetry(invoiceData, 3);
+      
+      // After successful send, create tracking record in peppol_invoices
+      if (result.success) {
+        try {
+          // Calculate totals from invoice lines
+          const subtotalAmount = invoiceData.invoiceLines?.reduce((sum, line) => sum + (line.taxableAmount || 0), 0) || 0;
+          const taxAmount = invoiceData.invoiceLines?.reduce((sum, line) => sum + (line.taxAmount || 0), 0) || 0;
+          const totalAmount = subtotalAmount + taxAmount;
+          
+          // Get sender participant ID if exists
+          let senderId = null;
+          if (invoiceData.sender?.peppolIdentifier) {
+            const { data: senderParticipant } = await supabase
+              .from('peppol_participants')
+              .select('id')
+              .eq('user_id', user.id)
+              .eq('peppol_identifier', invoiceData.sender.peppolIdentifier)
+              .single();
+            if (senderParticipant) {
+              senderId = senderParticipant.id;
+            }
+          }
+          
+          // Get receiver participant ID if exists
+          let receiverId = null;
+          if (receiverPeppolIdentifier) {
+            const { data: receiverParticipant } = await supabase
+              .from('peppol_participants')
+              .select('id')
+              .eq('user_id', user.id)
+              .eq('peppol_identifier', receiverPeppolIdentifier)
+              .single();
+            if (receiverParticipant) {
+              receiverId = receiverParticipant.id;
+            }
+          }
+          
+          // Insert tracking record
+          const { error: insertError } = await supabase
+            .from('peppol_invoices')
+            .insert({
+              user_id: user.id,
+              invoice_number: invoiceData.billName,
+              document_type: 'INVOICE',
+              direction: 'outbound',
+              reference_number: invoiceData.buyerReference || invoiceData.billName,
+              sender_id: senderId,
+              sender_peppol_id: invoiceData.sender?.peppolIdentifier || null,
+              sender_name: invoiceData.sender?.name || null,
+              sender_vat_number: invoiceData.sender?.vatNumber || null,
+              sender_email: invoiceData.sender?.contact?.email || null,
+              receiver_peppol_id: receiverPeppolIdentifier,
+              receiver_name: invoiceData.receiver?.name || null,
+              receiver_vat_number: invoiceData.receiver?.vatNumber || null,
+              receiver_email: invoiceData.receiver?.contact?.email || null,
+              issue_date: invoiceData.issueDate,
+              due_date: invoiceData.dueDate,
+              delivery_date: invoiceData.deliveryDate || null,
+              payment_terms: invoiceData.paymentDelay ? `Net within ${invoiceData.paymentDelay} days` : null,
+              buyer_reference: invoiceData.buyerReference || null,
+              currency: 'EUR',
+              subtotal_amount: subtotalAmount,
+              tax_amount: taxAmount,
+              discount_amount: 0,
+              total_amount: totalAmount,
+              ubl_xml: ublXml || null,
+              status: 'sent',
+              peppol_message_id: result.messageId || result.data?.messageId || null,
+              sent_at: new Date().toISOString(),
+              client_invoice_id: clientInvoiceId || null,
+              metadata: {
+                invoiceLines: invoiceData.invoiceLines || [],
+                paymentMeans: invoiceData.paymentMeans || null,
+                webhookEventType: 'OUTBOUND_SEND'
+              }
+            });
+          
+          if (insertError) {
+            console.error('[PeppolService] Failed to create tracking record:', insertError);
+            // Don't fail the send if tracking fails
+          }
+        } catch (trackingError) {
+          console.error('[PeppolService] Error creating tracking record:', trackingError);
+          // Don't fail the send if tracking fails
+        }
+      }
+      
+      return result;
       
     } catch (error) {
       throw error;
@@ -1409,7 +1500,12 @@ export class PeppolService {
         countryCode: countryNameToISO(senderInfo.country) || "BE", // Convert country name to ISO code
         zipCode: senderInfo.zip_code.trim(),
         iban: senderInfo.iban || null, // IBAN is optional but recommended for credit transfer payments
-        peppolIdentifier: senderInfo.peppol_identifier || null // Use Peppol ID from settings if available
+        peppolIdentifier: senderInfo.peppol_identifier || null, // Use Peppol ID from settings if available
+        contact: {
+          name: senderInfo.contact_name || null,
+          phone: senderInfo.contact_phone || null,
+          email: senderInfo.contact_email || null
+        }
       },
       receiver: {
         vatNumber: receiverInfo.vat_number || '',

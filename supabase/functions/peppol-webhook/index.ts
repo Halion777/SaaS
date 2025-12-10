@@ -490,7 +490,10 @@ function parseUBLInvoice(ublXml: string): any {
     const supplierCity = txt(supplierAddressNode, 'CityName');
     const supplierPostalCode = txt(supplierAddressNode, 'PostalZone');
     const supplierCountry = txt(pickRaw(supplierAddressNode, 'Country'), 'IdentificationCode');
-    const supplierEmail = txt(pickRaw(supplierParty, 'Contact'), 'ElectronicMail');
+    const supplierContact = pickRaw(supplierParty, 'Contact');
+    const supplierEmail = txt(supplierContact, 'ElectronicMail');
+    const supplierContactName = txt(supplierContact, 'Name');
+    const supplierPhone = txt(supplierContact, 'Telephone');
 
     // Extract Customer Party
     const customerParty = pickRaw(pickRaw(invoice, 'AccountingCustomerParty'), 'Party');
@@ -502,6 +505,7 @@ function parseUBLInvoice(ublXml: string): any {
     })();
     const customerName = txt(pickRaw(customerParty, 'PartyName'), 'Name') || txt(customerParty, 'Name');
     const customerVatNumber = txt(pickRaw(customerParty, 'PartyTaxScheme'), 'CompanyID');
+    const customerEmail = txt(pickRaw(customerParty, 'Contact'), 'ElectronicMail');
 
     // Extract Tax Information
     const taxTotal = pickRaw(invoice, 'TaxTotal');
@@ -633,6 +637,8 @@ function parseUBLInvoice(ublXml: string): any {
         name: fallbackSupplierName || supplierName,
         vatNumber: supplierVatNumber || supplierCompanyId,
         companyId: supplierCompanyId,
+        contactName: supplierContactName,
+        contactPhone: supplierPhone,
         address: {
           street: supplierStreet,
           city: supplierCity,
@@ -646,7 +652,8 @@ function parseUBLInvoice(ublXml: string): any {
       customer: {
         peppolId: customerEndpointScheme && customerEndpointId ? `${customerEndpointScheme}:${customerEndpointId}` : '',
         name: customerName,
-        vatNumber: customerVatNumber
+        vatNumber: customerVatNumber,
+        email: customerEmail
       },
       
       // Tax Information
@@ -804,7 +811,14 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
             business_name: invoiceData.supplier?.name || 'Unknown Sender',
             vat_number: supplierVatNumber,
             country_code: supplierCountry,
+            contact_name: invoiceData.supplier?.contactName || '',
             contact_email: invoiceData.supplier?.email || '',
+            contact_phone: invoiceData.supplier?.contactPhone || '',
+            street_address: invoiceData.supplier?.address?.street || '',
+            city: invoiceData.supplier?.address?.city || '',
+            zip_code: invoiceData.supplier?.address?.postalCode || '',
+            country: invoiceData.supplier?.address?.country || supplierCountry,
+            supported_document_types: invoiceData.invoiceTypeCode ? [String(invoiceData.invoiceTypeCode)] : [],
             is_active: true,
             verification_status: 'verified',
             last_verified: new Date().toISOString()
@@ -929,6 +943,7 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
         receiver_peppol_id: invoiceData.customer?.peppolId || data.receiverPeppolId || data.peppolIdentifier,
         receiver_name: invoiceData.customer?.name || data.receiverName || '',
         receiver_vat_number: invoiceData.customer?.vatNumber || data.receiverVatNumber || '',
+        receiver_email: invoiceData.customer?.email || data.receiverEmail || '',
         issue_date: invoiceData.issueDate || data.issueDate || new Date().toISOString().split('T')[0],
         due_date: invoiceData.dueDate || data.dueDate,
         delivery_date: invoiceData.deliveryDate || null,
@@ -997,14 +1012,14 @@ async function processSendOutcome(supabase: any, userId: string, payload: Webhoo
     // Determine Peppol status
     const peppolStatus = data.status === 'delivered' ? 'delivered' : 
                          data.status === 'failed' ? 'failed' : 'sent';
-    
+    const nowIso = new Date().toISOString();
     const updateData: any = {
       peppol_status: peppolStatus,
-      updated_at: new Date().toISOString()
+      updated_at: nowIso
     };
 
     if (peppolStatus === 'delivered') {
-      updateData.peppol_delivered_at = new Date().toISOString();
+      updateData.peppol_delivered_at = nowIso;
     } else if (peppolStatus === 'failed') {
       updateData.peppol_error_message = data.errorMessage || 'Delivery failed';
     }
@@ -1019,16 +1034,18 @@ async function processSendOutcome(supabase: any, userId: string, payload: Webhoo
       return { success: false, error: updateError.message };
     }
 
-    // Also update peppol_invoices if it exists (for tracking)
+    // Also update peppol_invoices tracking if present
+    const trackingUpdate: any = {
+      status: peppolStatus,
+      updated_at: nowIso
+    };
+    if (peppolStatus !== 'delivered' && peppolStatus !== 'failed') {
+      trackingUpdate.sent_at = trackingUpdate.sent_at || nowIso;
+    }
+
     const { error: peppolUpdateError } = await supabase
       .from('peppol_invoices')
-      .update({
-        status: peppolStatus,
-        delivered_at: peppolStatus === 'delivered' ? new Date().toISOString() : null,
-        failed_at: peppolStatus === 'failed' ? new Date().toISOString() : null,
-        error_message: peppolStatus === 'failed' ? data.errorMessage : null,
-        updated_at: new Date().toISOString()
-      })
+      .update(trackingUpdate)
       .eq('peppol_message_id', messageId)
       .eq('user_id', userId);
 
@@ -1122,7 +1139,6 @@ async function processAcknowledgment(supabase: any, userId: string, payload: Web
         .update({ 
           metadata,
           status: (isMLR || isTransportAck) && isDelivered ? 'delivered' : peppolInvoice.status,
-          delivered_at: (isMLR || isTransportAck) && isDelivered ? new Date().toISOString() : peppolInvoice.delivered_at,
           updated_at: new Date().toISOString()
         })
         .eq('id', peppolInvoice.id);

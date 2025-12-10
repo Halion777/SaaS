@@ -203,7 +203,10 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
         country: peppolSettings.countryCode || 'BE', // Use country_code from Peppol settings
         zip_code: companyInfo?.postalCode || '', // Fallback to company info for postal code
         iban: companyInfo?.iban || '', // Get IBAN from company profile (not in Peppol settings)
-        peppol_identifier: peppolSettings.peppolId // Use Peppol ID directly from settings
+        peppol_identifier: peppolSettings.peppolId, // Use Peppol ID directly from settings
+        contact_name: peppolSettings.contact_person_name || companyInfo?.name || '',
+        contact_email: companyInfo?.email || '',
+        contact_phone: companyInfo?.phone || ''
       };
 
       // Get receiver country code (convert to ISO if needed)
@@ -286,8 +289,11 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
       // Generate UBL XML before sending
       const ublXml = generatePEPPOLXML(peppolInvoiceData);
 
-      // Send invoice via Peppol
-      const result = await peppolService.sendInvoice(peppolInvoiceData);
+      // Send invoice via Peppol with tracking options
+      const result = await peppolService.sendInvoice(peppolInvoiceData, {
+        clientInvoiceId: invoice.id,
+        ublXml: ublXml
+      });
 
       if (result.success) {
         // Extract message ID from result if available
