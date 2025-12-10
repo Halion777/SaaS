@@ -170,7 +170,7 @@ serve(async (req: Request) => {
       }
     };
     
-    
+
     // Validate webhook authentication (basic validation)
     const authHeader = req.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Basic ')) {
@@ -227,7 +227,7 @@ serve(async (req: Request) => {
       }
     }
     
-  
+    
     if (!receiverPeppolId) {
       return new Response(
         JSON.stringify({ error: 'Invalid payload: missing receiver identifier' }), 
@@ -463,7 +463,7 @@ function parseUBLInvoice(ublXml: string): any {
       if (raw && typeof raw === 'object' && raw['@_currencyID']) return raw['@_currencyID'];
       return fallback;
     };
-
+    
     // Helpers below replaced by fast-xml-parser extraction (txt/num/asArray above)
 
     // Extract Document Identifiers (Mandatory)
@@ -523,7 +523,7 @@ function parseUBLInvoice(ublXml: string): any {
         category: taxCategoryId,
         percent: taxPercent
       };
-    });
+      });
 
     // Extract Monetary Totals
     const monetaryTotal = pickRaw(invoice, 'LegalMonetaryTotal');
@@ -778,7 +778,7 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
       ? (parsedInvoice.totals?.taxExclusiveAmount || parsedInvoice.totals?.lineExtensionAmount || (totalAmount - taxAmount))
       : (invoiceData.totals?.taxExclusiveAmount || invoiceData.totals?.lineExtensionAmount || (totalAmount - taxAmount));
     
-   
+
     // Extract supplier Peppol ID (format: schemeID:identifier)
     const supplierPeppolId = invoiceData.supplier?.peppolId || data.senderPeppolId || '';
     const supplierVatNumber = invoiceData.supplier?.vatNumber || data.senderVatNumber || (supplierPeppolId ? supplierPeppolId.split(':')[1] || '' : '');
@@ -863,48 +863,48 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
 
     // Create expense invoice record (supplier invoice) with all extracted mandatory fields
     const insertPayload = {
-      user_id: userId,
-      invoice_number: invoiceNumber,
+        user_id: userId,
+        invoice_number: invoiceNumber,
       supplier_name: supplierName,
-      supplier_email: invoiceData.supplier.email || data.senderEmail || '',
+        supplier_email: invoiceData.supplier.email || data.senderEmail || '',
       supplier_vat_number: supplierVatNumber,
-      amount: totalAmount,
-      net_amount: netAmount,
-      vat_amount: taxAmount,
-      status: 'pending',
-      category: data.category || 'General',
-      source: 'peppol',
-      issue_date: invoiceData.issueDate || data.issueDate || new Date().toISOString().split('T')[0],
-      due_date: invoiceData.dueDate || data.dueDate || new Date().toISOString().split('T')[0],
+        amount: totalAmount,
+        net_amount: netAmount,
+        vat_amount: taxAmount,
+        status: 'pending',
+        category: data.category || 'General',
+        source: 'peppol',
+        issue_date: invoiceData.issueDate || data.issueDate || new Date().toISOString().split('T')[0],
+        due_date: invoiceData.dueDate || data.dueDate || new Date().toISOString().split('T')[0],
       payment_method: invoiceData.payment?.meansName || invoiceData.payment?.meansCode || '',
-      notes: notes,
-      peppol_enabled: true,
-      peppol_message_id: data.messageId,
-      peppol_received_at: new Date().toISOString().replace('T', ' ').replace('Z', '').slice(0, 19), // Format: YYYY-MM-DD HH:mm:ss
-      sender_peppol_id: supplierPeppolId,
-      ubl_xml: data.ublXml,
-      // Store additional parsed data in metadata
-      peppol_metadata: {
-        documentType: documentType,
-        documentTypeLabel: documentTypeLabel,
-        isSelfBilling: isSelfBilling,
-        isCreditNote: isCreditNote,
-        webhookEventType: payload.eventType,
-        invoiceTypeCode: invoiceData.invoiceTypeCode,
-        documentCurrencyCode: invoiceData.documentCurrencyCode,
-        buyerReference: invoiceData.buyerReference,
-        orderReference: invoiceData.orderReference,
-        salesOrderId: invoiceData.salesOrderId,
-        deliveryDate: invoiceData.deliveryDate,
-        payment: invoiceData.payment || {},
-        taxSubtotals: invoiceData.tax?.subtotals || [],
-        invoiceLines: invoiceData.invoiceLines || [],
+        notes: notes,
+        peppol_enabled: true,
+        peppol_message_id: data.messageId,
+        peppol_received_at: new Date().toISOString().replace('T', ' ').replace('Z', '').slice(0, 19), // Format: YYYY-MM-DD HH:mm:ss
+        sender_peppol_id: supplierPeppolId,
+        ubl_xml: data.ublXml,
+        // Store additional parsed data in metadata
+        peppol_metadata: {
+          documentType: documentType,
+          documentTypeLabel: documentTypeLabel,
+          isSelfBilling: isSelfBilling,
+          isCreditNote: isCreditNote,
+          webhookEventType: payload.eventType,
+          invoiceTypeCode: invoiceData.invoiceTypeCode,
+          documentCurrencyCode: invoiceData.documentCurrencyCode,
+          buyerReference: invoiceData.buyerReference,
+          orderReference: invoiceData.orderReference,
+          salesOrderId: invoiceData.salesOrderId,
+          deliveryDate: invoiceData.deliveryDate,
+          payment: invoiceData.payment || {},
+          taxSubtotals: invoiceData.tax?.subtotals || [],
+          invoiceLines: invoiceData.invoiceLines || [],
         messageId: data.messageId || null,
         supplierName,
         supplierVatNumber,
-        supplierAddress: invoiceData.supplier?.address || {},
-        totals: invoiceData.totals || {}
-      }
+          supplierAddress: invoiceData.supplier?.address || {},
+          totals: invoiceData.totals || {}
+        }
     };
 
     console.log('[Peppol Webhook] Inserting expense invoice payload:', {

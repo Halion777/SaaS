@@ -1064,15 +1064,15 @@ const QuoteCreation = () => {
       return;
     }
 
-    setIsAutoSaving(true);
+        setIsAutoSaving(true);
 
     try {
-      const savedTime = new Date().toISOString();
+        const savedTime = new Date().toISOString();
 
-      // Calculate total amount and final amount with VAT for correct price display in quotes management
+        // Calculate total amount and final amount with VAT for correct price display in quotes management
       // Note: Users enter TOTAL prices for materials (already multiplied by quantity)
       // So mat.price should always be the total price for that material - NEVER multiply by quantity
-      const totalAmount = tasks.reduce((sum, task) => {
+        const totalAmount = tasks.reduce((sum, task) => {
         const taskMaterialsTotal = task.materials.reduce((matSum, mat) => {
           // mat.price is ALWAYS total price - users enter total prices
           // DO NOT multiply by quantity - that would cause double multiplication
@@ -1081,99 +1081,99 @@ const QuoteCreation = () => {
         }, 0);
         // task.price is also total price for the task
         return sum + (parseFloat(task.price) || 0) + taskMaterialsTotal;
-      }, 0);
+        }, 0);
 
-      const taxAmount = financialConfig?.vatConfig?.display
-        ? (totalAmount * (financialConfig.vatConfig.rate || 20) / 100)
-        : 0;
+        const taxAmount = financialConfig?.vatConfig?.display
+          ? (totalAmount * (financialConfig.vatConfig.rate || 20) / 100)
+          : 0;
 
-      // Calculate the final amount including VAT
-      const finalAmount = totalAmount + taxAmount;
+        // Calculate the final amount including VAT
+        const finalAmount = totalAmount + taxAmount;
 
-      // Calculate deposit amount if enabled
-      const depositAmount = financialConfig?.advanceConfig?.enabled
-        ? parseFloat(financialConfig.advanceConfig.amount || 0)
-        : 0;
+        // Calculate deposit amount if enabled
+        const depositAmount = financialConfig?.advanceConfig?.enabled
+          ? parseFloat(financialConfig.advanceConfig.amount || 0)
+          : 0;
 
-      // Include calculated amounts in projectInfo for quotes management display
-      const enhancedProjectInfo = {
-        ...projectInfo,
-        totalAmount,
-        taxAmount,
-        finalAmount,
-        depositAmount
-      };
+        // Include calculated amounts in projectInfo for quotes management display
+        const enhancedProjectInfo = {
+          ...projectInfo,
+          totalAmount,
+          taxAmount,
+          finalAmount,
+          depositAmount
+        };
 
-      const quoteData = {
-        selectedClient: normalizeSelectedClient(selectedClient),
-        projectInfo: enhancedProjectInfo,
-        tasks,
-        files,
+        const quoteData = {
+          selectedClient: normalizeSelectedClient(selectedClient),
+          projectInfo: enhancedProjectInfo,
+          tasks,
+          files,
         currentStep: targetStep !== undefined ? targetStep : currentStep,
-        companyInfo,
-        financialConfig,
-        leadId: leadId || null,
+          companyInfo,
+          financialConfig,
+          leadId: leadId || null,
         // Get client signature from localStorage
-        clientSignature: (() => {
-          const clientId = selectedClient?.id || selectedClient?.value || selectedClient?.client?.id;
-          if (clientId) {
-            const key = `client-signature-${user.id}-${clientId}`;
-            const storedSignature = localStorage.getItem(key);
-            if (storedSignature) {
-              try {
-                return JSON.parse(storedSignature);
-              } catch (e) {
-                console.warn('Failed to parse stored signature:', e);
+          clientSignature: (() => {
+            const clientId = selectedClient?.id || selectedClient?.value || selectedClient?.client?.id;
+            if (clientId) {
+              const key = `client-signature-${user.id}-${clientId}`;
+              const storedSignature = localStorage.getItem(key);
+              if (storedSignature) {
+                try {
+                  return JSON.parse(storedSignature);
+                } catch (e) {
+                  console.warn('Failed to parse stored signature:', e);
+                }
               }
             }
-          }
-          return null;
-        })(),
-        lastSaved: savedTime,
-        // Add calculated amounts at the top level for quotes management display
-        totalAmount,
-        taxAmount,
-        finalAmount,
-        depositAmount
-      };
+            return null;
+          })(),
+          lastSaved: savedTime,
+          // Add calculated amounts at the top level for quotes management display
+          totalAmount,
+          taxAmount,
+          finalAmount,
+          depositAmount
+        };
 
       // Save to localStorage
-      try {
-        const quoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
-        const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
-        localStorage.setItem(draftKey, JSON.stringify(quoteData));
-        setLastSaved(savedTime);
-      } catch (localStorageError) {
-        console.error('Error saving to localStorage:', localStorageError);
+        try {
+          const quoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
+          const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
+          localStorage.setItem(draftKey, JSON.stringify(quoteData));
+          setLastSaved(savedTime);
+        } catch (localStorageError) {
+          console.error('Error saving to localStorage:', localStorageError);
       }
 
       // Save to backend draft table (if not editing an existing quote)
       if (user?.id && !isEditing && !editingQuoteId) {
         try {
-          const quoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
-          const draftRowIdKey = getDraftRowIdKeyByQuoteNumber(quoteNumber);
-          const existingRowId = localStorage.getItem(draftRowIdKey);
+              const quoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
+              const draftRowIdKey = getDraftRowIdKeyByQuoteNumber(quoteNumber);
+              const existingRowId = localStorage.getItem(draftRowIdKey);
 
-          const fallbackRowIdKey = `quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`;
-          const fallbackRowId = !quoteNumber ? localStorage.getItem(fallbackRowIdKey) : null;
-          const rowIdToUse = existingRowId || fallbackRowId;
+              const fallbackRowIdKey = `quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`;
+              const fallbackRowId = !quoteNumber ? localStorage.getItem(fallbackRowIdKey) : null;
+              const rowIdToUse = existingRowId || fallbackRowId;
 
-          const { data: saved, error: draftErr } = await saveQuoteDraft({
-            id: rowIdToUse || undefined,
-            user_id: user.id,
-            profile_id: currentProfile?.id || null,
-            draft_data: quoteData,
-            quote_number: quoteNumber || null
-          });
+              const { data: saved, error: draftErr } = await saveQuoteDraft({
+                id: rowIdToUse || undefined,
+                user_id: user.id,
+                profile_id: currentProfile?.id || null,
+                draft_data: quoteData,
+                quote_number: quoteNumber || null
+              });
 
-          if (!draftErr && saved?.id) {
-            if (quoteNumber) {
-              localStorage.setItem(draftRowIdKey, saved.id);
-            }
-            if (!rowIdToUse) {
-              localStorage.setItem(fallbackRowIdKey, saved.id);
-            }
-          }
+              if (!draftErr && saved?.id) {
+                if (quoteNumber) {
+                  localStorage.setItem(draftRowIdKey, saved.id);
+                }
+                if (!rowIdToUse) {
+                  localStorage.setItem(fallbackRowIdKey, saved.id);
+                }
+              }
         } catch (e) {
           console.warn('Draft save on navigation failed:', e?.message || e);
         }
@@ -1181,7 +1181,7 @@ const QuoteCreation = () => {
     } catch (error) {
       console.error('Error saving draft:', error);
     } finally {
-      setIsAutoSaving(false);
+          setIsAutoSaving(false);
     }
   };
 

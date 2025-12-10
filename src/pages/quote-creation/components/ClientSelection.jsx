@@ -2023,8 +2023,8 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
             t('quoteCreation.navigation.saving', 'Saving...')
           ) : (
             <>
-              <span className="hidden sm:inline">{t('quoteCreation.navigation.nextStep')}</span>
-              <span className="sm:hidden">{t('quoteCreation.navigation.next')}</span>
+          <span className="hidden sm:inline">{t('quoteCreation.navigation.nextStep')}</span>
+          <span className="sm:hidden">{t('quoteCreation.navigation.next')}</span>
             </>
           )}
         </Button>

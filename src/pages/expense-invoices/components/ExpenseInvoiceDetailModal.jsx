@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
@@ -6,6 +6,16 @@ import Button from '../../../components/ui/Button';
 const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState('details');
+
+  // Reset tab to 'details' when invoice changes or if invoice is not Peppol
+  useEffect(() => {
+    if (invoice && isOpen) {
+      // Reset to 'details' if invoice doesn't have Peppol source
+      if (invoice.source !== 'peppol') {
+        setActiveTab('details');
+      }
+    }
+  }, [invoice?.id, isOpen]);
 
   if (!isOpen || !invoice) return null;
 
@@ -20,6 +30,15 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
   const formatDate = (date) => {
     if (!date) return t('expenseInvoices.common.notAvailable', 'N/A');
     return new Intl.DateTimeFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US').format(new Date(date));
+  };
+
+  const formatCategory = (category) => {
+    if (!category) return t('expenseInvoices.common.notAvailable', 'N/A');
+    // Convert snake_case or kebab-case to Title Case
+    return category
+      .split(/[_-]/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
   };
 
   const getStatusBadge = (status) => {
@@ -130,7 +149,7 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.invoiceInfo.category', 'Category')}</label>
-                    <p className="text-sm text-foreground mt-1">{invoice.category || t('expenseInvoices.common.notAvailable', 'N/A')}</p>
+                    <p className="text-sm text-foreground mt-1">{formatCategory(invoice.category)}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.invoiceInfo.source', 'Source')}</label>

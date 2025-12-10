@@ -114,16 +114,16 @@ serve(async (req) => {
         // First, try to find user-specific template (if userId provided)
         if (userId) {
           const { data: userTemplate, error: userError } = await supabase
-            .from('email_templates')
-            .select('*')
-            .eq('template_type', templateType)
-            .eq('language', normalizedLanguage)
+          .from('email_templates')
+          .select('*')
+          .eq('template_type', templateType)
+          .eq('language', normalizedLanguage)
             .eq('user_id', userId)
             .eq('is_active', true)
             .maybeSingle();
-          
-          if (userTemplate) {
-            return { success: true, data: userTemplate };
+        
+        if (userTemplate) {
+          return { success: true, data: userTemplate };
           }
         }
         
