@@ -111,30 +111,29 @@ serve(async (req) => {
         // Normalize language code
         const normalizedLanguage = normalizeLanguage(finalLanguage);
         
-        let query = supabase
-          .from('email_templates')
-          .select('*')
-          .eq('template_type', templateType)
-          .eq('language', normalizedLanguage)
-          .eq('is_active', true);
-        
+        // First, try to find user-specific template (if userId provided)
         if (userId) {
-          query = query.eq('user_id', userId);
+          const { data: userTemplate, error: userError } = await supabase
+            .from('email_templates')
+            .select('*')
+            .eq('template_type', templateType)
+            .eq('language', normalizedLanguage)
+            .eq('user_id', userId)
+            .eq('is_active', true)
+            .maybeSingle();
+          
+          if (userTemplate) {
+            return { success: true, data: userTemplate };
+          }
         }
         
-        const { data: userTemplate, error: userError } = await query.maybeSingle();
-        
-        if (userTemplate) {
-          return { success: true, data: userTemplate };
-        }
-        
-        // Fallback to default template
+        // Fallback to global template (user_id IS NULL) - this is where default templates are stored
         const { data: defaultTemplate, error: defaultError } = await supabase
           .from('email_templates')
           .select('*')
           .eq('template_type', templateType)
           .eq('language', normalizedLanguage)
-          .eq('is_default', true)
+          .is('user_id', null) // Explicitly check for NULL user_id (global templates)
           .eq('is_active', true)
           .maybeSingle();
         
@@ -143,13 +142,13 @@ serve(async (req) => {
         }
         
         // If no template found in requested language, try French as fallback
-        if (language !== 'fr') {
+        if (normalizedLanguage !== 'fr') {
           const { data: frenchTemplate, error: frenchError } = await supabase
             .from('email_templates')
             .select('*')
             .eq('template_type', templateType)
             .eq('language', 'fr')
-            .eq('is_default', true)
+            .is('user_id', null) // Explicitly check for NULL user_id (global templates)
             .eq('is_active', true)
             .maybeSingle();
           
@@ -158,7 +157,7 @@ serve(async (req) => {
           }
         }
         
-        return { success: false, error: 'Template not found' };
+        return { success: false, error: `Email template '${templateType}' not found in database for language '${normalizedLanguage}'. Please create the template in the email_templates table.` };
       } catch (error: any) {
         console.error('Error getting email template:', error);
         return { success: false, error: error.message };

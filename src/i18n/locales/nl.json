@@ -3317,6 +3317,7 @@
       "designation": "OMSCHRIJVING",
       "quantity": "AANTAL",
       "unitPrice": "EENHEIDSPRIJS",
+      "price": "PRIJS",
       "totalExclTax": "TOTAAL",
       "subtotalExclTax": "SUBTOTAAL EXCL. BTW:",
       "vat": "BTW",

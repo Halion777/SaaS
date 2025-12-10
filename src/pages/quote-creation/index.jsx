@@ -1056,284 +1056,148 @@ const QuoteCreation = () => {
 
 
 
-  // Enhanced auto-save functionality: localStorage + backend draft table
+  // Save draft function - called only on navigation button clicks
+  const saveDraftOnNavigation = async (targetStep) => {
+    // Prevent saving if no data
+    if (!selectedClient && tasks.length === 0 && files.length === 0 &&
+        projectInfo.categories.length === 0 && !projectInfo.description && !projectInfo.deadline) {
+      return;
+    }
 
-  useEffect(() => {
+    setIsAutoSaving(true);
 
-    const autoSave = async () => {
+    try {
+      const savedTime = new Date().toISOString();
 
-      // Auto-save if there's any data to save
-
-      if (selectedClient || tasks.length > 0 || files.length > 0 ||
-
-        projectInfo.categories.length > 0 || projectInfo.description || projectInfo.deadline) {
-
-        setIsAutoSaving(true);
-
-        const savedTime = new Date().toISOString();
-
-        // Calculate total amount and final amount with VAT for correct price display in quotes management
-        // Note: Users enter TOTAL prices for materials (already multiplied by quantity)
-        // So mat.price should always be the total price for that material
-        const totalAmount = tasks.reduce((sum, task) => {
-          const taskMaterialsTotal = task.materials.reduce((matSum, mat) => {
-            // mat.price should be total price (users enter total, DB stores in total_price)
-            // Add safeguard: if price seems like unit price (very small) and quantity exists, calculate total
-            const materialPrice = parseFloat(mat.price) || 0;
-            if (materialPrice > 0 && mat.quantity && mat.quantity > 1 && materialPrice < 0.1) {
-              // Likely a unit price that wasn't converted - calculate total
-              return matSum + (materialPrice * parseFloat(mat.quantity));
-            }
-            return matSum + materialPrice;
-          }, 0);
-          return sum + (task.price || 0) + taskMaterialsTotal;
+      // Calculate total amount and final amount with VAT for correct price display in quotes management
+      // Note: Users enter TOTAL prices for materials (already multiplied by quantity)
+      // So mat.price should always be the total price for that material - NEVER multiply by quantity
+      const totalAmount = tasks.reduce((sum, task) => {
+        const taskMaterialsTotal = task.materials.reduce((matSum, mat) => {
+          // mat.price is ALWAYS total price - users enter total prices
+          // DO NOT multiply by quantity - that would cause double multiplication
+          const materialPrice = parseFloat(mat.price) || 0;
+          return matSum + materialPrice;
         }, 0);
+        // task.price is also total price for the task
+        return sum + (parseFloat(task.price) || 0) + taskMaterialsTotal;
+      }, 0);
 
-        const taxAmount = financialConfig?.vatConfig?.display
-          ? (totalAmount * (financialConfig.vatConfig.rate || 20) / 100)
-          : 0;
+      const taxAmount = financialConfig?.vatConfig?.display
+        ? (totalAmount * (financialConfig.vatConfig.rate || 20) / 100)
+        : 0;
 
-        // Calculate the final amount including VAT
-        const finalAmount = totalAmount + taxAmount;
+      // Calculate the final amount including VAT
+      const finalAmount = totalAmount + taxAmount;
 
-        // Calculate deposit amount if enabled
-        const depositAmount = financialConfig?.advanceConfig?.enabled
-          ? parseFloat(financialConfig.advanceConfig.amount || 0)
-          : 0;
+      // Calculate deposit amount if enabled
+      const depositAmount = financialConfig?.advanceConfig?.enabled
+        ? parseFloat(financialConfig.advanceConfig.amount || 0)
+        : 0;
 
-        // Include calculated amounts in projectInfo for quotes management display
-        const enhancedProjectInfo = {
-          ...projectInfo,
-          totalAmount,
-          taxAmount,
-          finalAmount,
-          depositAmount
-        };
+      // Include calculated amounts in projectInfo for quotes management display
+      const enhancedProjectInfo = {
+        ...projectInfo,
+        totalAmount,
+        taxAmount,
+        finalAmount,
+        depositAmount
+      };
 
-        const quoteData = {
-          selectedClient: normalizeSelectedClient(selectedClient),
-
-          projectInfo: enhancedProjectInfo,
-
-          tasks,
-
-          files,
-
-          currentStep,
-
-          companyInfo,
-
-          financialConfig,
-
-          // Include leadId if this is a lead quote
-          leadId: leadId || null,
-
-          // Get client signature from localStorage or from current signature state
-          clientSignature: (() => {
-            // First try to get from localStorage
-            // Handle different client structures (normalized, lead client, etc.)
-            const clientId = selectedClient?.id || selectedClient?.value || selectedClient?.client?.id;
-            if (clientId) {
-              const key = `client-signature-${user.id}-${clientId}`;
-              const storedSignature = localStorage.getItem(key);
-              if (storedSignature) {
-                try {
-                  return JSON.parse(storedSignature);
-                } catch (e) {
-                  console.warn('Failed to parse stored signature:', e);
-                }
+      const quoteData = {
+        selectedClient: normalizeSelectedClient(selectedClient),
+        projectInfo: enhancedProjectInfo,
+        tasks,
+        files,
+        currentStep: targetStep !== undefined ? targetStep : currentStep,
+        companyInfo,
+        financialConfig,
+        leadId: leadId || null,
+        // Get client signature from localStorage
+        clientSignature: (() => {
+          const clientId = selectedClient?.id || selectedClient?.value || selectedClient?.client?.id;
+          if (clientId) {
+            const key = `client-signature-${user.id}-${clientId}`;
+            const storedSignature = localStorage.getItem(key);
+            if (storedSignature) {
+              try {
+                return JSON.parse(storedSignature);
+              } catch (e) {
+                console.warn('Failed to parse stored signature:', e);
               }
-            }
-            // Only warn if selectedClient exists but has no ID (not if it's null/undefined)
-            if (selectedClient && !clientId) {
-              console.warn('Auto-save: no client ID available', { selectedClient });
-            }
-            return null;
-          })(),
-          lastSaved: savedTime,
-
-          // Add calculated amounts at the top level for quotes management display
-          totalAmount,
-          taxAmount,
-          finalAmount,
-          depositAmount
-        };
-
-
-
-        // Save to localStorage (current in-progress draft only)
-
-        try {
-
-          const quoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
-          const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
-          localStorage.setItem(draftKey, JSON.stringify(quoteData));
-          setLastSaved(savedTime);
-
-        } catch (localStorageError) {
-
-          console.error('Error saving to localStorage:', localStorageError);
-
-        }
-
-
-
-        // If editing an existing quote (draft or final status), update the quote directly
-        // Otherwise, save to backend draft table for cross-device and quotes-management visibility
-
-        try {
-
-          if (user?.id) {
-
-            // Check if we're editing an existing quote
-            if (isEditing && editingQuoteId) {
-              // Update the existing quote directly instead of creating a draft
-              const totalAmount = tasks.reduce((sum, task) => {
-                const taskMaterialsTotal = task.materials.reduce((matSum, mat) =>
-                  matSum + (parseFloat(mat.price) || 0), 0);
-                return sum + (task.price || 0) + taskMaterialsTotal;
-              }, 0);
-
-              const depositAmount = financialConfig?.advanceConfig?.enabled
-                ? parseFloat(financialConfig.advanceConfig.amount || 0)
-                : 0;
-
-              const quoteUpdateData = {
-                title: projectInfo.description || 'Nouveau devis',
-                description: projectInfo.description || '',
-                project_categories: projectInfo.categories || [],
-                custom_category: projectInfo.customCategory || '',
-                deadline: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : null,
-                total_amount: totalAmount,
-                tax_amount: financialConfig?.vatConfig?.display ? (totalAmount * (financialConfig.vatConfig.rate || 20) / 100) : 0,
-                discount_amount: 0,
-                final_amount: totalAmount + (financialConfig?.vatConfig?.display ? (totalAmount * (financialConfig.vatConfig.rate || 20) / 100) : 0),
-                advance_payment_amount: depositAmount,
-                vat_config: financialConfig?.vatConfig || null,
-                marketing_banner: financialConfig?.marketingBannerConfig || null,
-                valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                terms_conditions: financialConfig?.defaultConditions?.text || '',
-                quote_number: projectInfo.quoteNumber, // Preserve quote number
-                tasks: tasks.map((task, index) => ({
-                  name: task.description || task.name || '',
-                  description: task.description || task.name || '',
-                  quantity: task.quantity || 1,
-                  unit: task.unit || 'piece',
-                  unit_price: task.price || task.unit_price || 0,
-                  total_price: (task.price || task.unit_price || 0) * (task.quantity || 1),
-                  duration: task.duration || 0,
-                  duration_unit: task.durationUnit || 'minutes',
-                  pricing_type: task.pricingType || 'flat',
-                  hourly_rate: task.hourlyRate || 0,
-                  order_index: index,
-                  materials: task.materials || []
-                })),
-                files: files.map((file, index) => ({
-                  file_name: file.name || file.file_name || '',
-                  file_path: file.path || file.file_path || file.url || '',
-                  file_size: file.size || file.file_size || 0,
-                  mime_type: file.type || file.mime_type || '',
-                  file_category: 'attachment',
-                  order_index: index
-                }))
-              };
-
-              // Update the quote in the backend
-              const { error: updateError } = await updateQuote(editingQuoteId, quoteUpdateData);
-
-              if (updateError) {
-                console.warn('Auto-save: Error updating quote:', updateError);
-              } else {
-                console.log('Auto-save: Quote updated successfully');
-              }
-            } else {
-              // Not editing an existing quote - save to draft table
-              // Use quote number for unique draft identification if available
-              const quoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
-              const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
-              const draftRowIdKey = getDraftRowIdKeyByQuoteNumber(quoteNumber);
-
-              const existingRowId = localStorage.getItem(draftRowIdKey);
-
-              // Also check fallback user-based key if quote number is not available
-              const fallbackRowIdKey = `quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`;
-              const fallbackRowId = !quoteNumber ? localStorage.getItem(fallbackRowIdKey) : null;
-
-              // Use existing row ID if available (from quote number key or fallback key)
-              const rowIdToUse = existingRowId || fallbackRowId;
-
-              const { data: saved, error: draftErr } = await saveQuoteDraft({
-
-                id: rowIdToUse || undefined,
-
-                user_id: user.id,
-
-                profile_id: currentProfile?.id || null,
-
-                draft_data: quoteData,
-                // Add quote number to draft data for better identification
-                quote_number: quoteNumber || null
-              });
-
-              // Store the row ID in both keys for future reference
-              if (!draftErr && saved?.id) {
-                if (quoteNumber) {
-                  localStorage.setItem(draftRowIdKey, saved.id);
-                }
-                // Also store in fallback key for cases where quote number isn't set yet
-                if (!rowIdToUse) {
-                  localStorage.setItem(fallbackRowIdKey, saved.id);
-                }
-              }
-
-              // Client signature is only saved to localStorage during auto-save
-              // It will be saved to quote_signatures table when explicitly saving or sending the quote
             }
           }
+          return null;
+        })(),
+        lastSaved: savedTime,
+        // Add calculated amounts at the top level for quotes management display
+        totalAmount,
+        taxAmount,
+        finalAmount,
+        depositAmount
+      };
 
-        } catch (e) {
-
-          console.warn('Draft autosave (backend) failed:', e?.message || e);
-
-        }
-
-
-
-        setTimeout(() => {
-
-          setIsAutoSaving(false);
-
-        }, 1500);
-
+      // Save to localStorage
+      try {
+        const quoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
+        const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
+        localStorage.setItem(draftKey, JSON.stringify(quoteData));
+        setLastSaved(savedTime);
+      } catch (localStorageError) {
+        console.error('Error saving to localStorage:', localStorageError);
       }
 
-    };
+      // Save to backend draft table (if not editing an existing quote)
+      if (user?.id && !isEditing && !editingQuoteId) {
+        try {
+          const quoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
+          const draftRowIdKey = getDraftRowIdKeyByQuoteNumber(quoteNumber);
+          const existingRowId = localStorage.getItem(draftRowIdKey);
 
+          const fallbackRowIdKey = `quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`;
+          const fallbackRowId = !quoteNumber ? localStorage.getItem(fallbackRowIdKey) : null;
+          const rowIdToUse = existingRowId || fallbackRowId;
 
+          const { data: saved, error: draftErr } = await saveQuoteDraft({
+            id: rowIdToUse || undefined,
+            user_id: user.id,
+            profile_id: currentProfile?.id || null,
+            draft_data: quoteData,
+            quote_number: quoteNumber || null
+          });
 
-    // Auto-save every 30 seconds
+          if (!draftErr && saved?.id) {
+            if (quoteNumber) {
+              localStorage.setItem(draftRowIdKey, saved.id);
+            }
+            if (!rowIdToUse) {
+              localStorage.setItem(fallbackRowIdKey, saved.id);
+            }
+          }
+        } catch (e) {
+          console.warn('Draft save on navigation failed:', e?.message || e);
+        }
+      }
+    } catch (error) {
+      console.error('Error saving draft:', error);
+    } finally {
+      setIsAutoSaving(false);
+    }
+  };
 
-    const interval = setInterval(autoSave, 30000);
+  // Auto-save draft when financialConfig or companyInfo changes on Step 4
+  // This ensures VAT% and other configs are saved even if user doesn't navigate away
+  useEffect(() => {
+    // Only auto-save on Step 4 (Preview step) when configs change
+    if (currentStep === 4 && financialConfig) {
+      // Debounce the save to avoid too many saves
+      const timeoutId = setTimeout(() => {
+        saveDraftOnNavigation(4);
+      }, 1000); // Wait 1 second after last change
 
-
-
-    // Also auto-save immediately when data changes (debounced)
-
-    const timeoutId = setTimeout(autoSave, 5000);
-
-
-
-    return () => {
-
-      clearInterval(interval);
-
-      clearTimeout(timeoutId);
-
-    };
-
-  }, [selectedClient, projectInfo, tasks, files, currentStep, companyInfo, financialConfig, user?.id, currentProfile?.id, isEditing, editingQuoteId]);
-
-
+      return () => clearTimeout(timeoutId);
+    }
+  }, [financialConfig, companyInfo, currentStep]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load company info from database and localStorage
 
@@ -1762,100 +1626,12 @@ const QuoteCreation = () => {
 
 
   const handlePrevious = async () => {
-
     if (currentStep > 1) {
-
-      // Auto-save before moving to previous step
-
-      const savedTime = new Date().toISOString();
-
-      const quoteData = {
-
-        selectedClient: normalizeSelectedClient(selectedClient),
-
-        projectInfo,
-
-        tasks,
-
-        files,
-
-        currentStep: currentStep - 1,
-
-        companyInfo,
-
-        financialConfig,
-
-        // Include leadId if this is a lead quote
-        leadId: leadId || null,
-
-        // Include client signature when moving between steps
-        // Get client signature from localStorage
-        clientSignature: (() => {
-          if (selectedClient?.id || selectedClient?.value) {
-            const storedSignature = localStorage.getItem(`client-signature-${user.id}-${selectedClient.id || selectedClient.value}`);
-            if (storedSignature) {
-              try {
-                return JSON.parse(storedSignature);
-              } catch (e) {
-                console.warn('Failed to parse stored signature:', e);
-              }
-            }
-          }
-          return null;
-        })(),
-        lastSaved: savedTime
-
-      };
-
-
-      // Use quote number for draft key if available
-      const quoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
-      const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
-      localStorage.setItem(draftKey, JSON.stringify(quoteData));
-      setLastSaved(savedTime);
-
-      // Save to backend draft table on navigation (if not editing an existing quote)
-      if (user?.id && !isEditing && !editingQuoteId) {
-        try {
-          const draftRowIdKey = getDraftRowIdKeyByQuoteNumber(quoteNumber);
-          const existingRowId = localStorage.getItem(draftRowIdKey);
-
-          // Also check fallback user-based key if quote number is not available
-          const fallbackRowIdKey = `quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`;
-          const fallbackRowId = !quoteNumber ? localStorage.getItem(fallbackRowIdKey) : null;
-
-          // Use existing row ID if available (from quote number key or fallback key)
-          const rowIdToUse = existingRowId || fallbackRowId;
-
-          const { data: saved, error: draftErr } = await saveQuoteDraft({
-            id: rowIdToUse || undefined,
-            user_id: user.id,
-            profile_id: currentProfile?.id || null,
-            draft_data: quoteData,
-            quote_number: quoteNumber || null
-          });
-
-          // Store the row ID in both keys for future reference
-          if (!draftErr && saved?.id) {
-            if (quoteNumber) {
-              localStorage.setItem(draftRowIdKey, saved.id);
-            }
-            // Also store in fallback key for cases where quote number isn't set yet
-            if (!rowIdToUse) {
-              localStorage.setItem(fallbackRowIdKey, saved.id);
-            }
-          }
-        } catch (e) {
-          console.warn('Draft save on navigation failed:', e?.message || e);
-        }
-      }
-
-
+      // Save draft before moving to previous step (with loading state)
+      await saveDraftOnNavigation(currentStep - 1);
 
       setCurrentStep(currentStep - 1);
-
     }
-
   };
 
 
@@ -2043,7 +1819,8 @@ const QuoteCreation = () => {
 
             unit_price: task.price || task.unit_price || 0,
 
-            total_price: (task.price || task.unit_price || 0) * (task.quantity || 1),
+            // task.price is already total price - do NOT multiply by quantity (that causes huge amounts)
+            total_price: task.price || task.unit_price || 0,
 
             duration: task.duration || 0,
 
@@ -3043,7 +2820,8 @@ const QuoteCreation = () => {
 
             unit_price: task.price || task.unit_price || 0,
 
-            total_price: (task.price || task.unit_price || 0) * (task.quantity || 1),
+            // task.price is already total price - do NOT multiply by quantity (that causes huge amounts)
+            total_price: task.price || task.unit_price || 0,
 
             duration: task.duration || 0,
 
@@ -4584,6 +4362,8 @@ const QuoteCreation = () => {
             leadId={leadId}
 
             userId={user?.id}
+
+            isSaving={isAutoSaving}
           />
 
         );
@@ -4608,6 +4388,8 @@ const QuoteCreation = () => {
 
             onPrevious={handlePrevious}
 
+            isSaving={isAutoSaving}
+
           />
 
         );
@@ -4629,7 +4411,7 @@ const QuoteCreation = () => {
             quoteId={editingQuoteId}
 
             quoteNumber={projectInfo.quoteNumber}
-            isSaving={isSaving}
+            isSaving={isSaving || isAutoSaving}
 
             currentProfile={currentProfile}
             onUploadStatusChange={handleFileUploadStatusChange}

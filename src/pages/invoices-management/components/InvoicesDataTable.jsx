@@ -29,7 +29,8 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
   }, [viewMode]);
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US', {
+    // Always use comma as decimal separator (fr-FR format) to match quote creation flow
+    return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'EUR'
     }).format(amount);

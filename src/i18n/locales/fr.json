@@ -3329,6 +3329,7 @@
       "designation": "DÉSIGNATION",
       "quantity": "QTÉ",
       "unitPrice": "PRIX U.",
+      "price": "PRIX",
       "totalExclTax": "TOTAL",
       "subtotalExclTax": "SOUS-TOTAL HT:",
       "vat": "TVA",

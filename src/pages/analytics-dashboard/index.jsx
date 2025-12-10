@@ -209,8 +209,8 @@ const AnalyticsDashboard = () => {
       : (paymentRate > 0 ? 100 : 0);
 
     const formatCurrency = (amount) => {
-      const locale = i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR';
-      return new Intl.NumberFormat(locale, {
+      // Always use comma as decimal separator (fr-FR format) to match quote creation flow
+      return new Intl.NumberFormat('fr-FR', {
         style: 'currency',
         currency: 'EUR',
         minimumFractionDigits: 0

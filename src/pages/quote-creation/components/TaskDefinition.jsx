@@ -110,7 +110,7 @@ function extractLaborPriceInfo(text = '') {
   return price;
 }
 
-const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCategory, projectDescription, projectCustomCategory }) => {
+const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCategory, projectDescription, projectCustomCategory, isSaving = false }) => {
   const { t } = useTranslation();
   const [currentTask, setCurrentTask] = useState({
     description: '',
@@ -1932,16 +1932,17 @@ const TaskDefinition = ({ tasks, onTasksChange, onNext, onPrevious, projectCateg
           onClick={onPrevious}
           iconName="ArrowLeft"
           iconPosition="left"
+          disabled={isSaving}
         >
-          {t('quoteCreation.navigation.previousStep')}
+          {isSaving ? t('quoteCreation.navigation.saving', 'Saving...') : t('quoteCreation.navigation.previousStep')}
         </Button>
         <Button
           onClick={onNext}
-          disabled={!isFormValid}
+          disabled={!isFormValid || isSaving}
           iconName="ArrowRight"
           iconPosition="right"
         >
-          {t('quoteCreation.navigation.nextStep')}
+          {isSaving ? t('quoteCreation.navigation.saving', 'Saving...') : t('quoteCreation.navigation.nextStep')}
         </Button>
       </div>
     </div>

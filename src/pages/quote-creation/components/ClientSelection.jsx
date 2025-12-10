@@ -13,7 +13,7 @@ import { generateQuoteNumber } from '../../../services/quotesService';
 import { getPeppolVATSchemeId } from '../../../utils/peppolSchemes';
 import { getClientCountryOptions } from '../../../utils/countryList';
 
-const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjectInfoChange, onNext, leadId, userId }) => {
+const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjectInfoChange, onNext, leadId, userId, isSaving = false }) => {
   const { t } = useTranslation();
   const [showNewClientForm, setShowNewClientForm] = useState(!!leadId); // Auto-show form if leadId exists
   const [clientType, setClientType] = useState(leadId ? 'particulier' : 'particulier');
@@ -2013,14 +2013,20 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         
         <Button
           onClick={onNext}
-          disabled={!isFormValid()}
+          disabled={!isFormValid() || isSaving}
           iconName="ArrowRight"
           iconPosition="right"
           size="sm"
           className="w-full sm:w-auto"
         >
-          <span className="hidden sm:inline">{t('quoteCreation.navigation.nextStep')}</span>
-          <span className="sm:hidden">{t('quoteCreation.navigation.next')}</span>
+          {isSaving ? (
+            t('quoteCreation.navigation.saving', 'Saving...')
+          ) : (
+            <>
+              <span className="hidden sm:inline">{t('quoteCreation.navigation.nextStep')}</span>
+              <span className="sm:hidden">{t('quoteCreation.navigation.next')}</span>
+            </>
+          )}
         </Button>
         
         {/* Help text when button is disabled due to lead_id */}

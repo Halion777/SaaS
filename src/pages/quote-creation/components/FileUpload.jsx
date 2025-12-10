@@ -487,7 +487,7 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, quoteNu
           iconPosition="left"
           disabled={isSaving}
         >
-          {t('quoteCreation.navigation.previousStep')}
+          {isSaving ? t('quoteCreation.navigation.saving', 'Saving...') : t('quoteCreation.navigation.previousStep')}
         </Button>
         <Button
           onClick={onNext}
@@ -495,7 +495,7 @@ const FileUpload = ({ files, onFilesChange, onNext, onPrevious, quoteId, quoteNu
           iconPosition="right"
           disabled={isSaving || uploadingFiles.size > 0}
         >
-          {uploadingFiles.size > 0 ? t('quoteCreation.fileUpload.uploading') : t('quoteCreation.navigation.nextStep')}
+          {uploadingFiles.size > 0 ? t('quoteCreation.fileUpload.uploading') : isSaving ? t('quoteCreation.navigation.saving', 'Saving...') : t('quoteCreation.navigation.nextStep')}
         </Button>
       </div>
     </div>

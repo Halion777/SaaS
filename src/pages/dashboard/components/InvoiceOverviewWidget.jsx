@@ -10,7 +10,8 @@ const InvoiceOverviewWidget = ({ invoiceData, expenseInvoiceData, loading = fals
 
   const formatCurrency = (amount) => {
     if (loading || amount === '...') return '...';
-    return new Intl.NumberFormat(i18n.language, {
+    // Always use comma as decimal separator (fr-FR format) to match quote creation flow
+    return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'EUR'
     }).format(amount || 0);

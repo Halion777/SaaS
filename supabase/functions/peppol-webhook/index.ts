@@ -465,37 +465,225 @@ function parseUBLInvoice(ublXml: string): any {
 
     // Helper function to get text content by local name (works with namespaces)
     // UBL XML uses namespaces, so we search by local name
+    // Try namespace-aware methods first, then fallback to prefix-based selectors
     const getTextByLocalName = (localName: string, parent?: any): string => {
       const searchRoot = parent || xmlDoc;
-      const elements = searchRoot.getElementsByTagName(localName);
-      if (elements.length > 0) {
-        return elements[0].textContent?.trim() || '';
+      
+      // Method 1: Try getElementsByTagNameNS with UBL namespaces
+      const ublNamespaces = [
+        'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2',
+        'urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2',
+        'urn:oasis:names:specification:ubl:schema:xsd:Invoice-2'
+      ];
+      
+      for (const ns of ublNamespaces) {
+        try {
+          const elements = searchRoot.getElementsByTagNameNS(ns, localName);
+          if (elements.length > 0 && elements[0].textContent) {
+            return elements[0].textContent.trim();
+          }
+        } catch (e) {
+          // Namespace method not supported, continue to next method
+        }
       }
-      // Also try with namespace prefix if available
-      const prefixed = searchRoot.querySelector(`cbc\\:${localName}, cac\\:${localName}`);
-      return prefixed?.textContent?.trim() || '';
+      
+      // Method 2: Try getElementsByTagName (works if namespaces are ignored)
+      try {
+        const elements = searchRoot.getElementsByTagName(localName);
+        if (elements.length > 0 && elements[0].textContent) {
+          return elements[0].textContent.trim();
+        }
+      } catch (e) {
+        // Continue to next method
+      }
+      
+      // Method 3: Try querySelector with namespace prefixes
+      try {
+        const prefixed = searchRoot.querySelector(`cbc\\:${localName}, cac\\:${localName}, Invoice > ${localName}`);
+        if (prefixed && prefixed.textContent) {
+          return prefixed.textContent.trim();
+        }
+      } catch (e) {
+        // Continue to next method
+      }
+      
+      // Method 4: Try XPath-like search (find by local name in all namespaces)
+      try {
+        const allElements = searchRoot.getElementsByTagName('*');
+        for (let i = 0; i < allElements.length; i++) {
+          const el = allElements[i];
+          if (el.localName === localName && el.textContent) {
+            return el.textContent.trim();
+          }
+        }
+      } catch (e) {
+        // Last resort
+      }
+      
+      return '';
     };
 
     const getAttributeByLocalName = (localName: string, attr: string, parent?: any): string => {
       const searchRoot = parent || xmlDoc;
-      const elements = searchRoot.getElementsByTagName(localName);
-      if (elements.length > 0) {
-        return elements[0].getAttribute(attr) || '';
+      
+      // Method 1: Try namespace-aware methods
+      const ublNamespaces = [
+        'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2',
+        'urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2',
+        'urn:oasis:names:specification:ubl:schema:xsd:Invoice-2'
+      ];
+      
+      for (const ns of ublNamespaces) {
+        try {
+          const elements = searchRoot.getElementsByTagNameNS(ns, localName);
+          if (elements.length > 0 && elements[0].hasAttribute(attr)) {
+            return elements[0].getAttribute(attr) || '';
+          }
+        } catch (e) {
+          // Continue
+        }
       }
-      const prefixed = searchRoot.querySelector(`cbc\\:${localName}, cac\\:${localName}`);
-      return prefixed?.getAttribute(attr) || '';
+      
+      // Method 2: Try getElementsByTagName
+      try {
+        const elements = searchRoot.getElementsByTagName(localName);
+        if (elements.length > 0 && elements[0].hasAttribute(attr)) {
+          return elements[0].getAttribute(attr) || '';
+        }
+      } catch (e) {
+        // Continue
+      }
+      
+      // Method 3: Try querySelector
+      try {
+        const prefixed = searchRoot.querySelector(`cbc\\:${localName}, cac\\:${localName}`);
+        if (prefixed && prefixed.hasAttribute(attr)) {
+          return prefixed.getAttribute(attr) || '';
+        }
+      } catch (e) {
+        // Continue
+      }
+      
+      // Method 4: Search by local name
+      try {
+        const allElements = searchRoot.getElementsByTagName('*');
+        for (let i = 0; i < allElements.length; i++) {
+          const el = allElements[i];
+          if (el.localName === localName && el.hasAttribute(attr)) {
+            return el.getAttribute(attr) || '';
+          }
+        }
+      } catch (e) {
+        // Last resort
+      }
+      
+      return '';
     };
 
-    // Helper to find element by local name within parent
+    // Helper to find element by local name within parent (namespace-aware)
     const findElement = (localName: string, parent?: any): any => {
       const searchRoot = parent || xmlDoc;
-      const elements = searchRoot.getElementsByTagName(localName);
-      return elements.length > 0 ? elements[0] : null;
+      
+      // Try namespace-aware methods first
+      const ublNamespaces = [
+        'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2',
+        'urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2',
+        'urn:oasis:names:specification:ubl:schema:xsd:Invoice-2'
+      ];
+      
+      for (const ns of ublNamespaces) {
+        try {
+          const elements = searchRoot.getElementsByTagNameNS(ns, localName);
+          if (elements.length > 0) {
+            return elements[0];
+          }
+        } catch (e) {
+          // Continue
+        }
+      }
+      
+      // Fallback to getElementsByTagName
+      try {
+        const elements = searchRoot.getElementsByTagName(localName);
+        if (elements.length > 0) {
+          return elements[0];
+        }
+      } catch (e) {
+        // Continue
+      }
+      
+      // Fallback to querySelector
+      try {
+        const prefixed = searchRoot.querySelector(`cbc\\:${localName}, cac\\:${localName}`);
+        if (prefixed) {
+          return prefixed;
+        }
+      } catch (e) {
+        // Continue
+      }
+      
+      // Last resort: search by local name
+      try {
+        const allElements = searchRoot.getElementsByTagName('*');
+        for (let i = 0; i < allElements.length; i++) {
+          const el = allElements[i];
+          if (el.localName === localName) {
+            return el;
+          }
+        }
+      } catch (e) {
+        // Return null if nothing found
+      }
+      
+      return null;
     };
     
     const findAllElements = (localName: string, parent?: any): any[] => {
       const searchRoot = parent || xmlDoc;
-      return Array.from(searchRoot.getElementsByTagName(localName));
+      const results: any[] = [];
+      
+      // Try namespace-aware methods first
+      const ublNamespaces = [
+        'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2',
+        'urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2',
+        'urn:oasis:names:specification:ubl:schema:xsd:Invoice-2'
+      ];
+      
+      for (const ns of ublNamespaces) {
+        try {
+          const elements = searchRoot.getElementsByTagNameNS(ns, localName);
+          if (elements.length > 0) {
+            return Array.from(elements);
+          }
+        } catch (e) {
+          // Continue
+        }
+      }
+      
+      // Fallback to getElementsByTagName
+      try {
+        const elements = searchRoot.getElementsByTagName(localName);
+        if (elements.length > 0) {
+          return Array.from(elements);
+        }
+      } catch (e) {
+        // Continue
+      }
+      
+      // Last resort: search by local name
+      try {
+        const allElements = searchRoot.getElementsByTagName('*');
+        for (let i = 0; i < allElements.length; i++) {
+          const el = allElements[i];
+          if (el.localName === localName) {
+            results.push(el);
+          }
+        }
+      } catch (e) {
+        // Return empty array
+      }
+      
+      return results;
     };
 
     // Helper for simple text extraction (tries both approaches)
@@ -753,7 +941,15 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
     if (data.ublXml) {
       try {
         parsedInvoice = parseUBLInvoice(data.ublXml);
-      } catch (parseError) {
+        console.log('[Peppol Webhook] Successfully parsed invoice:', {
+          invoiceId: parsedInvoice?.invoiceId,
+          payableAmount: parsedInvoice?.totals?.payableAmount,
+          taxAmount: parsedInvoice?.tax?.totalTaxAmount,
+          supplierName: parsedInvoice?.supplier?.name
+        });
+      } catch (parseError: any) {
+        console.error('[Peppol Webhook] Failed to parse UBL XML:', parseError?.message || parseError);
+        console.error('[Peppol Webhook] XML snippet:', data.ublXml?.substring(0, 500));
         // Fallback to webhook payload data if parsing fails
       }
     }
@@ -798,13 +994,31 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
       documentCurrencyCode: data.currency || 'EUR'
     };
 
-    // Calculate amounts
-    const totalAmount = invoiceData.totals?.payableAmount || invoiceData.totals?.taxInclusiveAmount || 0;
-    const taxAmount = invoiceData.tax?.totalTaxAmount || 0;
-    const netAmount = invoiceData.totals?.taxExclusiveAmount || invoiceData.totals?.lineExtensionAmount || (totalAmount - taxAmount);
+    // Calculate amounts - prioritize parsed invoice data
+    const totalAmount = parsedInvoice 
+      ? (parsedInvoice.totals?.payableAmount || parsedInvoice.totals?.taxInclusiveAmount || 0)
+      : (invoiceData.totals?.payableAmount || invoiceData.totals?.taxInclusiveAmount || 0);
+    const taxAmount = parsedInvoice
+      ? (parsedInvoice.tax?.totalTaxAmount || 0)
+      : (invoiceData.tax?.totalTaxAmount || 0);
+    const netAmount = parsedInvoice
+      ? (parsedInvoice.totals?.taxExclusiveAmount || parsedInvoice.totals?.lineExtensionAmount || (totalAmount - taxAmount))
+      : (invoiceData.totals?.taxExclusiveAmount || invoiceData.totals?.lineExtensionAmount || (totalAmount - taxAmount));
+    
+    // Log amounts for debugging
+    console.log('[Peppol Webhook] Calculated amounts:', {
+      parsedInvoice: !!parsedInvoice,
+      totalAmount,
+      taxAmount,
+      netAmount,
+      totals: invoiceData.totals,
+      tax: invoiceData.tax
+    });
 
     // Extract supplier Peppol ID (format: schemeID:identifier)
     const supplierPeppolId = invoiceData.supplier?.peppolId || data.senderPeppolId || '';
+    const supplierVatNumber = invoiceData.supplier?.vatNumber || data.senderVatNumber || (supplierPeppolId ? supplierPeppolId.split(':')[1] || '' : '');
+    const supplierName = invoiceData.supplier?.name || data.senderName || supplierPeppolId || 'Unknown Supplier';
 
     // Check if sender exists as participant, if not create one
     let senderId = null;
@@ -882,9 +1096,9 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
       .insert({
         user_id: userId,
         invoice_number: invoiceNumber,
-        supplier_name: invoiceData.supplier.name || data.senderName || 'Unknown Supplier',
+        supplier_name: supplierName,
         supplier_email: invoiceData.supplier.email || data.senderEmail || '',
-        supplier_vat_number: invoiceData.supplier.vatNumber || data.senderVatNumber || supplierPeppolId.split(':')[1] || '',
+        supplier_vat_number: supplierVatNumber,
         amount: totalAmount,
         net_amount: netAmount,
         vat_amount: taxAmount,
@@ -916,6 +1130,8 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
           payment: invoiceData.payment || {},
           taxSubtotals: invoiceData.tax?.subtotals || [],
           invoiceLines: invoiceData.invoiceLines || [],
+          supplierName,
+          supplierVatNumber,
           supplierAddress: invoiceData.supplier?.address || {},
           totals: invoiceData.totals || {}
         }

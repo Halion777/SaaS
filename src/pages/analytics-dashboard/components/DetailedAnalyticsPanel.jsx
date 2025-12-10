@@ -38,8 +38,8 @@ const DetailedAnalyticsPanel = ({ data, isLoading = false }) => {
               <p className="text-base font-semibold text-foreground">
                 {isLoading ? '...' : (typeof value === 'number' 
                   ? `${key.includes('Revenue') || key.includes('Invoice') ? (() => {
-                      const locale = i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR';
-                      return new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(value);
+                      // Always use comma as decimal separator (fr-FR format) to match quote creation flow
+                      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(value);
                     })() : value}${key.includes('Clients') ? '%' : ''}` 
                   : value)}
               </p>

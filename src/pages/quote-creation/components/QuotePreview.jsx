@@ -473,11 +473,10 @@ const QuotePreview = ({
     return `${countryPrefix}${cleanVAT}`;
   };
 
-  // Formatting helpers
-  const numberLocale = lang.startsWith('en') ? 'en-GB' : lang.startsWith('nl') ? 'nl-NL' : 'fr-FR';
+  // Formatting helpers - always use comma as decimal separator (fr-FR format) to match quote creation flow
   const formatNumber = (value) => {
     const n = Number.isFinite(Number(value)) ? Number(value) : 0;
-    return n.toLocaleString(numberLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
   const formatMoney = (value) => `${formatNumber(value)}€`;
 
@@ -807,7 +806,7 @@ const QuotePreview = ({
                       <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 w-10 text-center' : 'p-3 sm:p-4 w-12 text-center'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.number', 'N°')}</th>
                       <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-left' : 'p-3 sm:p-4 text-left'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.designation', 'DÉSIGNATION')}</th>
                       <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-center w-24' : 'p-3 sm:p-4 text-center w-28 sm:w-32'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.quantity', 'QTÉ')}</th>
-                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-24' : 'p-3 sm:p-4 text-right w-28 sm:w-32'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.unitPrice', 'PRIX U.')}</th>
+                      <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-24' : 'p-3 sm:p-4 text-right w-28 sm:w-32'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.price', 'PRIX')}</th>
                       <th className={`border border-gray-300 font-semibold ${previewMode === 'mobile' ? 'p-2 text-right w-24' : 'p-3 sm:p-4 text-right w-28 sm:w-32'}`} style={{ color: customization.colors.primary }}>{t('quoteCreation.quotePreview.totalExclTax', 'TOTAL HT')}</th>
                     </tr>
                   </thead>
@@ -838,11 +837,11 @@ const QuotePreview = ({
                             {(() => {
                               const hours = parseFloat(task.duration || 0);
                               const laborQty = Number.isFinite(hours) && hours > 0 ? hours : 1;
-                              const unitPrice = laborQty > 0 ? laborTotal / laborQty : laborTotal;
                               return (
                                 <>
                                   <td className={`border border-gray-200 text-center text-black ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>{formatNumber(laborQty)} h</td>
-                                  <td className={`border border-gray-200 text-right text-black ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>{formatMoney(unitPrice)}</td>
+                                  {/* Display total price instead of unit price */}
+                                  <td className={`border border-gray-200 text-right text-black ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>{formatMoney(laborTotal)}</td>
                                   <td className={`border border-gray-200 text-right font-semibold text-black ${previewMode === 'mobile' ? 'p-1.5' : 'p-2 sm:p-2.5'}`}>{formatMoney(laborTotal)}</td>
                                 </>
                               );
