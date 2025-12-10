@@ -334,22 +334,12 @@ const HomePage = () => {
                     
                     {/* Main Dashboard Image - Language-specific */}
                     <div className="relative bg-white rounded-2xl shadow-2xl p-4 transform rotate-3 hover:rotate-0 transition-transform duration-500">
-                      {/* Desktop Image - Hidden on mobile */}
+                      {/* Dashboard Image - Same for all devices */}
                       <img 
                         key={`desktop-${i18n.language}`}
                         src={mediaSettings.home?.desktopImage?.[i18n.language] || mediaSettings.home?.heroImage?.[i18n.language] || '/assets/images/dashboard 1.png'}
                         alt="Haliqo Dashboard" 
-                        className="hidden md:block w-full h-auto rounded-xl"
-                        onError={(e) => {
-                          e.target.src = '/assets/images/dashboard 1.png';
-                        }}
-                      />
-                      {/* Mobile Image - Hidden on desktop */}
-                      <img 
-                        key={`mobile-${i18n.language}`}
-                        src={mediaSettings.home?.mobileImage?.[i18n.language] || mediaSettings.home?.heroImage?.[i18n.language] || '/assets/images/dashboard 1.png'}
-                        alt="Haliqo Dashboard Mobile" 
-                        className="block md:hidden w-full h-auto rounded-xl"
+                        className="w-full h-auto rounded-xl"
                         onError={(e) => {
                           e.target.src = '/assets/images/dashboard 1.png';
                         }}
