@@ -28,6 +28,17 @@ export class EmailService {
    * @returns {number} - Balance amount (total with VAT minus deposit)
    */
   static calculateFinalAmount(quote) {
+    const breakdown = this.calculateFinancialBreakdown(quote);
+    return breakdown.balanceAmount;
+  }
+
+  /**
+   * Calculate complete financial breakdown for quote emails
+   * Returns all financial details: totals, VAT, deposit, balance
+   * @param {Object} quote - Quote object (should have quote_tasks, quote_materials, and quote_financial_configs)
+   * @returns {Object} - Financial breakdown object with all calculated values
+   */
+  static calculateFinancialBreakdown(quote) {
     // First, try to recalculate from tasks and materials (most accurate, matches QuotePreview)
     let calculatedTotal = 0;
     if (quote.quote_tasks && quote.quote_tasks.length > 0) {
@@ -44,32 +55,50 @@ export class EmailService {
       }, 0);
     }
     
-    // If we have a calculated total, use it with VAT
-    let totalWithVAT = 0;
-    if (calculatedTotal > 0) {
-      // Get VAT rate from financial config
-      const financialConfig = quote.quote_financial_configs?.[0];
-      const vatRate = financialConfig?.vat_config?.display ? (financialConfig.vat_config.rate || 0) : 0;
-      const vatAmount = calculatedTotal * (vatRate / 100);
-      totalWithVAT = calculatedTotal + vatAmount;
-    } else {
-      // Fallback: Use final_amount if available, otherwise calculate from total_amount + tax_amount
-      totalWithVAT = parseFloat(quote.final_amount || 0);
-      if (!totalWithVAT || totalWithVAT === 0) {
-        const totalAmount = parseFloat(quote.total_amount || 0);
-        const taxAmount = parseFloat(quote.tax_amount || 0);
-        totalWithVAT = totalAmount + taxAmount;
+    // Get financial config
+    const financialConfig = quote.quote_financial_configs?.[0];
+    
+    // Calculate totals
+    let totalBeforeVAT = calculatedTotal || parseFloat(quote.total_amount || 0);
+    
+    // Calculate VAT
+    const vatEnabled = financialConfig?.vat_config?.display || false;
+    const vatRate = vatEnabled ? (financialConfig.vat_config?.rate || 0) : 0;
+    const vatAmount = totalBeforeVAT * (vatRate / 100);
+    
+    // If calculatedTotal is 0, try to get VAT from stored tax_amount
+    let finalVATAmount = vatAmount;
+    if (calculatedTotal === 0 && quote.tax_amount) {
+      finalVATAmount = parseFloat(quote.tax_amount || 0);
+      // Try to reverse calculate totalBeforeVAT if we have tax_amount
+      if (vatRate > 0) {
+        totalBeforeVAT = finalVATAmount / (vatRate / 100);
       }
     }
     
-    // Subtract deposit from displayed amount (show balance)
-    const financialConfig = quote.quote_financial_configs?.[0];
-    if (financialConfig?.advance_config?.enabled && financialConfig.advance_config.amount > 0) {
-      const depositAmount = parseFloat(financialConfig.advance_config.amount || 0);
-      totalWithVAT = totalWithVAT - depositAmount;
+    // Calculate total with VAT
+    let totalWithVAT = totalBeforeVAT + finalVATAmount;
+    if (calculatedTotal === 0 && quote.final_amount) {
+      totalWithVAT = parseFloat(quote.final_amount || 0);
     }
     
-    return totalWithVAT;
+    // Calculate deposit
+    const depositEnabled = financialConfig?.advance_config?.enabled || false;
+    const depositAmount = depositEnabled ? parseFloat(financialConfig.advance_config?.amount || 0) : 0;
+    
+    // Calculate balance (total with VAT minus deposit)
+    const balanceAmount = totalWithVAT - depositAmount;
+    
+    return {
+      totalBeforeVAT,
+      vatEnabled,
+      vatRate,
+      vatAmount: finalVATAmount,
+      totalWithVAT,
+      depositEnabled,
+      depositAmount,
+      balanceAmount
+    };
   }
   
   /**
@@ -461,16 +490,29 @@ export class EmailService {
       const emailSubject = customEmailData?.subject || `Devis ${quote.quote_number} - ${companyName}`;
       const emailMessage = customEmailData?.message || `Bonjour,\n\nVeuillez trouver ci-joint notre devis pour votre projet.\n\nCordialement,\n${companyName}`;
       
+      // Calculate financial breakdown for email variables
+      const financialBreakdown = this.calculateFinancialBreakdown(quote);
+      
       const variables = {
         client_name: client.name || client.client?.name || 'Madame, Monsieur',
         quote_number: quote.quote_number,
         quote_title: quote.title || quote.project_description || 'Votre projet',
-        quote_amount: this.formatAmount(this.calculateFinalAmount(quote)),
+        quote_amount: this.formatAmount(financialBreakdown.balanceAmount),
         quote_link: shareToken ? `${BASE_URL}/quote-share/${shareToken}` : '#',
         valid_until: quote.valid_until ? new Date(quote.valid_until).toLocaleDateString('fr-FR') : '30 jours',
         company_name: companyName,
         custom_subject: emailSubject,
-        custom_message: emailMessage
+        custom_message: emailMessage,
+        // Financial breakdown variables
+        total_before_vat: this.formatAmount(financialBreakdown.totalBeforeVAT),
+        vat_enabled: financialBreakdown.vatEnabled ? 'true' : 'false',
+        vat_rate: financialBreakdown.vatRate.toString(),
+        vat_percentage: `${financialBreakdown.vatRate}%`,
+        vat_amount: this.formatAmount(financialBreakdown.vatAmount),
+        total_with_vat: this.formatAmount(financialBreakdown.totalWithVAT),
+        deposit_enabled: financialBreakdown.depositEnabled ? 'true' : 'false',
+        deposit_amount: this.formatAmount(financialBreakdown.depositAmount),
+        balance_amount: this.formatAmount(financialBreakdown.balanceAmount)
       };
       
       // Send email to client - always use custom quote email for better control
@@ -649,14 +691,27 @@ export class EmailService {
         }
       }
       
+      // Calculate financial breakdown for email variables
+      const financialBreakdown = this.calculateFinancialBreakdown(quote);
+      
       const variables = {
         client_name: client.name || 'Madame, Monsieur',
         quote_number: quote.quote_number,
         quote_title: quote.title || quote.project_description || 'Votre projet',
-        quote_amount: this.formatAmount(this.calculateFinalAmount(quote)),
+        quote_amount: this.formatAmount(financialBreakdown.balanceAmount),
         quote_link: shareToken ? `${BASE_URL}/quote-share/${shareToken}` : '#',
         days_since_sent: daysSinceSent || 'quelques',
-        company_name: companyProfile?.company_name || companyProfile?.name || 'Notre entreprise'
+        company_name: companyProfile?.company_name || companyProfile?.name || 'Notre entreprise',
+        // Financial breakdown variables
+        total_before_vat: this.formatAmount(financialBreakdown.totalBeforeVAT),
+        vat_enabled: financialBreakdown.vatEnabled ? 'true' : 'false',
+        vat_rate: financialBreakdown.vatRate.toString(),
+        vat_percentage: `${financialBreakdown.vatRate}%`,
+        vat_amount: this.formatAmount(financialBreakdown.vatAmount),
+        total_with_vat: this.formatAmount(financialBreakdown.totalWithVAT),
+        deposit_enabled: financialBreakdown.depositEnabled ? 'true' : 'false',
+        deposit_amount: this.formatAmount(financialBreakdown.depositAmount),
+        balance_amount: this.formatAmount(financialBreakdown.balanceAmount)
       };
       
       // Get client ID - check quote.client_id first, then client object
@@ -712,12 +767,25 @@ export class EmailService {
         }
       }
       
+      // Calculate financial breakdown for email variables
+      const financialBreakdown = this.calculateFinancialBreakdown(quote);
+      
       const variables = {
         client_name: client.name || 'Madame, Monsieur',
         quote_number: quote.quote_number,
-        quote_amount: this.formatAmount(this.calculateFinalAmount(quote)),
+        quote_amount: this.formatAmount(financialBreakdown.balanceAmount),
         quote_link: shareToken ? `${BASE_URL}/quote-share/${shareToken}` : '#',
-        company_name: companyProfile?.company_name || companyProfile?.name || 'Notre entreprise'
+        company_name: companyProfile?.company_name || companyProfile?.name || 'Notre entreprise',
+        // Financial breakdown variables
+        total_before_vat: this.formatAmount(financialBreakdown.totalBeforeVAT),
+        vat_enabled: financialBreakdown.vatEnabled ? 'true' : 'false',
+        vat_rate: financialBreakdown.vatRate.toString(),
+        vat_percentage: `${financialBreakdown.vatRate}%`,
+        vat_amount: this.formatAmount(financialBreakdown.vatAmount),
+        total_with_vat: this.formatAmount(financialBreakdown.totalWithVAT),
+        deposit_enabled: financialBreakdown.depositEnabled ? 'true' : 'false',
+        deposit_amount: this.formatAmount(financialBreakdown.depositAmount),
+        balance_amount: this.formatAmount(financialBreakdown.balanceAmount)
       };
       
       // Get client ID - check quote.client_id first, then client object
@@ -757,10 +825,24 @@ export class EmailService {
         companyProfile = await this.getCurrentUserCompanyProfile(userId);
       }
       
+      // Calculate financial breakdown for email variables (even for rejected quotes, may be useful)
+      const financialBreakdown = this.calculateFinancialBreakdown(quote);
+      
       const variables = {
         client_name: client.name || 'Madame, Monsieur',
         quote_number: quote.quote_number,
-        company_name: companyProfile?.company_name || companyProfile?.name || 'Notre entreprise'
+        company_name: companyProfile?.company_name || companyProfile?.name || 'Notre entreprise',
+        // Financial breakdown variables (optional for rejected emails but included for consistency)
+        quote_amount: this.formatAmount(financialBreakdown.balanceAmount),
+        total_before_vat: this.formatAmount(financialBreakdown.totalBeforeVAT),
+        vat_enabled: financialBreakdown.vatEnabled ? 'true' : 'false',
+        vat_rate: financialBreakdown.vatRate.toString(),
+        vat_percentage: `${financialBreakdown.vatRate}%`,
+        vat_amount: this.formatAmount(financialBreakdown.vatAmount),
+        total_with_vat: this.formatAmount(financialBreakdown.totalWithVAT),
+        deposit_enabled: financialBreakdown.depositEnabled ? 'true' : 'false',
+        deposit_amount: this.formatAmount(financialBreakdown.depositAmount),
+        balance_amount: this.formatAmount(financialBreakdown.balanceAmount)
       };
       
       // Get client ID - check quote.client_id first, then client object
@@ -880,16 +962,29 @@ export class EmailService {
       const emailSubject = `Devis ${quote.quote_number} - ${companyName}`;
       const emailMessage = `Bonjour,\n\nVeuillez trouver ci-joint notre devis pour votre projet.\n\nCordialement,\n${companyName}`;
       
+      // Calculate financial breakdown for email variables
+      const financialBreakdown = this.calculateFinancialBreakdown(quote);
+      
       const variables = {
         client_name: client.name || 'Madame, Monsieur',
         quote_number: quote.quote_number,
         quote_title: quote.title || quote.description || 'Votre projet',
-        quote_amount: this.formatAmount(this.calculateFinalAmount(quote)),
+        quote_amount: this.formatAmount(financialBreakdown.balanceAmount),
         quote_link: shareToken ? `${BASE_URL}/quote-share/${shareToken}` : '#',
         valid_until: quote.valid_until ? new Date(quote.valid_until).toLocaleDateString('fr-FR') : '30 jours',
         company_name: companyProfile?.company_name || companyProfile?.name || 'Notre entreprise',
         custom_subject: emailSubject,
-        custom_message: emailMessage
+        custom_message: emailMessage,
+        // Financial breakdown variables
+        total_before_vat: this.formatAmount(financialBreakdown.totalBeforeVAT),
+        vat_enabled: financialBreakdown.vatEnabled ? 'true' : 'false',
+        vat_rate: financialBreakdown.vatRate.toString(),
+        vat_percentage: `${financialBreakdown.vatRate}%`,
+        vat_amount: this.formatAmount(financialBreakdown.vatAmount),
+        total_with_vat: this.formatAmount(financialBreakdown.totalWithVAT),
+        deposit_enabled: financialBreakdown.depositEnabled ? 'true' : 'false',
+        deposit_amount: this.formatAmount(financialBreakdown.depositAmount),
+        balance_amount: this.formatAmount(financialBreakdown.balanceAmount)
       };
       
       // Get client's language preference using centralized helper

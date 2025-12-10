@@ -393,7 +393,17 @@ serve(async (req) => {
             valid_until: emailData.variables?.valid_until || '30 jours',
             custom_message: emailData.message || emailData.variables?.custom_message || '',
             quote_link: emailData.variables?.quote_link || '#',
-            company_name: emailData.variables?.company_name || 'Notre équipe'
+            company_name: emailData.variables?.company_name || 'Notre équipe',
+            // Financial breakdown variables
+            total_before_vat: emailData.variables?.total_before_vat || '0€',
+            vat_enabled: emailData.variables?.vat_enabled || 'false',
+            vat_rate: emailData.variables?.vat_rate || '0',
+            vat_percentage: emailData.variables?.vat_percentage || '0%',
+            vat_amount: emailData.variables?.vat_amount || '0€',
+            total_with_vat: emailData.variables?.total_with_vat || '0€',
+            deposit_enabled: emailData.variables?.deposit_enabled || 'false',
+            deposit_amount: emailData.variables?.deposit_amount || '0€',
+            balance_amount: emailData.variables?.balance_amount || emailData.variables?.quote_amount || '0€'
           };
           const rendered = renderTemplate(quoteTemplate.data, variables);
           emailResult = await sendEmail({
@@ -447,7 +457,17 @@ serve(async (req) => {
           quote_number: emailData.variables?.quote_number || 'N/A',
           quote_amount: emailData.variables?.quote_amount || '0€',
           quote_link: emailData.variables?.quote_link || '#',
-          company_name: emailData.variables?.company_name || 'Notre équipe'
+          company_name: emailData.variables?.company_name || 'Notre équipe',
+          // Financial breakdown variables
+          total_before_vat: emailData.variables?.total_before_vat || '0€',
+          vat_enabled: emailData.variables?.vat_enabled || 'false',
+          vat_rate: emailData.variables?.vat_rate || '0',
+          vat_percentage: emailData.variables?.vat_percentage || '0%',
+          vat_amount: emailData.variables?.vat_amount || '0€',
+          total_with_vat: emailData.variables?.total_with_vat || '0€',
+          deposit_enabled: emailData.variables?.deposit_enabled || 'false',
+          deposit_amount: emailData.variables?.deposit_amount || '0€',
+          balance_amount: emailData.variables?.balance_amount || emailData.variables?.quote_amount || '0€'
         };
         
         const rendered = renderTemplate(statusTemplate.data, variables);

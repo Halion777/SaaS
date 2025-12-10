@@ -133,11 +133,24 @@ const QuotesManagement = () => {
       return sum + taskPrice;
     }, 0);
     
-    // Handle materials - price is already total, no multiplication needed
+    // Handle materials - users enter TOTAL prices (already multiplied by quantity)
+    // Prefer total_price from database, then price field, then calculate from unit_price * quantity
     const materials = draftData.materials || draftData.quote_materials || draftData.quoteMaterials || [];
     total += materials.reduce((sum, material) => {
-      const price = parseFloat(material.price || material.unit_price || material.unitPrice || 0);
-      return sum + price;
+      // Prefer total_price (from database), then price (from auto-save/new materials)
+      // If neither exists but we have unit_price and quantity, calculate total
+      let materialPrice = 0;
+      if (material.total_price !== undefined && material.total_price !== null) {
+        materialPrice = parseFloat(material.total_price);
+      } else if (material.price !== undefined && material.price !== null) {
+        materialPrice = parseFloat(material.price);
+      } else if (material.unit_price !== undefined && material.quantity) {
+        // Calculate total from unit_price * quantity as fallback
+        materialPrice = parseFloat(material.unit_price || 0) * parseFloat(material.quantity || 1);
+      } else {
+        materialPrice = parseFloat(material.unit_price || material.unitPrice || 0);
+      }
+      return sum + materialPrice;
     }, 0);
     
     // If no tasks/materials or total is 0, try direct amount fields

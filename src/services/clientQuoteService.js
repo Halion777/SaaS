@@ -418,13 +418,27 @@ class ClientQuoteService {
         quoteAmount = totalWithVAT - depositAmount;
       }
 
+      // Calculate financial breakdown using EmailService helper
+      const { EmailService } = await import('./emailService');
+      const financialBreakdown = EmailService.calculateFinancialBreakdown(quote);
+      
       // Prepare variables for template rendering
         const variables = {
           client_name: clientData.client_name || 'Madame, Monsieur',
           quote_number: quote.quote_number,
           quote_amount: formatAmount(quoteAmount),
           quote_link: quote.share_token ? `${window.location.origin}/quote-share/${quote.share_token}` : '#',
-          company_name: quote.company_profiles?.company_name || 'Notre équipe'
+          company_name: quote.company_profiles?.company_name || 'Notre équipe',
+          // Financial breakdown variables
+          total_before_vat: formatAmount(financialBreakdown.totalBeforeVAT),
+          vat_enabled: financialBreakdown.vatEnabled ? 'true' : 'false',
+          vat_rate: financialBreakdown.vatRate.toString(),
+          vat_percentage: `${financialBreakdown.vatRate}%`,
+          vat_amount: formatAmount(financialBreakdown.vatAmount),
+          total_with_vat: formatAmount(financialBreakdown.totalWithVAT),
+          deposit_enabled: financialBreakdown.depositEnabled ? 'true' : 'false',
+          deposit_amount: formatAmount(financialBreakdown.depositAmount),
+          balance_amount: formatAmount(financialBreakdown.balanceAmount)
         };
 
       // Prepare fallback templates (only used if edge function can't find database template)

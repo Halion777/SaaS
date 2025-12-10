@@ -708,7 +708,12 @@ const QuoteCreation = () => {
 
           unit: material.unit,
 
-          price: material.unit_price || material.total_price
+          // Use total_price first since users enter total prices (already multiplied)
+          // If total_price is not available, calculate it from unit_price * quantity
+          // Fallback to unit_price only if quantity is missing
+          price: material.total_price || 
+                 (material.unit_price && material.quantity ? (material.unit_price * material.quantity) : material.unit_price) || 
+                 0
 
         };
 
@@ -1068,9 +1073,19 @@ const QuoteCreation = () => {
         const savedTime = new Date().toISOString();
 
         // Calculate total amount and final amount with VAT for correct price display in quotes management
+        // Note: Users enter TOTAL prices for materials (already multiplied by quantity)
+        // So mat.price should always be the total price for that material
         const totalAmount = tasks.reduce((sum, task) => {
-          const taskMaterialsTotal = task.materials.reduce((matSum, mat) =>
-            matSum + (parseFloat(mat.price) || 0), 0);
+          const taskMaterialsTotal = task.materials.reduce((matSum, mat) => {
+            // mat.price should be total price (users enter total, DB stores in total_price)
+            // Add safeguard: if price seems like unit price (very small) and quantity exists, calculate total
+            const materialPrice = parseFloat(mat.price) || 0;
+            if (materialPrice > 0 && mat.quantity && mat.quantity > 1 && materialPrice < 0.1) {
+              // Likely a unit price that wasn't converted - calculate total
+              return matSum + (materialPrice * parseFloat(mat.quantity));
+            }
+            return matSum + materialPrice;
+          }, 0);
           return sum + (task.price || 0) + taskMaterialsTotal;
         }, 0);
 
