@@ -1894,8 +1894,9 @@
         },
         "companyInfo": {
           "title": "Bedrijfsinformatie",
-          "description": "Beheer uw bedrijfsgegevens voor offertes en facturen",
-          "edit": "Bewerken"
+          "description": "Beheer bedrijfsgegevens, logo en handtekening",
+          "edit": "Bewerken",
+          "manage": "Beheren"
         }
       },
       "preferences": {

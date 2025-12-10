@@ -2277,8 +2277,9 @@
         },
         "companyInfo": {
           "title": "Informations de l'entreprise",
-          "description": "Gérez les détails de votre entreprise pour les devis et factures",
-          "edit": "Modifier"
+          "description": "Gérer les détails de l'entreprise, le logo et la signature",
+          "edit": "Modifier",
+          "manage": "Gérer"
         }
       },
       "preferences": {

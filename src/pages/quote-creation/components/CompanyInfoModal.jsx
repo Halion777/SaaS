@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import AppIcon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
@@ -558,12 +559,27 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-0 sm:p-2 md:p-4">
-      <div className="bg-card border border-border rounded-none sm:rounded-lg shadow-xl max-w-2xl w-full h-full sm:h-auto max-h-full sm:max-h-[90vh] overflow-hidden flex flex-col">
+  return createPortal(
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/30 z-[10001] transition-opacity"
+        onClick={handleClose}
+      />
+      
+      {/* Modal Panel - Full screen on mobile, centered on desktop */}
+      <div className={`
+        fixed bg-card border border-border shadow-2xl z-[10002]
+        transition-all duration-300 ease-out
+        inset-0 rounded-none
+        sm:inset-auto sm:rounded-lg
+        sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2
+        sm:w-[90vw] sm:max-w-2xl sm:h-auto sm:max-h-[90vh]
+        overflow-hidden flex flex-col
+      `}>
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 bg-gray-50 flex-shrink-0">
-          <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-800">{t('quoteCreation.companyInfo.title', "Informations de l'entreprise")}</h2>
+          <h2 className="text-lg sm:text-lg md:text-xl font-semibold text-gray-800">{t('quoteCreation.companyInfo.title', "Informations de l'entreprise")}</h2>
           <button
             onClick={handleClose}
             className="text-gray-500 hover:text-gray-700 transition-colors p-1 sm:p-2 rounded-full hover:bg-gray-100"
@@ -964,7 +980,8 @@ const CompanyInfoModal = ({ isOpen, onClose, onSave, onCompanyInfoChange, initia
           </Button>
         </div>
       </div>
-    </div>
+    </>,
+    document.body
   );
 };
 

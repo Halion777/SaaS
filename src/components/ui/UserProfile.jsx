@@ -13,6 +13,7 @@ import { useAuth } from '../../context/AuthContext';
 import emailVerificationService from '../../services/emailVerificationService';
 import { resetPassword } from '../../services/authService';
 import { supabase } from '../../services/supabaseClient';
+import CompanyInfoModal from '../../pages/quote-creation/components/CompanyInfoModal';
 
 const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) => {
   const { t } = useTranslation();
@@ -44,6 +45,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
   const [newEmail, setNewEmail] = useState('');
   const [changingEmail, setChangingEmail] = useState(false);
   const [isEditingAccount, setIsEditingAccount] = useState(false);
+  const [isCompanyInfoModalOpen, setIsCompanyInfoModalOpen] = useState(false);
   const [editingAccountData, setEditingAccountData] = useState({
     first_name: '',
     last_name: '',
@@ -966,6 +968,39 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                 </div>
               </div>
             )}
+
+        {/* Company Settings */}
+        <div className="flex items-center justify-between pt-2 border-t border-border">
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <Icon name="Building2" size={16} className="text-primary" />
+              <div>
+                <h4 className="text-sm font-medium text-foreground">
+                  {t('profile.settings.account.companyInfo.title', 'Company Information')}
+                </h4>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {t('profile.settings.account.companyInfo.description', 'Manage company details, logo, and signature')}
+                </p>
+              </div>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              // Close account settings first, then open company modal
+              setIsAccountSettingsOpen(false);
+              // Small delay to ensure account settings closes before opening company modal
+              setTimeout(() => {
+                setIsCompanyInfoModalOpen(true);
+              }, 100);
+            }}
+            className="flex items-center gap-2"
+          >
+            <Icon name="Settings" size={16} />
+            {t('profile.settings.account.companyInfo.manage', 'Manage')}
+          </Button>
+        </div>
       </div>
     );
   };
@@ -1429,6 +1464,18 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
         error={pinModal.error}
       />
 
+      {/* Company Info Modal */}
+      <CompanyInfoModal
+        isOpen={isCompanyInfoModalOpen}
+        onClose={() => setIsCompanyInfoModalOpen(false)}
+        onSave={(companyInfo) => {
+          // Company info is saved automatically by the modal
+          setIsCompanyInfoModalOpen(false);
+        }}
+        onCompanyInfoChange={(companyInfo) => {
+          // Optional: Handle company info changes if needed
+        }}
+      />
 
     </div>
   );

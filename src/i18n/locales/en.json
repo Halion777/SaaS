@@ -1862,8 +1862,9 @@
         },
         "companyInfo": {
           "title": "Company Information",
-          "description": "Manage your company details for quotes and invoices",
-          "edit": "Edit"
+          "description": "Manage company details, logo, and signature",
+          "edit": "Edit",
+          "manage": "Manage"
         }
       },
       "preferences": {
