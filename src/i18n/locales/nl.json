@@ -733,6 +733,7 @@
       "locationInfo": "Locatie-informatie",
       "category": "Werkcategorie",
       "selectCategory": "Selecteer een categorie",
+      "categoriesSelected": "categorieën geselecteerd",
       "categoryError": "Selecteer een werkcategorie",
       "streetNumber": "Straatnummer",
       "streetNumberPlaceholder": "Ex: 123",
@@ -801,6 +802,13 @@
     "empty": {
       "title": "Nog geen blogberichten",
       "message": "Kom binnenkort terug voor nieuwe content!"
+    },
+    "filter": {
+      "byLanguage": "Filter op taal",
+      "allLanguages": "Alle talen",
+      "english": "Engels",
+      "french": "Frans",
+      "dutch": "Nederlands"
     }
   },
   "login": {
@@ -3137,6 +3145,7 @@
       "title": "Projectinformatie",
       "projectCategoryLabel": "Categorieën",
       "selectCategories": "Selecteer categorieën",
+      "categoriesSelected": "categorieën geselecteerd",
       "otherCategory": "Andere categorie",
       "otherCategoryPlaceholder": "Bijv: Speciale muurschildering",
       "categories": {

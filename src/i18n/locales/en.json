@@ -733,6 +733,7 @@
       "locationInfo": "Location Information",
       "category": "Work category",
       "selectCategory": "Select a category",
+      "categoriesSelected": "categories selected",
       "categoryError": "Please select a work category",
       "streetNumber": "Street number",
       "streetNumberPlaceholder": "Ex: 123",
@@ -801,6 +802,13 @@
     "empty": {
       "title": "No blog posts yet",
       "message": "Check back soon for new content!"
+    },
+    "filter": {
+      "byLanguage": "Filter by Language",
+      "allLanguages": "All Languages",
+      "english": "English",
+      "french": "Français",
+      "dutch": "Nederlands"
     }
   },
   "login": {
@@ -3083,6 +3091,7 @@
       "title": "Project Information",
       "projectCategoryLabel": "Categories",
       "selectCategories": "Select categories",
+      "categoriesSelected": "categories selected",
       "otherCategory": "Other category",
       "otherCategoryPlaceholder": "Ex: Special wall painting",
       "categories": {

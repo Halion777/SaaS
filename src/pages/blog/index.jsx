@@ -184,15 +184,15 @@ const BlogPage = () => {
             {!loading && blogs.length > 0 && (
               <div className="mb-8 flex justify-end">
                 <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter by Language:</label>
+                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">{t('blog.filter.byLanguage')}:</label>
                   <Select
                     value={languageFilter}
                     onValueChange={(value) => setLanguageFilter(value)}
                     options={[
-                      { value: 'all', label: '🌍 All Languages' },
-                      { value: 'en', label: '🇬🇧 English' },
-                      { value: 'fr', label: '🇫🇷 Français' },
-                      { value: 'nl', label: '🇳🇱 Nederlands' }
+                      { value: 'all', label: `🌍 ${t('blog.filter.allLanguages')}` },
+                      { value: 'en', label: `🇬🇧 ${t('blog.filter.english')}` },
+                      { value: 'fr', label: `🇫🇷 ${t('blog.filter.french')}` },
+                      { value: 'nl', label: `🇳🇱 ${t('blog.filter.dutch')}` }
                     ]}
                     className="min-w-[200px]"
                   />

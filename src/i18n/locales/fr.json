@@ -734,6 +734,7 @@
       "locationInfo": "Informations de localisation",
       "category": "Catégorie de travaux",
       "selectCategory": "Sélectionnez une ou plusieurs catégories",
+      "categoriesSelected": "catégories sélectionnées",
       "categoryError": "Veuillez sélectionner au moins une catégorie de travaux",
       "streetNumber": "Numéro de rue",
       "streetNumberPlaceholder": "Ex: 123",
@@ -802,6 +803,13 @@
     "empty": {
       "title": "Aucun article de blog pour le moment",
       "message": "Revenez bientôt pour découvrir de nouveaux contenus !"
+    },
+    "filter": {
+      "byLanguage": "Filtrer par langue",
+      "allLanguages": "Toutes les langues",
+      "english": "Anglais",
+      "french": "Français",
+      "dutch": "Néerlandais"
     }
   },
   "login": {
@@ -3149,6 +3157,7 @@
       "title": "Informations du projet",
       "projectCategoryLabel": "Catégories",
       "selectCategories": "Sélectionner des catégories",
+      "categoriesSelected": "catégories sélectionnées",
       "otherCategory": "Autre catégorie",
       "otherCategoryPlaceholder": "Ex: Peinture murale spéciale",
       "categories": {

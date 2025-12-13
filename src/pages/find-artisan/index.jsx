@@ -602,13 +602,25 @@ const FindArtisanPage = () => {
                           <div className="absolute left-3 text-muted-foreground">
                             <Icon name="Briefcase" className="w-5 h-5" />
                           </div>
-                          <span className={formData.categories.length > 0 ? 'text-foreground' : 'text-muted-foreground'}>
+                          <span className={`flex-1 truncate ${formData.categories.length > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
                             {formData.categories.length > 0 
-                              ? formData.categories.map(cat => workCategories.find(c => c.value === cat)?.label).join(', ')
+                              ? (
+                                <>
+                                  <span className="hidden sm:inline">
+                                    {formData.categories.map(cat => workCategories.find(c => c.value === cat)?.label).join(', ')}
+                                  </span>
+                                  <span className="sm:hidden">
+                                    {formData.categories.length === 1 
+                                      ? workCategories.find(c => c.value === formData.categories[0])?.label
+                                      : `${formData.categories.length} ${t('findArtisan.form.categoriesSelected', 'categories selected')}`
+                                    }
+                                  </span>
+                                </>
+                              )
                               : t('findArtisan.form.selectCategory')
                             }
                           </span>
-                          <div className="absolute right-3 text-muted-foreground">
+                          <div className="absolute right-3 text-muted-foreground flex-shrink-0">
                             <Icon name="ChevronDown" className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
                           </div>
                         </button>

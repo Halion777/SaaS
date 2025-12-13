@@ -1792,18 +1792,25 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                 onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
                 className="w-full h-11 pl-4 pr-4 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left flex items-center justify-between"
               >
-                <span className={`${projectInfo.categories?.length > 0 ? 'text-foreground' : 'text-muted-foreground'} ${projectInfo.categories?.length > 0 ? 'hidden sm:inline' : ''}`}>
+                <span className={`flex-1 truncate ${projectInfo.categories?.length > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
                   {projectInfo.categories?.length > 0 
-                    ? projectInfo.categories.map(cat => categoryOptions.find(c => c.value === cat)?.label).join(', ')
+                    ? (
+                      <>
+                        <span className="hidden sm:inline">
+                          {projectInfo.categories.map(cat => categoryOptions.find(c => c.value === cat)?.label).join(', ')}
+                        </span>
+                        <span className="sm:hidden">
+                          {projectInfo.categories.length === 1 
+                            ? categoryOptions.find(c => c.value === projectInfo.categories[0])?.label
+                            : `${projectInfo.categories.length} ${t('quoteCreation.projectInfo.categoriesSelected', 'categories selected')}`
+                          }
+                        </span>
+                      </>
+                    )
                     : t('quoteCreation.projectInfo.selectCategories')
                   }
                 </span>
-                {projectInfo.categories?.length > 0 && (
-                  <span className="text-muted-foreground sm:hidden">
-                    {t('quoteCreation.projectInfo.selectCategories')}
-                  </span>
-                )}
-                <div className="text-muted-foreground">
+                <div className="text-muted-foreground flex-shrink-0 ml-2">
                   <Icon name="ChevronDown" className={`w-4 h-4 transition-transform ${categoryDropdownOpen ? 'rotate-180' : ''}`} />
                 </div>
               </button>
