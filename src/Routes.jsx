@@ -23,6 +23,7 @@ import TermsPage from './pages/terms';
 import PrivacyPage from './pages/privacy';
 import CookiesPage from './pages/cookies';
 import BlogPage from './pages/blog';
+import BlogDetailPage from './pages/blog/[slug]';
 import Dashboard from './pages/dashboard';
 import QuoteCreation from './pages/quote-creation';
 import QuotesManagement from './pages/quotes-management';
@@ -136,6 +137,11 @@ const AppRoutes = () => {
           <Route path="/blog" element={
             <PublicRoute>
               <BlogPage />
+            </PublicRoute>
+          } />
+          <Route path="/blog/:slug" element={
+            <PublicRoute>
+              <BlogDetailPage />
             </PublicRoute>
           } />
           <Route path="/stripe-success" element={<StripeSuccessPage />} />

@@ -556,7 +556,7 @@
       "month": "mois",
       "year": "an"
     },
-    "taxNote": "HT, TVA applicable",
+    "taxNote": "Hors TVA",
     "savings": "Économisez {{amount}}€ par an",
     "equivalentMonthly": "Équivalent à {{amount}}€/mois",
     "plans": {

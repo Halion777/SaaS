@@ -554,7 +554,7 @@
       "month": "maand",
       "year": "jaar"
     },
-    "taxNote": "Excl. BTW, toepasselijke belasting",
+    "taxNote": "Zonder BTW",
     "taxDeduction": "Abonnement aftrekbaar voor 120% dankzij overheidssteun voor de overgang naar elektronische facturering (e-invoicing).",
     "savings": "Bespaar {{amount}}€ per jaar",
     "equivalentMonthly": "Gelijk aan {{amount}}€/maand",

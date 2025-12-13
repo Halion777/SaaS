@@ -355,7 +355,7 @@ const PricingPage = () => {
                       ))}
                       {plan.limitations.map((limitation, i) => (
                         <li key={i} className="flex items-start">
-                          <Icon name="X" size={20} className="text-gray-400 mr-3 mt-0.5 flex-shrink-0" />
+                          <Icon name="X" size={20} className="text-red-500 mr-3 mt-0.5 flex-shrink-0" />
                           <span className="text-gray-500">{limitation}</span>
                         </li>
                       ))}

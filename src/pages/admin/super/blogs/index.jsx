@@ -9,6 +9,7 @@ import Input from 'components/ui/Input';
 import Select from 'components/ui/Select';
 import SuperAdminSidebar from 'components/ui/SuperAdminSidebar';
 import TableLoader from 'components/ui/TableLoader';
+import RichTextEditor from 'components/ui/RichTextEditor';
 import BlogsFilterToolbar from './components/BlogsFilterToolbar';
 
 const BlogsManagement = () => {
@@ -37,6 +38,7 @@ const BlogsManagement = () => {
     content: '',
     featured_image: '',
     category: 'general',
+    language: 'en',
     tags: [],
     status: 'draft',
     published_at: null,
@@ -145,6 +147,52 @@ const BlogsManagement = () => {
         throw error;
       }
 
+      // Fetch author information for blogs that have author_id
+      if (data && data.length > 0) {
+        const authorIds = [...new Set(data.filter(blog => blog.author_id).map(blog => blog.author_id))];
+        
+        if (authorIds.length > 0) {
+          // Get user information from public.users table
+          const { data: usersData, error: usersError } = await supabase
+            .from('users')
+            .select('id, email, first_name, last_name')
+            .in('id', authorIds);
+
+          if (usersError) {
+            console.error('Error fetching author information:', usersError);
+          }
+
+          // Create a map of author_id to user info
+          const authorsMap = {};
+          if (usersData && usersData.length > 0) {
+            usersData.forEach(user => {
+              // Combine first_name and last_name, fallback to email
+              const fullName = [user.first_name, user.last_name]
+                .filter(Boolean)
+                .join(' ')
+                .trim();
+              
+              authorsMap[user.id] = {
+                name: fullName || user.email || 'Unknown',
+                email: user.email
+              };
+            });
+          }
+
+          // Add author info to each blog
+          data.forEach(blog => {
+            if (blog.author_id) {
+              if (authorsMap[blog.author_id]) {
+                blog.author_info = authorsMap[blog.author_id];
+              } else {
+                // User not found in users table - log for debugging
+                console.warn(`Author not found for blog ${blog.id}:`, blog.author_id);
+              }
+            }
+          });
+        }
+      }
+
       setBlogs(data || []);
       setFilteredBlogs(data || []);
     } catch (error) {
@@ -199,7 +247,8 @@ const BlogsManagement = () => {
     setEditingBlog({
       ...blog,
       tags: Array.isArray(blog.tags) ? blog.tags : [],
-      category: blog.category || 'general'
+      category: blog.category || 'general',
+      language: blog.language || 'en'
     });
     setIsEditModalOpen(true);
   };
@@ -219,6 +268,7 @@ const BlogsManagement = () => {
       content: '',
       featured_image: '',
       category: 'general',
+      language: 'en',
       tags: [],
       status: 'draft',
       published_at: null,
@@ -232,10 +282,26 @@ const BlogsManagement = () => {
   // Save blog
   const handleSaveBlog = async () => {
     try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error('Error getting current user:', userError);
+      }
+
       const blogData = {
         ...editingBlog,
         updated_at: new Date().toISOString()
       };
+
+      // Set author_id to current user if creating new blog or if author_id is null
+      if (!editingBlog.id) {
+        // Creating new blog - set author to current user
+        blogData.author_id = user?.id || null;
+      } else if (!blogData.author_id && user) {
+        // Updating existing blog that has no author - set to current user
+        blogData.author_id = user.id;
+      }
 
       if (editingBlog.id) {
         // Update existing blog
@@ -484,6 +550,9 @@ const BlogsManagement = () => {
                       Category
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Language
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -513,13 +582,25 @@ const BlogsManagement = () => {
                       <td className="px-6 py-4 text-sm text-muted-foreground">
                         {blog.category || 'Uncategorized'}
                       </td>
+                      <td className="px-6 py-4 text-sm text-muted-foreground">
+                        {blog.language === 'en' ? '🇬🇧 EN' : blog.language === 'fr' ? '🇫🇷 FR' : blog.language === 'nl' ? '🇳🇱 NL' : blog.language || 'EN'}
+                      </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(blog.status)}`}>
                           {blog.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-muted-foreground">
-                        {blog.author_id ? 'Author' : 'No Author'}
+                        {blog.author_info ? (
+                          <div>
+                            <div className="font-medium text-foreground">{blog.author_info.name}</div>
+                            <div className="text-xs text-muted-foreground">{blog.author_info.email}</div>
+                          </div>
+                        ) : blog.author_id ? (
+                          <span className="text-muted-foreground">Unknown Author</span>
+                        ) : (
+                          <span className="text-muted-foreground">No Author</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-sm text-muted-foreground">
                         {blog.published_at ? new Date(blog.published_at).toLocaleDateString() : 'Not published'}
@@ -594,6 +675,12 @@ const BlogsManagement = () => {
                           <span className="text-xs text-foreground">{blog.category || 'Uncategorized'}</span>
                         </div>
                         <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Language:</span>
+                          <span className="text-xs text-foreground">
+                            {blog.language === 'en' ? '🇬🇧 EN' : blog.language === 'fr' ? '🇫🇷 FR' : blog.language === 'nl' ? '🇳🇱 NL' : blog.language || 'EN'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
                           <span className="text-xs text-muted-foreground">Status:</span>
                           <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${getStatusColor(blog.status)}`}>
                             {blog.status}
@@ -601,7 +688,9 @@ const BlogsManagement = () => {
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-muted-foreground">Author:</span>
-                          <span className="text-xs text-foreground">{blog.author_id ? 'Author' : 'No Author'}</span>
+                          <span className="text-xs text-foreground">
+                            {blog.author_info ? blog.author_info.name : blog.author_id ? 'Unknown Author' : 'No Author'}
+                          </span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-muted-foreground">Published:</span>
@@ -831,15 +920,14 @@ const BlogsManagement = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">Content</label>
-                  <textarea
-                    value={editingBlog.content}
-                    onChange={(e) => setEditingBlog({...editingBlog, content: e.target.value})}
-                    placeholder="Enter blog content (HTML supported)"
-                    className="w-full h-64 p-3 border border-border rounded-lg bg-background text-foreground"
+                  <RichTextEditor
+                    value={editingBlog.content || ''}
+                    onChange={(content) => setEditingBlog({...editingBlog, content})}
+                    placeholder="Enter blog content..."
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">Category</label>
                     <Select
@@ -851,6 +939,18 @@ const BlogsManagement = () => {
                         { value: 'business', label: 'Business' },
                         { value: 'tutorials', label: 'Tutorials' },
                         { value: 'news', label: 'News' }
+                      ]}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">Language</label>
+                    <Select
+                      value={editingBlog.language || 'en'}
+                      onChange={(e) => setEditingBlog({...editingBlog, language: e.target.value})}
+                      options={[
+                        { value: 'en', label: '🇬🇧 English' },
+                        { value: 'fr', label: '🇫🇷 Français' },
+                        { value: 'nl', label: '🇳🇱 Nederlands' }
                       ]}
                     />
                   </div>

@@ -555,7 +555,7 @@
       "year": "year"
     },
     "taxDeduction": "Subscription deductible at 120% thanks to government support for the transition to electronic invoicing (e-invoicing).",
-    "taxNote": "Excl. VAT, applicable tax",
+    "taxNote": "Excluded VAT",
     "savings": "Save {{amount}}€ per year",
     "equivalentMonthly": "Equivalent to {{amount}}€/month",
     "plans": {

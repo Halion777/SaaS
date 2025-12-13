@@ -196,7 +196,7 @@ const StepThree = ({ formData, updateFormData, errors }) => {
               ))}
               {plan.limitations.map((limitation, index) => (
                 <div key={index} className="flex items-start space-x-3">
-                  <Icon name="X" size={16} color="var(--color-muted-foreground)" className="flex-shrink-0 mt-0.5" />
+                  <Icon name="X" size={16} className="text-red-500 flex-shrink-0 mt-0.5" />
                   <span className="text-sm text-muted-foreground flex-1">{limitation}</span>
                 </div>
               ))}

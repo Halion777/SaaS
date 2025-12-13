@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabaseClient';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import TableLoader from '../../components/ui/TableLoader';
+import Select from '../../components/ui/Select';
 
 const BlogPage = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [blogs, setBlogs] = useState([]);
+  const [filteredBlogs, setFilteredBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [expandedBlogs, setExpandedBlogs] = useState({});
+  const [languageFilter, setLanguageFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
 
@@ -33,6 +37,7 @@ const BlogPage = () => {
             content,
             featured_image,
             category,
+            language,
             published_at,
             created_at,
             tags,
@@ -40,13 +45,21 @@ const BlogPage = () => {
             meta_description
           `)
           .eq('status', 'published')
-          .order('published_at', { ascending: false });
+          .order('created_at', { ascending: false });
 
         if (error) {
           console.error('Supabase error:', error);
           throw error;
         }
 
+        // Sort by published_at if available, otherwise use created_at
+        if (data) {
+          data.sort((a, b) => {
+            const dateA = a.published_at ? new Date(a.published_at) : new Date(a.created_at);
+            const dateB = b.published_at ? new Date(b.published_at) : new Date(b.created_at);
+            return dateB - dateA;
+          });
+        }
         
         setBlogs(data || []);
       } catch (error) {
@@ -59,19 +72,26 @@ const BlogPage = () => {
     loadBlogs();
   }, []);
 
-  // Toggle blog expansion
-  const toggleBlogExpansion = (blogId) => {
-    setExpandedBlogs(prev => ({
-      ...prev,
-      [blogId]: !prev[blogId]
-    }));
-  };
+  // Filter blogs by language
+  useEffect(() => {
+    const filtered = blogs.filter(blog => {
+      // If "all" is selected, show all blogs
+      if (languageFilter === 'all') {
+        return true;
+      }
+      // If blog has no language set, show it (for backward compatibility)
+      // Otherwise, filter by selected language
+      return !blog.language || blog.language === languageFilter;
+    });
+    setFilteredBlogs(filtered);
+    setCurrentPage(1); // Reset to first page when filter changes
+  }, [blogs, languageFilter]);
 
   // Pagination calculations
-  const totalPages = Math.ceil(blogs.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredBlogs.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedBlogs = blogs.slice(startIndex, endIndex);
+  const paginatedBlogs = filteredBlogs.slice(startIndex, endIndex);
 
   // Handle page change
   const handlePageChange = (page) => {
@@ -160,9 +180,29 @@ const BlogPage = () => {
         {/* Blog Posts Section */}
         <section className="py-16 bg-white">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Language Filter */}
+            {!loading && blogs.length > 0 && (
+              <div className="mb-8 flex justify-end">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter by Language:</label>
+                  <Select
+                    value={languageFilter}
+                    onValueChange={(value) => setLanguageFilter(value)}
+                    options={[
+                      { value: 'all', label: '🌍 All Languages' },
+                      { value: 'en', label: '🇬🇧 English' },
+                      { value: 'fr', label: '🇫🇷 Français' },
+                      { value: 'nl', label: '🇳🇱 Nederlands' }
+                    ]}
+                    className="min-w-[200px]"
+                  />
+                </div>
+              </div>
+            )}
+
             {loading ? (
               <TableLoader message={t('blog.loading.message')} />
-            ) : blogs.length === 0 ? (
+            ) : filteredBlogs.length === 0 ? (
               <div className="text-center py-16">
                 <Icon name="FileText" size={64} className="text-gray-300 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">{t('blog.empty.title')}</h3>
@@ -208,39 +248,20 @@ const BlogPage = () => {
                         {blog.excerpt}
                       </p>
 
-                      {/* Expanded Content */}
-                      {expandedBlogs[blog.id] && (
-                        <div className="mb-4 prose prose-sm max-w-none">
-                          <div 
-                            className="text-gray-700"
-                            dangerouslySetInnerHTML={{ __html: blog.content }}
-                          />
-                        </div>
-                      )}
 
                       {/* Read More Button */}
                       <div className="flex items-center justify-between">
                         <Button
-                          onClick={() => toggleBlogExpansion(blog.id)}
+                          onClick={() => navigate(`/blog/${blog.slug || blog.id}`)}
                           variant="outline"
                           className="text-[#0036ab] border-[#0036ab] hover:bg-[#0036ab] hover:text-white transition-all duration-200"
                         >
-                          {expandedBlogs[blog.id] ? 'Read Less' : 'Read More'}
+                          Read More
                           <Icon 
-                            name={expandedBlogs[blog.id] ? "ChevronUp" : "ChevronDown"} 
+                            name="ArrowRight" 
                             size={16} 
                             className="ml-2" 
                           />
-                        </Button>
-
-                        {/* External Link Button */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-gray-500 hover:text-[#0036ab] transition-colors duration-200"
-                          onClick={() => window.open(`https://www.haliqo.com/blog/${blog.slug}`, '_blank')}
-                        >
-                          <Icon name="ExternalLink" size={16} />
                         </Button>
                       </div>
                     </div>
@@ -295,8 +316,8 @@ const BlogPage = () => {
                       <div className="text-center mt-3 text-sm text-gray-500">
                         {t('blog.pagination.showing', {
                           start: startIndex + 1,
-                          end: Math.min(endIndex, blogs.length),
-                          total: blogs.length
+                          end: Math.min(endIndex, filteredBlogs.length),
+                          total: filteredBlogs.length
                         })}
                       </div>
               </div>
