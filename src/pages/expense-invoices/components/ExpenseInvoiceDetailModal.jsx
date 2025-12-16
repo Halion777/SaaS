@@ -411,15 +411,28 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
-                        {invoice.peppol_metadata.invoiceLines.map((line, index) => (
-                          <tr key={index}>
-                            <td className="px-4 py-2 text-sm text-foreground">{line.id || t('expenseInvoices.common.notAvailable', 'N/A')}</td>
-                            <td className="px-4 py-2 text-sm text-foreground">{line.description || line.itemName || t('expenseInvoices.common.notAvailable', 'N/A')}</td>
-                            <td className="px-4 py-2 text-sm text-foreground">{line.quantity || t('expenseInvoices.common.notAvailable', 'N/A')}</td>
-                            <td className="px-4 py-2 text-sm text-foreground">{formatCurrency(line.unit_price || line.unitPrice || line.priceAmount || 0)}</td>
-                            <td className="px-4 py-2 text-sm text-foreground">{formatCurrency(line.amount || line.lineExtensionAmount || 0)}</td>
-                          </tr>
-                        ))}
+                        {invoice.peppol_metadata.invoiceLines.map((line, index) => {
+                          // Use EXACT values from UBL XML - no calculations, no fallbacks
+                          // priceAmount comes from <cac:Price>/<cbc:PriceAmount> in UBL XML
+                          // lineExtensionAmount comes from <cbc:LineExtensionAmount> in UBL XML
+                          const exactUnitPrice = typeof line.priceAmount === 'number' ? line.priceAmount :
+                                                 typeof line.unitPrice === 'number' ? line.unitPrice :
+                                                 typeof line.unit_price === 'number' ? line.unit_price :
+                                                 0;
+                          const exactLineTotal = typeof line.lineExtensionAmount === 'number' ? line.lineExtensionAmount :
+                                                 typeof line.amount === 'number' ? line.amount :
+                                                 0;
+                          
+                          return (
+                            <tr key={index}>
+                              <td className="px-4 py-2 text-sm text-foreground">{line.id || line.lineId || t('expenseInvoices.common.notAvailable', 'N/A')}</td>
+                              <td className="px-4 py-2 text-sm text-foreground">{line.description || line.itemName || t('expenseInvoices.common.notAvailable', 'N/A')}</td>
+                              <td className="px-4 py-2 text-sm text-foreground">{line.quantity || t('expenseInvoices.common.notAvailable', 'N/A')}</td>
+                              <td className="px-4 py-2 text-sm text-foreground">{formatCurrency(exactUnitPrice)}</td>
+                              <td className="px-4 py-2 text-sm text-foreground">{formatCurrency(exactLineTotal)}</td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>

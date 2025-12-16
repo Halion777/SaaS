@@ -480,8 +480,11 @@ export async function createQuote(quoteData) {
             quantity: material.quantity || 1,
             // DB limit: VARCHAR(50)
             unit: truncateString(material.unit || 'piece', 50),
-            unit_price: material.unit_price || material.price || 0,
-            total_price: material.total_price || (material.quantity * (material.unit_price || material.price)) || 0,
+            // IMPORTANT: Users enter total prices, not unit prices
+            // unit_price should equal total_price (no multiplication by quantity)
+            unit_price: material.total_price || material.unit_price || material.price || 0,
+            // total_price should equal unit_price (users enter total prices)
+            total_price: material.total_price || material.unit_price || material.price || 0,
             order_index: matIndex
           }));
           
@@ -799,8 +802,11 @@ export async function updateQuote(id, quoteData) {
               description: material.description,
               quantity: material.quantity || 1,
               unit: truncateString(material.unit || 'piece', 50),
-              unit_price: material.unit_price || material.price || 0,
-              total_price: material.total_price || (material.quantity * (material.unit_price || material.price)) || 0,
+              // IMPORTANT: Users enter total prices, not unit prices
+              // unit_price should equal total_price (no multiplication by quantity)
+              unit_price: material.total_price || material.unit_price || material.price || 0,
+              // total_price should equal unit_price (users enter total prices)
+              total_price: material.total_price || material.unit_price || material.price || 0,
               order_index: matIndex
             }));
 
@@ -826,8 +832,11 @@ export async function updateQuote(id, quoteData) {
           description: material.description,
           quantity: material.quantity || 1,
           unit: material.unit || 'piece',
-          unit_price: material.unit_price || material.price || 0,
-          total_price: material.total_price || (material.quantity * (material.unit_price || material.price)) || 0,
+          // IMPORTANT: Users enter total prices, not unit prices
+          // unit_price should equal total_price (no multiplication by quantity)
+          unit_price: material.total_price || material.unit_price || material.price || 0,
+          // total_price should equal unit_price (users enter total prices)
+          total_price: material.total_price || material.unit_price || material.price || 0,
           order_index: index
         }));
         

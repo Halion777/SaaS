@@ -21,6 +21,8 @@ export class InvoiceService {
             quote_number, 
             title, 
             description,
+            deposit_amount,
+            balance_amount,
             quote_tasks(
               id,
               name,
@@ -29,6 +31,17 @@ export class InvoiceService {
               unit,
               unit_price,
               total_price
+            ),
+            quote_materials(
+              id,
+              quote_task_id,
+              name,
+              description,
+              quantity,
+              unit,
+              unit_price,
+              total_price,
+              order_index
             )
           )
         `)

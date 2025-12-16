@@ -403,16 +403,18 @@ serve(async (req) => {
             : '';
           
           // Deposit section HTML
-          const depositEnabled = emailData.variables?.deposit_enabled === 'true';
-          const depositAmount = emailData.variables?.deposit_amount || '0€';
+          // Check if deposit is enabled: if deposit_amount > 0, then deposit is enabled
+          // deposit_amount comes from quotes.deposit_amount column
+          const depositAmountStr = emailData.variables?.deposit_amount || '0€';
+          const depositAmountNum = parseFloat(depositAmountStr.replace(/[^\d,.-]/g, '').replace(',', '.'));
+          const depositEnabled = depositAmountNum > 0; // Deposit is enabled if amount > 0
+          const depositAmount = depositAmountStr;
           const balanceAmount = emailData.variables?.balance_amount || emailData.variables?.quote_amount || emailData.variables?.total_with_vat || '0€';
           
           let depositSectionHtml = '';
           let depositSectionText = '';
-          let depositBeforeWorkSectionHtml = '';
-          let depositBeforeWorkSectionText = '';
           
-          if (depositEnabled && depositAmount !== '0€' && parseFloat(depositAmount.replace(/[^\d,.-]/g, '').replace(',', '.')) > 0) {
+          if (depositEnabled && depositAmountNum > 0) {
             // Deposit enabled - show deposit information
             depositSectionHtml = `
               <div style="background: #fef3c7; padding: 12px; border-radius: 6px; margin-top: 12px; border-left: 4px solid #f59e0b;">
@@ -424,15 +426,6 @@ serve(async (req) => {
               </div>`;
             
             depositSectionText = `\n⚠️ ${isFrench ? 'ACOMPTE À LA COMMANDE' : isDutch ? 'VOORSCHOT BIJ BESTELLING' : 'ADVANCE PAYMENT'}: ${depositAmount}\n${isFrench ? '(Montant à payer avant le début des travaux)' : isDutch ? '(Bedrag te betalen vóór aanvang van het werk)' : '(Amount to pay before work starts)'}\n`;
-            
-            // Total Amount to Pay before work (deposit)
-            depositBeforeWorkSectionHtml = `
-              <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e0e0e0; margin-top: 5px;">
-                <span style="color: #333; font-weight: bold;">${isFrench ? 'Montant total à payer avant travaux:' : isDutch ? 'Totaalbedrag te betalen vóór werk:' : 'Total Amount to Pay before work:'}</span>
-                <span style="color: #333; font-weight: bold; font-size: 14px;">${depositAmount}</span>
-              </div>`;
-            
-            depositBeforeWorkSectionText = `${isFrench ? 'Montant total à payer avant travaux:' : isDutch ? 'Totaalbedrag te betalen vóór werk:' : 'Total Amount to Pay before work:'} ${depositAmount}\n`;
           }
           
           // Note: "Total Amount to Pay after work" section is now always shown in the template itself
@@ -461,9 +454,7 @@ serve(async (req) => {
             vat_section: vatSectionHtml,
             vat_section_text: vatSectionText,
             deposit_section: depositSectionHtml,
-            deposit_section_text: depositSectionText,
-            deposit_before_work_section: depositBeforeWorkSectionHtml,
-            deposit_before_work_section_text: depositBeforeWorkSectionText
+            deposit_section_text: depositSectionText
           };
           const rendered = renderTemplate(quoteTemplate.data, variables);
           emailResult = await sendEmail({

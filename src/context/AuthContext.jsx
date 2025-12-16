@@ -29,6 +29,7 @@ export const AuthProvider = ({ children }) => {
   const autoLoginRef = useRef(false);
   const redirectInProgressRef = useRef(false);
   const navigateRef = useRef(navigate);
+  const loadUserSessionExecutedRef = useRef(false);
 
   // Update navigate ref when navigate changes
   useEffect(() => {
@@ -274,9 +275,9 @@ export const AuthProvider = ({ children }) => {
         setSession(null);
         setIsProfileSelected(false);
         setLoading(false);
-        // Clear the logout flag
-        sessionStorage.removeItem('logout_in_progress');
-        localStorage.removeItem('logout_in_progress');
+        // Don't clear the logout flag immediately - let it persist to prevent double loading
+        // The flag will be cleared on next successful login or after a delay
+        // This prevents the useEffect from running again and causing double loads
         return;
       }
       
@@ -423,6 +424,10 @@ export const AuthProvider = ({ children }) => {
       // Set flag to prevent auto-login immediately after logout
       autoLoginRef.current = true;
       
+      // Set logout flag BEFORE clearing storage to prevent double loading
+      sessionStorage.setItem('logout_in_progress', 'true');
+      localStorage.setItem('logout_in_progress', 'true');
+      
       // Clear local state first to prevent any UI updates
       setUser(null);
       setSession(null);
@@ -437,7 +442,12 @@ export const AuthProvider = ({ children }) => {
       }
       
       // Use secure session manager to clear all auth data (including localStorage and cookies)
+      // Note: This will clear the logout_in_progress flag, so we need to set it again
       await sessionManager.clearAllAuthData();
+      
+      // Re-set logout flag after clearAllAuthData (since it clears everything)
+      sessionStorage.setItem('logout_in_progress', 'true');
+      localStorage.setItem('logout_in_progress', 'true');
       
       // Clear subscription cache
       clearSubscriptionCache();
@@ -457,17 +467,25 @@ export const AuthProvider = ({ children }) => {
         sessionStorage.removeItem(key);
       });
       
+      // Ensure logout flag is still set before navigation
+      sessionStorage.setItem('logout_in_progress', 'true');
+      localStorage.setItem('logout_in_progress', 'true');
+      
       // Force a small delay to ensure all cleanup is complete before navigation
       await new Promise(resolve => setTimeout(resolve, 100));
       
-      // Navigate to login page with replace to prevent back navigation
-      window.location.href = '/login';
+      // Navigate to login page with replace to prevent back navigation and double loading
+      // Use replace instead of href to prevent adding to history and ensure single navigation
+      window.location.replace('/login');
       
       return { error: null };
     } catch (error) {
       console.error('Logout error:', error);
-      // Even on error, try to navigate to login
-      window.location.href = '/login';
+      // Set logout flag even on error
+      sessionStorage.setItem('logout_in_progress', 'true');
+      localStorage.setItem('logout_in_progress', 'true');
+      // Even on error, try to navigate to login (use replace to prevent double load)
+      window.location.replace('/login');
       return { error };
     }
   };
@@ -572,4 +590,4 @@ export const useAuth = () => {
 };
 
 // Export the context for potential direct use
-export default AuthContext; 
+export { AuthContext };

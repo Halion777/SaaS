@@ -3,13 +3,54 @@ import html2canvas from 'html2canvas';
 import { calculateQuoteTotals, formatCurrency } from '../utils/quotePriceCalculator';
 
 /**
+ * Clean quantity string to extract only the first number (handles cases like "1 11" -> 1, "10 11" -> 10)
+ * @param {string|number} qty - Quantity value (string or number)
+ * @returns {number} - Cleaned quantity as number
+ */
+const cleanQuantity = (qty) => {
+  if (typeof qty === 'number') return qty;
+  if (!qty) return 1;
+  const str = String(qty).trim();
+  // Extract first number from string (handles cases like "1 11" -> "1", "10 11" -> "10")
+  const numberMatch = str.match(/^[-+]?(\d+(?:[.,]\d+)?)/);
+  if (numberMatch) {
+    const cleaned = numberMatch[1].replace(',', '.');
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? 1 : parsed;
+  }
+  return 1;
+};
+
+/**
  * Format number with comma as decimal separator (European format)
- * @param {number} num - Number to format
+ * Handles both numbers and strings (with or without commas)
+ * @param {number|string} num - Number to format
  * @param {number} decimals - Number of decimal places (default: 2)
  * @returns {string} - Formatted number with comma as decimal separator (e.g., "123,45")
  */
 const formatNumberWithComma = (num, decimals = 2) => {
-  const fixed = parseFloat(num || 0).toFixed(decimals);
+  // Handle null, undefined, or empty values
+  if (num === null || num === undefined || num === '') {
+    return (0).toFixed(decimals).replace('.', ',');
+  }
+  
+  // If it's already a string, clean it first (replace comma with dot for parsing)
+  let cleanNum = num;
+  if (typeof num === 'string') {
+    // Replace comma with dot for parsing (European format -> US format)
+    cleanNum = num.replace(',', '.');
+  }
+  
+  // Parse to number
+  const parsed = parseFloat(cleanNum);
+  
+  // Check if parsing was successful
+  if (isNaN(parsed)) {
+    return (0).toFixed(decimals).replace('.', ',');
+  }
+  
+  // Format with specified decimals and replace dot with comma
+  const fixed = parsed.toFixed(decimals);
   return fixed.replace('.', ',');
 };
 
@@ -437,12 +478,24 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
         if (!materialsByTaskId[taskId]) {
           materialsByTaskId[taskId] = [];
         }
+        // Helper to parse price value (handles both numbers and strings with commas)
+        const parsePrice = (value) => {
+          if (!value) return 0;
+          if (typeof value === 'number') return value;
+          // If string, replace comma with dot for parsing
+          const cleaned = String(value).replace(',', '.');
+          const parsed = parseFloat(cleaned);
+          return isNaN(parsed) ? 0 : parsed;
+        };
+        
         materialsByTaskId[taskId].push({
           name: material.name || '',
           quantity: material.quantity || 1,
           unit: material.unit || 'piece',
-          unitPrice: parseFloat(material.unit_price || 0),
-          totalPrice: parseFloat(material.total_price || material.unit_price || 0)
+          // unitPrice should equal totalPrice (users enter total prices, not unit prices)
+          // This matches quote creation logic where price = unit_price (no multiplication)
+          unitPrice: parsePrice(material.total_price || material.unit_price),
+          totalPrice: parsePrice(material.total_price || material.unit_price)
         });
       });
     }
@@ -451,17 +504,15 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
     quote.quote_tasks.forEach((task, taskIndex) => {
       const taskMaterials = materialsByTaskId[task.id] || [];
       const taskPrice = parseFloat(task.total_price || task.unit_price || 0);
-      const materialsTotal = taskMaterials.reduce((sum, mat) => sum + mat.totalPrice, 0);
-      const taskTotal = taskPrice + materialsTotal;
       
-      // Add task line
+      // Add task line - only show task price, materials are shown separately as sub-items
       invoiceLines.push({
         number: taskIndex + 1,
         description: task.description || task.name || '',
         quantity: task.quantity || 1,
         unit: task.unit || '',
         unitPrice: taskPrice,
-        totalPrice: taskTotal, // Include materials in task total
+        totalPrice: taskPrice, // Only task price, not including materials
         materials: taskMaterials // Store materials for sub-item display
       });
     });
@@ -501,11 +552,16 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
     }
   } else if (invoice.peppol_metadata && typeof invoice.peppol_metadata === 'object') {
     // Get deposit info from invoice's peppol_metadata (for converted invoices)
+    // Deposit is enabled if deposit_amount > 0 (same logic as quotes table)
     const metadata = invoice.peppol_metadata;
-    if (metadata.deposit_enabled || metadata.deposit_amount > 0) {
-      depositEnabled = true;
-      depositAmount = parseFloat(metadata.deposit_amount || 0);
-      balanceAmount = total; // final_amount is already the balance
+    depositAmount = typeof metadata.deposit_amount === 'number' ? metadata.deposit_amount :
+                    parseFloat(metadata.deposit_amount || 0);
+    depositEnabled = depositAmount > 0; // Deposit is enabled if amount > 0
+    
+    if (depositEnabled) {
+      // Use EXACT balance_amount from metadata if available, otherwise use total
+      balanceAmount = typeof metadata.balance_amount === 'number' ? metadata.balance_amount :
+                      parseFloat(metadata.balance_amount || total);
       totalWithVAT = balanceAmount + depositAmount;
     }
   }
@@ -627,7 +683,7 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
               <tr style="${index % 2 === 0 ? 'background-color: #fafafa;' : 'background-color: #ffffff;'}">
                 <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: center; color: ${secondaryColor}; font-size: 10px;">${line.number}</td>
                 <td style="border: 1px solid #d1d5db; padding: 8px 6px; color: ${secondaryColor}; font-size: 10px;">${escapeHtml(line.description)}</td>
-                <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: center; color: ${secondaryColor}; font-size: 10px;">${hasMaterials ? '' : `${line.quantity} ${escapeHtml(line.unit)}`}</td>
+                <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: center; color: ${secondaryColor}; font-size: 10px;">${hasMaterials ? '' : `${cleanQuantity(line.quantity)} ${escapeHtml(line.unit)}`}</td>
                 <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: right; color: ${secondaryColor}; font-size: 10px; font-weight: 500;">${hasMaterials ? '' : `${formatNumberWithComma(line.unitPrice)} €`}</td>
                 <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: right; color: ${secondaryColor}; font-size: 10px; font-weight: 500;">${formatNumberWithComma(line.totalPrice)} €</td>
               </tr>
@@ -635,7 +691,7 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
               <tr style="background-color: #f9fafb;">
                 <td style="border: 1px solid #d1d5db; padding: 6px 6px 6px 20px; text-align: center; color: ${secondaryColor}; font-size: 9px;">${line.number}.${matIndex + 1}</td>
                 <td style="border: 1px solid #d1d5db; padding: 6px 6px 6px 20px; color: ${secondaryColor}; font-size: 9px;">${escapeHtml(mat.name)}</td>
-                <td style="border: 1px solid #d1d5db; padding: 6px 6px; text-align: center; color: ${secondaryColor}; font-size: 9px;">${mat.quantity} ${escapeHtml(mat.unit)}</td>
+                <td style="border: 1px solid #d1d5db; padding: 6px 6px; text-align: center; color: ${secondaryColor}; font-size: 9px;">${cleanQuantity(mat.quantity)} ${escapeHtml(mat.unit)}</td>
                 <td style="border: 1px solid #d1d5db; padding: 6px 6px; text-align: right; color: ${secondaryColor}; font-size: 9px; font-weight: 500;">${formatNumberWithComma(mat.unitPrice)} €</td>
                 <td style="border: 1px solid #d1d5db; padding: 6px 6px; text-align: right; color: ${secondaryColor}; font-size: 9px; font-weight: 500;">${formatNumberWithComma(mat.totalPrice)} €</td>
               </tr>
@@ -893,64 +949,113 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
   const t = labels[language] || labels.fr;
   
   // Get invoice lines from Peppol metadata if available, otherwise create a single line
-  // Use exact values from UBL XML - no calculations
+  // Use EXACT values from UBL XML - NO calculations, NO modifications
+  // Show all lines as flat items (no grouping of materials under tasks)
   let invoiceLines = [];
   if (invoice.invoiceLines && Array.isArray(invoice.invoiceLines) && invoice.invoiceLines.length > 0) {
-    // Use exact values from UBL XML invoice lines
-    invoiceLines = invoice.invoiceLines.map((line, index) => ({
-      number: line.id || line.lineId || (index + 1),
-      description: line.description || line.itemName || '',
-      quantity: line.quantity || 1,
-      unit: line.unitCode || '',
-      // Use exact unit price from UBL XML
-      unitPrice: parseFloat(line.unitPrice || line.priceAmount || line.unit_price || 0),
-      // Use exact line total from UBL XML (lineExtensionAmount)
-      totalPrice: parseFloat(line.amount || line.lineExtensionAmount || 0)
-    }));
+    // Map all lines with their EXACT data from UBL XML (no parsing, no calculation, no grouping)
+    invoiceLines = invoice.invoiceLines.map((line, index) => {
+      // Use EXACT values as stored in peppol_metadata (already parsed from UBL XML)
+      // These values come directly from <cac:InvoiceLine> in UBL XML
+      const exactQuantity = cleanQuantity(line.quantity || line.InvoicedQuantity || 1);
+      const exactUnitPrice = typeof line.unitPrice === 'number' ? line.unitPrice : 
+                            typeof line.priceAmount === 'number' ? line.priceAmount :
+                            typeof line.unit_price === 'number' ? line.unit_price :
+                            parseFloat(line.unitPrice || line.priceAmount || line.unit_price || 0);
+      const exactTotalPrice = typeof line.amount === 'number' ? line.amount :
+                              typeof line.lineExtensionAmount === 'number' ? line.lineExtensionAmount :
+                              typeof line.totalPrice === 'number' ? line.totalPrice :
+                              parseFloat(line.amount || line.lineExtensionAmount || line.totalPrice || 0);
+      
+      return {
+        number: String(index + 1), // Simple sequential numbering: 1, 2, 3, etc. (no sub-items like 2.1, 2.2)
+        description: line.description || line.itemName || line.name || '',
+        quantity: exactQuantity,
+        unit: line.unitCode || line.unit || '',
+        // Use EXACT unit price from UBL XML - no calculation
+        unitPrice: exactUnitPrice,
+        // Use EXACT line total from UBL XML (lineExtensionAmount) - no calculation
+        totalPrice: exactTotalPrice
+      };
+    });
   } else {
     // Single line from invoice summary - use exact stored net amount
     const netAmount = parseFloat(invoice.net_amount || invoice.amount || 0);
     invoiceLines = [{
-      number: 1,
+      number: '1',
       description: invoice.notes || 'Service',
       quantity: 1,
       unit: '',
       unitPrice: netAmount,
-      totalPrice: netAmount
+      totalPrice: netAmount,
+      materials: []
     }];
   }
   
-  // Use exact values from UBL XML stored in database - no calculations
+  // Use EXACT values from UBL XML stored in database - NO calculations
   // These values come directly from <cac:LegalMonetaryTotal> in UBL XML
-  const total = parseFloat(invoice.amount || 0);
-  const netAmount = parseFloat(invoice.net_amount || 0);
-  const vatAmount = parseFloat(invoice.vat_amount || 0);
+  // For Peppol invoices, use totals from peppol_metadata which are exact UBL XML values
+  let total, netAmount, vatAmount, totalWithVAT, depositAmount, balanceAmount, depositEnabled;
   
-  // Extract deposit information from Peppol metadata (for expense invoices from Peppol)
-  let depositAmount = 0;
-  let balanceAmount = total;
-  let depositEnabled = false;
-  let totalWithVAT = netAmount + vatAmount;
-  
-  // Get deposit info from invoice's peppol_metadata if available
   if (invoice.peppol_metadata && typeof invoice.peppol_metadata === 'object') {
     const metadata = invoice.peppol_metadata;
-    if (metadata.deposit_enabled || (metadata.deposit_amount && parseFloat(metadata.deposit_amount) > 0)) {
-      depositEnabled = true;
-      depositAmount = parseFloat(metadata.deposit_amount || 0);
-      // Balance is the total minus deposit, or use balance_amount from metadata if available
-      balanceAmount = parseFloat(metadata.balance_amount || (total - depositAmount));
-      // Calculate totalWithVAT from deposit and balance
-      totalWithVAT = balanceAmount + depositAmount;
+    const totals = metadata.totals || {};
+    const taxSubtotals = metadata.taxSubtotals || [];
+    
+    // Use EXACT values from UBL XML totals (no calculation)
+    // These come from <cac:LegalMonetaryTotal> in UBL XML
+    total = typeof totals.payableAmount === 'number' ? totals.payableAmount :
+            typeof totals.taxInclusiveAmount === 'number' ? totals.taxInclusiveAmount :
+            parseFloat(invoice.amount || 0);
+    
+    // PRIORITIZE taxExclusiveAmount from UBL XML - this is the correct subtotal
+    netAmount = typeof totals.taxExclusiveAmount === 'number' ? totals.taxExclusiveAmount :
+                typeof totals.lineExtensionAmount === 'number' ? totals.lineExtensionAmount :
+                parseFloat(invoice.net_amount || 0);
+    
+    // PRIORITIZE VAT from UBL XML - use tax total amount directly, or sum from tax subtotals
+    // This ensures we use the exact VAT amount from UBL XML <cac:TaxTotal>/<cbc:TaxAmount>
+    // First try to get tax total from metadata (if stored), then sum from subtotals, then fallback to database
+    const taxTotal = metadata.tax?.totalTaxAmount;
+    if (typeof taxTotal === 'number' && taxTotal > 0) {
+      // Use exact tax total from UBL XML
+      vatAmount = taxTotal;
+    } else if (taxSubtotals.length > 0) {
+      // Sum all tax amounts from tax subtotals (exact from UBL XML)
+      vatAmount = taxSubtotals.reduce((sum, tax) => {
+        const taxAmt = typeof tax.taxAmount === 'number' ? tax.taxAmount :
+                       typeof tax.tax_amount === 'number' ? tax.tax_amount :
+                       parseFloat(tax.taxAmount || tax.tax_amount || 0);
+        return sum + taxAmt;
+      }, 0);
     } else {
-      // No deposit - totalWithVAT is just net + VAT
-      totalWithVAT = netAmount + vatAmount;
-      balanceAmount = totalWithVAT;
+      // Fallback to stored VAT amount if tax data not available
+      vatAmount = parseFloat(invoice.vat_amount || 0);
     }
+    
+    // Use EXACT totalWithVAT from UBL XML (taxInclusiveAmount or payableAmount) - NO calculation
+    totalWithVAT = typeof totals.taxInclusiveAmount === 'number' ? totals.taxInclusiveAmount :
+                    typeof totals.payableAmount === 'number' ? totals.payableAmount :
+                    total;
+    
+    // Extract deposit information from Peppol metadata (exact values, no calculation)
+    // Deposit is enabled if deposit_amount > 0 (same logic as quotes table)
+    depositAmount = typeof metadata.deposit_amount === 'number' ? metadata.deposit_amount :
+                    parseFloat(metadata.deposit_amount || 0);
+    depositEnabled = depositAmount > 0; // Deposit is enabled if amount > 0
+    
+    // Use EXACT balance_amount from metadata if available, otherwise use total
+    balanceAmount = typeof metadata.balance_amount === 'number' ? metadata.balance_amount :
+                    parseFloat(metadata.balance_amount || total);
   } else {
-    // No metadata - assume no deposit
-    totalWithVAT = netAmount + vatAmount;
-    balanceAmount = totalWithVAT;
+    // Manual invoice - use stored values directly (no calculation)
+    total = parseFloat(invoice.amount || 0);
+    netAmount = parseFloat(invoice.net_amount || 0);
+    vatAmount = parseFloat(invoice.vat_amount || 0);
+    totalWithVAT = total; // For manual invoices, amount is already total with VAT
+    depositAmount = 0;
+    balanceAmount = total;
+    depositEnabled = false;
   }
   
   // Helper to escape HTML
@@ -1051,7 +1156,7 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
               <tr style="${index % 2 === 0 ? 'background-color: #fafafa;' : 'background-color: #ffffff;'}">
                 <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: center; color: ${secondaryColor}; font-size: 10px;">${line.number}</td>
                 <td style="border: 1px solid #d1d5db; padding: 8px 6px; color: ${secondaryColor}; font-size: 10px;">${escapeHtml(line.description)}</td>
-                <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: center; color: ${secondaryColor}; font-size: 10px;">${line.quantity} ${escapeHtml(line.unit)}</td>
+                <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: center; color: ${secondaryColor}; font-size: 10px;">${cleanQuantity(line.quantity)} ${escapeHtml(line.unit)}</td>
                 <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: right; color: ${secondaryColor}; font-size: 10px; font-weight: 500;">${formatNumberWithComma(line.unitPrice)} €</td>
                 <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: right; color: ${secondaryColor}; font-size: 10px; font-weight: 500;">${formatNumberWithComma(line.totalPrice)} €</td>
               </tr>

@@ -455,8 +455,16 @@ function parseUBLInvoice(ublXml: string): any {
     };
     const num = (node: any, key: string) => {
       const v = txt(node, key);
-      const n = parseFloat(v.replace(',', '.'));
-      return isNaN(n) ? 0 : n;
+      if (!v) return 0;
+      // Extract first number from string (handles cases like "1 11" -> "1", "10 11" -> "10")
+      // Match: optional sign, digits, optional decimal part
+      const numberMatch = v.match(/^[-+]?(\d+(?:[.,]\d+)?)/);
+      if (numberMatch) {
+        const cleaned = numberMatch[1].replace(',', '.');
+        const n = parseFloat(cleaned);
+        return isNaN(n) ? 0 : n;
+      }
+      return 0;
     };
     const attrCurrency = (node: any, key: string, fallback: string) => {
       const raw = pickRaw(node, key);
@@ -878,16 +886,22 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
       documentCurrencyCode: data.currency || 'EUR'
     };
 
-    // Calculate amounts - prioritize parsed invoice data
+    // Use EXACT amounts from UBL XML - NO calculations, NO fallbacks
+    // Prioritize parsed invoice data which comes directly from UBL XML
     const totalAmount = parsedInvoice 
       ? (parsedInvoice.totals?.payableAmount || parsedInvoice.totals?.taxInclusiveAmount || 0)
       : (invoiceData.totals?.payableAmount || invoiceData.totals?.taxInclusiveAmount || 0);
+    
+    // Use EXACT tax amount from UBL XML <cac:TaxTotal>/<cbc:TaxAmount>
     const taxAmount = parsedInvoice
       ? (parsedInvoice.tax?.totalTaxAmount || 0)
       : (invoiceData.tax?.totalTaxAmount || 0);
+    
+    // Use EXACT net amount from UBL XML <cac:LegalMonetaryTotal>/<cbc:TaxExclusiveAmount>
+    // DO NOT calculate (totalAmount - taxAmount) as this can be wrong due to rounding
     const netAmount = parsedInvoice
-      ? (parsedInvoice.totals?.taxExclusiveAmount || parsedInvoice.totals?.lineExtensionAmount || (totalAmount - taxAmount))
-      : (invoiceData.totals?.taxExclusiveAmount || invoiceData.totals?.lineExtensionAmount || (totalAmount - taxAmount));
+      ? (parsedInvoice.totals?.taxExclusiveAmount || parsedInvoice.totals?.lineExtensionAmount || 0)
+      : (invoiceData.totals?.taxExclusiveAmount || invoiceData.totals?.lineExtensionAmount || 0);
     
 
     // Extract supplier Peppol ID (format: schemeID:identifier)
@@ -1042,12 +1056,15 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
           salesOrderId: invoiceData.salesOrderId,
           deliveryDate: invoiceData.deliveryDate,
           payment: invoiceData.payment || {},
+          tax: invoiceData.tax || {}, // Store full tax object including totalTaxAmount
           taxSubtotals: invoiceData.tax?.subtotals || [],
           invoiceLines: invoiceData.invoiceLines || [],
-        messageId: data.messageId || null,
-        supplierName,
-        supplierVatNumber,
+          messageId: data.messageId || null,
+          supplierName,
+          supplierVatNumber,
+          supplier: invoiceData.supplier || {},
           supplierAddress: invoiceData.supplier?.address || {},
+          customer: invoiceData.customer || {},
           totals: invoiceData.totals || {},
           // Store PDF attachment path if available
           pdfAttachmentPath: pdfAttachmentPath || null

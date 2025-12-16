@@ -352,6 +352,8 @@ const ExpenseInvoicesManagement = () => {
           source: invoice.source,
           notes: invoice.notes,
           status: invoice.status,
+          // Include full peppol_metadata for deposit/balance information
+          peppol_metadata: invoice.peppol_metadata || null,
           // Include invoice lines from Peppol metadata if available
           invoiceLines: invoice.peppol_metadata?.invoiceLines || [],
           // Include payment information from Peppol metadata if available

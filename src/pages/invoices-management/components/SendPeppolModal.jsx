@@ -234,28 +234,75 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
       };
 
       // Convert invoice to Peppol format
-      // Create invoice lines from quote tasks if available, otherwise create a single line
+      // Create invoice lines from quote tasks and materials if available, otherwise create a single line
       let invoiceLines = [];
       
       if (invoice.quote?.quote_tasks && invoice.quote.quote_tasks.length > 0) {
-        // Use quote tasks as invoice lines
-        invoiceLines = invoice.quote.quote_tasks.map((task, index) => {
-          const lineNetAmount = parseFloat(task.total_price || task.unit_price || 0);
-          const lineTaxAmount = invoice.taxAmount > 0 && invoice.netAmount > 0 
-            ? (lineNetAmount * (invoice.taxAmount / invoice.netAmount))
+        // Group materials by task_id
+        const materialsByTaskId = {};
+        if (invoice.quote.quote_materials && invoice.quote.quote_materials.length > 0) {
+          invoice.quote.quote_materials.forEach((material) => {
+            const taskId = material.quote_task_id;
+            if (!materialsByTaskId[taskId]) {
+              materialsByTaskId[taskId] = [];
+            }
+            materialsByTaskId[taskId].push(material);
+          });
+        }
+        
+        // Create invoice lines from tasks and their materials
+        // IMPORTANT: Tasks use total_price (users enter total prices, not unit prices)
+        // unit_price = total_price (no multiplication by quantity)
+        invoice.quote.quote_tasks.forEach((task, taskIndex) => {
+          // Task price is already total (user enters total price)
+          // Use total_price or unit_price (they should be the same)
+          const taskNetAmount = parseFloat(task.total_price || task.unit_price || 0);
+          const taskTaxAmount = invoice.taxAmount > 0 && invoice.netAmount > 0 
+            ? (taskNetAmount * (invoice.taxAmount / invoice.netAmount))
             : 0;
-          const vatPercentage = lineNetAmount > 0 ? Math.round((lineTaxAmount / lineNetAmount) * 100) : 21;
+          const taskVatPercentage = taskNetAmount > 0 ? Math.round((taskTaxAmount / taskNetAmount) * 100) : 21;
           
-          return {
-            description: task.description || task.name || `Ligne ${index + 1}`,
-            quantity: task.quantity || 1,
-            unit_price: parseFloat(task.unit_price || 0),
-            subtotal: lineNetAmount,
-            tax_amount: lineTaxAmount,
-            total: lineNetAmount + lineTaxAmount,
+          invoiceLines.push({
+            description: task.description || task.name || `Ligne ${taskIndex + 1}`,
+            // Quantity should be 1 since users enter total prices (not unit prices)
+            // If quantity > 1, we still use total price as unit_price (no multiplication)
+            quantity: 1, // Always use 1 since price is already total (matches quote creation logic)
+            // unit_price should equal total_price (user enters total price, not unit price)
+            unit_price: taskNetAmount, // Use total price as unit_price (same as quote creation logic)
+            subtotal: taskNetAmount, // Subtotal equals total price (no multiplication)
+            tax_amount: taskTaxAmount,
+            total: taskNetAmount + taskTaxAmount,
             vat_code: 'S', // Standard VAT
-            vat_percentage: vatPercentage
-          };
+            vat_percentage: taskVatPercentage
+          });
+          
+          // Add materials for this task as separate invoice lines
+          // IMPORTANT: Materials use total_price (users enter total prices, not unit prices)
+          // unit_price = total_price (no multiplication by quantity)
+          const taskMaterials = materialsByTaskId[task.id] || [];
+          taskMaterials.forEach((material) => {
+            // Material price is already total (user enters total price)
+            // Use total_price or unit_price (they should be the same)
+            const materialNetAmount = parseFloat(material.total_price || material.unit_price || 0);
+            const materialTaxAmount = invoice.taxAmount > 0 && invoice.netAmount > 0 
+              ? (materialNetAmount * (invoice.taxAmount / invoice.netAmount))
+              : 0;
+            const materialVatPercentage = materialNetAmount > 0 ? Math.round((materialTaxAmount / materialNetAmount) * 100) : 21;
+            
+            invoiceLines.push({
+              description: material.name || material.description || 'Material',
+              // Quantity should be 1 since users enter total prices (not unit prices)
+              // If quantity > 1, we still use total price as unit_price (no multiplication)
+              quantity: 1, // Always use 1 since price is already total (matches quote creation logic)
+              // unit_price should equal total_price (user enters total price, not unit price)
+              unit_price: materialNetAmount, // Use total price as unit_price (same as quote creation logic)
+              subtotal: materialNetAmount, // Subtotal equals total price (no multiplication)
+              tax_amount: materialTaxAmount,
+              total: materialNetAmount + materialTaxAmount,
+              vat_code: 'S', // Standard VAT
+              vat_percentage: materialVatPercentage
+            });
+          });
         });
       } else {
         // Create a single line from invoice summary

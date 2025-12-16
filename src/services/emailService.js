@@ -73,7 +73,9 @@ export class EmailService {
       vatRate: parseFloat(vatConfig.rate || 0),
       discountEnabled: financialConfig?.discountConfig?.enabled === true || financialConfig?.discount_config?.enabled === true,
       discountRate: parseFloat(financialConfig?.discountConfig?.rate || financialConfig?.discount_config?.rate || 0),
-      depositEnabled: advanceConfig.enabled === true
+      // Deposit is enabled if deposit_amount > 0 (from quotes.deposit_amount column)
+      // This is more reliable than checking advanceConfig.enabled flag
+      depositEnabled: depositAmount > 0
     };
   }
   
