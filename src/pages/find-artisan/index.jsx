@@ -1102,7 +1102,7 @@ const FindArtisanPage = () => {
                     {/* Region Selection */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
-                        Région/Province *
+                        Région/Province <span className="text-red-500">*</span>
                       </label>
                       <div className="relative" ref={regionDropdownRef}>
                         {/* Custom Dropdown Button */}
@@ -1224,7 +1224,7 @@ const FindArtisanPage = () => {
                     {/* Full Address */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
-                        {t('findArtisan.form.fullAddress')} *
+                        {t('findArtisan.form.fullAddress')} <span className="text-red-500">*</span>
                       </label>
                       <Input
                         type="text"
@@ -1263,7 +1263,7 @@ const FindArtisanPage = () => {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-foreground mb-2">
-                            {t('registerForm.step1.lastName', 'Last Name')} *
+                            {t('registerForm.step1.lastName', 'Last Name')} <span className="text-red-500">*</span>
                           </label>
                           <Input
                             type="text"
@@ -1292,7 +1292,7 @@ const FindArtisanPage = () => {
                         </div>
                       <div>
                         <label className="block text-sm font-medium text-foreground mb-2">
-                          {t('findArtisan.form.email')} *
+                          {t('findArtisan.form.email')} <span className="text-red-500">*</span>
                         </label>
                         <Input
                           type="email"

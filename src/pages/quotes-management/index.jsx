@@ -278,10 +278,23 @@ const QuotesManagement = () => {
             
             // Only add draft if it should be displayed (not excluded)
             if (!shouldExclude) {
+              // Helper to strip emoji icons from client name/label
+              const getCleanClientName = (client) => {
+                if (!client) return t('quotesManagement.draft.unknownClient');
+                // Prefer client.name (clean, no emoji)
+                if (client.client?.name) return client.client.name;
+                if (client.name) return client.name;
+                // Strip emoji from label if present
+                if (client.label) {
+                  return client.label.replace(/^[👤🏢]\s*/, '').trim() || t('quotesManagement.draft.unknownClient');
+                }
+                return t('quotesManagement.draft.unknownClient');
+              };
+              
               additionalDrafts.push({
                 id: `draft-${draft.id}`,
                 number: draftQuoteNumber || t('quotesManagement.draft.unsentDraft'),
-                clientName: d.selectedClient?.client?.name || d.selectedClient?.label || d.selectedClient?.name || t('quotesManagement.draft.unknownClient'),
+                clientName: getCleanClientName(d.selectedClient),
                 amount: calculateDraftAmount(d),
                 amountFormatted: formatCurrency(calculateDraftAmount(d)),
                 status: 'auto-saved',

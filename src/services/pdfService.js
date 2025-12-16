@@ -558,11 +558,13 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
               // Format VAT number with country prefix if not already present
               let formattedVAT = client.vat_number;
               if (formattedVAT && !formattedVAT.match(/^[A-Z]{2}\d+/i)) {
-                // VAT number doesn't have country prefix, add it based on client country
+                // VAT number doesn't have correct country prefix format (2 letters + digits)
+                // Remove all leading letters to get to the numeric part, handling malformed VATs correctly
+                // Examples: "ABC123" -> "123", "B123" -> "123", "BE123" -> "123"
                 const countryCode = (client?.country || 'BE').toUpperCase();
                 const countryPrefix = countryCode === 'GR' ? 'EL' : countryCode;
-                // Remove any existing prefix and add correct one
-                const cleanVAT = formattedVAT.replace(/^[A-Z]{2}/i, '');
+                // Remove all leading letters (not just 2) to handle malformed VAT numbers
+                const cleanVAT = formattedVAT.replace(/^[A-Z]+/i, '');
                 formattedVAT = `${countryPrefix}${cleanVAT}`;
               }
               return `<p style="margin: 3px 0 0 0; font-weight: 500;">${language === 'en' ? 'VAT:' : language === 'nl' ? 'BTW:' : 'TVA:'} ${escapeHtml(formattedVAT)}</p>`;

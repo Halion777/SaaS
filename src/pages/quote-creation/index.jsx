@@ -4648,11 +4648,24 @@ const QuoteCreation = () => {
     return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
+  // Prevent background scrolling when dialog is open
+  useEffect(() => {
+    if (showDraftRestoreDialog) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showDraftRestoreDialog]);
+
   return (
     <PermissionGuard module="quoteCreation" requiredPermission="full_access">
       {/* Draft Restore Dialog */}
       {showDraftRestoreDialog && foundDraft && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
