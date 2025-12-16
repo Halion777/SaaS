@@ -283,20 +283,6 @@ const ExpenseInvoicesManagement = () => {
   const handleExportExpenseInvoicePDF = async (invoice) => {
     if (isExportingPDF) return;
     
-    // Show warning before exporting PDF
-    const warningMessage = t(
-      'expenseInvoices.pdfWarning.message',
-      'This expense invoice PDF is for reference only. For official purposes, always use the Peppol UBL XML document received via Peppol network.'
-    );
-    
-    const userConfirmed = window.confirm(
-      `${t('expenseInvoices.pdfWarning.title', 'Important Notice')}\n\n${warningMessage}\n\n${t('expenseInvoices.pdfWarning.continue', 'Do you want to continue downloading the PDF?')}`
-    );
-    
-    if (!userConfirmed) {
-      return;
-    }
-    
     setIsExportingPDF(true);
     try {
       // Load company info
@@ -308,15 +294,20 @@ const ExpenseInvoicesManagement = () => {
       }
 
       // Prepare expense invoice data for PDF generation
+      // Extract supplier address from Peppol metadata if available
+      const supplierAddress = invoice.peppol_metadata?.supplierAddress || {};
+      const supplierContact = invoice.peppol_metadata?.supplier || {};
+      
       const expenseInvoiceData = {
         companyInfo,
         supplier: {
           name: invoice.supplier_name,
-          email: invoice.supplier_email,
-          phone: invoice.supplier_phone,
-          address: invoice.supplier_address,
-          postal_code: invoice.supplier_postal_code,
-          city: invoice.supplier_city,
+          email: invoice.supplier_email || supplierContact.email || '',
+          phone: invoice.supplier_phone || supplierContact.contactPhone || supplierContact.phone || '',
+          address: invoice.supplier_address || supplierAddress.street || '',
+          postal_code: invoice.supplier_postal_code || supplierAddress.postalCode || supplierAddress.zip_code || '',
+          city: invoice.supplier_city || supplierAddress.city || '',
+          country: supplierAddress.country || '',
           vat_number: invoice.supplier_vat_number
         },
         invoice: {
@@ -329,7 +320,11 @@ const ExpenseInvoicesManagement = () => {
           payment_method: invoice.payment_method,
           source: invoice.source,
           notes: invoice.notes,
-          status: invoice.status
+          status: invoice.status,
+          // Include invoice lines from Peppol metadata if available
+          invoiceLines: invoice.peppol_metadata?.invoiceLines || [],
+          // Include payment information from Peppol metadata if available
+          payment: invoice.peppol_metadata?.payment || null
         }
       };
 

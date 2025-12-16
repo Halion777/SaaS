@@ -939,9 +939,9 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
       }
     }
 
-    // Build notes with extracted information
+    // Build notes with extracted information (without Message ID)
     const notesParts = [
-      `Received via Peppol network (${documentTypeLabel}). Message ID: ${data.messageId || 'N/A'}`,
+      `Received via Peppol network (${documentTypeLabel}).`,
       invoiceData.buyerReference ? `Buyer Reference: ${invoiceData.buyerReference}` : '',
       invoiceData.orderReference ? `Order Reference: ${invoiceData.orderReference}` : '',
       invoiceData.payment?.terms ? `Payment Terms: ${invoiceData.payment.terms}` : '',

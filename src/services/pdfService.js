@@ -346,7 +346,7 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
   // Translation labels based on language
   const labels = {
     fr: {
-      invoice: 'FACTURE',
+      invoice: 'FACTURE CLIENT',
       client: 'CLIENT',
       company: 'ENTREPRISE',
       paymentInfo: 'INFORMATIONS DE PAIEMENT',
@@ -363,10 +363,12 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
       totalHT: 'Total HT',
       iban: 'IBAN:',
       account: 'Compte:',
-      bank: 'Banque:'
+      bank: 'Banque:',
+      pdfWarning: 'ATTENTION: Ce document PDF est fourni uniquement à titre de référence. Pour les transactions officielles et la facturation électronique, veuillez toujours utiliser le document UBL Peppol, qui est le format légalement reconnu pour la facturation électronique.',
+      pdfWarningTitle: 'Document de référence uniquement'
     },
     en: {
-      invoice: 'INVOICE',
+      invoice: 'CLIENT INVOICE',
       client: 'CLIENT',
       company: 'COMPANY',
       paymentInfo: 'PAYMENT INFORMATION',
@@ -383,10 +385,12 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
       totalHT: 'Total Excl. VAT',
       iban: 'IBAN:',
       account: 'Account:',
-      bank: 'Bank:'
+      bank: 'Bank:',
+      pdfWarning: 'WARNING: This PDF document is provided for reference purposes only. For official transactions and electronic invoicing, please always use the Peppol UBL document, which is the legally recognized format for electronic invoicing.',
+      pdfWarningTitle: 'Reference document only'
     },
     nl: {
-      invoice: 'FACTUUR',
+      invoice: 'KLANTENFACTUUR',
       client: 'KLANT',
       company: 'BEDRIJF',
       paymentInfo: 'BETALINGSINFORMATIE',
@@ -403,7 +407,9 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
       totalHT: 'Totaal Excl. BTW',
       iban: 'IBAN:',
       account: 'Rekening:',
-      bank: 'Bank:'
+      bank: 'Bank:',
+      pdfWarning: 'WAARSCHUWING: Dit PDF-document is uitsluitend bedoeld als referentie. Voor officiële transacties en elektronische facturering gebruik altijd het Peppol UBL-document, dat het wettelijk erkende formaat is voor elektronische facturering.',
+      pdfWarningTitle: 'Alleen referentiedocument'
     }
   };
   
@@ -563,6 +569,17 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
         </table>
       </div>
       
+      <!-- PDF Warning Notice -->
+      <div style="margin-top: 40px; padding: 15px; background-color: #fef3c7; border: 2px solid #f59e0b; border-radius: 6px;">
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+          <div style="flex-shrink: 0; color: #d97706; font-size: 16px; font-weight: bold;">⚠</div>
+          <div style="flex: 1;">
+            <p style="margin: 0 0 5px 0; font-size: 11px; font-weight: bold; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px;">${t.pdfWarningTitle}</p>
+            <p style="margin: 0; font-size: 10px; color: #78350f; line-height: 1.5;">${t.pdfWarning}</p>
+          </div>
+        </div>
+      </div>
+      
     </div>
   `;
 };
@@ -700,7 +717,19 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
       vat: 'TVA:',
       total: 'TOTAL TTC:',
       date: 'Date:',
-      due: 'Échéance:'
+      due: 'Échéance:',
+      paymentInfo: 'INFORMATIONS DE PAIEMENT',
+      services: 'DÉTAIL DES PRESTATIONS',
+      number: 'N°',
+      designation: 'Désignation',
+      qty: 'Qté',
+      unitPrice: 'Prix U.',
+      totalHT: 'Total HT',
+      iban: 'IBAN:',
+      account: 'Compte:',
+      bank: 'Banque:',
+      pdfWarning: 'ATTENTION: Ce document PDF est fourni uniquement à titre de référence. Pour les transactions officielles et la facturation électronique, veuillez toujours utiliser le document UBL Peppol, qui est le format légalement reconnu pour la facturation électronique.',
+      pdfWarningTitle: 'Document de référence uniquement'
     },
     en: {
       invoice: 'SUPPLIER INVOICE',
@@ -715,7 +744,19 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
       vat: 'VAT:',
       total: 'TOTAL INCL. VAT:',
       date: 'Date:',
-      due: 'Due Date:'
+      due: 'Due Date:',
+      paymentInfo: 'PAYMENT INFORMATION',
+      services: 'SERVICE DETAILS',
+      number: 'No.',
+      designation: 'Description',
+      qty: 'Qty',
+      unitPrice: 'Unit Price',
+      totalHT: 'Total Excl. VAT',
+      iban: 'IBAN:',
+      account: 'Account:',
+      bank: 'Bank:',
+      pdfWarning: 'WARNING: This PDF document is provided for reference purposes only. For official transactions and electronic invoicing, please always use the Peppol UBL document, which is the legally recognized format for electronic invoicing.',
+      pdfWarningTitle: 'Reference document only'
     },
     nl: {
       invoice: 'LEVERANCIERSFACTUUR',
@@ -730,7 +771,19 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
       vat: 'BTW:',
       total: 'TOTAAL INCL. BTW:',
       date: 'Datum:',
-      due: 'Vervaldatum:'
+      due: 'Vervaldatum:',
+      paymentInfo: 'BETALINGSINFORMATIE',
+      services: 'DIENSTDETAILS',
+      number: 'Nr.',
+      designation: 'Omschrijving',
+      qty: 'Aantal',
+      unitPrice: 'Prijs per eenheid',
+      totalHT: 'Totaal Excl. BTW',
+      iban: 'IBAN:',
+      account: 'Rekening:',
+      bank: 'Bank:',
+      pdfWarning: 'WAARSCHUWING: Dit PDF-document is uitsluitend bedoeld als referentie. Voor officiële transacties en elektronische facturering gebruik altijd het Peppol UBL-document, dat het wettelijk erkende formaat is voor elektronische facturering.',
+      pdfWarningTitle: 'Alleen referentiedocument'
     }
   };
   
@@ -739,6 +792,29 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
   const total = parseFloat(invoice.amount || 0);
   const netAmount = parseFloat(invoice.net_amount || invoice.amount || 0);
   const vatAmount = parseFloat(invoice.vat_amount || 0);
+  
+  // Get invoice lines from Peppol metadata if available, otherwise create a single line
+  let invoiceLines = [];
+  if (invoice.invoiceLines && Array.isArray(invoice.invoiceLines) && invoice.invoiceLines.length > 0) {
+    invoiceLines = invoice.invoiceLines.map((line, index) => ({
+      number: line.id || line.lineId || (index + 1),
+      description: line.description || line.itemName || '',
+      quantity: line.quantity || 1,
+      unit: line.unitCode || '',
+      unitPrice: parseFloat(line.unitPrice || line.priceAmount || line.unit_price || 0),
+      totalPrice: parseFloat(line.amount || line.lineExtensionAmount || 0)
+    }));
+  } else {
+    // Single line from invoice summary
+    invoiceLines = [{
+      number: 1,
+      description: invoice.notes || 'Service',
+      quantity: 1,
+      unit: '',
+      unitPrice: netAmount,
+      totalPrice: netAmount
+    }];
+  }
   
   // Helper to escape HTML
   const escapeHtml = (text) => {
@@ -792,6 +868,7 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
             ${supplier?.phone ? `<p style="margin: 0 0 3px 0;">${escapeHtml(supplier.phone)}</p>` : ''}
             ${supplier?.address ? `<p style="margin: 0 0 3px 0;">${escapeHtml(supplier.address)}</p>` : ''}
             ${supplier?.postal_code && supplier?.city ? `<p style="margin: 0;">${escapeHtml(supplier.postal_code)} ${escapeHtml(supplier.city)}</p>` : ''}
+            ${supplier?.country ? `<p style="margin: 3px 0 0 0;">${escapeHtml(supplier.country)}</p>` : ''}
             ${supplier?.vat_number ? `<p style="margin: 3px 0 0 0; font-weight: 500;">TVA: ${escapeHtml(supplier.vat_number)}</p>` : ''}
           </div>
         </div>
@@ -808,38 +885,70 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
         </div>
       </div>
       
-      <!-- Invoice Details -->
+      <!-- Payment Information -->
+      ${companyInfo?.iban || companyInfo?.accountName || companyInfo?.bankName ? `
       <div style="margin-bottom: 30px; padding: 12px; background-color: #f9fafb; border-radius: 6px; border: 1px solid #e5e7eb;">
-        <h3 style="margin: 0 0 8px 0; font-size: 11px; color: ${primaryColor}; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">${t.invoiceDetails}</h3>
-        <div style="color: ${secondaryColor}; font-size: 10px; line-height: 1.6;">
-          ${invoice.category ? `<div style="margin-bottom: 4px;"><span style="font-weight: 500;">${t.category}</span> ${escapeHtml(invoice.category)}</div>` : ''}
-          ${invoice.payment_method ? `<div style="margin-bottom: 4px;"><span style="font-weight: 500;">${t.payment}</span> ${escapeHtml(invoice.payment_method)}</div>` : ''}
-          ${invoice.source ? `<div style="margin-bottom: 4px;"><span style="font-weight: 500;">${t.source}</span> ${escapeHtml(invoice.source === 'peppol' ? 'Peppol' : language === 'en' ? 'Manual' : language === 'nl' ? 'Handmatig' : 'Manuel')}</div>` : ''}
-          ${invoice.status ? `<div style="margin-bottom: 4px;"><span style="font-weight: 500;">${language === 'en' ? 'Status:' : language === 'nl' ? 'Status:' : 'Statut:'}</span> ${escapeHtml(invoice.status === 'paid' ? (language === 'en' ? 'Paid' : language === 'nl' ? 'Betaald' : 'Payé') : invoice.status === 'overdue' ? (language === 'en' ? 'Overdue' : language === 'nl' ? 'Achterstallig' : 'En retard') : language === 'en' ? 'Pending' : language === 'nl' ? 'In behandeling' : 'En attente')}</div>` : ''}
+        <h3 style="margin: 0 0 8px 0; font-size: 11px; color: ${primaryColor}; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">${t.paymentInfo}</h3>
+        <div style="color: ${secondaryColor}; font-size: 10px; line-height: 1.5;">
+          ${companyInfo?.iban ? `<span style="font-weight: 500;">${t.iban}</span> ${escapeHtml(companyInfo.iban)}${companyInfo?.accountName || companyInfo?.bankName ? ' | ' : ''}` : ''}
+          ${companyInfo?.accountName ? `<span style="font-weight: 500;">${t.account}</span> ${escapeHtml(companyInfo.accountName)}${companyInfo?.bankName ? ' | ' : ''}` : ''}
+          ${companyInfo?.bankName ? `<span style="font-weight: 500;">${t.bank}</span> ${escapeHtml(companyInfo.bankName)}` : ''}
         </div>
-        ${invoice.notes ? `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb; color: ${secondaryColor}; font-size: 10px; line-height: 1.4;"><span style="font-weight: 500;">${t.notes}</span> ${escapeHtml(invoice.notes)}</div>` : ''}
       </div>
+      ` : ''}
       
-      <!-- Amount Summary -->
+      <!-- Invoice Lines Table -->
       <div style="margin-bottom: 30px;">
+        <h3 style="margin: 0 0 12px 0; font-size: 12px; color: ${primaryColor}; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">${t.services}</h3>
         <table style="width: 100%; border-collapse: collapse; border: 1px solid #d1d5db; font-size: 10px;">
+          <thead>
+            <tr style="background-color: ${primaryColorLight};">
+              <th style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: center; font-weight: bold; color: ${primaryColor}; font-size: 10px; text-transform: uppercase;">${t.number}</th>
+              <th style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: left; font-weight: bold; color: ${primaryColor}; font-size: 10px; text-transform: uppercase;">${t.designation}</th>
+              <th style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: center; font-weight: bold; color: ${primaryColor}; font-size: 10px; text-transform: uppercase;">${t.qty}</th>
+              <th style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px; text-transform: uppercase;">${t.unitPrice}</th>
+              <th style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px; text-transform: uppercase;">${t.totalHT}</th>
+            </tr>
+          </thead>
           <tbody>
+            ${invoiceLines.map((line, index) => `
+              <tr style="${index % 2 === 0 ? 'background-color: #fafafa;' : 'background-color: #ffffff;'}">
+                <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: center; color: ${secondaryColor}; font-size: 10px;">${line.number}</td>
+                <td style="border: 1px solid #d1d5db; padding: 8px 6px; color: ${secondaryColor}; font-size: 10px;">${escapeHtml(line.description)}</td>
+                <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: center; color: ${secondaryColor}; font-size: 10px;">${line.quantity} ${escapeHtml(line.unit)}</td>
+                <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: right; color: ${secondaryColor}; font-size: 10px; font-weight: 500;">${line.unitPrice.toFixed(2)} €</td>
+                <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: right; color: ${secondaryColor}; font-size: 10px; font-weight: 500;">${line.totalPrice.toFixed(2)} €</td>
+              </tr>
+            `).join('')}
+          </tbody>
+          <tfoot>
             <tr style="background-color: #f9fafb;">
-              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${t.subtotal}</td>
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${t.subtotal}</td>
               <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${netAmount.toFixed(2)} €</td>
             </tr>
             ${vatAmount > 0 ? `
             <tr style="background-color: #f9fafb;">
-              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${t.vat}</td>
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${t.vat}</td>
               <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${vatAmount.toFixed(2)} €</td>
             </tr>
             ` : ''}
             <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;">${t.total}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${total.toFixed(2)} €</td>
             </tr>
-          </tbody>
+          </tfoot>
         </table>
+      </div>
+      
+      <!-- PDF Warning Notice -->
+      <div style="margin-top: 40px; padding: 15px; background-color: #fef3c7; border: 2px solid #f59e0b; border-radius: 6px;">
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+          <div style="flex-shrink: 0; color: #d97706; font-size: 16px; font-weight: bold;">⚠</div>
+          <div style="flex: 1;">
+            <p style="margin: 0 0 5px 0; font-size: 11px; font-weight: bold; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px;">${t.pdfWarningTitle}</p>
+            <p style="margin: 0; font-size: 10px; color: #78350f; line-height: 1.5;">${t.pdfWarning}</p>
+          </div>
+        </div>
       </div>
       
     </div>
