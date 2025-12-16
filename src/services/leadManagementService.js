@@ -127,7 +127,6 @@ export class LeadManagementService {
             email,
             first_name,
             last_name,
-            full_name,
             language_preference
           )
         `)
@@ -280,7 +279,6 @@ export class LeadManagementService {
             user_id: userId,
             profile_id: profileData?.id || null,
             receive_leads: false,
-            intervention_radius: 20,
             work_categories: {},
             email_notifications: true
           })
