@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient';
 import EmailService from './emailService';
 import QuoteTrackingService from './quoteTrackingService';
+import { calculateQuoteTotalsFromDB } from '../utils/quotePriceCalculator';
 
 // Helper to ensure DB varchar limits are respected
 function truncateString(value, max) {
@@ -311,6 +312,32 @@ export async function fetchQuoteById(id) {
 }
 
 /**
+ * Check if a quote already exists by quote number for a user
+ * @param {string} userId - User ID
+ * @param {string} quoteNumber - Quote number to check
+ * @returns {Promise<{data, error}>} Existing quote or null
+ */
+export async function getQuoteByQuoteNumber(userId, quoteNumber) {
+  try {
+    if (!userId || !quoteNumber) {
+      return { data: null, error: null };
+    }
+    
+    const { data, error } = await supabase
+      .from('quotes')
+      .select('id, quote_number, status')
+      .eq('user_id', userId)
+      .eq('quote_number', quoteNumber)
+      .maybeSingle();
+    
+    return { data, error };
+  } catch (error) {
+    console.error('Error checking quote by quote number:', error);
+    return { data: null, error };
+  }
+}
+
+/**
  * Create a new quote with tasks, materials, and files
  * @param {Object} quoteData - Quote data
  * @returns {Promise<{data, error}>} Created quote or error
@@ -351,6 +378,8 @@ export async function createQuote(quoteData) {
       tax_amount: quoteData.tax_amount || 0,
       discount_amount: quoteData.discount_amount || 0,
       final_amount: quoteData.final_amount || quoteData.total_amount || 0,
+      deposit_amount: quoteData.deposit_amount || 0,
+      balance_amount: quoteData.balance_amount || quoteData.final_amount || quoteData.total_amount || 0,
       valid_until: quoteData.valid_until || null,
       terms_conditions: quoteData.terms_conditions || '',
       sent_at: quoteData.status === 'sent' ? new Date().toISOString() : null,
@@ -621,22 +650,27 @@ export async function updateQuote(id, quoteData) {
       }
     }
     
+    // Prepare update data with deposit_amount and balance_amount
+    const updateData = {
+      title: quoteData.title,
+      description: quoteData.description,
+      status: quoteData.status,
+      project_categories: quoteData.project_categories,
+      custom_category: quoteData.custom_category,
+      start_date: quoteData.start_date,
+      total_amount: quoteData.total_amount,
+      tax_amount: quoteData.tax_amount,
+      discount_amount: quoteData.discount_amount,
+      final_amount: quoteData.final_amount,
+      deposit_amount: quoteData.deposit_amount !== undefined ? quoteData.deposit_amount : null,
+      balance_amount: quoteData.balance_amount !== undefined ? quoteData.balance_amount : null,
+      valid_until: quoteData.valid_until,
+      terms_conditions: quoteData.terms_conditions
+    };
+    
     const { data: quote, error: quoteError } = await supabase
       .from('quotes')
-      .update({
-        title: quoteData.title,
-        description: quoteData.description,
-        status: quoteData.status,
-        project_categories: quoteData.project_categories,
-        custom_category: quoteData.custom_category,
-        start_date: quoteData.start_date,
-        total_amount: quoteData.total_amount,
-        tax_amount: quoteData.tax_amount,
-        discount_amount: quoteData.discount_amount,
-        final_amount: quoteData.final_amount,
-        valid_until: quoteData.valid_until,
-        terms_conditions: quoteData.terms_conditions
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
@@ -1685,43 +1719,30 @@ export async function convertQuoteToInvoice(quote, userId) {
     // Extract description - check both project_description and description fields
     const description = quoteData.project_description || quoteData.description || quote.description || '';
 
-    // Extract amounts - recalculate from tasks and materials for accuracy (same as QuotePreview)
-    // This ensures consistency even if the stored amounts are incorrect
-    let calculatedTotal = 0;
-    if (quoteData.quote_tasks && quoteData.quote_tasks.length > 0) {
-      calculatedTotal = quoteData.quote_tasks.reduce((sum, task) => {
-        // Task price (labor)
-        const taskPrice = parseFloat(task.total_price) || ((parseFloat(task.quantity) || 1) * (parseFloat(task.unit_price) || 0));
-        
-        // Materials total (price is already total, no multiplication needed)
-        const taskMaterials = quoteData.quote_materials?.filter(m => m.quote_task_id === task.id) || [];
-        const taskMaterialsTotal = taskMaterials.reduce((matSum, mat) => 
-          matSum + (parseFloat(mat.unit_price || mat.price) || 0), 0);
-        
-        return sum + taskPrice + taskMaterialsTotal;
-      }, 0);
-    }
-    
-    // Use calculated total if available, otherwise use stored amounts
-    const totalAmount = calculatedTotal > 0 ? calculatedTotal : parseFloat(quoteData.total_amount || 0);
-    
-    // Get VAT from financial config or stored tax_amount
-    const financialConfig = quoteData.quote_financial_configs?.[0];
-    const vatRate = financialConfig?.vat_config?.display ? (financialConfig.vat_config.rate || 0) : 0;
-    const taxAmount = calculatedTotal > 0 && vatRate > 0 
-      ? (calculatedTotal * (vatRate / 100))
-      : parseFloat(quoteData.tax_amount || 0);
-    
+    // Use stored values from quotes table directly for consistency
+    // These values are calculated and stored when the quote is created/updated
+    const totalBeforeVAT = parseFloat(quoteData.total_amount || 0);
+    const taxAmount = parseFloat(quoteData.tax_amount || 0);
     const discountAmount = parseFloat(quoteData.discount_amount || 0);
-    const finalAmount = totalAmount + taxAmount; // Total with VAT (do NOT subtract deposit)
+    const depositAmount = parseFloat(quoteData.deposit_amount || 0);
+    const balanceAmount = parseFloat(quoteData.balance_amount || 0);
     
-    // Calculate net amount (HT)
-    const netAmount = totalAmount - discountAmount;
+    // Calculate netAmount (after discount, before VAT)
+    const netAmount = totalBeforeVAT - discountAmount;
+    
+    // Calculate totalWithVAT from stored values
+    const totalWithVAT = balanceAmount > 0 && depositAmount > 0 
+      ? balanceAmount + depositAmount 
+      : totalBeforeVAT + taxAmount - discountAmount;
 
-    // Extract deposit information from financial config
-    const depositAmount = financialConfig?.advance_config?.enabled && financialConfig.advance_config.amount > 0
-      ? parseFloat(financialConfig.advance_config.amount || 0)
-      : 0;
+    // For invoice final_amount, use balanceAmount (totalWithVAT - deposit) 
+    // This represents the amount the client needs to pay after deposit
+    // If no deposit, balanceAmount equals totalWithVAT
+    const invoiceFinalAmount = balanceAmount > 0 ? balanceAmount : totalWithVAT;
+
+    // Get financial config from quoteData to check if deposit is enabled
+    const financialConfig = quoteData.quote_financial_configs?.[0] || {};
+    const depositEnabled = depositAmount > 0 || financialConfig?.advance_config?.enabled === true;
 
     // Prepare invoice data with all necessary fields
     const invoiceData = {
@@ -1737,7 +1758,7 @@ export async function convertQuoteToInvoice(quote, userId) {
       net_amount: netAmount, // Net amount (HT)
       tax_amount: taxAmount,
       discount_amount: discountAmount,
-      final_amount: finalAmount,
+      final_amount: invoiceFinalAmount, // Balance amount (totalWithVAT - deposit)
       issue_date: new Date().toISOString().split('T')[0],
       due_date: dueDate.toISOString().split('T')[0],
       payment_method: 'À définir',
@@ -1747,7 +1768,7 @@ export async function convertQuoteToInvoice(quote, userId) {
       // Store deposit information in metadata if invoices table doesn't have a deposit field
       peppol_metadata: {
         deposit_amount: depositAmount,
-        deposit_enabled: financialConfig?.advance_config?.enabled || false,
+        deposit_enabled: depositEnabled,
         converted_from_quote: true,
         original_quote_number: quoteData.quote_number
       }

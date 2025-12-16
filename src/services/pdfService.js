@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { calculateQuoteTotals, formatCurrency } from '../utils/quotePriceCalculator';
 
 /**
  * Generate PDF from quote preview
@@ -116,16 +117,33 @@ export const generateQuotePDF = async (quoteData, quoteNumber, elementToCapture)
  * Generate HTML content for the quote
  */
 const generateQuoteHTML = (quoteData, quoteNumber) => {
-  const { companyInfo, selectedClient, tasks, projectInfo, financialConfig } = quoteData;
+  const { companyInfo, selectedClient, tasks, projectInfo, financialConfig, quote } = quoteData;
+  
+  // Use stored values from quote table if available (for quotes loaded from database)
+  // Otherwise calculate from tasks (for quotes being created)
+  let totalBeforeVAT, vatAmount, totalWithVAT, depositAmount, balanceAmount;
+  
+  if (quote && (quote.total_amount !== undefined || quote.deposit_amount !== undefined)) {
+    // Use stored values from database for consistency
+    totalBeforeVAT = parseFloat(quote.total_amount || 0);
+    vatAmount = parseFloat(quote.tax_amount || 0);
+    depositAmount = parseFloat(quote.deposit_amount || 0);
+    balanceAmount = parseFloat(quote.balance_amount || 0);
+    // Calculate totalWithVAT from stored values
+    totalWithVAT = balanceAmount > 0 && depositAmount > 0 
+      ? balanceAmount + depositAmount 
+      : totalBeforeVAT + vatAmount;
+  } else {
+    // Calculate from tasks (for quotes being created)
+    const financialBreakdown = calculateQuoteTotals(tasks, financialConfig);
+    totalBeforeVAT = financialBreakdown.totalBeforeVAT;
+    vatAmount = financialBreakdown.vatAmount;
+    totalWithVAT = financialBreakdown.totalWithVAT;
+    depositAmount = financialBreakdown.depositAmount;
+    balanceAmount = financialBreakdown.balanceAmount;
+  }
   
   const currentDate = new Date().toLocaleDateString('fr-FR');
-  const totalAmount = tasks.reduce((sum, task) => {
-    const taskMaterialsTotal = (task.materials || []).reduce(
-      (matSum, mat) => matSum + ((parseFloat(mat.price || 0)) * (parseFloat(mat.quantity || 0))),
-      0
-    );
-    return sum + (parseFloat(task.price || 0)) + taskMaterialsTotal;
-  }, 0);
   
   return `
     <div style="max-width: 800px; margin: 0 auto; font-family: Arial, sans-serif;">
@@ -158,18 +176,44 @@ const generateQuoteHTML = (quoteData, quoteNumber) => {
             </tr>
           </thead>
           <tbody>
-            ${tasks.map(task => `
-              <tr>
-                <td style="border: 1px solid #d1d5db; padding: 12px;">${task.description || task.name || ''}</td>
-                <td style="border: 1px solid #d1d5db; padding: 12px; text-align: right;">${(task.price || 0).toFixed(2)} €</td>
-              </tr>
-            `).join('')}
+            ${tasks.map(task => {
+              const taskPrice = parseFloat(task.price || 0);
+              const materialsTotal = (task.materials || []).reduce((sum, mat) => sum + parseFloat(mat.price || 0), 0);
+              return `
+                <tr>
+                  <td style="border: 1px solid #d1d5db; padding: 12px;">${task.description || task.name || ''}</td>
+                  <td style="border: 1px solid #d1d5db; padding: 12px; text-align: right;">${(taskPrice + materialsTotal).toFixed(2)} €</td>
+                </tr>
+              `;
+            }).join('')}
           </tbody>
+          <tfoot>
+            <tr style="background-color: #f3f4f6;">
+              <td style="border: 1px solid #d1d5db; padding: 12px; font-weight: bold;">SOUS-TOTAL HT:</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px; text-align: right; font-weight: bold;">${totalBeforeVAT.toFixed(2)} €</td>
+            </tr>
+            ${financialConfig?.vatConfig?.display ? `
+            <tr style="background-color: #f3f4f6;">
+              <td style="border: 1px solid #d1d5db; padding: 12px; font-weight: bold;">TVA (${financialConfig.vatConfig.rate}%):</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px; text-align: right; font-weight: bold;">${vatAmount.toFixed(2)} €</td>
+            </tr>
+            ` : ''}
+            <tr style="background-color: #e5e7eb;">
+              <td style="border: 1px solid #d1d5db; padding: 12px; font-weight: bold;">TOTAL TTC:</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px; text-align: right; font-weight: bold;">${totalWithVAT.toFixed(2)} €</td>
+            </tr>
+            ${financialConfig?.advanceConfig?.enabled ? `
+            <tr style="background-color: #fef3c7;">
+              <td style="border: 1px solid #d1d5db; padding: 12px; font-weight: bold; color: #92400e;">ACOMPTE À LA COMMANDE:</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px; text-align: right; font-weight: bold; color: #92400e;">${depositAmount.toFixed(2)} €</td>
+            </tr>
+            <tr style="background-color: #fef3c7;">
+              <td style="border: 1px solid #d1d5db; padding: 12px; font-weight: bold; color: #92400e;">SOLDE À LA LIVRAISON:</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px; text-align: right; font-weight: bold; color: #92400e;">${balanceAmount.toFixed(2)} €</td>
+            </tr>
+            ` : ''}
+          </tfoot>
         </table>
-      </div>
-      
-      <div style="text-align: right; font-size: 18px; font-weight: bold; color: #374151;">
-        Total: ${totalAmount.toFixed(2)} €
       </div>
     </div>
   `;
@@ -629,7 +673,7 @@ export const generateExpenseInvoicePDF = async (expenseInvoiceData, invoiceNumbe
 const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language = 'fr') => {
   const { companyInfo, supplier, invoice } = expenseInvoiceData;
   
-  // Color scheme matching invoice preview
+  // Color scheme matching client invoice PDF exactly
   const primaryColor = '#374151'; // Dark gray
   const secondaryColor = '#1f2937'; // Darker gray
   const primaryColorLight = `${primaryColor}20`; // 20% opacity for backgrounds

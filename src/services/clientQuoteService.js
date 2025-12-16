@@ -375,53 +375,15 @@ class ClientQuoteService {
         }).format(numAmount) + '€';
       };
       
-      // Calculate final amount using the same logic as QuotePreview and EmailService
-      // First, try to recalculate from tasks and materials (most accurate)
-      let calculatedTotal = 0;
-      if (quote.quote_tasks && quote.quote_tasks.length > 0) {
-        calculatedTotal = quote.quote_tasks.reduce((sum, task) => {
-          // Task price (labor)
-          const taskPrice = parseFloat(task.total_price) || ((parseFloat(task.quantity) || 1) * (parseFloat(task.unit_price) || 0));
-          
-          // Materials total (price is already total, no multiplication needed)
-          const taskMaterials = quote.quote_materials?.filter(m => m.quote_task_id === task.id) || [];
-          const taskMaterialsTotal = taskMaterials.reduce((matSum, mat) => 
-            matSum + (parseFloat(mat.unit_price || mat.price) || 0), 0);
-          
-          return sum + taskPrice + taskMaterialsTotal;
-        }, 0);
-      }
-      
-      // If we have a calculated total, use it with VAT
-      let totalWithVAT = 0;
-      if (calculatedTotal > 0) {
-        // Get VAT rate from financial config
-        const financialConfig = quote.quote_financial_configs?.[0];
-        const vatRate = financialConfig?.vat_config?.display ? (financialConfig.vat_config.rate || 0) : 0;
-        const vatAmount = calculatedTotal * (vatRate / 100);
-        totalWithVAT = calculatedTotal + vatAmount;
-      } else {
-        // Fallback: Use final_amount if available, otherwise calculate from total_amount + tax_amount
-        totalWithVAT = parseFloat(quote.final_amount || 0);
-        if (!totalWithVAT || totalWithVAT === 0) {
-          const totalAmount = parseFloat(quote.total_amount || 0);
-          const taxAmount = parseFloat(quote.tax_amount || 0);
-          totalWithVAT = totalAmount + taxAmount;
-        }
-      }
-      
-      // Subtract deposit from displayed amount (show balance)
-      const financialConfig = quote.quote_financial_configs?.[0];
-      let quoteAmount = totalWithVAT;
-      if (financialConfig?.advance_config?.enabled && financialConfig.advance_config.amount > 0) {
-        const depositAmount = parseFloat(financialConfig.advance_config.amount || 0);
-        quoteAmount = totalWithVAT - depositAmount;
-      }
-
-      // Calculate financial breakdown using EmailService helper
+      // Use stored values from quotes table directly for consistency
+      // Calculate financial breakdown using EmailService helper (uses stored values)
       const { EmailService } = await import('./emailService');
       const financialBreakdown = EmailService.calculateFinancialBreakdown(quote);
       
+      // Use balanceAmount from stored values (totalWithVAT - deposit)
+      // This ensures consistency with all other email functions
+      const quoteAmount = financialBreakdown.balanceAmount;
+
       // Prepare variables for template rendering
         const variables = {
           client_name: clientData.client_name || 'Madame, Monsieur',

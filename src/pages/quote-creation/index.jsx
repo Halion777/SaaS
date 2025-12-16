@@ -22,7 +22,7 @@ import QuoteSendModal from './components/QuoteSendModal';
 
 // AIScoring removed
 
-import { generateQuoteNumber, createQuote, fetchQuoteById, updateQuote, saveQuoteDraft, deleteQuoteDraftById, deleteQuoteDraftByQuoteNumber } from '../../services/quotesService';
+import { generateQuoteNumber, createQuote, fetchQuoteById, updateQuote, saveQuoteDraft, deleteQuoteDraftById, deleteQuoteDraftByQuoteNumber, getQuoteByQuoteNumber } from '../../services/quotesService';
 import { uploadQuoteFile, uploadQuoteSignature } from '../../services/quoteFilesService';
 
 import { saveCompanyInfo } from '../../services/companyInfoService';
@@ -36,6 +36,7 @@ import EmailService from '../../services/emailService';
 import { generatePublicShareLink } from '../../services/shareService';
 
 import { getPublicUrl } from '../../services/storageService';
+import { calculateQuoteTotals } from '../../utils/quotePriceCalculator';
 
 
 
@@ -245,6 +246,11 @@ const QuoteCreation = () => {
           quoteNumber: draftQuoteNumber || d.projectInfo?.quoteNumber
         };
         setProjectInfo(restoredProjectInfo);
+        
+        // Also store quote number in localStorage for consistency (used in send flow)
+        if (draftQuoteNumber) {
+          localStorage.setItem('pre_generated_quote_number', draftQuoteNumber);
+        }
 
         setTasks(d.tasks || []);
 
@@ -1069,31 +1075,9 @@ const QuoteCreation = () => {
     try {
         const savedTime = new Date().toISOString();
 
-        // Calculate total amount and final amount with VAT for correct price display in quotes management
-      // Note: Users enter TOTAL prices for materials (already multiplied by quantity)
-      // So mat.price should always be the total price for that material - NEVER multiply by quantity
-        const totalAmount = tasks.reduce((sum, task) => {
-        const taskMaterialsTotal = task.materials.reduce((matSum, mat) => {
-          // mat.price is ALWAYS total price - users enter total prices
-          // DO NOT multiply by quantity - that would cause double multiplication
-          const materialPrice = parseFloat(mat.price) || 0;
-          return matSum + materialPrice;
-        }, 0);
-        // task.price is also total price for the task
-        return sum + (parseFloat(task.price) || 0) + taskMaterialsTotal;
-        }, 0);
-
-        const taxAmount = financialConfig?.vatConfig?.display
-          ? (totalAmount * (financialConfig.vatConfig.rate || 20) / 100)
-          : 0;
-
-        // Calculate the final amount including VAT
-        const finalAmount = totalAmount + taxAmount;
-
-        // Calculate deposit amount if enabled
-        const depositAmount = financialConfig?.advanceConfig?.enabled
-          ? parseFloat(financialConfig.advanceConfig.amount || 0)
-          : 0;
+        // Calculate totals using centralized calculator
+        const financialBreakdown = calculateQuoteTotals(tasks, financialConfig);
+        const { totalBeforeVAT: totalAmount, vatAmount: taxAmount, totalWithVAT: finalAmount, depositAmount } = financialBreakdown;
 
         // Include calculated amounts in projectInfo for quotes management display
         const enhancedProjectInfo = {
@@ -1751,44 +1735,20 @@ const QuoteCreation = () => {
 
       if (isEditing && editingQuoteId) {
 
-        // Update existing quote
-
-        const totalAmount = tasks.reduce((sum, task) => {
-
-          const taskMaterialsTotal = task.materials.reduce((matSum, mat) =>
-
-            matSum + (parseFloat(mat.price) || 0), 0);
-
-          return sum + (task.price || 0) + taskMaterialsTotal;
-
-        }, 0);
-
-
-
-        // Calculate deposit amount if enabled
-        const depositAmount = data.financialConfig?.advanceConfig?.enabled
-          ? parseFloat(data.financialConfig.advanceConfig.amount || 0)
-          : 0;
+        // Update existing quote - calculate totals using centralized calculator
+        const financialBreakdown = calculateQuoteTotals(tasks, data.financialConfig);
+        const { totalBeforeVAT: totalAmount, vatAmount: taxAmount, totalWithVAT: finalAmount, discountAmount, depositAmount } = financialBreakdown;
 
         const quoteData = {
-
           title: projectInfo.description || 'Nouveau devis',
-
           description: projectInfo.description || '',
-
           project_categories: projectInfo.categories || [],
-
           custom_category: projectInfo.customCategory || '',
-
           deadline: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : null,
-
           total_amount: totalAmount,
-
-          tax_amount: data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0,
-
-          discount_amount: 0,
-
-          final_amount: totalAmount + (data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0),
+          tax_amount: taxAmount,
+          discount_amount: discountAmount,
+          final_amount: finalAmount,
 
           // Add deposit amount to the quote data
           advance_payment_amount: depositAmount,
@@ -1888,96 +1848,72 @@ const QuoteCreation = () => {
       // In this case, we still need to create a quote in the quotes table and clean up the draft
       // So we continue with the quote creation flow below
 
-      // Create new quote (existing logic)
+      // Check for existing quote number from draft or localStorage
+      // Priority: projectInfo.quoteNumber > localStorage pre_generated > generate new
+      let finalQuoteNumber = projectInfo.quoteNumber || localStorage.getItem('pre_generated_quote_number');
 
-      // Check for pre-generated quote number first, or use existing quote number from draft
-      let finalQuoteNumber = localStorage.getItem('pre_generated_quote_number') || projectInfo.quoteNumber;
+      // If we have a quote number, check if a quote already exists with it
+      let existingQuote = null;
+      if (finalQuoteNumber && user?.id) {
+        const { data: existingQuoteData, error: checkError } = await getQuoteByQuoteNumber(user.id, finalQuoteNumber);
+        if (checkError) {
+          console.warn('Error checking for existing quote:', checkError);
+        } else if (existingQuoteData) {
+          existingQuote = existingQuoteData;
+          console.log('Found existing quote with number:', finalQuoteNumber, 'ID:', existingQuoteData.id);
+        }
+      }
 
-      if (!finalQuoteNumber) {
+      // Only generate a new quote number if we don't have one AND no existing quote was found
+      if (!finalQuoteNumber && !existingQuote) {
         // Generate quote number using the service
-
         const { data: quoteNumber, error: numberError } = await generateQuoteNumber(user?.id);
 
-
-
         if (numberError) {
-
           console.warn('Error generating quote number, using fallback:', numberError);
-
         }
-
-
 
         finalQuoteNumber = quoteNumber;
 
-
         // If backend didn't provide a number, generate a fallback with timestamp for uniqueness
-
         if (!finalQuoteNumber) {
-
           const timestamp = Date.now();
-
           const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-
           finalQuoteNumber = `${new Date().getFullYear()}-${timestamp}-${randomSuffix}`;
-
         }
-      } else {
-        // Clear the pre-generated number since we're using it
+      } else if (finalQuoteNumber) {
+        // Clear the pre-generated number since we're using the existing one
         localStorage.removeItem('pre_generated_quote_number');
-
       }
 
 
 
-      // Calculate totals more accurately
-
-      const totalAmount = tasks.reduce((sum, task) => {
-
-        const taskMaterialsTotal = task.materials.reduce((matSum, mat) =>
-
-          matSum + (parseFloat(mat.price) || 0), 0);
-
-        return sum + (task.price || 0) + taskMaterialsTotal;
-
-      }, 0);
-
-
+      // Calculate totals using centralized calculator
+      const financialBreakdown = calculateQuoteTotals(tasks, data.financialConfig);
+      const { totalBeforeVAT: totalAmount, vatAmount: taxAmount, totalWithVAT, balanceAmount, discountAmount, depositAmount } = financialBreakdown;
+      // Use balanceAmount (totalWithVAT - deposit) for final_amount to show the amount client needs to pay
+      const finalAmount = balanceAmount;
 
       // For new quotes, files will be uploaded when the quote is actually created
-
       const uploadedFiles = files;
 
-
-
       const quoteData = {
-
         user_id: user?.id,
-
         profile_id: currentProfile?.id,
-
         client_id: selectedClient?.value,
-
         quote_number: finalQuoteNumber,
         status: 'draft',
-
         title: projectInfo.description || 'Nouveau devis',
-
         description: projectInfo.description || '',
-
         project_categories: projectInfo.categories || [],
-
         custom_category: projectInfo.customCategory || '',
-
         start_date: new Date().toISOString().split('T')[0],
-
         total_amount: totalAmount,
-
-        tax_amount: data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0,
-
-        discount_amount: 0,
-
-        final_amount: totalAmount + (data.financialConfig?.vatConfig?.display ? (totalAmount * (data.financialConfig.vatConfig.rate || 20) / 100) : 0),
+        tax_amount: taxAmount,
+        discount_amount: discountAmount,
+        final_amount: finalAmount,
+        deposit_amount: depositAmount,
+        balance_amount: balanceAmount,
 
         valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
 
@@ -2036,27 +1972,90 @@ const QuoteCreation = () => {
 
 
 
-      // Create quote in database with draft status
+      // If quote already exists, update it instead of creating a new one
+      let quoteId;
+      if (existingQuote) {
+        console.log('Updating existing quote instead of creating new one:', existingQuote.id);
+        // Update existing quote - calculate totals using centralized calculator
+        const financialBreakdown = calculateQuoteTotals(tasks, data.financialConfig);
+        const { totalBeforeVAT: totalAmount, vatAmount: taxAmount, totalWithVAT, balanceAmount, discountAmount, depositAmount } = financialBreakdown;
+        // Use balanceAmount (totalWithVAT - deposit) for final_amount to show the amount client needs to pay
+        const finalAmount = balanceAmount;
 
-      const { data: createdQuote, error: createError } = await createQuote(quoteData);
+        const updateData = {
+          title: projectInfo.description || 'Nouveau devis',
+          description: projectInfo.description || '',
+          project_categories: projectInfo.categories || [],
+          custom_category: projectInfo.customCategory || '',
+          total_amount: totalAmount,
+          tax_amount: taxAmount,
+          discount_amount: discountAmount,
+          final_amount: finalAmount,
+          deposit_amount: depositAmount,
+          balance_amount: balanceAmount,
+          advance_payment_amount: depositAmount,
+          vat_config: data.financialConfig?.vatConfig || null,
+          marketing_banner: data.financialConfig?.marketingBannerConfig || null,
+          valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          terms_conditions: data.financialConfig?.defaultConditions?.text || '',
+          quote_number: finalQuoteNumber, // Preserve the quote number
+          tasks: tasks.map((task, index) => ({
+            name: task.description || task.name || '',
+            description: task.description || task.name || '',
+            quantity: task.quantity || 1,
+            unit: task.unit || 'piece',
+            unit_price: task.price || task.unit_price || 0,
+            total_price: (task.price || task.unit_price || 0) * (task.quantity || 1),
+            duration: task.duration || 0,
+            duration_unit: task.durationUnit || 'minutes',
+            pricing_type: task.pricingType || 'flat',
+            hourly_rate: task.hourlyRate || 0,
+            order_index: index,
+            materials: task.materials || []
+          })),
+          files: uploadedFiles.map((file, index) => ({
+            file_name: file.name || file.file_name || '',
+            file_path: file.file_path || file.path || file.file_path || file.url || '',
+            file_size: file.size || file.file_size || 0,
+            mime_type: file.type || file.mime_type || '',
+            file_category: 'attachment',
+            order_index: index
+          }))
+        };
 
+        const { data: updatedQuote, error: updateError } = await updateQuote(existingQuote.id, updateData);
 
+        if (updateError) {
+          console.error('Error updating existing quote:', updateError);
+          setIsSaving(false);
+          return;
+        }
 
-      if (createError) {
+        if (!updatedQuote) {
+          console.error('Error updating quote: updatedQuote is null or undefined');
+          setIsSaving(false);
+          return;
+        }
 
-        console.error('Error creating draft quote in backend:', createError);
+        quoteId = updatedQuote.id;
+      } else {
+        // Create quote in database with draft status
+        const { data: createdQuote, error: createError } = await createQuote(quoteData);
 
-        return;
+        if (createError) {
+          console.error('Error creating draft quote in backend:', createError);
+          setIsSaving(false);
+          return;
+        }
 
+        if (!createdQuote) {
+          console.error('Error creating quote: createdQuote is null or undefined');
+          setIsSaving(false);
+          return;
+        }
+
+        quoteId = createdQuote.id;
       }
-
-      if (!createdQuote) {
-        console.error('Error creating quote: createdQuote is null or undefined');
-        setIsSaving(false);
-        return;
-      }
-
-      const quoteId = createdQuote.id;
 
 
 
@@ -2764,45 +2763,27 @@ const QuoteCreation = () => {
 
       if (isEditing && editingQuoteId) {
 
-        // Update existing quote and send it
-
-        const totalAmount = tasks.reduce((sum, task) => {
-
-          const taskMaterialsTotal = task.materials.reduce((matSum, mat) =>
-
-            matSum + (parseFloat(mat.price) || 0), 0);
-
-          return sum + (task.price || 0) + taskMaterialsTotal;
-
-        }, 0);
-
-
+        // Update existing quote and send it - calculate totals using centralized calculator
+        const financialBreakdown = calculateQuoteTotals(tasks, sendData.financialConfig);
+        const { totalBeforeVAT: totalAmount, vatAmount: taxAmount, totalWithVAT, balanceAmount, discountAmount, depositAmount } = financialBreakdown;
+        // Use balanceAmount (totalWithVAT - deposit) for final_amount to show the amount client needs to pay
+        const finalAmount = balanceAmount;
 
         const quoteData = {
-
           title: projectInfo.description || 'Nouveau devis',
-
           description: projectInfo.description || '',
-
           status: 'sent', // Change status to sent
-
           // Preserve the existing quote number when editing
-
           quote_number: projectInfo.quoteNumber,
-
           project_categories: projectInfo.categories || [],
-
           custom_category: projectInfo.customCategory || '',
-
           deadline: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : null,
-
           total_amount: totalAmount,
-
-          tax_amount: sendData.financialConfig?.vatConfig?.display ? (totalAmount * (sendData.financialConfig.vatConfig.rate || 20) / 100) : 0,
-
-          discount_amount: 0,
-
-          final_amount: totalAmount + (sendData.financialConfig?.vatConfig?.display ? (totalAmount * (sendData.financialConfig.vatConfig.rate || 20) / 100) : 0),
+          tax_amount: taxAmount,
+          discount_amount: discountAmount,
+          final_amount: finalAmount,
+          deposit_amount: depositAmount,
+          balance_amount: balanceAmount,
 
           valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).split('T')[0],
 
@@ -2942,17 +2923,11 @@ const QuoteCreation = () => {
 
 
 
-      // Calculate totals more accurately
-
-      const totalAmount = tasks.reduce((sum, task) => {
-
-        const taskMaterialsTotal = task.materials.reduce((matSum, mat) =>
-
-          matSum + (parseFloat(mat.price) || 0), 0);
-
-        return sum + (task.price || 0) + taskMaterialsTotal;
-
-      }, 0);
+      // Calculate totals using centralized calculator
+      const financialBreakdown = calculateQuoteTotals(tasks, sendData.financialConfig);
+      const { totalBeforeVAT: totalAmount, vatAmount: taxAmount, totalWithVAT, balanceAmount, discountAmount, depositAmount } = financialBreakdown;
+      // Use balanceAmount (totalWithVAT - deposit) for final_amount to show the amount client needs to pay
+      const finalAmount = balanceAmount;
 
       // Note: Client email update already handled at the beginning of the function
 
@@ -2983,11 +2958,13 @@ const QuoteCreation = () => {
 
         total_amount: totalAmount,
 
-        tax_amount: sendData.financialConfig?.vatConfig?.display ? (totalAmount * (sendData.financialConfig.vatConfig.rate || 20) / 100) : 0,
+        tax_amount: taxAmount,
 
-        discount_amount: 0,
+        discount_amount: discountAmount,
 
-        final_amount: totalAmount + (sendData.financialConfig?.vatConfig?.display ? (totalAmount * (sendData.financialConfig.vatConfig.rate || 20) / 100) : 0),
+        final_amount: finalAmount,
+        deposit_amount: depositAmount,
+        balance_amount: balanceAmount,
 
         valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).split('T')[0],
 

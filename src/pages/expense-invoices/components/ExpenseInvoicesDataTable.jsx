@@ -14,6 +14,30 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
     return window.innerWidth < 1024 ? 'card' : 'table';
   }); // 'table' or 'card'
 
+  // Helper to get display invoice number (prefer original client invoice number from buyerReference)
+  const getDisplayInvoiceNumber = (invoice) => {
+    // For Peppol invoices, check if buyerReference contains the original client invoice number
+    if (invoice.source === 'peppol' && invoice.peppol_metadata?.buyerReference) {
+      const buyerRef = invoice.peppol_metadata.buyerReference;
+      // If buyerReference looks like a client invoice number (FACT-*), use it
+      // This ensures consistency - users see the same invoice number they sent
+      if (buyerRef && (buyerRef.match(/^FACT-\d+$/i) || buyerRef.startsWith('FACT-'))) {
+        return buyerRef;
+      }
+    }
+    // Otherwise, use the stored invoice_number (Peppol-generated or manual)
+    return invoice.invoice_number;
+  };
+
+  // Helper to get Peppol invoice number (for display in details)
+  const getPeppolInvoiceNumber = (invoice) => {
+    // For Peppol invoices, return the Peppol-generated invoice number
+    if (invoice.source === 'peppol') {
+      return invoice.invoice_number;
+    }
+    return null;
+  };
+
   // Auto-switch to card view on mobile/tablet
   React.useEffect(() => {
     const handleResize = () => {
@@ -197,8 +221,11 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                   onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
                 />
                 <div>
-                  <div className="text-sm font-medium text-foreground">{invoice.invoice_number}</div>
+                  <div className="text-sm font-medium text-foreground">{getDisplayInvoiceNumber(invoice)}</div>
                   <div className="text-xs text-muted-foreground">{invoice.category || 'N/A'}</div>
+                  {invoice.source === 'peppol' && getPeppolInvoiceNumber(invoice) !== getDisplayInvoiceNumber(invoice) && (
+                    <div className="text-xs text-muted-foreground">Peppol: {getPeppolInvoiceNumber(invoice)}</div>
+                  )}
                 </div>
               </div>
               <div className="flex items-center space-x-1">
@@ -406,8 +433,11 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                     />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-foreground">{invoice.invoice_number}</div>
+                    <div className="text-sm font-medium text-foreground">{getDisplayInvoiceNumber(invoice)}</div>
                     <div className="text-xs text-muted-foreground">{invoice.category || 'N/A'}</div>
+                    {invoice.source === 'peppol' && getPeppolInvoiceNumber(invoice) !== getDisplayInvoiceNumber(invoice) && (
+                      <div className="text-xs text-muted-foreground">Peppol: {getPeppolInvoiceNumber(invoice)}</div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-foreground">{invoice.supplier_name}</div>

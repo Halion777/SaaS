@@ -82,6 +82,34 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
   const buyerRef = invoice?.peppol_metadata?.buyerReference;
   const messageId = invoice?.peppol_message_id || invoice?.peppol_metadata?.messageId;
 
+  // Helper to get display invoice number (prefer original client invoice number from buyerReference)
+  const getDisplayInvoiceNumber = (invoice) => {
+    // For Peppol invoices, check if buyerReference contains the original client invoice number
+    if (invoice.source === 'peppol' && invoice.peppol_metadata?.buyerReference) {
+      const buyerRef = invoice.peppol_metadata.buyerReference;
+      // If buyerReference looks like a client invoice number (FACT-*), use it
+      // This ensures consistency - users see the same invoice number they sent
+      if (buyerRef && (buyerRef.match(/^FACT-\d+$/i) || buyerRef.startsWith('FACT-'))) {
+        return buyerRef;
+      }
+    }
+    // Otherwise, use the stored invoice_number (Peppol-generated or manual)
+    return invoice.invoice_number;
+  };
+
+  // Helper to get Peppol invoice number (for display in details)
+  const getPeppolInvoiceNumber = (invoice) => {
+    // For Peppol invoices, return the Peppol-generated invoice number
+    if (invoice.source === 'peppol') {
+      return invoice.invoice_number;
+    }
+    return null;
+  };
+
+  const displayInvoiceNumber = getDisplayInvoiceNumber(invoice);
+  const peppolInvoiceNumber = getPeppolInvoiceNumber(invoice);
+  const showPeppolNumber = invoice.source === 'peppol' && peppolInvoiceNumber !== displayInvoiceNumber;
+
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-card border border-border rounded-lg shadow-xl max-w-2xl w-full overflow-hidden">
@@ -94,7 +122,10 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-foreground">{t('expenseInvoices.modal.title', 'Invoice Details')}</h2>
-                <p className="text-sm text-muted-foreground">{invoice.invoice_number}</p>
+                <p className="text-sm text-muted-foreground">{displayInvoiceNumber}</p>
+                {showPeppolNumber && (
+                  <p className="text-xs text-muted-foreground mt-1">Peppol: {peppolInvoiceNumber}</p>
+                )}
               </div>
             </div>
             <button
@@ -141,7 +172,10 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.invoiceInfo.invoiceNumber', 'Invoice Number')}</label>
-                    <p className="text-sm text-foreground mt-1">{invoice.invoice_number}</p>
+                    <p className="text-sm text-foreground mt-1">{displayInvoiceNumber}</p>
+                    {showPeppolNumber && (
+                      <p className="text-xs text-muted-foreground mt-1">Peppol Invoice Number: {peppolInvoiceNumber}</p>
+                    )}
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.invoiceInfo.status', 'Status')}</label>
@@ -293,6 +327,12 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.buyerReference', 'Buyer Reference')}</label>
                         <p className="text-sm text-foreground mt-1">{buyerRef}</p>
+                      </div>
+                    )}
+                    {showPeppolNumber && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.peppolInvoiceNumber', 'Peppol Invoice Number')}</label>
+                        <p className="text-sm text-foreground mt-1">{peppolInvoiceNumber}</p>
                       </div>
                     )}
                     {invoice.peppol_metadata.orderReference && (

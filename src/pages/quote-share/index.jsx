@@ -246,25 +246,20 @@ const PublicQuoteShareViewer = () => {
     };
   }) || [];
 
-  // Calculate totals using the same logic as QuotePreview
-  const totalPrice = tasksWithMaterials.reduce((sum, task) => {
-    // Task price (labor)
-    const taskPrice = parseFloat(task.total_price) || ((parseFloat(task.quantity) || 1) * (parseFloat(task.unit_price) || 0));
-    
-    // Materials total (ALWAYS included in calculation, regardless of display setting)
-    // Price is already total, no multiplication needed
-    const taskMaterialsTotal = task.materials.reduce(
-      (matSum, mat) => matSum + (parseFloat(mat.unit_price || mat.price) || 0),
-      0
-    );
-    
-    return sum + taskPrice + taskMaterialsTotal;
-  }, 0);
-
-  const vatAmount = financialConfig.vatConfig?.display ? (totalPrice * financialConfig.vatConfig.rate / 100) : 0;
-  const totalWithVAT = totalPrice + vatAmount;
-  const advanceAmount = financialConfig.advanceConfig?.enabled ? (parseFloat(financialConfig.advanceConfig.amount) || 0) : 0;
-  const balanceAmount = totalWithVAT - advanceAmount;
+  // Use stored values from quotes table directly for consistency and performance
+  // These values are calculated and stored when the quote is created/updated
+  const totalBeforeVAT = parseFloat(quote.total_amount || 0);
+  const vatAmount = parseFloat(quote.tax_amount || 0);
+  const discountAmount = parseFloat(quote.discount_amount || 0);
+  const depositAmount = parseFloat(quote.deposit_amount || 0);
+  const balanceAmount = parseFloat(quote.balance_amount || 0);
+  
+  // Calculate totalWithVAT from stored values
+  // If balance_amount exists, totalWithVAT = balanceAmount + depositAmount
+  // Otherwise, calculate from total_amount + tax_amount
+  const totalWithVAT = balanceAmount > 0 && depositAmount > 0 
+    ? balanceAmount + depositAmount 
+    : totalBeforeVAT + vatAmount - discountAmount;
 
   // Helper function to format VAT number with country prefix
   const formatVATWithCountry = (vatNumber, countryCode) => {
@@ -655,7 +650,7 @@ const PublicQuoteShareViewer = () => {
               <div className="w-full sm:w-80 lg:w-96 space-y-3">
                 <div className="flex justify-between text-gray-600 text-xs sm:text-sm">
                   <span>{t('quoteShare.financial.subtotal')}:</span>
-                <span className="font-medium">{currency(totalPrice)}</span>
+                <span className="font-medium">{currency(totalBeforeVAT)}</span>
               </div>
               {financialConfig.vatConfig?.display && (
                   <div className="flex justify-between text-gray-600 text-xs sm:text-sm">
@@ -663,7 +658,7 @@ const PublicQuoteShareViewer = () => {
                   <span className="font-medium">{currency(vatAmount)}</span>
                 </div>
               )}
-                {financialConfig.advanceConfig?.enabled && financialConfig.advanceConfig.amount > 0 ? (
+                {(depositAmount > 0 || (financialConfig.advanceConfig?.enabled && financialConfig.advanceConfig.amount > 0)) ? (
                   <>
                     <div className="flex justify-between text-gray-600 text-xs sm:text-sm">
                       <span>{t('quoteShare.financial.totalInclTax', 'Total TTC')}:</span>
@@ -671,7 +666,7 @@ const PublicQuoteShareViewer = () => {
                 </div>
                   <div className="flex justify-between text-gray-600 text-xs sm:text-sm">
                     <span>{t('quoteShare.financial.advancePayment')}:</span>
-                  <span className="font-medium">{currency(financialConfig.advanceConfig.amount)}</span>
+                  <span className="font-medium">{currency(depositAmount)}</span>
                 </div>
                   <div className="flex justify-between text-base sm:text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
                       <span>{t('quoteShare.financial.total')}:</span>

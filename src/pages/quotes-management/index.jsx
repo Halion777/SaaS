@@ -350,49 +350,9 @@ const QuotesManagement = () => {
         
         // Transform backend data to match frontend structure
           const transformedQuotes = (quotesData || []).map(quote => {
-            // Calculate the final amount including VAT if enabled
-            // Use the same calculation logic as QuotePreview for consistency
-            
-            // First, try to recalculate from tasks and materials (most accurate)
-            let calculatedTotal = 0;
-            if (quote.quote_tasks && quote.quote_tasks.length > 0) {
-              calculatedTotal = quote.quote_tasks.reduce((sum, task) => {
-                // Task price (labor)
-                const taskPrice = parseFloat(task.total_price) || ((parseFloat(task.quantity) || 1) * (parseFloat(task.unit_price) || 0));
-                
-                // Materials total (price is already total, no multiplication needed)
-                const taskMaterials = quote.quote_materials?.filter(m => m.quote_task_id === task.id) || [];
-                const taskMaterialsTotal = taskMaterials.reduce((matSum, mat) => 
-                  matSum + (parseFloat(mat.unit_price || mat.price) || 0), 0);
-                
-                return sum + taskPrice + taskMaterialsTotal;
-              }, 0);
-            }
-            
-            // If we have a calculated total, use it with VAT
-            let finalAmount = 0;
-            if (calculatedTotal > 0) {
-              // Get VAT rate from financial config
-              const financialConfig = quote.quote_financial_configs?.[0];
-              const vatRate = financialConfig?.vat_config?.display ? (financialConfig.vat_config.rate || 0) : 0;
-              const vatAmount = calculatedTotal * (vatRate / 100);
-              finalAmount = calculatedTotal + vatAmount;
-            } else {
-              // Fallback: Use final_amount if available, otherwise calculate from total_amount + tax_amount
-              finalAmount = parseFloat(quote.final_amount || 0);
-              if (!finalAmount || finalAmount === 0) {
-                const totalAmount = parseFloat(quote.total_amount || 0);
-                const taxAmount = parseFloat(quote.tax_amount || 0);
-                finalAmount = totalAmount + taxAmount;
-              }
-            }
-            
-            // Subtract deposit from displayed amount (show balance)
-            const financialConfig = quote.quote_financial_configs?.[0];
-            if (financialConfig?.advance_config?.enabled && financialConfig.advance_config.amount > 0) {
-              const depositAmount = parseFloat(financialConfig.advance_config.amount || 0);
-              finalAmount = finalAmount - depositAmount;
-            }
+            // Use stored values from quotes table directly for consistency
+            // Display balance amount (total with VAT minus deposit) for quotes management
+            const finalAmount = parseFloat(quote.balance_amount || quote.final_amount || 0);
             
             return {
               id: quote.id,

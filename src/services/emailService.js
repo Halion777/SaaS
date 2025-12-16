@@ -35,69 +35,45 @@ export class EmailService {
   /**
    * Calculate complete financial breakdown for quote emails
    * Returns all financial details: totals, VAT, deposit, balance
-   * @param {Object} quote - Quote object (should have quote_tasks, quote_materials, and quote_financial_configs)
+   * Uses stored values from quotes table directly for consistency
+   * @param {Object} quote - Quote object (should have stored amounts from database)
    * @returns {Object} - Financial breakdown object with all calculated values
    */
   static calculateFinancialBreakdown(quote) {
-    // First, try to recalculate from tasks and materials (most accurate, matches QuotePreview)
-    let calculatedTotal = 0;
-    if (quote.quote_tasks && quote.quote_tasks.length > 0) {
-      calculatedTotal = quote.quote_tasks.reduce((sum, task) => {
-        // Task price (labor)
-        const taskPrice = parseFloat(task.total_price) || ((parseFloat(task.quantity) || 1) * (parseFloat(task.unit_price) || 0));
-        
-        // Materials total (price is already total, no multiplication needed)
-        const taskMaterials = quote.quote_materials?.filter(m => m.quote_task_id === task.id) || [];
-        const taskMaterialsTotal = taskMaterials.reduce((matSum, mat) => 
-          matSum + (parseFloat(mat.unit_price || mat.price) || 0), 0);
-        
-        return sum + taskPrice + taskMaterialsTotal;
-      }, 0);
-    }
+    // Use stored values from quotes table directly for consistency and performance
+    // These values are calculated and stored when the quote is created/updated
+    const totalBeforeVAT = parseFloat(quote.total_amount || 0);
+    const vatAmount = parseFloat(quote.tax_amount || 0);
+    const discountAmount = parseFloat(quote.discount_amount || 0);
+    const depositAmount = parseFloat(quote.deposit_amount || 0);
+    const balanceAmount = parseFloat(quote.balance_amount || 0);
     
-    // Get financial config
-    const financialConfig = quote.quote_financial_configs?.[0];
+    // Calculate netAmount (after discount, before VAT)
+    const netAmount = totalBeforeVAT - discountAmount;
     
-    // Calculate totals
-    let totalBeforeVAT = calculatedTotal || parseFloat(quote.total_amount || 0);
+    // Calculate totalWithVAT from stored values
+    const totalWithVAT = balanceAmount > 0 && depositAmount > 0 
+      ? balanceAmount + depositAmount 
+      : totalBeforeVAT + vatAmount - discountAmount;
     
-    // Calculate VAT
-    const vatEnabled = financialConfig?.vat_config?.display || false;
-    const vatRate = vatEnabled ? (financialConfig.vat_config?.rate || 0) : 0;
-    const vatAmount = totalBeforeVAT * (vatRate / 100);
-    
-    // If calculatedTotal is 0, try to get VAT from stored tax_amount
-    let finalVATAmount = vatAmount;
-    if (calculatedTotal === 0 && quote.tax_amount) {
-      finalVATAmount = parseFloat(quote.tax_amount || 0);
-      // Try to reverse calculate totalBeforeVAT if we have tax_amount
-      if (vatRate > 0) {
-        totalBeforeVAT = finalVATAmount / (vatRate / 100);
-      }
-    }
-    
-    // Calculate total with VAT
-    let totalWithVAT = totalBeforeVAT + finalVATAmount;
-    if (calculatedTotal === 0 && quote.final_amount) {
-      totalWithVAT = parseFloat(quote.final_amount || 0);
-    }
-    
-    // Calculate deposit
-    const depositEnabled = financialConfig?.advance_config?.enabled || false;
-    const depositAmount = depositEnabled ? parseFloat(financialConfig.advance_config?.amount || 0) : 0;
-    
-    // Calculate balance (total with VAT minus deposit)
-    const balanceAmount = totalWithVAT - depositAmount;
+    // Get financial config for flags
+    const financialConfig = quote.quote_financial_configs?.[0] || {};
+    const vatConfig = financialConfig?.vatConfig || financialConfig?.vat_config || {};
+    const advanceConfig = financialConfig?.advanceConfig || financialConfig?.advance_config || {};
     
     return {
       totalBeforeVAT,
-      vatEnabled,
-      vatRate,
-      vatAmount: finalVATAmount,
+      netAmount,
+      vatAmount,
       totalWithVAT,
-      depositEnabled,
+      discountAmount,
       depositAmount,
-      balanceAmount
+      balanceAmount,
+      vatEnabled: vatConfig.display !== false && vatConfig.display !== undefined,
+      vatRate: parseFloat(vatConfig.rate || 0),
+      discountEnabled: financialConfig?.discountConfig?.enabled === true || financialConfig?.discount_config?.enabled === true,
+      discountRate: parseFloat(financialConfig?.discountConfig?.rate || financialConfig?.discount_config?.rate || 0),
+      depositEnabled: advanceConfig.enabled === true
     };
   }
   
@@ -493,12 +469,19 @@ export class EmailService {
       // Calculate financial breakdown for email variables
       const financialBreakdown = this.calculateFinancialBreakdown(quote);
       
-      // Prefer total with VAT if available, otherwise fall back to total before VAT or stored amounts
-      const displayAmount = this.formatAmount(
-        financialBreakdown.totalWithVAT ||
-        financialBreakdown.totalBeforeVAT ||
-        parseFloat(quote.final_amount || quote.total_amount || 0)
-      );
+      // Use balanceAmount (total with VAT minus deposit) for quote_amount to be consistent with other emails
+      // This shows the amount the client needs to pay after deposit
+      // Always prioritize balanceAmount - if it's 0 or undefined, recalculate to ensure accuracy
+      let displayAmount;
+      if (financialBreakdown.balanceAmount !== undefined && financialBreakdown.balanceAmount !== null) {
+        displayAmount = this.formatAmount(financialBreakdown.balanceAmount);
+      } else if (financialBreakdown.totalWithVAT !== undefined && financialBreakdown.totalWithVAT !== null) {
+        // If balanceAmount is not available, use totalWithVAT (deposit might not be enabled)
+        displayAmount = this.formatAmount(financialBreakdown.totalWithVAT);
+      } else {
+        // Last resort: use stored final_amount (which should now be balanceAmount after our fix)
+        displayAmount = this.formatAmount(parseFloat(quote.final_amount || quote.total_amount || 0));
+      }
       
       const variables = {
         client_name: client.name || client.client?.name || 'Madame, Monsieur',

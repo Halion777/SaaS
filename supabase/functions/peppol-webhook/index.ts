@@ -622,9 +622,22 @@ function parseUBLInvoice(ublXml: string): any {
       return supplierName;
     })();
 
+    // Fallback for invoice ID if extraction failed
+    const fallbackInvoiceId = (() => {
+      if (!invoiceId || invoiceId.trim() === '') {
+        // Try regex extraction from UBL XML
+        const idFromRegex = regexText('ID');
+        if (idFromRegex) return idFromRegex;
+        // Try to extract from cbc:ID tag
+        const cbcIdMatch = ublXml.match(/<cbc:ID[^>]*>([^<]+)<\/cbc:ID>/i);
+        if (cbcIdMatch?.[1]) return cbcIdMatch[1].trim();
+      }
+      return invoiceId;
+    })();
+
     return {
       // Document Identifiers
-      invoiceId,
+      invoiceId: fallbackInvoiceId,
       issueDate,
       dueDate,
       invoiceTypeCode,
@@ -843,7 +856,9 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
     const notes = notesParts.join('\n');
 
     // Determine invoice number (handle duplicates)
-    const baseInvoiceNumber = invoiceData.invoiceId || data.invoiceNumber;
+    // Priority: parsed UBL XML invoice ID > webhook payload invoiceNumber > fallback
+    // This ensures the invoice number from the UBL XML (cbc:ID) is used, which matches what was sent
+    const baseInvoiceNumber = parsedInvoice?.invoiceId || invoiceData.invoiceId || data.invoiceNumber;
     let invoiceNumber = baseInvoiceNumber || `PEPPOL-${Date.now()}`;
     
     // Check if invoice number already exists (handle duplicates)

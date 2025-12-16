@@ -13,6 +13,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { generatePublicShareLink, getShareLinkInfo, deactivateShareLink } from '../../../services/shareService';
 import { useTranslation } from 'react-i18next';
 import { createProcessingOverlay } from '../../../components/ui/ProcessingOverlay';
+import { calculateQuoteTotals, formatCurrency, formatNumber } from '../../../utils/quotePriceCalculator';
 
 const QuotePreview = ({ 
   selectedClient, 
@@ -407,19 +408,9 @@ const QuotePreview = ({
     if (shareLink) window.open(shareLink, '_blank', 'noopener');
   };
 
-  // Calculate totals
-  const totalPrice = tasks.reduce((sum, task) => {
-    const taskMaterialsTotal = task.materials.reduce(
-      (matSum, mat) => matSum + (parseFloat(mat.price) || 0),
-      0
-    );
-    return sum + (parseFloat(task.price) || 0) + taskMaterialsTotal;
-  }, 0);
-
-  const vatAmount = financialConfig.vatConfig.display ? (totalPrice * financialConfig.vatConfig.rate / 100) : 0;
-  const totalWithVAT = totalPrice + vatAmount;
-  const advanceAmount = financialConfig.advanceConfig.enabled ? (parseFloat(financialConfig.advanceConfig.amount) || 0) : 0;
-  const balanceAmount = totalWithVAT - advanceAmount;
+  // Calculate totals using centralized calculator
+  const financialBreakdown = calculateQuoteTotals(tasks, financialConfig);
+  const { totalBeforeVAT, vatAmount, totalWithVAT, depositAmount, balanceAmount } = financialBreakdown;
 
   const displayQuoteNumber = quoteNumber || `${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
   
@@ -473,12 +464,8 @@ const QuotePreview = ({
     return `${countryPrefix}${cleanVAT}`;
   };
 
-  // Formatting helpers - always use comma as decimal separator (fr-FR format) to match quote creation flow
-  const formatNumber = (value) => {
-    const n = Number.isFinite(Number(value)) ? Number(value) : 0;
-    return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  };
-  const formatMoney = (value) => `${formatNumber(value)}€`;
+  // Formatting helpers - use centralized formatters
+  const formatMoney = (value) => formatCurrency(value);
 
   // Normalize general conditions text: remove redundant leading label since we already render a heading
   const normalizeConditionsText = (text) => {
@@ -872,7 +859,7 @@ const QuotePreview = ({
                   <tfoot>
                     <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
                       <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">{t('quoteCreation.quotePreview.subtotalExclTax', 'SOUS-TOTAL HT:')}</td>
-                      <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{formatMoney(totalPrice)}</td>
+                      <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{formatMoney(totalBeforeVAT)}</td>
                     </tr>
                     {financialConfig.vatConfig.display && (
                       <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
@@ -887,7 +874,7 @@ const QuotePreview = ({
                     {financialConfig.advanceConfig.enabled && (
                       <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
                         <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">{t('quoteCreation.quotePreview.depositOnOrder', 'ACOMPTE À LA COMMANDE:')}</td>
-                        <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{formatMoney(advanceAmount)}</td>
+                        <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{formatMoney(depositAmount)}</td>
                       </tr>
                     )}
                     {financialConfig.advanceConfig.enabled && (
