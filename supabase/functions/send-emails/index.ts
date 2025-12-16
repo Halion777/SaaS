@@ -858,6 +858,39 @@ serve(async (req) => {
         });
         break;
         
+      case 'subscription_limit_reached':
+      case 'peppol_limit_reached':
+      case 'profile_limit_reached': {
+        // Use database template for subscription limit reached emails
+        // Get language: user's database language_preference only
+        let limitLanguage: string | null = null;
+        if (emailData.user_id) {
+          limitLanguage = await getUserLanguagePreference(emailData.user_id);
+        }
+        limitLanguage = limitLanguage || 'fr';
+        const limitTemplate = await getEmailTemplate(emailType, limitLanguage, emailData.user_id || null);
+        if (!limitTemplate.success) {
+          throw new Error(`Email template '${emailType}' not found in database for language '${limitLanguage}'. Please create the template in the email_templates table.`);
+        }
+        const variables = {
+          user_name: emailData.variables?.user_name || 'User',
+          limit: emailData.variables?.limit || '0',
+          current: emailData.variables?.current || '0',
+          subscription_url: emailData.variables?.subscription_url || 'https://haliqo.com/subscription',
+          company_name: emailData.variables?.company_name || 'Haliqo',
+          support_email: emailData.variables?.support_email || 'support@haliqo.com'
+        };
+        const rendered = renderTemplate(limitTemplate.data, variables);
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [emailData.user_email],
+          subject: rendered.subject,
+          html: rendered.html,
+          text: rendered.text
+        });
+        break;
+      }
+        
       default:
         throw new Error(`Unknown email type: ${emailType}`);
     }

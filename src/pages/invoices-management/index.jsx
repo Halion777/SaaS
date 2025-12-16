@@ -286,7 +286,9 @@ const InvoicesManagement = () => {
           address: invoice.client?.address,
           postal_code: invoice.client?.postal_code,
           city: invoice.client?.city,
-          country: invoice.client?.country
+          country: invoice.client?.country,
+          vat_number: invoice.client?.vat_number,
+          client_type: invoice.client?.client_type
         },
         invoice: {
           issue_date: invoice.issueDate,

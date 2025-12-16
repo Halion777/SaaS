@@ -448,6 +448,7 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
             ${client?.address ? `<p style="margin: 0 0 3px 0;">${escapeHtml(client.address)}</p>` : ''}
             ${client?.postal_code && client?.city ? `<p style="margin: 0;">${escapeHtml(client.postal_code)} ${escapeHtml(client.city)}</p>` : ''}
             ${client?.country ? `<p style="margin: 3px 0 0 0;">${escapeHtml(client.country)}</p>` : ''}
+            ${(client?.client_type === 'company' || client?.client_type === 'professional') && client?.vat_number ? `<p style="margin: 3px 0 0 0; font-weight: 500;">${language === 'en' ? 'VAT:' : language === 'nl' ? 'BTW:' : 'TVA:'} ${escapeHtml(client.vat_number)}</p>` : ''}
           </div>
         </div>
         <div style="text-align: right;">

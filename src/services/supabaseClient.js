@@ -54,25 +54,48 @@ export const sessionManager = {
   /**
    * Completely clear all authentication-related data
    */
-  clearAllAuthData: () => {
+  clearAllAuthData: async () => {
     try {
-      // Clear Supabase session
-      supabase.auth.signOut();
+      // Clear Supabase session first (async)
+      await supabase.auth.signOut();
       
       // Clear all session storage
       sessionStorage.clear();
       
-      // Optional: Clear specific keys if needed
+      // Clear all localStorage (Supabase stores auth tokens here)
+      localStorage.clear();
+      
+      // Clear specific Supabase keys from localStorage (in case clear() doesn't work)
+      const supabaseKeys = Object.keys(localStorage).filter(key => 
+        key.startsWith('sb-') || 
+        key.includes('supabase') ||
+        key.includes('auth-token')
+      );
+      supabaseKeys.forEach(key => {
+        localStorage.removeItem(key);
+      });
+      
+      // Clear specific keys from sessionStorage
       const keysToRemove = [
         'sb-access-token', 
         'sb-refresh-token', 
         'sb-provider-token',
         'user_data',
-        'registration_complete'
+        'registration_complete',
+        'registration_pending',
+        'pendingRegistration'
       ];
       
       keysToRemove.forEach(key => {
         sessionStorage.removeItem(key);
+        localStorage.removeItem(key);
+      });
+      
+      // Clear cookies (Supabase may store session in cookies)
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
       });
       
       console.log('All authentication data cleared');

@@ -6,9 +6,35 @@ export class SubscriptionNotificationService {
   /**
    * Get all pricing data from database for displaying plans
    * Returns both monthly and yearly prices for all plans
+   * @param {string} language - Language code (en, fr, nl) - defaults to 'fr' if not provided
    */
-  static async getAllPricingData() {
+  static async getAllPricingData(language = null) {
     try {
+      // Get user's language preference if not provided
+      let currentLang = language;
+      if (!currentLang) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const langResult = await this.getUserLanguagePreference(user.id);
+            currentLang = langResult || 'fr';
+          } else {
+            // Try to get from localStorage/i18n if available
+            const storedLang = localStorage.getItem('i18nextLng') || 'fr';
+            currentLang = storedLang.split('-')[0] || 'fr';
+          }
+        } catch (error) {
+          console.error('Error getting user language preference:', error);
+          currentLang = 'fr'; // Fallback to French
+        }
+      }
+      
+      // Normalize language code (en, fr, nl)
+      currentLang = currentLang?.split('-')[0]?.toLowerCase() || 'fr';
+      if (!['en', 'fr', 'nl'].includes(currentLang)) {
+        currentLang = 'fr'; // Fallback to French if invalid language
+      }
+      
       const pricingResult = await AppSettingsService.getSetting('pricing_settings');
       
       if (!pricingResult.success || !pricingResult.data) {
@@ -42,20 +68,20 @@ export class SubscriptionNotificationService {
       // Build response with calculated yearly totals
       const pricing = {};
       for (const [planType, plan] of Object.entries(pricingSettings)) {
-        // Default to 'fr' for pricing display (this is just for UI display, not email sending)
-        const currentLang = 'fr';
+        // Use user's language preference for pricing display
         
         // Get description, features, and limitations for current language
+        // Fallback order: currentLang -> 'fr' -> 'en' -> first available
         const description = typeof plan.description === 'object' 
-          ? (plan.description[currentLang] || plan.description['fr'] || '')
+          ? (plan.description[currentLang] || plan.description['fr'] || plan.description['en'] || plan.description[Object.keys(plan.description)[0]] || '')
           : (plan.description || '');
         
         const features = plan.features && typeof plan.features === 'object'
-          ? (plan.features[currentLang] || plan.features['fr'] || [])
+          ? (plan.features[currentLang] || plan.features['fr'] || plan.features['en'] || plan.features[Object.keys(plan.features)[0]] || [])
           : [];
         
         const limitations = plan.limitations && typeof plan.limitations === 'object'
-          ? (plan.limitations[currentLang] || plan.limitations['fr'] || [])
+          ? (plan.limitations[currentLang] || plan.limitations['fr'] || plan.limitations['en'] || plan.limitations[Object.keys(plan.limitations)[0]] || [])
           : [];
         
         pricing[planType] = {

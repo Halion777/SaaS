@@ -2364,6 +2364,8 @@
       "signatureRate": "Handtekeningenpercentage",
       "monthlyTurnover": "Maandomzet",
       "aiGain": "AI-winst",
+      "totalClients": "Totaal klanten",
+      "overdueInvoices": "Achterstallige facturen",
       "changeTexts": {
         "positive": "+{{value}}%",
         "negative": "-{{value}}%",
@@ -2504,6 +2506,10 @@
         {
           "label": "Facturen Bekijken",
           "description": "Bekijk en beheer uw facturen"
+        },
+        {
+          "label": "Abonnement Beheren",
+          "description": "Upgrade, downgrade of beheer uw plan"
         }
       ],
       "keyboardShortcuts": "Sneltoets"
@@ -3350,6 +3356,7 @@
       "date": "Datum",
       "clientInfo": "Klantinformatie",
       "projectDetails": "Projectdetails",
+      "categoriesLabel": "Categorieën",
       "tasks": "Taken",
       "materials": "Materialen",
       "financialSummary": "Financieel overzicht",
@@ -3491,7 +3498,7 @@
     },
     "personalization": {
       "colorSchemes": "Kleurenschema's",
-      "colorSchemesDesc": "Kies een kleurenschema voor uw offerte-elementen. De achtergrond blijft wit.",
+      "colorSchemesDesc": "Kies een kleurenschema voor uw offerte-elementen. De achtergrond blijft oranje.",
       "customColors": "Aangepaste kleuren",
       "resetColors": "Sjabloon en kleuren terugzetten naar standaard",
       "primaryColor": "Primaire kleur",
@@ -3504,8 +3511,8 @@
           "description": "Minimalistisch en strak grijs"
         },
         "blanc": {
-          "name": "Wit",
-          "description": "Levendig oranje op witte achtergrond"
+          "name": "oranje",
+          "description": "Oranje accent op witte achtergrond"
         },
         "navy": {
           "name": "Marine",

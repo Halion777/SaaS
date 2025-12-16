@@ -193,19 +193,27 @@ const SuperAdminBilling = () => {
             startOfMonth.setDate(1);
             startOfMonth.setHours(0, 0, 0, 0);
             
+            // Count sent Peppol invoices (from invoices table)
+            // Use peppol_sent_at if available, otherwise created_at
             const { count: peppolSentCount } = await supabase
               .from('invoices')
               .select('*', { count: 'exact', head: true })
               .eq('user_id', userId)
               .eq('peppol_enabled', true)
-              .gte('created_at', startOfMonth.toISOString());
+              .not('peppol_sent_at', 'is', null)
+              .gte('peppol_sent_at', startOfMonth.toISOString());
             
+            // Count received Peppol invoices (from expense_invoices table)
+            // Use peppol_received_at for accurate monthly count
+            // Note: peppol_received_at is timestamp without timezone, but Supabase handles ISO format correctly
             const { count: peppolReceivedCount } = await supabase
               .from('expense_invoices')
               .select('*', { count: 'exact', head: true })
               .eq('user_id', userId)
+              .eq('peppol_enabled', true)
               .eq('source', 'peppol')
-              .gte('created_at', startOfMonth.toISOString());
+              .not('peppol_received_at', 'is', null)
+              .gte('peppol_received_at', startOfMonth.toISOString());
 
             const peppolUsage = (peppolSentCount || 0) + (peppolReceivedCount || 0);
 
@@ -770,7 +778,7 @@ const SuperAdminBilling = () => {
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
                           <h3 className="text-sm font-semibold text-foreground truncate">
-                            {subscription.users?.full_name || 'Unknown'}
+                            {(subscription.users?.first_name && subscription.users?.last_name ? `${subscription.users.first_name} ${subscription.users.last_name}` : subscription.users?.first_name || subscription.users?.last_name || 'Unknown')}
                           </h3>
                           <p className="text-xs text-muted-foreground truncate">{subscription.users?.email || 'No email'}</p>
                         </div>
@@ -957,7 +965,7 @@ const SuperAdminBilling = () => {
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <h3 className="text-sm font-semibold text-foreground truncate">
-                          {payment.subscriptions?.users?.full_name || 'Unknown'}
+                          {(payment.subscriptions?.users?.first_name && payment.subscriptions?.users?.last_name ? `${payment.subscriptions.users.first_name} ${payment.subscriptions.users.last_name}` : payment.subscriptions?.users?.first_name || payment.subscriptions?.users?.last_name || 'Unknown')}
                         </h3>
                         <p className="text-xs text-muted-foreground truncate">{payment.subscriptions?.users?.email || 'No email'}</p>
                       </div>

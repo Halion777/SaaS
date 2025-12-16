@@ -447,22 +447,28 @@ class FeatureAccessService {
       startOfMonth.setHours(0, 0, 0, 0);
       
       // Count Peppol invoices sent (from invoices table)
+      // Use peppol_sent_at if available for accurate monthly count
       const { count: sentCount, error: sentError } = await supabase
         .from('invoices')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', userId)
         .eq('peppol_enabled', true)
-        .gte('created_at', startOfMonth.toISOString());
+        .not('peppol_sent_at', 'is', null)
+        .gte('peppol_sent_at', startOfMonth.toISOString());
       
       if (sentError) throw sentError;
       
       // Count Peppol invoices received (from expense_invoices table)
+      // Use peppol_received_at for accurate monthly count
+      // Note: peppol_received_at is timestamp without timezone, but Supabase handles ISO format correctly
       const { count: receivedCount, error: receivedError } = await supabase
         .from('expense_invoices')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', userId)
+        .eq('peppol_enabled', true)
         .eq('source', 'peppol')
-        .gte('created_at', startOfMonth.toISOString());
+        .not('peppol_received_at', 'is', null)
+        .gte('peppol_received_at', startOfMonth.toISOString());
       
       if (receivedError) throw receivedError;
       

@@ -2517,6 +2517,10 @@
         {
           "label": "Voir les Factures",
           "description": "Consultez et gérez vos factures"
+        },
+        {
+          "label": "Gérer l'Abonnement",
+          "description": "Améliorez, réduisez ou gérez votre plan"
         }
       ],
       "keyboardShortcuts": "Raccourci clavier"
@@ -3362,6 +3366,7 @@
       "date": "Date",
       "clientInfo": "Informations client",
       "projectDetails": "Détails du projet",
+      "categoriesLabel": "Catégories",
       "tasks": "Tâches",
       "materials": "Matériaux",
       "financialSummary": "Résumé financier",

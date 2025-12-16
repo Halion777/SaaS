@@ -138,7 +138,10 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
           phone: invoice.client?.phone,
           address: invoice.client?.address,
           postal_code: invoice.client?.postal_code,
-          city: invoice.client?.city
+          city: invoice.client?.city,
+          country: invoice.client?.country,
+          vat_number: invoice.client?.vat_number,
+          client_type: invoice.client?.client_type
         },
         invoice: {
           issue_date: invoice.issue_date,

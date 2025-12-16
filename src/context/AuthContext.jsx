@@ -264,6 +264,22 @@ export const AuthProvider = ({ children }) => {
     let isMounted = true;
     
     async function loadUserSession() {
+      // Check if logout is in progress - don't auto-login
+      const logoutInProgress = sessionStorage.getItem('logout_in_progress') || 
+                               localStorage.getItem('logout_in_progress') ||
+                               new URLSearchParams(window.location.search).get('logout') === 'true';
+      
+      if (logoutInProgress) {
+        setUser(null);
+        setSession(null);
+        setIsProfileSelected(false);
+        setLoading(false);
+        // Clear the logout flag
+        sessionStorage.removeItem('logout_in_progress');
+        localStorage.removeItem('logout_in_progress');
+        return;
+      }
+      
       if (!isMounted || autoLoginRef.current) return;
       
       autoLoginRef.current = true;
@@ -404,6 +420,15 @@ export const AuthProvider = ({ children }) => {
   // Logout function
   const logout = async () => {
     try {
+      // Set flag to prevent auto-login immediately after logout
+      autoLoginRef.current = true;
+      
+      // Clear local state first to prevent any UI updates
+      setUser(null);
+      setSession(null);
+      setShowProfileSelection(false);
+      setIsProfileSelected(false);
+      
       // Use Supabase sign out method first
       const { error } = await supabase.auth.signOut();
       
@@ -411,29 +436,38 @@ export const AuthProvider = ({ children }) => {
         console.error('Supabase sign out error:', error);
       }
       
-      // Use secure session manager to clear all auth data
-      sessionManager.clearAllAuthData();
+      // Use secure session manager to clear all auth data (including localStorage and cookies)
+      await sessionManager.clearAllAuthData();
       
       // Clear subscription cache
       clearSubscriptionCache();
       
-      // Clear profile selection data from sessionStorage
+      // Clear profile selection data from sessionStorage and localStorage
       if (user) {
         sessionStorage.removeItem(`current-profile-id-${user.id}`);
+        localStorage.removeItem(`current-profile-id-${user.id}`);
       }
       
-      // Clear local state
-      setUser(null);
-      setSession(null);
-      setShowProfileSelection(false);
-      setIsProfileSelected(false);
+      // Clear all profile-related data
+      const profileKeys = Object.keys(localStorage).filter(key => 
+        key.includes('profile') || key.includes('current-profile')
+      );
+      profileKeys.forEach(key => {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+      });
       
-      // Navigate to login page
-      navigate('/login');
+      // Force a small delay to ensure all cleanup is complete before navigation
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Navigate to login page with replace to prevent back navigation
+      window.location.href = '/login';
       
       return { error: null };
     } catch (error) {
       console.error('Logout error:', error);
+      // Even on error, try to navigate to login
+      window.location.href = '/login';
       return { error };
     }
   };

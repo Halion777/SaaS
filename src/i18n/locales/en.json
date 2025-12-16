@@ -2329,12 +2329,13 @@
       "signatureRate": "Signature Rate",
       "monthlyTurnover": "Monthly Turnover",
       "aiGain": "AI Gain",
+      "totalClients": "Total clients",
+      "overdueInvoices": "Overdue invoices",
       "changeTexts": {
         "positive": "+{{value}}%",
         "negative": "-{{value}}%",
         "new": "New"
       }
-    
     },
     "recentActivity": {
       "title": "Recent Activity",
@@ -2470,6 +2471,10 @@
         {
           "label": "View Invoices",
           "description": "Review and manage your invoices"
+        },
+        {
+          "label": "Manage Subscription",
+          "description": "Upgrade, downgrade, or manage your plan"
         }
       ],
       "keyboardShortcuts": "Keyboard Shortcut"
@@ -2910,6 +2915,19 @@
         "acceptedQuotes": "Accepted Quotes",
         "rejectedQuotes": "Rejected Quotes",
         "pendingQuotes": "Pending Quotes"
+      },
+      "invoiceStatistics": {
+        "title": "Invoice Statistics",
+        "totalRevenue": "Total Revenue",
+        "averageInvoice": "Average Invoice",
+        "totalInvoices": "Total Invoices"
+      },
+      "quoteOverview": {
+        "title": "Quote Overview",
+        "totalQuotes": "Total Quotes",
+        "acceptedQuotes": "Accepted Quotes",
+        "rejectedQuotes": "Rejected Quotes",
+        "pendingQuotes": "Pending Quotes"
       }
     },
     "charts": {
@@ -3299,6 +3317,7 @@
       "date": "Date",
       "clientInfo": "Client Information",
       "projectDetails": "Project Details",
+      "categoriesLabel": "Categories",
       "tasks": "Tasks",
       "materials": "Materials",
       "financialSummary": "Financial Summary",

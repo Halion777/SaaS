@@ -7,11 +7,14 @@ import MainSidebar from '../../components/ui/MainSidebar';
 import PermissionGuard, { usePermissionCheck } from '../../components/PermissionGuard';
 import LimitedAccessGuard from '../../components/LimitedAccessGuard';
 import TableLoader from '../../components/ui/TableLoader';
+import { useAuth } from '../../context/AuthContext';
 import { useMultiUser } from '../../context/MultiUserContext';
+import { supabase } from '../../services/supabaseClient';
 import ClientModal from './components/ClientModal';
 import ClientCard from './components/ClientCard';
 import FilterToolbar from './components/FilterToolbar';
 import ClientAnalytics from './components/ClientAnalytics';
+
 import { 
   fetchClients, 
   createClient, 

@@ -283,7 +283,7 @@ export class InvoiceFollowUpService {
       // Get full client data for PDF generation
       const { data: fullClient, error: fullClientError } = await supabase
         .from('clients')
-        .select('name, email, phone, address, city, postal_code, country')
+        .select('name, email, phone, address, city, postal_code, country, vat_number, client_type')
         .eq('id', invoice.client_id)
         .single();
 
@@ -303,7 +303,14 @@ export class InvoiceFollowUpService {
         companyInfo: companyInfo || {},
         client: fullClient || {
           name: client.name,
-          email: client.email
+          email: client.email,
+          phone: client.phone,
+          address: client.address,
+          postal_code: client.postal_code,
+          city: client.city,
+          country: client.country,
+          vat_number: client.vat_number,
+          client_type: client.client_type
         },
         invoice: {
           issue_date: invoice.issue_date,

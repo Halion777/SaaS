@@ -14,7 +14,7 @@ import SubscriptionNotificationService from '../../services/subscriptionNotifica
 import PermissionGuard from '../../components/PermissionGuard';
 
 const SubscriptionManagement = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState(null);
@@ -122,7 +122,9 @@ const SubscriptionManagement = () => {
     const loadPricing = async () => {
       try {
         setPricingLoading(true);
-        const result = await SubscriptionNotificationService.getAllPricingData();
+        // Get current language from i18n (en, fr, nl)
+        const currentLanguage = i18n.language?.split('-')[0]?.toLowerCase() || 'fr';
+        const result = await SubscriptionNotificationService.getAllPricingData(currentLanguage);
         if (result.success && result.data) {
           // Convert database pricing to plans format with features from translations
           // Order: Starter first, then Pro (matching pricing page)
@@ -177,7 +179,7 @@ const SubscriptionManagement = () => {
       }
     };
     loadPricing();
-  }, [t]);
+  }, [t, i18n.language]);
 
   useEffect(() => {
     if (user) {

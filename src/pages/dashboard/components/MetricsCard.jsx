@@ -1,7 +1,9 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 
 const MetricsCard = ({ title, value, change, changeType, icon, color = "primary" }) => {
+  const { t } = useTranslation();
   const getChangeColor = () => {
     if (changeType === 'positive') return 'text-success';
     if (changeType === 'negative') return 'text-error';
@@ -38,7 +40,7 @@ const MetricsCard = ({ title, value, change, changeType, icon, color = "primary"
       </div>
       <div>
         <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-1">{value}</h3>
-        <p className="text-xs sm:text-sm text-muted-foreground">{title}</p>
+        <p className="text-xs sm:text-sm text-muted-foreground">{typeof title === 'string' && title.startsWith('dashboard.') ? t(title) : title}</p>
       </div>
     </div>
   );

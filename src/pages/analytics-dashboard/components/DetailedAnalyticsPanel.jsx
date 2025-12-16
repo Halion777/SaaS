@@ -32,8 +32,27 @@ const DetailedAnalyticsPanel = ({ data, isLoading = false }) => {
               />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground capitalize">
-                {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
+              <p className="text-sm text-muted-foreground">
+                {(() => {
+                  // Map keys to translation keys
+                  const translationKeyMap = {
+                    'paid': 'analyticsDashboard.detailedAnalytics.paymentStatus.paid',
+                    'pending': 'analyticsDashboard.detailedAnalytics.paymentStatus.pending',
+                    'overdue': 'analyticsDashboard.detailedAnalytics.paymentStatus.overdue',
+                    'newClients': 'analyticsDashboard.detailedAnalytics.clientActivity.newClients',
+                    'returningClients': 'analyticsDashboard.detailedAnalytics.clientActivity.returningClients',
+                    'inactiveClients': 'analyticsDashboard.detailedAnalytics.clientActivity.inactiveClients',
+                    'totalRevenue': 'analyticsDashboard.detailedAnalytics.invoiceStatistics.totalRevenue',
+                    'averageInvoice': 'analyticsDashboard.detailedAnalytics.invoiceStatistics.averageInvoice',
+                    'totalInvoices': 'analyticsDashboard.detailedAnalytics.invoiceStatistics.totalInvoices',
+                    'totalQuotes': 'analyticsDashboard.detailedAnalytics.quoteOverview.totalQuotes',
+                    'acceptedQuotes': 'analyticsDashboard.detailedAnalytics.quoteOverview.acceptedQuotes',
+                    'rejectedQuotes': 'analyticsDashboard.detailedAnalytics.quoteOverview.rejectedQuotes',
+                    'pendingQuotes': 'analyticsDashboard.detailedAnalytics.quoteOverview.pendingQuotes'
+                  };
+                  const translationKey = translationKeyMap[key];
+                  return translationKey ? t(translationKey) : key.replace(/([A-Z])/g, ' $1').toLowerCase();
+                })()}
               </p>
               <p className="text-base font-semibold text-foreground">
                 {isLoading ? '...' : (typeof value === 'number' 

@@ -8,9 +8,9 @@ const MetricsProgress = ({ metrics, userObjectives, onUpdate, isLoading = false,
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [editingValues, setEditingValues] = useState({
-    revenueTarget: (userObjectives?.revenueTarget ?? metrics.revenueTarget) || 0,
-    clientTarget: (userObjectives?.clientTarget ?? metrics.clientTarget) || 0,
-    projectsTarget: (userObjectives?.projectsTarget ?? metrics.projectsTarget) || 0
+    revenueTarget: (userObjectives?.revenueTarget ?? metrics.revenueTarget) || '',
+    clientTarget: (userObjectives?.clientTarget ?? metrics.clientTarget) || '',
+    projectsTarget: (userObjectives?.projectsTarget ?? metrics.projectsTarget) || ''
   });
   const progressItems = [
     {
@@ -62,9 +62,9 @@ const MetricsProgress = ({ metrics, userObjectives, onUpdate, isLoading = false,
   const handleSave = async () => {
     try {
       const objectives = {
-        revenueTarget: editingValues.revenueTarget,
-        clientTarget: editingValues.clientTarget,
-        projectsTarget: editingValues.projectsTarget
+        revenueTarget: editingValues.revenueTarget === '' ? 0 : (parseFloat(editingValues.revenueTarget) || 0),
+        clientTarget: editingValues.clientTarget === '' ? 0 : (parseFloat(editingValues.clientTarget) || 0),
+        projectsTarget: editingValues.projectsTarget === '' ? 0 : (parseFloat(editingValues.projectsTarget) || 0)
       };
       
       const result = await updateAnalyticsObjectives(objectives);
@@ -85,9 +85,9 @@ const MetricsProgress = ({ metrics, userObjectives, onUpdate, isLoading = false,
 
   const handleCancel = () => {
     setEditingValues({
-      revenueTarget: (userObjectives?.revenueTarget ?? metrics.revenueTarget) || 0,
-      clientTarget: (userObjectives?.clientTarget ?? metrics.clientTarget) || 0,
-      projectsTarget: (userObjectives?.projectsTarget ?? metrics.projectsTarget) || 0
+      revenueTarget: (userObjectives?.revenueTarget ?? metrics.revenueTarget) || '',
+      clientTarget: (userObjectives?.clientTarget ?? metrics.clientTarget) || '',
+      projectsTarget: (userObjectives?.projectsTarget ?? metrics.projectsTarget) || ''
     });
     setIsEditing(false);
   };
@@ -96,9 +96,9 @@ const MetricsProgress = ({ metrics, userObjectives, onUpdate, isLoading = false,
   React.useEffect(() => {
     if (!isEditing) {
       setEditingValues({
-        revenueTarget: (userObjectives?.revenueTarget ?? metrics.revenueTarget) || 0,
-        clientTarget: (userObjectives?.clientTarget ?? metrics.clientTarget) || 0,
-        projectsTarget: (userObjectives?.projectsTarget ?? metrics.projectsTarget) || 0
+        revenueTarget: (userObjectives?.revenueTarget ?? metrics.revenueTarget) || '',
+        clientTarget: (userObjectives?.clientTarget ?? metrics.clientTarget) || '',
+        projectsTarget: (userObjectives?.projectsTarget ?? metrics.projectsTarget) || ''
       });
     }
   }, [userObjectives, metrics, isEditing]);
@@ -169,11 +169,22 @@ const MetricsProgress = ({ metrics, userObjectives, onUpdate, isLoading = false,
                         type="number"
                         min="0"
                         step={targetKey === 'revenueTarget' ? '100' : '1'}
-                        value={editingValues[targetKey]}
-                        onChange={(e) => setEditingValues({
-                          ...editingValues,
-                          [targetKey]: parseFloat(e.target.value) || 0
-                        })}
+                        value={editingValues[targetKey] === '' || editingValues[targetKey] === null || editingValues[targetKey] === undefined ? '' : editingValues[targetKey]}
+                        onChange={(e) => {
+                          const inputValue = e.target.value;
+                          // Allow empty string, otherwise parse as number (including 0)
+                          let numericValue;
+                          if (inputValue === '') {
+                            numericValue = '';
+                          } else {
+                            const parsed = parseFloat(inputValue);
+                            numericValue = isNaN(parsed) ? '' : parsed;
+                          }
+                          setEditingValues({
+                            ...editingValues,
+                            [targetKey]: numericValue
+                          });
+                        }}
                         className="w-24 px-2 py-1 text-sm border border-border rounded bg-background text-foreground"
                         placeholder={targetKey === 'revenueTarget' ? t('analyticsDashboard.metricsProgress.amountPlaceholder') : t('analyticsDashboard.metricsProgress.numberPlaceholder')}
                       />

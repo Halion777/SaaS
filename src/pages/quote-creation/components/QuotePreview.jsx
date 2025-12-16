@@ -787,7 +787,7 @@ const QuotePreview = ({
               {(projectInfo?.categories?.length || projectInfo?.deadline) && (
                 <div className={`mt-2 ${previewMode === 'mobile' ? 'text-[11px]' : 'text-xs sm:text-sm'}`} style={{ color: customization.colors.secondary }}>
                   {projectInfo?.categories?.length > 0 && (
-                    <p>Catégories: {(projectInfo.categories || []).join(', ')}</p>
+                    <p>{t('quoteCreation.quotePreview.categoriesLabel', 'Categories')}: {(projectInfo.categories || []).map(cat => t(`quoteCreation.projectInfo.categories.${cat}`, cat)).join(', ')}</p>
                   )}
                   {/* Deadline is already displayed in the header; avoid duplication here */}
                 </div>

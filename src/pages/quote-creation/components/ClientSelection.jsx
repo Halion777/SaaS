@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import Select from '../../../components/ui/Select';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
 import { fetchClients, createClient } from '../../../services/clientsService';
+import { useMultiUser } from '../../../context/MultiUserContext';
+import { useAuth } from '../../../context/AuthContext';
+import { supabase } from '../../../services/supabaseClient';
 import { generateProjectDescriptionWithGemini, isGoogleAIServiceAvailable } from '../../../services/googleAIService';
 import { generateTaskSuggestionsWithGemini } from '../../../services/googleAIService';
 import { enhanceTranscriptionWithAI } from '../../../services/googleAIService';
@@ -247,6 +251,39 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
 
     loadClients();
   }, [clientsRefreshTrigger]);
+
+  // Check monthly clients added for Starter plan
+  useEffect(() => {
+    const checkMonthlyClients = async () => {
+      if (!user?.id) return;
+      try {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+        
+        const { count } = await supabase
+          .from('clients')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .gte('created_at', startOfMonth.toISOString());
+        
+        setMonthlyClientsAdded(count || 0);
+        
+        // Check if limit is reached
+        const isStarterPlan = userProfile?.selected_plan === 'starter';
+        const limit = subscriptionLimits?.clientsPerMonth || 30;
+        if (isStarterPlan && limit > 0 && (count || 0) >= limit) {
+          setClientLimitReached(true);
+        } else {
+          setClientLimitReached(false);
+        }
+      } catch (error) {
+        console.error('Error checking monthly clients:', error);
+      }
+    };
+    
+    checkMonthlyClients();
+  }, [user?.id, userProfile, subscriptionLimits, clientsRefreshTrigger]);
 
   // Ensure selected client is in existingClients array (for lead quotes after refresh)
   useEffect(() => {
@@ -631,6 +668,18 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         if (error) {
           console.error('Error creating client:', error);
           
+          // Handle client limit reached error with upgrade message
+          if (error.code === 'CLIENT_LIMIT_REACHED') {
+            const limitMessage = t('clientManagement.errors.clientLimitReached', {
+              limit: error.limit,
+              current: error.current,
+              defaultValue: `You have reached your monthly client limit (${error.current}/${error.limit}). This limit resets at the start of each month. Upgrade to Pro for unlimited clients.`
+            });
+            setCreateError(limitMessage);
+            setClientLimitReached(true);
+            return;
+          }
+          
           // Handle duplicate validation errors with user-friendly messages
           let errorMessage = t('clientManagement.errors.createFailed', { defaultValue: 'Erreur lors de la création du client' });
           if (error.code === 'DUPLICATE_EMAIL') {
@@ -643,6 +692,9 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
           setCreateError(errorMessage);
           return;
         }
+        
+        // Reset limit reached flag on successful creation
+        setClientLimitReached(false);
         
         // Format the created client for selection
       const formattedClientData = {
@@ -799,6 +851,16 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       return;
     }
 
+    // Check if limit is reached before allowing creation
+    if (limitReached || clientLimitReached) {
+      setCreateError(t('clientManagement.limitReached.submitError', {
+        current: monthlyClientsAdded,
+        limit: clientLimit,
+        defaultValue: `You have reached your monthly client limit (${monthlyClientsAdded}/${clientLimit}). Please upgrade to Pro to add more clients.`
+      }));
+      return;
+    }
+
     try {
       setIsCreatingClient(true);
       setCreateError(null);
@@ -825,6 +887,18 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       if (error) {
         console.error('Error creating client from lead:', error);
         
+        // Handle client limit reached error with upgrade message
+        if (error.code === 'CLIENT_LIMIT_REACHED') {
+          const limitMessage = t('clientManagement.errors.clientLimitReached', {
+            limit: error.limit,
+            current: error.current,
+            defaultValue: `You have reached your monthly client limit (${error.current}/${error.limit}). This limit resets at the start of each month. Upgrade to Pro for unlimited clients.`
+          });
+          setCreateError(limitMessage);
+          setClientLimitReached(true);
+          return;
+        }
+        
         // Handle duplicate validation errors with user-friendly messages
         let errorMessage = t('clientManagement.errors.createFailed', { defaultValue: 'Erreur lors de la création du client' });
         if (error.code === 'DUPLICATE_EMAIL') {
@@ -837,6 +911,9 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
         setCreateError(errorMessage);
         return;
       }
+      
+      // Reset limit reached flag on successful creation
+      setClientLimitReached(false);
       
       // Format the created client for selection
       const clientData = {
@@ -1111,6 +1188,11 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
 
   const countryOptions = getClientCountryOptions(t);
 
+  // Check if client limit is reached for Starter plan
+  const isStarterPlan = userProfile?.selected_plan === 'starter';
+  const clientLimit = subscriptionLimits?.clientsPerMonth || 30;
+  const limitReached = isStarterPlan && clientLimit > 0 && monthlyClientsAdded >= clientLimit;
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
@@ -1118,6 +1200,39 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
           <Icon name="Users" size={20} className="sm:w-6 sm:h-6 text-primary mr-2 sm:mr-3" />
           {t('quoteCreation.clientSelection.title')}
         </h2>
+        
+        {/* Client Limit Reached Banner */}
+        {(limitReached || clientLimitReached) && (
+          <div className="mb-4 p-4 bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200 rounded-lg">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-3 flex-1">
+                <div className="w-10 h-10 bg-orange-200 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Icon name="AlertCircle" size={20} className="text-orange-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-orange-900 mb-1">
+                    {t('clientManagement.limitReached.title', 'Monthly Client Limit Reached')}
+                  </h3>
+                  <p className="text-sm text-orange-800">
+                    {t('clientManagement.limitReached.message', {
+                      current: monthlyClientsAdded,
+                      limit: clientLimit,
+                      defaultValue: `You have reached your monthly client limit (${monthlyClientsAdded}/${clientLimit}). This limit resets at the start of each month. Upgrade to Pro for unlimited clients.`
+                    })}
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={() => navigate('/subscription')}
+                className="w-full sm:w-auto flex-shrink-0 bg-orange-600 hover:bg-orange-700 text-white"
+                size="sm"
+              >
+                <Icon name="ArrowUp" size={16} className="mr-2" />
+                {t('clientManagement.limitReached.upgradeButton', 'Upgrade to Pro')}
+              </Button>
+            </div>
+          </div>
+        )}
         
         {!showNewClientForm ? (
           <div className="space-y-3 sm:space-y-4">
@@ -1214,10 +1329,24 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
           <form onSubmit={handleNewClientSubmit} className="space-y-3 sm:space-y-4">
             {/* Error Display */}
             {createError && (
-              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
-                <div className="flex items-center space-x-2">
-                  <Icon name="AlertCircle" size={16} className="text-destructive" />
-                  <span className="text-sm text-destructive">{createError}</span>
+              <div className={`rounded-lg p-3 ${clientLimitReached ? 'bg-orange-50 border border-orange-200' : 'bg-destructive/10 border border-destructive/20'}`}>
+                <div className="flex items-start gap-3">
+                  <Icon name="AlertCircle" size={16} className={clientLimitReached ? 'text-orange-600 mt-0.5' : 'text-destructive mt-0.5'} />
+                  <div className="flex-1">
+                    <span className={`text-sm ${clientLimitReached ? 'text-orange-800' : 'text-destructive'}`}>{createError}</span>
+                    {clientLimitReached && (
+                      <div className="mt-2">
+                        <Button
+                          onClick={() => navigate('/subscription')}
+                          className="bg-orange-600 hover:bg-orange-700 text-white"
+                          size="sm"
+                        >
+                          <Icon name="ArrowUp" size={14} className="mr-2" />
+                          {t('clientManagement.limitReached.upgradeButton', 'Upgrade to Pro')}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -1696,8 +1825,9 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
               <Button
                 type="submit"
                 disabled={
-                  (clientType === 'particulier' 
-                    ? (!newClient.firstName?.trim() || !newClient.lastName?.trim()) 
+                  limitReached || clientLimitReached ||
+                  (clientType === 'particulier'
+                    ? (!newClient.firstName?.trim() || !newClient.lastName?.trim())
                     : !newClient.name?.trim()) 
                   || !newClient.email?.trim() 
                   || isCreatingClient
@@ -1748,10 +1878,11 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
               {leadId && !clientAddedFromLead ? (
                 <Button
                   onClick={handleQuickAddClient}
-                  disabled={isCreatingClient || !selectedClient?.name || !selectedClient?.email}
+                  disabled={isCreatingClient || !selectedClient?.name || !selectedClient?.email || limitReached || clientLimitReached}
                   iconName={isCreatingClient ? "Loader2" : "Plus"}
                   iconPosition="left"
                   size="sm"
+                  title={limitReached || clientLimitReached ? t('clientManagement.limitReached.disabledTooltip', 'Upgrade to Pro to add more clients') : ''}
                 >
                   {isCreatingClient ? t('quoteCreation.clientSelection.creating', 'Création...') : t('quoteCreation.clientSelection.addClient', 'Ajouter le client')}
                 </Button>

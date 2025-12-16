@@ -970,8 +970,26 @@ const BlogsManagement = () => {
                     <label className="block text-sm font-medium text-foreground mb-2">Published Date</label>
                     <Input
                       type="datetime-local"
-                      value={editingBlog.published_at ? new Date(editingBlog.published_at).toISOString().slice(0, 16) : ''}
-                      onChange={(e) => setEditingBlog({...editingBlog, published_at: e.target.value ? new Date(e.target.value).toISOString() : null})}
+                      value={editingBlog.published_at ? (() => {
+                        // Convert UTC date to local datetime-local format (YYYY-MM-DDTHH:mm)
+                        const date = new Date(editingBlog.published_at);
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        const hours = String(date.getHours()).padStart(2, '0');
+                        const minutes = String(date.getMinutes()).padStart(2, '0');
+                        return `${year}-${month}-${day}T${hours}:${minutes}`;
+                      })() : ''}
+                      onChange={(e) => {
+                        // Convert local datetime-local value to UTC ISO string
+                        if (e.target.value) {
+                          const localDate = new Date(e.target.value);
+                          // Preserve the original date/time by converting local input to UTC
+                          setEditingBlog({...editingBlog, published_at: localDate.toISOString()});
+                        } else {
+                          setEditingBlog({...editingBlog, published_at: null});
+                        }
+                      }}
                     />
                   </div>
                 </div>
