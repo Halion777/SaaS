@@ -733,9 +733,13 @@ const HomePage = () => {
                   {/* Dashboard Content */}
                   <div className="p-4">
                     <img 
-                      src="/assets/images/dashboard 2.png" 
+                      key={`dashboard-preview-${i18n.language}`}
+                      src={mediaSettings.home?.desktopImage?.[i18n.language] || mediaSettings.home?.heroImage?.[i18n.language] || '/assets/images/dashboard 2.png'}
                       alt="Haliqo Dashboard" 
                       className="w-full h-auto rounded-2xl shadow-lg"
+                      onError={(e) => {
+                        e.target.src = '/assets/images/dashboard 2.png';
+                      }}
                     />
                   </div>
                   
@@ -789,9 +793,13 @@ const HomePage = () => {
                       {/* App Content with proper notch handling */}
                       <div className="pt-10 pb-4 px-3 h-full">
                         <img 
-                          src="/assets/images/mobile 2.png" 
+                          key={`mobile-${i18n.language}`}
+                          src={mediaSettings.home?.mobileImage?.[i18n.language] || '/assets/images/mobile 2.png'}
                           alt="Haliqo Mobile App" 
                           className="w-full h-full mobile-app-image rounded-2xl"
+                          onError={(e) => {
+                            e.target.src = '/assets/images/mobile 2.png';
+                          }}
                         />
                       </div>
                     </div>

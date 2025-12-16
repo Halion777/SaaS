@@ -22,6 +22,8 @@ const FindArtisanPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [captchaToken, setCaptchaToken] = useState(null);
   const [formData, setFormData] = useState({
     categories: [],
     country: 'BE', // Default to Belgium
@@ -52,6 +54,7 @@ const FindArtisanPage = () => {
   const priceDropdownRef = useRef(null);
   const countryDropdownRef = useRef(null);
   const regionDropdownRef = useRef(null);
+  const captchaRef = useRef(null);
 
   // Handle click outside dropdowns to close them
   useEffect(() => {
@@ -97,11 +100,118 @@ const FindArtisanPage = () => {
     };
   }, [formData.uploadedFilePaths, formSubmitted]);
 
+  // Load Google reCAPTCHA script and render CAPTCHA
+  useEffect(() => {
+    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+    
+    // Don't load CAPTCHA if site key is not configured
+    if (!siteKey) {
+      console.warn('reCAPTCHA site key not found. Please set VITE_RECAPTCHA_SITE_KEY in your environment variables.');
+      return;
+    }
+
+    const renderCaptcha = () => {
+      if (window.grecaptcha && captchaRef.current && !captchaRef.current.hasChildNodes()) {
+        try {
+          window.grecaptcha.render(captchaRef.current, {
+            'sitekey': siteKey,
+            'callback': handleCaptchaChange,
+            'expired-callback': () => {
+              setCaptchaToken(null);
+              if (errors.captcha) {
+                setErrors(prev => ({
+                  ...prev,
+                  captcha: t('findArtisan.form.captchaExpired') || 'CAPTCHA expired. Please verify again.'
+                }));
+              }
+            },
+            'error-callback': () => {
+              setCaptchaToken(null);
+              setErrors(prev => ({
+                ...prev,
+                captcha: t('findArtisan.form.captchaError') || 'CAPTCHA verification failed. Please try again.'
+              }));
+            }
+          });
+        } catch (error) {
+          console.error('Error rendering reCAPTCHA:', error);
+          setErrors(prev => ({
+            ...prev,
+            captcha: t('findArtisan.form.captchaError') || 'Failed to load CAPTCHA. Please refresh the page.'
+          }));
+        }
+      }
+    };
+
+    // Check if script already exists
+    if (document.querySelector('script[src*="recaptcha"]')) {
+      // Script already loaded, just render CAPTCHA
+      if (window.grecaptcha) {
+        window.grecaptcha.ready(renderCaptcha);
+      }
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
+    script.async = true;
+    script.defer = true;
+    
+    script.onload = () => {
+      if (window.grecaptcha) {
+        window.grecaptcha.ready(renderCaptcha);
+      }
+    };
+
+    script.onerror = () => {
+      console.error('Failed to load reCAPTCHA script');
+      setErrors(prev => ({
+        ...prev,
+        captcha: t('findArtisan.form.captchaError') || 'Failed to load CAPTCHA. Please check your internet connection.'
+      }));
+    };
+
+    document.body.appendChild(script);
+
+    return () => {
+      // Cleanup: reset CAPTCHA but don't remove script (might be used elsewhere)
+      if (window.grecaptcha && captchaRef.current) {
+        try {
+          const widgetId = captchaRef.current.getAttribute('data-widget-id');
+          if (widgetId) {
+            window.grecaptcha.reset(widgetId);
+          }
+        } catch (e) {
+          // Ignore errors during cleanup
+        }
+      }
+    };
+  }, []);
+
+  // CAPTCHA callback
+  const handleCaptchaChange = (token) => {
+    setCaptchaToken(token);
+    if (errors.captcha) {
+      setErrors(prev => ({
+        ...prev,
+        captcha: ''
+      }));
+    }
+  };
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+    
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: ''
+      }));
+    }
     
     // Auto-fill client address when work address changes
     if (field === 'streetNumber' || field === 'fullAddress' || field === 'zipCode') {
@@ -120,6 +230,13 @@ const FindArtisanPage = () => {
         ...prev,
         region: ''
       }));
+      // Clear region error when country changes
+      if (errors.region) {
+        setErrors(prev => ({
+          ...prev,
+          region: ''
+        }));
+      }
     }
   };
 
@@ -135,6 +252,14 @@ const FindArtisanPage = () => {
         categories: newCategories
       };
     });
+    
+    // Clear category error when user selects a category
+    if (errors.categories) {
+      setErrors(prev => ({
+        ...prev,
+        categories: ''
+      }));
+    }
   };
 
   const handleCommunicationPreferenceChange = (preference) => {
@@ -233,11 +358,81 @@ const FindArtisanPage = () => {
     }
   };
 
+  // Validate form
+  const validateForm = () => {
+    const newErrors = {};
+    
+    // Project Information
+    if (formData.categories.length === 0) {
+      newErrors.categories = t('findArtisan.form.categoryError') || 'Please select at least one category';
+    }
+    
+    if (!formData.description || formData.description.trim() === '') {
+      newErrors.description = t('findArtisan.form.descriptionError') || 'Project description is required';
+    }
+    
+    // Location Information
+    if (!formData.country) {
+      newErrors.country = 'Please select a country';
+    }
+    
+    if (!formData.region) {
+      newErrors.region = 'Please select a region';
+    }
+    
+    if (!formData.zipCode || formData.zipCode.trim() === '') {
+      newErrors.zipCode = t('findArtisan.form.zipCodeError') || 'Zip code is required';
+    }
+    
+    if (!formData.city || formData.city.trim() === '') {
+      newErrors.city = t('findArtisan.form.cityError') || 'City is required';
+    }
+    
+    if (!formData.streetNumber || formData.streetNumber.trim() === '') {
+      newErrors.streetNumber = t('findArtisan.form.streetNumberError') || 'Street number is required';
+    }
+    
+    if (!formData.fullAddress || formData.fullAddress.trim() === '') {
+      newErrors.fullAddress = t('findArtisan.form.fullAddressError') || 'Full address is required';
+    }
+    
+    // Contact Information
+    if (!formData.firstName || formData.firstName.trim() === '') {
+      newErrors.firstName = t('findArtisan.form.firstNameError') || 'First name is required';
+    }
+    
+    if (!formData.lastName || formData.lastName.trim() === '') {
+      newErrors.lastName = t('findArtisan.form.lastNameError') || 'Last name is required';
+    }
+    
+    if (!formData.phone || formData.phone.trim() === '') {
+      newErrors.phone = t('findArtisan.form.phoneError') || 'Phone number is required';
+    }
+    
+    if (!formData.email || formData.email.trim() === '') {
+      newErrors.email = t('findArtisan.form.emailError') || 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = t('findArtisan.form.emailInvalid') || 'Please enter a valid email address';
+    }
+    
+    if (!formData.clientAddress || formData.clientAddress.trim() === '') {
+      newErrors.clientAddress = t('findArtisan.form.clientAddressError') || 'Client address is required';
+    }
+    
+    // CAPTCHA validation
+    if (!captchaToken) {
+      newErrors.captcha = t('findArtisan.form.captchaError') || 'Please complete the CAPTCHA verification';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     
-    // Check validation first
-    if (formData.categories.length === 0 || !formData.region) {
+    // Validate form
+    if (!validateForm()) {
       setFormSubmitted(true);
       return;
     }
@@ -254,6 +449,7 @@ const FindArtisanPage = () => {
         ...formData,
         fullName: [formData.firstName, formData.lastName].filter(Boolean).join(' ').trim(),
         projectImages: formData.uploadedFilePaths // Use uploaded URLs for submission
+        // Note: CAPTCHA is validated frontend-only (no backend verification needed)
       };
       
       // Create the lead request using our service
@@ -263,6 +459,8 @@ const FindArtisanPage = () => {
         // Success! Lead created - reset validation state and show success
         setFormSubmitted(false); // Reset validation errors
         setSubmitSuccess(true); // Set success state
+        setErrors({}); // Clear all errors
+        setCaptchaToken(null); // Reset CAPTCHA
         
         // Clear form data
         setFormData({
@@ -296,8 +494,24 @@ const FindArtisanPage = () => {
           fileInputRef.current.value = '';
         }
         
-        // Show success message or redirect
-        // You can add a success state here if needed
+        // Reset CAPTCHA
+        if (window.grecaptcha && captchaRef.current) {
+          try {
+            const widgetId = captchaRef.current.getAttribute('data-widget-id');
+            if (widgetId) {
+              window.grecaptcha.reset(widgetId);
+            } else if (captchaRef.current.querySelector('[data-widget-id]')) {
+              const widgetElement = captchaRef.current.querySelector('[data-widget-id]');
+              const id = widgetElement.getAttribute('data-widget-id');
+              window.grecaptcha.reset(id);
+            }
+          } catch (e) {
+            // If reset fails, just clear the container and re-render
+            if (captchaRef.current) {
+              captchaRef.current.innerHTML = '';
+            }
+          }
+        }
         
       } else {
         throw error;
@@ -306,6 +520,11 @@ const FindArtisanPage = () => {
     } catch (error) {
       console.error('Error submitting lead:', error);
       setSubmitError('Une erreur est survenue lors de la soumission. Veuillez réessayer.');
+      // Reset CAPTCHA on error
+      if (window.grecaptcha) {
+        window.grecaptcha.reset();
+      }
+      setCaptchaToken(null);
     } finally {
       setIsSubmitting(false);
     }
@@ -597,7 +816,11 @@ const FindArtisanPage = () => {
                         <button
                           type="button"
                           onClick={() => setDropdownOpen(!dropdownOpen)}
-                          className="w-full h-11 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left flex items-center"
+                          className={`w-full h-11 pl-10 pr-4 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 transition-all text-left flex items-center ${
+                            errors.categories 
+                              ? 'border-red-500 focus:border-red-500 focus:ring-red-200' 
+                              : 'border-border focus:ring-primary/20 focus:border-primary'
+                          }`}
                         >
                           <div className="absolute left-3 text-muted-foreground">
                             <Icon name="Briefcase" className="w-5 h-5" />
@@ -650,9 +873,9 @@ const FindArtisanPage = () => {
                       </div>
                       
                       {/* Error message if no category selected */}
-                      {formSubmitted && formData.categories.length === 0 && (
-                        <p className="text-sm text-destructive mt-2">
-                          {t('findArtisan.form.categoryError')}
+                      {errors.categories && (
+                        <p className="text-sm text-red-500 mt-2">
+                          {errors.categories}
                         </p>
                       )}
                     </div>
@@ -666,9 +889,18 @@ const FindArtisanPage = () => {
                             value={formData.description}
                             onChange={(e) => handleInputChange('description', e.target.value)}
                             placeholder={t('findArtisan.form.descriptionPlaceholder')}
-                            className="w-full h-32 px-4 py-3 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
+                            className={`w-full h-32 px-4 py-3 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 transition-all resize-none ${
+                              errors.description 
+                                ? 'border-red-500 focus:border-red-500 focus:ring-red-200' 
+                                : 'border-border focus:ring-primary/20 focus:border-primary'
+                            }`}
                             required
                           />
+                          {errors.description && (
+                            <p className="text-sm text-red-500 mt-2">
+                              {errors.description}
+                            </p>
+                          )}
                         </div>
 
                         {/* Price Range */}
@@ -807,7 +1039,11 @@ const FindArtisanPage = () => {
                         <button
                           type="button"
                           onClick={() => setCountryDropdownOpen(!countryDropdownOpen)}
-                          className="w-full h-11 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left flex items-center"
+                          className={`w-full h-11 pl-10 pr-4 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 transition-all text-left flex items-center ${
+                            errors.country 
+                              ? 'border-red-500 focus:border-red-500 focus:ring-red-200' 
+                              : 'border-border focus:ring-primary/20 focus:border-primary'
+                          }`}
                         >
                           <div className="absolute left-3 text-muted-foreground">
                             <Icon name="Globe" className="w-5 h-5" />
@@ -862,8 +1098,12 @@ const FindArtisanPage = () => {
                           type="button"
                           onClick={() => setRegionDropdownOpen(!regionDropdownOpen)}
                           disabled={!formData.country}
-                          className={`w-full h-11 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left flex items-center ${
+                          className={`w-full h-11 pl-10 pr-4 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 transition-all text-left flex items-center ${
                             !formData.country ? 'opacity-50 cursor-not-allowed' : ''
+                          } ${
+                            errors.region 
+                              ? 'border-red-500 focus:border-red-500 focus:ring-red-200' 
+                              : 'border-border focus:ring-primary/20 focus:border-primary'
                           }`}
                         >
                           <div className="absolute left-3 text-muted-foreground">
@@ -908,9 +1148,14 @@ const FindArtisanPage = () => {
                       </div>
                       
                       {/* Error message if no region selected */}
-                      {formSubmitted && !formData.region && (
-                        <p className="text-sm text-destructive mt-2">
-                          Veuillez sélectionner une région
+                      {errors.region && (
+                        <p className="text-sm text-red-500 mt-2">
+                          {errors.region}
+                        </p>
+                      )}
+                      {errors.country && (
+                        <p className="text-sm text-red-500 mt-2">
+                          {errors.country}
                         </p>
                       )}
                           </div>
@@ -927,6 +1172,7 @@ const FindArtisanPage = () => {
                         placeholder={t('findArtisan.form.zipCodePlaceholder')}
                         value={formData.zipCode}
                         onChange={(e) => handleInputChange('zipCode', e.target.value)}
+                        error={errors.zipCode}
                         required
                       />
                     </div>
@@ -941,6 +1187,7 @@ const FindArtisanPage = () => {
                               placeholder={t('findArtisan.form.cityPlaceholder', 'Enter city')}
                               value={formData.city}
                               onChange={(e) => handleInputChange('city', e.target.value)}
+                              error={errors.city}
                               required
                             />
                           </div>
@@ -957,6 +1204,7 @@ const FindArtisanPage = () => {
                         placeholder={t('findArtisan.form.streetNumberPlaceholder')}
                         value={formData.streetNumber}
                         onChange={(e) => handleInputChange('streetNumber', e.target.value)}
+                        error={errors.streetNumber}
                         required
                       />
                     </div>
@@ -971,6 +1219,7 @@ const FindArtisanPage = () => {
                         placeholder={t('findArtisan.form.fullAddressPlaceholder')}
                         value={formData.fullAddress}
                         onChange={(e) => handleInputChange('fullAddress', e.target.value)}
+                        error={errors.fullAddress}
                         required
                       />
                     </div>
@@ -996,6 +1245,7 @@ const FindArtisanPage = () => {
                             placeholder={t('registerForm.step1.firstNamePlaceholder', 'John')}
                             value={formData.firstName}
                             onChange={(e) => handleInputChange('firstName', e.target.value)}
+                            error={errors.firstName}
                             required
                           />
                         </div>
@@ -1008,6 +1258,7 @@ const FindArtisanPage = () => {
                             placeholder={t('registerForm.step1.lastNamePlaceholder', 'Doe')}
                             value={formData.lastName}
                             onChange={(e) => handleInputChange('lastName', e.target.value)}
+                            error={errors.lastName}
                             required
                           />
                         </div>
@@ -1023,6 +1274,7 @@ const FindArtisanPage = () => {
                             placeholder={t('findArtisan.form.phonePlaceholder')}
                             value={formData.phone}
                             onChange={(e) => handleInputChange('phone', e.target.value)}
+                            error={errors.phone}
                             required
                           />
                         </div>
@@ -1035,6 +1287,7 @@ const FindArtisanPage = () => {
                           placeholder={t('findArtisan.form.emailPlaceholder')}
                           value={formData.email}
                           onChange={(e) => handleInputChange('email', e.target.value)}
+                          error={errors.email}
                           required
                         />
                       </div>
@@ -1049,6 +1302,7 @@ const FindArtisanPage = () => {
                           placeholder={t('findArtisan.form.clientAddressPlaceholder')}
                           value={formData.clientAddress}
                           onChange={(e) => handleInputChange('clientAddress', e.target.value)}
+                          error={errors.clientAddress}
                           required
                         />
                         </div>
@@ -1125,6 +1379,21 @@ const FindArtisanPage = () => {
                         {t('findArtisan.form.languagePreferenceHelp', 'Nous communiquerons avec vous dans cette langue')}
                       </p>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* CAPTCHA */}
+                    <div className="pt-4">
+                      <div className="flex flex-col items-center">
+                        <div 
+                          ref={captchaRef}
+                          id="recaptcha-container"
+                        />
+                        {errors.captcha && (
+                          <p className="text-sm text-red-500 mt-2">
+                            {errors.captcha}
+                          </p>
+                        )}
                       </div>
                     </div>
 
