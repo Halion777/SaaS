@@ -116,7 +116,7 @@ const SuperAdminBilling = () => {
         .from('subscriptions')
         .select(`
           *,
-          users!subscriptions_user_id_fkey(first_name, last_name, email, company_name, role)
+          users!subscriptions_user_id_fkey(first_name, last_name, email, company_name, role, selected_plan)
         `)
         .order('created_at', { ascending: false });
 
@@ -170,9 +170,69 @@ const SuperAdminBilling = () => {
         record.subscriptions?.users && record.subscriptions.users.role !== 'superadmin'
       );
 
-     
+      // Fetch usage statistics for each subscription
+      const subscriptionsWithUsage = await Promise.all(
+        filteredSubscriptions.map(async (subscription) => {
+          const userId = subscription.user_id;
+          if (!userId) return subscription;
 
-      setSubscriptions(filteredSubscriptions);
+          try {
+            // Get monthly clients added count (clients created this month)
+            const startOfMonthForClients = new Date();
+            startOfMonthForClients.setDate(1);
+            startOfMonthForClients.setHours(0, 0, 0, 0);
+            
+            const { count: monthlyClientsAdded } = await supabase
+              .from('clients')
+              .select('*', { count: 'exact', head: true })
+              .eq('user_id', userId)
+              .gte('created_at', startOfMonthForClients.toISOString());
+
+            // Get monthly Peppol invoices usage (sent + received)
+            const startOfMonth = new Date();
+            startOfMonth.setDate(1);
+            startOfMonth.setHours(0, 0, 0, 0);
+            
+            const { count: peppolSentCount } = await supabase
+              .from('invoices')
+              .select('*', { count: 'exact', head: true })
+              .eq('user_id', userId)
+              .eq('peppol_enabled', true)
+              .gte('created_at', startOfMonth.toISOString());
+            
+            const { count: peppolReceivedCount } = await supabase
+              .from('expense_invoices')
+              .select('*', { count: 'exact', head: true })
+              .eq('user_id', userId)
+              .eq('source', 'peppol')
+              .gte('created_at', startOfMonth.toISOString());
+
+            const peppolUsage = (peppolSentCount || 0) + (peppolReceivedCount || 0);
+
+            // Get plan limits
+            const plan = subscription.users?.selected_plan || 'starter';
+            const { QUOTAS, formatQuotaLimit } = await import('../../../../config/subscriptionFeatures');
+            const planQuotas = QUOTAS[plan] || QUOTAS.starter;
+            const maxClientsPerMonth = formatQuotaLimit(planQuotas.clientsPerMonth);
+            const maxPeppol = formatQuotaLimit(planQuotas.peppolInvoicesPerMonth);
+
+            return {
+              ...subscription,
+              usage: {
+                clientsAddedThisMonth: monthlyClientsAdded || 0,
+                maxClientsPerMonth: maxClientsPerMonth,
+                peppolInvoices: peppolUsage,
+                maxPeppolInvoices: maxPeppol
+              }
+            };
+          } catch (error) {
+            console.error(`Error fetching usage for subscription ${subscription.id}:`, error);
+            return subscription;
+          }
+        })
+      );
+
+      setSubscriptions(subscriptionsWithUsage);
       setPayments(filteredPaymentRecords);
       setFilteredPayments(filteredPaymentRecords);
 
@@ -187,8 +247,8 @@ const SuperAdminBilling = () => {
       ).reduce((sum, record) => sum + (record.amount || 0), 0) || 0;
 
       // Calculate subscription counts (excluding superadmin)
-      const activeSubscriptions = filteredSubscriptions?.filter(sub => sub.status === 'active').length || 0;
-      const cancelledSubscriptions = filteredSubscriptions?.filter(sub => 
+      const activeSubscriptions = subscriptionsWithUsage?.filter(sub => sub.status === 'active').length || 0;
+      const cancelledSubscriptions = subscriptionsWithUsage?.filter(sub => 
         sub.status === 'cancelled' || sub.status === 'inactive'
       ).length || 0;
 
@@ -200,7 +260,7 @@ const SuperAdminBilling = () => {
       });
 
       // Process chart data (excluding superadmin)
-      const chartData = processChartData(filteredPaymentRecords, filteredSubscriptions);
+      const chartData = processChartData(filteredPaymentRecords, subscriptionsWithUsage);
       setChartData(chartData);
 
     } catch (error) {
@@ -590,6 +650,9 @@ const SuperAdminBilling = () => {
                         Created
                       </th>
                       <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
+                        Usage
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
                         Actions
                       </th>
                     </tr>
@@ -632,6 +695,22 @@ const SuperAdminBilling = () => {
                         </td>
                         <td className="px-4 py-3 text-sm text-muted-foreground">
                           {formatDate(subscription.created_at)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="space-y-1 text-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Clients (this month):</span>
+                              <span className="font-medium text-foreground">
+                                {subscription.usage?.clientsAddedThisMonth || 0} / {subscription.usage?.maxClientsPerMonth === 'Unlimited' ? '∞' : subscription.usage?.maxClientsPerMonth || 'N/A'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Peppol:</span>
+                              <span className="font-medium text-foreground">
+                                {subscription.usage?.peppolInvoices || 0} / {subscription.usage?.maxPeppolInvoices === 'Unlimited' ? '∞' : subscription.usage?.maxPeppolInvoices || 'N/A'}
+                              </span>
+                            </div>
+                          </div>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center space-x-2">
@@ -722,6 +801,23 @@ const SuperAdminBilling = () => {
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-muted-foreground">Created:</span>
                           <span className="text-xs text-foreground">{formatDate(subscription.created_at)}</span>
+                        </div>
+                        <div className="pt-2 border-t border-border">
+                          <p className="text-xs font-semibold text-muted-foreground mb-1">Usage:</p>
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">Clients (this month):</span>
+                              <span className="text-xs font-medium text-foreground">
+                                {subscription.usage?.clientsAddedThisMonth || 0} / {subscription.usage?.maxClientsPerMonth === 'Unlimited' ? '∞' : subscription.usage?.maxClientsPerMonth || 'N/A'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">Peppol:</span>
+                              <span className="text-xs font-medium text-foreground">
+                                {subscription.usage?.peppolInvoices || 0} / {subscription.usage?.maxPeppolInvoices === 'Unlimited' ? '∞' : subscription.usage?.maxPeppolInvoices || 'N/A'}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
 

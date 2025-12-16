@@ -2653,3 +2653,516 @@ Als u geen account heeft aangemaakt bij Haliqo, kunt u deze e-mail veilig negere
   true, true, 'nl'
 );
 
+
+
+-- =====================================================
+-- Subscription Limit Reached Email Templates
+-- Consistent with other email templates style
+-- =====================================================
+
+-- =====================================================
+-- CLIENT LIMIT REACHED TEMPLATES
+-- =====================================================
+
+-- French
+INSERT INTO public.email_templates (
+  template_type, template_name, subject, html_content, text_content, variables, is_active, is_default, language
+) VALUES (
+  'subscription_limit_reached',
+  'Limite de clients atteinte',
+  'Limite de clients atteinte - Mise à niveau vers Pro recommandée',
+  '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Limite de clients atteinte</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">Plan Starter</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Bonjour {user_name},</h2>
+    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">Vous avez atteint la limite mensuelle de <strong>{limit}</strong> clients ajoutés ce mois sur votre plan Starter.</p>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b;">
+      <p style="margin: 0 0 5px 0;"><strong>Clients ajoutés ce mois:</strong> {current} / {limit}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Plan actuel:</strong> Starter</p>
+      <p style="margin: 0; font-weight: bold; color: #333;"><strong>Plan recommandé:</strong> Pro (clients illimités)</p>
+    </div>
+    <p style="color: #555; margin: 15px 0 0 0; line-height: 1.5;">Cette limite se réinitialise automatiquement au début de chaque mois. Pour continuer à ajouter des clients sans limite, nous vous recommandons de passer au plan Pro qui offre un nombre illimité de clients.</p>
+  </div>
+  
+  <div style="text-align: center; margin: 20px 0;">
+    <a href="{subscription_url}" style="display: inline-block; background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Gérer mon abonnement</a>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">Cordialement,<br>{company_name}</p>
+    <p style="margin: 10px 0 0 0; font-size: 12px;">Besoin d''aide ? Contactez-nous à {support_email}</p>
+  </div>
+</div>',
+  'Limite de clients atteinte - Mise à niveau vers Pro recommandée
+
+Bonjour {user_name},
+
+Vous avez atteint la limite mensuelle de {limit} clients ajoutés ce mois sur votre plan Starter.
+
+Clients ajoutés ce mois: {current} / {limit}
+Plan actuel: Starter
+Plan recommandé: Pro (clients illimités)
+
+Cette limite se réinitialise automatiquement au début de chaque mois. Pour continuer à ajouter des clients sans limite, nous vous recommandons de passer au plan Pro qui offre un nombre illimité de clients.
+
+Gérer mon abonnement: {subscription_url}
+
+Cordialement,
+{company_name}
+
+Besoin d''aide ? Contactez-nous à {support_email}',
+  '{"user_name": true, "limit": true, "current": true, "subscription_url": true, "company_name": true, "support_email": true}',
+  true, true, 'fr'
+);
+
+-- English
+INSERT INTO public.email_templates (
+  template_type, template_name, subject, html_content, text_content, variables, is_active, is_default, language
+) VALUES (
+  'subscription_limit_reached',
+  'Client limit reached',
+  'Client limit reached - Upgrade to Pro recommended',
+  '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Client limit reached</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">Starter Plan</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Hello {user_name},</h2>
+    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">You have reached the limit of <strong>{limit}</strong> active clients on your Starter plan.</p>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b;">
+      <p style="margin: 0 0 5px 0;"><strong>Active clients:</strong> {current} / {limit}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Current plan:</strong> Starter</p>
+      <p style="margin: 0; font-weight: bold; color: #333;"><strong>Recommended plan:</strong> Pro (unlimited clients)</p>
+    </div>
+    <p style="color: #555; margin: 15px 0 0 0; line-height: 1.5;">This limit automatically resets at the start of each month. To continue adding clients without limits, we recommend upgrading to the Pro plan which offers unlimited clients.</p>
+  </div>
+  
+  <div style="text-align: center; margin: 20px 0;">
+    <a href="{subscription_url}" style="display: inline-block; background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Manage my subscription</a>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">Best regards,<br>{company_name}</p>
+    <p style="margin: 10px 0 0 0; font-size: 12px;">Need help? Contact us at {support_email}</p>
+  </div>
+</div>',
+  'Client limit reached - Upgrade to Pro recommended
+
+Hello {user_name},
+
+You have reached the limit of {limit} active clients on your Starter plan.
+
+Active clients: {current} / {limit}
+Current plan: Starter
+Recommended plan: Pro (unlimited clients)
+
+To continue adding clients, we recommend upgrading to the Pro plan which offers unlimited clients.
+
+Manage my subscription: {subscription_url}
+
+Best regards,
+{company_name}
+
+Need help? Contact us at {support_email}',
+  '{"user_name": true, "limit": true, "current": true, "subscription_url": true, "company_name": true, "support_email": true}',
+  true, false, 'en'
+);
+
+-- Dutch
+INSERT INTO public.email_templates (
+  template_type, template_name, subject, html_content, text_content, variables, is_active, is_default, language
+) VALUES (
+  'subscription_limit_reached',
+  'Klantenlimiet bereikt',
+  'Klantenlimiet bereikt - Upgrade naar Pro aanbevolen',
+  '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Klantenlimiet bereikt</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">Starter Plan</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Hallo {user_name},</h2>
+    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">U heeft de maandelijkse limiet van <strong>{limit}</strong> klanten toegevoegd deze maand bereikt op uw Starter-plan.</p>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b;">
+      <p style="margin: 0 0 5px 0;"><strong>Klanten toegevoegd deze maand:</strong> {current} / {limit}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Huidig plan:</strong> Starter</p>
+      <p style="margin: 0; font-weight: bold; color: #333;"><strong>Aanbevolen plan:</strong> Pro (onbeperkte klanten)</p>
+    </div>
+    <p style="color: #555; margin: 15px 0 0 0; line-height: 1.5;">Om door te gaan met het toevoegen van klanten, raden we u aan om te upgraden naar het Pro-plan dat onbeperkte klanten biedt.</p>
+  </div>
+  
+  <div style="text-align: center; margin: 20px 0;">
+    <a href="{subscription_url}" style="display: inline-block; background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Mijn abonnement beheren</a>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">Met vriendelijke groet,<br>{company_name}</p>
+    <p style="margin: 10px 0 0 0; font-size: 12px;">Hulp nodig? Neem contact met ons op via {support_email}</p>
+  </div>
+</div>',
+  'Klantenlimiet bereikt - Upgrade naar Pro aanbevolen
+
+Hallo {user_name},
+
+U heeft de maandelijkse limiet van {limit} klanten toegevoegd deze maand bereikt op uw Starter-plan.
+
+Klanten toegevoegd deze maand: {current} / {limit}
+Huidig plan: Starter
+Aanbevolen plan: Pro (onbeperkte klanten)
+
+Om door te gaan met het toevoegen van klanten, raden we u aan om te upgraden naar het Pro-plan dat onbeperkte klanten biedt.
+
+Mijn abonnement beheren: {subscription_url}
+
+Met vriendelijke groet,
+{company_name}
+
+Hulp nodig? Neem contact met ons op via {support_email}',
+  '{"user_name": true, "limit": true, "current": true, "subscription_url": true, "company_name": true, "support_email": true}',
+  true, false, 'nl'
+);
+
+-- =====================================================
+-- PEPPOL INVOICE LIMIT REACHED TEMPLATES
+-- =====================================================
+
+-- French
+INSERT INTO public.email_templates (
+  template_type, template_name, subject, html_content, text_content, variables, is_active, is_default, language
+) VALUES (
+  'peppol_limit_reached',
+  'Limite de factures Peppol atteinte',
+  'Limite de factures Peppol atteinte - Mise à niveau vers Pro recommandée',
+  '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Limite de factures Peppol atteinte</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">Plan Starter</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Bonjour {user_name},</h2>
+    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">Vous avez atteint la limite de <strong>{limit}</strong> factures Peppol (envoyées + reçues) ce mois sur votre plan Starter.</p>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b;">
+      <p style="margin: 0 0 5px 0;"><strong>Factures Peppol utilisées:</strong> {current} / {limit}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Plan actuel:</strong> Starter</p>
+      <p style="margin: 0; font-weight: bold; color: #333;"><strong>Plan recommandé:</strong> Pro (factures Peppol illimitées)</p>
+    </div>
+    <p style="color: #555; margin: 15px 0 0 0; line-height: 1.5;">Pour continuer à envoyer et recevoir des factures Peppol, nous vous recommandons de passer au plan Pro qui offre un nombre illimité de factures Peppol.</p>
+  </div>
+  
+  <div style="text-align: center; margin: 20px 0;">
+    <a href="{subscription_url}" style="display: inline-block; background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Gérer mon abonnement</a>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">Cordialement,<br>{company_name}</p>
+    <p style="margin: 10px 0 0 0; font-size: 12px;">Besoin d''aide ? Contactez-nous à {support_email}</p>
+  </div>
+</div>',
+  'Limite de factures Peppol atteinte - Mise à niveau vers Pro recommandée
+
+Bonjour {user_name},
+
+Vous avez atteint la limite de {limit} factures Peppol (envoyées + reçues) ce mois sur votre plan Starter.
+
+Factures Peppol utilisées: {current} / {limit}
+Plan actuel: Starter
+Plan recommandé: Pro (factures Peppol illimitées)
+
+Pour continuer à envoyer et recevoir des factures Peppol, nous vous recommandons de passer au plan Pro qui offre un nombre illimité de factures Peppol.
+
+Gérer mon abonnement: {subscription_url}
+
+Cordialement,
+{company_name}
+
+Besoin d''aide ? Contactez-nous à {support_email}',
+  '{"user_name": true, "limit": true, "current": true, "subscription_url": true, "company_name": true, "support_email": true}',
+  true, false, 'fr'
+);
+
+-- English
+INSERT INTO public.email_templates (
+  template_type, template_name, subject, html_content, text_content, variables, is_active, is_default, language
+) VALUES (
+  'peppol_limit_reached',
+  'Peppol invoice limit reached',
+  'Peppol invoice limit reached - Upgrade to Pro recommended',
+  '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Peppol invoice limit reached</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">Starter Plan</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Hello {user_name},</h2>
+    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">You have reached the limit of <strong>{limit}</strong> Peppol invoices (sent + received) this month on your Starter plan.</p>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b;">
+      <p style="margin: 0 0 5px 0;"><strong>Peppol invoices used:</strong> {current} / {limit}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Current plan:</strong> Starter</p>
+      <p style="margin: 0; font-weight: bold; color: #333;"><strong>Recommended plan:</strong> Pro (unlimited Peppol invoices)</p>
+    </div>
+    <p style="color: #555; margin: 15px 0 0 0; line-height: 1.5;">To continue sending and receiving Peppol invoices, we recommend upgrading to the Pro plan which offers unlimited Peppol invoices.</p>
+  </div>
+  
+  <div style="text-align: center; margin: 20px 0;">
+    <a href="{subscription_url}" style="display: inline-block; background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Manage my subscription</a>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">Best regards,<br>{company_name}</p>
+    <p style="margin: 10px 0 0 0; font-size: 12px;">Need help? Contact us at {support_email}</p>
+  </div>
+</div>',
+  'Peppol invoice limit reached - Upgrade to Pro recommended
+
+Hello {user_name},
+
+You have reached the limit of {limit} Peppol invoices (sent + received) this month on your Starter plan.
+
+Peppol invoices used: {current} / {limit}
+Current plan: Starter
+Recommended plan: Pro (unlimited Peppol invoices)
+
+To continue sending and receiving Peppol invoices, we recommend upgrading to the Pro plan which offers unlimited Peppol invoices.
+
+Manage my subscription: {subscription_url}
+
+Best regards,
+{company_name}
+
+Need help? Contact us at {support_email}',
+  '{"user_name": true, "limit": true, "current": true, "subscription_url": true, "company_name": true, "support_email": true}',
+  true, false, 'en'
+);
+
+-- Dutch
+INSERT INTO public.email_templates (
+  template_type, template_name, subject, html_content, text_content, variables, is_active, is_default, language
+) VALUES (
+  'peppol_limit_reached',
+  'Peppol-factuurlijmiet bereikt',
+  'Peppol-factuurlijmiet bereikt - Upgrade naar Pro aanbevolen',
+  '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Peppol-factuurlijmiet bereikt</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">Starter Plan</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Hallo {user_name},</h2>
+    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">U heeft de limiet van <strong>{limit}</strong> Peppol-facturen (verzonden + ontvangen) deze maand bereikt op uw Starter-plan.</p>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b;">
+      <p style="margin: 0 0 5px 0;"><strong>Gebruikte Peppol-facturen:</strong> {current} / {limit}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Huidig plan:</strong> Starter</p>
+      <p style="margin: 0; font-weight: bold; color: #333;"><strong>Aanbevolen plan:</strong> Pro (onbeperkte Peppol-facturen)</p>
+    </div>
+    <p style="color: #555; margin: 15px 0 0 0; line-height: 1.5;">Om door te gaan met het verzenden en ontvangen van Peppol-facturen, raden we u aan om te upgraden naar het Pro-plan dat onbeperkte Peppol-facturen biedt.</p>
+  </div>
+  
+  <div style="text-align: center; margin: 20px 0;">
+    <a href="{subscription_url}" style="display: inline-block; background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Mijn abonnement beheren</a>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">Met vriendelijke groet,<br>{company_name}</p>
+    <p style="margin: 10px 0 0 0; font-size: 12px;">Hulp nodig? Neem contact met ons op via {support_email}</p>
+  </div>
+</div>',
+  'Peppol-factuurlijmiet bereikt - Upgrade naar Pro aanbevolen
+
+Hallo {user_name},
+
+U heeft de limiet van {limit} Peppol-facturen (verzonden + ontvangen) deze maand bereikt op uw Starter-plan.
+
+Gebruikte Peppol-facturen: {current} / {limit}
+Huidig plan: Starter
+Aanbevolen plan: Pro (onbeperkte Peppol-facturen)
+
+Om door te gaan met het verzenden en ontvangen van Peppol-facturen, raden we u aan om te upgraden naar het Pro-plan dat onbeperkte Peppol-facturen biedt.
+
+Mijn abonnement beheren: {subscription_url}
+
+Met vriendelijke groet,
+{company_name}
+
+Hulp nodig? Neem contact met ons op via {support_email}',
+  '{"user_name": true, "limit": true, "current": true, "subscription_url": true, "company_name": true, "support_email": true}',
+  true, false, 'nl'
+);
+
+-- =====================================================
+-- PROFILE LIMIT REACHED TEMPLATES
+-- =====================================================
+
+-- French
+INSERT INTO public.email_templates (
+  template_type, template_name, subject, html_content, text_content, variables, is_active, is_default, language
+) VALUES (
+  'profile_limit_reached',
+  'Limite de profils atteinte',
+  'Limite de profils atteinte - Mise à niveau vers Pro recommandée',
+  '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Limite de profils atteinte</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">Plan Starter</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Bonjour {user_name},</h2>
+    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">Vous avez atteint la limite de <strong>{limit}</strong> profil(s) utilisateur sur votre plan Starter.</p>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b;">
+      <p style="margin: 0 0 5px 0;"><strong>Profils créés:</strong> {current} / {limit}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Plan actuel:</strong> Starter</p>
+      <p style="margin: 0; font-weight: bold; color: #333;"><strong>Plan recommandé:</strong> Pro (jusqu''à 10 profils)</p>
+    </div>
+    <p style="color: #555; margin: 15px 0 0 0; line-height: 1.5;">Pour ajouter plus de profils utilisateur et bénéficier de l''accès multi-utilisateur, nous vous recommandons de passer au plan Pro qui permet jusqu''à 10 profils.</p>
+  </div>
+  
+  <div style="text-align: center; margin: 20px 0;">
+    <a href="{subscription_url}" style="display: inline-block; background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Gérer mon abonnement</a>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">Cordialement,<br>{company_name}</p>
+    <p style="margin: 10px 0 0 0; font-size: 12px;">Besoin d''aide ? Contactez-nous à {support_email}</p>
+  </div>
+</div>',
+  'Limite de profils atteinte - Mise à niveau vers Pro recommandée
+
+Bonjour {user_name},
+
+Vous avez atteint la limite de {limit} profil(s) utilisateur sur votre plan Starter.
+
+Profils créés: {current} / {limit}
+Plan actuel: Starter
+Plan recommandé: Pro (jusqu''à 10 profils)
+
+Pour ajouter plus de profils utilisateur et bénéficier de l''accès multi-utilisateur, nous vous recommandons de passer au plan Pro qui permet jusqu''à 10 profils.
+
+Gérer mon abonnement: {subscription_url}
+
+Cordialement,
+{company_name}
+
+Besoin d''aide ? Contactez-nous à {support_email}',
+  '{"user_name": true, "limit": true, "current": true, "subscription_url": true, "company_name": true, "support_email": true}',
+  true, false, 'fr'
+);
+
+-- English
+INSERT INTO public.email_templates (
+  template_type, template_name, subject, html_content, text_content, variables, is_active, is_default, language
+) VALUES (
+  'profile_limit_reached',
+  'Profile limit reached',
+  'Profile limit reached - Upgrade to Pro recommended',
+  '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Profile limit reached</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">Starter Plan</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Hello {user_name},</h2>
+    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">You have reached the limit of <strong>{limit}</strong> user profile(s) on your Starter plan.</p>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b;">
+      <p style="margin: 0 0 5px 0;"><strong>Profiles created:</strong> {current} / {limit}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Current plan:</strong> Starter</p>
+      <p style="margin: 0; font-weight: bold; color: #333;"><strong>Recommended plan:</strong> Pro (up to 10 profiles)</p>
+    </div>
+    <p style="color: #555; margin: 15px 0 0 0; line-height: 1.5;">To add more user profiles and benefit from multi-user access, we recommend upgrading to the Pro plan which allows up to 10 profiles.</p>
+  </div>
+  
+  <div style="text-align: center; margin: 20px 0;">
+    <a href="{subscription_url}" style="display: inline-block; background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Manage my subscription</a>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">Best regards,<br>{company_name}</p>
+    <p style="margin: 10px 0 0 0; font-size: 12px;">Need help? Contact us at {support_email}</p>
+  </div>
+</div>',
+  'Profile limit reached - Upgrade to Pro recommended
+
+Hello {user_name},
+
+You have reached the limit of {limit} user profile(s) on your Starter plan.
+
+Profiles created: {current} / {limit}
+Current plan: Starter
+Recommended plan: Pro (up to 10 profiles)
+
+To add more user profiles and benefit from multi-user access, we recommend upgrading to the Pro plan which allows up to 10 profiles.
+
+Manage my subscription: {subscription_url}
+
+Best regards,
+{company_name}
+
+Need help? Contact us at {support_email}',
+  '{"user_name": true, "limit": true, "current": true, "subscription_url": true, "company_name": true, "support_email": true}',
+  true, false, 'en'
+);
+
+-- Dutch
+INSERT INTO public.email_templates (
+  template_type, template_name, subject, html_content, text_content, variables, is_active, is_default, language
+) VALUES (
+  'profile_limit_reached',
+  'Profiel limiet bereikt',
+  'Profiel limiet bereikt - Upgrade naar Pro aanbevolen',
+  '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Profiel limiet bereikt</h1>
+    <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">Starter Plan</p>
+  </div>
+  
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Hallo {user_name},</h2>
+    <p style="color: #555; margin: 0 0 15px 0; line-height: 1.5;">U heeft de limiet van <strong>{limit}</strong> gebruikersprofiel(en) bereikt op uw Starter-plan.</p>
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b;">
+      <p style="margin: 0 0 5px 0;"><strong>Gemaakte profielen:</strong> {current} / {limit}</p>
+      <p style="margin: 0 0 5px 0;"><strong>Huidig plan:</strong> Starter</p>
+      <p style="margin: 0; font-weight: bold; color: #333;"><strong>Aanbevolen plan:</strong> Pro (tot 10 profielen)</p>
+    </div>
+    <p style="color: #555; margin: 15px 0 0 0; line-height: 1.5;">Om meer gebruikersprofielen toe te voegen en te profiteren van multi-user toegang, raden we u aan om te upgraden naar het Pro-plan dat tot 10 profielen toestaat.</p>
+  </div>
+  
+  <div style="text-align: center; margin: 20px 0;">
+    <a href="{subscription_url}" style="display: inline-block; background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Mijn abonnement beheren</a>
+  </div>
+  
+  <div style="text-align: center; color: #666; font-size: 14px;">
+    <p style="margin: 0;">Met vriendelijke groet,<br>{company_name}</p>
+    <p style="margin: 10px 0 0 0; font-size: 12px;">Hulp nodig? Neem contact met ons op via {support_email}</p>
+  </div>
+</div>',
+  'Profiel limiet bereikt - Upgrade naar Pro aanbevolen
+
+Hallo {user_name},
+
+U heeft de limiet van {limit} gebruikersprofiel(en) bereikt op uw Starter-plan.
+
+Gemaakte profielen: {current} / {limit}
+Huidig plan: Starter
+Aanbevolen plan: Pro (tot 10 profielen)
+
+Om meer gebruikersprofielen toe te voegen en te profiteren van multi-user toegang, raden we u aan om te upgraden naar het Pro-plan dat tot 10 profielen toestaat.
+
+Mijn abonnement beheren: {subscription_url}
+
+Met vriendelijke groet,
+{company_name}
+
+Hulp nodig? Neem contact met ons op via {support_email}',
+  '{"user_name": true, "limit": true, "current": true, "subscription_url": true, "company_name": true, "support_email": true}',
+  true, false, 'nl'
+);

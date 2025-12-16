@@ -19,6 +19,8 @@ const PeppolWidget = () => {
     settings: {
       isConfigured: false,
       peppolId: '',
+      peppolId9925: null,
+      peppolId0208: null,
       businessName: '',
       sandboxMode: true
     },
@@ -78,7 +80,7 @@ const PeppolWidget = () => {
         console.error('Error loading Peppol settings:', settingsResult.error);
         setPeppolData(prev => ({
           ...prev,
-          settings: { isConfigured: false, peppolId: '', name: '', businessName: '', sandboxMode: true },
+          settings: { isConfigured: false, peppolId: '', peppolId9925: null, peppolId0208: null, name: '', businessName: '', sandboxMode: true },
           connectionStatus: 'disconnected'
         }));
         setLoading(false);
@@ -89,6 +91,8 @@ const PeppolWidget = () => {
       const settings = settingsResult.data || {
         isConfigured: false,
         peppolId: '',
+        peppolId9925: null,
+        peppolId0208: null,
         name: '',
         businessName: '',
         sandboxMode: true
@@ -328,9 +332,21 @@ const PeppolWidget = () => {
                 <Icon name="Hash" size={12} className="sm:w-[14px] sm:h-[14px]" color="var(--color-muted-foreground)" />
                 <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.peppolWidget.connectionInfo.peppolId.label')}</span>
               </div>
-              <p className="text-xs sm:text-sm font-medium text-foreground truncate">
-                {peppolData.settings.peppolId || t('dashboard.peppolWidget.connectionInfo.peppolId.notDefined')}
-              </p>
+              {/* Show both 0208 and 9925 for Belgium if both exist */}
+              {peppolData.settings.peppolId0208 && peppolData.settings.peppolId9925 ? (
+                <div className="space-y-1">
+                  <p className="text-xs sm:text-sm font-medium text-foreground truncate">
+                    <span className="text-muted-foreground">0208:</span> {peppolData.settings.peppolId0208}
+                  </p>
+                  <p className="text-xs sm:text-sm font-medium text-foreground truncate">
+                    <span className="text-muted-foreground">9925:</span> {peppolData.settings.peppolId9925}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs sm:text-sm font-medium text-foreground truncate">
+                  {peppolData.settings.peppolId || t('dashboard.peppolWidget.connectionInfo.peppolId.notDefined')}
+                </p>
+              )}
             </div>
             <div className="p-3 sm:p-4 bg-muted/30 rounded-lg">
               <div className="flex items-center space-x-2 mb-2">
@@ -344,7 +360,7 @@ const PeppolWidget = () => {
           </div>
 
           {/* Statistics */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
             <div className="text-center p-3 sm:p-4 bg-primary/5 rounded-lg">
               <div className="text-lg sm:text-xl font-bold text-primary mb-1">
                 {peppolData.stats.totalSent}
@@ -356,12 +372,6 @@ const PeppolWidget = () => {
                 {peppolData.stats.totalReceived}
               </div>
               <div className="text-xs text-muted-foreground">{t('dashboard.peppolWidget.statistics.totalReceived')}</div>
-            </div>
-            <div className="text-center p-3 sm:p-4 bg-warning/5 rounded-lg">
-              <div className="text-lg sm:text-xl font-bold text-warning mb-1">
-                {peppolData.stats.pending}
-              </div>
-              <div className="text-xs text-muted-foreground">{t('dashboard.peppolWidget.statistics.pending')}</div>
             </div>
             <div className="text-center p-3 sm:p-4 bg-error/5 rounded-lg">
               <div className="text-lg sm:text-xl font-bold text-error mb-1">

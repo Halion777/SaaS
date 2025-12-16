@@ -1297,6 +1297,43 @@ export class PeppolService {
       const peppolQuota = await featureAccessService.canSendPeppolInvoice(user.id);
       
       if (!peppolQuota.withinLimit && !peppolQuota.unlimited) {
+        // Send email notification about limit reached
+        try {
+          const { EmailService } = await import('./emailService');
+          const { data: userData } = await supabase
+            .from('users')
+            .select('first_name, last_name, email, language_preference')
+            .eq('id', user.id)
+            .single();
+          
+          const userName = userData?.first_name || userData?.last_name 
+            ? `${userData.first_name || ''} ${userData.last_name || ''}`.trim() 
+            : 'Utilisateur';
+          const userEmail = userData?.email || user.email;
+          const language = userData?.language_preference?.split('-')[0]?.toLowerCase() || 'fr';
+          
+          const companyProfile = await EmailService.getCurrentUserCompanyProfile(user.id);
+          const companyName = companyProfile?.company_name || 'Haliqo';
+          const subscriptionUrl = `${window.location.origin}/subscription`;
+          const supportEmail = 'support@haliqo.com';
+          
+          await EmailService.sendEmailViaEdgeFunction('peppol_limit_reached', {
+            user_id: user.id,
+            user_email: userEmail,
+            variables: {
+              user_name: userName,
+              limit: peppolQuota.limit.toString(),
+              current: peppolQuota.usage.toString(),
+              subscription_url: subscriptionUrl,
+              company_name: companyName,
+              support_email: supportEmail
+            }
+          });
+        } catch (emailError) {
+          console.error('Error sending limit reached email:', emailError);
+          // Don't fail the request if email fails
+        }
+        
         throw new Error(
           `Peppol invoice limit reached. You can send/receive up to ${peppolQuota.limit} Peppol invoices per month on your current plan. ` +
           `You have used ${peppolQuota.usage} of ${peppolQuota.limit}. Please upgrade to Pro for unlimited Peppol invoices.`

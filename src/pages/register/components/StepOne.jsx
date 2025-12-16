@@ -639,7 +639,7 @@ const StepOne = ({ formData, updateFormData, errors, onIncompleteRegistrationDet
 
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
-            {t('registerForm.step1.phone')} <span className="text-error">*</span>
+            {t('registerForm.step1.phone')} <span className="text-red-500">*</span>
           </label>
           <div className="flex gap-2">
             <div className="w-48 flex-shrink-0">

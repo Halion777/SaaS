@@ -249,8 +249,14 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                 iconName="Send"
                 onClick={() => onInvoiceAction('send', invoice)}
                 className="text-xs text-primary hover:text-primary/80"
-                title={!canEdit ? t('permissions.noFullAccess') : t('invoicesManagement.table.actions.sendInvoice')}
-                disabled={!canEdit}
+                title={
+                  !canEdit 
+                    ? t('permissions.noFullAccess') 
+                    : invoice.peppolSentAt 
+                      ? t('invoicesManagement.table.actions.alreadySent', 'Invoice already sent')
+                      : t('invoicesManagement.table.actions.sendInvoice')
+                }
+                disabled={!canEdit || !!invoice.peppolSentAt}
               />
               <Button
                 variant="ghost"
@@ -449,9 +455,15 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                         size="sm"
                         iconName="Send"
                         onClick={() => onInvoiceAction('send', invoice)}
-                        title={!canEdit ? t('permissions.noFullAccess') : t('invoicesManagement.table.actions.sendInvoice')}
+                        title={
+                          !canEdit 
+                            ? t('permissions.noFullAccess') 
+                            : (invoice.peppolSentAt || invoice.peppolStatus === 'sent' || invoice.peppolStatus === 'delivered')
+                              ? t('invoicesManagement.table.actions.alreadySent', 'Invoice already sent')
+                              : t('invoicesManagement.table.actions.sendInvoice')
+                        }
                         className="text-primary hover:text-primary/80"
-                        disabled={!canEdit}
+                        disabled={!canEdit || !!invoice.peppolSentAt || invoice.peppolStatus === 'sent' || invoice.peppolStatus === 'delivered'}
                       />
                       <Button
                         variant="ghost"

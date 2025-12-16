@@ -50,6 +50,43 @@ class MultiUserService {
       const currentProfiles = await this.getCompanyProfiles(userId);
       
       if (currentProfiles.length >= limits.maxProfiles) {
+        // Send email notification about limit reached
+        try {
+          const { EmailService } = await import('./emailService');
+          const { data: userData } = await supabase
+            .from('users')
+            .select('first_name, last_name, email, language_preference')
+            .eq('id', userId)
+            .single();
+          
+          const userName = userData?.first_name || userData?.last_name 
+            ? `${userData.first_name || ''} ${userData.last_name || ''}`.trim() 
+            : 'Utilisateur';
+          const userEmail = userData?.email;
+          const language = userData?.language_preference?.split('-')[0]?.toLowerCase() || 'fr';
+          
+          const companyProfile = await EmailService.getCurrentUserCompanyProfile(userId);
+          const companyName = companyProfile?.company_name || 'Haliqo';
+          const subscriptionUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/subscription`;
+          const supportEmail = 'support@haliqo.com';
+          
+          await EmailService.sendEmailViaEdgeFunction('profile_limit_reached', {
+            user_id: userId,
+            user_email: userEmail,
+            variables: {
+              user_name: userName,
+              limit: limits.maxProfiles.toString(),
+              current: currentProfiles.length.toString(),
+              subscription_url: subscriptionUrl,
+              company_name: companyName,
+              support_email: supportEmail
+            }
+          });
+        } catch (emailError) {
+          console.error('Error sending limit reached email:', emailError);
+          // Don't fail the request if email fails
+        }
+        
         throw new Error(`Limite de profils atteinte. Maximum: ${limits.maxProfiles} profil(s) pour votre plan.`);
       }
       
@@ -454,26 +491,36 @@ class MultiUserService {
       const isActive = userProfile.subscription_status === 'active' || 
                        userProfile.subscription_status === 'trial';
       
+      // Import quota config
+      const { QUOTAS } = await import('../config/subscriptionFeatures');
+      const plan = userProfile.selected_plan || 'starter';
+      const planQuotas = QUOTAS[plan] || QUOTAS.starter;
+      
       // Determine limits based on plan type
       if (userProfile.selected_plan === 'pro' && isActive) {
         return {
-          maxProfiles: 10,
-          maxStorage: '100GB',
+          maxProfiles: planQuotas.maxProfiles,
+          clientsPerMonth: planQuotas.clientsPerMonth, // Monthly limit
+          peppolInvoicesPerMonth: planQuotas.peppolInvoicesPerMonth, // Monthly limit
           features: ['multi-user', 'advanced-analytics', 'priority-support']
         };
       } else {
         // Starter plan or inactive subscription
         return {
-          maxProfiles: 1,
-          maxStorage: '10GB',
+          maxProfiles: planQuotas.maxProfiles,
+          clientsPerMonth: planQuotas.clientsPerMonth, // Monthly limit
+          peppolInvoicesPerMonth: planQuotas.peppolInvoicesPerMonth, // Monthly limit
           features: ['basic']
         };
       }
     } catch (error) {
       console.error('Error getting subscription limits:', error);
+      const { QUOTAS } = await import('../config/subscriptionFeatures');
+      const planQuotas = QUOTAS.starter;
       return {
-        maxProfiles: 1,
-        maxStorage: '10GB',
+        maxProfiles: planQuotas.maxProfiles,
+        clientsPerMonth: planQuotas.clientsPerMonth,
+        peppolInvoicesPerMonth: planQuotas.peppolInvoicesPerMonth,
         features: ['basic']
       };
     }

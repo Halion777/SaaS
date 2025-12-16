@@ -175,6 +175,73 @@ const SubscriptionViewModal = ({ isOpen, onClose, subscription }) => {
               </div>
             </div>
 
+            {/* Usage Statistics */}
+            {subscription.usage && (
+              <div className="bg-muted/30 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-foreground mb-3">Usage Statistics</h3>
+                <div className="space-y-4">
+                  {/* Clients Usage */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs text-muted-foreground">Clients Added This Month</p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {subscription.usage.clientsAddedThisMonth || 0} / {subscription.usage.maxClientsPerMonth === 'Unlimited' ? '∞' : subscription.usage.maxClientsPerMonth || 'N/A'}
+                      </p>
+                    </div>
+                    {subscription.usage.maxClientsPerMonth !== 'Unlimited' && (
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div 
+                          className="bg-primary h-2 rounded-full transition-all"
+                          style={{ 
+                            width: `${Math.min(100, ((subscription.usage.clientsAddedThisMonth || 0) / (parseInt(subscription.usage.maxClientsPerMonth) || 1)) * 100)}%` 
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Peppol Invoices Usage */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs text-muted-foreground">Peppol Invoices (This Month)</p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {subscription.usage.peppolInvoices || 0} / {subscription.usage.maxPeppolInvoices === 'Unlimited' ? '∞' : subscription.usage.maxPeppolInvoices || 'N/A'}
+                      </p>
+                    </div>
+                    {subscription.usage.maxPeppolInvoices !== 'Unlimited' && (
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div 
+                          className="bg-amber-500 h-2 rounded-full transition-all"
+                          style={{ 
+                            width: `${Math.min(100, ((subscription.usage.peppolInvoices || 0) / (parseInt(subscription.usage.maxPeppolInvoices) || 1)) * 100)}%` 
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Usage Summary */}
+                  <div className="pt-3 border-t border-border">
+                    <p className="text-xs text-muted-foreground mb-1">Plan Limits</p>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-muted-foreground">Clients Limit: </span>
+                        <span className="font-medium text-foreground">
+                          {subscription.usage.maxClientsPerMonth === 'Unlimited' ? 'Unlimited' : `${subscription.usage.maxClientsPerMonth} clients per month`}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Peppol Limit: </span>
+                        <span className="font-medium text-foreground">
+                          {subscription.usage.maxPeppolInvoices === 'Unlimited' ? 'Unlimited' : `${subscription.usage.maxPeppolInvoices}/month`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Timestamps */}
             <div className="bg-muted/30 rounded-lg p-4">
               <h3 className="text-sm font-medium text-foreground mb-3">Timestamps</h3>

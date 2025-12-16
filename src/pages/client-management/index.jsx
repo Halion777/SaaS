@@ -22,9 +22,11 @@ import {
   toggleClientStatus,
   getClientsByLocation
 } from '../../services/clientsService';
+import { getStarterLimit } from '../../config/subscriptionFeatures';
 
 const ClientManagement = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [clients, setClients] = useState([]);
   const [filteredClients, setFilteredClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
@@ -443,10 +445,34 @@ const ClientManagement = () => {
   // Get user profile and subscription limits
   const { userProfile, subscriptionLimits } = useMultiUser();
   
-  // Check if client limit is reached for Starter plan
+  // Check if client limit is reached for Starter plan (monthly limit)
   const isStarterPlan = userProfile?.selected_plan === 'starter';
-  const activeClientsCount = clients.filter(c => c.isActive).length;
-  const clientLimitReached = isStarterPlan && subscriptionLimits?.maxClients > 0 && activeClientsCount >= subscriptionLimits.maxClients;
+  const [monthlyClientsAdded, setMonthlyClientsAdded] = useState(0);
+  
+  useEffect(() => {
+    const checkMonthlyClients = async () => {
+      if (!user?.id) return;
+      try {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+        
+        const { count } = await supabase
+          .from('clients')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .gte('created_at', startOfMonth.toISOString());
+        
+        setMonthlyClientsAdded(count || 0);
+      } catch (error) {
+        console.error('Error checking monthly clients:', error);
+      }
+    };
+    
+    checkMonthlyClients();
+  }, [user?.id, clients.length]);
+  
+  const clientLimitReached = isStarterPlan && subscriptionLimits?.clientsPerMonth > 0 && monthlyClientsAdded >= subscriptionLimits.clientsPerMonth;
 
   const renderContent = () => (
     <div className="min-h-screen bg-background">
@@ -889,7 +915,7 @@ const ClientManagement = () => {
         <LimitedAccessGuard
           requiredPlan="pro"
           featureName={t('clientManagement.title', 'Client Management')}
-          customMessage={t('clientManagement.limitReached', 'You have reached the maximum number of active clients ({{max}}) on your Starter plan. Upgrade to Pro for unlimited clients.', { max: subscriptionLimits?.maxClients || 30 })}
+          customMessage={t('clientManagement.limitReached', 'You have reached the monthly limit of {{max}} clients added this month on your Starter plan. Upgrade to Pro for unlimited clients.', { max: subscriptionLimits?.clientsPerMonth || getStarterLimit('clientsPerMonth') })}
           showBanner={true}
         >
           {renderContent()}

@@ -1235,7 +1235,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
             {/* Client Type Selection */}
             <div className="space-y-3">
               <label className="block text-sm font-medium text-foreground">
-                {t('quoteCreation.clientSelection.clientType', 'Type de client')} *
+                {t('quoteCreation.clientSelection.clientType', 'Type de client')} <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-2 gap-3">
                 {typeOptions.map((option) => (

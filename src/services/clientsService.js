@@ -162,9 +162,46 @@ export async function createClient(clientData) {
     const clientQuota = await featureAccessService.canCreateClient(user.id);
     
     if (!clientQuota.withinLimit && !clientQuota.unlimited) {
+      // Send email notification about limit reached
+      try {
+        const { EmailService } = await import('./emailService');
+        const { data: userData } = await supabase
+          .from('users')
+          .select('first_name, last_name, email, language_preference')
+          .eq('id', user.id)
+          .single();
+        
+        const userName = userData?.first_name || userData?.last_name 
+          ? `${userData.first_name || ''} ${userData.last_name || ''}`.trim() 
+          : 'Utilisateur';
+        const userEmail = userData?.email || user.email;
+        const language = userData?.language_preference?.split('-')[0]?.toLowerCase() || 'fr';
+        
+        const companyProfile = await EmailService.getCurrentUserCompanyProfile(user.id);
+        const companyName = companyProfile?.company_name || 'Haliqo';
+        const subscriptionUrl = `${window.location.origin}/subscription`;
+        const supportEmail = 'support@haliqo.com';
+        
+        await EmailService.sendEmailViaEdgeFunction('subscription_limit_reached', {
+          user_id: user.id,
+          user_email: userEmail,
+          variables: {
+            user_name: userName,
+            limit: clientQuota.limit.toString(),
+            current: clientQuota.usage.toString(),
+            subscription_url: subscriptionUrl,
+            company_name: companyName,
+            support_email: supportEmail
+          }
+        });
+      } catch (emailError) {
+        console.error('Error sending limit reached email:', emailError);
+        // Don't fail the request if email fails
+      }
+      
       return { 
         error: { 
-          message: `Client limit reached. You can have up to ${clientQuota.limit} active clients on your current plan. Please upgrade to Pro for unlimited clients.`,
+          message: `Monthly client limit reached. You can add up to ${clientQuota.limit} clients per month on your current plan. This limit resets at the start of each month. Please upgrade to Pro for unlimited clients.`,
           code: 'CLIENT_LIMIT_REACHED',
           limit: clientQuota.limit,
           current: clientQuota.usage

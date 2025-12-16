@@ -1382,28 +1382,28 @@ const HomePage = () => {
                           <div className="flex items-center p-3 bg-green-50 rounded-lg">
                             <Icon name="Lock" size={20} className="text-[#12bf23] mr-3" />
                             <div>
-                              <div className="font-semibold text-gray-900">Chiffrement SSL</div>
+                              <div className="font-semibold text-gray-900">{t('home.faq.security.sslEncryption')}</div>
                               <div className="text-sm text-gray-600">{t('home.faq.security.encryptedData')}</div>
                             </div>
                           </div>
                           <div className="flex items-center p-3 bg-blue-50 rounded-lg">
                             <Icon name="Database" size={20} className="text-[#0036ab] mr-3" />
                             <div>
-                              <div className="font-semibold text-gray-900">Sauvegarde automatique</div>
-                              <div className="text-sm text-gray-600">Sauvegarde quotidienne</div>
+                              <div className="font-semibold text-gray-900">{t('home.faq.security.automaticBackup')}</div>
+                              <div className="text-sm text-gray-600">{t('home.faq.security.dailyBackup')}</div>
                             </div>
                           </div>
                           <div className="flex items-center p-3 bg-purple-50 rounded-lg">
                             <Icon name="Eye" size={20} className="text-purple-600 mr-3" />
                             <div>
-                              <div className="font-semibold text-gray-900">Conformité RGPD</div>
+                              <div className="font-semibold text-gray-900">{t('home.faq.security.gdprCompliance')}</div>
                               <div className="text-sm text-gray-600">{t('home.faq.security.compliance')}</div>
                             </div>
                           </div>
                           <div className="flex items-center p-3 bg-orange-50 rounded-lg">
                             <Icon name="Server" size={20} className="text-orange-600 mr-3" />
                             <div>
-                              <div className="font-semibold text-gray-900">Hébergement sécurisé en Europe</div>
+                              <div className="font-semibold text-gray-900">{t('home.faq.security.secureHosting')}</div>
                               <div className="text-sm text-gray-600">{t('home.faq.security.servers')}</div>
                             </div>
                           </div>

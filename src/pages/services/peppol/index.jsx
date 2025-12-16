@@ -18,6 +18,7 @@ import { getPeppolVATSchemeId, parsePeppolId, combinePeppolId, PEPPOL_COUNTRY_LA
 import { loadCompanyInfo } from '../../../services/companyInfoService';
 import { validateVATNumber, getExpectedFormat, VAT_VALIDATION_RULES } from '../../../utils/vatNumberValidation';
 import { getClientCountryOptions } from '../../../utils/countryList';
+import { getStarterLimit } from '../../../config/subscriptionFeatures';
 
 const PeppolNetworkPage = () => {
   const { t, i18n } = useTranslation();
@@ -366,7 +367,7 @@ const PeppolNetworkPage = () => {
           total_amount: parseFloat(inv.final_amount || inv.amount || 0),
           issue_date: inv.issue_date,
           due_date: inv.due_date,
-          status: inv.status || 'unpaid', // Use invoice status (unpaid, paid, overdue, etc.) instead of peppol_status
+          status: inv.peppol_status || 'sent', // Use Peppol status (sent, failed, error) instead of payment status
           peppol_message_id: inv.peppol_message_id,
           created_at: inv.peppol_sent_at || inv.issue_date
         }));
@@ -381,7 +382,7 @@ const PeppolNetworkPage = () => {
         total_amount: parseFloat(inv.amount || 0),
         issue_date: inv.issue_date,
         due_date: inv.due_date,
-        status: inv.status || 'pending', // Use expense invoice status (pending, paid, overdue)
+        status: 'received', // Received invoices are always 'received' status for Peppol
         peppol_message_id: inv.peppol_message_id,
         created_at: inv.peppol_received_at || inv.issue_date
       }));
@@ -576,15 +577,12 @@ const PeppolNetworkPage = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'paid':
+      // Peppol-specific statuses only
+      case 'sent':
         return 'bg-success/10 text-success';
-      case 'unpaid':
-        return 'bg-warning/10 text-warning';
-      case 'overdue':
+      case 'failed':
+      case 'error':
         return 'bg-error/10 text-error';
-      case 'cancelled':
-        return 'bg-purple-500/10 text-purple-600';
-      // For received invoices, keep the old statuses
       case 'delivered':
       case 'received':
       case 'processed':
@@ -598,16 +596,13 @@ const PeppolNetworkPage = () => {
 
   const getStatusText = (status) => {
     switch (status) {
-      // Invoice statuses (for sent invoices)
-      case 'paid':
-        return t('invoicesManagement.status.paid', 'Paid');
-      case 'unpaid':
-        return t('invoicesManagement.status.unpaid', 'Unpaid');
-      case 'overdue':
-        return t('invoicesManagement.status.overdue', 'Overdue');
-      case 'cancelled':
-        return t('invoicesManagement.status.cancelled', 'Cancelled');
-      // Peppol statuses (for received invoices)
+      // Peppol-specific statuses only (no payment statuses)
+      case 'sent':
+        return t('peppol.status.sent', 'Sent');
+      case 'failed':
+        return t('peppol.status.failed', 'Failed');
+      case 'error':
+        return t('peppol.status.error', 'Error');
       case 'delivered':
         return t('peppol.status.delivered', 'Delivered');
       case 'received':
@@ -1347,12 +1342,12 @@ const PeppolNetworkPage = () => {
         const peppolQuota = await featureAccessService.canSendPeppolInvoice(user.id);
         setPeppolUsage({
           usage: peppolQuota.usage || 0,
-          limit: peppolQuota.limit || 50,
+          limit: peppolQuota.limit || getStarterLimit('peppolInvoicesPerMonth'),
           withinLimit: peppolQuota.withinLimit || false
         });
       } catch (error) {
         // Error checking Peppol usage
-        setPeppolUsage({ usage: 0, limit: 50, withinLimit: true });
+        setPeppolUsage({ usage: 0, limit: getStarterLimit('peppolInvoicesPerMonth'), withinLimit: true });
       }
     };
 
@@ -2000,9 +1995,9 @@ const PeppolNetworkPage = () => {
                           placeholder={t('peppol.filters.allStatuses')}
                           options={[
                             { value: '', label: t('peppol.filters.allStatuses') },
-                            { value: 'delivered', label: t('peppol.status.delivered') },
-                            { value: 'pending', label: t('peppol.status.pending') },
-                            { value: 'failed', label: t('peppol.status.failed') }
+                            { value: 'sent', label: t('peppol.status.sent', 'Sent') },
+                            { value: 'failed', label: t('peppol.status.failed') },
+                            { value: 'error', label: t('peppol.status.error', 'Error') }
                           ]}
                         />
                       </div>
@@ -2056,9 +2051,9 @@ const PeppolNetworkPage = () => {
                             placeholder="Tous les statuts"
                             options={[
                               { value: '', label: 'Tous les statuts' },
-                              { value: 'delivered', label: 'Livré' },
-                              { value: 'pending', label: 'En attente' },
-                              { value: 'failed', label: 'Échoué' }
+                              { value: 'sent', label: 'Envoyé' },
+                              { value: 'failed', label: 'Échoué' },
+                              { value: 'error', label: 'Erreur' }
                             ]}
                           />
                         </div>
@@ -2243,8 +2238,8 @@ const PeppolNetworkPage = () => {
                           options={[
                             { value: '', label: t('peppol.filters.allStatuses') },
                             { value: 'received', label: t('peppol.status.received') },
-                            { value: 'processed', label: t('peppol.status.processed') },
-                            { value: 'pending', label: t('peppol.status.pending') }
+                            { value: 'failed', label: t('peppol.status.failed') },
+                            { value: 'error', label: t('peppol.status.error', 'Error') }
                           ]}
                         />
                       </div>
@@ -2298,8 +2293,8 @@ const PeppolNetworkPage = () => {
                             options={[
                               { value: '', label: t('peppol.filters.allStatuses') },
                               { value: 'received', label: t('peppol.status.received') },
-                              { value: 'processed', label: t('peppol.status.processed') },
-                              { value: 'pending', label: t('peppol.status.pending') }
+                              { value: 'failed', label: t('peppol.status.failed') },
+                              { value: 'error', label: t('peppol.status.error', 'Error') }
                             ]}
                           />
                         </div>

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import Button from '../../../components/ui/Button';
+import Icon from '../../../components/AppIcon';
 
-const ExportControls = ({ analyticsData, kpiData, detailedAnalyticsData, revenueData, conversionData, clientSegmentData }) => {
+const ExportControls = ({ analyticsData, kpiData, detailedAnalyticsData, revenueData, conversionData, clientSegmentData, isProPlan = false }) => {
   const { t, i18n } = useTranslation();
   const [isExporting, setIsExporting] = useState(false);
 
@@ -403,6 +405,25 @@ const ExportControls = ({ analyticsData, kpiData, detailedAnalyticsData, revenue
       setIsExporting(false);
     }
   };
+
+  const navigate = useNavigate();
+
+  // For starter plan, show upgrade button instead of export buttons
+  if (!isProPlan) {
+    return (
+      <Button
+        variant="default"
+        size="sm"
+        onClick={() => navigate('/subscription')}
+        iconName="ArrowUp"
+        iconPosition="left"
+        className="bg-primary hover:bg-primary/90"
+      >
+        <span className="hidden sm:inline">{t('analyticsDashboard.upgrade.button', 'Upgrade to Pro')}</span>
+        <span className="sm:hidden">{t('analyticsDashboard.upgrade.buttonShort', 'Upgrade')}</span>
+      </Button>
+    );
+  }
 
   return (
     <div className="flex items-center space-x-3">

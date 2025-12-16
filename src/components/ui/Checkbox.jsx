@@ -70,7 +70,7 @@ const Checkbox = React.forwardRef(({
                             )}
                         >
                             {label}
-                            {required && <span className="text-destructive ml-1">*</span>}
+                            {required && <span className="text-red-500 ml-1">*</span>}
                         </label>
                     )}
 
@@ -117,7 +117,7 @@ const CheckboxGroup = React.forwardRef(({
                     error ? "text-destructive" : "text-foreground"
                 )}>
                     {label}
-                    {required && <span className="text-destructive ml-1">*</span>}
+                    {required && <span className="text-red-500 ml-1">*</span>}
                 </legend>
             )}
 

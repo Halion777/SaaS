@@ -241,6 +241,9 @@ const EmailTemplatesManagement = () => {
       'invoice_payment_reminder': 'Invoice Payment Reminder',
       'invoice_to_accountant': 'Invoice to Accountant',
       'expense_invoice_to_accountant': 'Expense Invoice to Accountant',
+      'subscription_limit_reached': 'Subscription Limit Reached',
+      'peppol_limit_reached': 'Peppol Limit Reached',
+      'profile_limit_reached': 'Profile Limit Reached',
     };
     return typeNames[type] || type;
   };
@@ -293,7 +296,10 @@ const EmailTemplatesManagement = () => {
       'invoice_payment_reminder': 'bg-yellow-100 text-yellow-800',
       'invoice_to_accountant': 'bg-indigo-100 text-indigo-800',
       'expense_invoice_to_accountant': 'bg-amber-100 text-amber-800',
-      'email_verification_otp': 'bg-purple-100 text-purple-800'
+      'email_verification_otp': 'bg-purple-100 text-purple-800',
+      'subscription_limit_reached': 'bg-orange-100 text-orange-800',
+      'peppol_limit_reached': 'bg-amber-100 text-amber-800',
+      'profile_limit_reached': 'bg-yellow-100 text-yellow-800'
     };
     return colors[type] || 'bg-gray-100 text-gray-800';
   };

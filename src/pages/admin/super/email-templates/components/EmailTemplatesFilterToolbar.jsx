@@ -60,6 +60,9 @@ const EmailTemplatesFilterToolbar = ({
     { value: 'invoice_payment_reminder', label: 'Invoice Payment Reminder' },
     { value: 'invoice_to_accountant', label: 'Invoice to Accountant' },
     { value: 'expense_invoice_to_accountant', label: 'Expense Invoice to Accountant' },
+    { value: 'subscription_limit_reached', label: 'Subscription Limit Reached' },
+    { value: 'peppol_limit_reached', label: 'Peppol Limit Reached' },
+    { value: 'profile_limit_reached', label: 'Profile Limit Reached' },
   ];
 
   const languageOptions = [

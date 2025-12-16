@@ -809,7 +809,7 @@ const FindArtisanPage = () => {
                     {/* Work Category */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
-                        {t('findArtisan.form.category')} *
+                        {t('findArtisan.form.category')} <span className="text-red-500">*</span>
                       </label>
                       <div className="relative" ref={categoryDropdownRef}>
                         {/* Custom Dropdown Button */}
@@ -883,7 +883,7 @@ const FindArtisanPage = () => {
                         {/* Project Description */}
                         <div>
                           <label className="block text-sm font-medium text-foreground mb-2">
-                            {t('findArtisan.form.description')} *
+                            {t('findArtisan.form.description')} <span className="text-red-500">*</span>
                           </label>
                           <textarea
                             value={formData.description}
@@ -1032,7 +1032,7 @@ const FindArtisanPage = () => {
                     {/* Country Selection */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
-                        Pays *
+                        Pays <span className="text-red-500">*</span>
                       </label>
                       <div className="relative" ref={countryDropdownRef}>
                         {/* Custom Dropdown Button */}
@@ -1165,7 +1165,7 @@ const FindArtisanPage = () => {
                     {/* Zip Code */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
-                        {t('findArtisan.form.zipCode')} *
+                        {t('findArtisan.form.zipCode')} <span className="text-red-500">*</span>
                       </label>
                       <Input
                         type="text"
@@ -1180,7 +1180,7 @@ const FindArtisanPage = () => {
                           {/* City */}
                           <div>
                             <label className="block text-sm font-medium text-foreground mb-2">
-                              {t('findArtisan.form.city', 'City')} *
+                              {t('findArtisan.form.city', 'City')} <span className="text-red-500">*</span>
                             </label>
                             <Input
                               type="text"
@@ -1197,7 +1197,7 @@ const FindArtisanPage = () => {
                     {/* Street Number */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
-                        {t('findArtisan.form.streetNumber')} *
+                        {t('findArtisan.form.streetNumber')} <span className="text-red-500">*</span>
                       </label>
                       <Input
                         type="text"
@@ -1238,7 +1238,7 @@ const FindArtisanPage = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-foreground mb-2">
-                            {t('registerForm.step1.firstName', 'First Name')} *
+                            {t('registerForm.step1.firstName', 'First Name')} <span className="text-red-500">*</span>
                           </label>
                           <Input
                             type="text"
@@ -1267,7 +1267,7 @@ const FindArtisanPage = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-foreground mb-2">
-                            {t('findArtisan.form.phone')} *
+                            {t('findArtisan.form.phone')} <span className="text-red-500">*</span>
                           </label>
                           <Input
                             type="tel"
@@ -1295,7 +1295,7 @@ const FindArtisanPage = () => {
 
                       <div>
                         <label className="block text-sm font-medium text-foreground mb-2">
-                          {t('findArtisan.form.clientAddress')} *
+                          {t('findArtisan.form.clientAddress')} <span className="text-red-500">*</span>
                         </label>
                         <Input
                           type="text"

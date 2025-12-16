@@ -103,10 +103,10 @@
     "hero": {
       "badge": "Haliqo – Your Smart Digital Partner",
       "title": {
-        "prefix": "The all-in-one solution for ",
+        "prefix": "The all in one solution for ",
         "highlight": "Tradesperson professionals"
       },
-      "subtitle": "Save time, send your quotes, invoices and track your payments – stress-free.",
+      "subtitle": "Save time, send your quotes, invoices and track your payments stress-free.",
       "benefits": {
         "quotes": "Quotes & Invoices",
         "clients": "Client Management",
@@ -144,7 +144,7 @@
       },
       "feature2": {
         "title": "Real-time tracking & instant signature",
-        "description": "Track the status of your quotes, send them and have them signed online. Same for your invoices: sent, viewed, paid — everything is tracked."
+        "description": "Track the status of your quotes, send them and have them signed online. Same for your invoices: sent, viewed, paid everything is tracked."
       },
       "feature3": {
         "title": "Automatic payment reminders",
@@ -163,12 +163,12 @@
         "description": "Save tons of time by dictating your quotes by voice. Our voice assistant writes them for you, instantly."
       },
       "feature7": {
-        "title": "AI-powered intelligent pricing (Beta)",
-        "description": "An AI helps you estimate your rates based on the market, your previous quotes, and client type. More accuracy, more conversions."
+        "title": "AI Task & Pricing Suggestions (Beta)",
+        "description": "From a mission description, the AI proposes the right tasks, prices, and tools, helping structure the work clearly and execute faster with less effort."
       },
       "feature8": {
-        "title": "Quote analysis & AI recommendations (Beta)",
-        "description": "Receive automatic feedback on each quote: too expensive? too long? incomplete? AI guides you to optimize it before sending."
+        "title": "Financial Performance Analysis",
+        "description": "The AI analyzes revenues, signed quotes, and key financial data to provide detailed insights, track performance over time, and support smarter business decisions."
       }
     },
     "services": {
@@ -262,7 +262,7 @@
       },
       "others": {
         "title": "Other Trades",
-        "description": "Select this option if your activity is not listed above",
+        "description": "All other professions in the construction sector that are not listed.",
         "benefit": "Haliqo adapts to all specialties"
       }
     },
@@ -346,8 +346,13 @@
       "security": {
         "question": "Is my data secure?",
         "intro": "The security of your data is our absolute priority:",
+        "sslEncryption": "SSL Encryption",
         "encryptedData": "Data encrypted in transit",
+        "automaticBackup": "Automatic Backup",
+        "dailyBackup": "Daily backup",
+        "gdprCompliance": "GDPR Compliance",
         "compliance": "Regulatory compliance",
+        "secureHosting": "Secure Hosting in Europe",
         "servers": "Servers in France",
         "conclusion": "Your data is protected by the highest security standards in the market."
       },
@@ -396,7 +401,7 @@
         "highlight": "digital partner",
         "suffix": " for craftsmen"
       },
-      "subtitle": "Simple, fast and powerful tools to automate your quotes, invoices and payments – while focusing on your trade.",
+      "subtitle": "Simple, fast and powerful tools to automate your quotes, invoices and payments while focusing on your trade.",
       "benefits": {
         "trust": "500+ artisans trust us",
         "support": "Support in FR / NL / EN"
@@ -531,8 +536,7 @@
         "sendAnother": "Send another message"
       },
       "submitting": "Sending...",
-      "send": "Send",
-      "optional": "Optional"
+      "send": "Send"
     }
   },
   "pricing": {
@@ -1338,7 +1342,7 @@
     "keywords": "artisan, construction, quotes, invoices, management, electrician, plumber, painter",
     "ogTitle": "Haliqo - Your professional digital partner",
     "ogDescription": "Simplify your administrative management and develop your clientele",
-    "schemaDescription": "The all-in-one platform for construction professionals. Create quotes, send invoices, track payments and receive prospects.",
+    "schemaDescription": "The all in one platform for construction professionals. Create quotes, send invoices, track payments and receive prospects.",
     "phone": "+33-1-23-45-67-89",
     "about": {
       "title": "About - Haliqo",
@@ -1391,7 +1395,7 @@
     }
   },
   "footer": {
-    "description": "The all-in-one solution for artisans who want to simplify their administrative management and develop their clientele.",
+    "description": "The all in one solution for artisans who want to simplify their administrative management and develop their clientele.",
     "product": {
       "title": "Product",
       "pricing": "Pricing",
@@ -1462,12 +1466,12 @@
         "description": "Save tons of time by dictating your quotes by voice. Our voice assistant writes them for you, instantly."
       },
       "feature7": {
-        "title": "AI-powered intelligent pricing (Beta)",
-        "description": "An AI helps you estimate your rates based on the market, your previous quotes, and client type. More accuracy, more conversions."
+        "title": "AI Task & Pricing Suggestions (Beta)",
+        "description": "From a mission description, the AI proposes the right tasks, prices, and tools, helping structure the work clearly and execute faster with less effort."
       },
       "feature8": {
-        "title": "Quote analysis & AI recommendations (Beta)",
-        "description": "Receive automatic feedback on each quote: too expensive? too long? incomplete? AI guides you to optimize it before sending."
+        "title": "Financial Performance Analysis",
+        "description": "The AI analyzes revenues, signed quotes, and key financial data to provide detailed insights, track performance over time, and support smarter business decisions."
       }
     },
     "benefits": {

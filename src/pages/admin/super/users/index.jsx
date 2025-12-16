@@ -39,6 +39,9 @@ const SuperAdminUsers = () => {
   const [expandedUsers, setExpandedUsers] = useState(new Set());
   const [lifetimeAccessEmail, setLifetimeAccessEmail] = useState('');
   const [isGrantingAccess, setIsGrantingAccess] = useState(false);
+  const [showRevokeLifetimeAccessModal, setShowRevokeLifetimeAccessModal] = useState(false);
+  const [isRevokingAccess, setIsRevokingAccess] = useState(false);
+  const [lifetimeAccessMode, setLifetimeAccessMode] = useState('grant'); // 'grant' or 'revoke'
   const [userStats, setUserStats] = useState({
     total: 0,
     newThisMonth: 0,
@@ -589,6 +592,39 @@ const SuperAdminUsers = () => {
     }
   };
 
+  // Revoke lifetime access by email
+  const handleRevokeLifetimeAccess = async () => {
+    if (!lifetimeAccessEmail || !lifetimeAccessEmail.includes('@')) {
+      alert('Please enter a valid email address');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to revoke lifetime access from ${lifetimeAccessEmail}? This will downgrade their plan to Starter and set their subscription status to inactive.`)) {
+      return;
+    }
+
+    try {
+      setIsRevokingAccess(true);
+
+      const result = await AdminUserService.revokeLifetimeAccessByEmail(lifetimeAccessEmail);
+
+      if (result.error) {
+        alert(result.error.message || 'Error revoking lifetime access');
+        return;
+      }
+
+      alert(`Lifetime access revoked from ${lifetimeAccessEmail}`);
+      setShowRevokeLifetimeAccessModal(false);
+      setLifetimeAccessEmail('');
+      await loadUsers();
+    } catch (error) {
+      console.error('Error revoking lifetime access:', error);
+      alert(`Error revoking lifetime access: ${error.message || 'Please try again.'}`);
+    } finally {
+      setIsRevokingAccess(false);
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -620,11 +656,26 @@ const SuperAdminUsers = () => {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => setShowLifetimeAccessModal(true)}
+                    onClick={() => {
+                      setLifetimeAccessMode('grant');
+                      setShowLifetimeAccessModal(true);
+                    }}
                     className="sm:h-9 sm:px-3 sm:w-auto"
                   >
                     <Icon name="Gift" size={16} className="mr-2" />
                     Grant Lifetime Access
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      setLifetimeAccessMode('revoke');
+                      setShowRevokeLifetimeAccessModal(true);
+                    }}
+                    className="sm:h-9 sm:px-3 sm:w-auto border-red-200 text-red-600 hover:bg-red-50"
+                  >
+                    <Icon name="XCircle" size={16} className="mr-2" />
+                    Revoke Lifetime Access
                   </Button>
                   <Button 
                     variant="outline" 
@@ -781,6 +832,9 @@ const SuperAdminUsers = () => {
                       Role
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Plan
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Profiles
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -850,6 +904,15 @@ const SuperAdminUsers = () => {
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(user.role)}`}>
                           {user.role || 'admin'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          user.selected_plan === 'pro' ? 'bg-blue-100 text-blue-800' :
+                          user.selected_plan === 'starter' ? 'bg-gray-100 text-gray-800' :
+                          'bg-gray-100 text-gray-500'
+                        }`}>
+                          {user.selected_plan ? user.selected_plan.charAt(0).toUpperCase() + user.selected_plan.slice(1) : 'N/A'}
                         </span>
                       </td>
                       <td 
@@ -944,7 +1007,7 @@ const SuperAdminUsers = () => {
                     {isExpanded && hasProfiles && (
                       <tr>
                         <td 
-                          colSpan={7} 
+                          colSpan={8} 
                           className="px-4 py-4 bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
                           onClick={() => toggleUserProfiles(user.id)}
                         >
@@ -1054,6 +1117,16 @@ const SuperAdminUsers = () => {
                         <span className="text-xs text-muted-foreground">Role:</span>
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(user.role)}`}>
                           {user.role || 'admin'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Plan:</span>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          user.selected_plan === 'pro' ? 'bg-blue-100 text-blue-800' :
+                          user.selected_plan === 'starter' ? 'bg-gray-100 text-gray-800' :
+                          'bg-gray-100 text-gray-500'
+                        }`}>
+                          {user.selected_plan ? user.selected_plan.charAt(0).toUpperCase() + user.selected_plan.slice(1) : 'N/A'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
@@ -1586,6 +1659,69 @@ const SuperAdminUsers = () => {
                 disabled={isGrantingAccess}
               >
                 {isGrantingAccess ? 'Granting...' : 'Grant Lifetime Access'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Revoke Lifetime Access Modal */}
+      {showRevokeLifetimeAccessModal && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6 border-b border-border">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-foreground">Revoke Lifetime Access</h2>
+                <button
+                  onClick={() => {
+                    setShowRevokeLifetimeAccessModal(false);
+                    setLifetimeAccessEmail('');
+                  }}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <Icon name="X" size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm text-red-800">
+                  <Icon name="AlertTriangle" size={16} className="inline mr-2" />
+                  Enter the user's email address to revoke their lifetime access. This will downgrade their plan to Starter and set their subscription status to inactive.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Email Address <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="email"
+                  value={lifetimeAccessEmail}
+                  onChange={(e) => setLifetimeAccessEmail(e.target.value)}
+                  placeholder="user@example.com"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-border flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowRevokeLifetimeAccessModal(false);
+                  setLifetimeAccessEmail('');
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleRevokeLifetimeAccess}
+                disabled={isRevokingAccess}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {isRevokingAccess ? 'Revoking...' : 'Revoke Lifetime Access'}
               </Button>
             </div>
           </div>

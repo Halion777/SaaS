@@ -104,10 +104,10 @@
     "hero": {
       "badge": "Haliqo - Votre partenaire digital intelligent",
       "title": {
-        "prefix": "La solution tout-en-un pensée pour les ",
+        "prefix": "La solution tout en un pensée pour les ",
         "highlight": "artisans de tous métiers"
       },
-      "subtitle": "Gagnez du temps, envoyez vos devis, factures et suivez vos paiements – sans stress.",
+      "subtitle": "Gagnez du temps, envoyez vos devis, factures et suivez vos paiements sans stress.",
       "benefits": {
         "quotes": "Devis & Factures",
         "clients": "Gestion clients",
@@ -145,7 +145,7 @@
       },
       "feature2": {
         "title": "Suivi en temps réel & signature instantanée",
-        "description": "Suivez les statuts de vos devis, envoyez-les et faites-les signer en ligne. Même chose pour vos factures : envoyées, vues, payées — tout est tracé."
+        "description": "Suivez les statuts de vos devis, envoyez-les et faites-les signer en ligne. Même chose pour vos factures : envoyées, vues, payées tout est tracé."
       },
       "feature3": {
         "title": "Rappels automatiques de paiement",
@@ -164,12 +164,12 @@
         "description": "Gagnez un temps fou en dictant vos devis à la voix. Notre assistant vocal les rédige pour vous, instantanément."
       },
       "feature7": {
-        "title": "Tarification intelligente par IA (Bêta)",
-        "description": "Une IA vous aide à estimer vos tarifs selon le marché, vos précédents devis, et le type de client. Plus de précision, plus de conversions."
+        "title": "Suggestions IA de tâches et de tarifs (Beta)",
+        "description": "À partir d'une mission décrite, l'IA propose les bonnes tâches, des tarifs adaptés et les outils nécessaires, afin de structurer le travail et d'exécuter plus vite avec moins d'effort."
       },
       "feature8": {
-        "title": "Analyse de devis & recommandations IA (Bêta)",
-        "description": "Recevez un feedback automatique sur chaque devis : trop cher ? trop long ? incomplet ? L'IA vous guide pour l'optimiser avant l'envoi."
+        "title": "Analyse de la performance financière",
+        "description": "L'IA analyse les revenus, les devis signés et les données financières clés pour fournir des analyses détaillées, suivre la performance dans le temps et aider à prendre de meilleures décisions."
       }
     },
     "services": {
@@ -263,7 +263,7 @@
       },
       "others": {
         "title": "Autres métiers",
-        "description": "Sélectionnez cette option si votre activité ne figure pas ci-dessus",
+        "description": "Toutes les autres professions du secteur du bâtiment qui ne sont pas listées.",
         "benefit": "Haliqo s'adapte à toutes les spécialités"
       }
     },
@@ -347,8 +347,13 @@
       "security": {
         "question": "Mes données sont-elles sécurisées ?",
         "intro": "La sécurité de vos données est notre priorité absolue :",
+        "sslEncryption": "Chiffrement SSL",
         "encryptedData": "Données cryptées en transit",
+        "automaticBackup": "Sauvegarde automatique",
+        "dailyBackup": "Sauvegarde quotidienne",
+        "gdprCompliance": "Conformité RGPD",
         "compliance": "Respect de la réglementation",
+        "secureHosting": "Hébergement sécurisé en Europe",
         "servers": "Hébergement sécurisé en Europe",
         "conclusion": "Vos données sont protégées par les plus hauts standards de sécurité du marché."
       },
@@ -397,7 +402,7 @@
         "highlight": "partenaire digital",
         "suffix": " pour artisans"
       },
-      "subtitle": "Des outils simples, rapides et puissants pour automatiser vos devis, factures et paiements – tout en vous concentrant sur votre métier.",
+      "subtitle": "Des outils simples, rapides et puissants pour automatiser vos devis, factures et paiements tout en vous concentrant sur votre métier.",
       "benefits": {
         "trust": "500+ artisans nous font confiance",
         "support": "Support en FR / NL / EN"
@@ -532,8 +537,7 @@
         "sendAnother": "Envoyer un autre message"
       },
       "submitting": "Envoi en cours...",
-      "send": "Envoyer",
-      "optional": "Optionnel"
+      "send": "Envoyer"
     }
   },
   "pricing": {
@@ -1339,7 +1343,7 @@
     "keywords": "artisan, métiers, devis, facture, gestion, électricien, plombier, peintre, menuisier, maçon",
     "ogTitle": "Haliqo - Votre partenaire digital intelligent",
     "ogDescription": "Simplifiez votre gestion administrative et développez votre clientèle",
-    "schemaDescription": "La plateforme tout-en-un pour artisans de tous métiers. Créez des devis, envoyez des factures, suivez les paiements et recevez des prospects.",
+    "schemaDescription": "La plateforme tout en un pour artisans de tous métiers. Créez des devis, envoyez des factures, suivez les paiements et recevez des prospects.",
     "phone": "+33-1-23-45-67-89",
     "about": {
       "title": "À propos - Haliqo",
@@ -1464,12 +1468,12 @@
         "description": "Gagnez un temps fou en dictant vos devis à la voix. Notre assistant vocal les rédige pour vous, instantanément."
       },
       "feature7": {
-        "title": "Tarification intelligente par IA (Bêta)",
-        "description": "Une IA vous aide à estimer vos tarifs selon le marché, vos précédents devis, et le type de client. Plus de précision, plus de conversions."
+        "title": "Suggestions IA de tâches et de tarifs (Beta)",
+        "description": "À partir d'une mission décrite, l'IA propose les bonnes tâches, des tarifs adaptés et les outils nécessaires, afin de structurer le travail et d'exécuter plus vite avec moins d'effort."
       },
       "feature8": {
-        "title": "Analyse de devis & recommandations IA (Bêta)",
-        "description": "Recevez un feedback automatique sur chaque devis : trop cher ? trop long ? incomplet ? L'IA vous guide pour l'optimiser avant l'envoi."
+        "title": "Analyse de la performance financière",
+        "description": "L'IA analyse les revenus, les devis signés et les données financières clés pour fournir des analyses détaillées, suivre la performance dans le temps et aider à prendre de meilleures décisions."
       }
     },
     "benefits": {

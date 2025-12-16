@@ -37,10 +37,19 @@ const DetailedAnalyticsPanel = ({ data, isLoading = false }) => {
               </p>
               <p className="text-base font-semibold text-foreground">
                 {isLoading ? '...' : (typeof value === 'number' 
-                  ? `${key.includes('Revenue') || key.includes('Invoice') ? (() => {
-                      // Always use comma as decimal separator (fr-FR format) to match quote creation flow
-                      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(value);
-                    })() : value}${key.includes('Clients') ? '%' : ''}` 
+                  ? (() => {
+                      // totalInvoices should be displayed as number only (no € symbol)
+                      if (key === 'totalInvoices') {
+                        return value;
+                      }
+                      // Revenue and averageInvoice should have € symbol
+                      if (key.includes('Revenue') || key === 'averageInvoice') {
+                        // Always use comma as decimal separator (fr-FR format) to match quote creation flow
+                        return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(value);
+                      }
+                      // Other numeric values
+                      return `${value}${key.includes('Clients') ? '%' : ''}`;
+                    })()
                   : value)}
               </p>
             </div>

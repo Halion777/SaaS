@@ -103,10 +103,10 @@
     "hero": {
       "badge": "Haliqo - Je Slimme Digitale Partner",
       "title": {
-        "prefix": "De alles-in-één oplossing voor ",
-        "highlight": "vakmensen"
+        "prefix": "De alles in één oplossing voor ",
+        "highlight": "vakmensen"    
       },
-      "subtitle": "Bespaar tijd, verstuur je offertes, facturen en volg je betalingen – zonder stress.",
+      "subtitle": "Bespaar tijd, verstuur je offertes, facturen en volg je betalingen zonder stress.",
       "benefits": {
         "quotes": "Offertes & Facturen",
         "clients": "Klantenbeheer",
@@ -144,7 +144,7 @@
       },
       "feature2": {
         "title": "Real-time tracking & instant handtekening",
-        "description": "Volg de status van je offertes, verstuur ze en laat ze online ondertekenen. Hetzelfde voor je facturen: verzonden, bekeken, betaald — alles wordt bijgehouden."
+        "description": "Volg de status van je offertes, verstuur ze en laat ze online ondertekenen. Hetzelfde voor je facturen: verzonden, bekeken, betaald alles wordt bijgehouden."
       },
       "feature3": {
         "title": "Automatische betalingsherinneringen",
@@ -163,12 +163,12 @@
         "description": "Bespaar enorm veel tijd door je offertes te dicteren. Onze stemassistent schrijft ze voor je, direct."
       },
       "feature7": {
-        "title": "AI-aangedreven intelligente prijsstelling (Beta)",
-        "description": "Een AI helpt je je tarieven te schatten op basis van de markt, je eerdere offertes en klanttype. Meer nauwkeurigheid, meer conversies."
+        "title": "AI Taak- en prijsvoorstellen (Beta)",
+        "description": "Op basis van een beschreven opdracht stelt de AI de juiste taken, prijsinschattingen en benodigde tools voor, zodat het werk duidelijk gestructureerd is en sneller met minder moeite kan worden uitgevoerd."
       },
       "feature8": {
-        "title": "Offerte-analyse & AI-aanbevelingen (Beta)",
-        "description": "Ontvang automatische feedback op elke offerte: te duur? te lang? onvolledig? AI begeleidt je om het te optimaliseren voordat je het verstuurt."
+        "title": "Financiële prestatieanalyse",
+        "description": "De AI analyseert inkomsten, ondertekende offertes en belangrijke financiële gegevens om gedetailleerde inzichten te geven, prestaties in de tijd te volgen en betere zakelijke beslissingen te ondersteunen."
       }
     },
     "services": {
@@ -262,7 +262,7 @@
       },
       "others": {
         "title": "Andere vakken",
-        "description": "Selecteer deze optie als je activiteit hierboven niet vermeld staat",
+        "description": "Alle andere beroepen in de bouwsector die niet zijn opgenomen in de lijst.",
         "benefit": "Haliqo past zich aan alle specialiteiten aan"
       }
     },
@@ -346,8 +346,13 @@
       "security": {
         "question": "Zijn mijn gegevens beveiligd?",
         "intro": "De beveiliging van je gegevens is onze absolute prioriteit:",
+        "sslEncryption": "SSL-versleuteling",
         "encryptedData": "Gegevens versleuteld tijdens transport",
+        "automaticBackup": "Automatische back-up",
+        "dailyBackup": "Dagelijkse back-up",
+        "gdprCompliance": "AVG-conformiteit",
         "compliance": "Naleving van regelgeving",
+        "secureHosting": "Beveiligde hosting in Europa",
         "servers": "Servers in Frankrijk",
         "conclusion": "Uw gegevens worden beschermd door de hoogste beveiligingsstandaarden in de markt."
       },
@@ -392,11 +397,11 @@
     "hero": {
       "badge": "Over ons • Vakmanschap vereenvoudigen",
       "title": {
-        "prefix": "Haliqo, je ",
+        "prefix": "Haliqo, je ",  
         "highlight": "digitale partner",
         "suffix": " voor vakmensen"
       },
-      "subtitle": "Eenvoudige, snelle en krachtige tools om je offertes, facturen en betalingen te automatiseren – terwijl je je focust op je vak.",
+      "subtitle": "Eenvoudige, snelle en krachtige tools om je offertes, facturen en betalingen te automatiseren terwijl je je focust op je vak.",
       "benefits": {
         "trust": "500+ vakmensen vertrouwen ons",
         "support": "Ondersteuning in FR / NL / EN"
@@ -408,7 +413,7 @@
     },
     "story": {
       "badge": "Ons verhaal",
-      "title": "Ons verhaal",
+      "title": "Ons verhaal", 
       "subtitle": "Ontdek hoe Haliqo geboren werd uit een eenvoudige visie",
       "paragraph1": "Het idee van Haliqo werd geboren uit een eenvoudige observatie: vakmensen verliezen enorm veel tijd aan administratieve taken terwijl ze zich zouden moeten kunnen concentreren op hun expertise.",
       "paragraph2": "Na gesprekken met veel zelfstandigen realiseerden we ons dat er een gebrek was aan een eenvoudige, moderne en intuïtieve oplossing, speciaal ontworpen voor hen.",
@@ -531,8 +536,7 @@
         "sendAnother": "Nog een bericht sturen"
       },
       "submitting": "Verzenden...",
-      "send": "Versturen",
-      "optional": "Optioneel"
+      "send": "Versturen"
     }
   },
   "pricing": {
@@ -1344,7 +1348,7 @@
     "keywords": "vakman, bouw, offertes, facturen, beheer, elektricien, loodgieter, schilder",
     "ogTitle": "Haliqo - Je Slimme Digitale Partner",
     "ogDescription": "Vereenvoudig je administratief beheer en ontwikkel je klantenbestand",
-    "schemaDescription": "Het alles-in-één platform voor bouwvakkers. Maak offertes, verstuur facturen, volg betalingen en ontvang prospects.",
+    "schemaDescription": "Het alles in één platform voor bouwvakkers. Maak offertes, verstuur facturen, volg betalingen en ontvang prospects.",
     "phone": "+33-1-23-45-67-89",
     "about": {
       "title": "Over ons - Haliqo",

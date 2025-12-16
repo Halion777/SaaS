@@ -1000,7 +1000,7 @@ const MultiUserProfilesPage = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-2">
                             <label className="text-sm font-medium leading-none text-foreground">
-                              {t('multiUserProfiles.modals.addProfile.profileName')} <span className="text-destructive">*</span>
+                              {t('multiUserProfiles.modals.addProfile.profileName')} <span className="text-red-500">*</span>
                             </label>
                             <input
                               type="text"
@@ -1014,7 +1014,7 @@ const MultiUserProfilesPage = () => {
 
                           <div className="space-y-2">
                             <label className="text-sm font-medium leading-none text-foreground">
-                              {t('multiUserProfiles.modals.addProfile.email')} <span className="text-destructive">*</span>
+                              {t('multiUserProfiles.modals.addProfile.email')} <span className="text-red-500">*</span>
                             </label>
                             <input
                               type="email"
@@ -1085,7 +1085,7 @@ const MultiUserProfilesPage = () => {
                       {profileForm.selectedTemplate === 'custom' && (
                         <div className="mt-4">
                           <label className="text-sm font-medium leading-none text-foreground flex items-center mb-2">
-                            {t('multiUserProfiles.modals.addProfile.customRoleName')} <span className="text-destructive ml-1">*</span>
+                            {t('multiUserProfiles.modals.addProfile.customRoleName')} <span className="text-red-500 ml-1">*</span>
                           </label>
                           <input
                             type="text"
@@ -1243,7 +1243,7 @@ const MultiUserProfilesPage = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-2">
                             <label className="text-sm font-medium leading-none text-foreground">
-                              Nom du profil <span className="text-destructive">*</span>
+                              Nom du profil <span className="text-red-500">*</span>
                             </label>
                             <input
                               type="text"
@@ -1257,7 +1257,7 @@ const MultiUserProfilesPage = () => {
 
                           <div className="space-y-2">
                             <label className="text-sm font-medium leading-none text-foreground">
-                              Email <span className="text-destructive">*</span>
+                              Email <span className="text-red-500">*</span>
                             </label>
                             <input
                               type="email"
@@ -1328,7 +1328,7 @@ const MultiUserProfilesPage = () => {
                         {profileForm.selectedTemplate === 'custom' && (
                           <div className="mt-4">
                             <label className="text-sm font-medium leading-none text-foreground flex items-center mb-2">
-                              {t('multiUserProfiles.modals.addProfile.customRoleName')} <span className="text-destructive ml-1">*</span>
+                              {t('multiUserProfiles.modals.addProfile.customRoleName')} <span className="text-red-500 ml-1">*</span>
                             </label>
                             <input
                               type="text"

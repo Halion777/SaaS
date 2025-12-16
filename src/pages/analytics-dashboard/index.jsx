@@ -693,7 +693,8 @@ const AnalyticsDashboard = () => {
               </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
 
-                <ExportControls 
+                <ExportControls
+                  isProPlan={isProPlan} 
                   analyticsData={analyticsData}
                   kpiData={kpiData}
                   detailedAnalyticsData={detailedAnalyticsData}

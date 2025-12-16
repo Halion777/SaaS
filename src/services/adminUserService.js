@@ -77,6 +77,56 @@ class AdminUserService {
   }
 
   /**
+   * Revoke lifetime access from a user by email
+   */
+  async revokeLifetimeAccessByEmail(email) {
+    try {
+      // Find user by email
+      const { data: userData, error: findError } = await supabase
+        .from('users')
+        .select('id, email, has_lifetime_access, role')
+        .eq('email', email.toLowerCase().trim())
+        .single();
+
+      if (findError || !userData) {
+        return { error: new Error('User not found with this email address') };
+      }
+
+      // Prevent revoking from superadmin or special emails
+      const emailLower = userData.email.toLowerCase().trim();
+      if (userData.role === 'superadmin' || 
+          emailLower === SUPER_ADMIN_EMAIL.toLowerCase() ||
+          emailLower === SUPPORT_EMAIL.toLowerCase()) {
+        return { error: new Error('Cannot revoke lifetime access from superadmin or special accounts') };
+      }
+
+      if (!userData.has_lifetime_access) {
+        return { error: new Error('User does not have lifetime access') };
+      }
+
+      // Update user to revoke lifetime access
+      // Reset to starter plan and inactive status
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ 
+          has_lifetime_access: false,
+          selected_plan: 'starter',
+          subscription_status: 'inactive'
+        })
+        .eq('id', userData.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      return { data: { success: true, userId: userData.id }, error: null };
+    } catch (error) {
+      console.error('Error revoking lifetime access:', error);
+      return { data: null, error };
+    }
+  }
+
+  /**
    * Check if user has lifetime access
    */
   async checkLifetimeAccess(userId) {

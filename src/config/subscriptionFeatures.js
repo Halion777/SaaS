@@ -59,24 +59,53 @@ export const FEATURES = {
 };
 
 // ============================================
-// QUOTA LIMITS
+// QUOTA LIMITS - CENTRALIZED CONFIGURATION
+// ============================================
+// 
+// IMPORTANT: All subscription limits are defined here.
+// Update these values to change limits across the entire application.
+// 
+// Values:
+// - Positive number: Specific limit (e.g., 30 = 30 clients max)
+// - -1: Unlimited access
 // ============================================
 
 export const QUOTAS = {
   starter: {
     quotesPerMonth: -1, // -1 = unlimited (quotes are unlimited)
     invoicesPerMonth: -1, // -1 = unlimited (simple invoices are unlimited)
-    peppolInvoicesPerMonth: 50, // Up to 50 Peppol e-invoices per month (sent + received)
-    maxClients: 30, // Up to 30 active clients
-    maxProfiles: 1 // 1 user
+    peppolInvoicesPerMonth: 50, // Up to 50 Peppol e-invoices per month (sent + received) - RESETS MONTHLY
+    clientsPerMonth: 30, // Up to 30 clients added per month - RESETS MONTHLY
+    maxProfiles: 1 // 1 user profile (total limit, not monthly)
   },
   pro: {
     quotesPerMonth: -1, // -1 = unlimited
     invoicesPerMonth: -1, // -1 = unlimited
     peppolInvoicesPerMonth: -1, // -1 = unlimited (normal usage)
-    maxClients: -1, // -1 = unlimited
-    maxProfiles: 10 // Multi-user access
+    clientsPerMonth: -1, // -1 = unlimited (clients added per month)
+    maxProfiles: 10 // Multi-user access (up to 10 profiles)
   }
+};
+
+// ============================================
+// QUOTA CONSTANTS (for easy reference)
+// ============================================
+// Use these constants instead of hardcoding numbers
+
+export const STARTER_LIMITS = {
+  MAX_CLIENTS_PER_MONTH: QUOTAS.starter.clientsPerMonth,
+  MAX_PEPPOL_INVOICES_PER_MONTH: QUOTAS.starter.peppolInvoicesPerMonth,
+  MAX_PROFILES: QUOTAS.starter.maxProfiles, // Total limit, not monthly
+  MAX_QUOTES_PER_MONTH: QUOTAS.starter.quotesPerMonth,
+  MAX_INVOICES_PER_MONTH: QUOTAS.starter.invoicesPerMonth
+};
+
+export const PRO_LIMITS = {
+  MAX_CLIENTS_PER_MONTH: QUOTAS.pro.clientsPerMonth,
+  MAX_PEPPOL_INVOICES_PER_MONTH: QUOTAS.pro.peppolInvoicesPerMonth,
+  MAX_PROFILES: QUOTAS.pro.maxProfiles, // Total limit, not monthly
+  MAX_QUOTES_PER_MONTH: QUOTAS.pro.quotesPerMonth,
+  MAX_INVOICES_PER_MONTH: QUOTAS.pro.invoicesPerMonth
 };
 
 // ============================================
@@ -173,7 +202,9 @@ export const FEATURE_INFO = {
   },
   [FEATURES.CLIENTS]: {
     icon: 'Users',
-    starterLimit: 'Up to 30 active clients',
+    starterLimit: QUOTAS.starter.clientsPerMonth === -1 
+      ? 'Unlimited' 
+      : `Up to ${QUOTAS.starter.clientsPerMonth} clients per month`,
     proLimit: 'Unlimited'
   },
   [FEATURES.TEMPLATES]: {
@@ -193,8 +224,8 @@ export const FEATURE_INFO = {
   },
   [FEATURES.MULTI_USER]: {
     icon: 'UserPlus',
-    starterLimit: '1 user',
-    proLimit: 'Multi-user access (owner, admin, site manager, etc.)'
+    starterLimit: `${QUOTAS.starter.maxProfiles} user${QUOTAS.starter.maxProfiles > 1 ? 's' : ''}`,
+    proLimit: `Multi-user access (up to ${QUOTAS.pro.maxProfiles} profiles)`
   },
   [FEATURES.ADVANCED_ANALYTICS]: {
     icon: 'BarChart2',
@@ -279,6 +310,31 @@ export const getQuota = (plan, quotaKey) => {
 };
 
 /**
+ * Get starter plan limit for a specific quota
+ * Returns the actual limit value (not -1 for unlimited)
+ */
+export const getStarterLimit = (quotaKey) => {
+  return QUOTAS.starter[quotaKey];
+};
+
+/**
+ * Get pro plan limit for a specific quota
+ * Returns the actual limit value (not -1 for unlimited)
+ */
+export const getProLimit = (quotaKey) => {
+  return QUOTAS.pro[quotaKey];
+};
+
+/**
+ * Format quota limit for display
+ * Returns formatted string like "30" or "Unlimited"
+ */
+export const formatQuotaLimit = (limit) => {
+  if (limit === -1) return 'Unlimited';
+  return limit.toString();
+};
+
+/**
  * Check if quota is unlimited
  */
 export const isUnlimited = (plan, quotaKey) => {
@@ -310,6 +366,8 @@ export default {
   SUBSCRIPTION_STATUS,
   FEATURES,
   QUOTAS,
+  STARTER_LIMITS,
+  PRO_LIMITS,
   PLAN_FEATURES,
   MODULE_FEATURE_MAP,
   FEATURE_INFO,
@@ -318,6 +376,9 @@ export default {
   isFeatureAvailable,
   hasFullAccess,
   getQuota,
+  getStarterLimit,
+  getProLimit,
+  formatQuotaLimit,
   isUnlimited,
   getAvailableFeatures,
   getUnavailableFeatures
