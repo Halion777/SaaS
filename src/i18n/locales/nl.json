@@ -494,14 +494,18 @@
     "form": {
       "title": "Stuur ons een bericht",
       "fields": {
-        "firstName": "Naam",
+        "firstName": "Voornaam",
+        "lastName": "Achternaam",
         "email": "E-mail",
+        "phone": "Telefoonnummer",
         "subject": "Onderwerp",
         "message": "Bericht"
       },
       "placeholders": {
         "firstName": "Je naam",
+        "lastName": "Je achternaam",
         "email": "Je e-mail",
+        "phone": "Je telefoonnummer",
         "message": "Beschrijf je verzoek..."
       },
       "subject": {
@@ -517,6 +521,7 @@
         "lastNameRequired": "Achternaam is verplicht",
         "emailRequired": "E-mail is verplicht",
         "emailInvalid": "Ongeldige e-mail",
+        "phoneRequired": "Telefoonnummer is verplicht",
         "subjectRequired": "Onderwerp is verplicht",
         "messageRequired": "Bericht is verplicht"
       },
@@ -526,7 +531,8 @@
         "sendAnother": "Nog een bericht sturen"
       },
       "submitting": "Verzenden...",
-      "send": "Versturen"
+      "send": "Versturen",
+      "optional": "Optioneel"
     }
   },
   "pricing": {
@@ -775,7 +781,8 @@
         "sendAnother": "Nog een aanvraag versturen"
       },
       "submit": "Mijn aanvraag versturen",
-      "submitting": "Aanvraag versturen..."
+      "submitting": "Aanvraag versturen...",
+      "captchaError": "Voltooi de CAPTCHA-verificatie"
     }
   },    
   "blog": {

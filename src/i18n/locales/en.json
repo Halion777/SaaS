@@ -494,14 +494,18 @@
     "form": {
       "title": "Send us a message",
       "fields": {
-        "firstName": "Name",
+        "firstName": "First Name",
+        "lastName": "Last Name",
         "email": "Email",
+        "phone": "Phone Number",
         "subject": "Subject",
         "message": "Message"
       },
       "placeholders": {
         "firstName": "Your name",
+        "lastName": "Your last name",
         "email": "Your email",
+        "phone": "Your phone number",
         "message": "Describe your request..."
       },
       "subject": {
@@ -517,6 +521,7 @@
         "lastNameRequired": "Last name is required",
         "emailRequired": "Email is required",
         "emailInvalid": "Invalid email",
+        "phoneRequired": "Phone number is required",
         "subjectRequired": "Subject is required",
         "messageRequired": "Message is required"
       },
@@ -526,7 +531,8 @@
         "sendAnother": "Send another message"
       },
       "submitting": "Sending...",
-      "send": "Send"
+      "send": "Send",
+      "optional": "Optional"
     }
   },
   "pricing": {
@@ -775,7 +781,8 @@
         "sendAnother": "Send another request"
       },
       "submit": "Send my request",
-      "submitting": "Sending request..."
+      "submitting": "Sending request...",
+      "captchaError": "Please complete the CAPTCHA verification"
     }
   },
   "blog": {

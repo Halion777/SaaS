@@ -67,12 +67,19 @@ const ContactPage = () => {
     if (!formData.firstName || formData.firstName.trim() === '') {
       newErrors.firstName = t('contact.form.errors.firstNameRequired');
     }
-    // lastName is optional - no validation needed
+    
+    if (!formData.lastName || formData.lastName.trim() === '') {
+      newErrors.lastName = t('contact.form.errors.lastNameRequired');
+    }
     
     if (!formData.email) {
       newErrors.email = t('contact.form.errors.emailRequired');
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = t('contact.form.errors.emailInvalid');
+    }
+    
+    if (!formData.phone || formData.phone.trim() === '') {
+      newErrors.phone = t('contact.form.errors.phoneRequired');
     }
     
     if (!formData.subject) newErrors.subject = t('contact.form.errors.subjectRequired');
@@ -298,7 +305,7 @@ const ContactPage = () => {
                     <h2 className="text-2xl font-bold text-foreground mb-6">{t('contact.form.title')}</h2>
                     
                     <form onSubmit={handleSubmit} className="space-y-6">
-                      {/* Name and Email */}
+                      {/* Name Fields */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-semibold text-foreground mb-2">
@@ -316,6 +323,24 @@ const ContactPage = () => {
                         </div>
                         <div>
                           <label className="block text-sm font-semibold text-foreground mb-2">
+                            {t('contact.form.fields.lastName')} <span className="text-red-500">*</span>
+                          </label>
+                          <Input 
+                            name="lastName"
+                            value={formData.lastName}
+                            onChange={handleInputChange}
+                            error={errors.lastName}
+                            placeholder={t('contact.form.placeholders.lastName') || 'Your last name'}
+                            required
+                            className="h-11"
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Email and Phone */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-foreground mb-2">
                             {t('contact.form.fields.email')} <span className="text-red-500">*</span>
                           </label>
                           <Input 
@@ -325,6 +350,21 @@ const ContactPage = () => {
                             onChange={handleInputChange}
                             error={errors.email}
                             placeholder={t('contact.form.placeholders.email')}
+                            required
+                            className="h-11"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-foreground mb-2">
+                            {t('contact.form.fields.phone')} <span className="text-red-500">*</span>
+                          </label>
+                          <Input 
+                            type="tel"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                            error={errors.phone}
+                            placeholder={t('contact.form.placeholders.phone')}
                             required
                             className="h-11"
                           />

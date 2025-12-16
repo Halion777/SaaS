@@ -495,14 +495,18 @@
     "form": {
       "title": "Envoyez-nous un message",
       "fields": {
-        "firstName": "Nom",
+        "firstName": "Prénom",
+        "lastName": "Nom de famille",
         "email": "Email",
+        "phone": "Numéro de téléphone",
         "subject": "Sujet",
         "message": "Message"
       },
       "placeholders": {
         "firstName": "Votre nom",
+        "lastName": "Votre nom de famille",
         "email": "Votre email",
+        "phone": "Votre numéro de téléphone",
         "message": "Décrivez votre demande..."
       },
       "subject": {
@@ -518,6 +522,7 @@
         "lastNameRequired": "Nom est requis",
         "emailRequired": "Email est requis",
         "emailInvalid": "Email invalide",
+        "phoneRequired": "Numéro de téléphone est requis",
         "subjectRequired": "Sujet est requis",
         "messageRequired": "Message est requis"
       },
@@ -527,7 +532,8 @@
         "sendAnother": "Envoyer un autre message"
       },
       "submitting": "Envoi en cours...",
-      "send": "Envoyer"
+      "send": "Envoyer",
+      "optional": "Optionnel"
     }
   },
   "pricing": {
@@ -776,7 +782,8 @@
         "sendAnother": "Envoyer une autre demande"
       },
       "submit": "Envoyer ma demande",
-      "submitting": "Envoi de la demande..."
+      "submitting": "Envoi de la demande...",
+      "captchaError": "Veuillez compléter la vérification CAPTCHA"
     }
   },
   "blog": {
