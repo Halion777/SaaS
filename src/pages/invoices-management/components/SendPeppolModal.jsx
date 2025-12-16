@@ -10,7 +10,7 @@ import { supabase } from '../../../services/supabaseClient';
 import { useAuth } from '../../../context/AuthContext';
 
 const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal, validatedPeppolIdentifier = null }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);

@@ -19,11 +19,17 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
     // For Peppol invoices, check if buyerReference contains the original client invoice number
     if (invoice.source === 'peppol' && invoice.peppol_metadata?.buyerReference) {
       const buyerRef = invoice.peppol_metadata.buyerReference;
-      // If buyerReference looks like a client invoice number (FACT-*), use it
+      // If buyerReference looks like a client invoice number (INV-* or FACT-*), use it
       // This ensures consistency - users see the same invoice number they sent
-      if (buyerRef && (buyerRef.match(/^FACT-\d+$/i) || buyerRef.startsWith('FACT-'))) {
+      if (buyerRef && (buyerRef.match(/^(INV|FACT)-\d+$/i) || buyerRef.startsWith('INV-') || buyerRef.startsWith('FACT-'))) {
         return buyerRef;
       }
+    }
+    // Also check the invoice_number itself - if it's from UBL XML (cbc:ID), it should be the original invoice number
+    // The invoice_number should match what was sent (INV-000001 format)
+    if (invoice.source === 'peppol' && invoice.invoice_number && 
+        (invoice.invoice_number.match(/^(INV|FACT)-\d+$/i) || invoice.invoice_number.startsWith('INV-') || invoice.invoice_number.startsWith('FACT-'))) {
+      return invoice.invoice_number;
     }
     // Otherwise, use the stored invoice_number (Peppol-generated or manual)
     return invoice.invoice_number;

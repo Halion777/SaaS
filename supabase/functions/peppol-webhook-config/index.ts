@@ -104,6 +104,13 @@ serve(async (req) => {
       
       formData.append('document', xmlBlob, 'invoice.xml');
       
+      // Note: We don't pass 'id' parameter because:
+      // 1. The API expects 'id' to be a UUID format
+      // 2. According to API docs: "If provided, will be used in SBDH; otherwise, document identifier in UBL will be used"
+      // 3. We're already setting <cbc:ID> in the UBL XML to the invoice number (e.g., INV-000001)
+      // 4. The API will automatically use the <cbc:ID> value as the InstanceIdentifier in the SBD header
+      // This ensures the invoice number from UBL XML is used correctly
+      
       fetchOptions.body = formData;
       delete fetchOptions.headers['Content-Type']; // Let browser set boundary
     } else if (action === 'add-document-type' && peppolIdentifier && documentType) {

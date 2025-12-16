@@ -762,20 +762,20 @@ const ClientModal = ({ client, onSave, onClose }) => {
 
             {/* Error and Success Messages */}
             {saveError && (
-              <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-lg p-4 mb-4 animate-in slide-in-from-top-2">
+              <div className="bg-card border-2 border-destructive rounded-lg p-4 mb-4 shadow-sm animate-in slide-in-from-top-2">
                 <div className="flex items-start gap-3">
-                  <div className="p-1 bg-red-100 dark:bg-red-900/40 rounded-full flex-shrink-0">
-                    <Icon name="AlertCircle" size={18} className="text-red-600 dark:text-red-400" />
+                  <div className="p-1 rounded-full flex-shrink-0">
+                    <Icon name="AlertCircle" size={18} className="text-destructive" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-red-900 dark:text-red-100 mb-1">
+                    <p className="text-sm font-semibold text-foreground mb-1">
                       {client ? t('clientManagement.modal.updateFailed', 'Failed to update client') : t('clientManagement.modal.createFailed', 'Failed to create client')}
                     </p>
-                    <p className="text-sm text-red-700 dark:text-red-300 break-words">{saveError}</p>
+                    <p className="text-sm text-foreground break-words">{saveError}</p>
                   </div>
                   <button
                     onClick={() => setSaveError('')}
-                    className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200 transition-colors flex-shrink-0"
+                    className="text-foreground/60 hover:text-foreground transition-colors flex-shrink-0"
                     aria-label="Dismiss error"
                   >
                     <Icon name="X" size={18} />
@@ -785,12 +785,12 @@ const ClientModal = ({ client, onSave, onClose }) => {
             )}
 
             {saveSuccess && (
-              <div className="bg-green-50 dark:bg-green-900/20 border-2 border-green-300 dark:border-green-700 rounded-lg p-4 mb-4 animate-in slide-in-from-top-2">
+              <div className="bg-card border-2 border-success rounded-lg p-4 mb-4 shadow-sm animate-in slide-in-from-top-2">
                 <div className="flex items-center gap-3">
-                  <div className="p-1 bg-green-100 dark:bg-green-900/40 rounded-full flex-shrink-0">
-                    <Icon name="CheckCircle" size={18} className="text-green-600 dark:text-green-400" />
+                  <div className="p-1 rounded-full flex-shrink-0">
+                    <Icon name="CheckCircle" size={18} className="text-success" />
                   </div>
-                  <p className="text-sm font-semibold text-green-800 dark:text-green-200">
+                  <p className="text-sm font-semibold text-foreground">
                     {client 
                       ? t('clientManagement.modal.updateSuccess', 'Client updated successfully!')
                       : t('clientManagement.modal.createSuccess', 'Client created successfully!')

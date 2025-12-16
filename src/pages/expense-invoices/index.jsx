@@ -283,6 +283,20 @@ const ExpenseInvoicesManagement = () => {
   const handleExportExpenseInvoicePDF = async (invoice) => {
     if (isExportingPDF) return;
     
+    // Show warning before exporting PDF
+    const warningMessage = t(
+      'expenseInvoices.pdfWarning.message',
+      'This expense invoice PDF is for reference only. For official purposes, always use the Peppol UBL XML document received via Peppol network.'
+    );
+    
+    const userConfirmed = window.confirm(
+      `${t('expenseInvoices.pdfWarning.title', 'Important Notice')}\n\n${warningMessage}\n\n${t('expenseInvoices.pdfWarning.continue', 'Do you want to continue downloading the PDF?')}`
+    );
+    
+    if (!userConfirmed) {
+      return;
+    }
+    
     setIsExportingPDF(true);
     try {
       // Load company info

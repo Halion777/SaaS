@@ -2043,16 +2043,16 @@ const QuoteCreation = () => {
         const { data: createdQuote, error: createError } = await createQuote(quoteData);
 
         if (createError) {
-          console.error('Error creating draft quote in backend:', createError);
+        console.error('Error creating draft quote in backend:', createError);
           setIsSaving(false);
-          return;
-        }
+        return;
+      }
 
-        if (!createdQuote) {
-          console.error('Error creating quote: createdQuote is null or undefined');
-          setIsSaving(false);
-          return;
-        }
+      if (!createdQuote) {
+        console.error('Error creating quote: createdQuote is null or undefined');
+        setIsSaving(false);
+        return;
+      }
 
         quoteId = createdQuote.id;
       }

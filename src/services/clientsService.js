@@ -219,11 +219,11 @@ export async function createClient(clientData) {
         .maybeSingle();
       
       if (existingEmail) {
-        const clientTypeLabel = existingEmail.client_type === 'company' ? 'professional' : 'individual';
         return { 
           error: { 
-            message: `A client with email "${clientData.email}" already exists (${existingEmail.name})`,
-            code: 'DUPLICATE_EMAIL'
+            message: `A client with email "${clientData.email}" already exists: "${existingEmail.name}". Please use a different email address.`,
+            code: 'DUPLICATE_EMAIL',
+            existingClientName: existingEmail.name
           } 
         };
       }
@@ -300,8 +300,9 @@ export async function updateClient(id, clientData) {
       if (existingEmail) {
         return { 
           error: { 
-            message: `A client with email "${clientData.email}" already exists (${existingEmail.name})`,
-            code: 'DUPLICATE_EMAIL'
+            message: `A client with email "${clientData.email}" already exists: "${existingEmail.name}". Please use a different email address.`,
+            code: 'DUPLICATE_EMAIL',
+            existingClientName: existingEmail.name
           } 
         };
       }

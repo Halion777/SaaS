@@ -652,20 +652,20 @@ export async function updateQuote(id, quoteData) {
     
     // Prepare update data with deposit_amount and balance_amount
     const updateData = {
-      title: quoteData.title,
-      description: quoteData.description,
-      status: quoteData.status,
-      project_categories: quoteData.project_categories,
-      custom_category: quoteData.custom_category,
-      start_date: quoteData.start_date,
-      total_amount: quoteData.total_amount,
-      tax_amount: quoteData.tax_amount,
-      discount_amount: quoteData.discount_amount,
-      final_amount: quoteData.final_amount,
+        title: quoteData.title,
+        description: quoteData.description,
+        status: quoteData.status,
+        project_categories: quoteData.project_categories,
+        custom_category: quoteData.custom_category,
+        start_date: quoteData.start_date,
+        total_amount: quoteData.total_amount,
+        tax_amount: quoteData.tax_amount,
+        discount_amount: quoteData.discount_amount,
+        final_amount: quoteData.final_amount,
       deposit_amount: quoteData.deposit_amount !== undefined ? quoteData.deposit_amount : null,
       balance_amount: quoteData.balance_amount !== undefined ? quoteData.balance_amount : null,
-      valid_until: quoteData.valid_until,
-      terms_conditions: quoteData.terms_conditions
+        valid_until: quoteData.valid_until,
+        terms_conditions: quoteData.terms_conditions
     };
     
     const { data: quote, error: quoteError } = await supabase

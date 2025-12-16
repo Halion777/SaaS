@@ -93,8 +93,9 @@ $$;
 
 -- Function: generate_invoice_number
 -- Generates a unique invoice number for a user
--- Format: FACT-000001, FACT-000002, etc.
+-- Format: INV-000001, INV-000002, etc.
 -- Uses advisory locks to prevent race conditions
+-- Handles migration from FACT- to INV- format by checking both patterns
 CREATE OR REPLACE FUNCTION public.generate_invoice_number(user_id uuid)
 RETURNS TEXT
 LANGUAGE plpgsql
@@ -105,6 +106,8 @@ DECLARE
     lock_key BIGINT;
     max_attempts INTEGER := 10;
     attempt INTEGER := 0;
+    max_fact_number INTEGER;
+    max_inv_number INTEGER;
 BEGIN
     -- Generate a unique lock key based on user_id
     -- Using hashtext to convert UUID to integer for advisory lock
@@ -115,13 +118,25 @@ BEGIN
     -- Other users can still generate numbers concurrently
     PERFORM pg_advisory_xact_lock(lock_key);
     
-    -- Now safely get the next number (no race condition possible)
-    SELECT COALESCE(MAX(CAST(SUBSTRING(inv.invoice_number FROM 'FACT-([0-9]+)') AS INTEGER)), 0) + 1
-    INTO next_number
+    -- Get max number from both FACT- and INV- formats to ensure continuity
+    -- This handles migration from old FACT- format to new INV- format
+    SELECT COALESCE(MAX(CAST(SUBSTRING(inv.invoice_number FROM 'FACT-([0-9]+)') AS INTEGER)), 0)
+    INTO max_fact_number
     FROM public.invoices inv
-    WHERE inv.user_id = generate_invoice_number.user_id;
+    WHERE inv.user_id = generate_invoice_number.user_id
+    AND inv.invoice_number ~ '^FACT-[0-9]+$';
     
-    generated_invoice_number := 'FACT-' || LPAD(next_number::TEXT, 6, '0');
+    SELECT COALESCE(MAX(CAST(SUBSTRING(inv.invoice_number FROM 'INV-([0-9]+)') AS INTEGER)), 0)
+    INTO max_inv_number
+    FROM public.invoices inv
+    WHERE inv.user_id = generate_invoice_number.user_id
+    AND inv.invoice_number ~ '^INV-[0-9]+$';
+    
+    -- Use the maximum of both formats + 1
+    next_number := GREATEST(max_fact_number, max_inv_number) + 1;
+    
+    -- Generate new invoice number with INV- prefix
+    generated_invoice_number := 'INV-' || LPAD(next_number::TEXT, 6, '0');
     
     -- Double-check that this number doesn't exist (safety check)
     -- The lock should prevent this, but this is an extra safeguard
@@ -132,7 +147,7 @@ BEGIN
         AND inv2.invoice_number = generated_invoice_number
     ) LOOP
         next_number := next_number + 1;
-        generated_invoice_number := 'FACT-' || LPAD(next_number::TEXT, 6, '0');
+        generated_invoice_number := 'INV-' || LPAD(next_number::TEXT, 6, '0');
         
         attempt := attempt + 1;
         IF attempt >= max_attempts THEN

@@ -44,13 +44,21 @@ INSERT INTO public.email_templates (
       {vat_section}
       
       <!-- Total with VAT -->
-      <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 2px solid #e0e0e0; margin-top: 5px;">
+      <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e0e0e0; margin-top: 5px;">
         <span style="color: #333; font-weight: bold;">Total TTC:</span>
         <span style="color: #333; font-weight: bold; font-size: 16px;">{total_with_vat}</span>
       </div>
       
       <!-- Deposit Section - will be replaced by edge function based on deposit_enabled -->
       {deposit_section}
+      
+      <!-- Total Amount to Pay (always shown, even if deposit is enabled) -->
+      <div style="background: #dbeafe; padding: 12px; border-radius: 6px; margin-top: 12px; border-left: 4px solid #3b82f6;">
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #1e40af; font-weight: bold;">Montant total à payer:</span>
+          <span style="color: #1e40af; font-weight: bold; font-size: 18px;">{balance_amount}</span>
+        </div>
+      </div>
     </div>
     
     <!-- Custom Message -->
@@ -127,13 +135,21 @@ INSERT INTO public.email_templates (
       {vat_section}
       
       <!-- Total with VAT -->
-      <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 2px solid #e0e0e0; margin-top: 5px;">
+      <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e0e0e0; margin-top: 5px;">
         <span style="color: #333; font-weight: bold;">Total (incl. VAT):</span>
         <span style="color: #333; font-weight: bold; font-size: 16px;">{total_with_vat}</span>
       </div>
       
       <!-- Deposit Section - will be replaced by edge function based on deposit_enabled -->
       {deposit_section}
+      
+      <!-- Total Amount to Pay (always shown, even if deposit is enabled) -->
+      <div style="background: #dbeafe; padding: 12px; border-radius: 6px; margin-top: 12px; border-left: 4px solid #3b82f6;">
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #1e40af; font-weight: bold;">Total Amount to Pay:</span>
+          <span style="color: #1e40af; font-weight: bold; font-size: 18px;">{balance_amount}</span>
+        </div>
+      </div>
     </div>
     
     <!-- Custom Message -->
@@ -164,6 +180,7 @@ Subtotal (excl. VAT): {total_before_vat}
 Total (incl. VAT): {total_with_vat}
 
 {deposit_section_text}
+Total Amount to Pay: {balance_amount}
 
 {custom_message}
 
@@ -210,13 +227,21 @@ INSERT INTO public.email_templates (
       {vat_section}
       
       <!-- Total with VAT -->
-      <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 2px solid #e0e0e0; margin-top: 5px;">
+      <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e0e0e0; margin-top: 5px;">
         <span style="color: #333; font-weight: bold;">Totaal (incl. BTW):</span>
         <span style="color: #333; font-weight: bold; font-size: 16px;">{total_with_vat}</span>
       </div>
       
       <!-- Deposit Section - will be replaced by edge function based on deposit_enabled -->
       {deposit_section}
+      
+      <!-- Total Amount to Pay (always shown, even if deposit is enabled) -->
+      <div style="background: #dbeafe; padding: 12px; border-radius: 6px; margin-top: 12px; border-left: 4px solid #3b82f6;">
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #1e40af; font-weight: bold;">Totaalbedrag te betalen:</span>
+          <span style="color: #1e40af; font-weight: bold; font-size: 18px;">{balance_amount}</span>
+        </div>
+      </div>
     </div>
     
     <!-- Custom Message -->
@@ -247,6 +272,7 @@ Subtotaal (excl. BTW): {total_before_vat}
 Totaal (incl. BTW): {total_with_vat}
 
 {deposit_section_text}
+Totaalbedrag te betalen: {balance_amount}
 
 {custom_message}
 

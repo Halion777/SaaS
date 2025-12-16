@@ -792,7 +792,6 @@ export const generatePEPPOLXML = (invoiceData) => {
     return sum + calculatedTaxAmount;
   }, 0);
   
-  
   return `<?xml version="1.0" encoding="UTF-8"?>
   <Invoice xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
            xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
@@ -1200,6 +1199,10 @@ export class PeppolService {
         }
         
         // Send via edge function
+        // Note: We don't pass 'id' parameter because the API expects UUID format
+        // Instead, we rely on the <cbc:ID> in the UBL XML (set to invoice number like INV-000001)
+        // The API will automatically use <cbc:ID> as the InstanceIdentifier in SBD header
+        // This ensures the client invoice number appears correctly in expense invoices
         const response = await supabase.functions.invoke('peppol-webhook-config', {
           body: {
             endpoint: this.config.baseUrl,
@@ -1207,6 +1210,7 @@ export class PeppolService {
             password: this.config.password,
             action: 'send-ubl-document',
             xmlDocument: xml
+            // documentId removed - API will use <cbc:ID> from UBL XML automatically
           }
         });
         

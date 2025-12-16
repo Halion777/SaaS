@@ -246,7 +246,6 @@ const ClientManagement = () => {
   };
 
   const handleClientSave = async (clientData) => {
-    try {
       if (selectedClient) {
         // Update existing client
         const { data, error } = await updateClient(selectedClient.id, clientData);
@@ -254,9 +253,9 @@ const ClientManagement = () => {
         if (error) {
           console.error('Error updating client:', error);
           
-          // Handle duplicate validation errors
+        // Handle duplicate validation errors - use the error message from service which includes client name
           if (error.code === 'DUPLICATE_EMAIL') {
-            throw new Error(t('clientManagement.errors.duplicateEmail', { email: clientData.email }));
+          throw new Error(error.message || t('clientManagement.errors.duplicateEmail', { email: clientData.email }));
           }
           // Note: Peppol ID uniqueness check removed - clients can share the same Peppol ID
           
@@ -273,9 +272,9 @@ const ClientManagement = () => {
         if (error) {
           console.error('Error creating client:', error);
           
-          // Handle duplicate validation errors
+        // Handle duplicate validation errors - use the error message from service which includes client name
           if (error.code === 'DUPLICATE_EMAIL') {
-            throw new Error(t('clientManagement.errors.duplicateEmail', { email: clientData.email }));
+          throw new Error(error.message || t('clientManagement.errors.duplicateEmail', { email: clientData.email }));
           }
           // Note: Peppol ID uniqueness check removed - clients can share the same Peppol ID
           
@@ -295,10 +294,6 @@ const ClientManagement = () => {
       
       setIsModalOpen(false);
       setSelectedClient(null);
-    } catch (err) {
-      console.error('Unexpected error saving client:', err);
-      alert('An unexpected error occurred while saving the client');
-    }
   };
 
   const handleClientDelete = async (clientId) => {

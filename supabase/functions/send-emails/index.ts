@@ -405,13 +405,13 @@ serve(async (req) => {
           // Deposit section HTML
           const depositEnabled = emailData.variables?.deposit_enabled === 'true';
           const depositAmount = emailData.variables?.deposit_amount || '0€';
-          const balanceAmount = emailData.variables?.balance_amount || emailData.variables?.quote_amount || '0€';
+          const balanceAmount = emailData.variables?.balance_amount || emailData.variables?.quote_amount || emailData.variables?.total_with_vat || '0€';
           
           let depositSectionHtml = '';
           let depositSectionText = '';
           
           if (depositEnabled && depositAmount !== '0€' && parseFloat(depositAmount.replace(/[^\d,.-]/g, '').replace(',', '.')) > 0) {
-            // Deposit enabled - show deposit and balance
+            // Deposit enabled - show deposit information
             depositSectionHtml = `
               <div style="background: #fef3c7; padding: 12px; border-radius: 6px; margin-top: 12px; border-left: 4px solid #f59e0b;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
@@ -419,28 +419,13 @@ serve(async (req) => {
                   <span style="color: #92400e; font-weight: bold; font-size: 16px;">${depositAmount}</span>
                 </div>
                 <p style="margin: 0; color: #78350f; font-size: 13px; font-style: italic;">${isFrench ? 'Montant à payer avant le début des travaux' : isDutch ? 'Bedrag te betalen vóór aanvang van het werk' : 'Amount to pay before work starts'}</p>
-              </div>
-              <div style="background: #dbeafe; padding: 12px; border-radius: 6px; margin-top: 12px; border-left: 4px solid #3b82f6;">
-                <div style="display: flex; justify-content: space-between;">
-                  <span style="color: #1e40af; font-weight: bold;">${isFrench ? 'Solde à la livraison:' : isDutch ? 'Saldo bij levering:' : 'Balance on Delivery:'}</span>
-                  <span style="color: #1e40af; font-weight: bold; font-size: 18px;">${balanceAmount}</span>
-                </div>
-                <p style="margin: 0; color: #1e3a8a; font-size: 13px; font-style: italic;">${isFrench ? 'Montant restant à payer après livraison' : isDutch ? 'Resterend bedrag te betalen na voltooiing' : 'Remaining amount to pay after completion'}</p>
               </div>`;
             
-            depositSectionText = `\n⚠️ ${isFrench ? 'ACOMPTE À LA COMMANDE' : isDutch ? 'VOORSCHOT BIJ BESTELLING' : 'ADVANCE PAYMENT'}: ${depositAmount}\n${isFrench ? '(Montant à payer avant le début des travaux)' : isDutch ? '(Bedrag te betalen vóór aanvang van het werk)' : '(Amount to pay before work starts)'}\n\n✅ ${isFrench ? 'SOLDE À LA LIVRAISON' : isDutch ? 'SALDO BIJ LEVERING' : 'BALANCE ON DELIVERY'}: ${balanceAmount}\n${isFrench ? '(Montant restant à payer après livraison)' : isDutch ? '(Resterend bedrag te betalen na voltooiing)' : '(Remaining amount to pay after completion)'}\n`;
-          } else {
-            // No deposit - show total amount
-            depositSectionHtml = `
-              <div style="background: #dbeafe; padding: 12px; border-radius: 6px; margin-top: 12px; border-left: 4px solid #3b82f6;">
-                <div style="display: flex; justify-content: space-between;">
-                  <span style="color: #1e40af; font-weight: bold;">${isFrench ? 'Montant total à payer:' : isDutch ? 'Totaalbedrag te betalen:' : 'Total Amount to Pay:'}</span>
-                  <span style="color: #1e40af; font-weight: bold; font-size: 18px;">${emailData.variables?.quote_amount || '0€'}</span>
-                </div>
-              </div>`;
-            
-            depositSectionText = `\n${isFrench ? 'Montant total à payer' : isDutch ? 'Totaalbedrag te betalen' : 'Total Amount to Pay'}: ${emailData.variables?.quote_amount || '0€'}\n`;
+            depositSectionText = `\n⚠️ ${isFrench ? 'ACOMPTE À LA COMMANDE' : isDutch ? 'VOORSCHOT BIJ BESTELLING' : 'ADVANCE PAYMENT'}: ${depositAmount}\n${isFrench ? '(Montant à payer avant le début des travaux)' : isDutch ? '(Bedrag te betalen vóór aanvang van het werk)' : '(Amount to pay before work starts)'}\n`;
           }
+          
+          // Note: "Total Amount to Pay" section is now always shown in the template itself
+          // The edge function no longer generates it here to avoid duplication
           
           const variables = {
             client_name: emailData.variables?.client_name || 'Madame, Monsieur',

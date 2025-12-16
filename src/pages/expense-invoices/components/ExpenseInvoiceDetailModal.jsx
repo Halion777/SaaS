@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { ExpenseInvoicesService } from '../../../services/expenseInvoicesService';
 
 const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState('details');
+  const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
 
   // Reset tab to 'details' when invoice changes or if invoice is not Peppol
   useEffect(() => {
@@ -87,11 +89,17 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
     // For Peppol invoices, check if buyerReference contains the original client invoice number
     if (invoice.source === 'peppol' && invoice.peppol_metadata?.buyerReference) {
       const buyerRef = invoice.peppol_metadata.buyerReference;
-      // If buyerReference looks like a client invoice number (FACT-*), use it
+      // If buyerReference looks like a client invoice number (INV-* or FACT-*), use it
       // This ensures consistency - users see the same invoice number they sent
-      if (buyerRef && (buyerRef.match(/^FACT-\d+$/i) || buyerRef.startsWith('FACT-'))) {
+      if (buyerRef && (buyerRef.match(/^(INV|FACT)-\d+$/i) || buyerRef.startsWith('INV-') || buyerRef.startsWith('FACT-'))) {
         return buyerRef;
       }
+    }
+    // Also check the invoice_number itself - if it's from UBL XML (cbc:ID), it should be the original invoice number
+    // The invoice_number should match what was sent (INV-000001 format)
+    if (invoice.source === 'peppol' && invoice.invoice_number && 
+        (invoice.invoice_number.match(/^(INV|FACT)-\d+$/i) || invoice.invoice_number.startsWith('INV-') || invoice.invoice_number.startsWith('FACT-'))) {
+      return invoice.invoice_number;
     }
     // Otherwise, use the stored invoice_number (Peppol-generated or manual)
     return invoice.invoice_number;
@@ -109,6 +117,33 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
   const displayInvoiceNumber = getDisplayInvoiceNumber(invoice);
   const peppolInvoiceNumber = getPeppolInvoiceNumber(invoice);
   const showPeppolNumber = invoice.source === 'peppol' && peppolInvoiceNumber !== displayInvoiceNumber;
+  
+  // Check if PDF attachment is available
+  const pdfAttachmentPath = invoice.peppol_metadata?.pdfAttachmentPath;
+  const hasPDFAttachment = pdfAttachmentPath && invoice.source === 'peppol';
+  
+  // Handle PDF download
+  const handleDownloadPDF = async () => {
+    if (!hasPDFAttachment || !pdfAttachmentPath) return;
+    
+    setIsDownloadingPDF(true);
+    try {
+      const expenseService = new ExpenseInvoicesService();
+      const result = await expenseService.getFileDownloadUrl(pdfAttachmentPath);
+      
+      if (result.success) {
+        // Open PDF in new tab for download
+        window.open(result.data, '_blank');
+      } else {
+        alert(t('expenseInvoices.errors.downloadError', 'Error downloading PDF: {{error}}', { error: result.error }));
+      }
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      alert(t('expenseInvoices.errors.downloadError', 'Error downloading PDF: {{error}}', { error: error.message }));
+    } finally {
+      setIsDownloadingPDF(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -209,15 +244,15 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                     <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.invoiceInfo.dueDate', 'Due Date')}</label>
                     <p className="text-sm text-foreground mt-1">{formatDate(invoice.due_date)}</p>
                   </div>
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.invoiceInfo.paymentMethod', 'Payment Method')}</label>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.invoiceInfo.paymentMethod', 'Payment Method')}</label>
             <p className="text-sm text-foreground mt-1">
               {invoice.payment_method
                 || invoice.peppol_metadata?.payment?.meansName
                 || (invoice.peppol_metadata?.payment?.meansCode ? mapPaymentMethod(invoice.peppol_metadata.payment.meansCode) : t('expenseInvoices.common.notAvailable', 'N/A'))
               }
             </p>
-          </div>
+                  </div>
                 </div>
               </div>
 
@@ -307,7 +342,7 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
               </div>
 
               {/* Additional Peppol Metadata */}
-                {invoice.peppol_metadata && (
+              {invoice.peppol_metadata && (
                 <div>
                   <h3 className="text-lg font-semibold text-foreground mb-4">{t('expenseInvoices.modal.peppolInfo.additionalMetadata', 'Additional Metadata')}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -426,10 +461,27 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end space-x-3 pt-6 border-t border-border">
+          <div className="flex items-center justify-between pt-6 border-t border-border">
+            <div>
+              {hasPDFAttachment && (
+                <Button
+                  variant="outline"
+                  onClick={handleDownloadPDF}
+                  disabled={isDownloadingPDF}
+                  iconName="Download"
+                >
+                  {isDownloadingPDF 
+                    ? t('expenseInvoices.modal.downloadingPDF', 'Downloading...')
+                    : t('expenseInvoices.modal.downloadPDF', 'Download Original PDF')
+                  }
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center space-x-3">
             <Button variant="outline" onClick={onClose}>
               {t('expenseInvoices.modal.close', 'Close')}
             </Button>
+            </div>
           </div>
         </div>
       </div>

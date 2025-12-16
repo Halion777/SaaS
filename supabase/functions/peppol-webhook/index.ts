@@ -708,6 +708,95 @@ function parseUBLInvoice(ublXml: string): any {
 }
 
 /**
+ * Extract PDF attachments from AdditionalDocumentReference elements
+ * Returns array of PDF attachments with base64 data and filename
+ */
+function extractPDFAttachments(ublXml: string): Array<{ filename: string; base64: string; mimeCode: string }> {
+  const attachments: Array<{ filename: string; base64: string; mimeCode: string }> = [];
+  
+  try {
+    // Parse XML to extract AdditionalDocumentReference elements
+    const parser = new XMLParser({ ignoreAttributes: false, removeNSPrefix: true, trimValues: true });
+    const obj = parser.parse(ublXml);
+    const invoice = obj?.StandardBusinessDocument?.Invoice || obj?.Invoice;
+    
+    if (!invoice) return attachments;
+    
+    // Get AdditionalDocumentReference elements (can be array or single object)
+    const additionalDocs = invoice.AdditionalDocumentReference;
+    if (!additionalDocs) return attachments;
+    
+    const docsArray = Array.isArray(additionalDocs) ? additionalDocs : [additionalDocs];
+    
+    for (const doc of docsArray) {
+      const attachment = doc.Attachment;
+      if (!attachment) continue;
+      
+      const embeddedDoc = attachment.EmbeddedDocumentBinaryObject;
+      if (!embeddedDoc) continue;
+      
+      // Check if it's a PDF
+      const mimeCode = embeddedDoc['@_mimeCode'] || embeddedDoc.mimeCode || '';
+      if (mimeCode.toLowerCase() !== 'application/pdf') continue;
+      
+      const filename = embeddedDoc['@_filename'] || embeddedDoc.filename || doc.ID || 'invoice.pdf';
+      const base64Data = embeddedDoc['#text'] || embeddedDoc || '';
+      
+      if (base64Data && filename) {
+        attachments.push({
+          filename: String(filename),
+          base64: String(base64Data),
+          mimeCode: 'application/pdf'
+        });
+      }
+    }
+  } catch (error) {
+    console.error('[Peppol Webhook] Error extracting PDF attachments:', error);
+  }
+  
+  return attachments;
+}
+
+/**
+ * Store PDF attachment in Supabase Storage
+ * Returns the storage path if successful, null otherwise
+ */
+async function storePDFAttachment(
+  supabase: any,
+  userId: string,
+  invoiceNumber: string,
+  pdfData: { filename: string; base64: string }
+): Promise<string | null> {
+  try {
+    // Convert base64 to buffer
+    const pdfBuffer = Uint8Array.from(atob(pdfData.base64), c => c.charCodeAt(0));
+    
+    // Generate storage path: expense-invoice-pdfs/{userId}/{invoiceNumber}_{filename}
+    const sanitizedInvoiceNumber = invoiceNumber.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const sanitizedFilename = pdfData.filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const storagePath = `expense-invoice-pdfs/${userId}/${sanitizedInvoiceNumber}_${sanitizedFilename}`;
+    
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from('expense-invoice-attachments')
+      .upload(storagePath, pdfBuffer, {
+        contentType: 'application/pdf',
+        upsert: true // Overwrite if exists
+      });
+    
+    if (error) {
+      console.error('[Peppol Webhook] Error storing PDF attachment:', error);
+      return null;
+    }
+    
+    return storagePath;
+  } catch (error) {
+    console.error('[Peppol Webhook] Exception storing PDF attachment:', error);
+    return null;
+  }
+}
+
+/**
  * Process inbound invoice (received from Peppol network)
  * Creates expense invoice in the existing expense_invoices table
  * Extracts all mandatory fields from UBL XML according to Peppol BIS Billing 3.0
@@ -729,9 +818,14 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
     
     // Parse UBL XML to extract all mandatory fields
     let parsedInvoice: any = null;
+    let pdfAttachmentPath: string | null = null;
+    
     if (data.ublXml) {
       try {
         parsedInvoice = parseUBLInvoice(data.ublXml);
+        
+        // Extract PDF attachments from AdditionalDocumentReference (will store after we have invoice number)
+        const pdfAttachments = extractPDFAttachments(data.ublXml);
         
       } catch (parseError: any) {
         console.error('[Peppol Webhook] Failed to parse UBL XML:', parseError?.message || parseError);
@@ -918,7 +1012,9 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
         supplierName,
         supplierVatNumber,
           supplierAddress: invoiceData.supplier?.address || {},
-          totals: invoiceData.totals || {}
+          totals: invoiceData.totals || {},
+          // Store PDF attachment path if available
+          pdfAttachmentPath: pdfAttachmentPath || null
         }
     };
 
@@ -939,6 +1035,37 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
 
     if (expenseError) {
       return { success: false, error: expenseError.message };
+    }
+    
+    // Store PDF attachment after invoice is created (now we have the actual invoice number)
+    if (data.ublXml && expenseInvoice) {
+      const pdfAttachments = extractPDFAttachments(data.ublXml);
+      if (pdfAttachments.length > 0) {
+        const pdfAttachment = pdfAttachments[0];
+        pdfAttachmentPath = await storePDFAttachment(
+          supabase,
+          userId,
+          invoiceNumber,
+          pdfAttachment
+        );
+        
+        if (pdfAttachmentPath) {
+          // Update the invoice with the PDF path
+          await supabase
+            .from('expense_invoices')
+            .update({
+              peppol_metadata: {
+                ...insertPayload.peppol_metadata,
+                pdfAttachmentPath: pdfAttachmentPath
+              }
+            })
+            .eq('id', expenseInvoice.id);
+          
+          console.log('[Peppol Webhook] PDF attachment stored:', pdfAttachmentPath);
+        } else {
+          console.warn('[Peppol Webhook] Failed to store PDF attachment');
+        }
+      }
     }
 
     // Also create a record in peppol_invoices for tracking (optional)
