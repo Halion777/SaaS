@@ -380,9 +380,11 @@ class ClientQuoteService {
       const { EmailService } = await import('./emailService');
       const financialBreakdown = EmailService.calculateFinancialBreakdown(quote);
       
-      // Use balanceAmount from stored values (totalWithVAT - deposit)
-      // This ensures consistency with all other email functions
-      const quoteAmount = financialBreakdown.balanceAmount;
+      // For accepted/rejected emails, use total_with_vat (full quote amount) as the accepted amount
+      // balanceAmount is the amount after deposit, but "Accepted Amount" should show the full quote total
+      const quoteAmount = financialBreakdown.totalWithVAT > 0 
+        ? financialBreakdown.totalWithVAT 
+        : (parseFloat(quote.final_amount || 0) || financialBreakdown.balanceAmount);
 
       // Prepare variables for template rendering
         const variables = {

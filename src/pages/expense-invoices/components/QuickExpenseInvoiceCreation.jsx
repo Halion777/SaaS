@@ -657,19 +657,14 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
                       const vat = parseAmount(formData.vatAmount);
                       const total = net + vat;
                       
-                      // Update total if net or VAT changed
+                      // Update total when net amount changes
+                      // Use the newly calculated total, not the stale formData.amount
                       if (total > 0) {
                         handleInputChange('amount', total.toFixed(2).replace('.', ','));
                       }
                       
-                      // If total is set and VAT is set, recalculate VAT from total
-                      const existingTotal = parseAmount(formData.amount);
-                      if (existingTotal > 0 && vat > 0) {
-                        const newVat = existingTotal - net;
-                        if (newVat >= 0 && Math.abs(newVat - vat) > 0.01) {
-                          handleInputChange('vatAmount', newVat.toFixed(2).replace('.', ','));
-                        }
-                      }
+                      // Note: No need to recalculate VAT here since we're using net + vat to calculate total
+                      // If VAT needs to be adjusted, the user should change the VAT field directly
                     }}
                     placeholder="0,00"
                   />
