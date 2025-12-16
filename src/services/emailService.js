@@ -876,9 +876,36 @@ export class EmailService {
         companyProfile = await this.getCurrentUserCompanyProfile(userId);
       }
       
+      // For non-authenticated users (like Find Artisan form), get company name from app_settings
+      let companyName = companyProfile?.company_name || companyProfile?.name;
+      if (!companyName) {
+        try {
+          const { data: companyData, error: companyError } = await supabase
+            .from('app_settings')
+            .select('setting_value')
+            .eq('setting_key', 'company_details')
+            .maybeSingle();
+          
+          if (!companyError && companyData?.setting_value?.name) {
+            companyName = companyData.setting_value.name;
+          } else if (!companyError && companyData?.setting_value?.company_name) {
+            companyName = companyData.setting_value.company_name;
+          }
+        } catch (error) {
+          console.error('Error fetching company name from app_settings:', error);
+        }
+      }
+      
+      // Clean up client name - ensure it's properly formatted
+      let clientName = clientData.name || '';
+      // Remove any "NOT" or similar artifacts that might appear
+      if (clientName && typeof clientName === 'string') {
+        clientName = clientName.replace(/\s+NOT\s+/gi, ' ').trim();
+      }
+      
       const variables = {
-        client_name: clientData.name || 'Madame, Monsieur',
-        company_name: companyProfile?.company_name || companyProfile?.name || 'Notre entreprise'
+        client_name: clientName || 'Madame, Monsieur',
+        company_name: companyName || 'Haliqo'
       };
       
       // Get client ID from clientData
