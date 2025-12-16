@@ -102,6 +102,13 @@ const FindArtisanPage = () => {
 
   // Load Google reCAPTCHA script and render CAPTCHA
   useEffect(() => {
+    // Check if CAPTCHA is disabled via environment variable
+    const captchaDisabled = import.meta.env.VITE_DISABLE_CAPTCHA === 'true' || import.meta.env.VITE_DISABLE_CAPTCHA === '1';
+    if (captchaDisabled) {
+      console.log('CAPTCHA is disabled via VITE_DISABLE_CAPTCHA environment variable.');
+      return;
+    }
+    
     const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
     
     // Don't load CAPTCHA if site key is not configured
@@ -419,8 +426,9 @@ const FindArtisanPage = () => {
       newErrors.clientAddress = t('findArtisan.form.clientAddressError') || 'Client address is required';
     }
     
-    // CAPTCHA validation
-    if (!captchaToken) {
+    // CAPTCHA validation (skip if disabled via environment variable)
+    const captchaDisabled = import.meta.env.VITE_DISABLE_CAPTCHA === 'true' || import.meta.env.VITE_DISABLE_CAPTCHA === '1';
+    if (!captchaDisabled && !captchaToken) {
       newErrors.captcha = t('findArtisan.form.captchaError') || 'Please complete the CAPTCHA verification';
     }
     
@@ -494,8 +502,9 @@ const FindArtisanPage = () => {
           fileInputRef.current.value = '';
         }
         
-        // Reset CAPTCHA
-        if (window.grecaptcha && captchaRef.current) {
+        // Reset CAPTCHA (only if not disabled)
+        const captchaDisabled = import.meta.env.VITE_DISABLE_CAPTCHA === 'true' || import.meta.env.VITE_DISABLE_CAPTCHA === '1';
+        if (!captchaDisabled && window.grecaptcha && captchaRef.current) {
           try {
             const widgetId = captchaRef.current.getAttribute('data-widget-id');
             if (widgetId) {
@@ -520,11 +529,14 @@ const FindArtisanPage = () => {
     } catch (error) {
       console.error('Error submitting lead:', error);
       setSubmitError('Une erreur est survenue lors de la soumission. Veuillez réessayer.');
-      // Reset CAPTCHA on error
-      if (window.grecaptcha) {
+      // Reset CAPTCHA on error (only if not disabled)
+      const captchaDisabled = import.meta.env.VITE_DISABLE_CAPTCHA === 'true' || import.meta.env.VITE_DISABLE_CAPTCHA === '1';
+      if (!captchaDisabled && window.grecaptcha) {
         window.grecaptcha.reset();
       }
-      setCaptchaToken(null);
+      if (!captchaDisabled) {
+        setCaptchaToken(null);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -1383,19 +1395,21 @@ const FindArtisanPage = () => {
                     </div>
 
                     {/* CAPTCHA */}
-                    <div className="pt-4">
-                      <div className="flex flex-col items-center">
-                        <div 
-                          ref={captchaRef}
-                          id="recaptcha-container"
-                        />
-                        {errors.captcha && (
-                          <p className="text-sm text-red-500 mt-2">
-                            {errors.captcha}
-                          </p>
-                        )}
+                    {!(import.meta.env.VITE_DISABLE_CAPTCHA === 'true' || import.meta.env.VITE_DISABLE_CAPTCHA === '1') && (
+                      <div className="pt-4">
+                        <div className="flex flex-col items-center">
+                          <div 
+                            ref={captchaRef}
+                            id="recaptcha-container"
+                          />
+                          {errors.captcha && (
+                            <p className="text-sm text-red-500 mt-2">
+                              {errors.captcha}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Submit Button */}
                     <div className="pt-4">

@@ -13,7 +13,6 @@ import { supabase } from '../../services/supabaseClient';
 import ClientModal from './components/ClientModal';
 import ClientCard from './components/ClientCard';
 import FilterToolbar from './components/FilterToolbar';
-import ClientAnalytics from './components/ClientAnalytics';
 
 import { 
   fetchClients, 

@@ -19,6 +19,9 @@ import { getClientCountryOptions } from '../../../utils/countryList';
 
 const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjectInfoChange, onNext, leadId, userId, isSaving = false }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { userProfile, subscriptionLimits } = useMultiUser();
   const [showNewClientForm, setShowNewClientForm] = useState(!!leadId); // Auto-show form if leadId exists
   const [clientType, setClientType] = useState(leadId ? 'particulier' : 'particulier');
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
@@ -104,6 +107,8 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
   const [createError, setCreateError] = useState(null);
   const [createSuccess, setCreateSuccess] = useState(false);
   const [clientsRefreshTrigger, setClientsRefreshTrigger] = useState(0);
+  const [monthlyClientsAdded, setMonthlyClientsAdded] = useState(0);
+  const [clientLimitReached, setClientLimitReached] = useState(false);
   
   // AI functionality state
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
@@ -866,8 +871,11 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
       setCreateError(null);
       
       // Create client using pre-filled data from lead
+      // Get name from name property or extract from label
+      const clientName = selectedClient.name || (selectedClient.label ? selectedClient.label.replace(/^[👤🏢]\s*/, '') : '');
+      
       const { data: createdClient, error } = await createClient({
-        name: selectedClient.name,
+        name: clientName,
         type: 'particulier',
         email: selectedClient.email,
         phone: selectedClient.phone || '',
@@ -1189,9 +1197,11 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
   const countryOptions = getClientCountryOptions(t);
 
   // Check if client limit is reached for Starter plan
+  // Only check limit if we have subscription data loaded
   const isStarterPlan = userProfile?.selected_plan === 'starter';
   const clientLimit = subscriptionLimits?.clientsPerMonth || 30;
-  const limitReached = isStarterPlan && clientLimit > 0 && monthlyClientsAdded >= clientLimit;
+  // Only consider limit reached if we have subscription data and are actually at the limit
+  const limitReached = userProfile && subscriptionLimits && isStarterPlan && clientLimit > 0 && monthlyClientsAdded >= clientLimit;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -1878,11 +1888,23 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
               {leadId && !clientAddedFromLead ? (
                 <Button
                   onClick={handleQuickAddClient}
-                  disabled={isCreatingClient || !selectedClient?.name || !selectedClient?.email || limitReached || clientLimitReached}
+                  disabled={
+                    isCreatingClient || 
+                    !selectedClient ||
+                    !(selectedClient.name || (selectedClient.label && selectedClient.label.replace(/^[👤🏢]\s*/, ''))) ||
+                    !selectedClient.email || 
+                    (userProfile && subscriptionLimits && (limitReached || clientLimitReached))
+                  }
                   iconName={isCreatingClient ? "Loader2" : "Plus"}
                   iconPosition="left"
                   size="sm"
-                  title={limitReached || clientLimitReached ? t('clientManagement.limitReached.disabledTooltip', 'Upgrade to Pro to add more clients') : ''}
+                  title={
+                    (limitReached || clientLimitReached) && userProfile && subscriptionLimits
+                      ? t('clientManagement.limitReached.disabledTooltip', 'Upgrade to Pro to add more clients')
+                      : (!selectedClient || !(selectedClient.name || selectedClient.label) || !selectedClient.email)
+                        ? t('quoteCreation.clientSelection.fillClientInfo', 'Please fill in client name and email information')
+                        : ''
+                  }
                 >
                   {isCreatingClient ? t('quoteCreation.clientSelection.creating', 'Création...') : t('quoteCreation.clientSelection.addClient', 'Ajouter le client')}
                 </Button>
