@@ -782,8 +782,17 @@ export const generatePEPPOLXML = (invoiceData) => {
   const deliveryDate = formatUBLDate(invoiceData.deliveryDate);
   
   // Buyer reference is mandatory (PEPPOL-EN16931-R003)
-  // Use invoice number if buyerReference is not provided
-  const buyerReference = invoiceData.buyerReference || invoiceData.billName || 'INV-' + Date.now();
+  // Use invoice number (INV-000010 format) as buyerReference to ensure supplier receives same invoice number
+  // This ensures consistency: client invoice INV-000010 -> supplier invoice also shows INV-000010
+  const buyerReference = invoiceData.buyerReference || invoiceData.billName || null;
+  
+  if (!buyerReference && !invoiceData.billName) {
+    throw new Error('Invoice number (billName) is required for Peppol invoice. It will be used as buyerReference.');
+  }
+  
+  // Always use billName (invoice number) as buyerReference if not explicitly provided
+  // This ensures the supplier sees the same invoice number as the client
+  const finalBuyerReference = buyerReference || invoiceData.billName;
   
   // Recalculate total tax amount from tax categories to ensure accuracy
   const recalculatedTaxTotal = Object.values(taxCategories).reduce((sum, category) => {
@@ -803,7 +812,7 @@ export const generatePEPPOLXML = (invoiceData) => {
     <cbc:DueDate>${dueDate}</cbc:DueDate>
     <cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
     <cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
-    <cbc:BuyerReference>${xmlEscape(buyerReference)}</cbc:BuyerReference>
+    <cbc:BuyerReference>${xmlEscape(finalBuyerReference)}</cbc:BuyerReference>
   ${generatePartyInfo(invoiceData.sender, true)}
   ${generatePartyInfo(invoiceData.receiver, false)}
   ${generateDelivery({ ...invoiceData, deliveryDate })}
@@ -1520,16 +1529,22 @@ export class PeppolService {
       throw new Error('At least one invoice line item is required.');
     }
     
+        // Use the actual invoice number (INV-000010 format) - don't generate datetime-based numbers
+        if (!haliqoInvoice.invoice_number) {
+          throw new Error('Invoice number is required for Peppol invoice');
+    }
+    
         return {
-      billName: haliqoInvoice.invoice_number || `INV-${Date.now()}`,
+      billName: haliqoInvoice.invoice_number,
       // Use issue_date from schema (invoices.issue_date), fallback to created_at if not available
       issueDate: formatDate(haliqoInvoice.issue_date || haliqoInvoice.created_at || new Date(), "date"),
       // Use due_date from schema (invoices.due_date)
       dueDate: formatDate(haliqoInvoice.due_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), "date"),
       // delivery_date is not in invoices table, use issue_date as fallback (or created_at)
       deliveryDate: formatDate(haliqoInvoice.delivery_date || haliqoInvoice.issue_date || haliqoInvoice.created_at || new Date(), "date"),
-      // buyerReference can be from invoice notes, description, or invoice number
-      buyerReference: haliqoInvoice.buyer_reference || haliqoInvoice.reference || haliqoInvoice.invoice_number || null,
+      // buyerReference: Use invoice number (INV-000010) to ensure supplier receives same invoice number
+      // This ensures consistency: client invoice INV-000010 -> supplier invoice also shows INV-000010
+      buyerReference: haliqoInvoice.buyer_reference || haliqoInvoice.reference || haliqoInvoice.invoice_number,
       // Extract payment delay from payment_terms if available, otherwise default to 30 days
       paymentDelay: extractPaymentDelay(haliqoInvoice.payment_terms) || 30,
       paymentMeans: 31, // Debit transfer (code 31 = Credit transfer)

@@ -100,6 +100,11 @@ const QuoteCreation = () => {
 
   const [showQuoteSendModal, setShowQuoteSendModal] = useState(false);
   const [isFileUploading, setIsFileUploading] = useState(false);
+  
+  // Track if we've attempted to load draft on mount
+  const hasAttemptedDraftLoad = React.useRef(false);
+  const [showDraftRestoreDialog, setShowDraftRestoreDialog] = useState(false);
+  const [foundDraft, setFoundDraft] = useState(null);
 
 
 
@@ -1345,8 +1350,168 @@ const QuoteCreation = () => {
 
 
 
-  // Do not auto-load draft into the form on page open; only clean expired local draft
+  // Check for existing draft and show dialog on page refresh (when no URL params)
+  useEffect(() => {
+    // Only attempt to check once on mount
+    if (hasAttemptedDraftLoad.current) {
+      return;
+    }
+    
+    const checkForDraft = async () => {
+      // Only check if:
+      // 1. User is logged in
+      // 2. No URL parameters (not editing, duplicating, or from lead)
+      // 3. Not currently loading a quote
+      const editId = searchParams.get('edit');
+      const duplicateId = searchParams.get('duplicate');
+      const leadId = searchParams.get('lead_id');
+      
+      if (!user?.id || editId || duplicateId || leadId || isLoadingQuote || isEditing) {
+        hasAttemptedDraftLoad.current = true;
+        return;
+      }
+      
+      // Don't check if there's already significant data
+      const hasData = selectedClient || 
+        (tasks.length > 0 && tasks.some(t => t.name || t.description)) || 
+        (files.length > 0) || 
+        projectInfo.description || 
+        projectInfo.deadline ||
+        projectInfo.categories.length > 0;
+      
+      if (hasData) {
+        hasAttemptedDraftLoad.current = true;
+        return;
+      }
+      
+      hasAttemptedDraftLoad.current = true;
+      
+      try {
+        // Query for most recent draft for this user/profile
+        let query = supabase
+          .from('quote_drafts')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('last_saved', { ascending: false })
+          .limit(1);
+        
+        // Handle profile_id matching
+        if (currentProfile?.id) {
+          query = query.eq('profile_id', currentProfile.id);
+        } else {
+          query = query.is('profile_id', null);
+        }
+        
+        const { data, error } = await query.maybeSingle();
+        
+        if (error || !data) {
+          return; // No draft found or error
+        }
+        
+        // Check if draft is expired (24 hours)
+        if (isDraftExpired(data.last_saved)) {
+          return; // Draft expired, don't show dialog
+        }
+        
+        // Show dialog to ask user if they want to continue editing
+        setFoundDraft(data);
+        setShowDraftRestoreDialog(true);
+      } catch (err) {
+        console.error('Error checking for draft:', err);
+      }
+    };
+    
+    // Run after a short delay to ensure other useEffects have run
+    const timeoutId = setTimeout(() => {
+      checkForDraft();
+    }, 500);
+    
+    return () => clearTimeout(timeoutId);
+  }, [user?.id, currentProfile?.id]); // Only depend on user and profile - run once on mount
 
+  // Function to load the draft (called when user chooses to continue editing)
+  const loadDraft = (draftData) => {
+    const d = draftData.draft_data || {};
+    
+    setIsEditing(false);
+    setEditingQuoteId(null);
+    setSelectedClient(d.selectedClient || null);
+    
+    // Restore projectInfo with quote number from draft
+    const draftQuoteNumber = draftData.quote_number || d.projectInfo?.quoteNumber;
+    const restoredProjectInfo = {
+      ...(d.projectInfo || { categories: [], customCategory: '', deadline: '', description: '' }),
+      quoteNumber: draftQuoteNumber || d.projectInfo?.quoteNumber
+    };
+    setProjectInfo(restoredProjectInfo);
+    
+    // Store quote number in localStorage for consistency
+    if (draftQuoteNumber) {
+      localStorage.setItem('pre_generated_quote_number', draftQuoteNumber);
+    }
+    
+    setTasks(d.tasks || []);
+    setFiles(d.files || []);
+    setCompanyInfo(d.companyInfo || null);
+    setFinancialConfig(d.financialConfig || null);
+    setCurrentStep(d.currentStep || 1);
+    setLastSaved(draftData.last_saved || new Date().toISOString());
+    
+    // Restore leadId if this draft is from a lead
+    if (d.leadId) {
+      setLeadId(d.leadId);
+    }
+    
+    // Restore client signature from draft
+    if (d.clientSignature && d.selectedClient?.id) {
+      try {
+        localStorage.setItem(`client-signature-${user.id}-${d.selectedClient.id}`, JSON.stringify(d.clientSignature));
+      } catch (e) {
+        console.warn('Failed to restore client signature:', e);
+      }
+    } else if (d.clientSignature && d.selectedClient?.value) {
+      try {
+        localStorage.setItem(`client-signature-${user.id}-${d.selectedClient.value}`, JSON.stringify(d.clientSignature));
+      } catch (e) {
+        console.warn('Failed to restore client signature:', e);
+      }
+    }
+    
+    // Store draft in localStorage and bind to backend row ID
+    const quoteNumber = d.projectInfo?.quoteNumber;
+    const fallbackKey = `quote-draft-${user.id}-${currentProfile?.id || 'default'}`;
+    const fallbackRowIdKey = `quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`;
+    
+    if (quoteNumber) {
+      const draftKey = getDraftKeyByQuoteNumber(quoteNumber);
+      const draftRowIdKey = getDraftRowIdKeyByQuoteNumber(quoteNumber);
+      
+      try { localStorage.setItem(draftKey, JSON.stringify(d)); } catch { }
+      try { localStorage.setItem(draftRowIdKey, draftData.id); } catch { }
+      try { localStorage.setItem(fallbackRowIdKey, draftData.id); } catch { }
+    } else {
+      try { localStorage.setItem(fallbackKey, JSON.stringify(d)); } catch { }
+      try { localStorage.setItem(fallbackRowIdKey, draftData.id); } catch { }
+    }
+  };
+
+  // Handle dialog actions
+  const handleContinueEditing = () => {
+    if (foundDraft) {
+      loadDraft(foundDraft);
+    }
+    setShowDraftRestoreDialog(false);
+    setFoundDraft(null);
+  };
+
+  const handleCreateNew = () => {
+    setShowDraftRestoreDialog(false);
+    setFoundDraft(null);
+    // Clear any draft references
+    try { localStorage.removeItem(`quote-draft-rowid-${user.id}-${currentProfile?.id || 'default'}`); } catch { }
+  };
+
+  // Clean up expired local drafts
   useEffect(() => {
 
     if (user?.id) {
@@ -4465,8 +4630,82 @@ const QuoteCreation = () => {
 
 
 
+  // Format draft last saved date for display
+  const formatDraftDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return t('quoteCreation.draftRestore.justNow', 'À l\'instant');
+    if (diffMins < 60) return t('quoteCreation.draftRestore.minutesAgo', { count: diffMins }, `${diffMins} min${diffMins > 1 ? 's' : ''}`);
+    if (diffHours < 24) return t('quoteCreation.draftRestore.hoursAgo', { count: diffHours }, `${diffHours} h`);
+    if (diffDays === 1) return t('quoteCreation.draftRestore.yesterday', 'Hier');
+    if (diffDays < 7) return t('quoteCreation.draftRestore.daysAgo', { count: diffDays }, `Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`);
+    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  };
+
   return (
     <PermissionGuard module="quoteCreation" requiredPermission="full_access">
+      {/* Draft Restore Dialog */}
+      {showDraftRestoreDialog && foundDraft && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Icon name="FileText" size={24} className="text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {t('quoteCreation.draftRestore.title', 'Devis en cours d\'édition')}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t('quoteCreation.draftRestore.subtitle', 'Dernière sauvegarde')}: {formatDraftDate(foundDraft.last_saved)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-sm text-foreground mb-3">
+                {t('quoteCreation.draftRestore.message', 'Nous avons détecté un devis en cours d\'édition. Souhaitez-vous continuer à modifier ce devis ou créer un nouveau devis ?')}
+              </p>
+              {foundDraft.draft_data?.projectInfo?.quoteNumber && (
+                <div className="p-3 rounded-md bg-muted/50 border border-border">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {t('quoteCreation.draftRestore.quoteNumber', 'Numéro de devis')}:
+                  </p>
+                  <p className="text-sm font-medium text-foreground">
+                    {foundDraft.draft_data.projectInfo.quoteNumber}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
+              <Button
+                variant="outline"
+                onClick={handleCreateNew}
+                className="w-full sm:w-auto"
+              >
+                {t('quoteCreation.draftRestore.createNew', 'Créer un nouveau devis')}
+              </Button>
+              <Button
+                variant="default"
+                onClick={handleContinueEditing}
+                className="w-full sm:w-auto"
+              >
+                {t('quoteCreation.draftRestore.continueEditing', 'Continuer l\'édition')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="min-h-screen bg-background">
 
         <MainSidebar />

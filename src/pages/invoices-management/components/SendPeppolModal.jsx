@@ -275,8 +275,18 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
         }];
       }
 
+      // Ensure invoice_number is set (use number field if invoice_number is not available)
+      const invoiceNumber = invoice.invoice_number || invoice.number || invoice.invoiceNumber;
+      
+      if (!invoiceNumber) {
+        setError(t('invoicesManagement.sendPeppolModal.errors.invoiceNumberRequired', 'Invoice number is required for Peppol invoice'));
+        setIsSending(false);
+        return;
+      }
+
       const haliqoInvoice = {
         ...invoice,
+        invoice_number: invoiceNumber, // Ensure invoice_number is set
         items: invoiceLines
       };
 

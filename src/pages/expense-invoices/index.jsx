@@ -294,16 +294,47 @@ const ExpenseInvoicesManagement = () => {
       }
 
       // Prepare expense invoice data for PDF generation
+      // Use exact values from UBL XML or database - no calculations
+      const amount = parseFloat(invoice.amount || 0);
+      const netAmount = parseFloat(invoice.net_amount || 0);
+      const vatAmount = parseFloat(invoice.vat_amount || 0);
+      
       // Extract supplier address from Peppol metadata if available
       const supplierAddress = invoice.peppol_metadata?.supplierAddress || {};
       const supplierContact = invoice.peppol_metadata?.supplier || {};
+      const customerContact = invoice.peppol_metadata?.customer || {};
+      
+      // Helper to get display invoice number (prefer original client invoice number from buyerReference)
+      const getDisplayInvoiceNumber = (inv) => {
+        // For Peppol invoices, check if buyerReference contains the original client invoice number
+        if (inv.source === 'peppol' && inv.peppol_metadata?.buyerReference) {
+          const buyerRef = inv.peppol_metadata.buyerReference;
+          // If buyerReference looks like a client invoice number (INV-* or FACT-*), use it
+          if (buyerRef && (buyerRef.match(/^(INV|FACT)-\d+$/i) || buyerRef.startsWith('INV-') || buyerRef.startsWith('FACT-'))) {
+            return buyerRef;
+          }
+        }
+        // Also check the invoice_number itself - if it's from UBL XML (cbc:ID), it should be the original invoice number
+        if (inv.source === 'peppol' && inv.invoice_number && 
+            (inv.invoice_number.match(/^(INV|FACT)-\d+$/i) || inv.invoice_number.startsWith('INV-') || inv.invoice_number.startsWith('FACT-'))) {
+          return inv.invoice_number;
+        }
+        // Otherwise, use the stored invoice_number (Peppol-generated or manual)
+        return inv.invoice_number;
+      };
+      
+      // Use customer phone from Peppol metadata if companyInfo phone is not available
+      const companyPhone = companyInfo?.phone || customerContact?.phone || '';
       
       const expenseInvoiceData = {
-        companyInfo,
+        companyInfo: {
+          ...companyInfo,
+          phone: companyPhone || companyInfo?.phone || ''
+        },
         supplier: {
           name: invoice.supplier_name,
           email: invoice.supplier_email || supplierContact.email || '',
-          phone: invoice.supplier_phone || supplierContact.contactPhone || supplierContact.phone || '',
+          phone: invoice.supplier_phone || supplierContact.contactPhone || supplierContact.phone || supplierContact.telephone || '',
           address: invoice.supplier_address || supplierAddress.street || '',
           postal_code: invoice.supplier_postal_code || supplierAddress.postalCode || supplierAddress.zip_code || '',
           city: invoice.supplier_city || supplierAddress.city || '',
@@ -313,9 +344,9 @@ const ExpenseInvoicesManagement = () => {
         invoice: {
           issue_date: invoice.issue_date,
           due_date: invoice.due_date,
-          amount: invoice.amount,
-          net_amount: invoice.net_amount,
-          vat_amount: invoice.vat_amount,
+          amount: amount,
+          net_amount: netAmount,
+          vat_amount: vatAmount,
           category: invoice.category,
           payment_method: invoice.payment_method,
           source: invoice.source,
@@ -328,7 +359,8 @@ const ExpenseInvoicesManagement = () => {
         }
       };
 
-      const invoiceNumber = invoice.invoice_number || 'EXP-INV-001';
+      // Use original client invoice number from buyerReference if available, otherwise use stored invoice_number
+      const invoiceNumber = getDisplayInvoiceNumber(invoice) || 'EXP-INV-001';
       
       // Get user's preferred language
       const userLanguage = i18n.language || localStorage.getItem('language') || 'fr';
@@ -548,8 +580,17 @@ const ExpenseInvoicesManagement = () => {
 
   const handleCreateExpenseInvoice = async (newInvoice) => {
     try {
+      // Use values directly from form - no calculations
+      // Values should be provided by user or from UBL XML
+      const invoiceData = {
+        ...newInvoice,
+        amount: parseFloat(newInvoice.amount) || 0,
+        netAmount: parseFloat(newInvoice.netAmount) || parseFloat(newInvoice.amount) || 0,
+        vatAmount: parseFloat(newInvoice.vatAmount) || 0
+      };
+      
       const expenseService = new ExpenseInvoicesService();
-      const result = await expenseService.createExpenseInvoice(newInvoice);
+      const result = await expenseService.createExpenseInvoice(invoiceData);
       
       if (result.success) {
         // Refresh the data from the service
@@ -570,15 +611,18 @@ const ExpenseInvoicesManagement = () => {
 
   const handleUpdateExpenseInvoice = async (invoiceId, updatedInvoice) => {
     try {
+      // Use centralized calculation function to ensure consistency
+      // Use values directly from form - no calculations
+      // Values should be provided by user or from UBL XML
       const expenseService = new ExpenseInvoicesService();
       const result = await expenseService.updateExpenseInvoice(invoiceId, {
         supplier_name: updatedInvoice.supplierName,
         supplier_email: updatedInvoice.supplierEmail,
         supplier_vat_number: updatedInvoice.supplierVatNumber || null,
         invoice_number: updatedInvoice.invoiceNumber,
-        amount: updatedInvoice.amount,
-        net_amount: updatedInvoice.netAmount || updatedInvoice.amount,
-        vat_amount: updatedInvoice.vatAmount || 0,
+        amount: parseFloat(updatedInvoice.amount) || 0,
+        net_amount: parseFloat(updatedInvoice.netAmount) || parseFloat(updatedInvoice.amount) || 0,
+        vat_amount: parseFloat(updatedInvoice.vatAmount) || 0,
         category: updatedInvoice.category || null,
         issue_date: updatedInvoice.issueDate,
         due_date: updatedInvoice.dueDate,

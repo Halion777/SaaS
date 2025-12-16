@@ -358,7 +358,7 @@ class ClientQuoteService {
           company_profiles!quotes_company_profile_id_fkey(company_name),
           client:clients(id, language_preference),
           quote_tasks(id, total_price, quantity, unit_price, quote_id),
-          quote_materials(id, unit_price, price, quote_task_id),
+          quote_materials(id, unit_price, total_price, quote_task_id),
           quote_financial_configs(vat_config, advance_config)
         `)
         .eq('id', quoteId)

@@ -393,7 +393,7 @@ serve(async (req) => {
           const vatSectionHtml = vatEnabled 
             ? `<div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
                 <span style="color: #666;">${isFrench ? 'TVA' : isDutch ? 'BTW' : 'VAT'} (${emailData.variables?.vat_percentage || '0%'}):</span>
-                <span style="color: #333; font-weight: 500;">${emailData.variables?.vat_amount || '0€'}</span>
+                <span style="color: #333; font-size: 14px;">${emailData.variables?.vat_amount || '0€'}</span>
               </div>`
             : '';
           
@@ -409,6 +409,8 @@ serve(async (req) => {
           
           let depositSectionHtml = '';
           let depositSectionText = '';
+          let depositBeforeWorkSectionHtml = '';
+          let depositBeforeWorkSectionText = '';
           
           if (depositEnabled && depositAmount !== '0€' && parseFloat(depositAmount.replace(/[^\d,.-]/g, '').replace(',', '.')) > 0) {
             // Deposit enabled - show deposit information
@@ -416,15 +418,24 @@ serve(async (req) => {
               <div style="background: #fef3c7; padding: 12px; border-radius: 6px; margin-top: 12px; border-left: 4px solid #f59e0b;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                   <span style="color: #92400e; font-weight: bold;">${isFrench ? 'Acompte à la commande:' : isDutch ? 'Voorschot bij bestelling:' : 'Advance Payment:'}</span>
-                  <span style="color: #92400e; font-weight: bold; font-size: 16px;">${depositAmount}</span>
+                  <span style="color: #92400e; font-weight: bold; font-size: 14px;">${depositAmount}</span>
                 </div>
                 <p style="margin: 0; color: #78350f; font-size: 13px; font-style: italic;">${isFrench ? 'Montant à payer avant le début des travaux' : isDutch ? 'Bedrag te betalen vóór aanvang van het werk' : 'Amount to pay before work starts'}</p>
               </div>`;
             
             depositSectionText = `\n⚠️ ${isFrench ? 'ACOMPTE À LA COMMANDE' : isDutch ? 'VOORSCHOT BIJ BESTELLING' : 'ADVANCE PAYMENT'}: ${depositAmount}\n${isFrench ? '(Montant à payer avant le début des travaux)' : isDutch ? '(Bedrag te betalen vóór aanvang van het werk)' : '(Amount to pay before work starts)'}\n`;
+            
+            // Total Amount to Pay before work (deposit)
+            depositBeforeWorkSectionHtml = `
+              <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e0e0e0; margin-top: 5px;">
+                <span style="color: #333; font-weight: bold;">${isFrench ? 'Montant total à payer avant travaux:' : isDutch ? 'Totaalbedrag te betalen vóór werk:' : 'Total Amount to Pay before work:'}</span>
+                <span style="color: #333; font-weight: bold; font-size: 14px;">${depositAmount}</span>
+              </div>`;
+            
+            depositBeforeWorkSectionText = `${isFrench ? 'Montant total à payer avant travaux:' : isDutch ? 'Totaalbedrag te betalen vóór werk:' : 'Total Amount to Pay before work:'} ${depositAmount}\n`;
           }
           
-          // Note: "Total Amount to Pay" section is now always shown in the template itself
+          // Note: "Total Amount to Pay after work" section is now always shown in the template itself
           // The edge function no longer generates it here to avoid duplication
           
           const variables = {
@@ -450,7 +461,9 @@ serve(async (req) => {
             vat_section: vatSectionHtml,
             vat_section_text: vatSectionText,
             deposit_section: depositSectionHtml,
-            deposit_section_text: depositSectionText
+            deposit_section_text: depositSectionText,
+            deposit_before_work_section: depositBeforeWorkSectionHtml,
+            deposit_before_work_section_text: depositBeforeWorkSectionText
           };
           const rendered = renderTemplate(quoteTemplate.data, variables);
           emailResult = await sendEmail({

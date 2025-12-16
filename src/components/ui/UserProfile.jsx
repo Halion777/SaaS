@@ -653,15 +653,15 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                   {(subscription.status === 'trial' || subscription.status === 'trialing') && subscription.trial_end ? (
                     <>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Trial ends {new Date(subscription.trial_end).toLocaleDateString()}
+                        {t('profile.settings.subscription.trialEnds', 'Trial ends {{date}}', { date: new Date(subscription.trial_end).toLocaleDateString() })}
                       </p>
                       <p className="text-xs font-medium text-foreground mt-1">
-                        Then €{subscription.amount || 0}/{subscription.billing_cycle || subscription.interval || 'month'}
+                        {t('profile.settings.subscription.thenAmount', 'Then €{{amount}}/{{period}}', { amount: subscription.amount || 0, period: subscription.billing_cycle || subscription.interval || 'month' })}
                       </p>
                     </>
                   ) : (
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      €{subscription.amount || 0}/{subscription.billing_cycle || subscription.interval || 'month'}
+                      {t('profile.settings.subscription.amount', '€{{amount}}/{{period}}', { amount: subscription.amount || 0, period: subscription.billing_cycle || subscription.interval || 'month' })}
                     </p>
                   )}
                 </div>
@@ -679,7 +679,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                     size="sm"
                   >
                     <Icon name="CreditCard" size={14} />
-                    <span className="text-xs">Manage Subscription</span>
+                    <span className="text-xs">{t('profile.settings.subscription.manageSubscription', 'Manage Subscription')}</span>
                   </Button>
                 </div>
               )}
@@ -692,13 +692,13 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
           ) : (
             <div className="text-center py-6">
               <Icon name="AlertCircle" size={24} className="text-muted-foreground mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground mb-3">No active subscription</p>
+              <p className="text-xs text-muted-foreground mb-3">{t('profile.settings.subscription.noActiveSubscription', 'No active subscription')}</p>
               {canManageSubscription() && (
                 <Button
                   onClick={handleManageBilling}
                   size="sm"
                 >
-                  Subscribe Now
+                  {t('profile.settings.subscription.subscribeNow', 'Subscribe Now')}
                 </Button>
               )}
             </div>

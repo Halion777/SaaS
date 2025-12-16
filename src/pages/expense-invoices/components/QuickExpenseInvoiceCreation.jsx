@@ -6,6 +6,7 @@ import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import FileUpload from '../../../components/ui/FileUpload';
 import { OCRService } from '../../../services/ocrService';
+// Removed expenseInvoiceCalculator - using direct values from UBL XML or database
 
 const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, onUpdateExpenseInvoice, invoiceToEdit = null }) => {
   const { t } = useTranslation();
@@ -596,7 +597,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
                       
                       handleInputChange('amount', value);
                       
-                      // Calculate other fields
+                      // Simple calculation: total = net + vat
                       const total = parseAmount(value);
                       const net = parseAmount(formData.netAmount);
                       const vat = parseAmount(formData.vatAmount);
@@ -605,13 +606,13 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
                       if (net > 0 && vat > 0 && Math.abs((net + vat) - total) < 0.01) {
                         // Keep existing values
                       } else if (net > 0) {
-                        // Calculate VAT from net
+                        // Calculate VAT from total and net: VAT = Total - Net
                         const newVat = total - net;
                         if (newVat >= 0) {
                           handleInputChange('vatAmount', newVat.toFixed(2).replace('.', ','));
                         }
                       } else if (vat > 0) {
-                        // Calculate net from VAT
+                        // Calculate net from total and VAT: Net = Total - VAT
                         const newNet = total - vat;
                         if (newNet >= 0) {
                           handleInputChange('netAmount', newNet.toFixed(2).replace('.', ','));
@@ -651,11 +652,23 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
                       
                       handleInputChange('netAmount', value);
                       
+                      // Simple calculation: total = net + vat
                       const net = parseAmount(value);
-                      const total = parseAmount(formData.amount);
-                      const vat = total - net;
-                      if (vat >= 0 && total > 0) {
-                        handleInputChange('vatAmount', vat.toFixed(2).replace('.', ','));
+                      const vat = parseAmount(formData.vatAmount);
+                      const total = net + vat;
+                      
+                      // Update total if net or VAT changed
+                      if (total > 0) {
+                        handleInputChange('amount', total.toFixed(2).replace('.', ','));
+                      }
+                      
+                      // If total is set and VAT is set, recalculate VAT from total
+                      const existingTotal = parseAmount(formData.amount);
+                      if (existingTotal > 0 && vat > 0) {
+                        const newVat = existingTotal - net;
+                        if (newVat >= 0 && Math.abs(newVat - vat) > 0.01) {
+                          handleInputChange('vatAmount', newVat.toFixed(2).replace('.', ','));
+                        }
                       }
                     }}
                     placeholder="0,00"
@@ -689,11 +702,23 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
                       
                       handleInputChange('vatAmount', value);
                       
+                      // Simple calculation: total = net + vat
                       const vat = parseAmount(value);
                       const total = parseAmount(formData.amount);
-                      const net = total - vat;
-                      if (net >= 0 && total > 0) {
-                        handleInputChange('netAmount', net.toFixed(2).replace('.', ','));
+                      const net = parseAmount(formData.netAmount);
+                      
+                      if (total > 0) {
+                        // Calculate net from total and VAT: Net = Total - VAT
+                        const newNet = total - vat;
+                        if (newNet >= 0) {
+                          handleInputChange('netAmount', newNet.toFixed(2).replace('.', ','));
+                        }
+                      } else if (net > 0) {
+                        // Calculate total from net and VAT: Total = Net + VAT
+                        const newTotal = net + vat;
+                        if (newTotal > 0) {
+                          handleInputChange('amount', newTotal.toFixed(2).replace('.', ','));
+                        }
                       }
                     }}
                     placeholder="0,00"

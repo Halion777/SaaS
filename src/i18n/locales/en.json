@@ -1884,6 +1884,14 @@
           "description": "Manage company details, logo, and signature",
           "edit": "Edit",
           "manage": "Manage"
+        },
+        "subscription": {
+          "trialEnds": "Trial ends {{date}}",
+          "thenAmount": "Then €{{amount}}/{{period}}",
+          "amount": "€{{amount}}/{{period}}",
+          "manageSubscription": "Manage Subscription",
+          "noActiveSubscription": "No active subscription",
+          "subscribeNow": "Subscribe Now"
         }
       },
       "preferences": {
@@ -3052,6 +3060,19 @@
       "title": "Notes",
       "autosaved": "Draft auto-saved. You can find it in",
       "quotesManagement": "Quotes Management"
+    },
+    "draftRestore": {
+      "title": "Quote in Progress",
+      "subtitle": "Last saved",
+      "message": "We detected a quote in progress. Would you like to continue editing this quote or create a new quote?",
+      "quoteNumber": "Quote number",
+      "createNew": "Create a new quote",
+      "continueEditing": "Continue editing",
+      "justNow": "Just now",
+      "minutesAgo": "{{count}} min ago",
+      "hoursAgo": "{{count}} h ago",
+      "yesterday": "Yesterday",
+      "daysAgo": "{{count}} day ago"
     },
     "clientSelection": {
       "title": "Client Selection",

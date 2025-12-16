@@ -1916,6 +1916,14 @@
           "description": "Beheer bedrijfsgegevens, logo en handtekening",
           "edit": "Bewerken",
           "manage": "Beheren"
+        },
+        "subscription": {
+          "trialEnds": "Proefperiode eindigt op {{date}}",
+          "thenAmount": "Daarna €{{amount}}/{{period}}",
+          "amount": "€{{amount}}/{{period}}",
+          "manageSubscription": "Abonnement beheren",
+          "noActiveSubscription": "Geen actief abonnement",
+          "subscribeNow": "Nu abonneren"
         }
       },
       "preferences": {
@@ -3087,6 +3095,19 @@
       "title": "Notities",
       "autosaved": "Concept automatisch opgeslagen. U kunt het vinden in",
       "quotesManagement": "Offertebeheer"
+    },
+    "draftRestore": {
+      "title": "Offerte in bewerking",
+      "subtitle": "Laatst opgeslagen",
+      "message": "We hebben een offerte in bewerking gedetecteerd. Wilt u doorgaan met het bewerken van deze offerte of een nieuwe offerte maken?",
+      "quoteNumber": "Offertenummer",
+      "createNew": "Nieuwe offerte maken",
+      "continueEditing": "Bewerking voortzetten",
+      "justNow": "Zojuist",
+      "minutesAgo": "{{count}} min geleden",
+      "hoursAgo": "{{count}} u geleden",
+      "yesterday": "Gisteren",
+      "daysAgo": "{{count}} dag geleden"
     },
     "clientSelection": {
       "title": "Klant selecteren",

@@ -152,7 +152,8 @@ const InvoicesManagement = () => {
           peppolSentAt: invoice.peppol_sent_at,
           peppolDeliveredAt: invoice.peppol_delivered_at,
           receiverPeppolId: invoice.receiver_peppol_id,
-          peppolErrorMessage: invoice.peppol_error_message
+          peppolErrorMessage: invoice.peppol_error_message,
+          peppol_metadata: invoice.peppol_metadata || null
         }));
         
         setInvoices(transformedInvoices);
@@ -299,7 +300,8 @@ const InvoicesManagement = () => {
           final_amount: invoice.amount,
           description: invoice.description,
           title: invoice.title,
-          notes: invoice.notes
+          notes: invoice.notes,
+          peppol_metadata: invoice.peppol_metadata || null
         },
         quote: invoice.quote || null
       };

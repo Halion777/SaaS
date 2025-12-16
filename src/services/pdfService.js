@@ -203,13 +203,13 @@ const generateQuoteHTML = (quoteData, quoteNumber) => {
               <td style="border: 1px solid #d1d5db; padding: 12px; text-align: right; font-weight: bold;">${totalWithVAT.toFixed(2)} €</td>
             </tr>
             ${financialConfig?.advanceConfig?.enabled ? `
-            <tr style="background-color: #fef3c7;">
-              <td style="border: 1px solid #d1d5db; padding: 12px; font-weight: bold; color: #92400e;">ACOMPTE À LA COMMANDE:</td>
-              <td style="border: 1px solid #d1d5db; padding: 12px; text-align: right; font-weight: bold; color: #92400e;">${depositAmount.toFixed(2)} €</td>
+            <tr style="background-color: #f9fafb;">
+              <td style="border: 1px solid #d1d5db; padding: 12px; font-weight: bold; color: ${primaryColor};">ACOMPTE À LA COMMANDE:</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px; text-align: right; font-weight: bold; color: ${primaryColor};">${depositAmount.toFixed(2)} €</td>
             </tr>
-            <tr style="background-color: #fef3c7;">
-              <td style="border: 1px solid #d1d5db; padding: 12px; font-weight: bold; color: #92400e;">SOLDE À LA LIVRAISON:</td>
-              <td style="border: 1px solid #d1d5db; padding: 12px; text-align: right; font-weight: bold; color: #92400e;">${balanceAmount.toFixed(2)} €</td>
+            <tr style="background-color: #f9fafb;">
+              <td style="border: 1px solid #d1d5db; padding: 12px; font-weight: bold; color: ${primaryColor};">SOLDE À LA LIVRAISON:</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px; text-align: right; font-weight: bold; color: ${primaryColor};">${balanceAmount.toFixed(2)} €</td>
             </tr>
             ` : ''}
           </tfoot>
@@ -415,17 +415,45 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
   
   const t = labels[language] || labels.fr;
   
-  // Get invoice lines from quote tasks if available, otherwise create a single line
+  // Get invoice lines from quote tasks and materials if available, otherwise create a single line
   let invoiceLines = [];
   if (quote && quote.quote_tasks && quote.quote_tasks.length > 0) {
-    invoiceLines = quote.quote_tasks.map((task, index) => ({
-      number: index + 1,
-      description: task.description || task.name || '',
-      quantity: task.quantity || 1,
-      unit: task.unit || '',
-      unitPrice: parseFloat(task.unit_price || 0),
-      totalPrice: parseFloat(task.total_price || 0)
-    }));
+    // Group materials by task_id
+    const materialsByTaskId = {};
+    if (quote.quote_materials && quote.quote_materials.length > 0) {
+      quote.quote_materials.forEach((material) => {
+        const taskId = material.quote_task_id;
+        if (!materialsByTaskId[taskId]) {
+          materialsByTaskId[taskId] = [];
+        }
+        materialsByTaskId[taskId].push({
+          name: material.name || '',
+          quantity: material.quantity || 1,
+          unit: material.unit || 'piece',
+          unitPrice: parseFloat(material.unit_price || 0),
+          totalPrice: parseFloat(material.total_price || material.unit_price || 0)
+        });
+      });
+    }
+    
+    // Build invoice lines with tasks and their materials
+    quote.quote_tasks.forEach((task, taskIndex) => {
+      const taskMaterials = materialsByTaskId[task.id] || [];
+      const taskPrice = parseFloat(task.total_price || task.unit_price || 0);
+      const materialsTotal = taskMaterials.reduce((sum, mat) => sum + mat.totalPrice, 0);
+      const taskTotal = taskPrice + materialsTotal;
+      
+      // Add task line
+      invoiceLines.push({
+        number: taskIndex + 1,
+        description: task.description || task.name || '',
+        quantity: task.quantity || 1,
+        unit: task.unit || '',
+        unitPrice: taskPrice,
+        totalPrice: taskTotal, // Include materials in task total
+        materials: taskMaterials // Store materials for sub-item display
+      });
+    });
   } else {
     // Single line from invoice summary
     invoiceLines = [{
@@ -441,6 +469,35 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
   const subtotal = parseFloat(invoice.net_amount || invoice.amount || 0);
   const taxAmount = parseFloat(invoice.tax_amount || 0);
   const total = parseFloat(invoice.final_amount || invoice.amount || 0);
+  
+  // Extract deposit information directly from quote table or invoice peppol_metadata
+  let depositAmount = 0;
+  let balanceAmount = total;
+  let depositEnabled = false;
+  let totalWithVAT = subtotal + taxAmount;
+  
+  if (quote && (quote.deposit_amount !== undefined || quote.balance_amount !== undefined)) {
+    // Get deposit info directly from quote table columns
+    depositAmount = parseFloat(quote.deposit_amount || 0);
+    balanceAmount = parseFloat(quote.balance_amount || total);
+    depositEnabled = depositAmount > 0;
+    
+    // Calculate totalWithVAT from stored values
+    if (depositEnabled && balanceAmount > 0) {
+      totalWithVAT = balanceAmount + depositAmount;
+    } else {
+      totalWithVAT = subtotal + taxAmount;
+    }
+  } else if (invoice.peppol_metadata && typeof invoice.peppol_metadata === 'object') {
+    // Get deposit info from invoice's peppol_metadata (for converted invoices)
+    const metadata = invoice.peppol_metadata;
+    if (metadata.deposit_enabled || metadata.deposit_amount > 0) {
+      depositEnabled = true;
+      depositAmount = parseFloat(metadata.deposit_amount || 0);
+      balanceAmount = total; // final_amount is already the balance
+      totalWithVAT = balanceAmount + depositAmount;
+    }
+  }
   
   // Helper to escape HTML
   const escapeHtml = (text) => {
@@ -497,8 +554,19 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
             ${client?.phone ? `<p style="margin: 0 0 3px 0;">${escapeHtml(client.phone)}</p>` : ''}
             ${client?.address ? `<p style="margin: 0 0 3px 0;">${escapeHtml(client.address)}</p>` : ''}
             ${client?.postal_code && client?.city ? `<p style="margin: 0;">${escapeHtml(client.postal_code)} ${escapeHtml(client.city)}</p>` : ''}
-            ${client?.country ? `<p style="margin: 3px 0 0 0;">${escapeHtml(client.country)}</p>` : ''}
-            ${(client?.client_type === 'company' || client?.client_type === 'professional') && client?.vat_number ? `<p style="margin: 3px 0 0 0; font-weight: 500;">${language === 'en' ? 'VAT:' : language === 'nl' ? 'BTW:' : 'TVA:'} ${escapeHtml(client.vat_number)}</p>` : ''}
+            ${(client?.client_type === 'company' || client?.client_type === 'professional') && client?.vat_number ? (() => {
+              // Format VAT number with country prefix if not already present
+              let formattedVAT = client.vat_number;
+              if (formattedVAT && !formattedVAT.match(/^[A-Z]{2}\d+/i)) {
+                // VAT number doesn't have country prefix, add it based on client country
+                const countryCode = (client?.country || 'BE').toUpperCase();
+                const countryPrefix = countryCode === 'GR' ? 'EL' : countryCode;
+                // Remove any existing prefix and add correct one
+                const cleanVAT = formattedVAT.replace(/^[A-Z]{2}/i, '');
+                formattedVAT = `${countryPrefix}${cleanVAT}`;
+              }
+              return `<p style="margin: 3px 0 0 0; font-weight: 500;">${language === 'en' ? 'VAT:' : language === 'nl' ? 'BTW:' : 'TVA:'} ${escapeHtml(formattedVAT)}</p>`;
+            })() : ''}
           </div>
         </div>
         <div style="text-align: right;">
@@ -540,15 +608,27 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
             </tr>
           </thead>
           <tbody>
-            ${invoiceLines.map((line, index) => `
+            ${invoiceLines.map((line, index) => {
+              const hasMaterials = line.materials && line.materials.length > 0;
+              return `
               <tr style="${index % 2 === 0 ? 'background-color: #fafafa;' : 'background-color: #ffffff;'}">
                 <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: center; color: ${secondaryColor}; font-size: 10px;">${line.number}</td>
                 <td style="border: 1px solid #d1d5db; padding: 8px 6px; color: ${secondaryColor}; font-size: 10px;">${escapeHtml(line.description)}</td>
-                <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: center; color: ${secondaryColor}; font-size: 10px;">${line.quantity} ${escapeHtml(line.unit)}</td>
-                <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: right; color: ${secondaryColor}; font-size: 10px; font-weight: 500;">${line.unitPrice.toFixed(2)} €</td>
+                <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: center; color: ${secondaryColor}; font-size: 10px;">${hasMaterials ? '' : `${line.quantity} ${escapeHtml(line.unit)}`}</td>
+                <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: right; color: ${secondaryColor}; font-size: 10px; font-weight: 500;">${hasMaterials ? '' : `${line.unitPrice.toFixed(2)} €`}</td>
                 <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: right; color: ${secondaryColor}; font-size: 10px; font-weight: 500;">${line.totalPrice.toFixed(2)} €</td>
               </tr>
-            `).join('')}
+              ${hasMaterials ? line.materials.map((mat, matIndex) => `
+              <tr style="background-color: #f9fafb;">
+                <td style="border: 1px solid #d1d5db; padding: 6px 6px 6px 20px; text-align: center; color: ${secondaryColor}; font-size: 9px;">${line.number}.${matIndex + 1}</td>
+                <td style="border: 1px solid #d1d5db; padding: 6px 6px 6px 20px; color: ${secondaryColor}; font-size: 9px;">${escapeHtml(mat.name)}</td>
+                <td style="border: 1px solid #d1d5db; padding: 6px 6px; text-align: center; color: ${secondaryColor}; font-size: 9px;">${mat.quantity} ${escapeHtml(mat.unit)}</td>
+                <td style="border: 1px solid #d1d5db; padding: 6px 6px; text-align: right; color: ${secondaryColor}; font-size: 9px; font-weight: 500;">${mat.unitPrice.toFixed(2)} €</td>
+                <td style="border: 1px solid #d1d5db; padding: 6px 6px; text-align: right; color: ${secondaryColor}; font-size: 9px; font-weight: 500;">${mat.totalPrice.toFixed(2)} €</td>
+              </tr>
+              `).join('') : ''}
+            `;
+            }).join('')}
           </tbody>
           <tfoot>
             <tr style="background-color: #f9fafb;">
@@ -563,8 +643,18 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
             ` : ''}
             <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${total.toFixed(2)} €</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${totalWithVAT.toFixed(2)} €</td>
             </tr>
+            ${depositEnabled && depositAmount > 0 ? `
+            <tr style="background-color: #f9fafb;">
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 11px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'ACOMPTE À LA COMMANDE:' : language === 'en' ? 'DOWN PAYMENT ON ORDER:' : 'VOORSCHOT BIJ BESTELLING:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 11px;">${depositAmount.toFixed(2)} €</td>
+            </tr>
+            <tr style="background-color: #f9fafb;">
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 11px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'SOLDE À LA LIVRAISON:' : language === 'en' ? 'BALANCE ON DELIVERY:' : 'SALDO BIJ LEVERING:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 11px;">${balanceAmount.toFixed(2)} €</td>
+            </tr>
+            ` : ''}
           </tfoot>
         </table>
       </div>
@@ -789,23 +879,24 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
   
   const t = labels[language] || labels.fr;
   
-  const total = parseFloat(invoice.amount || 0);
-  const netAmount = parseFloat(invoice.net_amount || invoice.amount || 0);
-  const vatAmount = parseFloat(invoice.vat_amount || 0);
-  
   // Get invoice lines from Peppol metadata if available, otherwise create a single line
+  // Use exact values from UBL XML - no calculations
   let invoiceLines = [];
   if (invoice.invoiceLines && Array.isArray(invoice.invoiceLines) && invoice.invoiceLines.length > 0) {
+    // Use exact values from UBL XML invoice lines
     invoiceLines = invoice.invoiceLines.map((line, index) => ({
       number: line.id || line.lineId || (index + 1),
       description: line.description || line.itemName || '',
       quantity: line.quantity || 1,
       unit: line.unitCode || '',
+      // Use exact unit price from UBL XML
       unitPrice: parseFloat(line.unitPrice || line.priceAmount || line.unit_price || 0),
+      // Use exact line total from UBL XML (lineExtensionAmount)
       totalPrice: parseFloat(line.amount || line.lineExtensionAmount || 0)
     }));
   } else {
-    // Single line from invoice summary
+    // Single line from invoice summary - use exact stored net amount
+    const netAmount = parseFloat(invoice.net_amount || invoice.amount || 0);
     invoiceLines = [{
       number: 1,
       description: invoice.notes || 'Service',
@@ -815,6 +906,12 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
       totalPrice: netAmount
     }];
   }
+  
+  // Use exact values from UBL XML stored in database - no calculations
+  // These values come directly from <cac:LegalMonetaryTotal> in UBL XML
+  const total = parseFloat(invoice.amount || 0);
+  const netAmount = parseFloat(invoice.net_amount || 0);
+  const vatAmount = parseFloat(invoice.vat_amount || 0);
   
   // Helper to escape HTML
   const escapeHtml = (text) => {
@@ -868,7 +965,6 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
             ${supplier?.phone ? `<p style="margin: 0 0 3px 0;">${escapeHtml(supplier.phone)}</p>` : ''}
             ${supplier?.address ? `<p style="margin: 0 0 3px 0;">${escapeHtml(supplier.address)}</p>` : ''}
             ${supplier?.postal_code && supplier?.city ? `<p style="margin: 0;">${escapeHtml(supplier.postal_code)} ${escapeHtml(supplier.city)}</p>` : ''}
-            ${supplier?.country ? `<p style="margin: 3px 0 0 0;">${escapeHtml(supplier.country)}</p>` : ''}
             ${supplier?.vat_number ? `<p style="margin: 3px 0 0 0; font-weight: 500;">TVA: ${escapeHtml(supplier.vat_number)}</p>` : ''}
           </div>
         </div>
@@ -934,8 +1030,18 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
             ` : ''}
             <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${total.toFixed(2)} €</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${totalWithVAT.toFixed(2)} €</td>
             </tr>
+            ${depositEnabled && depositAmount > 0 ? `
+            <tr style="background-color: #f9fafb;">
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 11px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'ACOMPTE À LA COMMANDE:' : language === 'en' ? 'DOWN PAYMENT ON ORDER:' : 'VOORSCHOT BIJ BESTELLING:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 11px;">${depositAmount.toFixed(2)} €</td>
+            </tr>
+            <tr style="background-color: #f9fafb;">
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 11px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'SOLDE À LA LIVRAISON:' : language === 'en' ? 'BALANCE ON DELIVERY:' : 'SALDO BIJ LEVERING:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 11px;">${balanceAmount.toFixed(2)} €</td>
+            </tr>
+            ` : ''}
           </tfoot>
         </table>
       </div>

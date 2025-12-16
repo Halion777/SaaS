@@ -505,7 +505,9 @@ function parseUBLInvoice(ublXml: string): any {
     })();
     const customerName = txt(pickRaw(customerParty, 'PartyName'), 'Name') || txt(customerParty, 'Name');
     const customerVatNumber = txt(pickRaw(customerParty, 'PartyTaxScheme'), 'CompanyID');
-    const customerEmail = txt(pickRaw(customerParty, 'Contact'), 'ElectronicMail');
+    const customerContact = pickRaw(customerParty, 'Contact');
+    const customerEmail = txt(customerContact, 'ElectronicMail');
+    const customerPhone = txt(customerContact, 'Telephone');
 
     // Extract Tax Information
     const taxTotal = pickRaw(invoice, 'TaxTotal');
@@ -666,7 +668,8 @@ function parseUBLInvoice(ublXml: string): any {
         peppolId: customerEndpointScheme && customerEndpointId ? `${customerEndpointScheme}:${customerEndpointId}` : '',
         name: customerName,
         vatNumber: customerVatNumber,
-        email: customerEmail
+        email: customerEmail,
+        phone: customerPhone
       },
       
       // Tax Information
@@ -835,8 +838,9 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
     }
 
     // Use parsed data if available, otherwise fallback to webhook payload
+    // Note: invoiceId should come from UBL XML <cbc:ID> which is the original client invoice number (INV-000010)
     const invoiceData = parsedInvoice || {
-      invoiceId: data.invoiceNumber || `PEPPOL-${Date.now()}`,
+      invoiceId: data.invoiceNumber || null, // Don't generate datetime-based numbers
       issueDate: data.issueDate || new Date().toISOString().split('T')[0],
       dueDate: data.dueDate || new Date().toISOString().split('T')[0],
       supplier: {
@@ -949,14 +953,22 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
     ].filter(Boolean);
     const notes = notesParts.join('\n');
 
-    // Determine invoice number (handle duplicates)
-    // Priority: parsed UBL XML invoice ID > webhook payload invoiceNumber > fallback
-    // This ensures the invoice number from the UBL XML (cbc:ID) is used, which matches what was sent
-    const baseInvoiceNumber = parsedInvoice?.invoiceId || invoiceData.invoiceId || data.invoiceNumber;
-    let invoiceNumber = baseInvoiceNumber || `PEPPOL-${Date.now()}`;
+    // Determine invoice number
+    // Priority: parsed UBL XML invoice ID (cbc:ID) > buyerReference (original client invoice number) > webhook payload
+    // The invoice ID from UBL XML should be the original client invoice number (INV-000010 format)
+    // buyerReference also contains the original client invoice number
+    const baseInvoiceNumber = parsedInvoice?.invoiceId || 
+                              invoiceData.buyerReference || 
+                              invoiceData.invoiceId || 
+                              data.invoiceNumber;
+    
+    if (!baseInvoiceNumber) {
+      console.error('[Peppol Webhook] No invoice number found in UBL XML or webhook payload');
+      return { success: false, error: 'Invoice number is required but not found in UBL XML' };
+    }
     
     // Check if invoice number already exists (handle duplicates)
-    if (baseInvoiceNumber) {
+    let invoiceNumber = baseInvoiceNumber;
       const { data: existingInvoice } = await supabase
         .from('expense_invoices')
         .select('id, invoice_number')
@@ -965,8 +977,32 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
         .single();
       
       if (existingInvoice) {
-        // Invoice already exists - append timestamp to make unique
-        invoiceNumber = `${baseInvoiceNumber}-${Date.now()}`;
+      // Invoice already exists - append sequence number instead of timestamp
+      // This preserves the original invoice number format
+      let sequence = 1;
+      let newInvoiceNumber = `${baseInvoiceNumber}-${sequence}`;
+      
+      // Find next available sequence number
+      while (true) {
+        const { data: existing } = await supabase
+          .from('expense_invoices')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('invoice_number', newInvoiceNumber)
+          .single();
+        
+        if (!existing) {
+          invoiceNumber = newInvoiceNumber;
+          break;
+        }
+        sequence++;
+        newInvoiceNumber = `${baseInvoiceNumber}-${sequence}`;
+        
+        // Safety limit
+        if (sequence > 1000) {
+          console.error('[Peppol Webhook] Too many duplicate invoice numbers');
+          return { success: false, error: 'Unable to generate unique invoice number' };
+        }
       }
     }
 

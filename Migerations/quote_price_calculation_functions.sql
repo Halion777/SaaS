@@ -93,9 +93,10 @@ $$;
 
 -- Function: generate_invoice_number
 -- Generates a unique invoice number for a user
--- Format: INV-000001, INV-000002, etc.
+-- Format: INV-000000001, INV-000000002, etc. (9 digits for future-proofing)
 -- Uses advisory locks to prevent race conditions
 -- Handles migration from FACT- to INV- format by checking both patterns
+-- Also handles migration from 6-digit to 9-digit format seamlessly
 CREATE OR REPLACE FUNCTION public.generate_invoice_number(user_id uuid)
 RETURNS TEXT
 LANGUAGE plpgsql
@@ -135,8 +136,8 @@ BEGIN
     -- Use the maximum of both formats + 1
     next_number := GREATEST(max_fact_number, max_inv_number) + 1;
     
-    -- Generate new invoice number with INV- prefix
-    generated_invoice_number := 'INV-' || LPAD(next_number::TEXT, 6, '0');
+    -- Generate new invoice number with INV- prefix (9 digits for future-proofing)
+    generated_invoice_number := 'INV-' || LPAD(next_number::TEXT, 9, '0');
     
     -- Double-check that this number doesn't exist (safety check)
     -- The lock should prevent this, but this is an extra safeguard
@@ -147,7 +148,7 @@ BEGIN
         AND inv2.invoice_number = generated_invoice_number
     ) LOOP
         next_number := next_number + 1;
-        generated_invoice_number := 'INV-' || LPAD(next_number::TEXT, 6, '0');
+        generated_invoice_number := 'INV-' || LPAD(next_number::TEXT, 9, '0');
         
         attempt := attempt + 1;
         IF attempt >= max_attempts THEN

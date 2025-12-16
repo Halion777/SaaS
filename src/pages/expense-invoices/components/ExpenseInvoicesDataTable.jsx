@@ -291,8 +291,16 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
             {/* Amount and Payment Method */}
             <div className="mb-3">
               <div className="text-lg font-bold text-foreground">{formatCurrency(invoice.amount)}</div>
+              {invoice.net_amount && (
+                <div className="text-xs text-muted-foreground">{t('expenseInvoices.table.net', 'Net')}: {formatCurrency(invoice.net_amount)}</div>
+              )}
+              {invoice.vat_amount && (
+                <div className="text-xs text-muted-foreground">{t('expenseInvoices.table.vat', 'VAT')}: {formatCurrency(invoice.vat_amount)}</div>
+              )}
+              {/* Balance amount (same as total for expense invoices) */}
+              <div className="text-xs text-muted-foreground mt-1">{t('expenseInvoices.table.balance', 'Balance')}: {formatCurrency(invoice.amount)}</div>
               {invoice.payment_method && (
-                <div className="text-xs text-muted-foreground">{invoice.payment_method}</div>
+                <div className="text-xs text-muted-foreground mt-1">{invoice.payment_method}</div>
               )}
             </div>
 
@@ -485,6 +493,8 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                     {invoice.vat_amount && (
                       <div className="text-xs text-muted-foreground">{t('expenseInvoices.table.vat', 'VAT')}: {formatCurrency(invoice.vat_amount)}</div>
                     )}
+                    {/* Balance amount (same as total for expense invoices) */}
+                    <div className="text-xs text-muted-foreground mt-1">{t('expenseInvoices.table.balance', 'Balance')}: {formatCurrency(invoice.amount)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                     {formatDate(invoice.issue_date)}

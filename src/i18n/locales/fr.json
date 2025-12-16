@@ -1893,6 +1893,19 @@
       "draftInProgress": "Brouillon en cours",
       "unknownClient": "Client inconnu"
     },
+    "draftRestore": {
+      "title": "Devis en cours d'édition",
+      "subtitle": "Dernière sauvegarde",
+      "message": "Nous avons détecté un devis en cours d'édition. Souhaitez-vous continuer à modifier ce devis ou créer un nouveau devis ?",
+      "quoteNumber": "Numéro de devis",
+      "createNew": "Créer un nouveau devis",
+      "continueEditing": "Continuer l'édition",
+      "justNow": "À l'instant",
+      "minutesAgo": "Il y a {{count}} min",
+      "hoursAgo": "Il y a {{count}} h",
+      "yesterday": "Hier",
+      "daysAgo": "Il y a {{count}} jour"
+    },
     "tracking": {
       "notOpened": "Non ouvert",
       "viewedNoAction": "Vue sans action",
@@ -2299,6 +2312,14 @@
           "description": "Gérer les détails de l'entreprise, le logo et la signature",
           "edit": "Modifier",
           "manage": "Gérer"
+        },
+        "subscription": {
+          "trialEnds": "Essai se termine le {{date}}",
+          "thenAmount": "Ensuite €{{amount}}/{{period}}",
+          "amount": "€{{amount}}/{{period}}",
+          "manageSubscription": "Gérer l'abonnement",
+          "noActiveSubscription": "Aucun abonnement actif",
+          "subscribeNow": "S'abonner maintenant"
         }
       },
       "preferences": {

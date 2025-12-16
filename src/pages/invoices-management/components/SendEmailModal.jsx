@@ -152,7 +152,8 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
           final_amount: invoice.final_amount,
           description: invoice.description,
           title: invoice.title,
-          notes: invoice.notes
+          notes: invoice.notes,
+          peppol_metadata: invoice.peppol_metadata || null
         },
         quote: invoice.quote || null
       };

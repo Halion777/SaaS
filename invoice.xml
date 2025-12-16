@@ -306,3 +306,360 @@
       </cac:InvoiceLine>
    </Invoice>
 </sbd:StandardBusinessDocument>
+
+
+
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<sbd:StandardBusinessDocument xmlns:sbd="http://www.unece.org/cefact/namespaces/StandardBusinessDocumentHeader"
+                              xmlns:xs="http://www.w3.org/2001/XMLSchema">
+   <sbd:StandardBusinessDocumentHeader>
+      <sbd:HeaderVersion>1.0</sbd:HeaderVersion>
+      <sbd:Sender>
+         <sbd:Identifier Authority="iso6523-actorid-upis">9925:be1001464622</sbd:Identifier>
+      </sbd:Sender>
+      <sbd:Receiver>
+         <sbd:Identifier Authority="iso6523-actorid-upis">9925:be0545744269</sbd:Identifier>
+      </sbd:Receiver>
+      <sbd:DocumentIdentification>
+         <sbd:Standard>urn:oasis:names:specification:ubl:schema:xsd:Invoice-2</sbd:Standard>
+         <sbd:TypeVersion>2.1</sbd:TypeVersion>
+         <sbd:InstanceIdentifier>INV-1765899573365</sbd:InstanceIdentifier>
+         <sbd:Type>Invoice</sbd:Type>
+         <sbd:CreationDateAndTime>2025-12-16T15:39:41.241252439Z</sbd:CreationDateAndTime>
+      </sbd:DocumentIdentification>
+      <sbd:BusinessScope>
+         <sbd:Scope>
+            <sbd:Type>DOCUMENTID</sbd:Type>
+            <sbd:InstanceIdentifier>urn:oasis:names:specification:ubl:schema:xsd:Invoice-2::Invoice##urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0::2.1</sbd:InstanceIdentifier>
+            <sbd:Identifier>busdox-docid-qns</sbd:Identifier>
+         </sbd:Scope>
+         <sbd:Scope>
+            <sbd:Type>PROCESSID</sbd:Type>
+            <sbd:InstanceIdentifier>urn:fdc:peppol.eu:2017:poacc:billing:01:1.0</sbd:InstanceIdentifier>
+            <sbd:Identifier>cenbii-procid-ubl</sbd:Identifier>
+         </sbd:Scope>
+         <sbd:Scope>
+            <sbd:Type>COUNTRY_C1</sbd:Type>
+            <sbd:InstanceIdentifier>BE</sbd:InstanceIdentifier>
+         </sbd:Scope>
+      </sbd:BusinessScope>
+   </sbd:StandardBusinessDocumentHeader>
+   <Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+            xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+            xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
+      <cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0</cbc:CustomizationID>
+      <cbc:ProfileID>urn:fdc:peppol.eu:2017:poacc:billing:01:1.0</cbc:ProfileID>
+      <cbc:ID>INV-1765899573365</cbc:ID>
+      <cbc:IssueDate>2025-12-16</cbc:IssueDate>
+      <cbc:DueDate>2026-01-15</cbc:DueDate>
+      <cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
+      <cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
+      <cbc:BuyerReference>INV-1765899573365</cbc:BuyerReference>
+      <cac:AccountingSupplierParty>
+         <cac:Party>
+            <cbc:EndpointID schemeID="9925">be1001464622</cbc:EndpointID>
+            <cac:PartyIdentification>
+               <cbc:ID>be1001464622</cbc:ID>
+            </cac:PartyIdentification>
+            <cac:PartyName>
+               <cbc:Name>Rixon</cbc:Name>
+            </cac:PartyName>
+            <cac:PostalAddress>
+               <cbc:StreetName>Islamabad</cbc:StreetName>
+               <cbc:CityName>Islamabad</cbc:CityName>
+               <cbc:PostalZone>81000</cbc:PostalZone>
+               <cac:Country>
+                  <cbc:IdentificationCode>BE</cbc:IdentificationCode>
+               </cac:Country>
+            </cac:PostalAddress>
+            <cac:PartyTaxScheme>
+               <cbc:CompanyID>BE1001464622</cbc:CompanyID>
+               <cac:TaxScheme>
+                  <cbc:ID>VAT</cbc:ID>
+               </cac:TaxScheme>
+            </cac:PartyTaxScheme>
+            <cac:PartyLegalEntity>
+               <cbc:RegistrationName>Rixon</cbc:RegistrationName>
+               <cbc:CompanyID>BE1001464622</cbc:CompanyID>
+            </cac:PartyLegalEntity>
+            <cac:Contact>
+               <cbc:Name>Rixon</cbc:Name>
+               <cbc:Telephone>3000713825</cbc:Telephone>
+               <cbc:ElectronicMail>abdulhameed000650@gmail.com</cbc:ElectronicMail>
+            </cac:Contact>
+         </cac:Party>
+      </cac:AccountingSupplierParty>
+      <cac:AccountingCustomerParty>
+         <cac:Party>
+            <cbc:EndpointID schemeID="9925">BE0545744269</cbc:EndpointID>
+            <cac:PartyIdentification>
+               <cbc:ID>BE0545744269</cbc:ID>
+            </cac:PartyIdentification>
+            <cac:PartyName>
+               <cbc:Name>rix</cbc:Name>
+            </cac:PartyName>
+            <cac:PostalAddress>
+               <cbc:StreetName>Islamabad, Tarlai Kalan,</cbc:StreetName>
+               <cbc:CityName>Islamabad</cbc:CityName>
+               <cbc:PostalZone>45550</cbc:PostalZone>
+               <cac:Country>
+                  <cbc:IdentificationCode>BE</cbc:IdentificationCode>
+               </cac:Country>
+            </cac:PostalAddress>
+            <cac:PartyTaxScheme>
+               <cbc:CompanyID>BE0545744269</cbc:CompanyID>
+               <cac:TaxScheme>
+                  <cbc:ID>VAT</cbc:ID>
+               </cac:TaxScheme>
+            </cac:PartyTaxScheme>
+            <cac:PartyLegalEntity>
+               <cbc:RegistrationName>rix</cbc:RegistrationName>
+               <cbc:CompanyID>BE0545744269</cbc:CompanyID>
+            </cac:PartyLegalEntity>
+            <cac:Contact>
+               <cbc:Name>rix</cbc:Name>
+               <cbc:Telephone>0923000713825</cbc:Telephone>
+               <cbc:ElectronicMail>abdulhameed000650@gmail.com</cbc:ElectronicMail>
+            </cac:Contact>
+         </cac:Party>
+      </cac:AccountingCustomerParty>
+      <cac:Delivery>
+         <cbc:ActualDeliveryDate>2025-12-16</cbc:ActualDeliveryDate>
+         <cac:DeliveryLocation>
+            <cac:Address>
+               <cac:Country>
+                  <cbc:IdentificationCode>BE</cbc:IdentificationCode>
+               </cac:Country>
+            </cac:Address>
+         </cac:DeliveryLocation>
+      </cac:Delivery>
+      <cac:PaymentMeans>
+         <cbc:PaymentMeansCode name="Credit transfer">31</cbc:PaymentMeansCode>
+         <cbc:PaymentID>INV-1765899573365</cbc:PaymentID>
+         <cac:PayeeFinancialAccount>
+            <cbc:ID>IBNA12121212</cbc:ID>
+            <cbc:Name>Rixon</cbc:Name>
+         </cac:PayeeFinancialAccount>
+      </cac:PaymentMeans>
+      <cac:PaymentTerms>
+         <cbc:Note>Net within 30 days</cbc:Note>
+      </cac:PaymentTerms>
+      <cac:TaxTotal>
+         <cbc:TaxAmount currencyID="EUR">47.25</cbc:TaxAmount>
+         <cac:TaxSubtotal>
+            <cbc:TaxableAmount currencyID="EUR">225.00</cbc:TaxableAmount>
+            <cbc:TaxAmount currencyID="EUR">47.25</cbc:TaxAmount>
+            <cac:TaxCategory>
+               <cbc:ID>S</cbc:ID>
+               <cbc:Percent>21</cbc:Percent>
+               <cac:TaxScheme>
+                  <cbc:ID>VAT</cbc:ID>
+               </cac:TaxScheme>
+            </cac:TaxCategory>
+         </cac:TaxSubtotal>
+      </cac:TaxTotal>
+      <cac:LegalMonetaryTotal>
+         <cbc:LineExtensionAmount currencyID="EUR">225.00</cbc:LineExtensionAmount>
+         <cbc:TaxExclusiveAmount currencyID="EUR">225.00</cbc:TaxExclusiveAmount>
+         <cbc:TaxInclusiveAmount currencyID="EUR">272.25</cbc:TaxInclusiveAmount>
+         <cbc:PayableAmount currencyID="EUR">272.25</cbc:PayableAmount>
+      </cac:LegalMonetaryTotal>
+      <cac:InvoiceLine>
+         <cbc:ID>1</cbc:ID>
+         <cbc:InvoicedQuantity unitCode="1I">1</cbc:InvoicedQuantity>
+         <cbc:LineExtensionAmount currencyID="EUR">225.00</cbc:LineExtensionAmount>
+         <cac:Item>
+            <cbc:Name>Installation de prises et interrupteurs - Mise en place et connexion des prises de courant et des interrupteurs, en veillant Ã  leur bon fonctionnement et Ã  leur intÃ©gration esthÃ©tique.</cbc:Name>
+            <cac:ClassifiedTaxCategory>
+               <cbc:ID>S</cbc:ID>
+               <cbc:Percent>21</cbc:Percent>
+               <cac:TaxScheme>
+                  <cbc:ID>VAT</cbc:ID>
+               </cac:TaxScheme>
+            </cac:ClassifiedTaxCategory>
+         </cac:Item>
+         <cac:Price>
+            <cbc:PriceAmount currencyID="EUR">225.00</cbc:PriceAmount>
+         </cac:Price>
+      </cac:InvoiceLine>
+   </Invoice>
+</sbd:StandardBusinessDocument>
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<sbd:StandardBusinessDocument xmlns:sbd="http://www.unece.org/cefact/namespaces/StandardBusinessDocumentHeader"
+                              xmlns:xs="http://www.w3.org/2001/XMLSchema">
+   <sbd:StandardBusinessDocumentHeader>
+      <sbd:HeaderVersion>1.0</sbd:HeaderVersion>
+      <sbd:Sender>
+         <sbd:Identifier Authority="iso6523-actorid-upis">9925:be0545744269</sbd:Identifier>
+      </sbd:Sender>
+      <sbd:Receiver>
+         <sbd:Identifier Authority="iso6523-actorid-upis">9925:be1001464622</sbd:Identifier>
+      </sbd:Receiver>
+      <sbd:DocumentIdentification>
+         <sbd:Standard>urn:oasis:names:specification:ubl:schema:xsd:Invoice-2</sbd:Standard>
+         <sbd:TypeVersion>2.1</sbd:TypeVersion>
+         <sbd:InstanceIdentifier>INV-000004</sbd:InstanceIdentifier>
+         <sbd:Type>Invoice</sbd:Type>
+         <sbd:CreationDateAndTime>2025-12-16T17:21:28.828564453Z</sbd:CreationDateAndTime>
+      </sbd:DocumentIdentification>
+      <sbd:BusinessScope>
+         <sbd:Scope>
+            <sbd:Type>DOCUMENTID</sbd:Type>
+            <sbd:InstanceIdentifier>urn:oasis:names:specification:ubl:schema:xsd:Invoice-2::Invoice##urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0::2.1</sbd:InstanceIdentifier>
+            <sbd:Identifier>busdox-docid-qns</sbd:Identifier>
+         </sbd:Scope>
+         <sbd:Scope>
+            <sbd:Type>PROCESSID</sbd:Type>
+            <sbd:InstanceIdentifier>urn:fdc:peppol.eu:2017:poacc:billing:01:1.0</sbd:InstanceIdentifier>
+            <sbd:Identifier>cenbii-procid-ubl</sbd:Identifier>
+         </sbd:Scope>
+         <sbd:Scope>
+            <sbd:Type>COUNTRY_C1</sbd:Type>
+            <sbd:InstanceIdentifier>BE</sbd:InstanceIdentifier>
+         </sbd:Scope>
+      </sbd:BusinessScope>
+   </sbd:StandardBusinessDocumentHeader>
+   <Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+            xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+            xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
+      <cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0</cbc:CustomizationID>
+      <cbc:ProfileID>urn:fdc:peppol.eu:2017:poacc:billing:01:1.0</cbc:ProfileID>
+      <cbc:ID>INV-000004</cbc:ID>
+      <cbc:IssueDate>2025-12-16</cbc:IssueDate>
+      <cbc:DueDate>2026-01-15</cbc:DueDate>
+      <cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
+      <cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
+      <cbc:BuyerReference>INV-000004</cbc:BuyerReference>
+      <cac:AccountingSupplierParty>
+         <cac:Party>
+            <cbc:EndpointID schemeID="9925">be0545744269</cbc:EndpointID>
+            <cac:PartyIdentification>
+               <cbc:ID>be0545744269</cbc:ID>
+            </cac:PartyIdentification>
+            <cac:PartyName>
+               <cbc:Name>Rix</cbc:Name>
+            </cac:PartyName>
+            <cac:PostalAddress>
+               <cbc:StreetName>Islamabad</cbc:StreetName>
+               <cbc:CityName>Islamabad</cbc:CityName>
+               <cbc:PostalZone>81000</cbc:PostalZone>
+               <cac:Country>
+                  <cbc:IdentificationCode>BE</cbc:IdentificationCode>
+               </cac:Country>
+            </cac:PostalAddress>
+            <cac:PartyTaxScheme>
+               <cbc:CompanyID>BE0545744269</cbc:CompanyID>
+               <cac:TaxScheme>
+                  <cbc:ID>VAT</cbc:ID>
+               </cac:TaxScheme>
+            </cac:PartyTaxScheme>
+            <cac:PartyLegalEntity>
+               <cbc:RegistrationName>Rix</cbc:RegistrationName>
+               <cbc:CompanyID>BE0545744269</cbc:CompanyID>
+            </cac:PartyLegalEntity>
+            <cac:Contact>
+               <cbc:Name>Rix</cbc:Name>
+               <cbc:Telephone>3000121212</cbc:Telephone>
+               <cbc:ElectronicMail>abdulhameedbcs001@gmail.com</cbc:ElectronicMail>
+            </cac:Contact>
+         </cac:Party>
+      </cac:AccountingSupplierParty>
+      <cac:AccountingCustomerParty>
+         <cac:Party>
+            <cbc:EndpointID schemeID="9925">BE1001464622</cbc:EndpointID>
+            <cac:PartyIdentification>
+               <cbc:ID>BE1001464622</cbc:ID>
+            </cac:PartyIdentification>
+            <cac:PartyName>
+               <cbc:Name>Comsats</cbc:Name>
+            </cac:PartyName>
+            <cac:PostalAddress>
+               <cbc:StreetName>Islamabad</cbc:StreetName>
+               <cbc:CityName>Islamabad</cbc:CityName>
+               <cbc:PostalZone>81000</cbc:PostalZone>
+               <cac:Country>
+                  <cbc:IdentificationCode>BE</cbc:IdentificationCode>
+               </cac:Country>
+            </cac:PostalAddress>
+            <cac:PartyTaxScheme>
+               <cbc:CompanyID>BE1000000160</cbc:CompanyID>
+               <cac:TaxScheme>
+                  <cbc:ID>VAT</cbc:ID>
+               </cac:TaxScheme>
+            </cac:PartyTaxScheme>
+            <cac:PartyLegalEntity>
+               <cbc:RegistrationName>Comsats</cbc:RegistrationName>
+               <cbc:CompanyID>BE1000000160</cbc:CompanyID>
+            </cac:PartyLegalEntity>
+            <cac:Contact>
+               <cbc:Name>Comsats</cbc:Name>
+               <cbc:Telephone>03226338678</cbc:Telephone>
+               <cbc:ElectronicMail>abdulhameed000650@gmail.com</cbc:ElectronicMail>
+            </cac:Contact>
+         </cac:Party>
+      </cac:AccountingCustomerParty>
+      <cac:Delivery>
+         <cbc:ActualDeliveryDate>2025-12-16</cbc:ActualDeliveryDate>
+         <cac:DeliveryLocation>
+            <cac:Address>
+               <cac:Country>
+                  <cbc:IdentificationCode>BE</cbc:IdentificationCode>
+               </cac:Country>
+            </cac:Address>
+         </cac:DeliveryLocation>
+      </cac:Delivery>
+      <cac:PaymentMeans>
+         <cbc:PaymentMeansCode name="Credit transfer">31</cbc:PaymentMeansCode>
+         <cbc:PaymentID>INV-000004</cbc:PaymentID>
+         <cac:PayeeFinancialAccount>
+            <cbc:ID>Iban12121121</cbc:ID>
+            <cbc:Name>Rix</cbc:Name>
+         </cac:PayeeFinancialAccount>
+      </cac:PaymentMeans>
+      <cac:PaymentTerms>
+         <cbc:Note>Net within 30 days</cbc:Note>
+      </cac:PaymentTerms>
+      <cac:TaxTotal>
+         <cbc:TaxAmount currencyID="EUR">42.00</cbc:TaxAmount>
+         <cac:TaxSubtotal>
+            <cbc:TaxableAmount currencyID="EUR">200.00</cbc:TaxableAmount>
+            <cbc:TaxAmount currencyID="EUR">42.00</cbc:TaxAmount>
+            <cac:TaxCategory>
+               <cbc:ID>S</cbc:ID>
+               <cbc:Percent>21</cbc:Percent>
+               <cac:TaxScheme>
+                  <cbc:ID>VAT</cbc:ID>
+               </cac:TaxScheme>
+            </cac:TaxCategory>
+         </cac:TaxSubtotal>
+      </cac:TaxTotal>
+      <cac:LegalMonetaryTotal>
+         <cbc:LineExtensionAmount currencyID="EUR">200.00</cbc:LineExtensionAmount>
+         <cbc:TaxExclusiveAmount currencyID="EUR">200.00</cbc:TaxExclusiveAmount>
+         <cbc:TaxInclusiveAmount currencyID="EUR">242.00</cbc:TaxInclusiveAmount>
+         <cbc:PayableAmount currencyID="EUR">242.00</cbc:PayableAmount>
+      </cac:LegalMonetaryTotal>
+      <cac:InvoiceLine>
+         <cbc:ID>1</cbc:ID>
+         <cbc:InvoicedQuantity unitCode="1I">1</cbc:InvoicedQuantity>
+         <cbc:LineExtensionAmount currencyID="EUR">200.00</cbc:LineExtensionAmount>
+         <cac:Item>
+            <cbc:Name>DÃ©pose de l'Ancien RÃ©seau - Retrait sÃ©curisÃ© et conforme de l'ensemble des cÃ¢bles, disjoncteurs, prises et appareillages Ã©lectriques obsolÃ¨tes ou non conformes. Gestion des dÃ©chets selon la rÃ©glementation.</cbc:Name>
+            <cac:ClassifiedTaxCategory>
+               <cbc:ID>S</cbc:ID>
+               <cbc:Percent>21</cbc:Percent>
+               <cac:TaxScheme>
+                  <cbc:ID>VAT</cbc:ID>
+               </cac:TaxScheme>
+            </cac:ClassifiedTaxCategory>
+         </cac:Item>
+         <cac:Price>
+            <cbc:PriceAmount currencyID="EUR">200.00</cbc:PriceAmount>
+         </cac:Price>
+      </cac:InvoiceLine>
+   </Invoice>
+</sbd:StandardBusinessDocument>

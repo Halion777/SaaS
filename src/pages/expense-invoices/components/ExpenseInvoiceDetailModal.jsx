@@ -71,14 +71,11 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
     return mappings[code] || `${t('expenseInvoices.paymentMethods.code', 'Code')}: ${code}`;
   };
 
-  const computeTaxPercent = (tax) => {
-    if (tax?.percent && Number.isFinite(tax.percent)) return tax.percent;
-    const taxable = parseFloat(tax?.taxableAmount || 0);
-    const taxAmt = parseFloat(tax?.taxAmount || 0);
-    if (taxable > 0 && taxAmt >= 0) {
-      return Math.round((taxAmt / taxable) * 10000) / 100; // two decimals
-    }
-    return 0;
+  // Use exact VAT percentage from UBL XML - no calculations
+  const getTaxPercent = (tax) => {
+    // Use exact value from UBL XML <cbc:Percent> element
+    // Priority: percent (from TaxCategory/Percent) > taxPercent (fallback)
+    return tax?.percent || tax?.taxPercent || 0;
   };
 
   const buyerRef = invoice?.peppol_metadata?.buyerReference;
@@ -445,8 +442,11 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                       <tbody className="divide-y divide-border">
                         {invoice.peppol_metadata.taxSubtotals.map((tax, index) => (
                           <tr key={index}>
-                            <td className="px-4 py-2 text-sm text-foreground">{computeTaxPercent(tax)}%</td>
+                            {/* Use exact VAT percentage from UBL XML <cbc:Percent> - no calculations */}
+                            <td className="px-4 py-2 text-sm text-foreground">{getTaxPercent(tax)}%</td>
+                            {/* Use exact taxable amount from UBL XML <cbc:TaxableAmount> - no calculations */}
                             <td className="px-4 py-2 text-sm text-foreground">{formatCurrency(tax.taxableAmount || 0)}</td>
+                            {/* Use exact VAT amount from UBL XML <cbc:TaxAmount> - no calculations */}
                             <td className="px-4 py-2 text-sm text-foreground">{formatCurrency(tax.taxAmount || 0)}</td>
                           </tr>
                         ))}
