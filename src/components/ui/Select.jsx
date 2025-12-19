@@ -327,9 +327,15 @@ const Select = React.forwardRef(({
                     id={selectId}
                     type="button"
                     className={cn(
-                        "flex h-10 w-full items-center justify-between rounded-md border border-border bg-background text-foreground px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground/10 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                        "flex h-10 w-full items-center justify-between rounded-md border border-border text-foreground px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground/10 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                        // Only apply default background if no gradient is provided
+                        !className?.includes('bg-gradient-to-r') && "bg-background border-border",
                         error && "border-destructive focus:ring-destructive",
-                        !hasValue && "text-muted-foreground/10"
+                        !hasValue && "text-muted-foreground/10",
+                        // Check if className contains gradient (badge style) and override default styles
+                        className?.includes('bg-gradient-to-r') && "h-auto py-1.5 px-3 min-w-[100px]",
+                        // Merge custom className for badge styling (must come last to override defaults)
+                        className
                     )}
                     onClick={handleToggle}
                     onKeyDown={(e) => {
@@ -356,7 +362,10 @@ const Select = React.forwardRef(({
                     aria-haspopup="listbox"
                     {...props}
                 >
-                    <span className="truncate flex items-center gap-2">
+                    <span className={cn(
+                        "truncate flex items-center gap-2",
+                        className?.includes('bg-gradient-to-r') && "w-full justify-center"
+                    )}>
                         {(() => {
                             if (!value) return placeholder;
                             
@@ -365,6 +374,10 @@ const Select = React.forwardRef(({
                                 if (selectedOptions.length === 0) return placeholder;
                                 if (selectedOptions.length === 1) {
                                     const option = selectedOptions[0];
+                                    // If badge style, don't show dot, just show label
+                                    if (className?.includes('bg-gradient-to-r')) {
+                                        return <span className="truncate font-semibold text-xs">{option.label}</span>;
+                                    }
                                     return (
                                         <>
                                             {option.badgeColor && <span className={`w-2 h-2 rounded-full flex-shrink-0 ${option.badgeColor}`}></span>}
@@ -377,6 +390,11 @@ const Select = React.forwardRef(({
                             
                             const selectedOption = options.find(opt => String(opt.value) === String(value));
                             if (!selectedOption) return placeholder;
+                            
+                            // If badge style, don't show dot, just show label
+                            if (className?.includes('bg-gradient-to-r')) {
+                                return <span className="truncate font-semibold text-xs">{selectedOption.label}</span>;
+                            }
                             
                             return (
                                 <>

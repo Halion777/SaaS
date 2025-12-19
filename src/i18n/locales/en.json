@@ -570,7 +570,7 @@
     "equivalentMonthly": "Equivalent to {{amount}}€/month",
     "plans": {
       "starter": {
-        "name": "Starter",
+        "name": "Starter Plan",
         "description": "An intelligent entry-level plan for craftsmen who want clean, compliant quotes and invoices with a tool that is very easy to use.",
         "features": {
           "feature1": "Unlimited quotes",
@@ -1234,7 +1234,8 @@
       "trial": "Trial",
       "billingStartsAfterTrial": "Billing starts after trial",
       "paymentMethod": "Payment Method",
-      "expires": "Expires"
+      "expires": "Expires",
+      "unknown": "Unknown Plan"
     },
     "tabs": {
       "plans": "Plans",
@@ -1306,7 +1307,8 @@
       "open": "Open",
       "draft": "Draft",
       "void": "Void",
-      "uncollectible": "Uncollectible"
+      "uncollectible": "Uncollectible",
+      "unknown": "Unknown"
     },
     "checking": "Verifying subscription...",
     "noSubscription": "No Active Subscription",

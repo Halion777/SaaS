@@ -16,7 +16,7 @@ import { supabase } from '../../services/supabaseClient';
 import CompanyInfoModal from '../../pages/quote-creation/components/CompanyInfoModal';
 
 const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
@@ -379,7 +379,6 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
 
   const loadSubscriptionData = async () => {
     if (!actualUser) {
-      console.log('No user found, skipping subscription load');
       return;
     }
     
@@ -387,7 +386,6 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
       setLoadingSubscription(true);
       const { supabase } = await import('../../services/supabaseClient');
       
-      console.log('Loading subscription for user:', actualUser.id);
       
       const { data: subscriptionData, error } = await supabase
         .from('subscriptions')
@@ -406,7 +404,6 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
         return;
       }
 
-      console.log('Subscription data received:', subscriptionData);
       setSubscription(subscriptionData);
     } catch (error) {
       console.error('Error loading subscription:', error);
@@ -434,12 +431,12 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
 
   const getStatusText = (status) => {
     switch (status) {
-      case 'active': return 'Active';
+      case 'active': return t('subscription.status.active', 'Active');
       case 'trialing': 
-      case 'trial': return 'Trial';
-      case 'cancelled': return 'Cancelled';
-      case 'inactive': return 'Inactive';
-      default: return 'Unknown';
+      case 'trial': return t('subscription.currentPlan.trial', 'Trial');
+      case 'cancelled': return t('subscription.status.cancelled', 'Cancelled');
+      case 'inactive': return t('subscription.status.inactive', 'Inactive');
+      default: return t('subscription.status.unknown', 'Unknown');
     }
   };
 
@@ -648,20 +645,42 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">
-                    {subscription.plan_name || 'Unknown Plan'}
+                    {subscription.plan_type ? t(`pricing.plans.${subscription.plan_type}.name`, subscription.plan_name || 'Unknown Plan') : (subscription.plan_name || t('subscription.currentPlan.unknown', 'Unknown Plan'))}
                   </p>
                   {(subscription.status === 'trial' || subscription.status === 'trialing') && subscription.trial_end ? (
                     <>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {t('profile.settings.subscription.trialEnds', 'Trial ends {{date}}', { date: new Date(subscription.trial_end).toLocaleDateString() })}
+                        {t('profile.settings.subscription.trialEnds', 'Trial ends {{date}}', { 
+                          date: new Date(subscription.trial_end).toLocaleDateString(
+                            i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US'
+                          )
+                        })}
                       </p>
                       <p className="text-xs font-medium text-foreground mt-1">
-                        {t('profile.settings.subscription.thenAmount', 'Then €{{amount}}/{{period}}', { amount: subscription.amount || 0, period: subscription.billing_cycle || subscription.interval || 'month' })}
+                        {(() => {
+                          const cycle = subscription.billing_cycle || subscription.interval || 'month';
+                          const period = (cycle === 'month' || cycle === 'monthly') 
+                            ? t('subscription.billingCycle.monthly', 'monthly')
+                            : t('subscription.billingCycle.yearly', 'yearly');
+                          return t('profile.settings.subscription.thenAmount', 'Then €{{amount}}/{{period}}', { 
+                            amount: subscription.amount || 0, 
+                            period: period
+                          });
+                        })()}
                       </p>
                     </>
                   ) : (
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {t('profile.settings.subscription.amount', '€{{amount}}/{{period}}', { amount: subscription.amount || 0, period: subscription.billing_cycle || subscription.interval || 'month' })}
+                      {(() => {
+                        const cycle = subscription.billing_cycle || subscription.interval || 'month';
+                        const period = cycle === 'month' || cycle === 'monthly' 
+                          ? t('subscription.billingCycle.monthly', 'monthly')
+                          : t('subscription.billingCycle.yearly', 'yearly');
+                        return t('profile.settings.subscription.amount', '€{{amount}}/{{period}}', { 
+                          amount: subscription.amount || 0, 
+                          period: period
+                        });
+                      })()}
                     </p>
                   )}
                 </div>

@@ -41,18 +41,38 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
   };
 
   const statusOptions = [
-    { value: 'paid', label: t('invoicesManagement.status.paid'), badgeColor: 'bg-success' },
-    { value: 'unpaid', label: t('invoicesManagement.status.unpaid'), badgeColor: 'bg-warning' },
-    { value: 'overdue', label: t('invoicesManagement.status.overdue'), badgeColor: 'bg-error' },
-    { value: 'cancelled', label: t('invoicesManagement.status.cancelled'), badgeColor: 'bg-purple-500' }
+    { value: 'paid', label: t('invoicesManagement.status.paid') },
+    { value: 'unpaid', label: t('invoicesManagement.status.unpaid') },
+    { value: 'overdue', label: t('invoicesManagement.status.overdue') },
+    { value: 'cancelled', label: t('invoicesManagement.status.cancelled') }
   ];
 
   const getStatusBadge = (status, invoice = null) => {
     const statusConfig = {
-      paid: { label: t('invoicesManagement.status.paid'), color: 'bg-success text-success-foreground' },
-      unpaid: { label: t('invoicesManagement.status.unpaid'), color: 'bg-warning text-warning-foreground' },
-      overdue: { label: t('invoicesManagement.status.overdue'), color: 'bg-error text-error-foreground' },
-      cancelled: { label: t('invoicesManagement.status.cancelled'), color: 'bg-purple-500 text-white' }
+      paid: { 
+        label: t('invoicesManagement.status.paid'), 
+        color: 'bg-gradient-to-r from-green-500 to-emerald-600 text-white',
+        border: 'border border-green-400/30',
+        shadow: 'shadow-sm shadow-green-500/20'
+      },
+      unpaid: { 
+        label: t('invoicesManagement.status.unpaid'), 
+        color: 'bg-gradient-to-r from-amber-400 to-orange-500 text-white',
+        border: 'border border-amber-300/30',
+        shadow: 'shadow-sm shadow-amber-500/20'
+      },
+      overdue: { 
+        label: t('invoicesManagement.status.overdue'), 
+        color: 'bg-gradient-to-r from-red-500 to-rose-600 text-white',
+        border: 'border border-red-400/30',
+        shadow: 'shadow-sm shadow-red-500/20'
+      },
+      cancelled: { 
+        label: t('invoicesManagement.status.cancelled'), 
+        color: 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white',
+        border: 'border border-purple-400/30',
+        shadow: 'shadow-sm shadow-purple-500/20'
+      }
     };
 
     const config = statusConfig[status] || statusConfig.unpaid;
@@ -65,7 +85,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
             value={status}
             onValueChange={(newStatus) => onStatusUpdate(invoice.id, newStatus)}
             options={statusOptions}
-            className="w-auto min-w-[120px]"
+            className={`w-auto min-w-[140px] ${config.color} ${config.border} ${config.shadow} rounded-lg`}
             usePortal={true}
           />
         </div>
@@ -73,7 +93,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
     }
     
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${config.color}`}>
+      <span className={`px-3 py-1.5 rounded-lg text-xs font-semibold text-center inline-flex items-center justify-center ${config.color} ${config.border} ${config.shadow} min-w-[70px]`}>
         {config.label}
       </span>
     );

@@ -571,7 +571,7 @@
     "equivalentMonthly": "Équivalent à {{amount}}€/mois",
     "plans": {
       "starter": {
-        "name": "Starter",
+        "name": "Plan Starter",
         "description": "Un plan d'entrée de gamme intelligent pour les artisans qui souhaitent des devis et factures propres, conformes, avec un outil très facile à utiliser.",
         "features": {
           "feature1": "Devis illimités",
@@ -602,7 +602,7 @@
         "cta": "Essai gratuit de 14 jours"
       },
       "pro": {
-        "name": "Pro",
+        "name": "Plan Pro",
         "description": "La version premium de votre back-office : un outil intelligent axé sur l'IA, l'automatisation et la croissance, toujours très facile à utiliser pour tout artisan.",
         "features": {
           "feature1": "Devis illimités",
@@ -1235,7 +1235,8 @@
       "trial": "Essai",
       "billingStartsAfterTrial": "La facturation commence après l'essai",
       "paymentMethod": "Méthode de paiement",
-      "expires": "Expire"
+      "expires": "Expire",
+      "unknown": "Plan inconnu"
     },
     "tabs": {
       "plans": "Plans",
@@ -1307,7 +1308,8 @@
       "open": "Ouvert",
       "draft": "Brouillon",
       "void": "Annulé",
-      "uncollectible": "Irrécupérable"
+      "uncollectible": "Irrécupérable",
+      "unknown": "Inconnu"
     },
     "checking": "Vérification de l'abonnement...",
     "noSubscription": "Aucun abonnement actif",

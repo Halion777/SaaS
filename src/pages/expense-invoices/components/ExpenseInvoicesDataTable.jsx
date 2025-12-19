@@ -132,9 +132,24 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
 
   const getStatusBadge = (status, invoiceId = null) => {
     const statusConfig = {
-      paid: { label: t('expenseInvoices.status.paid', 'Paid'), color: 'bg-success text-success-foreground' },
-      pending: { label: t('expenseInvoices.status.pending', 'Pending'), color: 'bg-warning text-warning-foreground' },
-      overdue: { label: t('expenseInvoices.status.overdue', 'Overdue'), color: 'bg-error text-error-foreground' }
+      paid: { 
+        label: t('expenseInvoices.status.paid', 'Paid'), 
+        color: 'bg-gradient-to-r from-green-500 to-emerald-600 text-white',
+        border: 'border border-green-400/30',
+        shadow: 'shadow-sm shadow-green-500/20'
+      },
+      pending: { 
+        label: t('expenseInvoices.status.pending', 'Pending'), 
+        color: 'bg-gradient-to-r from-amber-400 to-orange-500 text-white',
+        border: 'border border-amber-300/30',
+        shadow: 'shadow-sm shadow-amber-500/20'
+      },
+      overdue: { 
+        label: t('expenseInvoices.status.overdue', 'Overdue'), 
+        color: 'bg-gradient-to-r from-red-500 to-rose-600 text-white',
+        border: 'border border-red-400/30',
+        shadow: 'shadow-sm shadow-red-500/20'
+      }
     };
 
     const config = statusConfig[status] || statusConfig.pending;
@@ -147,7 +162,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
             value={status}
             onValueChange={(newStatus) => onStatusUpdate(invoiceId, newStatus)}
             options={statusOptions}
-            className="w-auto min-w-[120px]"
+            className={`w-auto min-w-[140px] ${config.color} ${config.border} ${config.shadow} rounded-lg`}
             usePortal={true}
           />
         </div>
@@ -155,7 +170,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
     }
     
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${config.color}`}>
+      <span className={`px-3 py-1.5 rounded-lg text-xs font-semibold text-center inline-flex items-center justify-center ${config.color} ${config.border} ${config.shadow} min-w-[70px]`}>
         {config.label}
       </span>
     );

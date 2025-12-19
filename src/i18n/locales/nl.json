@@ -570,7 +570,7 @@
     "equivalentMonthly": "Gelijk aan {{amount}}€/maand",
     "plans": {
       "starter": {
-        "name": "Starter",
+        "name": "Starter Plan",
         "description": "Een intelligente instapplan voor ambachtslieden die schone, conforme offertes en facturen willen met een zeer gebruiksvriendelijk hulpmiddel.",
         "features": {
           "feature1": "Onbeperkte offertes",
@@ -601,7 +601,7 @@
         "cta": "14 dagen gratis proefperiode"
       },
       "pro": {
-        "name": "Pro",
+        "name": "Pro Plan",
         "description": "De premium versie van uw back-office: een intelligent hulpmiddel gericht op AI, automatisering en groei, nog steeds zeer gebruiksvriendelijk voor elke ambachtsman.",
         "features": {
           "feature1": "Onbeperkte offertes",
@@ -1237,6 +1237,7 @@
       "price": "Prijs",
       "nextBilling": "Volgende facturering",
       "trialEnd": "Einde proefperiode",
+      "unknown": "Onbekend plan",
       "trial": "Proefperiode",
       "billingStartsAfterTrial": "Facturering start na proefperiode",
       "paymentMethod": "Betaalmethode",
@@ -1312,7 +1313,8 @@
       "open": "Open",
       "draft": "Concept",
       "void": "Ongeldig",
-      "uncollectible": "Niet-inbaar"
+      "uncollectible": "Niet-inbaar",
+      "unknown": "Onbekend"
     },
     "checking": "Abonnement verifiëren...",
     "noSubscription": "Geen actief abonnement",

@@ -155,7 +155,7 @@ const SubscriptionManagement = () => {
             
             return {
               id: planId,
-              name: planData.name || `${planId.charAt(0).toUpperCase() + planId.slice(1)} Plan`,
+              name: t(`pricing.plans.${planId}.name`, planData.name || `${planId.charAt(0).toUpperCase() + planId.slice(1)} Plan`),
               price: {
                 monthly: planData.monthly,
                 yearly: planData.yearly,
@@ -210,7 +210,6 @@ const SubscriptionManagement = () => {
 
       if (!stripeData?.subscription) {
         // No subscription found in Stripe
-        console.log('No subscription found in Stripe');
         setSubscription(null);
         return;
       }
@@ -234,7 +233,6 @@ const SubscriptionManagement = () => {
         plan.current = plan.id === subscriptionData.plan_type;
       });
 
-      console.log('Subscription loaded from Stripe');
 
     } catch (error) {
       console.error('Error loading subscription:', error);
@@ -746,7 +744,7 @@ const SubscriptionManagement = () => {
               <div>
                 <p className="text-sm text-muted-foreground">{t('subscription.currentPlan.plan', 'Plan')}</p>
                 <p className="text-lg font-semibold text-foreground">
-                  {subscription.plan_name || 'Unknown Plan'}
+                  {subscription.plan_type ? t(`pricing.plans.${subscription.plan_type}.name`, subscription.plan_name || 'Unknown Plan') : (subscription.plan_name || t('subscription.currentPlan.unknown', 'Unknown Plan'))}
                   {(subscription.status === 'trial' || subscription.status === 'trialing') && 
                     <span className="text-sm text-primary ml-2">({t('subscription.currentPlan.trial', 'Trial')})</span>
                   }
