@@ -4596,7 +4596,7 @@
         "close": "Close",
         "tabs": {
           "details": "Details",
-          "peppol": "Peppol Metadata"
+          "peppol": "Peppol"
         },
         "invoiceInfo": {
           "title": "Invoice Information",
@@ -4709,7 +4709,7 @@
         "close": "Close",
         "tabs": {
           "details": "Details",
-          "peppol": "Peppol Metadata"
+          "peppol": "Peppol"
         },
         "invoiceInfo": {
           "title": "Invoice Information",

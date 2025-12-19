@@ -337,11 +337,11 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
                                   <td className="px-4 py-3 text-sm font-bold text-blue-700 text-right">{formatCurrency(depositAmount)}</td>
                                 </tr>
                                 {balanceAmount > 0 && (
-                                  <tr className="bg-blue-50 border-l-4 border-blue-500">
-                                    <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-blue-700">
+                                  <tr className="bg-muted/20">
+                                    <td colSpan="4" className="px-4 py-3 text-xs text-muted-foreground italic">
                                       {i18n.language === 'fr' ? 'Montant restant à payer après travaux:' : i18n.language === 'nl' ? 'Resterend bedrag te betalen na werk:' : 'Remaining amount to pay after work:'}
                                     </td>
-                                    <td className="px-4 py-3 text-sm font-bold text-blue-700 text-right">{formatCurrency(balanceAmount)}</td>
+                                    <td className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">{formatCurrency(balanceAmount)}</td>
                                   </tr>
                                 )}
                                 <tr className="bg-primary/10 border-t-2 border-primary">
@@ -381,7 +381,7 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
                           </tfoot>
                         </table>
                       </div>
-                    </div>
+                  </div>
                   );
                 })()}
 
@@ -433,6 +433,13 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
               </div>
             )}
           </div>
+        </div>
+        
+        {/* Footer with Close Button */}
+        <div className="border-t border-border p-6 bg-muted/30 flex justify-end">
+          <Button variant="outline" onClick={onClose}>
+            {t('invoicesManagement.modal.close', 'Close')}
+          </Button>
         </div>
       </div>
     </div>

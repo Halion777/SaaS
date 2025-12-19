@@ -70,6 +70,60 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
     return new Intl.DateTimeFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US').format(new Date(date));
   };
 
+  const renderAmountInfo = (invoice) => {
+    const invoiceType = invoice.invoice_type || invoice.invoiceType || 'final';
+    const depositAmount = invoice.peppol_metadata?.deposit_amount || 0;
+    const balanceAmount = invoice.peppol_metadata?.balance_amount || 0;
+    const depositEnabled = depositAmount > 0;
+    
+    // Calculate net and VAT for the displayed amount
+    let displayNet = invoice.net_amount || 0;
+    let displayVAT = invoice.vat_amount || 0;
+    
+    // For invoices with deposits, calculate proportional net/VAT
+    if (depositEnabled && depositAmount > 0 && balanceAmount > 0) {
+      if (invoiceType === 'deposit') {
+        // For deposit invoice: show deposit net and VAT
+        // Calculate proportionally based on deposit vs total
+        const totalWithVAT = depositAmount + balanceAmount;
+        const totalNet = invoice.net_amount || 0;
+        const totalVAT = invoice.vat_amount || 0;
+        if (totalWithVAT > 0 && (totalNet > 0 || totalVAT > 0)) {
+          displayNet = (depositAmount / totalWithVAT) * totalNet;
+          displayVAT = (depositAmount / totalWithVAT) * totalVAT;
+        } else {
+          // Fallback: estimate from deposit amount (assuming 21% VAT)
+          displayNet = depositAmount / 1.21;
+          displayVAT = depositAmount - displayNet;
+        }
+      } else if (invoiceType === 'final') {
+        // For final invoice: show balance net and VAT
+        const totalWithVAT = depositAmount + balanceAmount;
+        const totalNet = invoice.net_amount || 0;
+        const totalVAT = invoice.vat_amount || 0;
+        if (totalWithVAT > 0 && (totalNet > 0 || totalVAT > 0)) {
+          displayNet = (balanceAmount / totalWithVAT) * totalNet;
+          displayVAT = (balanceAmount / totalWithVAT) * totalVAT;
+        } else {
+          // Fallback: estimate from balance amount (assuming 21% VAT)
+          displayNet = balanceAmount / 1.21;
+          displayVAT = balanceAmount - displayNet;
+        }
+      }
+    }
+    
+    // Only show if we have valid amounts
+    if (displayNet > 0 || displayVAT > 0) {
+      return (
+        <div className="text-xs text-muted-foreground space-y-0.5">
+          <div>HT: {formatCurrency(displayNet)}</div>
+          <div>TVA: {formatCurrency(displayVAT)}</div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   const statusOptions = [
     { value: 'paid', label: t('expenseInvoices.status.paid', 'Paid'), badgeColor: 'bg-success' },
     { value: 'pending', label: t('expenseInvoices.status.pending', 'Pending'), badgeColor: 'bg-warning' },
@@ -522,14 +576,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-foreground">{formatCurrency(invoice.amount)}</div>
-                    {invoice.net_amount && (
-                      <div className="text-xs text-muted-foreground">{t('expenseInvoices.table.net', 'Net')}: {formatCurrency(invoice.net_amount)}</div>
-                    )}
-                    {invoice.vat_amount && (
-                      <div className="text-xs text-muted-foreground">{t('expenseInvoices.table.vat', 'VAT')}: {formatCurrency(invoice.vat_amount)}</div>
-                    )}
-                    {/* Balance amount (same as total for expense invoices) */}
-                    <div className="text-xs text-muted-foreground mt-1">{t('expenseInvoices.table.balance', 'Balance')}: {formatCurrency(invoice.amount)}</div>
+                    {renderAmountInfo(invoice)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                     {formatDate(invoice.issue_date)}

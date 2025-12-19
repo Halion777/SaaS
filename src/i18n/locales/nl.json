@@ -4164,6 +4164,8 @@
       },
       "filter": {
         "title": "Filters",
+        "invoicesFound": "{{count}} factuur gevonden",
+        "invoicesFound_plural": "{{count}} facturen gevonden",
         "clear": "Wissen",
         "showFilters": "Filters tonen",
         "hideFilters": "Filters verbergen",
@@ -4488,6 +4490,8 @@
       "filter": {
         "title": "Filters",
         "clear": "Wissen",
+        "invoicesFound": "{{count}} factuur gevonden",
+        "invoicesFound_plural": "{{count}} facturen gevonden",
         "hideFilters": "Filters verbergen",
         "showFilters": "Filters tonen",
         "activeFilters": "{{count}} actief(e) filter(s)",
@@ -4615,7 +4619,7 @@
         "close": "Sluiten",
         "tabs": {
           "details": "Details",
-          "peppol": "Peppol Metadata"
+          "peppol": "Peppol"
         },
         "invoiceInfo": {
           "title": "Factuurinformatie",
@@ -4728,7 +4732,7 @@
         "close": "Sluiten",
         "tabs": {
           "details": "Details",
-          "peppol": "Peppol Metadata"
+          "peppol": "Peppol"
         },
         "invoiceInfo": {
           "title": "Factuurinformatie",

@@ -766,116 +766,116 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
             ) : (
               // Ungrouped view (original)
               invoices.map((invoice) => {
-                const daysOverdue = getDaysOverdue(invoice.dueDate, invoice.status);
-                return (
-                  <tr key={invoice.id} className="hover:bg-muted/30 transition-colors duration-150">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Checkbox
-                        checked={selectedInvoices.includes(invoice.id)}
-                        onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+              const daysOverdue = getDaysOverdue(invoice.dueDate, invoice.status);
+              return (
+                <tr key={invoice.id} className="hover:bg-muted/30 transition-colors duration-150">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <Checkbox
+                      checked={selectedInvoices.includes(invoice.id)}
+                      onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
+                    />
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-2">
-                        <div className="text-sm font-medium text-foreground">{invoice.number}</div>
+                    <div className="text-sm font-medium text-foreground">{invoice.number}</div>
                         {getInvoiceTypeBadge(invoice.invoiceType)}
                       </div>
-                      {invoice.quoteNumber && (
-                        <div className="text-xs text-muted-foreground">{t('invoicesManagement.table.quote')}: {invoice.quoteNumber}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-foreground">{invoice.clientName}</div>
-                      <div className="text-xs text-muted-foreground">{invoice.clientEmail}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-foreground">{formatCurrency(invoice.amount)}</div>
+                    {invoice.quoteNumber && (
+                      <div className="text-xs text-muted-foreground">{t('invoicesManagement.table.quote')}: {invoice.quoteNumber}</div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-foreground">{invoice.clientName}</div>
+                    <div className="text-xs text-muted-foreground">{invoice.clientEmail}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-foreground">{formatCurrency(invoice.amount)}</div>
                       {renderAmountInfo(invoice)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-col space-y-1">
-                        {getStatusBadge(invoice.status, invoice)}
-                        {daysOverdue && (
-                          <span className="text-xs text-error">+{daysOverdue} {t('invoicesManagement.table.days')}</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {/* Show Peppol status (read-only) for professional clients */}
-                      {(() => {
-                        const clientType = invoice.client?.client_type || invoice.client?.type;
-                        const isProfessional = clientType === 'company' || clientType === 'professionnel';
-                        if (isProfessional) {
-                          // Show Peppol status (read-only badge, cannot be modified by user)
-                          return getPeppolStatusBadge(invoice.peppolStatus || 'not_sent');
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex flex-col space-y-1">
+                      {getStatusBadge(invoice.status, invoice)}
+                      {daysOverdue && (
+                        <span className="text-xs text-error">+{daysOverdue} {t('invoicesManagement.table.days')}</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {/* Show Peppol status (read-only) for professional clients */}
+                    {(() => {
+                      const clientType = invoice.client?.client_type || invoice.client?.type;
+                      const isProfessional = clientType === 'company' || clientType === 'professionnel';
+                      if (isProfessional) {
+                        // Show Peppol status (read-only badge, cannot be modified by user)
+                        return getPeppolStatusBadge(invoice.peppolStatus || 'not_sent');
+                      }
+                      // Individual clients don't use Peppol
+                      return (
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200">
+                          {t('invoicesManagement.peppolStatus.notApplicable', 'N/A')}
+                        </span>
+                      );
+                    })()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                    {formatDate(invoice.issueDate)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                    <div className={`${invoice.status === 'overdue' ? 'text-error font-medium' : ''}`}>
+                      {formatDate(invoice.dueDate)}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        iconName="Eye"
+                        onClick={() => onInvoiceAction('view', invoice)}
+                        title={t('invoicesManagement.table.actions.viewDetails')}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        iconName="Download"
+                        onClick={() => onInvoiceAction('export', invoice)}
+                        title={t('invoicesManagement.table.actions.exportPDF', 'Export PDF')}
+                        className="text-primary hover:text-primary/80"
+                        disabled={isExportingPDF}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        iconName="Send"
+                        onClick={() => onInvoiceAction('send', invoice)}
+                        title={
+                          !canEdit 
+                            ? t('permissions.noFullAccess') 
+                            : (invoice.peppolSentAt || invoice.peppolStatus === 'sent' || invoice.peppolStatus === 'delivered')
+                              ? t('invoicesManagement.table.actions.alreadySent', 'Invoice already sent')
+                              : t('invoicesManagement.table.actions.sendInvoice')
                         }
-                        // Individual clients don't use Peppol
-                        return (
-                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200">
-                            {t('invoicesManagement.peppolStatus.notApplicable', 'N/A')}
-                          </span>
-                        );
-                      })()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                      {formatDate(invoice.issueDate)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                      <div className={`${invoice.status === 'overdue' ? 'text-error font-medium' : ''}`}>
-                        {formatDate(invoice.dueDate)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          iconName="Eye"
-                          onClick={() => onInvoiceAction('view', invoice)}
-                          title={t('invoicesManagement.table.actions.viewDetails')}
-                        />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          iconName="Download"
-                          onClick={() => onInvoiceAction('export', invoice)}
-                          title={t('invoicesManagement.table.actions.exportPDF', 'Export PDF')}
-                          className="text-primary hover:text-primary/80"
-                          disabled={isExportingPDF}
-                        />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          iconName="Send"
-                          onClick={() => onInvoiceAction('send', invoice)}
-                          title={
-                            !canEdit 
-                              ? t('permissions.noFullAccess') 
-                              : (invoice.peppolSentAt || invoice.peppolStatus === 'sent' || invoice.peppolStatus === 'delivered')
-                                ? t('invoicesManagement.table.actions.alreadySent', 'Invoice already sent')
-                                : t('invoicesManagement.table.actions.sendInvoice')
-                          }
-                          className="text-primary hover:text-primary/80"
-                          disabled={!canEdit || !!invoice.peppolSentAt || invoice.peppolStatus === 'sent' || invoice.peppolStatus === 'delivered'}
-                        />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          iconName="Mail"
-                          onClick={() => onInvoiceAction('send_to_accountant', invoice)}
-                          title={!canEdit ? t('permissions.noFullAccess') : t('invoicesManagement.table.actions.sendToAccountant', 'Send to Accountant')}
-                          className="text-primary hover:text-primary/80"
-                          disabled={!canEdit}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                );
+                        className="text-primary hover:text-primary/80"
+                        disabled={!canEdit || !!invoice.peppolSentAt || invoice.peppolStatus === 'sent' || invoice.peppolStatus === 'delivered'}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        iconName="Mail"
+                        onClick={() => onInvoiceAction('send_to_accountant', invoice)}
+                        title={!canEdit ? t('permissions.noFullAccess') : t('invoicesManagement.table.actions.sendToAccountant', 'Send to Accountant')}
+                        className="text-primary hover:text-primary/80"
+                        disabled={!canEdit}
+                      />
+                    </div>
+                  </td>
+                </tr>
+              );
               })
             )}
           </tbody>
         </table>
-      </div>
+        </div>
       )}
     </div>
   );

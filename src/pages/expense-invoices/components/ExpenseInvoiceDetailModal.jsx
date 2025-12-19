@@ -57,7 +57,6 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
     );
   };
 
-
   const mapPaymentMethod = (code) => {
     const mappings = {
       '31': t('expenseInvoices.paymentMethods.creditTransfer', 'Credit transfer'),
@@ -189,7 +188,7 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                     : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {t('expenseInvoices.modal.tabs.peppol', 'Peppol Metadata')}
+                {t('expenseInvoices.modal.tabs.peppol', 'Peppol')}
               </button>
             )}
           </div>
@@ -199,27 +198,30 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
           {activeTab === 'details' && (
             <div className="space-y-6">
               {/* Invoice Information */}
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-4">{t('expenseInvoices.modal.invoiceInfo.title', 'Invoice Information')}</h3>
+              <div className="bg-card border border-border rounded-lg p-5">
+                <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
+                  <Icon name="FileText" size={18} className="mr-2 text-primary" />
+                  {t('expenseInvoices.modal.invoiceInfo.title', 'Invoice Information')}
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.invoiceInfo.invoiceNumber', 'Invoice Number')}</label>
-                    <p className="text-sm text-foreground mt-1">{displayInvoiceNumber}</p>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('expenseInvoices.modal.invoiceInfo.invoiceNumber', 'Invoice Number')}</label>
+                    <p className="text-sm font-semibold text-foreground">{displayInvoiceNumber}</p>
                     {showPeppolNumber && (
                       <p className="text-xs text-muted-foreground mt-1">Peppol Invoice Number: {peppolInvoiceNumber}</p>
                     )}
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.invoiceInfo.status', 'Status')}</label>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('expenseInvoices.modal.invoiceInfo.status', 'Status')}</label>
                     <div className="mt-1">{getStatusBadge(invoice.status)}</div>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.invoiceInfo.category', 'Category')}</label>
-                    <p className="text-sm text-foreground mt-1">{formatCategory(invoice.category)}</p>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('expenseInvoices.modal.invoiceInfo.category', 'Category')}</label>
+                    <p className="text-sm font-semibold text-foreground">{formatCategory(invoice.category)}</p>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.invoiceInfo.source', 'Source')}</label>
-                    <p className="text-sm text-foreground mt-1">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('expenseInvoices.modal.invoiceInfo.source', 'Source')}</label>
+                    <p className="text-sm font-medium text-foreground">
                       {invoice.source === 'peppol' ? (
                         <span className="inline-flex items-center">
                           <Icon name="Globe" size={14} className="mr-1" />
@@ -233,46 +235,40 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                       )}
                     </p>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.invoiceInfo.issueDate', 'Issue Date')}</label>
-                    <p className="text-sm text-foreground mt-1">{formatDate(invoice.issue_date)}</p>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('expenseInvoices.modal.invoiceInfo.issueDate', 'Issue Date')}</label>
+                    <p className="text-sm font-semibold text-foreground">{formatDate(invoice.issue_date)}</p>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.invoiceInfo.dueDate', 'Due Date')}</label>
-                    <p className="text-sm text-foreground mt-1">{formatDate(invoice.due_date)}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.invoiceInfo.paymentMethod', 'Payment Method')}</label>
-            <p className="text-sm text-foreground mt-1">
-              {invoice.payment_method
-                || invoice.peppol_metadata?.payment?.meansName
-                || (invoice.peppol_metadata?.payment?.meansCode ? mapPaymentMethod(invoice.peppol_metadata.payment.meansCode) : t('expenseInvoices.common.notAvailable', 'N/A'))
-              }
-            </p>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('expenseInvoices.modal.invoiceInfo.dueDate', 'Due Date')}</label>
+                    <p className="text-sm font-semibold text-foreground">{formatDate(invoice.due_date)}</p>
                   </div>
                 </div>
               </div>
 
               {/* Supplier Information */}
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-4">{t('expenseInvoices.modal.supplierInfo.title', 'Supplier Information')}</h3>
+              <div className="bg-card border border-border rounded-lg p-5">
+                <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
+                  <Icon name="Building" size={18} className="mr-2 text-primary" />
+                  {t('expenseInvoices.modal.supplierInfo.title', 'Supplier Information')}
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.supplierInfo.name', 'Name')}</label>
-                    <p className="text-sm text-foreground mt-1">{invoice.supplier_name}</p>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('expenseInvoices.modal.supplierInfo.name', 'Name')}</label>
+                    <p className="text-sm font-semibold text-foreground">{invoice.supplier_name}</p>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.supplierInfo.email', 'Email')}</label>
-                    <p className="text-sm text-foreground mt-1">{invoice.supplier_email || t('expenseInvoices.common.notAvailable', 'N/A')}</p>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('expenseInvoices.modal.supplierInfo.email', 'Email')}</label>
+                    <p className="text-sm font-medium text-foreground">{invoice.supplier_email || t('expenseInvoices.common.notAvailable', 'N/A')}</p>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.supplierInfo.vatNumber', 'VAT Number')}</label>
-                    <p className="text-sm text-foreground mt-1">{invoice.supplier_vat_number || t('expenseInvoices.common.notAvailable', 'N/A')}</p>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('expenseInvoices.modal.supplierInfo.vatNumber', 'VAT Number')}</label>
+                    <p className="text-sm font-semibold text-foreground">{invoice.supplier_vat_number || t('expenseInvoices.common.notAvailable', 'N/A')}</p>
                   </div>
                   {invoice.source === 'peppol' && invoice.sender_peppol_id && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.supplierInfo.peppolId', 'Peppol ID')}</label>
-                      <p className="text-sm text-foreground mt-1 flex items-center">
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('expenseInvoices.modal.supplierInfo.peppolId', 'Peppol ID')}</label>
+                      <p className="text-sm font-semibold text-foreground flex items-center">
                         <Icon name="Globe" size={14} className="mr-1 text-blue-600" />
                         {invoice.sender_peppol_id}
                       </p>
@@ -281,182 +277,15 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                 </div>
               </div>
 
-              {/* Financial Information */}
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-4">{t('expenseInvoices.modal.financialInfo.title', 'Financial Information')}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.financialInfo.totalAmount', 'Total Amount (incl. VAT)')}</label>
-                    <p className="text-lg font-bold text-foreground mt-1">{formatCurrency(invoice.amount)}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.financialInfo.netAmount', 'Net Amount')}</label>
-                    <p className="text-lg font-semibold text-foreground mt-1">{formatCurrency(invoice.net_amount || 0)}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.financialInfo.vatAmount', 'VAT Amount')}</label>
-                    <p className="text-lg font-semibold text-foreground mt-1">{formatCurrency(invoice.vat_amount || 0)}</p>
-                  </div>
-                </div>
+              {/* Invoice Line Items */}
+              {(() => {
+                // Build invoice lines from peppol_metadata.invoiceLines
+                let invoiceLines = [];
+                const metadata = invoice.peppol_metadata || {};
                 
-                {/* Deposit and Balance Information - shown when invoice_type is deposit or final with deposit enabled */}
-                {(() => {
-                  const invoiceType = invoice.invoice_type || invoice.peppol_metadata?.invoice_type || 'final';
-                  const depositAmount = invoice.peppol_metadata?.deposit_amount || 0;
-                  const balanceAmount = invoice.peppol_metadata?.balance_amount || 0;
-                  const depositEnabled = depositAmount > 0;
-                  
-                  if (depositEnabled && (invoiceType === 'deposit' || invoiceType === 'final')) {
-                    return (
-                      <div className="mt-4 pt-4 border-t border-border">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {invoiceType === 'deposit' && (
-                            <div>
-                              <label className="text-sm font-medium text-muted-foreground">
-                                {t('expenseInvoices.modal.financialInfo.paymentBeforeWork', 'Payment Before Work')}
-                              </label>
-                              <p className="text-lg font-bold text-blue-600 mt-1">{formatCurrency(depositAmount)}</p>
-                            </div>
-                          )}
-                          {invoiceType === 'final' && depositAmount > 0 && (
-                            <>
-                              <div>
-                                <label className="text-sm font-medium text-muted-foreground">
-                                  {t('expenseInvoices.modal.financialInfo.paidDeposit', 'Paid Deposit')}
-                                </label>
-                                <p className="text-lg font-semibold text-green-600 mt-1">{formatCurrency(depositAmount)}</p>
-                              </div>
-                              <div>
-                                <label className="text-sm font-medium text-muted-foreground">
-                                  {t('expenseInvoices.modal.financialInfo.paymentAfterWork', 'Payment After Work')}
-                                </label>
-                                <p className="text-lg font-bold text-blue-600 mt-1">{formatCurrency(balanceAmount || invoice.amount)}</p>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-              </div>
-
-              {/* Notes */}
-              {invoice.notes && (
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground mb-4">{t('expenseInvoices.modal.notes', 'Notes')}</h3>
-                  <ul className="text-sm text-foreground bg-muted/30 p-4 rounded-lg list-disc list-inside space-y-1">
-                    {invoice.notes
-                      .split(/\r?\n/)
-                      .map((noteLine, idx) => noteLine.trim())
-                      .filter(Boolean)
-                      .map((noteLine, idx) => (
-                        <li key={idx}>{noteLine}</li>
-                      ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'peppol' && invoice.source === 'peppol' && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-4">{t('expenseInvoices.modal.peppolInfo.title', 'Peppol Information')}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.documentType', 'Document Type')}</label>
-                    <p className="text-sm text-foreground mt-1">
-                      {invoice.peppol_metadata?.documentTypeLabel || t('expenseInvoices.common.notAvailable', 'N/A')}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.receivedDate', 'Receipt Date')}</label>
-                    <p className="text-sm text-foreground mt-1">
-                      {invoice.peppol_received_at ? formatDate(invoice.peppol_received_at) : t('expenseInvoices.common.notAvailable', 'N/A')}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Additional Peppol Metadata */}
-              {invoice.peppol_metadata && (
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground mb-4">{t('expenseInvoices.modal.peppolInfo.additionalMetadata', 'Additional Metadata')}</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {(messageId && buyerRef && messageId === buyerRef) && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.messageIdAndBuyerReference', 'Message ID / Buyer Reference')}</label>
-                        <p className="text-sm text-foreground mt-1">{messageId}</p>
-                      </div>
-                    )}
-                    {(messageId && (!buyerRef || messageId !== buyerRef)) && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.messageId', 'Message ID')}</label>
-                        <p className="text-sm text-foreground mt-1">{messageId}</p>
-                      </div>
-                    )}
-                    {(buyerRef && (!messageId || messageId !== buyerRef)) && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.buyerReference', 'Buyer Reference')}</label>
-                        <p className="text-sm text-foreground mt-1">{buyerRef}</p>
-                      </div>
-                    )}
-                    {showPeppolNumber && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.peppolInvoiceNumber', 'Peppol Invoice Number')}</label>
-                        <p className="text-sm text-foreground mt-1">{peppolInvoiceNumber}</p>
-                      </div>
-                    )}
-                    {invoice.peppol_metadata.orderReference && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.orderReference', 'Order Reference')}</label>
-                        <p className="text-sm text-foreground mt-1">{invoice.peppol_metadata.orderReference}</p>
-                      </div>
-                    )}
-                    {invoice.peppol_metadata.salesOrderId && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.salesOrderId', 'Sales Order ID')}</label>
-                        <p className="text-sm text-foreground mt-1">{invoice.peppol_metadata.salesOrderId}</p>
-                      </div>
-                    )}
-                    {invoice.peppol_metadata.deliveryDate && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.deliveryDate', 'Delivery Date')}</label>
-                        <p className="text-sm text-foreground mt-1">{formatDate(invoice.peppol_metadata.deliveryDate)}</p>
-                      </div>
-                    )}
-                    {invoice.peppol_metadata.documentCurrencyCode && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.currency', 'Currency')}</label>
-                        <p className="text-sm text-foreground mt-1">{invoice.peppol_metadata.documentCurrencyCode}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Invoice Lines */}
-              {invoice.peppol_metadata?.invoiceLines && invoice.peppol_metadata.invoiceLines.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground mb-4">{t('expenseInvoices.modal.peppolInfo.invoiceLines', 'Invoice Lines')}</h3>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-border">
-                      <thead className="bg-muted/30">
-                        <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.table.id', 'ID')}</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.table.description', 'Description')}</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.table.quantity', 'Quantity')}</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.table.unitPrice', 'Unit Price')}</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.table.amount', 'Amount')}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
-                        {invoice.peppol_metadata.invoiceLines.map((line, index) => {
+                if (metadata.invoiceLines && metadata.invoiceLines.length > 0) {
+                  invoiceLines = metadata.invoiceLines.map((line, index) => {
                           // Use EXACT values from UBL XML - no calculations, no fallbacks
-                          // priceAmount comes from <cac:Price>/<cbc:PriceAmount> in UBL XML
-                          // lineExtensionAmount comes from <cbc:LineExtensionAmount> in UBL XML
                           const exactUnitPrice = typeof line.priceAmount === 'number' ? line.priceAmount :
                                                  typeof line.unitPrice === 'number' ? line.unitPrice :
                                                  typeof line.unit_price === 'number' ? line.unit_price :
@@ -465,58 +294,206 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                                                  typeof line.amount === 'number' ? line.amount :
                                                  0;
                           
+                    return {
+                      number: index + 1,
+                      description: line.description || line.itemName || 'Service',
+                      quantity: line.quantity || 1,
+                      unit: line.unit || '',
+                      unitPrice: exactUnitPrice,
+                      totalPrice: exactLineTotal
+                    };
+                  });
+                } else {
+                  // Single line from invoice summary
+                  invoiceLines = [{
+                    number: 1,
+                    description: invoice.notes || 'Service',
+                    quantity: 1,
+                    unit: '',
+                    unitPrice: parseFloat(invoice.net_amount || invoice.amount || 0),
+                    totalPrice: parseFloat(invoice.net_amount || invoice.amount || 0)
+                  }];
+                }
+                
+                // Calculate totals
+                const invoiceType = invoice.invoice_type || metadata.invoice_type || 'final';
+                const depositAmount = metadata.deposit_amount || 0;
+                const balanceAmount = metadata.balance_amount || 0;
+                const depositEnabled = depositAmount > 0;
+                
+                let subtotal = parseFloat(invoice.net_amount || 0);
+                let taxAmount = parseFloat(invoice.vat_amount || 0);
+                let total = parseFloat(invoice.amount || 0);
+                let totalWithVAT = subtotal + taxAmount;
+                
+                // For deposit invoices, calculate total from deposit + balance
+                if (invoiceType === 'deposit' && depositEnabled) {
+                  totalWithVAT = depositAmount + balanceAmount;
+                  total = depositAmount;
+                  // Calculate proportional subtotal and VAT for deposit
+                  if (totalWithVAT > 0) {
+                    const totalNet = invoice.net_amount || 0;
+                    const totalVAT = invoice.vat_amount || 0;
+                    if (totalNet > 0 || totalVAT > 0) {
+                      subtotal = (depositAmount / totalWithVAT) * totalNet;
+                      taxAmount = (depositAmount / totalWithVAT) * totalVAT;
+                    }
+                  }
+                } else if (invoiceType === 'final' && depositEnabled) {
+                  totalWithVAT = depositAmount + balanceAmount;
+                  total = balanceAmount || invoice.amount;
+                }
+                
+                return (
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
+                      <Icon name="List" size={18} className="mr-2 text-primary" />
+                      {t('expenseInvoices.modal.invoiceLines', 'Invoice Line Items')}
+                    </h3>
+                    <div className="overflow-x-auto border border-border rounded-lg bg-card">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="bg-muted/50">
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase border-b border-border">N°</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase border-b border-border">Description</th>
+                            <th className="px-4 py-3 text-center text-xs font-semibold text-foreground uppercase border-b border-border">Qty</th>
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-foreground uppercase border-b border-border">Unit Price</th>
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-foreground uppercase border-b border-border">Total Excl. VAT</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {invoiceLines.map((line, index) => {
+                            const hasMaterials = line.materials && line.materials.length > 0;
                           return (
-                            <tr key={index}>
-                              <td className="px-4 py-2 text-sm text-foreground">{line.id || line.lineId || t('expenseInvoices.common.notAvailable', 'N/A')}</td>
-                              <td className="px-4 py-2 text-sm text-foreground">{line.description || line.itemName || t('expenseInvoices.common.notAvailable', 'N/A')}</td>
-                              <td className="px-4 py-2 text-sm text-foreground">{line.quantity || t('expenseInvoices.common.notAvailable', 'N/A')}</td>
-                              <td className="px-4 py-2 text-sm text-foreground">{formatCurrency(exactUnitPrice)}</td>
-                              <td className="px-4 py-2 text-sm text-foreground">{formatCurrency(exactLineTotal)}</td>
+                              <React.Fragment key={index}>
+                                <tr className={index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}>
+                                  <td className="px-4 py-3 text-sm text-foreground border-b border-border text-center font-medium">{line.number}</td>
+                                  <td className="px-4 py-3 text-sm text-foreground border-b border-border font-medium">{line.description}</td>
+                                  <td className="px-4 py-3 text-sm text-foreground border-b border-border text-center">{hasMaterials ? '' : `${typeof line.quantity === 'number' ? line.quantity : parseFloat(String(line.quantity).trim().split(' ')[0]) || 1} ${line.unit || ''}`}</td>
+                                  <td className="px-4 py-3 text-sm text-foreground border-b border-border text-right">{hasMaterials ? '' : formatCurrency(line.unitPrice)}</td>
+                                  <td className="px-4 py-3 text-sm text-foreground border-b border-border text-right font-medium">{formatCurrency(line.totalPrice)}</td>
+                                </tr>
+                                {hasMaterials && line.materials.map((mat, matIndex) => (
+                                  <tr key={`${index}-${matIndex}`} className="bg-muted/10">
+                                    <td className="px-4 py-2 text-xs text-muted-foreground border-b border-border text-center pl-8">{line.number}.{matIndex + 1}</td>
+                                    <td className="px-4 py-2 text-xs text-muted-foreground border-b border-border pl-8">{mat.name || mat.description}</td>
+                                    <td className="px-4 py-2 text-xs text-muted-foreground border-b border-border text-center">{mat.quantity} {mat.unit}</td>
+                                    <td className="px-4 py-2 text-xs text-muted-foreground border-b border-border text-right">{formatCurrency(mat.unitPrice || mat.price)}</td>
+                                    <td className="px-4 py-2 text-xs text-muted-foreground border-b border-border text-right">{formatCurrency(mat.totalPrice || mat.amount)}</td>
                             </tr>
+                                ))}
+                              </React.Fragment>
                           );
                         })}
                       </tbody>
+                        <tfoot>
+                          <tr className="bg-muted/30">
+                            <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-foreground border-t border-border">Subtotal Excl. VAT</td>
+                            <td className="px-4 py-3 text-sm font-semibold text-foreground border-t border-border text-right">{formatCurrency(subtotal)}</td>
+                          </tr>
+                          {taxAmount > 0 && (
+                            <tr className="bg-muted/30">
+                              <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-foreground">VAT</td>
+                              <td className="px-4 py-3 text-sm font-semibold text-foreground text-right">{formatCurrency(taxAmount)}</td>
+                            </tr>
+                          )}
+                          {invoiceType === 'deposit' && depositEnabled && (
+                            <>
+                              <tr className="bg-blue-50 border-l-4 border-blue-500">
+                                <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-blue-700">
+                                  {i18n.language === 'fr' ? 'Paiement avant travaux:' : i18n.language === 'nl' ? 'Betaling voor werk:' : 'Payment before work:'}
+                                </td>
+                                <td className="px-4 py-3 text-sm font-bold text-blue-700 text-right">{formatCurrency(depositAmount)}</td>
+                              </tr>
+                              {balanceAmount > 0 && (
+                                <tr className="bg-muted/20">
+                                  <td colSpan="4" className="px-4 py-3 text-xs text-muted-foreground italic">
+                                    {i18n.language === 'fr' ? 'Montant restant à payer après travaux:' : i18n.language === 'nl' ? 'Resterend bedrag te betalen na werk:' : 'Remaining amount to pay after work:'}
+                                  </td>
+                                  <td className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">{formatCurrency(balanceAmount)}</td>
+                                </tr>
+                              )}
+                              <tr className="bg-primary/10 border-t-2 border-primary">
+                                <td colSpan="4" className="px-4 py-3 text-base font-bold text-foreground">Total Incl. VAT</td>
+                                <td className="px-4 py-3 text-base font-bold text-foreground text-right">{formatCurrency(totalWithVAT)}</td>
+                              </tr>
+                            </>
+                          )}
+                          {invoiceType === 'final' && depositEnabled && (
+                            <>
+                              <tr className="bg-blue-50 border-l-4 border-blue-500">
+                                <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-blue-700">
+                                  {i18n.language === 'fr' ? 'MONTANT RESTANT À PAYER:' : i18n.language === 'nl' ? 'RESTEREND BEDRAG TE BETALEN:' : 'REMAINING AMOUNT TO PAY:'}
+                                </td>
+                                <td className="px-4 py-3 text-sm font-bold text-blue-700 text-right">{formatCurrency(balanceAmount || total)}</td>
+                              </tr>
+                              <tr className="bg-primary/10 border-t-2 border-primary">
+                                <td colSpan="4" className="px-4 py-3 text-base font-bold text-foreground">Total Incl. VAT</td>
+                                <td className="px-4 py-3 text-base font-bold text-foreground text-right">{formatCurrency(totalWithVAT)}</td>
+                              </tr>
+                            </>
+                          )}
+                          {!depositEnabled && (
+                            <tr className="bg-primary/10 border-t-2 border-primary">
+                              <td colSpan="4" className="px-4 py-3 text-base font-bold text-foreground">Total Incl. VAT</td>
+                              <td className="px-4 py-3 text-base font-bold text-foreground text-right">{formatCurrency(total)}</td>
+                            </tr>
+                          )}
+                        </tfoot>
                     </table>
                   </div>
+                  </div>
+                );
+              })()}
+
                 </div>
               )}
 
-              {/* Tax Information */}
-              {invoice.peppol_metadata?.taxSubtotals && invoice.peppol_metadata.taxSubtotals.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground mb-4">{t('expenseInvoices.modal.peppolInfo.taxInformation', 'Tax Information')}</h3>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-border">
-                      <thead className="bg-muted/30">
-                        <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.table.rate', 'Rate (%)')}</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.table.taxableAmount', 'Taxable Amount')}</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">{t('expenseInvoices.modal.peppolInfo.table.vatAmount', 'VAT Amount')}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
-                        {invoice.peppol_metadata.taxSubtotals.map((tax, index) => (
-                          <tr key={index}>
-                            {/* Use exact VAT percentage from UBL XML <cbc:Percent> - no calculations */}
-                            <td className="px-4 py-2 text-sm text-foreground">{getTaxPercent(tax)}%</td>
-                            {/* Use exact taxable amount from UBL XML <cbc:TaxableAmount> - no calculations */}
-                            <td className="px-4 py-2 text-sm text-foreground">{formatCurrency(tax.taxableAmount || 0)}</td>
-                            {/* Use exact VAT amount from UBL XML <cbc:TaxAmount> - no calculations */}
-                            <td className="px-4 py-2 text-sm text-foreground">{formatCurrency(tax.taxAmount || 0)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+          {activeTab === 'peppol' && invoice.source === 'peppol' && (
+            <div className="space-y-6">
+              <div className="bg-card border border-border rounded-lg p-5">
+                <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
+                  <Icon name="Globe" size={18} className="mr-2 text-primary" />
+                  {t('expenseInvoices.modal.peppolInfo.title', 'Peppol Information')}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('expenseInvoices.modal.peppolInfo.receivedDate', 'Received')}</label>
+                    <p className="text-sm font-semibold text-foreground">
+                      {invoice.peppol_received_at ? formatDate(invoice.peppol_received_at) : t('expenseInvoices.common.notAvailable', 'N/A')}
+                    </p>
                   </div>
+                  {invoice.sender_peppol_id && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('expenseInvoices.modal.peppolInfo.from', 'From')}</label>
+                      <p className="text-sm font-semibold text-foreground flex items-center">
+                        <Icon name="Globe" size={14} className="mr-1 text-blue-600" />
+                        {invoice.sender_peppol_id}
+                      </p>
+                    </div>
+                  )}
+                  {peppolInvoiceNumber && showPeppolNumber && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('expenseInvoices.modal.peppolInfo.peppolInvoiceNumber', 'Peppol Invoice Number')}</label>
+                      <p className="text-sm font-semibold text-foreground">{peppolInvoiceNumber}</p>
+                  </div>
+                  )}
+                  {messageId && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('expenseInvoices.modal.peppolInfo.messageId', 'Message ID')}</label>
+                      <p className="text-sm font-mono text-foreground break-all">{messageId}</p>
                 </div>
               )}
+                </div>
+              </div>
             </div>
           )}
 
           </div>
+          </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-between pt-6 border-t border-border">
+        <div className="flex items-center justify-between pt-6 border-t border-border px-6 pb-6">
             <div>
               {hasPDFAttachment && (
                 <Button
@@ -536,7 +513,6 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
             <Button variant="outline" onClick={onClose}>
               {t('expenseInvoices.modal.close', 'Close')}
             </Button>
-            </div>
           </div>
         </div>
       </div>
@@ -545,4 +521,3 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
 };
 
 export default ExpenseInvoiceDetailModal;
-
