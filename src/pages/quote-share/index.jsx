@@ -678,25 +678,21 @@ const PublicQuoteShareViewer = () => {
               )}
                 {(depositAmount > 0 || (financialConfig.advanceConfig?.enabled && financialConfig.advanceConfig.amount > 0)) ? (
                   <>
-                    <div className="flex justify-between text-gray-600 text-xs sm:text-sm">
-                      <span>{t('quoteShare.financial.totalInclTax', 'Total TTC')}:</span>
-                      <span className="font-medium">{currency(totalWithVAT)}</span>
-                </div>
                   <div className="flex justify-between text-gray-600 text-xs sm:text-sm">
                     <span>{t('quoteShare.financial.paymentBeforeWork', 'Payment Before Work')}:</span>
                   <span className="font-medium">{currency(depositAmount)}</span>
                 </div>
-                  <div className="flex justify-between text-base sm:text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
+                  <div className="flex justify-between text-gray-600 text-xs sm:text-sm">
                       <span>{t('quoteShare.financial.paymentAfterWork', 'Payment After Work')}:</span>
-                      <span className="text-blue-600">{currency(balanceAmount)}</span>
+                      <span className="font-medium">{currency(balanceAmount)}</span>
                     </div>
                   </>
-                ) : (
-                  <div className="flex justify-between text-base sm:text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
-                    <span>{t('quoteShare.financial.total')}:</span>
-                    <span className="text-blue-600">{currency(totalWithVAT)}</span>
-                  </div>
-                )}
+                ) : null}
+                {/* Always show total with VAT at the end with same typography as payment after work */}
+                <div className="flex justify-between text-base sm:text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
+                  <span>{t('quoteShare.financial.totalInclTax', 'Total TTC')}:</span>
+                  <span className="text-blue-600">{currency(totalWithVAT)}</span>
+                </div>
                 {!includeMaterialsPrices && (
                   <div className="text-xs text-gray-500 text-center pt-1">
                     * {t('quoteShare.financial.materialsNote')}

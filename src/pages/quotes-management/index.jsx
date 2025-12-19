@@ -168,18 +168,8 @@ const QuotesManagement = () => {
       }
     }
     
-    // Subtract deposit from displayed amount (show balance)
-    if (draftData.financialConfig?.advanceConfig?.enabled && draftData.financialConfig?.advanceConfig?.amount > 0) {
-      const depositAmount = parseFloat(draftData.financialConfig.advanceConfig.amount);
-      totalWithVAT = totalWithVAT - depositAmount;
-    } else if (draftData.depositAmount !== undefined && draftData.depositAmount > 0) {
-      const depositAmount = parseFloat(draftData.depositAmount);
-      totalWithVAT = totalWithVAT - depositAmount;
-    } else if (draftData.projectInfo?.depositAmount !== undefined && draftData.projectInfo.depositAmount > 0) {
-      const depositAmount = parseFloat(draftData.projectInfo.depositAmount);
-      totalWithVAT = totalWithVAT - depositAmount;
-    }
-    
+    // Don't subtract deposit - show total with VAT in price column
+    // The price column should always show the full total with VAT, not the balance
     return totalWithVAT;
   };
 
@@ -365,15 +355,24 @@ const QuotesManagement = () => {
         // Transform backend data to match frontend structure
           const transformedQuotes = (quotesData || []).map(quote => {
             // Use stored values from quotes table directly for consistency
-            // Display balance amount (total with VAT minus deposit) for quotes management
-            const finalAmount = parseFloat(quote.balance_amount || quote.final_amount || 0);
+            // Display total with VAT (not balance) for quotes management price column
+            const totalBeforeVAT = parseFloat(quote.total_amount || 0);
+            const vatAmount = parseFloat(quote.tax_amount || 0);
+            const discountAmount = parseFloat(quote.discount_amount || 0);
+            const depositAmount = parseFloat(quote.deposit_amount || 0);
+            const balanceAmount = parseFloat(quote.balance_amount || 0);
+            
+            // Calculate total with VAT: if deposit enabled, total = balance + deposit, otherwise total = total_before_vat + vat - discount
+            const totalWithVAT = balanceAmount > 0 && depositAmount > 0 
+              ? balanceAmount + depositAmount 
+              : totalBeforeVAT + vatAmount - discountAmount;
             
             return {
               id: quote.id,
               number: quote.quote_number,
               clientName: quote.client?.name || t('quotesManagement.draft.unknownClient'),
-              amount: finalAmount,
-              amountFormatted: formatCurrency(finalAmount),
+              amount: totalWithVAT,
+              amountFormatted: formatCurrency(totalWithVAT),
               status: quote.status,
               statusLabel: getStatusLabel(quote.status),
               createdAt: quote.created_at,

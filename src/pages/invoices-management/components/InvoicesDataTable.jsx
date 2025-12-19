@@ -96,6 +96,61 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
     );
   };
 
+  // Helper function to render deposit/final financial info instead of payment method
+  const renderAmountInfo = (invoice) => {
+    const invoiceType = invoice.invoiceType || invoice.invoice_type || 'final';
+    const depositAmount = invoice.peppol_metadata?.deposit_amount || 0;
+    const balanceAmount = invoice.peppol_metadata?.balance_amount || 0;
+    const depositEnabled = depositAmount > 0;
+    
+    // Calculate net and VAT for the displayed amount
+    let displayNet = invoice.netAmount || 0;
+    let displayVAT = invoice.taxAmount || 0;
+    
+    // For invoices with deposits, calculate proportional net/VAT
+    if (depositEnabled && depositAmount > 0 && balanceAmount > 0) {
+      if (invoiceType === 'deposit') {
+        // For deposit invoice: show deposit net and VAT
+        // Calculate proportionally based on deposit vs total
+        const totalWithVAT = depositAmount + balanceAmount;
+        const totalNet = invoice.netAmount || 0;
+        const totalVAT = invoice.taxAmount || 0;
+        if (totalWithVAT > 0 && (totalNet > 0 || totalVAT > 0)) {
+          displayNet = (depositAmount / totalWithVAT) * totalNet;
+          displayVAT = (depositAmount / totalWithVAT) * totalVAT;
+        } else {
+          // Fallback: estimate from deposit amount (assuming 21% VAT)
+          displayNet = depositAmount / 1.21;
+          displayVAT = depositAmount - displayNet;
+        }
+      } else if (invoiceType === 'final') {
+        // For final invoice: show balance net and VAT
+        const totalWithVAT = depositAmount + balanceAmount;
+        const totalNet = invoice.netAmount || 0;
+        const totalVAT = invoice.taxAmount || 0;
+        if (totalWithVAT > 0 && (totalNet > 0 || totalVAT > 0)) {
+          displayNet = (balanceAmount / totalWithVAT) * totalNet;
+          displayVAT = (balanceAmount / totalWithVAT) * totalVAT;
+        } else {
+          // Fallback: estimate from balance amount (assuming 21% VAT)
+          displayNet = balanceAmount / 1.21;
+          displayVAT = balanceAmount - displayNet;
+        }
+      }
+    }
+    
+    // Only show if we have valid amounts
+    if (displayNet > 0 || displayVAT > 0) {
+      return (
+        <div className="text-xs text-muted-foreground space-y-0.5">
+          <div>HT: {formatCurrency(displayNet)}</div>
+          <div>TVA: {formatCurrency(displayVAT)}</div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   const getInvoiceTypeBadge = (invoiceType) => {
     if (!invoiceType || invoiceType === 'final') {
       return null; // Don't show badge for final invoices (default)
@@ -252,12 +307,10 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                       <div className="text-xs text-muted-foreground">{invoice.clientEmail}</div>
                     </div>
 
-                    {/* Amount and Payment Method */}
+                    {/* Amount and Financial Info */}
                     <div className="mb-3">
                       <div className="text-lg font-bold text-foreground">{formatCurrency(invoice.amount)}</div>
-                      {invoice.paymentMethod && (
-                        <div className="text-xs text-muted-foreground">{invoice.paymentMethod}</div>
-                      )}
+                      {renderAmountInfo(invoice)}
                     </div>
 
                     {/* Status */}
@@ -388,12 +441,10 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
               <div className="text-xs text-muted-foreground">{invoice.clientEmail}</div>
             </div>
 
-            {/* Amount and Payment Method */}
+            {/* Amount and Financial Info */}
             <div className="mb-3">
               <div className="text-lg font-bold text-foreground">{formatCurrency(invoice.amount)}</div>
-              {invoice.paymentMethod && (
-                <div className="text-xs text-muted-foreground">{invoice.paymentMethod}</div>
-              )}
+              {renderAmountInfo(invoice)}
             </div>
 
             {/* Status */}
@@ -631,9 +682,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-foreground">{formatCurrency(invoice.amount)}</div>
-                          {invoice.paymentMethod && (
-                            <div className="text-xs text-muted-foreground">{invoice.paymentMethod}</div>
-                          )}
+                          {renderAmountInfo(invoice)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex flex-col space-y-1">
@@ -741,9 +790,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-foreground">{formatCurrency(invoice.amount)}</div>
-                      {invoice.paymentMethod && (
-                        <div className="text-xs text-muted-foreground">{invoice.paymentMethod}</div>
-                      )}
+                      {renderAmountInfo(invoice)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col space-y-1">

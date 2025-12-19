@@ -403,26 +403,30 @@ serve(async (req) => {
             : '';
           
           // Deposit section HTML
-          // Check if deposit is enabled: if deposit_amount > 0, then deposit is enabled
+          // Check if deposit is enabled: check both deposit_enabled flag and deposit_amount > 0
           // deposit_amount comes from quotes.deposit_amount column
           const depositAmountStr = emailData.variables?.deposit_amount || '0€';
-          const depositAmountNum = parseFloat(depositAmountStr.replace(/[^\d,.-]/g, '').replace(',', '.'));
-          const depositEnabled = depositAmountNum > 0; // Deposit is enabled if amount > 0
+          const depositAmountNum = parseFloat(depositAmountStr.replace(/[^\d,.-]/g, '').replace(',', '.')) || 0;
+          // Check both the explicit flag and the amount value
+          const depositEnabledFlag = emailData.variables?.deposit_enabled === 'true' || emailData.variables?.deposit_enabled === true;
+          // Deposit is enabled only if flag is true AND amount is a valid number > 0
+          const depositEnabled = depositEnabledFlag && !isNaN(depositAmountNum) && depositAmountNum > 0;
           const depositAmount = depositAmountStr;
           const balanceAmount = emailData.variables?.balance_amount || emailData.variables?.quote_amount || emailData.variables?.total_with_vat || '0€';
           
           let depositSectionHtml = '';
           let depositSectionText = '';
           
+          // Only show deposit section if deposit is explicitly enabled AND amount is greater than 0
           if (depositEnabled && depositAmountNum > 0) {
-            // Deposit enabled - show deposit information
+            // Deposit enabled - show deposit information (simple white background, matching amount style)
             depositSectionHtml = `
-              <div style="background: #fef3c7; padding: 12px; border-radius: 6px; margin-top: 12px; border-left: 4px solid #f59e0b;">
+              <div style="background: white; padding: 12px; border-radius: 6px; margin-top: 12px; border-left: 4px solid #059669;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                  <span style="color: #92400e; font-weight: bold;">${isFrench ? 'Acompte à la commande:' : isDutch ? 'Voorschot bij bestelling:' : 'Advance Payment:'}</span>
-                  <span style="color: #92400e; font-weight: bold; font-size: 14px;">${depositAmount}</span>
+                  <span style="color: #333; font-weight: bold;">${isFrench ? 'Acompte à la commande:' : isDutch ? 'Voorschot bij bestelling:' : 'Advance Payment:'}</span>
+                  <span style="color: #333; font-weight: bold; font-size: 14px;">${depositAmount}</span>
                 </div>
-                <p style="margin: 0; color: #78350f; font-size: 13px; font-style: italic;">${isFrench ? 'Montant à payer avant le début des travaux' : isDutch ? 'Bedrag te betalen vóór aanvang van het werk' : 'Amount to pay before work starts'}</p>
+                <p style="margin: 0; color: #666; font-size: 13px; font-style: italic;">${isFrench ? 'Montant à payer avant le début des travaux' : isDutch ? 'Bedrag te betalen vóór aanvang van het werk' : 'Amount to pay before work starts'}</p>
               </div>`;
             
             depositSectionText = `\n⚠️ ${isFrench ? 'ACOMPTE À LA COMMANDE' : isDutch ? 'VOORSCHOT BIJ BESTELLING' : 'ADVANCE PAYMENT'}: ${depositAmount}\n${isFrench ? '(Montant à payer avant le début des travaux)' : isDutch ? '(Bedrag te betalen vóór aanvang van het werk)' : '(Amount to pay before work starts)'}\n`;
@@ -432,12 +436,13 @@ serve(async (req) => {
           let balanceSectionHtml = '';
           let balanceSectionText = '';
           
+          // Only show balance section if deposit is explicitly enabled AND amount is greater than 0
           if (depositEnabled && depositAmountNum > 0) {
             balanceSectionHtml = `
-              <div style="background: #dbeafe; padding: 12px; border-radius: 6px; margin-top: 12px; border-left: 4px solid #3b82f6;">
+              <div style="background: white; padding: 12px; border-radius: 6px; margin-top: 12px; border-left: 4px solid #059669;">
                 <div style="display: flex; justify-content: space-between;">
-                  <span style="color: #1e40af; font-weight: bold;">${isFrench ? 'Montant total à payer après travaux:' : isDutch ? 'Totaalbedrag te betalen na werk:' : 'Total Amount to Pay after work:'}</span>
-                  <span style="color: #1e40af; font-weight: bold; font-size: 14px;">${balanceAmount}</span>
+                  <span style="color: #333; font-weight: bold;">${isFrench ? 'Montant total à payer après travaux:' : isDutch ? 'Totaalbedrag te betalen na werk:' : 'Total Amount to Pay after work:'}</span>
+                  <span style="color: #333; font-weight: bold; font-size: 14px;">${balanceAmount}</span>
                 </div>
               </div>`;
             

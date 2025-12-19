@@ -325,6 +325,16 @@ const InvoicesManagement = () => {
         return;
       }
 
+      // Check if deposit invoice is paid for the same quote (for final invoices)
+      let depositInvoiceStatus = null;
+      if (invoice.invoiceType === 'final' && invoice.quoteId) {
+        const depositInvoice = invoices.find(inv => 
+          inv.invoiceType === 'deposit' && 
+          inv.quoteId === invoice.quoteId
+        );
+        depositInvoiceStatus = depositInvoice?.status || null;
+      }
+      
       // Prepare invoice data for PDF generation
       const invoiceData = {
         companyInfo,
@@ -352,7 +362,8 @@ const InvoicesManagement = () => {
           invoice_type: invoice.invoiceType || invoice.invoice_type || 'final',
           peppol_metadata: invoice.peppol_metadata || null
         },
-        quote: invoice.quote || null
+        quote: invoice.quote || null,
+        depositInvoiceStatus: depositInvoiceStatus // Pass deposit invoice status for PDF generation
       };
 
       const invoiceNumber = invoice.number || invoice.invoice_number || 'INV-001';
@@ -782,6 +793,7 @@ const InvoicesManagement = () => {
               setIsDetailModalOpen(false);
               setSelectedInvoice(null);
             }}
+            allInvoices={invoices}
           />
 
           {/* Send Invoice Modal */}

@@ -604,7 +604,10 @@ const ExpenseInvoicesManagement = () => {
         ...newInvoice,
         amount: parseFloat(newInvoice.amount) || 0,
         netAmount: parseFloat(newInvoice.netAmount) || parseFloat(newInvoice.amount) || 0,
-        vatAmount: parseFloat(newInvoice.vatAmount) || 0
+        vatAmount: parseFloat(newInvoice.vatAmount) || 0,
+        invoiceType: newInvoice.invoiceType || 'final',
+        depositAmount: newInvoice.depositAmount || null,
+        balanceAmount: newInvoice.balanceAmount || null
       };
       
       const expenseService = new ExpenseInvoicesService();
@@ -632,6 +635,19 @@ const ExpenseInvoicesManagement = () => {
       // Use centralized calculation function to ensure consistency
       // Use values directly from form - no calculations
       // Values should be provided by user or from UBL XML
+      // Prepare peppol_metadata with deposit/balance info if invoice_type is set
+      const existingMetadata = updatedInvoice.peppol_metadata || {};
+      const peppolMetadata = { ...existingMetadata };
+      if (updatedInvoice.invoiceType) {
+        peppolMetadata.invoice_type = updatedInvoice.invoiceType;
+        if (updatedInvoice.depositAmount !== null && updatedInvoice.depositAmount !== undefined) {
+          peppolMetadata.deposit_amount = parseFloat(updatedInvoice.depositAmount) || 0;
+        }
+        if (updatedInvoice.balanceAmount !== null && updatedInvoice.balanceAmount !== undefined) {
+          peppolMetadata.balance_amount = parseFloat(updatedInvoice.balanceAmount) || 0;
+        }
+      }
+
       const expenseService = new ExpenseInvoicesService();
       const result = await expenseService.updateExpenseInvoice(invoiceId, {
         supplier_name: updatedInvoice.supplierName,
@@ -642,10 +658,12 @@ const ExpenseInvoicesManagement = () => {
         net_amount: parseFloat(updatedInvoice.netAmount) || parseFloat(updatedInvoice.amount) || 0,
         vat_amount: parseFloat(updatedInvoice.vatAmount) || 0,
         category: updatedInvoice.category || null,
+        invoice_type: updatedInvoice.invoiceType || 'final',
         issue_date: updatedInvoice.issueDate,
         due_date: updatedInvoice.dueDate,
         payment_method: updatedInvoice.paymentMethod || null,
-        notes: updatedInvoice.notes || null
+        notes: updatedInvoice.notes || null,
+        peppol_metadata: Object.keys(peppolMetadata).length > 0 ? peppolMetadata : null
       });
       
       if (result.success) {

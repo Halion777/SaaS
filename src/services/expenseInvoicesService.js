@@ -119,6 +119,32 @@ export class ExpenseInvoicesService {
         throw new Error('User not authenticated');
       }
 
+      // Prepare peppol_metadata with deposit/balance info if invoice_type is set
+      const peppolMetadata = {};
+      if (invoiceData.invoiceType) {
+        peppolMetadata.invoice_type = invoiceData.invoiceType;
+        const depositAmount = invoiceData.depositAmount !== null && invoiceData.depositAmount !== undefined 
+          ? parseFloat(invoiceData.depositAmount) || 0 
+          : 0;
+        const balanceAmount = invoiceData.balanceAmount !== null && invoiceData.balanceAmount !== undefined 
+          ? parseFloat(invoiceData.balanceAmount) || 0 
+          : 0;
+        
+        if (invoiceData.invoiceType === 'deposit') {
+          // Deposit invoice: amount = deposit, store deposit and balance in metadata
+          peppolMetadata.deposit_amount = depositAmount || parseFloat(invoiceData.amount);
+          if (balanceAmount > 0) {
+            peppolMetadata.balance_amount = balanceAmount;
+          }
+        } else if (invoiceData.invoiceType === 'final') {
+          // Final invoice: amount = balance, store deposit and balance in metadata
+          if (depositAmount > 0) {
+            peppolMetadata.deposit_amount = depositAmount;
+          }
+          peppolMetadata.balance_amount = balanceAmount || parseFloat(invoiceData.amount);
+        }
+      }
+
       // Insert the main invoice record
       let { data: invoice, error: invoiceError } = await supabase
         .from(this.tableName)
@@ -134,10 +160,12 @@ export class ExpenseInvoicesService {
           status: 'pending',
           category: invoiceData.category || null,
           source: invoiceData.source || 'manual',
+          invoice_type: invoiceData.invoiceType || 'final',
           issue_date: invoiceData.issueDate || new Date().toISOString().split('T')[0],
           due_date: invoiceData.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           payment_method: invoiceData.paymentMethod || null,
-          notes: invoiceData.notes || null
+          notes: invoiceData.notes || null,
+          peppol_metadata: Object.keys(peppolMetadata).length > 0 ? peppolMetadata : null
         }])
         .select()
         .single();

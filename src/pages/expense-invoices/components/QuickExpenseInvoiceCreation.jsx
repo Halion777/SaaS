@@ -21,6 +21,8 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
     category: '',
     source: 'manual',
     invoiceType: 'final',
+    depositAmount: '', // For deposit invoices: amount to pay before work
+    balanceAmount: '', // For final invoices: amount to pay after work (calculated)
     issueDate: '',
     dueDate: '',
     paymentMethod: '',
@@ -96,6 +98,8 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
         category: invoiceToEdit.category || '',
         source: invoiceToEdit.source || 'manual',
         invoiceType: invoiceToEdit.invoice_type || 'final',
+        depositAmount: invoiceToEdit.peppol_metadata?.deposit_amount?.toString() || '',
+        balanceAmount: invoiceToEdit.peppol_metadata?.balance_amount?.toString() || '',
         issueDate: invoiceToEdit.issue_date || '',
         dueDate: invoiceToEdit.due_date || '',
         paymentMethod: invoiceToEdit.payment_method || '',
@@ -115,6 +119,8 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
         category: '',
         source: 'manual',
         invoiceType: 'final',
+        depositAmount: '',
+        balanceAmount: '',
         issueDate: '',
         dueDate: '',
         paymentMethod: '',
@@ -353,6 +359,8 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
         category: formData.category,
         source: formData.source,
         invoiceType: formData.invoiceType || 'final',
+        depositAmount: formData.depositAmount ? parseAmount(formData.depositAmount) : null,
+        balanceAmount: formData.balanceAmount ? parseAmount(formData.balanceAmount) : null,
         issueDate: formData.issueDate || new Date().toISOString().split('T')[0],
         dueDate: formData.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         paymentMethod: formData.paymentMethod,
@@ -765,7 +773,20 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
                   </label>
                   <Select
                     value={formData.invoiceType}
-                    onValueChange={(value) => handleInputChange('invoiceType', value)}
+                    onValueChange={(value) => {
+                      handleInputChange('invoiceType', value);
+                      // When switching to deposit, set deposit amount to total amount if not already set
+                      if (value === 'deposit') {
+                        const total = parseAmount(formData.amount);
+                        const currentDeposit = parseAmount(formData.depositAmount);
+                        if (total > 0 && currentDeposit === 0) {
+                          handleInputChange('depositAmount', formData.amount);
+                        }
+                      }
+                      // When switching to final, calculate balance if deposit exists
+                      // Note: For final invoices, the amount should be the balance (remaining after deposit)
+                      // So we don't auto-calculate here - user should enter the correct balance amount
+                    }}
                     options={[
                       { value: 'final', label: t('expenseInvoices.createModal.invoiceType.final', 'Final Invoice') },
                       { value: 'deposit', label: t('expenseInvoices.createModal.invoiceType.deposit', 'Deposit Invoice') }
@@ -773,6 +794,144 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
                     placeholder={t('expenseInvoices.createModal.invoiceType.select', 'Select invoice type')}
                   />
                 </div>
+
+                {/* Deposit Amount - shown when invoice type is deposit */}
+                {formData.invoiceType === 'deposit' && (
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      {t('expenseInvoices.createModal.fields.depositAmount', 'Deposit Amount (€)')} *
+                    </label>
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      value={formData.depositAmount || formData.amount}
+                      onChange={(e) => {
+                        let value = e.target.value;
+                        value = value.replace(/[^\d,.\s]/g, '');
+                        const hasComma = value.includes(',');
+                        const hasDot = value.includes('.');
+                        if (hasComma && hasDot) {
+                          const lastComma = value.lastIndexOf(',');
+                          const lastDot = value.lastIndexOf('.');
+                          if (lastComma > lastDot) {
+                            value = value.replace(/\./g, '');
+                          } else {
+                            value = value.replace(/,/g, '');
+                          }
+                        }
+                        handleInputChange('depositAmount', value);
+                        // For deposit invoices, amount = deposit amount
+                        handleInputChange('amount', value);
+                      }}
+                      placeholder="0,00"
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {t('expenseInvoices.createModal.fields.depositAmountHelp', 'Amount to pay before work')}
+                    </p>
+                    
+                    {/* Optional: Balance Amount for deposit invoices (to calculate total) */}
+                    <div className="mt-3">
+                      <label className="block text-sm font-medium text-muted-foreground mb-2">
+                        {t('expenseInvoices.createModal.fields.balanceAmount', 'Balance Amount (€)')} {t('expenseInvoices.createModal.fields.optional', '(Optional)')}
+                      </label>
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        value={formData.balanceAmount}
+                        onChange={(e) => {
+                          let value = e.target.value;
+                          value = value.replace(/[^\d,.\s]/g, '');
+                          const hasComma = value.includes(',');
+                          const hasDot = value.includes('.');
+                          if (hasComma && hasDot) {
+                            const lastComma = value.lastIndexOf(',');
+                            const lastDot = value.lastIndexOf('.');
+                            if (lastComma > lastDot) {
+                              value = value.replace(/\./g, '');
+                            } else {
+                              value = value.replace(/,/g, '');
+                            }
+                          }
+                          handleInputChange('balanceAmount', value);
+                        }}
+                        placeholder="0,00"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {t('expenseInvoices.createModal.fields.balanceAmountHelpDeposit', 'Remaining amount to pay after work (optional, for reference)')}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Balance Amount - shown when invoice type is final */}
+                {formData.invoiceType === 'final' && (
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      {t('expenseInvoices.createModal.fields.balanceAmount', 'Balance Amount (€)')} *
+                    </label>
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      value={formData.balanceAmount || formData.amount}
+                      onChange={(e) => {
+                        let value = e.target.value;
+                        value = value.replace(/[^\d,.\s]/g, '');
+                        const hasComma = value.includes(',');
+                        const hasDot = value.includes('.');
+                        if (hasComma && hasDot) {
+                          const lastComma = value.lastIndexOf(',');
+                          const lastDot = value.lastIndexOf('.');
+                          if (lastComma > lastDot) {
+                            value = value.replace(/\./g, '');
+                          } else {
+                            value = value.replace(/,/g, '');
+                          }
+                        }
+                        handleInputChange('balanceAmount', value);
+                        // For final invoices, amount = balance amount (what's left to pay)
+                        handleInputChange('amount', value);
+                      }}
+                      placeholder="0,00"
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {t('expenseInvoices.createModal.fields.balanceAmountHelp', 'Amount to pay after work')}
+                    </p>
+                    
+                    {/* Optional: Deposit Amount for final invoices (to show what was already paid) */}
+                    <div className="mt-3">
+                      <label className="block text-sm font-medium text-muted-foreground mb-2">
+                        {t('expenseInvoices.createModal.fields.depositAmount', 'Deposit Amount (€)')} {t('expenseInvoices.createModal.fields.optional', '(Optional)')}
+                      </label>
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        value={formData.depositAmount}
+                        onChange={(e) => {
+                          let value = e.target.value;
+                          value = value.replace(/[^\d,.\s]/g, '');
+                          const hasComma = value.includes(',');
+                          const hasDot = value.includes('.');
+                          if (hasComma && hasDot) {
+                            const lastComma = value.lastIndexOf(',');
+                            const lastDot = value.lastIndexOf('.');
+                            if (lastComma > lastDot) {
+                              value = value.replace(/\./g, '');
+                            } else {
+                              value = value.replace(/,/g, '');
+                            }
+                          }
+                          handleInputChange('depositAmount', value);
+                        }}
+                        placeholder="0,00"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {t('expenseInvoices.createModal.fields.depositAmountHelpFinal', 'Amount already paid before work (optional, for reference)')}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">

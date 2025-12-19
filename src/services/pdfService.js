@@ -547,6 +547,7 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
   let balanceAmount = total;
   let depositEnabled = false;
   let totalWithVAT = subtotal + taxAmount;
+  let isDepositPaid = false; // Check if deposit invoice is paid (for final invoices)
   
   if (quote && (quote.deposit_amount !== undefined || quote.balance_amount !== undefined)) {
     // Get deposit info directly from quote table columns
@@ -559,6 +560,11 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
       totalWithVAT = balanceAmount + depositAmount;
     } else {
       totalWithVAT = subtotal + taxAmount;
+    }
+    
+    // Check if deposit invoice is paid (from invoiceData if provided)
+    if (invoiceData.depositInvoiceStatus === 'paid' || invoice.deposit_invoice_status === 'paid') {
+      isDepositPaid = true;
     }
   } else if (invoice.peppol_metadata && typeof invoice.peppol_metadata === 'object') {
     // Get deposit info from invoice's peppol_metadata (for converted invoices)
@@ -573,6 +579,11 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
       balanceAmount = typeof metadata.balance_amount === 'number' ? metadata.balance_amount :
                       parseFloat(metadata.balance_amount || total);
       totalWithVAT = balanceAmount + depositAmount;
+    }
+    
+    // Check deposit status from metadata or invoiceData
+    if (metadata.deposit_invoice_status === 'paid' || invoiceData.depositInvoiceStatus === 'paid' || invoice.deposit_invoice_status === 'paid') {
+      isDepositPaid = true;
     }
   }
   
@@ -616,11 +627,19 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
         <div style="text-align: right; flex: 1;">
           <h2 style="margin: 0 0 10px 0; font-size: 18px; color: ${primaryColor}; font-weight: bold; letter-spacing: 1px;">${t.invoice}</h2>
           <p style="margin: 5px 0; font-size: 16px; color: ${primaryColor}; font-weight: bold;">${escapeHtml(invoiceNumber || 'N/A')}</p>
-          ${isDepositInvoice ? `<div style="margin: 8px 0; padding: 6px 12px; background-color: #dbeafe; border: 2px solid #3b82f6; border-radius: 6px; display: inline-block;">
-            <p style="margin: 0; font-size: 11px; font-weight: bold; color: #1e40af; text-transform: uppercase;">${language === 'fr' ? 'FACTURE D\'ACOMPTE' : language === 'en' ? 'DEPOSIT INVOICE' : 'AANBETALINGSFACTUUR'}</p>
-          </div>` : isFinalInvoice && depositEnabled && depositAmount > 0 ? `<div style="margin: 8px 0; padding: 6px 12px; background-color: #d1fae5; border: 2px solid #10b981; border-radius: 6px; display: inline-block;">
-            <p style="margin: 0; font-size: 11px; font-weight: bold; color: #065f46; text-transform: uppercase;">${language === 'fr' ? 'ACOMPTE PAYÉ' : language === 'en' ? 'PAID DEPOSIT' : 'BETAALD VOORSCHOT'}</p>
-          </div>` : ''}
+          ${(() => {
+            // Only show badge if we have valid invoice type and conditions
+            if (isDepositInvoice && depositAmount > 0) {
+              return `<div style="margin: 8px 0; padding: 6px 12px; background-color: #dbeafe; border: 2px solid #3b82f6; border-radius: 6px; display: inline-block;">
+                <p style="margin: 0; font-size: 11px; font-weight: bold; color: #1e40af; text-transform: uppercase;">${language === 'fr' ? 'FACTURE D\'ACOMPTE' : language === 'en' ? 'DEPOSIT INVOICE' : 'AANBETALINGSFACTUUR'}</p>
+              </div>`;
+            } else if (isFinalInvoice && depositEnabled && depositAmount > 0) {
+              return `<div style="margin: 8px 0; padding: 6px 12px; background-color: #d1fae5; border: 2px solid #10b981; border-radius: 6px; display: inline-block;">
+                <p style="margin: 0; font-size: 11px; font-weight: bold; color: #065f46; text-transform: uppercase;">${language === 'fr' ? 'ACOMPTE PAYÉ' : language === 'en' ? 'PAID DEPOSIT' : 'BETAALD VOORSCHOT'}</p>
+              </div>`;
+            }
+            return '';
+          })()}
           <p style="margin: 3px 0; color: ${secondaryColor}; font-size: 11px;">${t.date} ${currentDate}</p>
           ${dueDate ? `<p style="margin: 3px 0; color: ${secondaryColor}; font-size: 11px;">${t.due} ${dueDate}</p>` : ''}
         </div>
@@ -727,28 +746,38 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
             ` : ''}
             ${depositEnabled && depositAmount > 0 ? `
             ${isDepositInvoice ? `
-            <!-- Deposit Invoice: Show only deposit info, bold -->
+            <!-- Deposit Invoice: Show deposit info, remaining balance (highlighted), and total -->
             <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'PAIEMENT AVANT TRAVAUX:' : language === 'en' ? 'PAYMENT BEFORE WORK:' : 'BETALING VOOR WERK:'}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(depositAmount)} €</td>
             </tr>
-            <tr style="background-color: #f0f9ff; border-left: 4px solid #3b82f6;">
-              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: 600; color: #1e40af; font-size: 10px; font-style: italic;" colspan="5">
-                ${language === 'fr' ? 'Paiement final après travaux: ' : language === 'en' ? 'Final payment after work: ' : 'Eindbetaling na werk: '}
-                <span style="font-weight: bold;">${formatNumberWithComma(balanceAmount)} €</span>
-              </td>
+            ${balanceAmount > 0 ? `
+            <tr style="background-color: #dbeafe; border-left: 4px solid #3b82f6;">
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: #1e40af; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'MONTANT RESTANT À PAYER APRÈS TRAVAUX:' : language === 'en' ? 'REMAINING AMOUNT TO PAY AFTER WORK:' : 'RESTEREND BEDRAG TE BETALEN NA WERK:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: #1e40af; font-size: 14px;">${formatNumberWithComma(balanceAmount)} €</td>
+            </tr>
+            ` : ''}
+            <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(totalWithVAT)} €</td>
             </tr>
             ` : isFinalInvoice ? `
-            <!-- Final Invoice: Show only final info, bold, with paid deposit badge -->
+            <!-- Final Invoice: Show remaining amount to pay (highlighted like Payment before work), then paid deposit (if paid), then total -->
+            <tr style="background-color: #dbeafe; border-left: 4px solid #3b82f6;">
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: #1e40af; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'MONTANT RESTANT À PAYER:' : language === 'en' ? 'REMAINING AMOUNT TO PAY:' : 'RESTEREND BEDRAG TE BETALEN:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: #1e40af; font-size: 14px;">${formatNumberWithComma(balanceAmount)} €</td>
+            </tr>
+            ${isDepositPaid ? `
             <tr style="background-color: #f0fdf4; border-left: 4px solid #10b981;">
               <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: 600; color: #065f46; font-size: 10px; font-style: italic;" colspan="5">
                 ${language === 'fr' ? '✓ Acompte payé: ' : language === 'en' ? '✓ Paid deposit: ' : '✓ Betaald voorschot: '}
                 <span style="font-weight: bold;">${formatNumberWithComma(depositAmount)} €</span>
               </td>
             </tr>
+            ` : ''}
             <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'PAIEMENT APRÈS TRAVAUX:' : language === 'en' ? 'PAYMENT AFTER WORK:' : 'BETALING NA WERK:'}</td>
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(balanceAmount)} €</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(totalWithVAT)} €</td>
             </tr>
             ` : `
             <!-- No deposit/final distinction: Show both (backward compatibility) -->
@@ -776,7 +805,8 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
         </table>
       </div>
       
-      <!-- PDF Warning Notice -->
+      <!-- PDF Warning Notice - Only show for professional clients (companies), not individual clients -->
+      ${(client?.client_type === 'company' || client?.client_type === 'professional' || client?.type === 'company' || client?.type === 'professional') ? `
       <div style="margin-top: 40px; padding: 15px; background-color: #fef3c7; border: 2px solid #f59e0b; border-radius: 6px;">
         <div style="display: flex; align-items: flex-start; gap: 10px;">
           <div style="flex-shrink: 0; color: #d97706; font-size: 16px; font-weight: bold;">⚠</div>
@@ -786,6 +816,7 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
           </div>
         </div>
       </div>
+      ` : ''}
       
     </div>
   `;
@@ -1104,11 +1135,19 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
     } else {
       balanceAmount = totalWithVAT;
     }
+    
+    // Check deposit status from metadata or invoiceData
+    if (metadata.deposit_invoice_status === 'paid' || expenseInvoiceData.depositInvoiceStatus === 'paid' || invoice.deposit_invoice_status === 'paid') {
+      isDepositPaid = true;
+    }
   } else {
-    // Manual invoice - check if deposit info exists in invoice object itself
-    // (similar to how client invoices check quote table)
-    const manualDepositAmount = parseFloat(invoice.deposit_amount || 0);
-    const manualBalanceAmount = parseFloat(invoice.balance_amount || 0);
+    // Manual invoice - check if deposit info exists in peppol_metadata or invoice object
+    // For expense invoices, deposit/balance are stored in peppol_metadata
+    const metadata = invoice.peppol_metadata || {};
+    const manualDepositAmount = typeof metadata.deposit_amount === 'number' ? metadata.deposit_amount :
+                                parseFloat(metadata.deposit_amount || invoice.deposit_amount || 0);
+    const manualBalanceAmount = typeof metadata.balance_amount === 'number' ? metadata.balance_amount :
+                                parseFloat(metadata.balance_amount || invoice.balance_amount || 0);
     
     total = parseFloat(invoice.amount || 0);
     netAmount = parseFloat(invoice.net_amount || 0);
@@ -1116,10 +1155,22 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
     totalWithVAT = total; // For manual invoices, amount is already total with VAT
     
     // Check if deposit is enabled for manual invoices
+    // For deposit invoices: amount = deposit, total = deposit + balance (stored in metadata)
+    // For final invoices: amount = balance, deposit is stored in metadata
     if (manualDepositAmount > 0) {
       depositAmount = manualDepositAmount;
       depositEnabled = true;
-      balanceAmount = manualBalanceAmount > 0 ? manualBalanceAmount : (totalWithVAT - depositAmount);
+      // If it's a deposit invoice, total = deposit + balance
+      // If it's a final invoice, amount = balance, total = deposit + balance
+      if (finalInvoiceType === 'deposit') {
+        // Deposit invoice: amount is deposit, calculate total from deposit + balance
+        balanceAmount = manualBalanceAmount > 0 ? manualBalanceAmount : 0;
+        totalWithVAT = depositAmount + balanceAmount;
+      } else {
+        // Final invoice: amount is balance, total = deposit + balance
+        balanceAmount = manualBalanceAmount > 0 ? manualBalanceAmount : total;
+        totalWithVAT = depositAmount + balanceAmount;
+      }
     } else {
       depositAmount = 0;
       balanceAmount = totalWithVAT;
@@ -1164,11 +1215,19 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
         <div style="text-align: right; flex: 1;">
           <h2 style="margin: 0 0 10px 0; font-size: 18px; color: ${primaryColor}; font-weight: bold; letter-spacing: 1px;">${t.invoice}</h2>
           <p style="margin: 5px 0; font-size: 16px; color: ${primaryColor}; font-weight: bold;">${escapeHtml(invoiceNumber || 'N/A')}</p>
-          ${isDepositInvoice ? `<div style="margin: 8px 0; padding: 6px 12px; background-color: #dbeafe; border: 2px solid #3b82f6; border-radius: 6px; display: inline-block;">
-            <p style="margin: 0; font-size: 11px; font-weight: bold; color: #1e40af; text-transform: uppercase;">${language === 'fr' ? 'FACTURE D\'ACOMPTE' : language === 'en' ? 'DEPOSIT INVOICE' : 'AANBETALINGSFACTUUR'}</p>
-          </div>` : isFinalInvoice && depositEnabled && depositAmount > 0 ? `<div style="margin: 8px 0; padding: 6px 12px; background-color: #d1fae5; border: 2px solid #10b981; border-radius: 6px; display: inline-block;">
-            <p style="margin: 0; font-size: 11px; font-weight: bold; color: #065f46; text-transform: uppercase;">${language === 'fr' ? 'ACOMPTE PAYÉ' : language === 'en' ? 'PAID DEPOSIT' : 'BETAALD VOORSCHOT'}</p>
-          </div>` : ''}
+          ${(() => {
+            // Only show badge if we have valid invoice type and conditions
+            if (isDepositInvoice && depositAmount > 0) {
+              return `<div style="margin: 8px 0; padding: 6px 12px; background-color: #dbeafe; border: 2px solid #3b82f6; border-radius: 6px; display: inline-block;">
+                <p style="margin: 0; font-size: 11px; font-weight: bold; color: #1e40af; text-transform: uppercase;">${language === 'fr' ? 'FACTURE D\'ACOMPTE' : language === 'en' ? 'DEPOSIT INVOICE' : 'AANBETALINGSFACTUUR'}</p>
+              </div>`;
+            } else if (isFinalInvoice && depositEnabled && depositAmount > 0) {
+              return `<div style="margin: 8px 0; padding: 6px 12px; background-color: #d1fae5; border: 2px solid #10b981; border-radius: 6px; display: inline-block;">
+                <p style="margin: 0; font-size: 11px; font-weight: bold; color: #065f46; text-transform: uppercase;">${language === 'fr' ? 'ACOMPTE PAYÉ' : language === 'en' ? 'PAID DEPOSIT' : 'BETAALD VOORSCHOT'}</p>
+              </div>`;
+            }
+            return '';
+          })()}
           <p style="margin: 3px 0; color: ${secondaryColor}; font-size: 11px;">${t.date} ${currentDate}</p>
           ${dueDate ? `<p style="margin: 3px 0; color: ${secondaryColor}; font-size: 11px;">${t.due} ${dueDate}</p>` : ''}
         </div>
@@ -1249,28 +1308,38 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
             ` : ''}
             ${depositEnabled && depositAmount > 0 ? `
             ${isDepositInvoice ? `
-            <!-- Deposit Invoice: Show only deposit info, bold -->
+            <!-- Deposit Invoice: Show deposit info, remaining balance (highlighted), and total -->
             <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'PAIEMENT AVANT TRAVAUX:' : language === 'en' ? 'PAYMENT BEFORE WORK:' : 'BETALING VOOR WERK:'}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(depositAmount)} €</td>
             </tr>
-            <tr style="background-color: #f0f9ff; border-left: 4px solid #3b82f6;">
-              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: 600; color: #1e40af; font-size: 10px; font-style: italic;" colspan="5">
-                ${language === 'fr' ? 'Paiement final après travaux: ' : language === 'en' ? 'Final payment after work: ' : 'Eindbetaling na werk: '}
-                <span style="font-weight: bold;">${formatNumberWithComma(balanceAmount)} €</span>
-              </td>
+            ${balanceAmount > 0 ? `
+            <tr style="background-color: #dbeafe; border-left: 4px solid #3b82f6;">
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: #1e40af; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'MONTANT RESTANT À PAYER APRÈS TRAVAUX:' : language === 'en' ? 'REMAINING AMOUNT TO PAY AFTER WORK:' : 'RESTEREND BEDRAG TE BETALEN NA WERK:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: #1e40af; font-size: 14px;">${formatNumberWithComma(balanceAmount)} €</td>
+            </tr>
+            ` : ''}
+            <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(totalWithVAT)} €</td>
             </tr>
             ` : isFinalInvoice ? `
-            <!-- Final Invoice: Show only final info, bold, with paid deposit badge -->
+            <!-- Final Invoice: Show remaining amount to pay (highlighted like Payment before work), then paid deposit (if paid), then total -->
+            <tr style="background-color: #dbeafe; border-left: 4px solid #3b82f6;">
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: #1e40af; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'MONTANT RESTANT À PAYER:' : language === 'en' ? 'REMAINING AMOUNT TO PAY:' : 'RESTEREND BEDRAG TE BETALEN:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: #1e40af; font-size: 14px;">${formatNumberWithComma(balanceAmount)} €</td>
+            </tr>
+            ${isDepositPaid ? `
             <tr style="background-color: #f0fdf4; border-left: 4px solid #10b981;">
               <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: 600; color: #065f46; font-size: 10px; font-style: italic;" colspan="5">
                 ${language === 'fr' ? '✓ Acompte payé: ' : language === 'en' ? '✓ Paid deposit: ' : '✓ Betaald voorschot: '}
                 <span style="font-weight: bold;">${formatNumberWithComma(depositAmount)} €</span>
               </td>
             </tr>
+            ` : ''}
             <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'PAIEMENT APRÈS TRAVAUX:' : language === 'en' ? 'PAYMENT AFTER WORK:' : 'BETALING NA WERK:'}</td>
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(balanceAmount)} €</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(totalWithVAT)} €</td>
             </tr>
             ` : `
             <!-- No deposit/final distinction: Show both (backward compatibility) -->
@@ -1298,7 +1367,7 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
         </table>
       </div>
       
-      <!-- PDF Warning Notice -->
+      <!-- PDF Warning Notice - Expense invoices are always from suppliers (companies), so always show warning -->
       <div style="margin-top: 40px; padding: 15px; background-color: #fef3c7; border: 2px solid #f59e0b; border-radius: 6px;">
         <div style="display: flex; align-items: flex-start; gap: 10px;">
           <div style="flex-shrink: 0; color: #d97706; font-size: 16px; font-weight: bold;">⚠</div>

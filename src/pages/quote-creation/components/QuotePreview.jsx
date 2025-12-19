@@ -858,29 +858,29 @@ const QuotePreview = ({
                   </tbody>
                   <tfoot>
                     <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
-                      <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">{t('quoteCreation.quotePreview.subtotalExclTax', 'SOUS-TOTAL HT:')}</td>
-                      <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{formatMoney(totalBeforeVAT)}</td>
+                      <td className={`font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ border: `1px solid ${customization.colors.primary}`, color: '#1f2937' }} colSpan="4">{t('quoteCreation.quotePreview.subtotalExclTax', 'SOUS-TOTAL HT:')}</td>
+                      <td className={`text-right font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ border: `1px solid ${customization.colors.primary}`, color: '#1f2937' }}>{formatMoney(totalBeforeVAT)}</td>
                     </tr>
                     {financialConfig.vatConfig.display && (
                       <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
-                        <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">{t('quoteCreation.quotePreview.vat', 'TVA')} ({financialConfig.vatConfig.rate}%):</td>
-                        <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{formatMoney(vatAmount)}</td>
+                        <td className={`font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ border: `1px solid ${customization.colors.primary}`, color: '#1f2937' }} colSpan="4">{t('quoteCreation.quotePreview.vat', 'TVA')} ({financialConfig.vatConfig.rate}%):</td>
+                        <td className={`text-right font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ border: `1px solid ${customization.colors.primary}`, color: '#1f2937' }}>{formatMoney(vatAmount)}</td>
                       </tr>
                     )}
                     <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
-                      <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">{t('quoteCreation.quotePreview.totalInclTax', 'TOTAL TTC:')}</td>
-                      <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{formatMoney(totalWithVAT)}</td>
+                      <td className={`font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ border: `1px solid ${customization.colors.primary}`, color: '#1f2937' }} colSpan="4">{t('quoteCreation.quotePreview.totalInclTax', 'TOTAL TTC:')}</td>
+                      <td className={`text-right font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ border: `1px solid ${customization.colors.primary}`, color: '#1f2937' }}>{formatMoney(totalWithVAT)}</td>
                     </tr>
                     {financialConfig.advanceConfig.enabled && (
                       <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
-                        <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">{t('quoteCreation.quotePreview.paymentBeforeWork', lang.startsWith('en') ? 'PAYMENT BEFORE WORK:' : lang.startsWith('nl') ? 'BETALING VOOR WERK:' : 'PAIEMENT AVANT TRAVAUX:')}</td>
-                        <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{formatMoney(depositAmount)}</td>
+                        <td className={`font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ border: `1px solid ${customization.colors.primary}`, color: '#1f2937' }} colSpan="4">{t('quoteCreation.quotePreview.paymentBeforeWork', lang.startsWith('en') ? 'PAYMENT BEFORE WORK:' : lang.startsWith('nl') ? 'BETALING VOOR WERK:' : 'PAIEMENT AVANT TRAVAUX:')}</td>
+                        <td className={`text-right font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ border: `1px solid ${customization.colors.primary}`, color: '#1f2937' }}>{formatMoney(depositAmount)}</td>
                       </tr>
                     )}
                     {financialConfig.advanceConfig.enabled && (
                       <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
-                        <td className={`border border-orange-300 font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} colSpan="4">{t('quoteCreation.quotePreview.paymentAfterWork', lang.startsWith('en') ? 'PAYMENT AFTER WORK:' : lang.startsWith('nl') ? 'BETALING NA WERK:' : 'PAIEMENT APRÈS TRAVAUX:')}</td>
-                        <td className={`border border-orange-300 text-right font-bold text-black ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`}>{formatMoney(balanceAmount)}</td>
+                        <td className={`font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ border: `1px solid ${customization.colors.primary}`, color: '#1f2937' }} colSpan="4">{t('quoteCreation.quotePreview.paymentAfterWork', lang.startsWith('en') ? 'PAYMENT AFTER WORK:' : lang.startsWith('nl') ? 'BETALING NA WERK:' : 'PAIEMENT APRÈS TRAVAUX:')}</td>
+                        <td className={`text-right font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ border: `1px solid ${customization.colors.primary}`, color: '#1f2937' }}>{formatMoney(balanceAmount)}</td>
                       </tr>
                     )}
                   </tfoot>

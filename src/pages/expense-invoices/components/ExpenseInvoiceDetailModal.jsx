@@ -298,6 +298,48 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                     <p className="text-lg font-semibold text-foreground mt-1">{formatCurrency(invoice.vat_amount || 0)}</p>
                   </div>
                 </div>
+                
+                {/* Deposit and Balance Information - shown when invoice_type is deposit or final with deposit enabled */}
+                {(() => {
+                  const invoiceType = invoice.invoice_type || invoice.peppol_metadata?.invoice_type || 'final';
+                  const depositAmount = invoice.peppol_metadata?.deposit_amount || 0;
+                  const balanceAmount = invoice.peppol_metadata?.balance_amount || 0;
+                  const depositEnabled = depositAmount > 0;
+                  
+                  if (depositEnabled && (invoiceType === 'deposit' || invoiceType === 'final')) {
+                    return (
+                      <div className="mt-4 pt-4 border-t border-border">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {invoiceType === 'deposit' && (
+                            <div>
+                              <label className="text-sm font-medium text-muted-foreground">
+                                {t('expenseInvoices.modal.financialInfo.paymentBeforeWork', 'Payment Before Work')}
+                              </label>
+                              <p className="text-lg font-bold text-blue-600 mt-1">{formatCurrency(depositAmount)}</p>
+                            </div>
+                          )}
+                          {invoiceType === 'final' && depositAmount > 0 && (
+                            <>
+                              <div>
+                                <label className="text-sm font-medium text-muted-foreground">
+                                  {t('expenseInvoices.modal.financialInfo.paidDeposit', 'Paid Deposit')}
+                                </label>
+                                <p className="text-lg font-semibold text-green-600 mt-1">{formatCurrency(depositAmount)}</p>
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium text-muted-foreground">
+                                  {t('expenseInvoices.modal.financialInfo.paymentAfterWork', 'Payment After Work')}
+                                </label>
+                                <p className="text-lg font-bold text-blue-600 mt-1">{formatCurrency(balanceAmount || invoice.amount)}</p>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
 
               {/* Notes */}

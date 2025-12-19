@@ -1,4 +1,5 @@
 
+
 -- Migration: Update quote_sent email templates to clearly show deposit information
 -- This replaces the previous templates with new ones that display deposit/advance payment clearly
 
@@ -29,18 +30,11 @@ INSERT INTO public.email_templates (
       <p style="margin: 0 0 5px 0;"><strong>Devis:</strong> {quote_number}</p>
       <p style="margin: 0 0 5px 0;"><strong>Projet:</strong> {quote_title}</p>
       <p style="margin: 0 0 5px 0;"><strong>Valable jusqu''au:</strong> {valid_until}</p>
+      <p style="margin: 0; font-weight: bold; color: #333;"><strong>Montant:</strong> {total_with_vat}</p>
     </div>
     
-    <!-- Financial Breakdown Section -->
-    <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e0e0e0; margin-bottom: 15px;">
-      <h3 style="color: #333; margin: 0 0 12px 0; font-size: 16px; font-weight: bold;">Détails financiers:</h3>
-      
-      <!-- Subtotal -->
-      <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
-        <span style="color: #666;">Sous-total HT:</span>
-        <span style="color: #333; font-size: 14px;">{total_before_vat}</span>
-      </div>
-      
+    <!-- Financial Breakdown Section - Matching invoice_sent style -->
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #059669; margin-bottom: 15px;">
       <!-- VAT (if enabled) - will be replaced by edge function -->
       {vat_section}
       
@@ -49,12 +43,6 @@ INSERT INTO public.email_templates (
       
       <!-- Total Amount to Pay after work (balance) - will be replaced by edge function only if deposit is enabled -->
       {balance_section}
-      
-      <!-- Total with VAT (Grand Total) - shown at the end -->
-      <div style="display: flex; justify-content: space-between; padding: 12px 0; border-top: 2px solid #e0e0e0; margin-top: 12px;">
-        <span style="color: #333; font-weight: bold; font-size: 16px;">Total TTC:</span>
-        <span style="color: #333; font-weight: bold; font-size: 16px;">{total_with_vat}</span>
-      </div>
     </div>
     
     <!-- Custom Message -->
@@ -78,14 +66,12 @@ Bonjour {client_name},
 Devis: {quote_number}
 Projet: {quote_title}
 Valable jusqu''au: {valid_until}
+Montant: {total_with_vat}
 
-Détails financiers:
-Sous-total HT: {total_before_vat}
 {vat_section_text}
 
 {deposit_section_text}
-Montant total à payer après travaux: {balance_amount}
-Total TTC: {total_with_vat}
+{balance_section_text}
 
 {custom_message}
 
@@ -116,18 +102,11 @@ INSERT INTO public.email_templates (
       <p style="margin: 0 0 5px 0;"><strong>Quote:</strong> {quote_number}</p>
       <p style="margin: 0 0 5px 0;"><strong>Project:</strong> {quote_title}</p>
       <p style="margin: 0 0 5px 0;"><strong>Valid until:</strong> {valid_until}</p>
+      <p style="margin: 0; font-weight: bold; color: #333;"><strong>Amount:</strong> {total_with_vat}</p>
     </div>
     
-    <!-- Financial Breakdown Section -->
-    <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e0e0e0; margin-bottom: 15px;">
-      <h3 style="color: #333; margin: 0 0 12px 0; font-size: 16px; font-weight: bold;">Financial Details:</h3>
-      
-      <!-- Subtotal -->
-      <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
-        <span style="color: #666;">Subtotal (excl. VAT):</span>
-        <span style="color: #333; font-size: 14px;">{total_before_vat}</span>
-      </div>
-      
+    <!-- Financial Breakdown Section - Matching invoice_sent style -->
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #059669; margin-bottom: 15px;">
       <!-- VAT (if enabled) - will be replaced by edge function -->
       {vat_section}
       
@@ -136,12 +115,6 @@ INSERT INTO public.email_templates (
       
       <!-- Total Amount to Pay after work (balance) - will be replaced by edge function only if deposit is enabled -->
       {balance_section}
-      
-      <!-- Total with VAT (Grand Total) - shown at the end -->
-      <div style="display: flex; justify-content: space-between; padding: 12px 0; border-top: 2px solid #e0e0e0; margin-top: 12px;">
-        <span style="color: #333; font-weight: bold; font-size: 16px;">Total (incl. VAT):</span>
-        <span style="color: #333; font-weight: bold; font-size: 16px;">{total_with_vat}</span>
-      </div>
     </div>
     
     <!-- Custom Message -->
@@ -165,14 +138,12 @@ Hello {client_name},
 Quote: {quote_number}
 Project: {quote_title}
 Valid until: {valid_until}
+Amount: {total_with_vat}
 
-Financial Details:
-Subtotal (excl. VAT): {total_before_vat}
 {vat_section_text}
 
 {deposit_section_text}
 {balance_section_text}
-Total (incl. VAT): {total_with_vat}
 
 {custom_message}
 
@@ -203,18 +174,11 @@ INSERT INTO public.email_templates (
       <p style="margin: 0 0 5px 0;"><strong>Offerte:</strong> {quote_number}</p>
       <p style="margin: 0 0 5px 0;"><strong>Project:</strong> {quote_title}</p>
       <p style="margin: 0 0 5px 0;"><strong>Geldig tot:</strong> {valid_until}</p>
+      <p style="margin: 0; font-weight: bold; color: #333;"><strong>Bedrag:</strong> {total_with_vat}</p>
     </div>
     
-    <!-- Financial Breakdown Section -->
-    <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e0e0e0; margin-bottom: 15px;">
-      <h3 style="color: #333; margin: 0 0 12px 0; font-size: 16px; font-weight: bold;">Financiële details:</h3>
-      
-      <!-- Subtotal -->
-      <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
-        <span style="color: #666;">Subtotaal (excl. BTW):</span>
-        <span style="color: #333; font-size: 14px;">{total_before_vat}</span>
-      </div>
-      
+    <!-- Financial Breakdown Section - Matching invoice_sent style -->
+    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #059669; margin-bottom: 15px;">
       <!-- VAT (if enabled) - will be replaced by edge function -->
       {vat_section}
       
@@ -223,12 +187,6 @@ INSERT INTO public.email_templates (
       
       <!-- Total Amount to Pay after work (balance) - will be replaced by edge function only if deposit is enabled -->
       {balance_section}
-      
-      <!-- Total with VAT (Grand Total) - shown at the end -->
-      <div style="display: flex; justify-content: space-between; padding: 12px 0; border-top: 2px solid #e0e0e0; margin-top: 12px;">
-        <span style="color: #333; font-weight: bold; font-size: 16px;">Totaal (incl. BTW):</span>
-        <span style="color: #333; font-weight: bold; font-size: 16px;">{total_with_vat}</span>
-      </div>
     </div>
     
     <!-- Custom Message -->
@@ -252,14 +210,12 @@ Beste {client_name},
 Offerte: {quote_number}
 Project: {quote_title}
 Geldig tot: {valid_until}
+Bedrag: {total_with_vat}
 
-Financiële details:
-Subtotaal (excl. BTW): {total_before_vat}
 {vat_section_text}
 
 {deposit_section_text}
 {balance_section_text}
-Totaal (incl. BTW): {total_with_vat}
 
 {custom_message}
 

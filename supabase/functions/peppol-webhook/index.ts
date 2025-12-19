@@ -1030,14 +1030,38 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
       }
     }
 
-    // Extract invoice_type from payment terms Note field if present
-    // Format: "Net within X days | INVOICE_TYPE:deposit" or "Net within X days | INVOICE_TYPE:final"
+    // Extract invoice_type and deposit/balance amounts from payment terms Note field if present
+    // Format: "Net within X days | INVOICE_TYPE:deposit | DEPOSIT_AMOUNT:100 | BALANCE_AMOUNT:200"
     let invoiceType: string = 'final'; // Default to final
+    let depositAmount: number = 0;
+    let balanceAmount: number = 0;
     const paymentTermsNote = invoiceData.payment?.terms || '';
     if (paymentTermsNote) {
       const invoiceTypeMatch = paymentTermsNote.match(/INVOICE_TYPE:(deposit|final)/i);
       if (invoiceTypeMatch && invoiceTypeMatch[1]) {
         invoiceType = invoiceTypeMatch[1].toLowerCase();
+      }
+      
+      // Extract deposit amount if present
+      const depositMatch = paymentTermsNote.match(/DEPOSIT_AMOUNT:([\d.,]+)/i);
+      if (depositMatch && depositMatch[1]) {
+        depositAmount = parseFloat(depositMatch[1].replace(',', '.')) || 0;
+      }
+      
+      // Extract balance amount if present
+      const balanceMatch = paymentTermsNote.match(/BALANCE_AMOUNT:([\d.,]+)/i);
+      if (balanceMatch && balanceMatch[1]) {
+        balanceAmount = parseFloat(balanceMatch[1].replace(',', '.')) || 0;
+      }
+      
+      // If invoice_type is deposit but no deposit amount extracted, use totalAmount as deposit
+      if (invoiceType === 'deposit' && depositAmount === 0) {
+        depositAmount = totalAmount;
+      }
+      
+      // If invoice_type is final but no balance amount extracted, use totalAmount as balance
+      if (invoiceType === 'final' && balanceAmount === 0 && depositAmount > 0) {
+        balanceAmount = totalAmount;
       }
     }
 
@@ -1089,19 +1113,13 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
           customer: invoiceData.customer || {},
           totals: invoiceData.totals || {},
           // Store PDF attachment path if available
-          pdfAttachmentPath: pdfAttachmentPath || null
+          pdfAttachmentPath: pdfAttachmentPath || null,
+          // Store invoice_type and deposit/balance amounts for PDF generation
+          invoice_type: invoiceType,
+          deposit_amount: depositAmount > 0 ? depositAmount : null,
+          balance_amount: balanceAmount > 0 ? balanceAmount : null
         }
     };
-
-    console.log('[Peppol Webhook] Inserting expense invoice payload:', {
-      invoice_number: insertPayload.invoice_number,
-      amount: insertPayload.amount,
-      net_amount: insertPayload.net_amount,
-      vat_amount: insertPayload.vat_amount,
-      supplier_name: insertPayload.supplier_name,
-      supplier_vat_number: insertPayload.supplier_vat_number
-    });
-
     const { data: expenseInvoice, error: expenseError } = await supabase
       .from('expense_invoices')
       .insert(insertPayload)

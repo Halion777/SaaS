@@ -129,6 +129,8 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
       const clientName = invoice.client?.name || invoice.clientName || t('invoicesManagement.sendEmailModal.client');
       const companyName = companyInfo?.name || t('invoicesManagement.sendEmailModal.yourCompany');
       
+      // Note: For PDF generation, deposit invoice status check would need all invoices
+      // This is handled in the PDF service via invoiceData.depositInvoiceStatus if provided
       // Generate invoice PDF
       const invoiceData = {
         companyInfo,
@@ -156,7 +158,8 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
           invoice_type: invoice.invoice_type || invoice.invoiceType || 'final',
           peppol_metadata: invoice.peppol_metadata || null
         },
-        quote: invoice.quote || null
+        quote: invoice.quote || null,
+        depositInvoiceStatus: invoice.depositInvoiceStatus || null // Can be passed from parent if available
       };
 
       // Generate PDF blob (hide bank info for professional clients, but show it if from invalid Peppol ID flow or Peppol failed/not sent)
