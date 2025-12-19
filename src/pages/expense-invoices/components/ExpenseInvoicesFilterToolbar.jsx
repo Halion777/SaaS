@@ -42,6 +42,12 @@ const ExpenseInvoicesFilterToolbar = ({ filters, onFiltersChange, filteredCount 
     { value: 'peppol', label: t('expenseInvoices.source.peppol', 'Peppol') }
   ];
 
+  const invoiceTypeOptions = [
+    { value: '', label: t('expenseInvoices.filter.invoiceType.all', 'All Types') },
+    { value: 'deposit', label: t('expenseInvoices.filter.invoiceType.deposit', 'Deposit Invoices') },
+    { value: 'final', label: t('expenseInvoices.filter.invoiceType.final', 'Final Invoices') }
+  ];
+
   const handleDateRangeChange = (field, value) => {
     const newRange = { ...dateRange, [field]: value };
     setDateRange(newRange);
@@ -60,6 +66,7 @@ const ExpenseInvoicesFilterToolbar = ({ filters, onFiltersChange, filteredCount 
     if (filters.status) count++;
     if (filters.category) count++;
     if (filters.source) count++;
+    if (filters.invoiceType) count++;
     if (dateRange.start || dateRange.end) count++;
     if (amountRange.min || amountRange.max) count++;
     return count;
@@ -73,6 +80,7 @@ const ExpenseInvoicesFilterToolbar = ({ filters, onFiltersChange, filteredCount 
       status: '',
       category: '',
       source: '',
+      invoiceType: '',
       dateRange: { start: '', end: '' },
       amountRange: { min: '', max: '' }
     };
@@ -148,6 +156,14 @@ const ExpenseInvoicesFilterToolbar = ({ filters, onFiltersChange, filteredCount 
             value={filters.category || ''}
             onChange={(e) => onFiltersChange({ ...filters, category: e.target.value })}
             placeholder={t('expenseInvoices.filter.category.all', 'All Categories')}
+          />
+
+          <Select
+            label={t('expenseInvoices.filter.invoiceType.label', 'Invoice Type')}
+            options={invoiceTypeOptions}
+            value={filters.invoiceType || ''}
+            onChange={(e) => onFiltersChange({ ...filters, invoiceType: e.target.value })}
+            placeholder={t('expenseInvoices.filter.invoiceType.all', 'All Types')}
           />
 
           <div className="space-y-2">
@@ -236,6 +252,19 @@ const ExpenseInvoicesFilterToolbar = ({ filters, onFiltersChange, filteredCount 
                 </button>
               </div>
             )}
+
+            {filters.invoiceType && (
+              <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
+                <span>{t('expenseInvoices.filter.chips.invoiceType', 'Type')}: {invoiceTypeOptions.find(opt => opt.value === filters.invoiceType)?.label}</span>
+                <button
+                  onClick={() => onFiltersChange({ ...filters, invoiceType: '' })}
+                  className="hover:bg-primary/20 rounded-full p-0.5"
+                  aria-label={t('expenseInvoices.filter.chips.removeInvoiceType', 'Remove invoice type filter')}
+                >
+                  <Icon name="X" size={12} />
+                </button>
+              </div>
+            )}
             
             {(dateRange.start || dateRange.end) && (
               <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
@@ -304,6 +333,14 @@ const ExpenseInvoicesFilterToolbar = ({ filters, onFiltersChange, filteredCount 
               value={filters.source || ''}
               onChange={(e) => onFiltersChange({ ...filters, source: e.target.value })}
               placeholder={t('expenseInvoices.filter.source.all', 'All Sources')}
+            />
+
+            <Select
+              label={t('expenseInvoices.filter.invoiceType.label', 'Invoice Type')}
+              options={invoiceTypeOptions}
+              value={filters.invoiceType || ''}
+              onChange={(e) => onFiltersChange({ ...filters, invoiceType: e.target.value })}
+              placeholder={t('expenseInvoices.filter.invoiceType.all', 'All Types')}
             />
 
             <div className="space-y-2">
@@ -389,6 +426,18 @@ const ExpenseInvoicesFilterToolbar = ({ filters, onFiltersChange, filteredCount 
                   </button>
                 </div>
               )}
+
+              {filters.invoiceType && (
+                <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
+                  <span>Type: {invoiceTypeOptions.find(opt => opt.value === filters.invoiceType)?.label}</span>
+                  <button
+                    onClick={() => onFiltersChange({ ...filters, invoiceType: '' })}
+                    className="hover:bg-primary/20 rounded-full p-0.5"
+                  >
+                    <Icon name="X" size={12} />
+                  </button>
+                </div>
+              )}
               
               {(dateRange.start || dateRange.end) && (
                 <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
@@ -433,6 +482,7 @@ const ExpenseInvoicesFilterToolbar = ({ filters, onFiltersChange, filteredCount 
               {filters.status && ` • ${statusOptions.find(opt => opt.value === filters.status)?.label}`}
               {filters.category && ` • ${categoryOptions.find(opt => opt.value === filters.category)?.label}`}
               {filters.source && ` • ${sourceOptions.find(opt => opt.value === filters.source)?.label}`}
+              {filters.invoiceType && ` • ${invoiceTypeOptions.find(opt => opt.value === filters.invoiceType)?.label}`}
               {(dateRange.start || dateRange.end) && ` • ${t('expenseInvoices.filter.period.label', 'Period')}`}
               {(amountRange.min || amountRange.max) && ` • ${t('expenseInvoices.filter.amount.label', 'Amount')}`}
             </span>

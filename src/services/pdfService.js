@@ -171,6 +171,11 @@ export const generateQuotePDF = async (quoteData, quoteNumber, elementToCapture)
 const generateQuoteHTML = (quoteData, quoteNumber) => {
   const { companyInfo, selectedClient, tasks, projectInfo, financialConfig, quote } = quoteData;
   
+  // Detect language from localStorage
+  const lang = (localStorage.getItem('language') || 'fr').toLowerCase();
+  const paymentBeforeWorkLabel = lang.startsWith('en') ? 'PAYMENT BEFORE WORK:' : lang.startsWith('nl') ? 'BETALING VOOR WERK:' : 'PAIEMENT AVANT TRAVAUX:';
+  const paymentAfterWorkLabel = lang.startsWith('en') ? 'PAYMENT AFTER WORK:' : lang.startsWith('nl') ? 'BETALING NA WERK:' : 'PAIEMENT APRÈS TRAVAUX:';
+  
   // Use stored values from quote table if available (for quotes loaded from database)
   // Otherwise calculate from tasks (for quotes being created)
   let totalBeforeVAT, vatAmount, totalWithVAT, depositAmount, balanceAmount;
@@ -256,11 +261,11 @@ const generateQuoteHTML = (quoteData, quoteNumber) => {
             </tr>
             ${financialConfig?.advanceConfig?.enabled ? `
             <tr style="background-color: #f9fafb;">
-              <td style="border: 1px solid #d1d5db; padding: 12px; font-weight: bold; color: ${primaryColor};">ACOMPTE À LA COMMANDE:</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px; font-weight: bold; color: ${primaryColor}; text-transform: uppercase;">${paymentBeforeWorkLabel}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px; text-align: right; font-weight: bold; color: ${primaryColor};">${formatNumberWithComma(depositAmount)} €</td>
             </tr>
             <tr style="background-color: #f9fafb;">
-              <td style="border: 1px solid #d1d5db; padding: 12px; font-weight: bold; color: ${primaryColor};">SOLDE À LA LIVRAISON:</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px; font-weight: bold; color: ${primaryColor}; text-transform: uppercase;">${paymentAfterWorkLabel}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px; text-align: right; font-weight: bold; color: ${primaryColor};">${formatNumberWithComma(balanceAmount)} €</td>
             </tr>
             ` : ''}
@@ -279,7 +284,7 @@ const generateQuoteHTML = (quoteData, quoteNumber) => {
  * @param {string} language - User's preferred language (fr, en, nl)
  * @returns {Promise<Blob>} PDF blob
  */
-export const generateInvoicePDF = async (invoiceData, invoiceNumber, elementToCapture = null, language = 'fr', hideBankInfo = false) => {
+export const generateInvoicePDF = async (invoiceData, invoiceNumber, elementToCapture = null, language = 'fr', hideBankInfo = false, invoiceType = null) => {
   try {
     let target = elementToCapture;
     
@@ -293,7 +298,7 @@ export const generateInvoicePDF = async (invoiceData, invoiceNumber, elementToCa
       tempDiv.style.backgroundColor = 'white';
       tempDiv.style.padding = '0';
       tempDiv.style.fontFamily = 'Arial, sans-serif';
-      tempDiv.innerHTML = generateInvoiceHTML(invoiceData, invoiceNumber, language, hideBankInfo);
+      tempDiv.innerHTML = generateInvoiceHTML(invoiceData, invoiceNumber, language, hideBankInfo, invoiceType);
       document.body.appendChild(tempDiv);
       target = tempDiv;
     }
@@ -380,8 +385,13 @@ export const generateInvoicePDF = async (invoiceData, invoiceNumber, elementToCa
 /**
  * Generate HTML content for the invoice (improved styling matching quote preview)
  */
-const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBankInfo = false) => {
+const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBankInfo = false, invoiceType = null) => {
   const { companyInfo, client, invoice, quote } = invoiceData;
+  
+  // Get invoice_type from parameter, invoice object, or peppol_metadata
+  const finalInvoiceType = invoiceType || invoice.invoice_type || invoice.peppol_metadata?.invoice_type || 'final';
+  const isDepositInvoice = finalInvoiceType === 'deposit';
+  const isFinalInvoice = finalInvoiceType === 'final';
   
   // Color scheme matching quote preview
   const primaryColor = '#374151'; // Dark gray
@@ -606,6 +616,11 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
         <div style="text-align: right; flex: 1;">
           <h2 style="margin: 0 0 10px 0; font-size: 18px; color: ${primaryColor}; font-weight: bold; letter-spacing: 1px;">${t.invoice}</h2>
           <p style="margin: 5px 0; font-size: 16px; color: ${primaryColor}; font-weight: bold;">${escapeHtml(invoiceNumber || 'N/A')}</p>
+          ${isDepositInvoice ? `<div style="margin: 8px 0; padding: 6px 12px; background-color: #dbeafe; border: 2px solid #3b82f6; border-radius: 6px; display: inline-block;">
+            <p style="margin: 0; font-size: 11px; font-weight: bold; color: #1e40af; text-transform: uppercase;">${language === 'fr' ? 'FACTURE D\'ACOMPTE' : language === 'en' ? 'DEPOSIT INVOICE' : 'AANBETALINGSFACTUUR'}</p>
+          </div>` : isFinalInvoice && depositEnabled && depositAmount > 0 ? `<div style="margin: 8px 0; padding: 6px 12px; background-color: #d1fae5; border: 2px solid #10b981; border-radius: 6px; display: inline-block;">
+            <p style="margin: 0; font-size: 11px; font-weight: bold; color: #065f46; text-transform: uppercase;">${language === 'fr' ? 'ACOMPTE PAYÉ' : language === 'en' ? 'PAID DEPOSIT' : 'BETAALD VOORSCHOT'}</p>
+          </div>` : ''}
           <p style="margin: 3px 0; color: ${secondaryColor}; font-size: 11px;">${t.date} ${currentDate}</p>
           ${dueDate ? `<p style="margin: 3px 0; color: ${secondaryColor}; font-size: 11px;">${t.due} ${dueDate}</p>` : ''}
         </div>
@@ -710,20 +725,53 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
               <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatNumberWithComma(taxAmount)} €</td>
             </tr>
             ` : ''}
+            ${depositEnabled && depositAmount > 0 ? `
+            ${isDepositInvoice ? `
+            <!-- Deposit Invoice: Show only deposit info, bold -->
+            <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'PAIEMENT AVANT TRAVAUX:' : language === 'en' ? 'PAYMENT BEFORE WORK:' : 'BETALING VOOR WERK:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(depositAmount)} €</td>
+            </tr>
+            <tr style="background-color: #f0f9ff; border-left: 4px solid #3b82f6;">
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: 600; color: #1e40af; font-size: 10px; font-style: italic;" colspan="5">
+                ${language === 'fr' ? 'Paiement final après travaux: ' : language === 'en' ? 'Final payment after work: ' : 'Eindbetaling na werk: '}
+                <span style="font-weight: bold;">${formatNumberWithComma(balanceAmount)} €</span>
+              </td>
+            </tr>
+            ` : isFinalInvoice ? `
+            <!-- Final Invoice: Show only final info, bold, with paid deposit badge -->
+            <tr style="background-color: #f0fdf4; border-left: 4px solid #10b981;">
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: 600; color: #065f46; font-size: 10px; font-style: italic;" colspan="5">
+                ${language === 'fr' ? '✓ Acompte payé: ' : language === 'en' ? '✓ Paid deposit: ' : '✓ Betaald voorschot: '}
+                <span style="font-weight: bold;">${formatNumberWithComma(depositAmount)} €</span>
+              </td>
+            </tr>
+            <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'PAIEMENT APRÈS TRAVAUX:' : language === 'en' ? 'PAYMENT AFTER WORK:' : 'BETALING NA WERK:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(balanceAmount)} €</td>
+            </tr>
+            ` : `
+            <!-- No deposit/final distinction: Show both (backward compatibility) -->
             <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(totalWithVAT)} €</td>
             </tr>
-            ${depositEnabled && depositAmount > 0 ? `
             <tr style="background-color: #f9fafb;">
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 11px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'ACOMPTE À LA COMMANDE:' : language === 'en' ? 'DOWN PAYMENT ON ORDER:' : 'VOORSCHOT BIJ BESTELLING:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 11px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'PAIEMENT AVANT TRAVAUX:' : language === 'en' ? 'PAYMENT BEFORE WORK:' : 'BETALING VOOR WERK:'}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 11px;">${formatNumberWithComma(depositAmount)} €</td>
             </tr>
             <tr style="background-color: #f9fafb;">
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 11px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'SOLDE À LA LIVRAISON:' : language === 'en' ? 'BALANCE ON DELIVERY:' : 'SALDO BIJ LEVERING:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 11px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'PAIEMENT APRÈS TRAVAUX:' : language === 'en' ? 'PAYMENT AFTER WORK:' : 'BETALING NA WERK:'}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 11px;">${formatNumberWithComma(balanceAmount)} €</td>
             </tr>
-            ` : ''}
+            `}
+            ` : `
+            <!-- No deposit: Show total only -->
+            <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(totalWithVAT)} €</td>
+            </tr>
+            `}
           </tfoot>
         </table>
       </div>
@@ -749,7 +797,7 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
  * @param {string} invoiceNumber - Invoice number
  * @returns {Promise<Blob>} PDF blob
  */
-export const generateExpenseInvoicePDF = async (expenseInvoiceData, invoiceNumber, language = 'fr') => {
+export const generateExpenseInvoicePDF = async (expenseInvoiceData, invoiceNumber, language = 'fr', invoiceType = null) => {
   try {
     // Create a temporary element with the expense invoice preview
     const tempDiv = document.createElement('div');
@@ -760,7 +808,7 @@ export const generateExpenseInvoicePDF = async (expenseInvoiceData, invoiceNumbe
     tempDiv.style.backgroundColor = 'white';
     tempDiv.style.padding = '0';
     tempDiv.style.fontFamily = 'Arial, sans-serif';
-    tempDiv.innerHTML = generateExpenseInvoiceHTML(expenseInvoiceData, invoiceNumber, language);
+      tempDiv.innerHTML = generateExpenseInvoiceHTML(expenseInvoiceData, invoiceNumber, language, invoiceType);
     document.body.appendChild(tempDiv);
     const target = tempDiv;
     
@@ -846,8 +894,13 @@ export const generateExpenseInvoicePDF = async (expenseInvoiceData, invoiceNumbe
 /**
  * Generate HTML content for the expense invoice
  */
-const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language = 'fr') => {
+const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language = 'fr', invoiceType = null) => {
   const { companyInfo, supplier, invoice } = expenseInvoiceData;
+  
+  // Get invoice_type from parameter, invoice object, or peppol_metadata
+  const finalInvoiceType = invoiceType || invoice.invoice_type || invoice.peppol_metadata?.invoice_type || 'final';
+  const isDepositInvoice = finalInvoiceType === 'deposit';
+  const isFinalInvoice = finalInvoiceType === 'final';
   
   // Color scheme matching client invoice PDF exactly
   const primaryColor = '#374151'; // Dark gray
@@ -1044,18 +1097,34 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
                     parseFloat(metadata.deposit_amount || 0);
     depositEnabled = depositAmount > 0; // Deposit is enabled if amount > 0
     
-    // Use EXACT balance_amount from metadata if available, otherwise use total
-    balanceAmount = typeof metadata.balance_amount === 'number' ? metadata.balance_amount :
-                    parseFloat(metadata.balance_amount || total);
+    // Use EXACT balance_amount from metadata if available, otherwise calculate from total
+    if (depositEnabled && depositAmount > 0) {
+      balanceAmount = typeof metadata.balance_amount === 'number' ? metadata.balance_amount :
+                      parseFloat(metadata.balance_amount || (totalWithVAT - depositAmount));
+    } else {
+      balanceAmount = totalWithVAT;
+    }
   } else {
-    // Manual invoice - use stored values directly (no calculation)
+    // Manual invoice - check if deposit info exists in invoice object itself
+    // (similar to how client invoices check quote table)
+    const manualDepositAmount = parseFloat(invoice.deposit_amount || 0);
+    const manualBalanceAmount = parseFloat(invoice.balance_amount || 0);
+    
     total = parseFloat(invoice.amount || 0);
     netAmount = parseFloat(invoice.net_amount || 0);
     vatAmount = parseFloat(invoice.vat_amount || 0);
     totalWithVAT = total; // For manual invoices, amount is already total with VAT
-    depositAmount = 0;
-    balanceAmount = total;
-    depositEnabled = false;
+    
+    // Check if deposit is enabled for manual invoices
+    if (manualDepositAmount > 0) {
+      depositAmount = manualDepositAmount;
+      depositEnabled = true;
+      balanceAmount = manualBalanceAmount > 0 ? manualBalanceAmount : (totalWithVAT - depositAmount);
+    } else {
+      depositAmount = 0;
+      balanceAmount = totalWithVAT;
+      depositEnabled = false;
+    }
   }
   
   // Helper to escape HTML
@@ -1095,6 +1164,11 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
         <div style="text-align: right; flex: 1;">
           <h2 style="margin: 0 0 10px 0; font-size: 18px; color: ${primaryColor}; font-weight: bold; letter-spacing: 1px;">${t.invoice}</h2>
           <p style="margin: 5px 0; font-size: 16px; color: ${primaryColor}; font-weight: bold;">${escapeHtml(invoiceNumber || 'N/A')}</p>
+          ${isDepositInvoice ? `<div style="margin: 8px 0; padding: 6px 12px; background-color: #dbeafe; border: 2px solid #3b82f6; border-radius: 6px; display: inline-block;">
+            <p style="margin: 0; font-size: 11px; font-weight: bold; color: #1e40af; text-transform: uppercase;">${language === 'fr' ? 'FACTURE D\'ACOMPTE' : language === 'en' ? 'DEPOSIT INVOICE' : 'AANBETALINGSFACTUUR'}</p>
+          </div>` : isFinalInvoice && depositEnabled && depositAmount > 0 ? `<div style="margin: 8px 0; padding: 6px 12px; background-color: #d1fae5; border: 2px solid #10b981; border-radius: 6px; display: inline-block;">
+            <p style="margin: 0; font-size: 11px; font-weight: bold; color: #065f46; text-transform: uppercase;">${language === 'fr' ? 'ACOMPTE PAYÉ' : language === 'en' ? 'PAID DEPOSIT' : 'BETAALD VOORSCHOT'}</p>
+          </div>` : ''}
           <p style="margin: 3px 0; color: ${secondaryColor}; font-size: 11px;">${t.date} ${currentDate}</p>
           ${dueDate ? `<p style="margin: 3px 0; color: ${secondaryColor}; font-size: 11px;">${t.due} ${dueDate}</p>` : ''}
         </div>
@@ -1173,20 +1247,53 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
               <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatNumberWithComma(vatAmount)} €</td>
             </tr>
             ` : ''}
+            ${depositEnabled && depositAmount > 0 ? `
+            ${isDepositInvoice ? `
+            <!-- Deposit Invoice: Show only deposit info, bold -->
+            <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'PAIEMENT AVANT TRAVAUX:' : language === 'en' ? 'PAYMENT BEFORE WORK:' : 'BETALING VOOR WERK:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(depositAmount)} €</td>
+            </tr>
+            <tr style="background-color: #f0f9ff; border-left: 4px solid #3b82f6;">
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: 600; color: #1e40af; font-size: 10px; font-style: italic;" colspan="5">
+                ${language === 'fr' ? 'Paiement final après travaux: ' : language === 'en' ? 'Final payment after work: ' : 'Eindbetaling na werk: '}
+                <span style="font-weight: bold;">${formatNumberWithComma(balanceAmount)} €</span>
+              </td>
+            </tr>
+            ` : isFinalInvoice ? `
+            <!-- Final Invoice: Show only final info, bold, with paid deposit badge -->
+            <tr style="background-color: #f0fdf4; border-left: 4px solid #10b981;">
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: 600; color: #065f46; font-size: 10px; font-style: italic;" colspan="5">
+                ${language === 'fr' ? '✓ Acompte payé: ' : language === 'en' ? '✓ Paid deposit: ' : '✓ Betaald voorschot: '}
+                <span style="font-weight: bold;">${formatNumberWithComma(depositAmount)} €</span>
+              </td>
+            </tr>
+            <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'PAIEMENT APRÈS TRAVAUX:' : language === 'en' ? 'PAYMENT AFTER WORK:' : 'BETALING NA WERK:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(balanceAmount)} €</td>
+            </tr>
+            ` : `
+            <!-- No deposit/final distinction: Show both (backward compatibility) -->
             <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(totalWithVAT)} €</td>
             </tr>
-            ${depositEnabled && depositAmount > 0 ? `
             <tr style="background-color: #f9fafb;">
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 11px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'ACOMPTE À LA COMMANDE:' : language === 'en' ? 'DOWN PAYMENT ON ORDER:' : 'VOORSCHOT BIJ BESTELLING:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 11px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'PAIEMENT AVANT TRAVAUX:' : language === 'en' ? 'PAYMENT BEFORE WORK:' : 'BETALING VOOR WERK:'}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 11px;">${formatNumberWithComma(depositAmount)} €</td>
             </tr>
             <tr style="background-color: #f9fafb;">
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 11px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'SOLDE À LA LIVRAISON:' : language === 'en' ? 'BALANCE ON DELIVERY:' : 'SALDO BIJ LEVERING:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 11px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'PAIEMENT APRÈS TRAVAUX:' : language === 'en' ? 'PAYMENT AFTER WORK:' : 'BETALING NA WERK:'}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 11px;">${formatNumberWithComma(balanceAmount)} €</td>
             </tr>
-            ` : ''}
+            `}
+            ` : `
+            <!-- No deposit: Show total only -->
+            <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(totalWithVAT)} €</td>
+            </tr>
+            `}
           </tfoot>
         </table>
       </div>

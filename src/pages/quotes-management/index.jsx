@@ -69,6 +69,7 @@ const QuotesManagement = () => {
     amountRange: { min: '', max: '' }
   });
   const [tableLoading, setTableLoading] = useState(false);
+  const [convertingQuoteId, setConvertingQuoteId] = useState(null);
   // const [showAIPanel, setShowAIPanel] = useState(false);
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
@@ -736,7 +737,7 @@ const QuotesManagement = () => {
 
   const handleConvertToInvoice = async (quote) => {
     try {
-      setTableLoading(true);
+      setConvertingQuoteId(quote.id);
       
       const result = await convertQuoteToInvoice(quote, user.id);
       
@@ -753,7 +754,7 @@ const QuotesManagement = () => {
       console.error('Error converting quote to invoice:', error);
       alert('Erreur lors de la conversion du devis en facture');
     } finally {
-      setTableLoading(false);
+      setConvertingQuoteId(null);
     }
   };
 
@@ -1577,6 +1578,7 @@ const QuotesManagement = () => {
                 setSearchTerm={setSearchTerm}
                 canEdit={canEdit}
                 canDelete={canDelete}
+                convertingQuoteId={convertingQuoteId}
               />
             )}
             </div>

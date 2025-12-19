@@ -5,7 +5,7 @@ import Input from '../../../components/ui/Input';
 import { Checkbox } from '../../../components/ui/Checkbox';
 import { useTranslation } from 'react-i18next';
 
-const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuoteAction, onQuoteSelect, viewMode = 'table', setViewMode = () => {}, searchTerm = '', setSearchTerm = () => {}, canEdit = true, canDelete = true }) => {
+const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuoteAction, onQuoteSelect, viewMode = 'table', setViewMode = () => {}, searchTerm = '', setSearchTerm = () => {}, canEdit = true, canDelete = true, convertingQuoteId = null }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
   const { t } = useTranslation();
 
@@ -330,9 +330,13 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                 onClick={() => onQuoteAction('convert', quote)}
                 title={!canEdit ? t('permissions.noFullAccess') : t('quotesManagement.table.actions.convertToInvoice')}
                 className="h-8 w-8"
-                disabled={!canEdit}
+                disabled={!canEdit || convertingQuoteId === quote.id}
               >
+                {convertingQuoteId === quote.id ? (
+                  <Icon name="Loader2" size={16} className="animate-spin" />
+                ) : (
                 <Icon name="Receipt" size={16} />
+                )}
               </Button>
             )}
                   {/* Follow-up management icon removed per request */}
@@ -459,9 +463,13 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                 onClick={() => onQuoteAction('convert', quote)}
                 title={!canEdit ? t('permissions.noFullAccess') : t('quotesManagement.table.actions.convertToInvoice')}
                 className="h-7 w-7"
-                disabled={!canEdit}
+                disabled={!canEdit || convertingQuoteId === quote.id}
               >
+                {convertingQuoteId === quote.id ? (
+                  <Icon name="Loader2" size={14} className="animate-spin" />
+                ) : (
                 <Icon name="Receipt" size={14} />
+                )}
               </Button>
             )}
             {/* Follow-up management icon removed per request */}

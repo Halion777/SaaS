@@ -324,12 +324,11 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
     
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
         <TableLoader 
           message={t('ui.loading', 'Loading...')}
-          className="h-screen"
+        overlay={true}
+        zIndex={50}
         />
-      </div>
     );
   }
   

@@ -77,12 +77,11 @@ const SuperAdminProtectedRoute = ({ children }) => {
   // STRICT CHECKING: Show loading until ALL checks are complete
   if (loading || roleLoading || !roleChecked) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
         <TableLoader 
           message={t('ui.verifyingAccess', 'Verifying access...')}
-          className="h-screen"
+        overlay={true}
+        zIndex={50}
         />
-      </div>
     );
   }
   

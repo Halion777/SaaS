@@ -20,6 +20,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
     vatAmount: '',
     category: '',
     source: 'manual',
+    invoiceType: 'final',
     issueDate: '',
     dueDate: '',
     paymentMethod: '',
@@ -30,6 +31,15 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOCRProcessing, setIsOCRProcessing] = useState(false);
   const [ocrStatus, setOcrStatus] = useState('');
+
+  // Helper function to round VAT up (ceiling) to 2 decimal places
+  // Example: 72.975 -> 72.98 (not 72.97)
+  // This ensures VAT always rounds up when calculated
+  const roundVatUp = (vatAmount) => {
+    if (!vatAmount || isNaN(vatAmount)) return 0;
+    // Multiply by 100, round up (ceiling), then divide by 100
+    return Math.ceil(vatAmount * 100) / 100;
+  };
 
   // Helper function to normalize amount (convert dot to comma for decimal separator, keep comma as default)
   const normalizeAmount = (value) => {
@@ -85,6 +95,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
         vatAmount: invoiceToEdit.vat_amount?.toString() || '',
         category: invoiceToEdit.category || '',
         source: invoiceToEdit.source || 'manual',
+        invoiceType: invoiceToEdit.invoice_type || 'final',
         issueDate: invoiceToEdit.issue_date || '',
         dueDate: invoiceToEdit.due_date || '',
         paymentMethod: invoiceToEdit.payment_method || '',
@@ -103,6 +114,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
         vatAmount: '',
         category: '',
         source: 'manual',
+        invoiceType: 'final',
         issueDate: '',
         dueDate: '',
         paymentMethod: '',
@@ -336,9 +348,11 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
         invoiceNumber: formData.invoiceNumber,
         amount: parseAmount(formData.amount),
         netAmount: parseAmount(formData.netAmount) || parseAmount(formData.amount),
-        vatAmount: parseAmount(formData.vatAmount) || 0,
+        // Round VAT up (ceiling) when saving to ensure proper rounding
+        vatAmount: roundVatUp(parseAmount(formData.vatAmount) || 0),
         category: formData.category,
         source: formData.source,
+        invoiceType: formData.invoiceType || 'final',
         issueDate: formData.issueDate || new Date().toISOString().split('T')[0],
         dueDate: formData.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         paymentMethod: formData.paymentMethod,
@@ -607,7 +621,8 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
                         // Keep existing values
                       } else if (net > 0) {
                         // Calculate VAT from total and net: VAT = Total - Net
-                        const newVat = total - net;
+                        // Round VAT up (ceiling) to ensure proper rounding
+                        const newVat = roundVatUp(total - net);
                         if (newVat >= 0) {
                           handleInputChange('vatAmount', newVat.toFixed(2).replace('.', ','));
                         }
@@ -741,6 +756,21 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
                     onValueChange={(value) => handleInputChange('paymentMethod', value)}
                     options={paymentMethodOptions}
                     placeholder={t('expenseInvoices.createModal.paymentMethod.select', 'Select a method')}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    {t('expenseInvoices.createModal.fields.invoiceType', 'Invoice Type')}
+                  </label>
+                  <Select
+                    value={formData.invoiceType}
+                    onValueChange={(value) => handleInputChange('invoiceType', value)}
+                    options={[
+                      { value: 'final', label: t('expenseInvoices.createModal.invoiceType.final', 'Final Invoice') },
+                      { value: 'deposit', label: t('expenseInvoices.createModal.invoiceType.deposit', 'Deposit Invoice') }
+                    ]}
+                    placeholder={t('expenseInvoices.createModal.invoiceType.select', 'Select invoice type')}
                   />
                 </div>
 

@@ -18,12 +18,11 @@ const PublicRoute = ({ children }) => {
   // Show loading state while checking authentication
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
         <TableLoader 
           message={t('ui.loading', 'Chargement...')}
-          className="h-screen"
+        overlay={true}
+        zIndex={50}
         />
-      </div>
     );
   }
   

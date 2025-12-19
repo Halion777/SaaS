@@ -642,6 +642,13 @@ const generatePaymentMeansAndTerms = (invoiceConfig) => {
   const cleanedIBAN = invoiceConfig.sender.iban ? invoiceConfig.sender.iban.replace(/\s+/g, '') : '';
   const hasIBAN = cleanedIBAN && cleanedIBAN.trim() !== '';
   
+  // Build Note field: include payment terms and invoice_type if provided
+  // Format: "Net within X days | INVOICE_TYPE:deposit" or "Net within X days | INVOICE_TYPE:final"
+  let noteText = `Net within ${invoiceConfig.paymentDelay} days`;
+  if (invoiceConfig.invoiceType && invoiceConfig.invoiceType !== 'final') {
+    noteText += ` | INVOICE_TYPE:${invoiceConfig.invoiceType}`;
+  }
+  
   return `
 <cac:PaymentMeans>
   <cbc:PaymentMeansCode name="Credit transfer">${invoiceConfig.paymentMeans}</cbc:PaymentMeansCode>
@@ -654,7 +661,7 @@ const generatePaymentMeansAndTerms = (invoiceConfig) => {
   ` : ''}
 </cac:PaymentMeans>
 <cac:PaymentTerms>
-  <cbc:Note>Net within ${invoiceConfig.paymentDelay} days</cbc:Note>
+  <cbc:Note>${xmlEscape(noteText)}</cbc:Note>
 </cac:PaymentTerms>
 `;
 };
@@ -1548,6 +1555,8 @@ export class PeppolService {
       // Extract payment delay from payment_terms if available, otherwise default to 30 days
       paymentDelay: extractPaymentDelay(haliqoInvoice.payment_terms) || 30,
       paymentMeans: 31, // Debit transfer (code 31 = Credit transfer)
+      // Include invoice_type (deposit or final) to be included in Note field
+      invoiceType: haliqoInvoice.invoice_type || 'final',
       sender: {
         vatNumber: cleanVATNumber(senderInfo.vat_number), // Clean VAT number (remove Peppol scheme prefixes)
         name: senderInfo.company_name || senderInfo.full_name || 'Company Name Required',

@@ -334,6 +334,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
       const haliqoInvoice = {
         ...invoice,
         invoice_number: invoiceNumber, // Ensure invoice_number is set
+        invoice_type: invoice.invoiceType || invoice.invoice_type || 'final', // Include invoice_type for Peppol
         items: invoiceLines
       };
 

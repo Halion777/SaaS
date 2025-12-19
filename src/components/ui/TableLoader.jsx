@@ -11,6 +11,8 @@ import Icon from '../AppIcon';
  * @param {string} props.className - Additional class names for the container
  * @param {string} props.iconClassName - Additional class names for the icon
  * @param {string} props.textClassName - Additional class names for the text
+ * @param {boolean} props.overlay - If true, shows as full-screen overlay with blur background (default: false)
+ * @param {number} props.zIndex - Z-index for overlay mode (default: 50)
  * @returns {React.ReactNode}
  */
 const TableLoader = ({ 
@@ -19,8 +21,30 @@ const TableLoader = ({
   size = 32,
   className = "",
   iconClassName = "",
-  textClassName = ""
+  textClassName = "",
+  overlay = false,
+  zIndex = 50
 }) => {
+  // Overlay mode - full screen with blur background
+  if (overlay) {
+    return (
+      <div 
+        className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center"
+        style={{ zIndex }}
+      >
+        <div className="flex flex-col items-center gap-4">
+          <Icon 
+            name={icon} 
+            size={size} 
+            className={`animate-spin text-primary ${iconClassName}`} 
+          />
+          <p className={`text-sm font-medium text-foreground ${textClassName}`}>{message}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Inline mode - no overlay, just the loader
   return (
     <div className={`flex items-center justify-center h-64 ${className}`}>
       <div className="text-center">

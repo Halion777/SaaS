@@ -25,6 +25,8 @@ const PublicQuoteShareViewer = () => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('Trop cher');
   const [actionLoading, setActionLoading] = useState(false);
+  const [acceptLoading, setAcceptLoading] = useState(false);
+  const [rejectLoading, setRejectLoading] = useState(false);
   const [quoteStatus, setQuoteStatus] = useState('sent'); // sent, accepted, rejected, expired
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [clientSignature, setClientSignature] = useState(null);
@@ -96,6 +98,7 @@ const PublicQuoteShareViewer = () => {
     if (clientSignature) {
       try {
         setActionLoading(true);
+        setAcceptLoading(true);
         const result = await ClientQuoteService.acceptQuote(quote.id, token, clientSignature, quote);
         
         if (result.success) {
@@ -109,17 +112,21 @@ const PublicQuoteShareViewer = () => {
         alert(t('quoteShare.alerts.acceptanceError'));
       } finally {
         setActionLoading(false);
+        setAcceptLoading(false);
       }
       return;
     }
     
-    // If not signed yet, show signature modal
-    setShowSignatureModal(true);
+    // If not signed yet, show signature modal (only if reject is not in progress)
+    if (!rejectLoading) {
+      setShowSignatureModal(true);
+    }
   };
 
   const handleSignatureComplete = async (signatureData) => {
     try {
       setActionLoading(true);
+      setAcceptLoading(true);
       setClientSignature(signatureData);
       
       const result = await ClientQuoteService.acceptQuote(quote.id, token, signatureData, quote);
@@ -136,6 +143,7 @@ const PublicQuoteShareViewer = () => {
       alert(t('quoteShare.alerts.acceptanceError'));
     } finally {
       setActionLoading(false);
+      setAcceptLoading(false);
     }
   };
 
@@ -312,26 +320,31 @@ const PublicQuoteShareViewer = () => {
             {/* Action Buttons - Mobile */}
             {(quoteStatus === 'sent' || quoteStatus === 'viewed') && !isViewOnly && (
               <div className="flex flex-col space-y-3">
-                <Button
-                  onClick={() => setShowRejectModal(true)}
-                  variant="outline"
-                  className="w-full px-6 py-3 border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 transition-colors"
-                >
-                  <Icon name="XCircle" size={18} className="mr-2" />
-                  {t('quoteShare.actions.reject')}
-                </Button>
-                <Button
-                  onClick={handleAcceptQuote}
-                  disabled={actionLoading}
-                  className={`w-full px-6 py-3 shadow-lg hover:shadow-xl transition-all ${
-                    clientSignature 
-                      ? 'bg-green-700 hover:bg-green-800 text-white' 
-                      : 'bg-green-600 hover:bg-green-700 text-white'
-                  }`}
-                >
-                  <Icon name="CheckCircle" size={18} className="mr-2" />
-                  {actionLoading ? t('quoteShare.actions.processing') : clientSignature ? t('quoteShare.actions.confirmAcceptance') : t('quoteShare.actions.accept')}
-                </Button>
+                {!acceptLoading && (
+                  <Button
+                    onClick={() => !acceptLoading && setShowRejectModal(true)}
+                    disabled={acceptLoading}
+                    variant="outline"
+                    className="w-full px-6 py-3 border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 transition-colors"
+                  >
+                    <Icon name="XCircle" size={18} className="mr-2" />
+                    {t('quoteShare.actions.reject')}
+                  </Button>
+                )}
+                {!rejectLoading && (
+                  <Button
+                    onClick={handleAcceptQuote}
+                    disabled={acceptLoading}
+                    className={`w-full px-6 py-3 shadow-lg hover:shadow-xl transition-all ${
+                      clientSignature 
+                        ? 'bg-green-700 hover:bg-green-800 text-white' 
+                        : 'bg-green-600 hover:bg-green-700 text-white'
+                    }`}
+                  >
+                    <Icon name="CheckCircle" size={18} className="mr-2" />
+                    {acceptLoading ? t('quoteShare.actions.processing') : clientSignature ? t('quoteShare.actions.confirmAcceptance') : t('quoteShare.actions.accept')}
+                  </Button>
+                )}
               </div>
             )}
             {/* View Only Message - Mobile */}
@@ -363,26 +376,31 @@ const PublicQuoteShareViewer = () => {
             {/* Right Side - Action Buttons */}
             {(quoteStatus === 'sent' || quoteStatus === 'viewed') && !isViewOnly && (
               <div className="flex items-center space-x-4">
-                <Button
-                  onClick={() => setShowRejectModal(true)}
-                  variant="outline"
-                  className="px-8 py-3 border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 transition-colors text-base font-medium"
-                >
-                  <Icon name="XCircle" size={20} className="mr-2" />
-                  {t('quoteShare.actions.reject')}
-                </Button>
-                <Button
-                  onClick={handleAcceptQuote}
-                  disabled={actionLoading}
-                  className={`px-8 py-3 shadow-lg hover:shadow-xl transition-all text-base font-medium ${
-                    clientSignature 
-                      ? 'bg-green-700 hover:bg-green-800 text-white' 
-                      : 'bg-green-600 hover:bg-green-700 text-white'
-                  }`}
-                >
-                  <Icon name="CheckCircle" size={20} className="mr-2" />
-                  {actionLoading ? t('quoteShare.actions.processing') : clientSignature ? t('quoteShare.actions.confirmAcceptance') : t('quoteShare.actions.accept')}
-                </Button>
+                {!acceptLoading && (
+                  <Button
+                    onClick={() => !acceptLoading && setShowRejectModal(true)}
+                    disabled={acceptLoading}
+                    variant="outline"
+                    className="px-8 py-3 border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 transition-colors text-base font-medium"
+                  >
+                    <Icon name="XCircle" size={20} className="mr-2" />
+                    {t('quoteShare.actions.reject')}
+                  </Button>
+                )}
+                {!rejectLoading && (
+                  <Button
+                    onClick={handleAcceptQuote}
+                    disabled={acceptLoading}
+                    className={`px-8 py-3 shadow-lg hover:shadow-xl transition-all text-base font-medium ${
+                      clientSignature 
+                        ? 'bg-green-700 hover:bg-green-800 text-white' 
+                        : 'bg-green-600 hover:bg-green-700 text-white'
+                    }`}
+                  >
+                    <Icon name="CheckCircle" size={20} className="mr-2" />
+                    {acceptLoading ? t('quoteShare.actions.processing') : clientSignature ? t('quoteShare.actions.confirmAcceptance') : t('quoteShare.actions.accept')}
+                  </Button>
+                )}
               </div>
             )}
             {/* View Only Message - Desktop */}
@@ -665,11 +683,11 @@ const PublicQuoteShareViewer = () => {
                       <span className="font-medium">{currency(totalWithVAT)}</span>
                 </div>
                   <div className="flex justify-between text-gray-600 text-xs sm:text-sm">
-                    <span>{t('quoteShare.financial.advancePayment')}:</span>
+                    <span>{t('quoteShare.financial.paymentBeforeWork', 'Payment Before Work')}:</span>
                   <span className="font-medium">{currency(depositAmount)}</span>
                 </div>
                   <div className="flex justify-between text-base sm:text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
-                      <span>{t('quoteShare.financial.total')}:</span>
+                      <span>{t('quoteShare.financial.paymentAfterWork', 'Payment After Work')}:</span>
                       <span className="text-blue-600">{currency(balanceAmount)}</span>
                     </div>
                   </>
@@ -891,7 +909,7 @@ const PublicQuoteShareViewer = () => {
       {/* Footer */}
       <Footer />
       {/* Reject Modal */}
-      {showRejectModal && (
+      {showRejectModal && !acceptLoading && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-4 sm:p-6 mx-4">
             <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
@@ -921,10 +939,10 @@ const PublicQuoteShareViewer = () => {
               </button>
               <button
                 onClick={handleRejectQuote}
-                disabled={actionLoading}
+                disabled={rejectLoading}
                 className="w-full sm:flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 text-sm"
               >
-                {actionLoading ? t('quoteShare.actions.processing') : t('quoteShare.rejectModal.reject')}
+                {rejectLoading ? t('quoteShare.actions.processing') : t('quoteShare.rejectModal.reject')}
               </button>
             </div>
           </div>
@@ -932,10 +950,10 @@ const PublicQuoteShareViewer = () => {
       )}
 
       {/* Electronic Signature Modal */}
-      {showSignatureModal && (
+      {showSignatureModal && !rejectLoading && (
         <ElectronicSignatureModal
           isOpen={showSignatureModal}
-          onClose={() => setShowSignatureModal(false)}
+          onClose={() => !rejectLoading && setShowSignatureModal(false)}
           onComplete={handleSignatureComplete}
           title={t('quoteShare.signatureModal.title')}
           subtitle={t('quoteShare.signatureModal.subtitle')}

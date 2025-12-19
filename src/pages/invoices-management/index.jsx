@@ -28,6 +28,7 @@ const InvoicesManagement = () => {
     search: '',
     status: '',
     client: '',
+    invoiceType: '',
     dateRange: { start: '', end: '' },
     amountRange: { min: '', max: '' }
   });
@@ -40,6 +41,7 @@ const InvoicesManagement = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isSendInvoiceModalOpen, setIsSendInvoiceModalOpen] = useState(false);
   const [isSendToAccountantModalOpen, setIsSendToAccountantModalOpen] = useState(false);
+  const [groupByQuote, setGroupByQuote] = useState(false);
 
   // Handle sidebar offset for responsive layout
   useEffect(() => {
@@ -134,6 +136,7 @@ const InvoicesManagement = () => {
           clientEmail: invoice.client?.email || '',
           client: invoice.client, // Keep full client object
           quote: invoice.quote, // Keep quote data for line items
+          quoteId: invoice.quote_id, // Keep quote_id for filtering deposit/final invoices
           amount: parseFloat(invoice.final_amount || 0),
           netAmount: parseFloat(invoice.net_amount || 0),
           taxAmount: parseFloat(invoice.tax_amount || 0),
@@ -145,6 +148,8 @@ const InvoicesManagement = () => {
           title: invoice.title,
           description: invoice.description,
           notes: invoice.notes,
+          // Invoice type (deposit or final)
+          invoiceType: invoice.invoice_type || 'final',
           // Peppol fields
           peppolEnabled: invoice.peppol_enabled || false,
           peppolStatus: invoice.peppol_status || 'not_sent',
@@ -219,6 +224,14 @@ const InvoicesManagement = () => {
       filtered = filtered.filter(invoice => invoice.client?.id?.toString() === newFilters.client);
     }
 
+    // Invoice type filter
+    if (newFilters.invoiceType) {
+      filtered = filtered.filter(invoice => {
+        const invoiceType = invoice.invoiceType || invoice.invoice_type || 'final';
+        return invoiceType === newFilters.invoiceType;
+      });
+    }
+
     // Date range filter (custom date range)
     if (newFilters.dateRange && (newFilters.dateRange.start || newFilters.dateRange.end)) {
       if (newFilters.dateRange.start) {
@@ -249,6 +262,40 @@ const InvoicesManagement = () => {
       }
     }
 
+    // Filter: Hide final invoices if deposit invoice is not paid
+    // Only apply this logic if invoice type filter is NOT active (to allow users to see all invoices when filtering by type)
+    if (!newFilters.invoiceType) {
+      // For each final invoice, check if there's a deposit invoice with the same quote_id
+      // If deposit invoice exists and is not paid, hide the final invoice
+      // Note: Check against all invoices (not filtered) to ensure we find deposit invoices even if they're filtered out
+      filtered = filtered.filter(invoice => {
+        // If it's a deposit invoice, always show it
+        if (invoice.invoiceType === 'deposit') {
+          return true;
+        }
+        
+        // If it's a final invoice, check if deposit invoice is paid
+        if (invoice.invoiceType === 'final' && invoice.quoteId) {
+          // Find deposit invoice with same quote_id from all invoices (not filtered)
+          const depositInvoice = invoices.find(inv => 
+            inv.invoiceType === 'deposit' && 
+            inv.quoteId === invoice.quoteId
+          );
+          
+          // If no deposit invoice exists, show final invoice (backward compatibility)
+          if (!depositInvoice) {
+            return true;
+          }
+          
+          // If deposit invoice exists, only show final invoice if deposit is paid
+          return depositInvoice.status === 'paid';
+        }
+        
+        // For invoices without invoice_type or quote_id, show them (backward compatibility)
+        return true;
+      });
+    }
+
     setFilteredInvoices(filtered);
   };
 
@@ -257,6 +304,7 @@ const InvoicesManagement = () => {
       search: '',
       status: '',
       client: '',
+      invoiceType: '',
       dateRange: { start: '', end: '' },
       amountRange: { min: '', max: '' }
     };
@@ -301,6 +349,7 @@ const InvoicesManagement = () => {
           description: invoice.description,
           title: invoice.title,
           notes: invoice.notes,
+          invoice_type: invoice.invoiceType || invoice.invoice_type || 'final',
           peppol_metadata: invoice.peppol_metadata || null
         },
         quote: invoice.quote || null
@@ -312,7 +361,8 @@ const InvoicesManagement = () => {
       const userLanguage = i18n.language || localStorage.getItem('language') || 'fr';
       
       // Generate PDF blob
-      const pdfBlob = await generateInvoicePDF(invoiceData, invoiceNumber, null, userLanguage);
+      const invoiceType = invoice.invoiceType || invoice.invoice_type || 'final';
+      const pdfBlob = await generateInvoicePDF(invoiceData, invoiceNumber, null, userLanguage, false, invoiceType);
       
       // Create download link
       const url = URL.createObjectURL(pdfBlob);
@@ -617,6 +667,27 @@ const InvoicesManagement = () => {
             filteredCount={filteredInvoices.length}
           />
 
+          {/* Group by Quote Toggle */}
+          <div className="flex items-center justify-between bg-card border border-border rounded-lg p-3">
+            <div className="flex items-center space-x-2">
+              <Icon name="Layers" size={18} className="text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">
+                {t('invoicesManagement.groupByQuote.label', 'Group invoices by quote')}
+              </span>
+            </div>
+            <Button
+              variant={groupByQuote ? "default" : "outline"}
+              size="sm"
+              onClick={() => setGroupByQuote(!groupByQuote)}
+              iconName={groupByQuote ? "Check" : "X"}
+              iconPosition="left"
+            >
+              {groupByQuote 
+                ? t('invoicesManagement.groupByQuote.enabled', 'Grouped') 
+                : t('invoicesManagement.groupByQuote.disabled', 'Ungrouped')}
+            </Button>
+          </div>
+
           {/* Bulk Actions */}
           {selectedInvoices.length > 0 && (
             <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-6">
@@ -698,8 +769,9 @@ const InvoicesManagement = () => {
             canEdit={canEdit}
             canDelete={canDelete}
             onFiltersChange={handleFiltersChange}
-              onStatusUpdate={handleStatusUpdate}
-            />
+            onStatusUpdate={handleStatusUpdate}
+            groupByQuote={groupByQuote}
+          />
           )}
 
           {/* Invoice Detail Modal */}

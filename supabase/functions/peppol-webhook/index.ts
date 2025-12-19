@@ -590,6 +590,16 @@ function parseUBLInvoice(ublXml: string): any {
     // Extract Payment Terms
     const paymentTermsNote = txt(pickRaw(invoice, 'PaymentTerms'), 'Note');
 
+    // Extract invoice_type from Note field if present
+    // Format: "Net within X days | INVOICE_TYPE:deposit" or "Net within X days | INVOICE_TYPE:final"
+    let invoiceType = 'final'; // Default to final
+    if (paymentTermsNote) {
+      const invoiceTypeMatch = paymentTermsNote.match(/INVOICE_TYPE:(deposit|final)/i);
+      if (invoiceTypeMatch && invoiceTypeMatch[1]) {
+        invoiceType = invoiceTypeMatch[1].toLowerCase();
+      }
+    }
+
     // Extract Delivery Information
     const deliveryDate = txt(pickRaw(invoice, 'Delivery'), 'ActualDeliveryDate');
 
@@ -1020,6 +1030,17 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
       }
     }
 
+    // Extract invoice_type from payment terms Note field if present
+    // Format: "Net within X days | INVOICE_TYPE:deposit" or "Net within X days | INVOICE_TYPE:final"
+    let invoiceType: string = 'final'; // Default to final
+    const paymentTermsNote = invoiceData.payment?.terms || '';
+    if (paymentTermsNote) {
+      const invoiceTypeMatch = paymentTermsNote.match(/INVOICE_TYPE:(deposit|final)/i);
+      if (invoiceTypeMatch && invoiceTypeMatch[1]) {
+        invoiceType = invoiceTypeMatch[1].toLowerCase();
+      }
+    }
+
     // Create expense invoice record (supplier invoice) with all extracted mandatory fields
     const insertPayload = {
         user_id: userId,
@@ -1033,6 +1054,7 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
         status: 'pending',
         category: data.category || 'General',
         source: 'peppol',
+        invoice_type: invoiceType, // Set invoice_type extracted from Note field
         issue_date: invoiceData.issueDate || data.issueDate || new Date().toISOString().split('T')[0],
         due_date: invoiceData.dueDate || data.dueDate || new Date().toISOString().split('T')[0],
       payment_method: invoiceData.payment?.meansName || invoiceData.payment?.meansCode || '',

@@ -3331,8 +3331,10 @@
       "vat": "VAT",
       "vatLabel": "VAT:",
       "totalInclTax": "TOTAL INCL. TAX:",
-      "depositOnOrder": "DEPOSIT ON ORDER:",
-      "balanceOnDelivery": "BALANCE ON DELIVERY:",
+      "depositOnOrder": "PAYMENT BEFORE WORK:",
+      "balanceOnDelivery": "PAYMENT AFTER WORK:",
+      "paymentBeforeWork": "PAYMENT BEFORE WORK:",
+      "paymentAfterWork": "PAYMENT AFTER WORK:",
       "generalConditions": "GENERAL CONDITIONS",
       "quoteNumber": "Quote Number",
       "date": "Date",
@@ -3595,8 +3597,12 @@
       "subtotal": "Subtotal",
       "vat": "VAT",
       "total": "Total",
-      "advancePayment": "Advance Payment",
-      "balanceOnDelivery": "Balance on Delivery",
+      "totalInclTax": "Total TTC",
+      "advancePayment": "Payment Before Work",
+      "afterWork": "Payment After Work",
+      "balanceOnDelivery": "Payment After Work",
+      "paymentBeforeWork": "Payment Before Work",
+      "paymentAfterWork": "Payment After Work",
       "materialsNote": "Material prices are included in the total but hidden"
     },
     "additionalInfo": {
@@ -4156,16 +4162,32 @@
           "from": "From",
           "to": "To"
         },
+        "invoiceType": {
+          "label": "Invoice Type",
+          "all": "All Types",
+          "deposit": "Deposit Invoices",
+          "final": "Final Invoices"
+        },
         "chips": {
           "status": "Status",
           "client": "Client",
+          "invoiceType": "Type",
           "period": "Period",
           "amount": "Amount",
           "removeStatus": "Remove status filter",
           "removeClient": "Remove client filter",
+          "removeInvoiceType": "Remove invoice type filter",
           "removePeriod": "Remove period filter",
           "removeAmount": "Remove amount filter"
         }
+      },
+      "groupByQuote": {
+        "label": "Group invoices by quote",
+        "enabled": "Grouped",
+        "disabled": "Ungrouped",
+        "quoteLabel": "Quote",
+        "invoiceCount": "{{count}} invoice",
+        "invoiceCount_plural": "{{count}} invoices"
       },
       "table": {
         "searchPlaceholder": "Search by number, client, description or status...",
@@ -4472,6 +4494,12 @@
           "from": "From",
           "to": "To"
         },
+        "invoiceType": {
+          "label": "Invoice Type",
+          "all": "All Types",
+          "deposit": "Deposit Invoices",
+          "final": "Final Invoices"
+        },
         "chips": {
           "status": "Status",
           "removeStatus": "Remove status filter",
@@ -4479,6 +4507,8 @@
           "removeCategory": "Remove category filter",
           "source": "Source",
           "removeSource": "Remove source filter",
+          "invoiceType": "Type",
+          "removeInvoiceType": "Remove invoice type filter",
           "period": "Period",
           "removePeriod": "Remove period filter",
           "amount": "Amount",

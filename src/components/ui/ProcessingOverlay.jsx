@@ -51,13 +51,11 @@ const ProcessingOverlay = ({ isVisible, message = null, id = "processing-overlay
   return (
     <div 
       id={id}
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[10001] flex items-center justify-center"
+      className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[10001] flex items-center justify-center"
     >
-      <div className="bg-white rounded-lg p-6 shadow-xl max-w-xs w-full text-center">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-          <p className="font-medium text-gray-800">{displayMessage}</p>
-        </div>
+        <p className="font-medium text-foreground">{displayMessage}</p>
       </div>
     </div>
   );
@@ -85,35 +83,50 @@ export const createProcessingOverlay = (message = null, id = "processing-overlay
   overlayElement.style.left = '0';
   overlayElement.style.width = '100%';
   overlayElement.style.height = '100%';
-  overlayElement.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-  overlayElement.style.backdropFilter = 'blur(2px)';
+  // Use backdrop blur with semi-transparent background (matching signature modal style)
+  // Try to get background color from CSS variables, fallback to white with opacity
+  let bgColor = 'rgba(255, 255, 255, 0.8)'; // Default light mode
+  try {
+    const computedStyle = getComputedStyle(document.documentElement);
+    const bgVar = computedStyle.getPropertyValue('--background')?.trim();
+    if (bgVar) {
+      // If it's an RGB value, convert to rgba with opacity
+      if (bgVar.startsWith('rgb')) {
+        bgColor = bgVar.replace('rgb', 'rgba').replace(')', ', 0.8)');
+      } else {
+        bgColor = bgVar + 'CC'; // Add opacity hex (80% = CC)
+      }
+    }
+  } catch (e) {
+    // Fallback if CSS variables not available
+  }
+  
+  overlayElement.style.backgroundColor = bgColor;
+  overlayElement.style.backdropFilter = 'blur(4px)';
+  overlayElement.style.WebkitBackdropFilter = 'blur(4px)';
   overlayElement.style.zIndex = '10001';
   overlayElement.style.display = 'flex';
+  overlayElement.style.flexDirection = 'column';
   overlayElement.style.justifyContent = 'center';
   overlayElement.style.alignItems = 'center';
-  
-  // Create content element
-  const contentElement = document.createElement('div');
-  contentElement.style.backgroundColor = 'white';
-  contentElement.style.padding = '24px';
-  contentElement.style.borderRadius = '8px';
-  contentElement.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
-  contentElement.style.textAlign = 'center';
-  contentElement.style.maxWidth = '320px';
-  contentElement.style.width = '100%';
+  overlayElement.style.gap = '16px';
   
   // Use provided message or fallback to default
   const displayMessage = message || 'Processing...';
   
-  // Create spinner and message
-  contentElement.innerHTML = `
-    <div style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
-      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-      <p style="font-weight: 500; color: #1f2937;">${displayMessage}</p>
-    </div>
-  `;
+  // Create spinner element
+  const spinnerElement = document.createElement('div');
+  spinnerElement.className = 'animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary';
   
-  overlayElement.appendChild(contentElement);
+  // Create message element
+  const messageElement = document.createElement('p');
+  messageElement.style.fontWeight = '500';
+  messageElement.style.color = '#1f2937';
+  messageElement.textContent = displayMessage;
+  
+  // Append spinner and message directly to overlay
+  overlayElement.appendChild(spinnerElement);
+  overlayElement.appendChild(messageElement);
   
   // Add beforeunload event listener
   // Note: This function is used imperatively without React context, so we can't use translations here

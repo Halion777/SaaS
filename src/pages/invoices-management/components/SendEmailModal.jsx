@@ -153,6 +153,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
           description: invoice.description,
           title: invoice.title,
           notes: invoice.notes,
+          invoice_type: invoice.invoice_type || invoice.invoiceType || 'final',
           peppol_metadata: invoice.peppol_metadata || null
         },
         quote: invoice.quote || null
@@ -160,7 +161,8 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
 
       // Generate PDF blob (hide bank info for professional clients, but show it if from invalid Peppol ID flow or Peppol failed/not sent)
       const hideBankInfo = isProfessionalClient && !fromInvalidPeppolId && !shouldShowEmailWarning;
-      const pdfBlob = await generateInvoicePDF(invoiceData, invoiceNumber, null, i18n.language, hideBankInfo);
+      const invoiceType = invoice.invoice_type || invoice.invoiceType || 'final';
+      const pdfBlob = await generateInvoicePDF(invoiceData, invoiceNumber, null, i18n.language, hideBankInfo, invoiceType);
       
       // Convert PDF blob to base64 for email attachment
       const pdfBase64 = await new Promise((resolve, reject) => {

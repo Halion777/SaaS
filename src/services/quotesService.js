@@ -1753,7 +1753,131 @@ export async function convertQuoteToInvoice(quote, userId) {
     const financialConfig = quoteData.quote_financial_configs?.[0] || {};
     const depositEnabled = depositAmount > 0 || financialConfig?.advance_config?.enabled === true;
 
-    // Prepare invoice data with all necessary fields
+    // Calculate deposit net amount and VAT proportionally
+    // If deposit is a percentage of total, calculate proportional VAT
+    const depositNetAmount = depositAmount > 0 && totalWithVAT > 0 
+      ? (depositAmount / totalWithVAT) * netAmount 
+      : depositAmount;
+    const depositTaxAmount = depositAmount > 0 && totalWithVAT > 0
+      ? (depositAmount / totalWithVAT) * taxAmount
+      : 0;
+
+    // Calculate final invoice amounts (balance)
+    const finalNetAmount = netAmount - depositNetAmount;
+    const finalTaxAmount = taxAmount - depositTaxAmount;
+
+    const invoicesToCreate = [];
+    let createdInvoices = []; // Declare here to be accessible in both branches
+
+    // If deposit is enabled, create two invoices: deposit and final
+    if (depositEnabled && depositAmount > 0) {
+      // Generate invoice numbers sequentially to avoid race conditions
+      // First generate deposit invoice number
+      const { data: depositInvoiceNumber, error: depositNumberError } = await supabase
+        .rpc('generate_invoice_number', { user_id: userId });
+
+      if (depositNumberError) {
+        throw new Error(`Failed to generate deposit invoice number: ${depositNumberError.message}`);
+      }
+
+      // Insert deposit invoice first to ensure it's committed before generating final invoice number
+      const depositInvoiceData = {
+        user_id: userId,
+        client_id: clientId,
+        quote_id: quoteData.id,
+        invoice_number: depositInvoiceNumber,
+        quote_number: quoteData.quote_number,
+        title: `${quoteData.title || `Facture pour ${description || 'Projet'}`} - Acompte`,
+        description: `Acompte pour ${description || 'le projet'}`,
+        status: 'unpaid',
+        amount: depositNetAmount,
+        net_amount: depositNetAmount,
+        tax_amount: depositTaxAmount,
+        discount_amount: 0, // Discount already applied to total
+        final_amount: depositAmount, // Deposit amount (TTC)
+        issue_date: new Date().toISOString().split('T')[0],
+        due_date: dueDate.toISOString().split('T')[0],
+        payment_method: 'À définir',
+        payment_terms: 'Paiement à 30 jours',
+        notes: `Facture d'acompte générée automatiquement depuis le devis ${quoteData.quote_number}`,
+        converted_from_quote_at: new Date().toISOString(),
+        invoice_type: 'deposit',
+        peppol_metadata: {
+          deposit_amount: depositAmount,
+          deposit_enabled: true,
+          converted_from_quote: true,
+          original_quote_number: quoteData.quote_number,
+          is_deposit_invoice: true
+        }
+      };
+
+      // Insert deposit invoice first
+      const { data: depositInvoice, error: depositInsertError } = await supabase
+        .from('invoices')
+        .insert([depositInvoiceData])
+        .select()
+        .single();
+
+      if (depositInsertError) {
+        throw new Error(`Failed to create deposit invoice: ${depositInsertError.message}`);
+      }
+
+      // Now generate final invoice number (after deposit invoice is committed)
+      const { data: finalInvoiceNumber, error: finalNumberError } = await supabase
+        .rpc('generate_invoice_number', { user_id: userId });
+
+      if (finalNumberError) {
+        throw new Error(`Failed to generate final invoice number: ${finalNumberError.message}`);
+      }
+
+      // Create final invoice
+      const finalInvoiceData = {
+        user_id: userId,
+        client_id: clientId,
+        quote_id: quoteData.id,
+        invoice_number: finalInvoiceNumber,
+        quote_number: quoteData.quote_number,
+        title: `${quoteData.title || `Facture pour ${description || 'Projet'}`} - Solde`,
+        description: `Solde pour ${description || 'le projet'}`,
+        status: 'unpaid',
+        amount: finalNetAmount,
+        net_amount: finalNetAmount,
+        tax_amount: finalTaxAmount,
+        discount_amount: discountAmount, // Full discount applied to final invoice
+        final_amount: balanceAmount, // Balance amount (TTC)
+        issue_date: new Date().toISOString().split('T')[0],
+        due_date: dueDate.toISOString().split('T')[0],
+        payment_method: 'À définir',
+        payment_terms: 'Paiement à 30 jours',
+        notes: `Facture de solde générée automatiquement depuis le devis ${quoteData.quote_number}. À payer après règlement de l'acompte.`,
+        converted_from_quote_at: new Date().toISOString(),
+        invoice_type: 'final',
+        peppol_metadata: {
+          deposit_amount: depositAmount,
+          balance_amount: balanceAmount,
+          deposit_enabled: true,
+          converted_from_quote: true,
+          original_quote_number: quoteData.quote_number,
+          is_final_invoice: true
+        }
+      };
+
+      // Insert final invoice immediately after creating it
+      const { data: finalInvoice, error: finalInsertError } = await supabase
+        .from('invoices')
+        .insert([finalInvoiceData])
+        .select()
+        .single();
+
+      if (finalInsertError) {
+        console.error('Error inserting final invoice:', finalInsertError);
+        throw new Error(`Failed to create final invoice: ${finalInsertError.message}`);
+      }
+
+      // Store both invoices for return (will be used later)
+      createdInvoices = [depositInvoice, finalInvoice];
+    } else {
+      // No deposit - create single final invoice (backward compatible)
     const invoiceData = {
       user_id: userId,
       client_id: clientId,
@@ -1762,19 +1886,19 @@ export async function convertQuoteToInvoice(quote, userId) {
       quote_number: quoteData.quote_number,
       title: quoteData.title || `Facture pour ${description || 'Projet'}`,
       description: description,
-      status: 'unpaid', // Always start as unpaid
-      amount: netAmount, // Net amount (HT)
-      net_amount: netAmount, // Net amount (HT)
+        status: 'unpaid',
+        amount: netAmount,
+        net_amount: netAmount,
       tax_amount: taxAmount,
       discount_amount: discountAmount,
-      final_amount: invoiceFinalAmount, // Balance amount (totalWithVAT - deposit)
+        final_amount: invoiceFinalAmount,
       issue_date: new Date().toISOString().split('T')[0],
       due_date: dueDate.toISOString().split('T')[0],
       payment_method: 'À définir',
       payment_terms: 'Paiement à 30 jours',
       notes: `Facture générée automatiquement depuis le devis ${quoteData.quote_number}`,
       converted_from_quote_at: new Date().toISOString(),
-      // Store deposit information in metadata if invoices table doesn't have a deposit field
+        invoice_type: 'final', // Default to final
       peppol_metadata: {
         deposit_amount: depositAmount,
         deposit_enabled: depositEnabled,
@@ -1783,16 +1907,24 @@ export async function convertQuoteToInvoice(quote, userId) {
       }
     };
 
-    // Insert the invoice
+      invoicesToCreate.push(invoiceData);
+    }
+
+    // Insert invoices (deposit and final already inserted if deposit enabled)
+    // Note: createdInvoices is already set in the deposit block above if deposit enabled
+    if (!depositEnabled || depositAmount === 0) {
+      // No deposit - insert single final invoice
     const { data: invoice, error: insertError } = await supabase
       .from('invoices')
-      .insert([invoiceData])
-      .select()
-      .single();
+        .insert(invoicesToCreate)
+        .select();
 
     if (insertError) {
       console.error('Error inserting invoice:', insertError);
       throw new Error(`Failed to create invoice: ${insertError.message}`);
+      }
+      
+      createdInvoices = Array.isArray(invoice) ? invoice : [invoice];
     }
 
     // Update quote status to indicate it has been converted
@@ -1809,19 +1941,26 @@ export async function convertQuoteToInvoice(quote, userId) {
       // Don't fail the whole operation if quote update fails
     }
 
-    // Trigger follow-up creation for the new invoice
+    // Trigger follow-up creation for all created invoices
     try {
       const { default: InvoiceFollowUpService } = await import('./invoiceFollowUpService');
+      const invoicesArray = Array.isArray(createdInvoices) ? createdInvoices : [createdInvoices];
+      for (const invoice of invoicesArray) {
+        if (invoice && invoice.id) {
       await InvoiceFollowUpService.triggerFollowUpCreation(invoice.id);
+        }
+      }
     } catch (followUpError) {
-      console.warn('Warning: Failed to trigger follow-up creation for invoice:', followUpError);
+      console.warn('Warning: Failed to trigger follow-up creation for invoices:', followUpError);
       // Don't fail the whole operation if follow-up trigger fails
     }
 
     return {
       success: true,
-      data: invoice,
-      message: 'Quote successfully converted to invoice'
+      data: depositEnabled && depositAmount > 0 ? createdInvoices : (Array.isArray(createdInvoices) ? createdInvoices[0] : createdInvoices), // Return array if deposit, single invoice if not
+      message: depositEnabled && depositAmount > 0 
+        ? 'Quote successfully converted to deposit and final invoices'
+        : 'Quote successfully converted to invoice'
     };
 
   } catch (error) {

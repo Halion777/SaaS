@@ -28,6 +28,7 @@ const ExpenseInvoicesManagement = () => {
     status: '',
     category: '',
     source: '',
+    invoiceType: '',
     dateRange: { start: '', end: '' },
     amountRange: { min: '', max: '' },
     paymentMethod: ''
@@ -217,6 +218,14 @@ const ExpenseInvoicesManagement = () => {
       filtered = filtered.filter(invoice => invoice.source === newFilters.source);
     }
 
+    // Invoice type filter
+    if (newFilters.invoiceType) {
+      filtered = filtered.filter(invoice => {
+        const invoiceType = invoice.invoice_type || 'final';
+        return invoiceType === newFilters.invoiceType;
+      });
+    }
+
     // Date range filter
     if (newFilters.dateRange && (newFilters.dateRange.start || newFilters.dateRange.end)) {
       const today = new Date();
@@ -352,6 +361,10 @@ const ExpenseInvoicesManagement = () => {
           source: invoice.source,
           notes: invoice.notes,
           status: invoice.status,
+          invoice_type: invoice.invoice_type || 'final',
+          // Include deposit/balance amounts if available (for manual invoices or Peppol invoices)
+          deposit_amount: invoice.deposit_amount || invoice.peppol_metadata?.deposit_amount || null,
+          balance_amount: invoice.balance_amount || invoice.peppol_metadata?.balance_amount || null,
           // Include full peppol_metadata for deposit/balance information
           peppol_metadata: invoice.peppol_metadata || null,
           // Include invoice lines from Peppol metadata if available
@@ -367,8 +380,11 @@ const ExpenseInvoicesManagement = () => {
       // Get user's preferred language
       const userLanguage = i18n.language || localStorage.getItem('language') || 'fr';
       
+      // Get invoice_type for PDF generation
+      const invoiceType = invoice.invoice_type || 'final';
+      
       // Generate PDF blob
-      const pdfBlob = await generateExpenseInvoicePDF(expenseInvoiceData, invoiceNumber, userLanguage);
+      const pdfBlob = await generateExpenseInvoicePDF(expenseInvoiceData, invoiceNumber, userLanguage, invoiceType);
       
       // Create download link
       const url = URL.createObjectURL(pdfBlob);

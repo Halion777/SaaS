@@ -19,6 +19,12 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [], filter
     { value: 'cancelled', label: t('invoicesManagement.status.cancelled') }
   ];
 
+  const invoiceTypeOptions = [
+    { value: '', label: t('invoicesManagement.filter.invoiceType.all', 'All Types') },
+    { value: 'deposit', label: t('invoicesManagement.filter.invoiceType.deposit', 'Deposit Invoices') },
+    { value: 'final', label: t('invoicesManagement.filter.invoiceType.final', 'Final Invoices') }
+  ];
+
   // Generate client options from actual invoices data
   const clientOptions = React.useMemo(() => {
     const uniqueClients = new Map();
@@ -87,6 +93,7 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [], filter
       search: '',
       status: '',
       client: '',
+      invoiceType: '',
       dateRange: { start: '', end: '' },
       amountRange: { min: '', max: '' }
     };
@@ -157,6 +164,14 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [], filter
             searchable
           />
 
+          <Select
+            label={t('invoicesManagement.filter.invoiceType.label', 'Invoice Type')}
+            options={invoiceTypeOptions}
+            value={filters.invoiceType || ''}
+            onChange={(e) => onFiltersChange({ ...filters, invoiceType: e.target.value })}
+            placeholder={t('invoicesManagement.filter.invoiceType.all', 'All Types')}
+          />
+
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">{t('invoicesManagement.filter.amount.label')}</label>
             <div className="grid grid-cols-2 gap-2">
@@ -177,22 +192,21 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [], filter
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">{t('invoicesManagement.filter.period.label')}</label>
-            <div className="grid grid-cols-2 gap-2 relative">
+            <div className="flex items-center gap-3">
               <Input
                 type="date"
                 placeholder={t('invoicesManagement.filter.period.from')}
                 value={dateRange.start}
                 onChange={(e) => handleDateRangeChange('start', e.target.value)}
-                className="relative z-10"
-                style={{ position: 'relative', zIndex: 10 }}
+                className="flex-1"
               />
+              <span className="text-muted-foreground text-sm">-</span>
               <Input
                 type="date"
                 placeholder={t('invoicesManagement.filter.period.to')}
                 value={dateRange.end}
                 onChange={(e) => handleDateRangeChange('end', e.target.value)}
-                className="relative z-10"
-                style={{ position: 'relative', zIndex: 10 }}
+                className="flex-1"
               />
             </div>
           </div>
@@ -221,6 +235,19 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [], filter
                   onClick={() => onFiltersChange({ ...filters, client: '' })}
                   className="hover:bg-primary/20 rounded-full p-0.5"
                   aria-label={t('invoicesManagement.filter.chips.removeClient')}
+                >
+                  <Icon name="X" size={12} />
+                </button>
+              </div>
+            )}
+            
+            {filters.invoiceType && (
+              <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
+                <span>{t('invoicesManagement.filter.chips.invoiceType', 'Type')}: {invoiceTypeOptions.find(opt => opt.value === filters.invoiceType)?.label}</span>
+                <button
+                  onClick={() => onFiltersChange({ ...filters, invoiceType: '' })}
+                  className="hover:bg-primary/20 rounded-full p-0.5"
+                  aria-label={t('invoicesManagement.filter.chips.removeInvoiceType', 'Remove invoice type filter')}
                 >
                   <Icon name="X" size={12} />
                 </button>
@@ -286,6 +313,14 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [], filter
               placeholder={t('invoicesManagement.filter.client.all')}
             />
 
+            <Select
+              label={t('invoicesManagement.filter.invoiceType.label', 'Invoice Type')}
+              options={invoiceTypeOptions}
+              value={filters.invoiceType || ''}
+              onChange={(e) => onFiltersChange({ ...filters, invoiceType: e.target.value })}
+              placeholder={t('invoicesManagement.filter.invoiceType.all', 'All Types')}
+            />
+
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">{t('invoicesManagement.filter.amount.label')}</label>
               <div className="grid grid-cols-2 gap-2">
@@ -306,22 +341,21 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [], filter
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">{t('invoicesManagement.filter.period.label')}</label>
-              <div className="grid grid-cols-2 gap-2 relative">
+              <div className="flex items-center gap-3">
                 <Input
                   type="date"
                   placeholder={t('invoicesManagement.filter.period.from')}
                   value={dateRange.start}
                   onChange={(e) => handleDateRangeChange('start', e.target.value)}
-                  className="relative z-10"
-                  style={{ position: 'relative', zIndex: 10 }}
+                  className="flex-1"
                 />
+                <span className="text-muted-foreground text-sm">-</span>
                 <Input
                   type="date"
                   placeholder={t('invoicesManagement.filter.period.to')}
                   value={dateRange.end}
                   onChange={(e) => handleDateRangeChange('end', e.target.value)}
-                  className="relative z-10"
-                  style={{ position: 'relative', zIndex: 10 }}
+                  className="flex-1"
                 />
               </div>
             </div>
@@ -332,7 +366,7 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [], filter
             <div className="flex flex-wrap gap-2 pt-3 border-t border-border">
               {filters.status && (
                 <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
-                  <span>Statut: {statusOptions.find(opt => opt.value === filters.status)?.label}</span>
+                  <span>{t('invoicesManagement.filter.chips.status')}: {statusOptions.find(opt => opt.value === filters.status)?.label}</span>
                   <button
                     onClick={() => onFiltersChange({ ...filters, status: '' })}
                     className="hover:bg-primary/20 rounded-full p-0.5"
@@ -344,7 +378,7 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [], filter
               
               {filters.client && (
                 <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
-                  <span>Client: {clientOptions.find(opt => opt.value === filters.client)?.label}</span>
+                  <span>{t('invoicesManagement.filter.chips.client')}: {clientOptions.find(opt => opt.value === filters.client)?.label}</span>
                   <button
                     onClick={() => onFiltersChange({ ...filters, client: '' })}
                     className="hover:bg-primary/20 rounded-full p-0.5"
@@ -354,9 +388,21 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [], filter
                 </div>
               )}
               
+              {filters.invoiceType && (
+                <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
+                  <span>{t('invoicesManagement.filter.chips.invoiceType', 'Type')}: {invoiceTypeOptions.find(opt => opt.value === filters.invoiceType)?.label}</span>
+                  <button
+                    onClick={() => onFiltersChange({ ...filters, invoiceType: '' })}
+                    className="hover:bg-primary/20 rounded-full p-0.5"
+                  >
+                    <Icon name="X" size={12} />
+                  </button>
+                </div>
+              )}
+              
               {(dateRange.start || dateRange.end) && (
                 <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
-                  <span>Période: {dateRange.start || '...'} - {dateRange.end || '...'}</span>
+                  <span>{t('invoicesManagement.filter.chips.period')}: {dateRange.start || '...'} - {dateRange.end || '...'}</span>
                   <button
                     onClick={() => {
                       setDateRange({ start: '', end: '' });
@@ -371,7 +417,7 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [], filter
               
               {(amountRange.min || amountRange.max) && (
                 <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
-                  <span>Montant: {amountRange.min || '0'}€ - {amountRange.max || '∞'}€</span>
+                  <span>{t('invoicesManagement.filter.chips.amount')}: {amountRange.min || '0'}€ - {amountRange.max || '∞'}€</span>
                   <button
                     onClick={() => {
                       setAmountRange({ min: '', max: '' });
@@ -396,8 +442,9 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [], filter
             <span className="text-xs ml-2">
               {filters.status && ` • ${statusOptions.find(opt => opt.value === filters.status)?.label}`}
               {filters.client && ` • ${clientOptions.find(opt => opt.value === filters.client)?.label}`}
-              {(dateRange.start || dateRange.end) && ` • Période`}
-              {(amountRange.min || amountRange.max) && ` • Montant`}
+              {filters.invoiceType && ` • ${invoiceTypeOptions.find(opt => opt.value === filters.invoiceType)?.label}`}
+              {(dateRange.start || dateRange.end) && ` • ${t('invoicesManagement.filter.chips.period', 'Period')}`}
+              {(amountRange.min || amountRange.max) && ` • ${t('invoicesManagement.filter.chips.amount', 'Amount')}`}
             </span>
           </div>
         </div>

@@ -322,7 +322,8 @@ export class InvoiceFollowUpService {
           final_amount: invoice.final_amount,
           description: invoice.description,
           title: invoice.title,
-          notes: invoice.notes
+          notes: invoice.notes,
+          invoice_type: invoice.invoice_type || 'final'
         },
         quote: invoice.quote || null
       };
@@ -330,7 +331,8 @@ export class InvoiceFollowUpService {
       // Generate PDF blob
       let pdfBase64 = null;
       try {
-        const pdfBlob = await generateInvoicePDF(invoiceDataForPDF, invoice.invoice_number);
+        const invoiceType = invoice.invoice_type || 'final';
+        const pdfBlob = await generateInvoicePDF(invoiceDataForPDF, invoice.invoice_number, null, 'fr', false, invoiceType);
         
         // Convert PDF blob to base64 for email attachment
         pdfBase64 = await new Promise((resolve, reject) => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
@@ -6,7 +6,7 @@ import Input from '../../../components/ui/Input';
 import { Checkbox } from '../../../components/ui/Checkbox';
 import Select from '../../../components/ui/Select';
 
-const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSelectionChange, filters, onFiltersChange, onStatusUpdate, isExportingPDF = false, canEdit = true, canDelete = true }) => {
+const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSelectionChange, filters, onFiltersChange, onStatusUpdate, isExportingPDF = false, canEdit = true, canDelete = true, groupByQuote = false }) => {
   const { t, i18n } = useTranslation();
   const [sortConfig, setSortConfig] = useState({ key: 'issueDate', direction: 'desc' });
   const [viewMode, setViewMode] = useState(() => {
@@ -96,6 +96,35 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
     );
   };
 
+  const getInvoiceTypeBadge = (invoiceType) => {
+    if (!invoiceType || invoiceType === 'final') {
+      return null; // Don't show badge for final invoices (default)
+    }
+    
+    const typeConfig = {
+      deposit: { 
+        label: t('invoicesManagement.invoiceType.deposit', 'Deposit Invoice'), 
+        color: 'bg-blue-100 text-blue-700 border border-blue-300',
+        icon: 'CreditCard'
+      },
+      final: { 
+        label: t('invoicesManagement.invoiceType.final', 'Final Invoice'), 
+        color: 'bg-green-100 text-green-700 border border-green-300',
+        icon: 'FileCheck'
+      }
+    };
+    
+    const config = typeConfig[invoiceType];
+    if (!config) return null;
+    
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${config.color}`}>
+        <Icon name={config.icon} size={12} />
+        <span>{config.label}</span>
+      </span>
+    );
+  };
+
   const getDaysOverdue = (dueDate, status) => {
     if (status !== 'overdue') return null;
     const today = new Date();
@@ -129,6 +158,35 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
     }
   };
 
+  // Group invoices by quote when groupByQuote is enabled
+  const groupedInvoices = useMemo(() => {
+    if (!groupByQuote) {
+      return { ungrouped: invoices };
+    }
+
+    const groups = {};
+    invoices.forEach(invoice => {
+      const groupKey = invoice.quoteId || 'ungrouped';
+      if (!groups[groupKey]) {
+        groups[groupKey] = {
+          quoteId: invoice.quoteId,
+          quoteNumber: invoice.quoteNumber,
+          invoices: []
+        };
+      }
+      groups[groupKey].invoices.push(invoice);
+    });
+
+    // Sort groups: ungrouped first, then by quote number
+    const sortedGroups = Object.values(groups).sort((a, b) => {
+      if (!a.quoteId) return -1;
+      if (!b.quoteId) return 1;
+      return (a.quoteNumber || '').localeCompare(b.quoteNumber || '');
+    });
+
+    return sortedGroups;
+  }, [invoices, groupByQuote]);
+
   const SortableHeader = ({ label, sortKey }) => (
     <th 
       className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-muted/50"
@@ -145,6 +203,159 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
     </th>
   );
 
+  const renderGroupedCardView = () => {
+    if (!groupByQuote) {
+      return renderCardView();
+    }
+
+    return (
+      <div className="p-4 space-y-6">
+        {groupedInvoices.map((group, groupIndex) => (
+          <div key={group.quoteId || `ungrouped-${groupIndex}`} className="space-y-4">
+            {group.quoteId && (
+              <div className="bg-muted/20 border border-border rounded-lg p-4">
+                <div className="flex items-center space-x-2">
+                  <Icon name="FileText" size={18} className="text-primary" />
+                  <span className="text-base font-semibold text-foreground">
+                    {t('invoicesManagement.groupByQuote.quoteLabel', 'Quote')}: {group.quoteNumber || group.quoteId}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    ({t('invoicesManagement.groupByQuote.invoiceCount', { count: group.invoices.length }, `${group.invoices.length} invoice(s)`)})
+                  </span>
+                </div>
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {group.invoices.map((invoice) => {
+                const daysOverdue = getDaysOverdue(invoice.dueDate, invoice.status);
+                return (
+                  <div key={invoice.id} className={`bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow duration-150 ${group.quoteId ? 'bg-muted/5' : ''}`}>
+                    {/* Header with checkbox and invoice number */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          checked={selectedInvoices.includes(invoice.id)}
+                          onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
+                        />
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <div className="text-sm font-medium text-foreground">{invoice.number}</div>
+                            {getInvoiceTypeBadge(invoice.invoiceType)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Client Info */}
+                    <div className="mb-3">
+                      <div className="text-sm font-medium text-foreground">{invoice.clientName}</div>
+                      <div className="text-xs text-muted-foreground">{invoice.clientEmail}</div>
+                    </div>
+
+                    {/* Amount and Payment Method */}
+                    <div className="mb-3">
+                      <div className="text-lg font-bold text-foreground">{formatCurrency(invoice.amount)}</div>
+                      {invoice.paymentMethod && (
+                        <div className="text-xs text-muted-foreground">{invoice.paymentMethod}</div>
+                      )}
+                    </div>
+
+                    {/* Status */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex flex-col space-y-1">
+                        <div>
+                          <div className="text-xs text-muted-foreground mb-1">{t('invoicesManagement.table.headers.status')}</div>
+                          {getStatusBadge(invoice.status, invoice)}
+                        </div>
+                        {daysOverdue && (
+                          <span className="text-xs text-error">+{daysOverdue} {t('invoicesManagement.table.days')}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Peppol Status */}
+                    {(() => {
+                      const clientType = invoice.client?.client_type || invoice.client?.type;
+                      const isProfessional = clientType === 'company' || clientType === 'professionnel';
+                      if (isProfessional) {
+                        return (
+                          <div className="mb-3">
+                            <div className="text-xs text-muted-foreground mb-1">{t('invoicesManagement.table.headers.peppolStatus', 'Peppol Status')}</div>
+                            {getPeppolStatusBadge(invoice.peppolStatus || 'not_sent')}
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+
+                    {/* Dates */}
+                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-3">
+                      <div>
+                        <div className="font-medium">{t('invoicesManagement.table.issue')}:</div>
+                        <div>{formatDate(invoice.issueDate)}</div>
+                      </div>
+                      <div>
+                        <div className="font-medium">{t('invoicesManagement.table.due')}:</div>
+                        <div className={`${invoice.status === 'overdue' ? 'text-error font-medium' : ''}`}>
+                          {formatDate(invoice.dueDate)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-between pt-3 border-t border-border space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        iconName="Eye"
+                        onClick={() => onInvoiceAction('view', invoice)}
+                        className="text-xs"
+                        title={t('invoicesManagement.table.actions.viewDetails')}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        iconName="Download"
+                        onClick={() => onInvoiceAction('export', invoice)}
+                        className="text-xs text-primary hover:text-primary/80"
+                        title={t('invoicesManagement.table.actions.exportPDF', 'Export PDF')}
+                        disabled={isExportingPDF}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        iconName="Send"
+                        onClick={() => onInvoiceAction('send', invoice)}
+                        className="text-xs text-primary hover:text-primary/80"
+                        title={
+                          !canEdit 
+                            ? t('permissions.noFullAccess') 
+                            : invoice.peppolSentAt 
+                              ? t('invoicesManagement.table.actions.alreadySent', 'Invoice already sent')
+                              : t('invoicesManagement.table.actions.sendInvoice')
+                        }
+                        disabled={!canEdit || !!invoice.peppolSentAt}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        iconName="Mail"
+                        onClick={() => onInvoiceAction('send_to_accountant', invoice)}
+                        className="text-xs text-primary hover:text-primary/80"
+                        title={!canEdit ? t('permissions.noFullAccess') : t('invoicesManagement.table.actions.sendToAccountant', 'Send to Accountant')}
+                        disabled={!canEdit}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   const renderCardView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
       {invoices.map((invoice) => {
@@ -159,7 +370,10 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                   onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
                 />
                 <div>
+                  <div className="flex items-center space-x-2">
                   <div className="text-sm font-medium text-foreground">{invoice.number}</div>
+                    {getInvoiceTypeBadge(invoice.invoiceType)}
+                  </div>
                   {invoice.quoteNumber && (
                     <div className="text-xs text-muted-foreground">{t('invoicesManagement.table.quote')}: {invoice.quoteNumber}</div>
                   )}
@@ -344,7 +558,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
           <p className="text-muted-foreground">{t('invoicesManagement.empty.description')}</p>
         </div>
       ) : viewMode === 'card' ? (
-        renderCardView()
+        groupByQuote ? renderGroupedCardView() : renderCardView()
       ) : (
       <div className="overflow-x-auto overflow-y-visible">
         <table className="min-w-full divide-y divide-border">
@@ -373,115 +587,248 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
             </tr>
           </thead>
           <tbody className="bg-card divide-y divide-border">
-            {invoices.map((invoice) => {
-              const daysOverdue = getDaysOverdue(invoice.dueDate, invoice.status);
-              return (
-                <tr key={invoice.id} className="hover:bg-muted/30 transition-colors duration-150">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <Checkbox
-                      checked={selectedInvoices.includes(invoice.id)}
-                      onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
-                    />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-foreground">{invoice.number}</div>
-                    {invoice.quoteNumber && (
-                      <div className="text-xs text-muted-foreground">{t('invoicesManagement.table.quote')}: {invoice.quoteNumber}</div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-foreground">{invoice.clientName}</div>
-                    <div className="text-xs text-muted-foreground">{invoice.clientEmail}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-foreground">{formatCurrency(invoice.amount)}</div>
-                    {invoice.paymentMethod && (
-                      <div className="text-xs text-muted-foreground">{invoice.paymentMethod}</div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex flex-col space-y-1">
-                      {getStatusBadge(invoice.status, invoice)}
-                      {daysOverdue && (
-                        <span className="text-xs text-error">+{daysOverdue} {t('invoicesManagement.table.days')}</span>
+            {groupByQuote ? (
+              // Grouped view
+              groupedInvoices.map((group, groupIndex) => (
+                <React.Fragment key={group.quoteId || `ungrouped-${groupIndex}`}>
+                  {group.quoteId && (
+                    <tr className="bg-muted/20">
+                      <td colSpan={9} className="px-6 py-3">
+                        <div className="flex items-center space-x-2">
+                          <Icon name="FileText" size={16} className="text-primary" />
+                          <span className="text-sm font-semibold text-foreground">
+                            {t('invoicesManagement.groupByQuote.quoteLabel', 'Quote')}: {group.quoteNumber || group.quoteId}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            ({t('invoicesManagement.groupByQuote.invoiceCount', { count: group.invoices.length }, `${group.invoices.length} invoice(s)`)})
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  {group.invoices.map((invoice) => {
+                    const daysOverdue = getDaysOverdue(invoice.dueDate, invoice.status);
+                    return (
+                      <tr key={invoice.id} className={`hover:bg-muted/30 transition-colors duration-150 ${group.quoteId ? 'bg-muted/5' : ''}`}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Checkbox
+                            checked={selectedInvoices.includes(invoice.id)}
+                            onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
+                          />
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-2">
+                            <div className="text-sm font-medium text-foreground">{invoice.number}</div>
+                            {getInvoiceTypeBadge(invoice.invoiceType)}
+                          </div>
+                          {invoice.quoteNumber && !groupByQuote && (
+                            <div className="text-xs text-muted-foreground">{t('invoicesManagement.table.quote')}: {invoice.quoteNumber}</div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-foreground">{invoice.clientName}</div>
+                          <div className="text-xs text-muted-foreground">{invoice.clientEmail}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-foreground">{formatCurrency(invoice.amount)}</div>
+                          {invoice.paymentMethod && (
+                            <div className="text-xs text-muted-foreground">{invoice.paymentMethod}</div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex flex-col space-y-1">
+                            {getStatusBadge(invoice.status, invoice)}
+                            {daysOverdue && (
+                              <span className="text-xs text-error">+{daysOverdue} {t('invoicesManagement.table.days')}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {(() => {
+                            const clientType = invoice.client?.client_type || invoice.client?.type;
+                            const isProfessional = clientType === 'company' || clientType === 'professionnel';
+                            if (isProfessional) {
+                              return getPeppolStatusBadge(invoice.peppolStatus || 'not_sent');
+                            }
+                            return (
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200">
+                                {t('invoicesManagement.peppolStatus.notApplicable', 'N/A')}
+                              </span>
+                            );
+                          })()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                          {formatDate(invoice.issueDate)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                          <div className={`${invoice.status === 'overdue' ? 'text-error font-medium' : ''}`}>
+                            {formatDate(invoice.dueDate)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              iconName="Eye"
+                              onClick={() => onInvoiceAction('view', invoice)}
+                              title={t('invoicesManagement.table.actions.viewDetails')}
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              iconName="Download"
+                              onClick={() => onInvoiceAction('export', invoice)}
+                              title={t('invoicesManagement.table.actions.exportPDF', 'Export PDF')}
+                              className="text-primary hover:text-primary/80"
+                              disabled={isExportingPDF}
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              iconName="Send"
+                              onClick={() => onInvoiceAction('send', invoice)}
+                              title={
+                                !canEdit 
+                                  ? t('permissions.noFullAccess') 
+                                  : (invoice.peppolSentAt || invoice.peppolStatus === 'sent' || invoice.peppolStatus === 'delivered')
+                                    ? t('invoicesManagement.table.actions.alreadySent', 'Invoice already sent')
+                                    : t('invoicesManagement.table.actions.sendInvoice')
+                              }
+                              className="text-primary hover:text-primary/80"
+                              disabled={!canEdit || !!invoice.peppolSentAt || invoice.peppolStatus === 'sent' || invoice.peppolStatus === 'delivered'}
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              iconName="Mail"
+                              onClick={() => onInvoiceAction('send_to_accountant', invoice)}
+                              title={!canEdit ? t('permissions.noFullAccess') : t('invoicesManagement.table.actions.sendToAccountant', 'Send to Accountant')}
+                              className="text-primary hover:text-primary/80"
+                              disabled={!canEdit}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </React.Fragment>
+              ))
+            ) : (
+              // Ungrouped view (original)
+              invoices.map((invoice) => {
+                const daysOverdue = getDaysOverdue(invoice.dueDate, invoice.status);
+                return (
+                  <tr key={invoice.id} className="hover:bg-muted/30 transition-colors duration-150">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Checkbox
+                        checked={selectedInvoices.includes(invoice.id)}
+                        onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-2">
+                        <div className="text-sm font-medium text-foreground">{invoice.number}</div>
+                        {getInvoiceTypeBadge(invoice.invoiceType)}
+                      </div>
+                      {invoice.quoteNumber && (
+                        <div className="text-xs text-muted-foreground">{t('invoicesManagement.table.quote')}: {invoice.quoteNumber}</div>
                       )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {/* Show Peppol status (read-only) for professional clients */}
-                    {(() => {
-                      const clientType = invoice.client?.client_type || invoice.client?.type;
-                      const isProfessional = clientType === 'company' || clientType === 'professionnel';
-                      if (isProfessional) {
-                        // Show Peppol status (read-only badge, cannot be modified by user)
-                        return getPeppolStatusBadge(invoice.peppolStatus || 'not_sent');
-                      }
-                      // Individual clients don't use Peppol
-                      return (
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200">
-                          {t('invoicesManagement.peppolStatus.notApplicable', 'N/A')}
-                        </span>
-                      );
-                    })()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                    {formatDate(invoice.issueDate)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                    <div className={`${invoice.status === 'overdue' ? 'text-error font-medium' : ''}`}>
-                      {formatDate(invoice.dueDate)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        iconName="Eye"
-                        onClick={() => onInvoiceAction('view', invoice)}
-                        title={t('invoicesManagement.table.actions.viewDetails')}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        iconName="Download"
-                        onClick={() => onInvoiceAction('export', invoice)}
-                        title={t('invoicesManagement.table.actions.exportPDF', 'Export PDF')}
-                        className="text-primary hover:text-primary/80"
-                        disabled={isExportingPDF}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        iconName="Send"
-                        onClick={() => onInvoiceAction('send', invoice)}
-                        title={
-                          !canEdit 
-                            ? t('permissions.noFullAccess') 
-                            : (invoice.peppolSentAt || invoice.peppolStatus === 'sent' || invoice.peppolStatus === 'delivered')
-                              ? t('invoicesManagement.table.actions.alreadySent', 'Invoice already sent')
-                              : t('invoicesManagement.table.actions.sendInvoice')
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-foreground">{invoice.clientName}</div>
+                      <div className="text-xs text-muted-foreground">{invoice.clientEmail}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-foreground">{formatCurrency(invoice.amount)}</div>
+                      {invoice.paymentMethod && (
+                        <div className="text-xs text-muted-foreground">{invoice.paymentMethod}</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-col space-y-1">
+                        {getStatusBadge(invoice.status, invoice)}
+                        {daysOverdue && (
+                          <span className="text-xs text-error">+{daysOverdue} {t('invoicesManagement.table.days')}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {/* Show Peppol status (read-only) for professional clients */}
+                      {(() => {
+                        const clientType = invoice.client?.client_type || invoice.client?.type;
+                        const isProfessional = clientType === 'company' || clientType === 'professionnel';
+                        if (isProfessional) {
+                          // Show Peppol status (read-only badge, cannot be modified by user)
+                          return getPeppolStatusBadge(invoice.peppolStatus || 'not_sent');
                         }
-                        className="text-primary hover:text-primary/80"
-                        disabled={!canEdit || !!invoice.peppolSentAt || invoice.peppolStatus === 'sent' || invoice.peppolStatus === 'delivered'}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        iconName="Mail"
-                        onClick={() => onInvoiceAction('send_to_accountant', invoice)}
-                        title={!canEdit ? t('permissions.noFullAccess') : t('invoicesManagement.table.actions.sendToAccountant', 'Send to Accountant')}
-                        className="text-primary hover:text-primary/80"
-                        disabled={!canEdit}
-                      />
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                        // Individual clients don't use Peppol
+                        return (
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200">
+                            {t('invoicesManagement.peppolStatus.notApplicable', 'N/A')}
+                          </span>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                      {formatDate(invoice.issueDate)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                      <div className={`${invoice.status === 'overdue' ? 'text-error font-medium' : ''}`}>
+                        {formatDate(invoice.dueDate)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          iconName="Eye"
+                          onClick={() => onInvoiceAction('view', invoice)}
+                          title={t('invoicesManagement.table.actions.viewDetails')}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          iconName="Download"
+                          onClick={() => onInvoiceAction('export', invoice)}
+                          title={t('invoicesManagement.table.actions.exportPDF', 'Export PDF')}
+                          className="text-primary hover:text-primary/80"
+                          disabled={isExportingPDF}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          iconName="Send"
+                          onClick={() => onInvoiceAction('send', invoice)}
+                          title={
+                            !canEdit 
+                              ? t('permissions.noFullAccess') 
+                              : (invoice.peppolSentAt || invoice.peppolStatus === 'sent' || invoice.peppolStatus === 'delivered')
+                                ? t('invoicesManagement.table.actions.alreadySent', 'Invoice already sent')
+                                : t('invoicesManagement.table.actions.sendInvoice')
+                          }
+                          className="text-primary hover:text-primary/80"
+                          disabled={!canEdit || !!invoice.peppolSentAt || invoice.peppolStatus === 'sent' || invoice.peppolStatus === 'delivered'}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          iconName="Mail"
+                          onClick={() => onInvoiceAction('send_to_accountant', invoice)}
+                          title={!canEdit ? t('permissions.noFullAccess') : t('invoicesManagement.table.actions.sendToAccountant', 'Send to Accountant')}
+                          className="text-primary hover:text-primary/80"
+                          disabled={!canEdit}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
-        </div>
+      </div>
       )}
     </div>
   );

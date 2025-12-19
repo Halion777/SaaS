@@ -3380,8 +3380,10 @@
       "vat": "TVA",
       "vatLabel": "TVA:",
       "totalInclTax": "TOTAL TTC:",
-      "depositOnOrder": "ACOMPTE À LA COMMANDE:",
-      "balanceOnDelivery": "SOLDE À LA LIVRAISON:",
+      "depositOnOrder": "PAIEMENT AVANT TRAVAUX:",
+      "balanceOnDelivery": "PAIEMENT APRÈS TRAVAUX:",
+      "paymentBeforeWork": "PAIEMENT AVANT TRAVAUX:",
+      "paymentAfterWork": "PAIEMENT APRÈS TRAVAUX:",
       "generalConditions": "CONDITIONS GÉNÉRALES",
       "quoteNumber": "Numéro de devis",
       "date": "Date",
@@ -3644,8 +3646,12 @@
       "subtotal": "Sous-total",
       "vat": "TVA",
       "total": "Total",
-      "advancePayment": "Acompte à la commande",
-      "balanceOnDelivery": "Solde à la livraison",
+      "totalInclTax": "Total TTC",
+      "advancePayment": "Paiement avant travaux",
+      "afterWork": "Paiement après travaux",
+      "balanceOnDelivery": "Paiement après travaux",
+      "paymentBeforeWork": "Paiement avant travaux",
+      "paymentAfterWork": "Paiement après travaux",
       "materialsNote": "Les prix des matériaux sont inclus dans le total mais masqués"
     },
     "additionalInfo": {
@@ -4203,16 +4209,32 @@
           "from": "Du",
           "to": "Au"
         },
+        "invoiceType": {
+          "label": "Type de facture",
+          "all": "Tous les types",
+          "deposit": "Factures d'acompte",
+          "final": "Factures finales"
+        },
         "chips": {
           "status": "Statut",
           "client": "Client",
+          "invoiceType": "Type",
           "period": "Période",
           "amount": "Montant",
           "removeStatus": "Supprimer le filtre de statut",
           "removeClient": "Supprimer le filtre de client",
+          "removeInvoiceType": "Supprimer le filtre de type de facture",
           "removePeriod": "Supprimer le filtre de période",
           "removeAmount": "Supprimer le filtre de montant"
         }
+      },
+      "groupByQuote": {
+        "label": "Grouper les factures par devis",
+        "enabled": "Groupé",
+        "disabled": "Non groupé",
+        "quoteLabel": "Devis",
+        "invoiceCount": "{{count}} facture",
+        "invoiceCount_plural": "{{count}} factures"
       },
       "table": {
         "searchPlaceholder": "Rechercher par numéro, client, description ou statut...",
@@ -4516,6 +4538,12 @@
           "from": "Du",
           "to": "Au"
         },
+        "invoiceType": {
+          "label": "Type de facture",
+          "all": "Tous les types",
+          "deposit": "Factures d'acompte",
+          "final": "Factures finales"
+        },
         "chips": {
           "status": "Statut",
           "removeStatus": "Supprimer le filtre de statut",
@@ -4523,6 +4551,8 @@
           "removeCategory": "Supprimer le filtre de catégorie",
           "source": "Source",
           "removeSource": "Supprimer le filtre de source",
+          "invoiceType": "Type",
+          "removeInvoiceType": "Supprimer le filtre de type de facture",
           "period": "Période",
           "removePeriod": "Supprimer le filtre de période",
           "amount": "Montant",

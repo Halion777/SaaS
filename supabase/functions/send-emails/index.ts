@@ -428,8 +428,21 @@ serve(async (req) => {
             depositSectionText = `\n⚠️ ${isFrench ? 'ACOMPTE À LA COMMANDE' : isDutch ? 'VOORSCHOT BIJ BESTELLING' : 'ADVANCE PAYMENT'}: ${depositAmount}\n${isFrench ? '(Montant à payer avant le début des travaux)' : isDutch ? '(Bedrag te betalen vóór aanvang van het werk)' : '(Amount to pay before work starts)'}\n`;
           }
           
-          // Note: "Total Amount to Pay after work" section is now always shown in the template itself
-          // The edge function no longer generates it here to avoid duplication
+          // Balance section HTML (only shown if deposit is enabled)
+          let balanceSectionHtml = '';
+          let balanceSectionText = '';
+          
+          if (depositEnabled && depositAmountNum > 0) {
+            balanceSectionHtml = `
+              <div style="background: #dbeafe; padding: 12px; border-radius: 6px; margin-top: 12px; border-left: 4px solid #3b82f6;">
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #1e40af; font-weight: bold;">${isFrench ? 'Montant total à payer après travaux:' : isDutch ? 'Totaalbedrag te betalen na werk:' : 'Total Amount to Pay after work:'}</span>
+                  <span style="color: #1e40af; font-weight: bold; font-size: 14px;">${balanceAmount}</span>
+                </div>
+              </div>`;
+            
+            balanceSectionText = `${isFrench ? 'Montant total à payer après travaux:' : isDutch ? 'Totaalbedrag te betalen na werk:' : 'Total Amount to Pay after work:'} ${balanceAmount}\n`;
+          }
           
           const variables = {
             client_name: emailData.variables?.client_name || 'Madame, Monsieur',
@@ -454,7 +467,9 @@ serve(async (req) => {
             vat_section: vatSectionHtml,
             vat_section_text: vatSectionText,
             deposit_section: depositSectionHtml,
-            deposit_section_text: depositSectionText
+            deposit_section_text: depositSectionText,
+            balance_section: balanceSectionHtml,
+            balance_section_text: balanceSectionText
           };
           const rendered = renderTemplate(quoteTemplate.data, variables);
           emailResult = await sendEmail({

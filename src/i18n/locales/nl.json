@@ -3370,8 +3370,10 @@
       "vat": "BTW",
       "vatLabel": "BTW:",
       "totalInclTax": "TOTAAL INCL. BTW:",
-      "depositOnOrder": "AANBETALING BIJ BESTELLING:",
-      "balanceOnDelivery": "SALDO BIJ LEVERING:",
+      "depositOnOrder": "BETALING VOOR WERK:",
+      "balanceOnDelivery": "BETALING NA WERK:",
+      "paymentBeforeWork": "BETALING VOOR WERK:",
+      "paymentAfterWork": "BETALING NA WERK:",
       "generalConditions": "ALGEMENE VOORWAARDEN",
       "quoteNumber": "Offertenummer",
       "date": "Datum",
@@ -3633,8 +3635,12 @@
       "subtotal": "Subtotaal",
       "vat": "BTW",
       "total": "Totaal",
-      "advancePayment": "Voorschot bij bestelling",
-      "balanceOnDelivery": "Saldo bij levering",
+      "totalInclTax": "Totaal inclusief BTW",
+      "advancePayment": "Betaling voor werk",
+      "afterWork": "Betaling na werk",
+      "balanceOnDelivery": "Betaling na werk",
+      "paymentBeforeWork": "Betaling voor werk",
+      "paymentAfterWork": "Betaling na werk",
       "materialsNote": "Materiaalkosten zijn inbegrepen in het totaal maar verborgen"
     },
     "additionalInfo": {
@@ -4191,16 +4197,32 @@
           "from": "Van",
           "to": "Tot"
         },
+        "invoiceType": {
+          "label": "Factuurtype",
+          "all": "Alle typen",
+          "deposit": "Aanbetalingsfacturen",
+          "final": "Eindfacturen"
+        },
         "chips": {
           "status": "Status",
           "client": "Klant",
+          "invoiceType": "Type",
           "period": "Periode",
           "amount": "Bedrag",
           "removeStatus": "Statusfilter verwijderen",
           "removeClient": "Klantfilter verwijderen",
+          "removeInvoiceType": "Factuurtypefilter verwijderen",
           "removePeriod": "Periodfilter verwijderen",
           "removeAmount": "Bedragfilter verwijderen"
         }
+      },
+      "groupByQuote": {
+        "label": "Facturen groeperen per offerte",
+        "enabled": "Gegroepeerd",
+        "disabled": "Niet gegroepeerd",
+        "quoteLabel": "Offerte",
+        "invoiceCount": "{{count}} factuur",
+        "invoiceCount_plural": "{{count}} facturen"
       },
       "table": {
         "searchPlaceholder": "Zoeken op nummer, klant, beschrijving of status...",
@@ -4491,6 +4513,12 @@
           "from": "Van",
           "to": "Tot"
         },
+        "invoiceType": {
+          "label": "Factuurtype",
+          "all": "Alle typen",
+          "deposit": "Aanbetalingsfacturen",
+          "final": "Eindfacturen"
+        },
         "chips": {
           "status": "Status",
           "removeStatus": "Statusfilter verwijderen",
@@ -4498,6 +4526,8 @@
           "removeCategory": "Categoriefilter verwijderen",
           "source": "Bron",
           "removeSource": "Bronfilter verwijderen",
+          "invoiceType": "Type",
+          "removeInvoiceType": "Factuurtypefilter verwijderen",
           "period": "Periode",
           "removePeriod": "Periodefilter verwijderen",
           "amount": "Bedrag",

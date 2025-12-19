@@ -47,13 +47,8 @@ INSERT INTO public.email_templates (
       <!-- Deposit Section - will be replaced by edge function based on deposit_enabled -->
       {deposit_section}
       
-      <!-- Total Amount to Pay after work (balance) - always shown -->
-      <div style="background: #dbeafe; padding: 12px; border-radius: 6px; margin-top: 12px; border-left: 4px solid #3b82f6;">
-        <div style="display: flex; justify-content: space-between;">
-          <span style="color: #1e40af; font-weight: bold;">Montant total à payer après travaux:</span>
-          <span style="color: #1e40af; font-weight: bold; font-size: 14px;">{balance_amount}</span>
-        </div>
-      </div>
+      <!-- Total Amount to Pay after work (balance) - will be replaced by edge function only if deposit is enabled -->
+      {balance_section}
       
       <!-- Total with VAT (Grand Total) - shown at the end -->
       <div style="display: flex; justify-content: space-between; padding: 12px 0; border-top: 2px solid #e0e0e0; margin-top: 12px;">
@@ -139,13 +134,8 @@ INSERT INTO public.email_templates (
       <!-- Deposit Section - will be replaced by edge function based on deposit_enabled -->
       {deposit_section}
       
-      <!-- Total Amount to Pay after work (balance) - always shown -->
-      <div style="background: #dbeafe; padding: 12px; border-radius: 6px; margin-top: 12px; border-left: 4px solid #3b82f6;">
-        <div style="display: flex; justify-content: space-between;">
-          <span style="color: #1e40af; font-weight: bold;">Total Amount to Pay after work:</span>
-          <span style="color: #1e40af; font-weight: bold; font-size: 14px;">{balance_amount}</span>
-        </div>
-      </div>
+      <!-- Total Amount to Pay after work (balance) - will be replaced by edge function only if deposit is enabled -->
+      {balance_section}
       
       <!-- Total with VAT (Grand Total) - shown at the end -->
       <div style="display: flex; justify-content: space-between; padding: 12px 0; border-top: 2px solid #e0e0e0; margin-top: 12px;">
@@ -181,7 +171,7 @@ Subtotal (excl. VAT): {total_before_vat}
 {vat_section_text}
 
 {deposit_section_text}
-Total Amount to Pay after work: {balance_amount}
+{balance_section_text}
 Total (incl. VAT): {total_with_vat}
 
 {custom_message}
@@ -231,13 +221,8 @@ INSERT INTO public.email_templates (
       <!-- Deposit Section - will be replaced by edge function based on deposit_enabled -->
       {deposit_section}
       
-      <!-- Total Amount to Pay after work (balance) - always shown -->
-      <div style="background: #dbeafe; padding: 12px; border-radius: 6px; margin-top: 12px; border-left: 4px solid #3b82f6;">
-        <div style="display: flex; justify-content: space-between;">
-          <span style="color: #1e40af; font-weight: bold;">Totaalbedrag te betalen na werk:</span>
-          <span style="color: #1e40af; font-weight: bold; font-size: 14px;">{balance_amount}</span>
-        </div>
-      </div>
+      <!-- Total Amount to Pay after work (balance) - will be replaced by edge function only if deposit is enabled -->
+      {balance_section}
       
       <!-- Total with VAT (Grand Total) - shown at the end -->
       <div style="display: flex; justify-content: space-between; padding: 12px 0; border-top: 2px solid #e0e0e0; margin-top: 12px;">
@@ -273,7 +258,7 @@ Subtotaal (excl. BTW): {total_before_vat}
 {vat_section_text}
 
 {deposit_section_text}
-Totaalbedrag te betalen na werk: {balance_amount}
+{balance_section_text}
 Totaal (incl. BTW): {total_with_vat}
 
 {custom_message}

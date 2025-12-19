@@ -58,10 +58,21 @@ export function calculateQuoteTotals(tasks = [], financialConfig = {}, options =
   const vatEnabled = vatConfig.display !== false && vatConfig.display !== undefined;
   const vatRate = vatEnabled ? parseFloat(vatConfig.rate || 0) : 0;
   
+  // Helper function to round VAT up (ceiling) to 2 decimal places
+  // Example: 72.975 -> 72.98 (not 72.97)
+  // This ensures VAT always rounds up when calculated from percentage
+  const roundVatUp = (vatAmount) => {
+    if (!vatAmount || isNaN(vatAmount)) return 0;
+    // Multiply by 100, round up (ceiling), then divide by 100
+    return Math.ceil(vatAmount * 100) / 100;
+  };
+
   // Calculate VAT amount
   let vatAmount = 0;
   if (vatEnabled && vatRate > 0) {
-    vatAmount = totalBeforeVAT * (vatRate / 100);
+    // Calculate VAT from percentage and round up (ceiling)
+    // Example: 21% of 347.50 = 72.975 -> 72.98
+    vatAmount = roundVatUp(totalBeforeVAT * (vatRate / 100));
   } else if (useStoredAmounts && storedQuote?.tax_amount) {
     // Fallback to stored tax amount if VAT is disabled but we have stored value
     vatAmount = parseFloat(storedQuote.tax_amount || 0);
