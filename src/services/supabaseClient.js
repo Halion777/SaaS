@@ -56,6 +56,9 @@ export const sessionManager = {
    */
   clearAllAuthData: async () => {
     try {
+      // Preserve logout flag before clearing storage
+      const logoutFlag = sessionStorage.getItem('logout_in_progress') || localStorage.getItem('logout_in_progress');
+      
       // Clear Supabase session first (async)
       await supabase.auth.signOut();
       
@@ -64,6 +67,12 @@ export const sessionManager = {
       
       // Clear all localStorage (Supabase stores auth tokens here)
       localStorage.clear();
+      
+      // Restore logout flag if it was set
+      if (logoutFlag) {
+        sessionStorage.setItem('logout_in_progress', 'true');
+        localStorage.setItem('logout_in_progress', 'true');
+      }
       
       // Clear specific Supabase keys from localStorage (in case clear() doesn't work)
       const supabaseKeys = Object.keys(localStorage).filter(key => 
@@ -98,7 +107,6 @@ export const sessionManager = {
           .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
       });
       
-      console.log('All authentication data cleared');
     } catch (error) {
       console.error('Error clearing authentication data:', error);
     }

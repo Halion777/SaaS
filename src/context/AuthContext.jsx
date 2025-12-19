@@ -375,6 +375,10 @@ export const AuthProvider = ({ children }) => {
         throw error;
       }
       
+      // Clear logout flag on successful login
+      sessionStorage.removeItem('logout_in_progress');
+      localStorage.removeItem('logout_in_progress');
+      
       // Explicitly set user and session
       if (data?.user) {
         setUser(data.user);
@@ -418,47 +422,31 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout function
+  // Logout function - simplified
   const logout = async () => {
     try {
-      // Set flag to prevent auto-login immediately after logout
+      // Set flag to prevent auto-login
       autoLoginRef.current = true;
       
-      // Set logout flag BEFORE clearing storage to prevent double loading
+      // Set logout flag BEFORE any cleanup
       sessionStorage.setItem('logout_in_progress', 'true');
       localStorage.setItem('logout_in_progress', 'true');
       
-      // Clear local state first to prevent any UI updates
+      // Clear local state immediately
       setUser(null);
       setSession(null);
       setShowProfileSelection(false);
       setIsProfileSelected(false);
       
-      // Use Supabase sign out method first
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error('Supabase sign out error:', error);
-      }
-      
-      // Use secure session manager to clear all auth data (including localStorage and cookies)
-      // Note: This will clear the logout_in_progress flag, so we need to set it again
-      await sessionManager.clearAllAuthData();
-      
-      // Re-set logout flag after clearAllAuthData (since it clears everything)
-      sessionStorage.setItem('logout_in_progress', 'true');
-      localStorage.setItem('logout_in_progress', 'true');
-      
       // Clear subscription cache
       clearSubscriptionCache();
       
-      // Clear profile selection data from sessionStorage and localStorage
+      // Clear profile data
       if (user) {
         sessionStorage.removeItem(`current-profile-id-${user.id}`);
         localStorage.removeItem(`current-profile-id-${user.id}`);
       }
       
-      // Clear all profile-related data
       const profileKeys = Object.keys(localStorage).filter(key => 
         key.includes('profile') || key.includes('current-profile')
       );
@@ -467,16 +455,16 @@ export const AuthProvider = ({ children }) => {
         sessionStorage.removeItem(key);
       });
       
-      // Ensure logout flag is still set before navigation
+      // Sign out from Supabase and clear all auth data
+      await supabase.auth.signOut();
+      await sessionManager.clearAllAuthData();
+      
+      // Ensure logout flag is set (clearAllAuthData preserves it, but ensure it's there)
       sessionStorage.setItem('logout_in_progress', 'true');
       localStorage.setItem('logout_in_progress', 'true');
       
-      // Force a small delay to ensure all cleanup is complete before navigation
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Navigate to login page with replace to prevent back navigation and double loading
-      // Use replace instead of href to prevent adding to history and ensure single navigation
-      window.location.replace('/login');
+      // Navigate using React Router (no page reload)
+      navigate('/login', { replace: true });
       
       return { error: null };
     } catch (error) {
@@ -484,8 +472,8 @@ export const AuthProvider = ({ children }) => {
       // Set logout flag even on error
       sessionStorage.setItem('logout_in_progress', 'true');
       localStorage.setItem('logout_in_progress', 'true');
-      // Even on error, try to navigate to login (use replace to prevent double load)
-      window.location.replace('/login');
+      // Navigate even on error
+      navigate('/login', { replace: true });
       return { error };
     }
   };
