@@ -4265,6 +4265,18 @@
       },
       "modal": {
         "title": "Invoice Details",
+        "close": "Close",
+        "invoiceLines": "Invoice Line Items",
+        "invoiceLinesTable": {
+          "number": "N°",
+          "description": "Description",
+          "quantity": "Qty",
+          "unitPrice": "Unit Price",
+          "totalExclVat": "Total Excl. VAT",
+          "subtotalExclVat": "Subtotal Excl. VAT",
+          "vat": "VAT",
+          "totalInclVat": "Total Incl. VAT"
+        },
         "tabs": {
           "details": "Details",
           "peppol": "Peppol"
@@ -4594,6 +4606,17 @@
       "modal": {
         "title": "Invoice Details",
         "close": "Close",
+        "invoiceLines": "Invoice Line Items",
+        "invoiceLinesTable": {
+          "number": "N°",
+          "description": "Description",
+          "quantity": "Qty",
+          "unitPrice": "Unit Price",
+          "totalExclVat": "Total Excl. VAT",
+          "subtotalExclVat": "Subtotal Excl. VAT",
+          "vat": "VAT",
+          "totalInclVat": "Total Incl. VAT"
+        },
         "tabs": {
           "details": "Details",
           "peppol": "Peppol"
@@ -4707,6 +4730,7 @@
       "modal": {
         "title": "Invoice Details",
         "close": "Close",
+        "invoiceLines": "Invoice Line Items",
         "tabs": {
           "details": "Details",
           "peppol": "Peppol"

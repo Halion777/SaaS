@@ -1859,9 +1859,20 @@ const PeppolNetworkPage = () => {
                               </div>
                             </div>
                             <div className="flex items-center space-x-3">
-                              <div className="bg-green-600 text-white px-3 py-1 rounded-full text-xs font-mono font-semibold">
-                                {peppolSettings.peppolId}
-                              </div>
+                              {peppolSettings.countryCode === 'BE' && peppolIdentifier ? (
+                                <div className="flex items-center space-x-2">
+                                  <div className="bg-green-600 text-white px-3 py-1 rounded-full text-xs font-mono font-semibold">
+                                    {combinePeppolIdWithCountry('0208', 'BE', peppolIdentifier)}
+                                  </div>
+                                  <div className="bg-green-600 text-white px-3 py-1 rounded-full text-xs font-mono font-semibold">
+                                    {combinePeppolIdWithCountry('9925', 'BE', peppolIdentifier)}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="bg-green-600 text-white px-3 py-1 rounded-full text-xs font-mono font-semibold">
+                                  {peppolSettings.peppolId}
+                                </div>
+                              )}
                               <Icon
                                 name={showParticipantDetails ? "ChevronUp" : "ChevronDown"}
                                 size={20}
@@ -1873,6 +1884,29 @@ const PeppolNetworkPage = () => {
 
                         {showParticipantDetails && (
                           <div className="space-y-4">
+                            {/* Peppol IDs for Belgium */}
+                            {peppolSettings.countryCode === 'BE' && peppolIdentifier && (
+                              <div className="bg-muted/30 border border-border rounded-lg p-4">
+                                <label className="block text-xs font-medium text-muted-foreground mb-2">
+                                  {t('peppol.setup.companyInfo.combinedPeppolId', 'Peppol IDs')}
+                                </label>
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-muted-foreground font-medium min-w-[40px]">0208:</span>
+                                    <code className="text-sm font-mono text-foreground bg-background px-2 py-1 rounded border border-border">
+                                      {combinePeppolIdWithCountry('0208', 'BE', peppolIdentifier)}
+                                    </code>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-muted-foreground font-medium min-w-[40px]">9925:</span>
+                                    <code className="text-sm font-mono text-foreground bg-background px-2 py-1 rounded border border-border">
+                                      {combinePeppolIdWithCountry('9925', 'BE', peppolIdentifier)}
+                                    </code>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                            
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <div className="bg-card border border-border rounded-lg p-3">
                                 <label className="text-xs text-muted-foreground">{t('peppol.setup.registered.participantName')}</label>

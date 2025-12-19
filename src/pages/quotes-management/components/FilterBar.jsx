@@ -118,6 +118,7 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [], filt
             value={filters.status || ''}
             onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
             placeholder={t('quotesManagement.filter.status.all')}
+            maxHeight="none"
           />
 
           <Select
@@ -248,6 +249,7 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [], filt
               value={filters.status || ''}
               onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
               placeholder={t('quotesManagement.filter.status.all')}
+              maxHeight="none"
             />
 
             <Select

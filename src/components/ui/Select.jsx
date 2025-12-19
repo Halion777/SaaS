@@ -26,6 +26,7 @@ const Select = React.forwardRef(({
     onOpenChange,
     searchable, // Extract searchable to prevent it from being passed to DOM
     usePortal = false, // Use portal to render dropdown outside of parent overflow containers
+    maxHeight, // Optional max height override for dropdown
     ...props
 }, ref) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -73,7 +74,7 @@ const Select = React.forwardRef(({
                 if (!selectRef.current) return;
                 const rect = selectRef.current.getBoundingClientRect();
                 const viewportHeight = window.innerHeight;
-                const dropdownHeight = 200; // max-h-[200px] from the dropdown
+                const dropdownHeight = maxHeight && maxHeight !== 'none' ? (typeof maxHeight === 'string' ? parseInt(maxHeight) : maxHeight) : 200; // Use maxHeight prop or default to 200px
                 const spaceBelow = viewportHeight - rect.bottom;
                 const spaceAbove = rect.top;
                 
@@ -440,27 +441,31 @@ const Select = React.forwardRef(({
                         <div 
                             ref={dropdownRef}
                             className={cn(
-                                "bg-popover text-popover-foreground border border-border rounded-md shadow-lg max-h-[200px] overflow-auto",
+                                "bg-popover text-popover-foreground border border-border rounded-md shadow-lg overflow-auto",
+                                !maxHeight && "max-h-[200px]",
                                 usePortal ? "fixed" : "absolute w-full"
-                            )} 
-                            style={usePortal ? { 
-                                zIndex: 99999, 
-                                top: `${dropdownPosition.top}px`, 
-                                left: `${dropdownPosition.left}px`, 
-                                width: `${dropdownPosition.width}px`,
-                                marginTop: openUpward ? '0px' : '1px',
-                                marginBottom: openUpward ? '0px' : '0px',
-                                position: 'fixed',
-                                transform: openUpward ? 'translateY(-100%)' : 'none'
-                            } : { 
-                                zIndex: 1001,
-                                bottom: openUpward ? '100%' : 'auto',
-                                top: openUpward ? 'auto' : '100%',
-                                marginTop: openUpward ? '0px' : '1px',
-                                marginBottom: openUpward ? '0px' : '0px'
+                            )}
+                            style={{
+                                ...(maxHeight && maxHeight !== 'none' ? { maxHeight: typeof maxHeight === 'string' ? maxHeight : `${maxHeight}px` } : {}),
+                                ...(usePortal ? { 
+                                    zIndex: 99999, 
+                                    top: `${dropdownPosition.top}px`, 
+                                    left: `${dropdownPosition.left}px`, 
+                                    width: `${dropdownPosition.width}px`,
+                                    marginTop: openUpward ? '0px' : '1px',
+                                    marginBottom: openUpward ? '0px' : '0px',
+                                    position: 'fixed',
+                                    transform: openUpward ? 'translateY(-100%)' : 'none'
+                                } : { 
+                                    zIndex: 1001,
+                                    bottom: openUpward ? '100%' : 'auto',
+                                    top: openUpward ? 'auto' : '100%',
+                                    marginTop: openUpward ? '0px' : '1px',
+                                    marginBottom: openUpward ? '0px' : '0px'
+                                })
                             }}
                         >
-                            <div className="py-1 max-h-60 overflow-y-auto overflow-x-hidden scrollbar-hide">
+                            <div className={cn("py-1 overflow-y-auto overflow-x-hidden scrollbar-hide", !maxHeight && "max-h-60")} style={maxHeight && maxHeight !== 'none' ? { maxHeight: typeof maxHeight === 'string' ? maxHeight : `${maxHeight}px` } : undefined}>
                                 {filteredOptions.length === 0 ? (
                                     <div className="px-3 py-2 text-sm text-muted-foreground">
                                         {keyboardFilter ? `No country codes starting with "${keyboardFilter.toUpperCase()}"` : 'No options available'}

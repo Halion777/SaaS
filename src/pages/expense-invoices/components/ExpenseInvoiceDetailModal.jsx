@@ -354,11 +354,11 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                       <table className="w-full border-collapse">
                         <thead>
                           <tr className="bg-muted/50">
-                            <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase border-b border-border">N°</th>
-                            <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase border-b border-border">Description</th>
-                            <th className="px-4 py-3 text-center text-xs font-semibold text-foreground uppercase border-b border-border">Qty</th>
-                            <th className="px-4 py-3 text-right text-xs font-semibold text-foreground uppercase border-b border-border">Unit Price</th>
-                            <th className="px-4 py-3 text-right text-xs font-semibold text-foreground uppercase border-b border-border">Total Excl. VAT</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase border-b border-border">{t('expenseInvoices.modal.invoiceLinesTable.number', 'N°')}</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase border-b border-border">{t('expenseInvoices.modal.invoiceLinesTable.description', 'Description')}</th>
+                            <th className="px-4 py-3 text-center text-xs font-semibold text-foreground uppercase border-b border-border">{t('expenseInvoices.modal.invoiceLinesTable.quantity', 'Qty')}</th>
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-foreground uppercase border-b border-border">{t('expenseInvoices.modal.invoiceLinesTable.unitPrice', 'Unit Price')}</th>
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-foreground uppercase border-b border-border">{t('expenseInvoices.modal.invoiceLinesTable.totalExclVat', 'Total Excl. VAT')}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -414,7 +414,7 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                                 </tr>
                               )}
                               <tr className="bg-primary/10 border-t-2 border-primary">
-                                <td colSpan="4" className="px-4 py-3 text-base font-bold text-foreground">Total Incl. VAT</td>
+                                <td colSpan="4" className="px-4 py-3 text-base font-bold text-foreground">{t('expenseInvoices.modal.invoiceLinesTable.totalInclVat', 'Total Incl. VAT')}</td>
                                 <td className="px-4 py-3 text-base font-bold text-foreground text-right">{formatCurrency(totalWithVAT)}</td>
                               </tr>
                             </>
@@ -428,7 +428,7 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                                 <td className="px-4 py-3 text-sm font-bold text-blue-700 text-right">{formatCurrency(balanceAmount || total)}</td>
                               </tr>
                               <tr className="bg-primary/10 border-t-2 border-primary">
-                                <td colSpan="4" className="px-4 py-3 text-base font-bold text-foreground">Total Incl. VAT</td>
+                                <td colSpan="4" className="px-4 py-3 text-base font-bold text-foreground">{t('expenseInvoices.modal.invoiceLinesTable.totalInclVat', 'Total Incl. VAT')}</td>
                                 <td className="px-4 py-3 text-base font-bold text-foreground text-right">{formatCurrency(totalWithVAT)}</td>
                               </tr>
                             </>

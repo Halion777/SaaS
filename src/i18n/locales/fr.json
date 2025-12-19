@@ -4314,6 +4314,18 @@
       },
       "modal": {
         "title": "Détails de la facture",
+        "close": "Fermer",
+        "invoiceLines": "Lignes de facture",
+        "invoiceLinesTable": {
+          "number": "N°",
+          "description": "Description",
+          "quantity": "Qté",
+          "unitPrice": "Prix U.",
+          "totalExclVat": "Total HT",
+          "subtotalExclVat": "Sous-total HT",
+          "vat": "TVA",
+          "totalInclVat": "Total TTC"
+        },
         "tabs": {
           "details": "Détails",
           "peppol": "Peppol"
@@ -4756,6 +4768,17 @@
       "modal": {
         "title": "Détails de la facture",
         "close": "Fermer",
+        "invoiceLines": "Lignes de facture",
+        "invoiceLinesTable": {
+          "number": "N°",
+          "description": "Description",
+          "quantity": "Qté",
+          "unitPrice": "Prix U.",
+          "totalExclVat": "Total HT",
+          "subtotalExclVat": "Sous-total HT",
+          "vat": "TVA",
+          "totalInclVat": "Total TTC"
+        },
         "tabs": {
           "details": "Détails",
           "peppol": "Peppol"
