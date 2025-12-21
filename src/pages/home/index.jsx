@@ -318,9 +318,9 @@ const HomePage = () => {
                     </div>
                     
                     {/* Main Dashboard Image - Language-specific */}
-                    <div className="relative bg-white rounded-2xl shadow-2xl p-2 sm:p-4 transform rotate-3 hover:rotate-0 transition-transform duration-500">
+                    <div className="relative bg-white rounded-2xl shadow-2xl p-3 sm:p-5 transform rotate-3 hover:rotate-0 transition-transform duration-500">
                       {/* Dashboard Image - Fixed aspect ratio for consistent sizing across languages */}
-                      <div className="w-[87%] sm:w-full aspect-[16/10] mx-auto">
+                      <div className="w-[92%] sm:w-[95%] md:w-full aspect-[16/10] mx-auto">
                       <img 
                         key={`desktop-${i18n.language}`}
                         src={mediaSettings.home?.desktopImage?.[i18n.language] || mediaSettings.home?.heroImage?.[i18n.language] || '/assets/images/dashboard 1.png'}
