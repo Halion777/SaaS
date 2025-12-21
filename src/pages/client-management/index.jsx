@@ -678,6 +678,14 @@ const ClientManagement = () => {
           <div className="w-full">
             <TableLoader message={t('clientManagement.loading')} />
           </div>
+        ) : error ? (
+          <div className="p-4 sm:p-6">
+            <ErrorDisplay 
+              error={error} 
+              onRetry={loadClients}
+              title={t('clientManagement.errors.loadError', 'Error Loading Clients')}
+            />
+          </div>
         ) : (
           <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm">
             {/* Search Bar */}

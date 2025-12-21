@@ -4318,8 +4318,10 @@
         "updateStatusError": "Fout bij het bijwerken van de status",
         "updateInvoicesError": "Fout bij het bijwerken van de facturen",
         "error": "Fout",
-        "selectAtLeastOneInvoice": "Selecteer ten minste één factuur"
+        "selectAtLeastOneInvoice": "Selecteer ten minste één factuur",
+        "loadError": "Fout bij het laden van facturen"
       },
+      "retry": "Opnieuw proberen",
       "modal": {
         "title": "Factuurdetails",
         "close": "Sluiten",
