@@ -129,56 +129,49 @@ const PermissionGuard = ({
           className={`transition-all duration-300 ease-out ${isMobile ? 'pb-16 pt-4' : ''}`}
           style={{ marginLeft: isMobile ? 0 : `${sidebarOffset}px` }}
         >
-          <div className="flex items-center justify-center min-h-[calc(100vh-100px)] p-4">
-            <div className="bg-card border border-border rounded-lg shadow-lg max-w-md w-full p-8 text-center">
-              {/* Icon with animated pulse effect */}
-              <div className="w-20 h-20 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-6 relative">
-                <div className="absolute inset-0 bg-error/20 rounded-full animate-ping"></div>
-                <Icon name="AlertCircle" size={40} className="text-error relative z-10" />
+          <div className="flex items-center justify-center min-h-[calc(100vh-100px)] p-4 sm:p-6">
+            <div className="bg-card border border-border rounded-xl shadow-xl max-w-lg w-full p-8 sm:p-10 text-center">
+              {/* WiFi Icon with animated pulse effect */}
+              <div className="w-24 h-24 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-6 relative">
+                <div className="absolute inset-0 bg-error/20 rounded-full animate-ping opacity-75"></div>
+                <div className="absolute inset-0 bg-error/10 rounded-full"></div>
+                <Icon name="WifiOff" size={48} className="text-error relative z-10" />
               </div>
               
-              <h2 className="text-2xl font-bold text-foreground mb-3">
+              <h2 className="text-3xl font-bold text-foreground mb-3">
                 {t('common.errors.noInternet', 'No Internet Connection')}
               </h2>
               
-              <p className="text-muted-foreground mb-6">
+              <p className="text-muted-foreground mb-8 text-base">
                 {t('common.errors.noInternetMessage', 'Please check your internet connection and try again.')}
               </p>
 
               {/* Connection status info */}
-              <div className="bg-muted/50 rounded-lg p-4 mb-6 text-left">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-foreground">
+              <div className="bg-gradient-to-r from-muted/50 to-muted/30 rounded-lg p-5 mb-8 border border-border/50">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-semibold text-foreground">
                     {t('common.errors.connectionStatus', 'Connection Status')}:
                   </span>
-                  <span className="text-sm text-error font-medium">
+                  <span className="text-sm text-error font-bold px-3 py-1 bg-error/10 rounded-full">
                     {t('common.errors.offline', 'Offline')}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {t('common.errors.connectionHelp', 'Make sure your device is connected to Wi-Fi or mobile data, then click Retry.')}
+                <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
+                  {t('common.errors.connectionHelp', 'Make sure your device is connected to Wi-Fi or mobile data, then click the button below.')}
                 </p>
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button
-                  onClick={checkConnection}
-                  variant="default"
-                  iconName="RefreshCw"
-                  iconPosition="left"
-                  disabled={isChecking}
-                >
-                  {isChecking ? t('common.checking', 'Checking...') : t('common.retry', 'Retry')}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => window.location.reload()}
-                  iconName="RotateCw"
-                  iconPosition="left"
-                >
-                  {t('common.refresh', 'Refresh Page')}
-                </Button>
-              </div>
+              <Button
+                onClick={checkConnection}
+                variant="default"
+                iconName="Wifi"
+                iconPosition="left"
+                disabled={isChecking}
+                className="w-full sm:w-auto min-w-[200px] text-base py-6 px-8 font-semibold"
+                size="lg"
+              >
+                {isChecking ? t('common.checking', 'Checking...') : t('common.connectMeNow', 'Connect Me Now')}
+              </Button>
             </div>
           </div>
         </main>

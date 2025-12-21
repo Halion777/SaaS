@@ -1984,7 +1984,8 @@
     },
     "retry": "Opnieuw proberen",
     "checking": "Controleren...",
-    "refresh": "Pagina vernieuwen"
+    "refresh": "Pagina vernieuwen",
+    "connectMeNow": "Verbind me nu"
   },
   "quotesManagement": {
     "title": "Offertebeheer",

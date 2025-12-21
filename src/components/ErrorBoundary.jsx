@@ -3,8 +3,6 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from '../i18n';
 import Icon from './AppIcon';
 import Button from './ui/Button';
-import Header from './Header';
-import Footer from './Footer';
 
 // ErrorBoundaryContent component that doesn't use hooks
 // It receives translations directly to avoid hook usage issues
@@ -14,30 +12,26 @@ const ErrorBoundaryContent = ({ error }) => {
     window.location.reload();
   };
 
-  // Show generic error UI with Header and Footer
+  // Show generic error UI
   return (
     <I18nextProvider i18n={i18n}>
-      <div className="min-h-screen bg-background flex flex-col">
-        <Header />
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-lg shadow-lg max-w-md w-full p-8 text-center">
-            <Icon name="AlertCircle" size={64} className="text-error mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-foreground mb-2">
-              {i18n.t('common.errors.somethingWentWrong', 'Something went wrong')}
-            </h2>
-            <p className="text-muted-foreground mb-6">
-              {i18n.t('common.errors.unexpectedError', 'We\'re sorry, but something unexpected happened. Please try refreshing the page.')}
-            </p>
-            <Button
-              onClick={handleRetry}
-              variant="default"
-              className="w-full sm:w-auto"
-            >
-              {i18n.t('common.retry', 'Retry')}
-            </Button>
-          </div>
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="bg-card border border-border rounded-lg shadow-lg max-w-md w-full p-8 text-center">
+          <Icon name="AlertCircle" size={64} className="text-error mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-foreground mb-2">
+            {i18n.t('common.errors.somethingWentWrong', 'Something went wrong')}
+          </h2>
+          <p className="text-muted-foreground mb-6">
+            {i18n.t('common.errors.unexpectedError', 'We\'re sorry, but something unexpected happened. Please try refreshing the page.')}
+          </p>
+          <Button
+            onClick={handleRetry}
+            variant="default"
+            className="w-full sm:w-auto"
+          >
+            {i18n.t('common.retry', 'Retry')}
+          </Button>
         </div>
-        <Footer />
       </div>
     </I18nextProvider>
   );

@@ -2395,7 +2395,8 @@
     },
     "retry": "Réessayer",
     "checking": "Vérification...",
-    "refresh": "Actualiser la page"
+    "refresh": "Actualiser la page",
+    "connectMeNow": "Me connecter maintenant"
   },
 
   "dashboard": {

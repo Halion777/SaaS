@@ -1952,7 +1952,8 @@
     },
     "retry": "Retry",
     "checking": "Checking...",
-    "refresh": "Refresh Page"
+    "refresh": "Refresh Page",
+    "connectMeNow": "Connect Me Now"
   },
 
   "quotesManagement": {
