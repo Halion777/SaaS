@@ -221,6 +221,18 @@ const SubscriptionManagement = () => {
         subscriptionData.status = 'trialing';
       }
       
+      // If subscription is cancelled, expired, or incomplete_expired, treat it as no subscription
+      // This allows users to resubscribe via checkout
+      const isSubscriptionActive = subscriptionData.status === 'active' || 
+                                   subscriptionData.status === 'trialing' || 
+                                   subscriptionData.status === 'past_due';
+      
+      if (!isSubscriptionActive) {
+        // Subscription is cancelled/expired - set to null to allow new checkout
+        setSubscription(null);
+        return;
+      }
+      
       setSubscription(subscriptionData);
       
       // Set billing cycle based on current subscription
@@ -292,7 +304,9 @@ const SubscriptionManagement = () => {
   const handlePlanChange = async (newPlanId) => {
     if (isChangingPlan) return;
     
-    // If no subscription exists, create a new one via checkout
+    // If no subscription exists (cancelled/expired), create a new one via checkout
+    // Note: For fully cancelled/expired subscriptions, Stripe requires creating a new subscription
+    // This is the standard approach - we just need to ensure no trial is given for resubscriptions
     if (!subscription) {
       try {
         setIsChangingPlan(true);
@@ -300,6 +314,7 @@ const SubscriptionManagement = () => {
         setErrorType(null);
         
         // Create checkout session for new subscription
+        // The checkout session function will check if user has used trial and prevent giving trial again
         const { data: checkoutData, error: checkoutError } = await createCheckoutSession({
           planType: newPlanId,
           billingCycle: billingCycle,
@@ -566,6 +581,22 @@ const SubscriptionManagement = () => {
     
     try {
       setIsManagingBilling(true);
+      
+      // If there's no active subscription (cancelled/expired), redirect to plans tab to resubscribe
+      // The portal only works for active subscriptions
+      if (!subscription || (subscription.status !== 'active' && subscription.status !== 'trialing' && subscription.status !== 'past_due')) {
+        // No active subscription - switch to plans tab so user can resubscribe
+        setActiveTab('plans');
+        setIsManagingBilling(false);
+        // Scroll to plans section
+        setTimeout(() => {
+          const plansSection = document.getElementById('plans-section');
+          if (plansSection) {
+            plansSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
+        return;
+      }
       
       // Always use Supabase user ID - the Edge Function will look up the Stripe customer ID
       const { data, error } = await createPortalSession(user.id);
@@ -875,8 +906,8 @@ const SubscriptionManagement = () => {
           </div>
 
           {activeTab === 'plans' && (
-            <>
-          {/* Billing Cycle Toggle */}
+            <div id="plans-section">
+              {/* Billing Cycle Toggle */}
           <div className="flex justify-center mb-6">
             <div className="inline-flex items-center bg-muted rounded-lg p-1">
               <button
@@ -1009,7 +1040,7 @@ const SubscriptionManagement = () => {
             </div>
           </div>
         </div>
-            </>
+            </div>
           )}
 
           {/* Invoices Tab */}

@@ -54,8 +54,8 @@ serve(async (req)=>{
     // Create service role client for admin operations
     // @ts-ignore
     const supabaseAdmin = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
-    // First try to get user from public.users table
-    let { data: user, error: userError } = await supabaseClient.from('users').select('*').eq('id', userId).single();
+    // First try to get user from public.users table (including has_used_trial flag)
+    let { data: user, error: userError } = await supabaseClient.from('users').select('*, has_used_trial').eq('id', userId).single();
     // If user doesn't exist in public.users, get from auth.users
     if (userError && userError.code === 'PGRST116') {
       // Get user from auth.users using service role
@@ -125,8 +125,59 @@ serve(async (req)=>{
         stripe_customer_id: customerId
       }).eq('id', userId);
     }
+    
+    // Check for existing subscriptions (including cancelled/expired ones)
+    // If user has an existing cancelled/expired subscription, we need to handle it
+    let existingSubscription = null;
+    let hasActiveSubscription = false;
+    let hasPreviousSubscription = false; // Track if user ever had a subscription (for trial check)
+    
+    if (customerId) {
+      try {
+        // List all subscriptions for this customer
+        const subscriptions = await stripe.subscriptions.list({
+          customer: customerId,
+          status: 'all', // Include all statuses: active, past_due, canceled, unpaid, incomplete, etc.
+          limit: 10
+        });
+        
+        // Find the most recent subscription (active, cancelled, or expired)
+        if (subscriptions.data.length > 0) {
+          hasPreviousSubscription = true; // User has had at least one subscription before
+          // Sort by created date (most recent first)
+          existingSubscription = subscriptions.data.sort((a, b) => b.created - a.created)[0];
+          // Check if there's an active subscription
+          hasActiveSubscription = subscriptions.data.some(sub => 
+            sub.status === 'active' || sub.status === 'trialing' || sub.status === 'past_due'
+          );
+          
+          // If there's an active subscription, we should use the portal or update flow instead
+          // But if it's cancelled/expired, we can create a new checkout
+          if (hasActiveSubscription) {
+            throw new Error('You already have an active subscription. Please use "Manage Subscription" to change your plan.');
+          }
+        }
+      } catch (error) {
+        // If error is about active subscription, re-throw it
+        if (error.message && error.message.includes('active subscription')) {
+          throw error;
+        }
+        console.error('Error checking for existing subscriptions:', error);
+        // Continue with checkout creation even if we can't check
+      }
+    }
+    
+    // Determine if user should get a trial
+    // Only give trial if:
+    // 1. User hasn't used trial before (has_used_trial is false or null)
+    // 2. User has never had a subscription before (no previous subscriptions)
+    const shouldGiveTrial = !user.has_used_trial && !hasPreviousSubscription;
+    
+    // If there's an existing cancelled/expired subscription but no active one,
+    // Stripe allows creating a new subscription via checkout
+    // We'll create the checkout session which will create a new subscription
     // Create checkout session WITH 14-DAY TRIAL
-    const session = await stripe.checkout.sessions.create({
+    const sessionConfig: any = {
       customer: customerId,
       payment_method_types: [
         'card'
@@ -140,7 +191,7 @@ serve(async (req)=>{
       mode: 'subscription',
       locale: 'en',
       subscription_data: {
-        trial_period_days: 14,
+        ...(shouldGiveTrial ? { trial_period_days: 14 } : {}), // Only add trial if user hasn't used it before
         metadata: {
           userId: userId,
           planType: planType,
@@ -173,7 +224,15 @@ serve(async (req)=>{
         country: convertToString(user.country),
         businessSize: convertToString(user.business_size)
       }
-    });
+    };
+    
+    // If there's an existing cancelled/expired subscription, add metadata to track this is a resubscription
+    if (existingSubscription && !hasActiveSubscription) {
+      sessionConfig.metadata.isResubscription = 'true';
+      sessionConfig.metadata.previousSubscriptionId = existingSubscription.id;
+    }
+    
+    const session = await stripe.checkout.sessions.create(sessionConfig);
     return new Response(JSON.stringify({
       url: session.url
     }), {

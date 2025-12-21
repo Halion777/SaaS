@@ -26,18 +26,45 @@ const StripeSuccessPage = () => {
           return;
         }
 
+        // Fetch real Stripe session data first to determine if this is a new registration or resubscription
+        
+        const { data: stripeSessionData, error: stripeError } = await getStripeSession(sessionId);
+        
+        if (stripeError) {
+          console.error('Error fetching Stripe session:', stripeError);
+          setErrorDetails('Failed to retrieve payment information. Please contact support with session ID: ' + sessionId);
+          setStatus('error');
+          return;
+        }
+
+        console.log('Real Stripe session data retrieved:', stripeSessionData);
+        
+        // Check if this is a resubscription (user already exists) or new registration
+        const userId = stripeSessionData.metadata?.userId;
+        const isResubscription = stripeSessionData.metadata?.isResubscription === 'true';
+        
         // Get pending registration data - check both possible keys
         let pendingRegistration = sessionStorage.getItem('pendingRegistration');
         if (!pendingRegistration) {
           pendingRegistration = sessionStorage.getItem('registration_pending');
         }
         
-        console.log('Pending registration data:', pendingRegistration ? 'Found' : 'Not found');
-        console.log('Checking keys:', {
-          pendingRegistration: !!sessionStorage.getItem('pendingRegistration'),
-          registration_pending: !!sessionStorage.getItem('registration_pending')
-        });
+        // If no registration data but we have userId from metadata, this is likely a resubscription
+        if (!pendingRegistration && userId && (isResubscription || stripeSessionData.subscription)) {
+          console.log('Resubscription detected - user already exists, subscription will be handled by webhook');
+          
+          // For resubscriptions, the webhook already handles subscription creation
+          // We just need to verify and redirect
+          setStatus('success');
+          
+          // Redirect to subscription page to show success
+          setTimeout(() => {
+            navigate('/subscription?success=true', { replace: true });
+          }, 2000);
+          return;
+        }
         
+        // If no registration data and no userId, this is an error
         if (!pendingRegistration) {
           console.error('No pending registration data found in sessionStorage');
           console.error('Available sessionStorage keys:', Object.keys(sessionStorage));
@@ -53,19 +80,6 @@ const StripeSuccessPage = () => {
             email: registrationData.email,
             plan: registrationData.selectedPlan
           });
-          
-          // Fetch real Stripe session data
-          console.log('Fetching real Stripe session data...');
-          const { data: stripeSessionData, error: stripeError } = await getStripeSession(sessionId);
-          
-          if (stripeError) {
-            console.error('Error fetching Stripe session:', stripeError);
-            setErrorDetails('Failed to retrieve payment information. Please contact support with session ID: ' + sessionId);
-            setStatus('error');
-            return;
-          }
-
-          console.log('Real Stripe session data retrieved:', stripeSessionData);
           
           // Create session data object with REAL Stripe IDs
           const sessionData = {

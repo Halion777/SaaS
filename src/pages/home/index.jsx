@@ -247,7 +247,7 @@ const HomePage = () => {
         <Header />
         
         {/* Hero Section - Modern Design */}
-        <section ref={heroRef} id="hero" className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 via-white to-blue-50 -mt-8 pt-8">
+        <section ref={heroRef} id="hero" className="relative min-h-[90vh] sm:min-h-[95vh] md:min-h-[90vh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 via-white to-blue-50 -mt-8 pt-8 pb-8 sm:pb-12">
           {/* Animated Background Elements */}
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute top-20 left-10 w-72 h-72 bg-[#0036ab]/10 rounded-full blur-3xl animate-pulse"></div>
@@ -324,49 +324,50 @@ const HomePage = () => {
                 <div className={`transition-all duration-1000 delay-300 ${isVisible.hero ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
                   <div className="relative">
                     {/* PEPPOL Logo - Floating Element */}
-                    <div className="absolute -top-8 -left-8 bg-white rounded-full shadow-lg p-3 z-20">
+                    <div className="absolute -top-4 sm:-top-8 -left-4 sm:-left-8 bg-white rounded-full shadow-lg p-2 sm:p-3 z-20">
                       <img 
                         src="/assets/logo/peppol_logo.png" 
                         alt="PEPPOL Logo" 
-                        className="w-20 h-10 object-contain"
+                        className="w-12 h-6 sm:w-20 sm:h-10 object-contain"
                       />
                     </div>
                     
                     {/* Main Dashboard Image - Language-specific */}
-                    <div className="relative bg-white rounded-2xl shadow-2xl p-4 transform rotate-3 hover:rotate-0 transition-transform duration-500">
-                      {/* Dashboard Image - Same for all devices */}
+                    <div className="relative bg-white rounded-2xl shadow-2xl p-2 sm:p-4 transform rotate-3 hover:rotate-0 transition-transform duration-500">
+                      {/* Dashboard Image - Responsive sizing */}
                       <img 
                         key={`desktop-${i18n.language}`}
                         src={mediaSettings.home?.desktopImage?.[i18n.language] || mediaSettings.home?.heroImage?.[i18n.language] || '/assets/images/dashboard 1.png'}
-                        alt="Haliqo Dashboard" 
-                        className="w-full h-auto rounded-xl"
+                        alt="Haliqo Dashboard"
+                        className="w-[85%] sm:w-full h-auto max-h-[300px] sm:max-h-[400px] md:max-h-[500px] lg:max-h-none rounded-xl object-contain mx-auto"
                         onError={(e) => {
                           e.target.src = '/assets/images/dashboard 1.png';
                         }}
                       />
                       
-                      {/* Floating Elements */}
-                      <div className="absolute -top-4 -right-4 bg-white rounded-xl shadow-lg p-4 transform -rotate-6">
+                      {/* Floating Elements - Hidden on mobile, shown on larger screens */}
+                      <div className="hidden sm:block absolute -top-4 -right-4 bg-white rounded-xl shadow-lg p-3 sm:p-4 transform -rotate-6">
                         <div className="flex items-center space-x-2">
-                          <Icon name="TrendingUp" size={20} className="text-[#12bf23]" />
-                          <span className="text-sm font-medium text-gray-700">+45% {t('home.hero.floatingElements.turnover')}</span>
+                          <Icon name="TrendingUp" size={16} className="sm:w-5 sm:h-5 text-[#12bf23]" />
+                          <span className="text-xs sm:text-sm font-medium text-gray-700">+45% {t('home.hero.floatingElements.turnover')}</span>
                         </div>
                       </div>
                       
-                      <div className="absolute -bottom-4 -left-4 bg-white rounded-xl shadow-lg p-4 transform rotate-6">
+                      <div className="hidden sm:block absolute -bottom-4 -left-4 bg-white rounded-xl shadow-lg p-3 sm:p-4 transform rotate-6">
                         <div className="flex items-center space-x-2">
-                          <Icon name="Clock" size={20} className="text-[#0036ab]" />
-                          <span className="text-sm font-medium text-gray-700">-60% {t('home.hero.floatingElements.time')}</span>
+                          <Icon name="Clock" size={16} className="sm:w-5 sm:h-5 text-[#0036ab]" />
+                          <span className="text-xs sm:text-sm font-medium text-gray-700">-60% {t('home.hero.floatingElements.time')}</span>
                         </div>
                       </div>
                     </div>
                     
 
                     
-                    <div className="absolute -bottom-8 -right-8 bg-white rounded-full shadow-lg p-4 transform -rotate-6">
-                      <div className="flex items-center space-x-2">
-                        <Icon name="Brain" size={20} className="text-[#12bf23]" />
-                        <span className="text-sm font-medium text-gray-700">AI</span>
+                    {/* AI Badge */}
+                    <div className="absolute -bottom-4 sm:-bottom-8 -right-4 sm:-right-8 bg-white rounded-full shadow-lg p-2 sm:p-3 md:p-4 transform -rotate-6">
+                      <div className="flex items-center space-x-1 sm:space-x-2">
+                        <Icon name="Brain" size={14} className="sm:w-4 sm:h-4 md:w-5 md:h-5 text-[#12bf23]" />
+                        <span className="text-[10px] sm:text-xs md:text-sm font-medium text-gray-700">AI</span>
                       </div>
                     </div>
                   </div>

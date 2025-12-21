@@ -351,7 +351,7 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                       {t('expenseInvoices.modal.invoiceLines', 'Invoice Line Items')}
                     </h3>
                     <div className="overflow-x-auto border border-border rounded-lg bg-card">
-                      <table className="w-full border-collapse">
+                      <table className="w-full border-collapse min-w-[520px] sm:min-w-full">
                         <thead>
                           <tr className="bg-muted/50">
                             <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase border-b border-border">{t('expenseInvoices.modal.invoiceLinesTable.number', 'N°')}</th>

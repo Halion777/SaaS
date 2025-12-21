@@ -34,6 +34,7 @@ const InvoicesManagement = () => {
   });
 
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
@@ -104,26 +105,17 @@ const InvoicesManagement = () => {
     };
   }, []);
 
-  // Fetch invoices when component mounts
-  useEffect(() => {
-    if (user) {
-      fetchInvoices();
-    }
-  }, [user]);
-
-  // Load data function for compatibility
-  const loadData = () => {
-    if (user) {
-      fetchInvoices();
-    }
-  };
-
   // Fetch invoices from database
   const fetchInvoices = async () => {
-    if (!user) return;
+    if (!user) {
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
     
     try {
       setIsLoading(true);
+      setError(null);
       const result = await InvoiceService.fetchInvoices(user.id);
       
       if (result.success) {
@@ -163,18 +155,36 @@ const InvoicesManagement = () => {
         
         setInvoices(transformedInvoices);
         setFilteredInvoices(transformedInvoices);
+        setError(null);
       } else {
         console.error('Failed to fetch invoices:', result.error);
-        // Fallback to empty array
+        setError(result.error || t('invoicesManagement.errors.loadError', 'Failed to load invoices'));
         setInvoices([]);
         setFilteredInvoices([]);
       }
     } catch (error) {
       console.error('Error fetching invoices:', error);
+      setError(error.message || t('invoicesManagement.errors.loadError', 'Failed to load invoices'));
       setInvoices([]);
       setFilteredInvoices([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Fetch invoices when component mounts
+  useEffect(() => {
+    if (user) {
+      fetchInvoices();
+    } else {
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  // Load data function for compatibility
+  const loadData = () => {
+    if (user) {
+      fetchInvoices();
     }
   };
 
@@ -186,19 +196,6 @@ const InvoicesManagement = () => {
     revenueGrowth: 0, // Could be calculated from historical data
     overdueCount: invoices.filter(invoice => invoice.status === 'overdue').length
   };
-
-
-
-  useEffect(() => {
-    // Simulate loading
-    const loadData = async () => {
-      setIsLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setIsLoading(false);
-    };
-
-    loadData();
-  }, []);
 
   const handleFiltersChange = (newFilters) => {
     setFilters(newFilters);
@@ -769,6 +766,15 @@ const InvoicesManagement = () => {
           {isLoading ? (
             <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
               <TableLoader message={t('invoicesManagement.loading')} />
+            </div>
+          ) : error ? (
+            <div className="bg-card border border-border rounded-lg p-4 sm:p-6 text-center">
+              <Icon name="AlertCircle" size={48} className="text-error mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">{t('invoicesManagement.errors.loadError', 'Error Loading Invoices')}</h3>
+              <p className="text-sm text-muted-foreground mb-4">{error}</p>
+              <Button onClick={fetchInvoices} variant="outline">
+                {t('invoicesManagement.retry', 'Retry')}
+              </Button>
             </div>
           ) : (
           <InvoicesDataTable

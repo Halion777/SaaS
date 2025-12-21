@@ -895,6 +895,19 @@ const PeppolNetworkPage = () => {
   // For other countries:
   //   - Format: {SCHEME_ID}:{COUNTRY_CODE_LOWERCASE}{VAT_NUMBER} (e.g., 9957:fr12345678901)
   //   - Digiteal API requires lowercase country code in identifier
+  // Helper function to shorten Peppol ID for display (shows scheme:shortened-id)
+  // Only shortens on mobile when there are multiple IDs (Belgium case)
+  const shortenPeppolIdForDisplay = (fullId, shouldShorten = false) => {
+    if (!fullId) return '';
+    if (!shouldShorten) return fullId; // Don't shorten if not needed
+    const parts = fullId.split(':');
+    if (parts.length !== 2) return fullId;
+    const [scheme, identifier] = parts;
+    // Show first 6 chars of identifier + ... if longer
+    const shortId = identifier.length > 6 ? `${identifier.substring(0, 6)}...` : identifier;
+    return `${scheme}:${shortId}`;
+  };
+
   const combinePeppolIdWithCountry = (schemeCode, countryCode, vatNumber) => {
     if (!schemeCode || !countryCode || !vatNumber) {
       return '';
@@ -1623,16 +1636,18 @@ const PeppolNetworkPage = () => {
 
                                 {/* Combined Peppol ID Display for Belgium (read-only, showing both formats) */}
                                 {peppolIdentifier && (
-                                  <div className="bg-muted/30 border border-border rounded-lg p-3 space-y-2">
+                                  <div className="bg-muted/30 border border-border rounded-lg p-3 space-y-2 hidden sm:block">
                                     <label className="block text-xs font-medium text-muted-foreground mb-1">
                                       {t('peppol.setup.companyInfo.combinedPeppolId', 'Peppol IDs (Both will be registered)')}
                                     </label>
-                                    <div className="space-y-1">
-                                      <p className="text-sm font-mono text-foreground">
-                                        <span className="text-muted-foreground">0208:</span> {combinePeppolIdWithCountry('0208', 'BE', peppolIdentifier)}
+                                    <div className="space-y-1.5">
+                                      <p className="text-xs sm:text-sm font-mono text-foreground break-all">
+                                        <span className="text-muted-foreground min-w-[35px] sm:min-w-[40px] inline-block">0208:</span> 
+                                        {combinePeppolIdWithCountry('0208', 'BE', peppolIdentifier)}
                                       </p>
-                                      <p className="text-sm font-mono text-foreground">
-                                        <span className="text-muted-foreground">9925:</span> {combinePeppolIdWithCountry('9925', 'BE', peppolIdentifier)}
+                                      <p className="text-xs sm:text-sm font-mono text-foreground break-all">
+                                        <span className="text-muted-foreground min-w-[35px] sm:min-w-[40px] inline-block">9925:</span> 
+                                        {combinePeppolIdWithCountry('9925', 'BE', peppolIdentifier)}
                                       </p>
                                     </div>
                                   </div>
@@ -1858,25 +1873,34 @@ const PeppolNetworkPage = () => {
                                 </p>
                               </div>
                             </div>
-                            <div className="flex items-center space-x-3">
+                            <div className="flex items-center space-x-2 sm:space-x-3">
                               {peppolSettings.countryCode === 'BE' && peppolIdentifier ? (
-                                <div className="flex items-center space-x-2">
-                                  <div className="bg-green-600 text-white px-3 py-1 rounded-full text-xs font-mono font-semibold">
+                                <div className="hidden sm:flex flex-row items-center gap-2">
+                                  <div 
+                                    className="bg-green-600 text-white px-3 py-1 rounded-full text-xs font-mono font-semibold"
+                                    title={combinePeppolIdWithCountry('0208', 'BE', peppolIdentifier)}
+                                  >
                                     {combinePeppolIdWithCountry('0208', 'BE', peppolIdentifier)}
                                   </div>
-                                  <div className="bg-green-600 text-white px-3 py-1 rounded-full text-xs font-mono font-semibold">
+                                  <div 
+                                    className="bg-green-600 text-white px-3 py-1 rounded-full text-xs font-mono font-semibold"
+                                    title={combinePeppolIdWithCountry('9925', 'BE', peppolIdentifier)}
+                                  >
                                     {combinePeppolIdWithCountry('9925', 'BE', peppolIdentifier)}
                                   </div>
                                 </div>
                               ) : (
-                                <div className="bg-green-600 text-white px-3 py-1 rounded-full text-xs font-mono font-semibold">
+                                <div 
+                                  className="hidden sm:block bg-green-600 text-white px-3 py-1 rounded-full text-xs font-mono font-semibold"
+                                  title={peppolSettings.peppolId}
+                                >
                                   {peppolSettings.peppolId}
                                 </div>
                               )}
                               <Icon
                                 name={showParticipantDetails ? "ChevronUp" : "ChevronDown"}
                                 size={20}
-                                className="text-green-600"
+                                className="text-green-600 flex-shrink-0"
                               />
                             </div>
                           </div>
@@ -1891,15 +1915,21 @@ const PeppolNetworkPage = () => {
                                   {t('peppol.setup.companyInfo.combinedPeppolId', 'Peppol IDs')}
                                 </label>
                                 <div className="space-y-2">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-muted-foreground font-medium min-w-[40px]">0208:</span>
-                                    <code className="text-sm font-mono text-foreground bg-background px-2 py-1 rounded border border-border">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-xs text-muted-foreground font-medium min-w-[35px] sm:min-w-[40px]">0208:</span>
+                                    <code 
+                                      className="text-xs sm:text-sm font-mono text-foreground bg-background px-2 py-1 rounded border border-border break-all"
+                                      title={combinePeppolIdWithCountry('0208', 'BE', peppolIdentifier)}
+                                    >
                                       {combinePeppolIdWithCountry('0208', 'BE', peppolIdentifier)}
                                     </code>
                                   </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-muted-foreground font-medium min-w-[40px]">9925:</span>
-                                    <code className="text-sm font-mono text-foreground bg-background px-2 py-1 rounded border border-border">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-xs text-muted-foreground font-medium min-w-[35px] sm:min-w-[40px]">9925:</span>
+                                    <code 
+                                      className="text-xs sm:text-sm font-mono text-foreground bg-background px-2 py-1 rounded border border-border break-all"
+                                      title={combinePeppolIdWithCountry('9925', 'BE', peppolIdentifier)}
+                                    >
                                       {combinePeppolIdWithCountry('9925', 'BE', peppolIdentifier)}
                                     </code>
                                   </div>

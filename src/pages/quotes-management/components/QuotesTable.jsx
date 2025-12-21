@@ -112,6 +112,12 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
           </div>
         )}
         
+        {/* Show rejection reason for rejected quotes */}
+        {status === 'rejected' && quote.rejectionReason && (
+          <div className="mt-1 text-xs text-red-700 bg-red-50 border border-red-200 rounded px-2 py-1 max-w-xs">
+            <span className="font-medium">{t('quotesManagement.rejectionReason.label', 'Reason')}:</span> {quote.rejectionReason}
+          </div>
+        )}
 
       </div>
     );
@@ -383,7 +389,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
             <div className="text-xs text-muted-foreground">{t('quotesManagement.table.card.validUntil')} {quote.validUntil ? formatDate(quote.validUntil) : '-'}</div>
           </div>
           
-                    <div className="text-xs text-muted-foreground mb-3">
+          <div className="text-xs text-muted-foreground mb-3">
             {t('quotesManagement.table.card.createdAt')} {formatDate(quote.createdAt)}
           </div>
           

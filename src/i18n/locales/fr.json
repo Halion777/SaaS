@@ -1914,6 +1914,9 @@
       "accepted": "Accepté",
       "rejected": "Rejeté",
       "expired": "Expiré"
+    },
+    "rejectionReason": {
+      "label": "Raison"
     }
   },
   "followUpManagement": {

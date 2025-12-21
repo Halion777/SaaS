@@ -2065,6 +2065,9 @@
       "accepted": "Accepted",
       "rejected": "Rejected",
       "expired": "Expired"
+    },
+    "rejectionReason": {
+      "label": "Reason"
     }
   },
   "followUpManagement": {

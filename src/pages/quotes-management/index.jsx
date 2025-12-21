@@ -390,7 +390,8 @@ const QuotesManagement = () => {
               validUntil: quote.valid_until || quote.expires_at,
               validUntilFormatted: formatDate(quote.valid_until || quote.expires_at),
               isExpired: isQuoteExpired(quote.valid_until || quote.expires_at),
-              terms: quote.terms_conditions
+              terms: quote.terms_conditions,
+              rejectionReason: quote.rejection_reason || null
             };
           });
         

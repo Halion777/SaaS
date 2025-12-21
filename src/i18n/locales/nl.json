@@ -2096,6 +2096,9 @@
       "accepted": "Geaccepteerd",
       "rejected": "Afgewezen",
       "expired": "Verlopen"
+    },
+    "rejectionReason": {
+      "label": "Reden"
     }
   },
   "followUpManagement": {

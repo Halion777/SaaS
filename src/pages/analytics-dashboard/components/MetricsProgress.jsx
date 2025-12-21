@@ -181,7 +181,7 @@ const MetricsProgress = ({ metrics, userObjectives, onUpdate, isLoading = false,
                             numericValue = isNaN(parsed) ? '' : parsed;
                           }
                           setEditingValues({
-                            ...editingValues,
+                          ...editingValues,
                             [targetKey]: numericValue
                           });
                         }}

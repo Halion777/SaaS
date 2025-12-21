@@ -63,8 +63,8 @@ const DetailedAnalyticsPanel = ({ data, isLoading = false }) => {
                       }
                       // Revenue and averageInvoice should have € symbol
                       if (key.includes('Revenue') || key === 'averageInvoice') {
-                        // Always use comma as decimal separator (fr-FR format) to match quote creation flow
-                        return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(value);
+                      // Always use comma as decimal separator (fr-FR format) to match quote creation flow
+                      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(value);
                       }
                       // Other numeric values
                       return `${value}${key.includes('Clients') ? '%' : ''}`;

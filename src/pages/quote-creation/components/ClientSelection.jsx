@@ -1836,8 +1836,8 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                 type="submit"
                 disabled={
                   limitReached || clientLimitReached ||
-                  (clientType === 'particulier'
-                    ? (!newClient.firstName?.trim() || !newClient.lastName?.trim())
+                  (clientType === 'particulier' 
+                    ? (!newClient.firstName?.trim() || !newClient.lastName?.trim()) 
                     : !newClient.name?.trim()) 
                   || !newClient.email?.trim() 
                   || isCreatingClient

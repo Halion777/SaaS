@@ -34,16 +34,8 @@ INSERT INTO public.email_templates (
     </div>
     
     <!-- Financial Breakdown Section - Matching invoice_sent style -->
-    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #059669; margin-bottom: 15px;">
-      <!-- VAT (if enabled) - will be replaced by edge function -->
-      {vat_section}
-      
-      <!-- Deposit Section - will be replaced by edge function based on deposit_enabled -->
-      {deposit_section}
-      
-      <!-- Total Amount to Pay after work (balance) - will be replaced by edge function only if deposit is enabled -->
-      {balance_section}
-    </div>
+    <!-- This entire section will be replaced by edge function - only shown if VAT or deposit is enabled -->
+    {financial_breakdown_section}
     
     <!-- Custom Message -->
     <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e0e0e0;">
@@ -68,10 +60,7 @@ Projet: {quote_title}
 Valable jusqu''au: {valid_until}
 Montant: {total_with_vat}
 
-{vat_section_text}
-
-{deposit_section_text}
-{balance_section_text}
+{financial_breakdown_section_text}
 
 {custom_message}
 
@@ -79,7 +68,7 @@ Voir le devis: {quote_link}
 
 Cordialement,
 {company_name}',
-  '{"quote_link": "string", "client_name": "string", "quote_title": "string", "valid_until": "string", "company_name": "string", "quote_amount": "string", "quote_number": "string", "custom_message": "string", "total_before_vat": "string", "vat_enabled": "string", "vat_rate": "string", "vat_percentage": "string", "vat_amount": "string", "total_with_vat": "string", "deposit_enabled": "string", "deposit_amount": "string", "balance_amount": "string"}',
+  '{"quote_link": "string", "client_name": "string", "quote_title": "string", "valid_until": "string", "company_name": "string", "quote_amount": "string", "quote_number": "string", "custom_message": "string", "total_before_vat": "string", "vat_enabled": "string", "vat_rate": "string", "vat_percentage": "string", "vat_amount": "string", "total_with_vat": "string", "deposit_enabled": "string", "deposit_amount": "string", "balance_amount": "string", "financial_breakdown_section": "string", "financial_breakdown_section_text": "string"}',
   true, true, 'fr'
 );
 
@@ -106,16 +95,8 @@ INSERT INTO public.email_templates (
     </div>
     
     <!-- Financial Breakdown Section - Matching invoice_sent style -->
-    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #059669; margin-bottom: 15px;">
-      <!-- VAT (if enabled) - will be replaced by edge function -->
-      {vat_section}
-      
-      <!-- Deposit Section - will be replaced by edge function based on deposit_enabled -->
-      {deposit_section}
-      
-      <!-- Total Amount to Pay after work (balance) - will be replaced by edge function only if deposit is enabled -->
-      {balance_section}
-    </div>
+    <!-- This entire section will be replaced by edge function - only shown if VAT or deposit is enabled -->
+    {financial_breakdown_section}
     
     <!-- Custom Message -->
     <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e0e0e0;">
@@ -140,10 +121,7 @@ Project: {quote_title}
 Valid until: {valid_until}
 Amount: {total_with_vat}
 
-{vat_section_text}
-
-{deposit_section_text}
-{balance_section_text}
+{financial_breakdown_section_text}
 
 {custom_message}
 
@@ -151,7 +129,7 @@ View Quote: {quote_link}
 
 Best regards,
 {company_name}',
-  '{"quote_link": "string", "client_name": "string", "quote_title": "string", "valid_until": "string", "company_name": "string", "quote_amount": "string", "quote_number": "string", "custom_message": "string", "total_before_vat": "string", "vat_enabled": "string", "vat_rate": "string", "vat_percentage": "string", "vat_amount": "string", "total_with_vat": "string", "deposit_enabled": "string", "deposit_amount": "string", "balance_amount": "string"}',
+  '{"quote_link": "string", "client_name": "string", "quote_title": "string", "valid_until": "string", "company_name": "string", "quote_amount": "string", "quote_number": "string", "custom_message": "string", "total_before_vat": "string", "vat_enabled": "string", "vat_rate": "string", "vat_percentage": "string", "vat_amount": "string", "total_with_vat": "string", "deposit_enabled": "string", "deposit_amount": "string", "balance_amount": "string", "financial_breakdown_section": "string", "financial_breakdown_section_text": "string"}',
   true, false, 'en'
 );
 
@@ -178,16 +156,8 @@ INSERT INTO public.email_templates (
     </div>
     
     <!-- Financial Breakdown Section - Matching invoice_sent style -->
-    <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #059669; margin-bottom: 15px;">
-      <!-- VAT (if enabled) - will be replaced by edge function -->
-      {vat_section}
-      
-      <!-- Deposit Section - will be replaced by edge function based on deposit_enabled -->
-      {deposit_section}
-      
-      <!-- Total Amount to Pay after work (balance) - will be replaced by edge function only if deposit is enabled -->
-      {balance_section}
-    </div>
+    <!-- This entire section will be replaced by edge function - only shown if VAT or deposit is enabled -->
+    {financial_breakdown_section}
     
     <!-- Custom Message -->
     <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e0e0e0;">
@@ -212,10 +182,7 @@ Project: {quote_title}
 Geldig tot: {valid_until}
 Bedrag: {total_with_vat}
 
-{vat_section_text}
-
-{deposit_section_text}
-{balance_section_text}
+{financial_breakdown_section_text}
 
 {custom_message}
 
@@ -223,7 +190,7 @@ Bekijk offerte: {quote_link}
 
 Met vriendelijke groet,
 {company_name}',
-  '{"quote_link": "string", "client_name": "string", "quote_title": "string", "valid_until": "string", "company_name": "string", "quote_amount": "string", "quote_number": "string", "custom_message": "string", "total_before_vat": "string", "vat_enabled": "string", "vat_rate": "string", "vat_percentage": "string", "vat_amount": "string", "total_with_vat": "string", "deposit_enabled": "string", "deposit_amount": "string", "balance_amount": "string"}',
+  '{"quote_link": "string", "client_name": "string", "quote_title": "string", "valid_until": "string", "company_name": "string", "quote_amount": "string", "quote_number": "string", "custom_message": "string", "total_before_vat": "string", "vat_enabled": "string", "vat_rate": "string", "vat_percentage": "string", "vat_amount": "string", "total_with_vat": "string", "deposit_enabled": "string", "deposit_amount": "string", "balance_amount": "string", "financial_breakdown_section": "string", "financial_breakdown_section_text": "string"}',
   true, false, 'nl'
 );
 

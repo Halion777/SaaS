@@ -32,8 +32,20 @@ const GlobalProfile = () => {
       setIsMobile(window.innerWidth < 768);
     };
 
+    const getScrollPosition = () => {
+      // First, try to find the main scrollable container (usually the one with h-screen and overflow-y-auto)
+      const scrollableContainer = document.querySelector('.h-screen.overflow-y-auto, [class*="h-screen"][class*="overflow-y-auto"]');
+      
+      if (scrollableContainer) {
+        return scrollableContainer.scrollTop || 0;
+      }
+      
+      // Fallback to window scroll
+      return window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+    };
+
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
+      const currentScrollY = getScrollPosition();
       
       // Show profile only when at the very top, hide when scrolling
       if (currentScrollY <= 10) {
@@ -47,14 +59,35 @@ const GlobalProfile = () => {
     };
 
     handleResize();
+    
+    // Find the main scrollable container
+    const scrollableContainer = document.querySelector('.h-screen.overflow-y-auto, [class*="h-screen"][class*="overflow-y-auto"]');
+    
+    // Use a small delay to ensure DOM is ready
+    const timeoutId = setTimeout(() => {
+      handleScroll(); // Check initial scroll position
+      
+      if (scrollableContainer) {
+        // Listen to scroll on the container
+        scrollableContainer.addEventListener('scroll', handleScroll, { passive: true });
+      } else {
+        // Fallback to window scroll
+        window.addEventListener('scroll', handleScroll, { passive: true });
+      }
+    }, 100);
+    
     window.addEventListener('resize', handleResize);
-    window.addEventListener('scroll', handleScroll, { passive: true });
     
     return () => {
+      clearTimeout(timeoutId);
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('scroll', handleScroll);
+      if (scrollableContainer) {
+        scrollableContainer.removeEventListener('scroll', handleScroll);
+      } else {
+        window.removeEventListener('scroll', handleScroll);
+      }
     };
-  }, [lastScrollY]);
+  }, [location.pathname]); // Re-run when route changes
 
   // Use real user data from AuthContext
   const userData = user ? {
@@ -78,8 +111,8 @@ const GlobalProfile = () => {
     }
   };
 
-  // Only render on mobile AND on dashboard pages
-  if (!isMobile || !shouldShowProfile()) {
+  // Only render on mobile AND on dashboard pages AND when user is loaded
+  if (!isMobile || !shouldShowProfile() || !user) {
     return null;
   }
 

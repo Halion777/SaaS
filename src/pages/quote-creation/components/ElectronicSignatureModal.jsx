@@ -205,13 +205,13 @@ const ElectronicSignatureModal = ({ isOpen, onClose, onSign, onComplete, quoteDa
 
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
-      <div className="bg-card border border-border rounded-lg shadow-xl max-w-2xl w-full overflow-hidden max-h-[95vh] sm:max-h-[90vh] flex flex-col">
+      <div className="bg-card border border-border rounded-lg shadow-xl max-w-2xl w-full overflow-hidden max-h-[85vh] sm:max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+        <div className="flex items-center justify-between p-3 sm:p-6 border-b border-gray-200 bg-gray-50 flex-shrink-0">
           <div className="flex-1 min-w-0 pr-2">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-800 truncate">{title || t('quoteCreation.electronicSignatureModal.title', 'Signature électronique')}</h2>
+            <h2 className="text-base sm:text-xl font-semibold text-gray-800 truncate">{title || t('quoteCreation.electronicSignatureModal.title', 'Signature électronique')}</h2>
             {subtitle && (
-              <p className="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-2">{subtitle}</p>
+              <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1 line-clamp-1 sm:line-clamp-2">{subtitle}</p>
             )}
           </div>
           <button
@@ -219,21 +219,21 @@ const ElectronicSignatureModal = ({ isOpen, onClose, onSign, onComplete, quoteDa
             className="text-gray-500 hover:text-gray-700 transition-colors p-1 sm:p-2 rounded-full hover:bg-gray-100 flex-shrink-0"
             aria-label="Close"
           >
-            <Icon name="X" size={20} />
+            <Icon name="X" size={18} className="sm:w-5 sm:h-5" />
           </button>
         </div>
 
-        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto flex-1" onScroll={handleScroll}>
+        <div className="p-3 sm:p-6 space-y-3 sm:space-y-6 overflow-y-auto flex-1 min-h-0" onScroll={handleScroll}>
           {/* Client Comment */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5 sm:mb-2">
               {t('quoteCreation.electronicSignatureModal.clientComment', 'Commentaire client')}
               <span className="text-red-500 ml-1">*</span>
             </label>
             <textarea
               value={clientComment}
               onChange={(e) => setClientComment(e.target.value)}
-              rows={3}
+              rows={2}
               className="w-full p-2 sm:p-3 border border-border rounded-lg bg-input text-foreground text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder={t('quoteCreation.electronicSignatureModal.commentPlaceholder', `Ex: ${clientName ? clientName + ' ' : ''}accepte ce devis et ses conditions...`)}
             />
@@ -243,34 +243,34 @@ const ElectronicSignatureModal = ({ isOpen, onClose, onSign, onComplete, quoteDa
           {clientComment.trim() && (
             <>
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-foreground mb-2 sm:mb-3">
+            <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5 sm:mb-3">
               {t('quoteCreation.electronicSignatureModal.signatureMethod', 'Méthode de signature')}
             </label>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:space-x-0">
               <button
                 onClick={() => setSignatureMode('draw')}
-                className={`flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg border-2 transition-all ${
+                className={`flex-1 py-2 sm:py-3 px-3 sm:px-4 rounded-lg border-2 transition-all ${
                   signatureMode === 'draw'
                     ? 'border-blue-500 bg-blue-50 text-blue-700'
                     : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
                 }`}
               >
                 <div className="flex items-center justify-center space-x-2">
-                  <Icon name="PenTool" size={18} className="sm:w-5 sm:h-5" />
-                  <span className="font-medium text-sm sm:text-base">{t('quoteCreation.electronicSignatureModal.draw', 'Dessiner')}</span>
+                  <Icon name="PenTool" size={16} className="sm:w-5 sm:h-5" />
+                  <span className="font-medium text-xs sm:text-base">{t('quoteCreation.electronicSignatureModal.draw', 'Dessiner')}</span>
                 </div>
               </button>
               <button
                 onClick={() => setSignatureMode('upload')}
-                className={`flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg border-2 transition-all ${
+                className={`flex-1 py-2 sm:py-3 px-3 sm:px-4 rounded-lg border-2 transition-all ${
                   signatureMode === 'upload'
                     ? 'border-blue-500 bg-blue-50 text-blue-700'
                     : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
                 }`}
               >
                 <div className="flex items-center justify-center space-x-2">
-                  <Icon name="Upload" size={18} className="sm:w-5 sm:h-5" />
-                  <span className="font-medium text-sm sm:text-base">{t('quoteCreation.electronicSignatureModal.import', 'Importer')}</span>
+                  <Icon name="Upload" size={16} className="sm:w-5 sm:h-5" />
+                  <span className="font-medium text-xs sm:text-base">{t('quoteCreation.electronicSignatureModal.import', 'Importer')}</span>
                 </div>
               </button>
             </div>
@@ -299,29 +299,29 @@ const ElectronicSignatureModal = ({ isOpen, onClose, onSign, onComplete, quoteDa
                 <SignatureCanvas
                   ref={signaturePadRef}
                   canvasProps={{
-                    className: 'w-full h-40 sm:h-48 rounded-lg touch-none',
+                    className: 'w-full h-32 sm:h-48 rounded-lg touch-none',
                     style: { border: 'none', touchAction: 'none' }
                   }}
                   backgroundColor="white"
                   penColor="black"
                 />
-                <div className="p-2 sm:p-3 bg-gray-50 border-t border-gray-200 rounded-b-lg">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <div className="p-1.5 sm:p-3 bg-gray-50 border-t border-gray-200 rounded-b-lg">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-2">
                     <p className="text-xs text-gray-500">
                       {t('quoteCreation.electronicSignatureModal.drawAbove', 'Dessinez votre signature ci-dessus')}
                     </p>
-                    <div className="flex gap-2 w-full sm:w-auto">
+                    <div className="flex gap-1.5 sm:gap-2 w-full sm:w-auto">
                       {!signatureImage && (
                         <button
                           onClick={() => signaturePadRef.current?.clear()}
-                          className="flex-1 sm:flex-none px-3 py-1.5 sm:py-1 text-xs sm:text-sm bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+                          className="flex-1 sm:flex-none px-2.5 sm:px-3 py-1 sm:py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
                         >
                           {t('quoteCreation.electronicSignatureModal.clear', 'Effacer')}
                         </button>
                       )}
                       <button
                         onClick={saveSignature}
-                        className="flex-1 sm:flex-none px-3 py-1.5 sm:py-1 text-xs sm:text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                        className="flex-1 sm:flex-none px-2.5 sm:px-3 py-1 sm:py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
                       >
                         {t('quoteCreation.electronicSignatureModal.save', 'Sauvegarder')}
                       </button>
@@ -330,7 +330,7 @@ const ElectronicSignatureModal = ({ isOpen, onClose, onSign, onComplete, quoteDa
                 </div>
               </div>
             ) : (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 text-center bg-gray-50 min-h-[180px] sm:min-h-[200px] flex flex-col items-center justify-center">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 sm:p-6 text-center bg-gray-50 min-h-[140px] sm:min-h-[200px] flex flex-col items-center justify-center">
                 {uploadedImage ? (
                   <div className="w-full">
                     <img 
@@ -384,13 +384,13 @@ const ElectronicSignatureModal = ({ isOpen, onClose, onSign, onComplete, quoteDa
 
             {/* Signature Preview */}
             {signatureImage && (
-              <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-gray-50 rounded-lg">
-                <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2">{t('quoteCreation.electronicSignatureModal.signaturePreview', 'Aperçu de la signature')}:</p>
-                <div className="flex items-center justify-center p-2 bg-white border border-gray-200 rounded">
+              <div className="mt-2 sm:mt-4 p-2 sm:p-3 bg-gray-50 rounded-lg">
+                <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">{t('quoteCreation.electronicSignatureModal.signaturePreview', 'Aperçu de la signature')}:</p>
+                <div className="flex items-center justify-center p-1.5 sm:p-2 bg-white border border-gray-200 rounded">
                   <img 
                     src={signatureImage} 
                     alt="Signature Preview" 
-                    className="max-h-14 sm:max-h-16 max-w-full"
+                    className="max-h-12 sm:max-h-16 max-w-full"
                   />
                 </div>
               </div>
@@ -400,12 +400,12 @@ const ElectronicSignatureModal = ({ isOpen, onClose, onSign, onComplete, quoteDa
           )}
 
           {/* Legal Notice */}
-          <div className="p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="p-2.5 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-start space-x-2">
-              <Icon name="Shield" size={18} className="text-blue-600 mt-0.5 flex-shrink-0 sm:w-5 sm:h-5" />
+              <Icon name="Shield" size={16} className="text-blue-600 mt-0.5 flex-shrink-0 sm:w-5 sm:h-5" />
               <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-blue-800 mb-1">{t('quoteCreation.electronicSignatureModal.secureSignature', 'Signature électronique sécurisée')}</p>
-                <p className="text-xs text-blue-700">
+                <p className="text-xs sm:text-sm font-medium text-blue-800 mb-0.5 sm:mb-1">{t('quoteCreation.electronicSignatureModal.secureSignature', 'Signature électronique sécurisée')}</p>
+                <p className="text-xs text-blue-700 leading-tight">
                   {t('quoteCreation.electronicSignatureModal.legalNotice', "Cette signature électronique a la même valeur juridique qu'une signature manuscrite. Elle est horodatée et enregistrée de manière sécurisée.")}
                 </p>
               </div>
@@ -414,12 +414,12 @@ const ElectronicSignatureModal = ({ isOpen, onClose, onSign, onComplete, quoteDa
         </div>
 
         {/* Footer */}
-        <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 sm:space-x-0 p-4 sm:p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+        <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 sm:space-x-0 p-3 sm:p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0">
           <Button
             variant="outline"
             onClick={onClose}
             disabled={isSigning}
-            className="w-full sm:w-auto order-2 sm:order-1"
+            className="w-full sm:w-auto order-2 sm:order-1 text-sm sm:text-base py-2 sm:py-2.5"
           >
             Annuler
           </Button>
@@ -428,7 +428,7 @@ const ElectronicSignatureModal = ({ isOpen, onClose, onSign, onComplete, quoteDa
             disabled={!clientComment.trim() || !signatureImage || isSigning}
             iconName="PenTool"
             iconPosition="left"
-            className="w-full sm:w-auto order-1 sm:order-2"
+            className="w-full sm:w-auto order-1 sm:order-2 text-sm sm:text-base py-2 sm:py-2.5"
           >
             {isSigning ? t('quoteCreation.electronicSignatureModal.signing', 'Signature en cours...') : t('quoteCreation.electronicSignatureModal.signQuote', 'Signer le devis')}
           </Button>

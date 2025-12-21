@@ -8,9 +8,11 @@ import { SUPPORT_EMAIL, SUPER_ADMIN_EMAIL } from '../config/appConfig';
 import TableLoader from './ui/TableLoader';
 import Button from './ui/Button';
 import Icon from './AppIcon';
+import Header from './Header';
+import Footer from './Footer';
 
-// Cache duration: 30 minutes in milliseconds
-const SUBSCRIPTION_CACHE_DURATION = 30 * 60 * 1000;
+// Cache duration: 1 minutes in milliseconds
+const SUBSCRIPTION_CACHE_DURATION = 1 * 60 * 1000;
 const SUBSCRIPTION_CACHE_KEY = 'haliqo_subscription_cache';
 
 /**
@@ -31,7 +33,7 @@ const getCachedSubscription = (userId) => {
       return null;
     }
     
-    // Check if cache is still valid (within 30 minutes)
+    // Check if cache is still valid (within 1 minutes)
     const now = Date.now();
     const cacheAge = now - data.timestamp;
     
@@ -79,7 +81,7 @@ const getCachedSubscription = (userId) => {
 
 /**
  * Save subscription data to localStorage cache
- * This resets the 30-minute timer every time it's called
+ * This resets the 1-minute timer every time it's called
  */
 const setCachedSubscription = (userId, status, isSuperAdmin = false, subscriptionData = null, hasLifetimeAccess = false) => {
   try {
@@ -89,7 +91,7 @@ const setCachedSubscription = (userId, status, isSuperAdmin = false, subscriptio
       isSuperAdmin,
       hasLifetimeAccess,
       subscriptionData,
-      timestamp: Date.now() // Fresh timestamp on every save = resets 30-min timer
+      timestamp: Date.now() // Fresh timestamp on every save = resets 1-min timer
     };
     localStorage.setItem(SUBSCRIPTION_CACHE_KEY, JSON.stringify(cacheData));
     
@@ -113,7 +115,7 @@ export const clearSubscriptionCache = () => {
 /**
  * Protected route component that redirects to login if user is not authenticated
  * and checks for valid subscription (all in one loading phase)
- * Uses localStorage cache for 30 minutes to handle unstable connections
+ * Uses localStorage cache for 1 minutes to handle unstable connections
  */
 const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -136,8 +138,12 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
         return;
       }
 
-      // Get cached data for fallback in case of network issues
+      // Clear cache if it exists and has expired status - force fresh check after resubscription
       const cachedData = getCachedSubscription(user.id);
+      if (cachedData && (cachedData.status === 'expired' || cachedData.status === 'none')) {
+        // Clear expired cache to force fresh check
+        clearSubscriptionCache();
+      }
       
       try {
         // Always try to fetch fresh data from network
@@ -179,7 +185,7 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
               .eq('id', user.id);
           }
           setSubscriptionStatus('active');
-          // Update cache with fresh timestamp (resets 30-min timer)
+          // Update cache with fresh timestamp (resets 1-min timer)
           setCachedSubscription(user.id, 'active', true);
           setSubscriptionLoading(false);
           return;
@@ -204,7 +210,7 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
         // Check for lifetime access
         if (userData?.has_lifetime_access === true) {
           setSubscriptionStatus('active');
-          // Update cache with fresh timestamp (resets 30-min timer)
+          // Update cache with fresh timestamp (resets 1-min timer)
           setCachedSubscription(user.id, 'active', false, null, true);
           setSubscriptionLoading(false);
           return;
@@ -265,25 +271,108 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
                              new Date(subscriptionData.current_period_end) < new Date();
 
           if (!isActive || trialExpired || periodEnded) {
-            setShowExpiredModal(true);
-            setSubscriptionStatus('expired');
-            // Update cache with fresh timestamp
-            setCachedSubscription(user.id, 'expired', false, subscriptionData);
+            // Database shows expired - verify with Stripe directly (fallback for resubscription)
+            try {
+              const { data: stripeData, error: stripeError } = await supabase.functions.invoke('get-subscription', {
+                body: { userId: user.id }
+              });
+
+              if (!stripeError && stripeData?.success && stripeData?.subscription) {
+                const stripeSub = stripeData.subscription;
+                const stripeIsActive = stripeSub.status === 'active' || 
+                                      stripeSub.status === 'trialing' || 
+                                      stripeSub.status === 'past_due';
+                
+                if (stripeIsActive) {
+                  // Stripe shows active - database is out of sync, allow access
+                  setShowExpiredModal(false);
+                  setSubscriptionStatus('active');
+                  setCachedSubscription(user.id, 'active', false, {
+                    status: stripeSub.status,
+                    current_period_end: stripeSub.current_period_end,
+                    trial_end: stripeSub.trial_end
+                  });
+                } else {
+                  // Stripe also shows expired
+                  setShowExpiredModal(true);
+                  setSubscriptionStatus('expired');
+                  setCachedSubscription(user.id, 'expired', false, subscriptionData);
+                }
+              } else {
+                // Stripe check failed or no subscription - use database result
+                setShowExpiredModal(true);
+                setSubscriptionStatus('expired');
+                setCachedSubscription(user.id, 'expired', false, subscriptionData);
+              }
+            } catch (stripeCheckError) {
+              console.error('Error checking Stripe subscription:', stripeCheckError);
+              // On error, use database result
+              setShowExpiredModal(true);
+              setSubscriptionStatus('expired');
+              setCachedSubscription(user.id, 'expired', false, subscriptionData);
+            }
           } else {
+            // Subscription is active - clear any expired cache and set active
+            setShowExpiredModal(false); // Ensure modal is hidden
             setSubscriptionStatus('active');
-            // Update cache with fresh timestamp (resets 30-min timer)
+            // Update cache with fresh timestamp (resets 1-min timer)
             setCachedSubscription(user.id, 'active', false, subscriptionData);
           }
         } else {
-          // No subscription found in database
-          // Check if we have valid cache showing active (might be temporary network issue)
-          if (cachedData && cachedData.status === 'active' && !cachedData.subscriptionExpired) {
-            setSubscriptionStatus('active');
-            // Don't update cache here - let it expire naturally
-          } else {
-            setShowExpiredModal(true);
-            setSubscriptionStatus('none');
-            setCachedSubscription(user.id, 'none', false);
+          // No subscription found in database - check Stripe directly (fallback for resubscription)
+          try {
+            const { data: stripeData, error: stripeError } = await supabase.functions.invoke('get-subscription', {
+              body: { userId: user.id }
+            });
+
+            if (!stripeError && stripeData?.success && stripeData?.subscription) {
+              const stripeSub = stripeData.subscription;
+              const stripeIsActive = stripeSub.status === 'active' || 
+                                    stripeSub.status === 'trialing' || 
+                                    stripeSub.status === 'past_due';
+              
+              if (stripeIsActive) {
+                // Stripe shows active subscription - database is out of sync, allow access
+                setShowExpiredModal(false);
+                setSubscriptionStatus('active');
+                setCachedSubscription(user.id, 'active', false, {
+                  status: stripeSub.status,
+                  current_period_end: stripeSub.current_period_end,
+                  trial_end: stripeSub.trial_end
+                });
+              } else {
+                // Stripe also shows no active subscription
+                if (cachedData && cachedData.status === 'active' && !cachedData.subscriptionExpired) {
+                  setSubscriptionStatus('active');
+                  setShowExpiredModal(false);
+                } else {
+                  setShowExpiredModal(true);
+                  setSubscriptionStatus('none');
+                  setCachedSubscription(user.id, 'none', false);
+                }
+              }
+            } else {
+              // Stripe check failed - check cache
+              if (cachedData && cachedData.status === 'active' && !cachedData.subscriptionExpired) {
+                setSubscriptionStatus('active');
+                setShowExpiredModal(false);
+              } else {
+                setShowExpiredModal(true);
+                setSubscriptionStatus('none');
+                setCachedSubscription(user.id, 'none', false);
+              }
+            }
+          } catch (stripeCheckError) {
+            console.error('Error checking Stripe subscription:', stripeCheckError);
+            // On error, check cache
+            if (cachedData && cachedData.status === 'active' && !cachedData.subscriptionExpired) {
+              setSubscriptionStatus('active');
+              setShowExpiredModal(false);
+            } else {
+              setShowExpiredModal(true);
+              setSubscriptionStatus('none');
+              setCachedSubscription(user.id, 'none', false);
+            }
           }
         }
       } catch (error) {
@@ -340,51 +429,55 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
   // Show expired subscription modal
   if (showExpiredModal && !skipSubscriptionCheck) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="bg-card border border-border rounded-lg shadow-xl max-w-md w-full p-8 text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Icon name="AlertTriangle" size={32} className="text-red-600" />
-          </div>
-          
-          <h2 className="text-2xl font-bold text-foreground mb-4">
-            {subscriptionStatus === 'none' 
-              ? t('subscription.noSubscription', 'No Active Subscription')
-              : t('subscription.expired', 'Subscription Expired')}
-          </h2>
-          
-          <p className="text-muted-foreground mb-8">
-            {subscriptionStatus === 'none'
-              ? t('subscription.noSubscriptionMessage', 'You don\'t have an active subscription. Please subscribe to access the application.')
-              : t('subscription.expiredMessage', 'Your subscription has expired. Please renew your subscription to continue using Haliqo.')}
-          </p>
-          
-          <div className="space-y-3">
-            <Button
-              onClick={() => navigate('/subscription')}
-              className="w-full"
-            >
-              <Icon name="CreditCard" size={18} className="mr-2" />
-              {t('subscription.renewSubscription', 'Manage Subscription')}
-            </Button>
+      <div className="min-h-screen bg-background flex flex-col">
+        <Header />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-lg shadow-xl max-w-md w-full p-8 text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Icon name="AlertTriangle" size={32} className="text-red-600" />
+            </div>
             
-            <Button
-              variant="outline"
-              onClick={() => {
-                clearSubscriptionCache();
-                supabase.auth.signOut();
-                navigate('/login');
-              }}
-              className="w-full"
-            >
-              <Icon name="LogOut" size={18} className="mr-2" />
-              {t('nav.logout', 'Logout')}
-            </Button>
+            <h2 className="text-2xl font-bold text-foreground mb-4">
+              {subscriptionStatus === 'none' 
+                ? t('subscription.noSubscription', 'No Active Subscription')
+                : t('subscription.expired', 'Subscription Expired')}
+            </h2>
+            
+            <p className="text-muted-foreground mb-8">
+              {subscriptionStatus === 'none'
+                ? t('subscription.noSubscriptionMessage', 'You don\'t have an active subscription. Please subscribe to access the application.')
+                : t('subscription.expiredMessage', 'Your subscription has expired. Please renew your subscription to continue using Haliqo.')}
+            </p>
+            
+            <div className="space-y-3">
+              <Button
+                onClick={() => navigate('/subscription')}
+                className="w-full"
+              >
+                <Icon name="CreditCard" size={18} className="mr-2" />
+                {t('subscription.renewSubscription', 'Manage Subscription')}
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={() => {
+                  clearSubscriptionCache();
+                  supabase.auth.signOut();
+                  navigate('/login');
+                }}
+                className="w-full"
+              >
+                <Icon name="LogOut" size={18} className="mr-2" />
+                {t('nav.logout', 'Logout')}
+              </Button>
+            </div>
+            
+            <p className="text-xs text-muted-foreground mt-6">
+              {t('subscription.contactSupport', 'Need help? Contact us at support@haliqo.com')}
+            </p>
           </div>
-          
-          <p className="text-xs text-muted-foreground mt-6">
-            {t('subscription.contactSupport', 'Need help? Contact us at support@haliqo.com')}
-          </p>
         </div>
+        <Footer />
       </div>
     );
   }

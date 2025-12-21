@@ -39,6 +39,7 @@ const ExpenseInvoicesManagement = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [invoiceToEdit, setInvoiceToEdit] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isSendToAccountantModalOpen, setIsSendToAccountantModalOpen] = useState(false);
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
@@ -132,57 +133,61 @@ const ExpenseInvoicesManagement = () => {
     manualInvoices: 0
   });
 
-  useEffect(() => {
-    // Load data from service
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const expenseService = new ExpenseInvoicesService();
+  // Load data from service
+  const loadData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const expenseService = new ExpenseInvoicesService();
+      
+      // Load invoices
+      const result = await expenseService.getExpenseInvoices();
+      if (result.success) {
+        // Auto-update overdue status based on due_date
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
         
-        // Load invoices
-        const result = await expenseService.getExpenseInvoices();
-        if (result.success) {
-          // Auto-update overdue status based on due_date
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          
-          const updatedInvoices = await Promise.all(result.data.map(async (invoice) => {
-            // If invoice is not paid and due_date has passed, mark as overdue
-            if (invoice.status !== 'paid' && invoice.due_date) {
-              const dueDate = new Date(invoice.due_date);
-              dueDate.setHours(0, 0, 0, 0);
-              
-              if (dueDate < today && invoice.status !== 'overdue') {
-                // Auto-update status to overdue
-                await expenseService.updateExpenseInvoice(invoice.id, { status: 'overdue' });
-                return { ...invoice, status: 'overdue' };
-              }
+        const updatedInvoices = await Promise.all(result.data.map(async (invoice) => {
+          // If invoice is not paid and due_date has passed, mark as overdue
+          if (invoice.status !== 'paid' && invoice.due_date) {
+            const dueDate = new Date(invoice.due_date);
+            dueDate.setHours(0, 0, 0, 0);
+            
+            if (dueDate < today && invoice.status !== 'overdue') {
+              // Auto-update status to overdue
+              await expenseService.updateExpenseInvoice(invoice.id, { status: 'overdue' });
+              return { ...invoice, status: 'overdue' };
             }
-            return invoice;
-          }));
-          
-          setExpenseInvoices(updatedInvoices);
-          setFilteredExpenseInvoices(updatedInvoices);
-        } else {
-          console.error('Error loading expense invoices:', result.error);
-          setExpenseInvoices([]);
-          setFilteredExpenseInvoices([]);
-        }
+          }
+          return invoice;
+        }));
         
-        // Load statistics
-        const statsResult = await expenseService.getStatistics();
-        if (statsResult.success) {
-          setSummaryData(statsResult.data);
-        }
-      } catch (error) {
-        console.error('Error loading expense invoices:', error);
+        setExpenseInvoices(updatedInvoices);
+        setFilteredExpenseInvoices(updatedInvoices);
+        setError(null);
+      } else {
+        console.error('Error loading expense invoices:', result.error);
+        setError(result.error || t('expenseInvoices.errors.loadError', 'Failed to load expense invoices'));
         setExpenseInvoices([]);
         setFilteredExpenseInvoices([]);
-      } finally {
-        setIsLoading(false);
       }
-    };
+      
+      // Load statistics
+      const statsResult = await expenseService.getStatistics();
+      if (statsResult.success) {
+        setSummaryData(statsResult.data);
+      }
+    } catch (error) {
+      console.error('Error loading expense invoices:', error);
+      setError(error.message || t('expenseInvoices.errors.loadError', 'Failed to load expense invoices'));
+      setExpenseInvoices([]);
+      setFilteredExpenseInvoices([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadData();
   }, []);
 
@@ -808,6 +813,15 @@ const ExpenseInvoicesManagement = () => {
           {isLoading ? (
             <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
               <TableLoader message={t('expenseInvoices.loading', 'Loading expense invoices...')} />
+            </div>
+          ) : error ? (
+            <div className="bg-card border border-border rounded-lg p-4 sm:p-6 text-center">
+              <Icon name="AlertCircle" size={48} className="text-error mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">{t('expenseInvoices.errors.loadError', 'Error Loading Expense Invoices')}</h3>
+              <p className="text-sm text-muted-foreground mb-4">{error}</p>
+              <Button onClick={loadData} variant="outline">
+                {t('expenseInvoices.retry', 'Retry')}
+              </Button>
             </div>
           ) : (
             <ExpenseInvoicesDataTable

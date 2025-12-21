@@ -449,6 +449,26 @@ serve(async (req) => {
             balanceSectionText = `${isFrench ? 'Montant total à payer après travaux:' : isDutch ? 'Totaalbedrag te betalen na werk:' : 'Total Amount to Pay after work:'} ${balanceAmount}\n`;
           }
           
+          // Check if there's any content to show in the financial breakdown section
+          // Only show the container if VAT is enabled OR deposit is enabled
+          const hasFinancialContent = vatEnabled || (depositEnabled && depositAmountNum > 0);
+          
+          // Generate the entire financial breakdown section only if there's content
+          let financialBreakdownHtml = '';
+          let financialBreakdownText = '';
+          
+          if (hasFinancialContent) {
+            // Build the financial breakdown container with all sections
+            financialBreakdownHtml = `
+    <div style="background: white; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+      ${vatSectionHtml}
+      ${depositSectionHtml}
+      ${balanceSectionHtml}
+    </div>`;
+            
+            financialBreakdownText = `${vatSectionText}${depositSectionText}${balanceSectionText}`;
+          }
+          
           const variables = {
             client_name: emailData.variables?.client_name || 'Madame, Monsieur',
             quote_number: emailData.variables?.quote_number || 'N/A',
@@ -468,13 +488,17 @@ serve(async (req) => {
             deposit_enabled: emailData.variables?.deposit_enabled || 'false',
             deposit_amount: emailData.variables?.deposit_amount || '0€',
             balance_amount: balanceAmount,
-            // Conditional sections
-            vat_section: vatSectionHtml,
+            // Conditional sections - replace the entire financial breakdown container
+            // The template has placeholders for individual sections, but we'll replace the whole container
+            vat_section: hasFinancialContent ? vatSectionHtml : '',
             vat_section_text: vatSectionText,
             deposit_section: depositSectionHtml,
             deposit_section_text: depositSectionText,
             balance_section: balanceSectionHtml,
-            balance_section_text: balanceSectionText
+            balance_section_text: balanceSectionText,
+            // New variable to replace the entire financial breakdown section
+            financial_breakdown_section: financialBreakdownHtml,
+            financial_breakdown_section_text: financialBreakdownText
           };
           const rendered = renderTemplate(quoteTemplate.data, variables);
           emailResult = await sendEmail({

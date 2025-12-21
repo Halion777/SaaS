@@ -343,9 +343,9 @@ const PeppolWidget = () => {
                   </p>
                 </div>
               ) : (
-                <p className="text-xs sm:text-sm font-medium text-foreground truncate">
-                  {peppolData.settings.peppolId || t('dashboard.peppolWidget.connectionInfo.peppolId.notDefined')}
-                </p>
+              <p className="text-xs sm:text-sm font-medium text-foreground truncate">
+                {peppolData.settings.peppolId || t('dashboard.peppolWidget.connectionInfo.peppolId.notDefined')}
+              </p>
               )}
             </div>
             <div className="p-3 sm:p-4 bg-muted/30 rounded-lg">

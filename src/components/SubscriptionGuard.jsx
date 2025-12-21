@@ -7,6 +7,8 @@ import { SUPPORT_EMAIL, SUPER_ADMIN_EMAIL } from '../config/appConfig';
 import TableLoader from './ui/TableLoader';
 import Button from './ui/Button';
 import Icon from './AppIcon';
+import Header from './Header';
+import Footer from './Footer';
 
 /**
  * SubscriptionGuard component that checks if user has an active subscription
@@ -149,50 +151,54 @@ const SubscriptionGuard = ({ children }) => {
   // Show expired subscription modal
   if (showExpiredModal) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="bg-card border border-border rounded-lg shadow-xl max-w-md w-full p-8 text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Icon name="AlertTriangle" size={32} className="text-red-600" />
-          </div>
-          
-          <h2 className="text-2xl font-bold text-foreground mb-4">
-            {subscriptionStatus === 'none' 
-              ? t('subscription.noSubscription', 'No Active Subscription')
-              : t('subscription.expired', 'Subscription Expired')}
-          </h2>
-          
-          <p className="text-muted-foreground mb-8">
-            {subscriptionStatus === 'none'
-              ? t('subscription.noSubscriptionMessage', 'You don\'t have an active subscription. Please subscribe to access the application.')
-              : t('subscription.expiredMessage', 'Your subscription has expired. Please renew your subscription to continue using Haliqo.')}
-          </p>
-          
-          <div className="space-y-3">
-            <Button
-              onClick={() => navigate('/subscription')}
-              className="w-full"
-            >
-              <Icon name="CreditCard" size={18} className="mr-2" />
-              {t('subscription.renewSubscription', 'Manage Subscription')}
-            </Button>
+      <div className="min-h-screen bg-background flex flex-col">
+        <Header />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-lg shadow-xl max-w-md w-full p-8 text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Icon name="AlertTriangle" size={32} className="text-red-600" />
+            </div>
             
-            <Button
-              variant="outline"
-              onClick={() => {
-                supabase.auth.signOut();
-                navigate('/login');
-              }}
-              className="w-full"
-            >
-              <Icon name="LogOut" size={18} className="mr-2" />
-              {t('nav.logout', 'Logout')}
-            </Button>
+            <h2 className="text-2xl font-bold text-foreground mb-4">
+              {subscriptionStatus === 'none' 
+                ? t('subscription.noSubscription', 'No Active Subscription')
+                : t('subscription.expired', 'Subscription Expired')}
+            </h2>
+            
+            <p className="text-muted-foreground mb-8">
+              {subscriptionStatus === 'none'
+                ? t('subscription.noSubscriptionMessage', 'You don\'t have an active subscription. Please subscribe to access the application.')
+                : t('subscription.expiredMessage', 'Your subscription has expired. Please renew your subscription to continue using Haliqo.')}
+            </p>
+            
+            <div className="space-y-3">
+              <Button
+                onClick={() => navigate('/subscription')}
+                className="w-full"
+              >
+                <Icon name="CreditCard" size={18} className="mr-2" />
+                {t('subscription.renewSubscription', 'Manage Subscription')}
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={() => {
+                  supabase.auth.signOut();
+                  navigate('/login');
+                }}
+                className="w-full"
+              >
+                <Icon name="LogOut" size={18} className="mr-2" />
+                {t('nav.logout', 'Logout')}
+              </Button>
+            </div>
+            
+            <p className="text-xs text-muted-foreground mt-6">
+              {t('subscription.contactSupport', 'Need help? Contact us at support@haliqo.com')}
+            </p>
           </div>
-          
-          <p className="text-xs text-muted-foreground mt-6">
-            {t('subscription.contactSupport', 'Need help? Contact us at support@haliqo.com')}
-          </p>
         </div>
+        <Footer />
       </div>
     );
   }

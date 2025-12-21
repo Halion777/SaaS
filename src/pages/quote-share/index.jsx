@@ -154,6 +154,7 @@ const PublicQuoteShareViewer = () => {
     }
 
     try {
+      setRejectLoading(true);
       setActionLoading(true);
       const result = await ClientQuoteService.rejectQuote(quote.id, token, rejectionReason);
       
@@ -168,6 +169,7 @@ const PublicQuoteShareViewer = () => {
     } catch (error) {
       alert(t('quoteShare.alerts.rejectionError'));
     } finally {
+      setRejectLoading(false);
       setActionLoading(false);
     }
   };
@@ -577,7 +579,7 @@ const PublicQuoteShareViewer = () => {
                   <Icon name="DollarSign" size={14} className="sm:w-4 sm:h-4 text-green-600" />
                 </div>
                 <p className="text-xs text-gray-500 mb-1">{t('quoteShare.quoteDetails.totalAmount')}</p>
-                <p className="text-lg sm:text-xl font-bold text-green-600">{currency(balanceAmount)}</p>
+                <p className="text-lg sm:text-xl font-bold text-green-600">{currency(totalWithVAT)}</p>
               </div>
             </div>
           </div>
@@ -929,16 +931,24 @@ const PublicQuoteShareViewer = () => {
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <button
                 onClick={() => setShowRejectModal(false)}
-                className="w-full sm:flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm"
+                disabled={rejectLoading}
+                className="w-full sm:flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-colors"
               >
                 {t('quoteShare.rejectModal.cancel')}
               </button>
               <button
                 onClick={handleRejectQuote}
                 disabled={rejectLoading}
-                className="w-full sm:flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 text-sm"
+                className="w-full sm:flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-colors flex items-center justify-center"
               >
-                {rejectLoading ? t('quoteShare.actions.processing') : t('quoteShare.rejectModal.reject')}
+                {rejectLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    {t('quoteShare.actions.processing')}
+                  </>
+                ) : (
+                  t('quoteShare.rejectModal.reject')
+                )}
               </button>
             </div>
           </div>
