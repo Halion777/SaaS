@@ -3,33 +3,41 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from '../i18n';
 import Icon from './AppIcon';
 import Button from './ui/Button';
+import Header from './Header';
+import Footer from './Footer';
 
 // ErrorBoundaryContent component that doesn't use hooks
 // It receives translations directly to avoid hook usage issues
+// Note: Cannot use MainSidebar or GlobalProfile here as they require Router and MultiUserProvider contexts
 const ErrorBoundaryContent = ({ error }) => {
   const handleRetry = () => {
     window.location.reload();
   };
 
+  // Show generic error UI with Header and Footer
   return (
     <I18nextProvider i18n={i18n}>
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="max-w-md w-full bg-card border border-border rounded-lg shadow-lg p-6 text-center">
-          <Icon name="AlertCircle" size={64} className="text-error mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-foreground mb-2">
-            {i18n.t('common.errors.somethingWentWrong', 'Something went wrong')}
-          </h2>
-          <p className="text-muted-foreground mb-6">
-            {i18n.t('common.errors.unexpectedError', 'We\'re sorry, but something unexpected happened. Please try refreshing the page.')}
-          </p>
-          <Button
-            onClick={handleRetry}
-            variant="default"
-            className="w-full sm:w-auto"
-          >
-            {i18n.t('common.retry', 'Retry')}
-          </Button>
+      <div className="min-h-screen bg-background flex flex-col">
+        <Header />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-lg shadow-lg max-w-md w-full p-8 text-center">
+            <Icon name="AlertCircle" size={64} className="text-error mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-foreground mb-2">
+              {i18n.t('common.errors.somethingWentWrong', 'Something went wrong')}
+            </h2>
+            <p className="text-muted-foreground mb-6">
+              {i18n.t('common.errors.unexpectedError', 'We\'re sorry, but something unexpected happened. Please try refreshing the page.')}
+            </p>
+            <Button
+              onClick={handleRetry}
+              variant="default"
+              className="w-full sm:w-auto"
+            >
+              {i18n.t('common.retry', 'Retry')}
+            </Button>
+          </div>
         </div>
+        <Footer />
       </div>
     </I18nextProvider>
   );
@@ -38,17 +46,46 @@ const ErrorBoundaryContent = ({ error }) => {
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { 
+      hasError: false, 
+      error: null,
+      isOffline: !navigator.onLine
+    };
   }
 
   static getDerivedStateFromError(error) {
-    // Update state so the next render will show the fallback UI
-    return { hasError: true, error };
+    // Don't catch network/internet errors - let InternetConnectionCheck handle those
+    // Check if error is network-related
+    const isNetworkError = error?.message?.includes('fetch') || 
+                          error?.message?.includes('network') ||
+                          error?.message?.includes('NetworkError') ||
+                          error?.name === 'TypeError' && error?.message?.includes('Failed to fetch');
+    
+    // If it's a network error and we're offline, don't show error boundary
+    // Let InternetConnectionCheck handle it instead
+    if (isNetworkError && !navigator.onLine) {
+      // Reset error state - let InternetConnectionCheck handle it
+      return { hasError: false, error: null, isOffline: true };
+    }
+    
+    return { hasError: true, error, isOffline: !navigator.onLine };
   }
 
   componentDidCatch(error, errorInfo) {
     // Log the error
     console.error('Error caught by boundary:', error, errorInfo);
+    
+    // Check if it's a network error - if so, don't show error boundary
+    const isNetworkError = error?.message?.includes('fetch') || 
+                          error?.message?.includes('network') ||
+                          error?.message?.includes('NetworkError') ||
+                          error?.name === 'TypeError' && error?.message?.includes('Failed to fetch');
+    
+    // If network error and offline, reset error state to let InternetConnectionCheck handle it
+    if (isNetworkError && !navigator.onLine) {
+      this.setState({ hasError: false, error: null, isOffline: true });
+      return;
+    }
     
     // Optionally send error to error tracking service
     if (process.env.NODE_ENV === 'production') {
@@ -56,11 +93,41 @@ class ErrorBoundary extends React.Component {
     }
   }
 
-  render() {
+  componentDidMount() {
+    // Listen for online/offline events to detect network issues
+    window.addEventListener('online', this.handleOnline);
+    window.addEventListener('offline', this.handleOffline);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('online', this.handleOnline);
+    window.removeEventListener('offline', this.handleOffline);
+  }
+
+  handleOnline = () => {
+    this.setState({ isOffline: false });
+  };
+
+  handleOffline = () => {
+    this.setState({ isOffline: true });
+    // If we have an error and go offline, reset error state to let InternetConnectionCheck handle it
     if (this.state.hasError) {
-      return <ErrorBoundaryContent error={this.state.error} />;
+      this.setState({ hasError: false, error: null });
+    }
+  };
+
+  render() {
+    // Only show error boundary for actual React errors, not network errors
+    // Network errors should be handled by InternetConnectionCheck
+    if (this.state.hasError && !this.state.isOffline) {
+      return (
+        <ErrorBoundaryContent 
+          error={this.state.error}
+        />
+      );
     }
 
+    // If it's just an internet issue, don't show error boundary - let InternetConnectionCheck handle it
     return this.props.children;
   }
 }

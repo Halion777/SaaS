@@ -3,8 +3,139 @@ import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import Icon from './AppIcon';
 import Button from './ui/Button';
-import MainSidebar from './ui/MainSidebar';
-import GlobalProfile from './ui/GlobalProfile';
+import Header from './Header';
+import Footer from './Footer';
+
+/**
+ * Shared utility function to check internet connectivity
+ * Can be used by both hooks and class components
+ * Checks both general internet and Supabase connectivity
+ */
+export const checkInternetConnection = async () => {
+  try {
+    // First check: Try to fetch a small resource to verify general connectivity
+    try {
+      await fetch('/favicon.ico', { 
+        method: 'HEAD',
+        cache: 'no-cache',
+        mode: 'no-cors',
+        signal: AbortSignal.timeout(5000) // 5 second timeout
+      });
+    } catch (fetchError) {
+      // Check for specific network error codes
+      const errorMessage = fetchError?.message || fetchError?.toString() || '';
+      const isNetworkError = errorMessage.includes('ERR_INTERNET_DISCONNECTED') ||
+                           errorMessage.includes('ERR_NETWORK') ||
+                           errorMessage.includes('Failed to fetch') ||
+                           errorMessage.includes('NetworkError') ||
+                           fetchError?.name === 'TypeError';
+      
+      if (isNetworkError) {
+        return false;
+      }
+    }
+
+    // Second check: Try to connect to Supabase to verify database connectivity
+    // This catches ERR_INTERNET_DISCONNECTED and other Supabase network errors
+    try {
+      const { supabase } = await import('../services/supabaseClient');
+      
+      // Make a lightweight query to test Supabase connection
+      // Use Promise.race with timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Connection timeout')), 5000)
+      );
+      
+      const queryPromise = supabase
+        .from('users')
+        .select('id')
+        .limit(1)
+        .maybeSingle();
+      
+      try {
+        const result = await Promise.race([queryPromise, timeoutPromise]);
+        const { error } = result || {};
+        
+        // If we get an error, check if it's a network error
+        if (error) {
+          const errorMessage = error.message || error.toString() || '';
+          const errorCode = error.code || '';
+          
+          // Check for Supabase network error codes and browser network errors
+          // This includes ERR_INTERNET_DISCONNECTED from Supabase requests
+          const isSupabaseNetworkError = 
+            errorCode === 'PGRST301' || // Connection error
+            errorCode === 'PGRST302' || // Timeout
+            errorCode === 'PGRST303' || // Network error
+            errorMessage.includes('ERR_INTERNET_DISCONNECTED') ||
+            errorMessage.includes('ERR_NETWORK') ||
+            errorMessage.includes('ERR_CONNECTION_REFUSED') ||
+            errorMessage.includes('ERR_CONNECTION_TIMED_OUT') ||
+            errorMessage.includes('ERR_CONNECTION_RESET') ||
+            errorMessage.includes('Failed to fetch') ||
+            errorMessage.includes('NetworkError') ||
+            errorMessage.includes('network') ||
+            errorMessage.includes('timeout') ||
+            errorMessage.includes('ECONNREFUSED') ||
+            errorMessage.includes('ETIMEDOUT') ||
+            errorMessage.includes('ENOTFOUND');
+          
+          if (isSupabaseNetworkError) {
+            return false;
+          }
+          // Other Supabase errors (like permission errors) don't mean we're offline
+          // So we still return true if it's not a network error
+        }
+        
+        return true;
+      } catch (raceError) {
+        // Check if it's a timeout or network error
+        const errorMessage = raceError?.message || raceError?.toString() || '';
+        if (errorMessage.includes('timeout') || 
+            errorMessage.includes('ERR_INTERNET_DISCONNECTED') ||
+            errorMessage.includes('ERR_NETWORK')) {
+          return false;
+        }
+        throw raceError;
+      }
+    } catch (supabaseError) {
+      // Check if Supabase error is network-related
+      const errorMessage = supabaseError?.message || supabaseError?.toString() || '';
+      const errorName = supabaseError?.name || '';
+      
+      const isNetworkError = 
+        errorMessage.includes('ERR_INTERNET_DISCONNECTED') ||
+        errorMessage.includes('ERR_NETWORK') ||
+        errorMessage.includes('ERR_CONNECTION_REFUSED') ||
+        errorMessage.includes('ERR_CONNECTION_TIMED_OUT') ||
+        errorMessage.includes('ERR_CONNECTION_RESET') ||
+        errorMessage.includes('Failed to fetch') ||
+        errorMessage.includes('NetworkError') ||
+        errorMessage.includes('timeout') ||
+        errorMessage.includes('ECONNREFUSED') ||
+        errorMessage.includes('ETIMEDOUT') ||
+        errorMessage.includes('ENOTFOUND') ||
+        errorName === 'TypeError' ||
+        errorName === 'AbortError' ||
+        errorName === 'NetworkError';
+      
+      if (isNetworkError) {
+        return false;
+      }
+      // If it's not a network error, assume we're online (might be a different issue)
+      return true;
+    }
+  } catch (error) {
+    // Catch any other errors and check if they're network-related
+    const errorMessage = error?.message || error?.toString() || '';
+    const isNetworkError = errorMessage.includes('ERR_INTERNET_DISCONNECTED') ||
+                          errorMessage.includes('ERR_NETWORK') ||
+                          errorMessage.includes('Failed to fetch') ||
+                          errorMessage.includes('NetworkError');
+    
+    return !isNetworkError;
+  }
+};
 
 /**
  * Hook to check internet connectivity
@@ -17,17 +148,9 @@ export const useInternetConnection = () => {
   const checkConnection = async () => {
     setIsChecking(true);
     try {
-      // Try to fetch a small resource to verify actual connectivity
-      const response = await fetch('/favicon.ico', { 
-        method: 'HEAD',
-        cache: 'no-cache',
-        mode: 'no-cors'
-      });
-      setIsOnline(true);
-      return true;
-    } catch (error) {
-      setIsOnline(false);
-      return false;
+      const isConnected = await checkInternetConnection();
+      setIsOnline(isConnected);
+      return isConnected;
     } finally {
       setIsChecking(false);
     }
@@ -127,66 +250,61 @@ const InternetConnectionCheck = ({ children }) => {
   // If offline and not on public route, show error
   if (!isOnline && !isPublicRoute && !isChecking) {
     return (
-      <div className="min-h-screen bg-background">
-        <MainSidebar />
-        <GlobalProfile />
-        <main 
-          className={`transition-all duration-300 ease-out ${isMobile ? 'pb-16 pt-4' : ''}`}
-          style={{ marginLeft: isMobile ? 0 : `${sidebarOffset}px` }}
-        >
-          <div className="flex items-center justify-center min-h-[calc(100vh-100px)] p-4">
-            <div className="bg-card border border-border rounded-lg shadow-lg max-w-md w-full p-8 text-center">
-              {/* Icon with animated pulse effect */}
-              <div className="w-20 h-20 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-6 relative">
-                <div className="absolute inset-0 bg-error/20 rounded-full animate-ping"></div>
-                <Icon name="AlertCircle" size={40} className="text-error relative z-10" />
-              </div>
-              
-              <h2 className="text-2xl font-bold text-foreground mb-3">
-                {t('common.errors.noInternet', 'No Internet Connection')}
-              </h2>
-              
-              <p className="text-muted-foreground mb-6">
-                {t('common.errors.noInternetMessage', 'Please check your internet connection and try again.')}
-              </p>
+      <div className="min-h-screen bg-background flex flex-col">
+        <Header />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-lg shadow-lg max-w-md w-full p-8 text-center">
+            {/* Icon with animated pulse effect */}
+            <div className="w-20 h-20 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-6 relative">
+              <div className="absolute inset-0 bg-error/20 rounded-full animate-ping"></div>
+              <Icon name="AlertCircle" size={40} className="text-error relative z-10" />
+            </div>
+            
+            <h2 className="text-2xl font-bold text-foreground mb-3">
+              {t('common.errors.noInternet', 'No Internet Connection')}
+            </h2>
+            
+            <p className="text-muted-foreground mb-6">
+              {t('common.errors.noInternetMessage', 'Please check your internet connection and try again.')}
+            </p>
 
-              {/* Connection status info */}
-              <div className="bg-muted/50 rounded-lg p-4 mb-6 text-left">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-foreground">
-                    {t('common.errors.connectionStatus', 'Connection Status')}:
-                  </span>
-                  <span className="text-sm text-error font-medium">
-                    {t('common.errors.offline', 'Offline')}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {t('common.errors.connectionHelp', 'Make sure your device is connected to Wi-Fi or mobile data, then click Retry.')}
-                </p>
+            {/* Connection status info */}
+            <div className="bg-muted/50 rounded-lg p-4 mb-6 text-left">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-foreground">
+                  {t('common.errors.connectionStatus', 'Connection Status')}:
+                </span>
+                <span className="text-sm text-error font-medium">
+                  {t('common.errors.offline', 'Offline')}
+                </span>
               </div>
-              
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button
-                  onClick={checkConnection}
-                  variant="default"
-                  iconName="RefreshCw"
-                  iconPosition="left"
-                  disabled={isChecking}
-                >
-                  {isChecking ? t('common.checking', 'Checking...') : t('common.retry', 'Retry')}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => window.location.reload()}
-                  iconName="RotateCw"
-                  iconPosition="left"
-                >
-                  {t('common.refresh', 'Refresh Page')}
-                </Button>
-              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {t('common.errors.connectionHelp', 'Make sure your device is connected to Wi-Fi or mobile data, then click Retry.')}
+              </p>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button
+                onClick={checkConnection}
+                variant="default"
+                iconName="RefreshCw"
+                iconPosition="left"
+                disabled={isChecking}
+              >
+                {isChecking ? t('common.checking', 'Checking...') : t('common.retry', 'Retry')}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => window.location.reload()}
+                iconName="RotateCw"
+                iconPosition="left"
+              >
+                {t('common.refresh', 'Refresh Page')}
+              </Button>
             </div>
           </div>
-        </main>
+        </div>
+        <Footer />
       </div>
     );
   }
