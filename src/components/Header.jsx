@@ -11,6 +11,7 @@ const MobileLanguageSelector = () => {
   const { t, i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const { user, updateUserProfile } = useAuth();
 
   const languages = [
     { code: 'fr', name: 'Français', flag: '🇫🇷' },
@@ -20,11 +21,29 @@ const MobileLanguageSelector = () => {
 
   const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
 
-  const handleLanguageChange = (languageCode) => {
+  const handleLanguageChange = async (languageCode) => {
     try {
-      i18n.changeLanguage(languageCode);
+      // Change language in i18n
+      await i18n.changeLanguage(languageCode);
+      
+      // Save to localStorage
       localStorage.setItem('language', languageCode);
+      
+      // Set HTML lang attribute
       document.documentElement.setAttribute('lang', languageCode);
+      
+      // If user is logged in, update their language_preference in database
+      if (user) {
+        try {
+          await updateUserProfile({ 
+            language_preference: languageCode 
+          });
+        } catch (error) {
+          console.warn('Failed to update language preference in database:', error);
+          // Continue anyway - localStorage and i18n are already updated
+        }
+      }
+      
       setIsOpen(false);
     } catch (error) {
       console.error('Error changing language:', error);

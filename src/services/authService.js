@@ -392,14 +392,37 @@ export async function updateProfile(profileData) {
     const user = await getCurrentUser();
     if (!user) return { error: { message: 'Not authenticated' } };
     
-    // Update auth metadata
-    const { error: metadataError } = await supabase.auth.updateUser({
-      data: profileData
-    });
+    // Fields that should only be updated in database, not auth metadata
+    // These don't need auth metadata updates and shouldn't trigger session refresh
+    const dbOnlyFields = ['language_preference', 'analytics_objectives', 'subscription_status', 'selected_plan'];
+    const isDbOnlyUpdate = Object.keys(profileData).every(key => dbOnlyFields.includes(key));
     
-    if (metadataError) return { error: metadataError };
+    // If this is a database-only update (like language_preference), skip auth metadata update
+    // This prevents triggering TOKEN_REFRESHED events that might cause page reloads
+    if (!isDbOnlyUpdate) {
+      // Separate auth metadata fields from database fields
+      // Auth metadata fields that should be updated via auth.updateUser
+      const authMetadataFields = ['first_name', 'last_name', 'company_name', 'phone', 'country', 'business_size', 'language'];
+      const authMetadata = {};
+      
+      // Extract only auth metadata fields
+      Object.keys(profileData).forEach(key => {
+        if (authMetadataFields.includes(key)) {
+          authMetadata[key] = profileData[key];
+        }
+      });
+      
+      // Only update auth metadata if there are auth metadata fields
+      if (Object.keys(authMetadata).length > 0) {
+        const { error: metadataError } = await supabase.auth.updateUser({
+          data: authMetadata
+        });
+        
+        if (metadataError) return { error: metadataError };
+      }
+    }
     
-    // Update profile in users table
+    // Always update profile in users table (including language_preference and other db-only fields)
     const { data, error } = await supabase
       .from('users')
       .update(profileData)

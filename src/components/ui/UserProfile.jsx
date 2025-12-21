@@ -83,7 +83,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
   };
 
   // Get actual user data from AuthContext
-  const { user: authUser } = useAuth();
+  const { user: authUser, updateUserProfile } = useAuth();
   
   // Use actual user data or fallback to props
   const actualUser = authUser || user;
@@ -1025,8 +1025,8 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
   };
 
   const renderPreferencesSection = () => {
-        // Get current language from localStorage
-        const currentLanguage = localStorage.getItem('language') || 'fr';
+        // Get current language from i18n - this will update reactively
+        const currentLanguage = i18n.language || localStorage.getItem('language') || 'fr';
         
         // Language options
         const languages = [
@@ -1035,8 +1035,38 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
           { code: 'nl', name: 'Nederlands', flag: '🇳🇱' }
         ];
 
-        // Find current language details
+        // Find current language details - will update when i18n.language changes
         const selectedLanguageDetails = languages.find(lang => lang.code === currentLanguage) || languages[0];
+
+        const handleLanguageChange = async (e, languageCode) => {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          try {
+            // Change language in i18n
+            await i18n.changeLanguage(languageCode);
+            
+            // Save to localStorage
+            localStorage.setItem('language', languageCode);
+            
+            // Set HTML lang attribute
+            document.documentElement.setAttribute('lang', languageCode);
+            
+            // Update user profile in database if user is logged in
+            if (user) {
+              try {
+                await updateUserProfile({ 
+                  language_preference: languageCode 
+                });
+              } catch (error) {
+                console.warn('Failed to update language preference in database:', error);
+                // Continue anyway - localStorage and i18n are already updated
+              }
+            }
+          } catch (error) {
+            console.error('Error changing language:', error);
+          }
+        };
 
         return (
             <div className="space-y-4">
@@ -1052,10 +1082,8 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                       {languages.map((language) => (
                         <button
                           key={language.code}
-                          onClick={() => {
-                            localStorage.setItem('language', language.code);
-                            window.location.reload();
-                          }}
+                          type="button"
+                          onClick={(e) => handleLanguageChange(e, language.code)}
                           className={`
                       w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-150
                             ${currentLanguage === language.code 

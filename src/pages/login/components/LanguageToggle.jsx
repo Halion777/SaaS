@@ -1,26 +1,55 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../../context/AuthContext';
 import Icon from '../../../components/AppIcon';
 
 const LanguageToggle = () => {
-  const [currentLanguage, setCurrentLanguage] = useState('fr');
+  const { i18n } = useTranslation();
+  const { user, updateUserProfile } = useAuth();
+  const [currentLanguage, setCurrentLanguage] = useState(i18n.language || 'fr');
 
   useEffect(() => {
-    const savedLanguage = localStorage.getItem('language') || 'fr';
+    const savedLanguage = localStorage.getItem('language') || i18n.language || 'fr';
     setCurrentLanguage(savedLanguage);
-  }, []);
+  }, [i18n.language]);
 
   const languages = [
     { code: 'fr', name: 'Français', flag: '🇫🇷' },
-    { code: 'en', name: 'English', flag: '🇬🇧' }
+    { code: 'en', name: 'English', flag: '🇬🇧' },
+    { code: 'nl', name: 'Nederlands', flag: '🇳🇱' }
   ];
 
-  const handleLanguageChange = (languageCode) => {
-    setCurrentLanguage(languageCode);
-    localStorage.setItem('language', languageCode);
-    // In a real app, this would trigger a language change across the app
+  const handleLanguageChange = async (languageCode) => {
+    try {
+      // Change language in i18n
+      await i18n.changeLanguage(languageCode);
+      
+      // Save to localStorage
+      localStorage.setItem('language', languageCode);
+      
+      // Set HTML lang attribute
+      document.documentElement.setAttribute('lang', languageCode);
+      
+      // Update local state
+      setCurrentLanguage(languageCode);
+      
+      // If user is logged in, update their language_preference in database
+      if (user) {
+        try {
+          await updateUserProfile({ 
+            language_preference: languageCode 
+          });
+        } catch (error) {
+          console.warn('Failed to update language preference in database:', error);
+          // Continue anyway - localStorage and i18n are already updated
+        }
+      }
+    } catch (error) {
+      console.error('Error changing language:', error);
+    }
   };
 
-  const currentLang = languages.find(lang => lang.code === currentLanguage);
+  const currentLang = languages.find(lang => lang.code === currentLanguage) || languages[0];
 
   return (
     <div className="absolute top-4 right-4">

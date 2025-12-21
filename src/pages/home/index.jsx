@@ -154,23 +154,8 @@ const HomePage = () => {
     loadMediaSettings();
   }, [i18n.language]); // Reload when language changes
 
-  // Listen for language changes and reload page to ensure all images update
-  useEffect(() => {
-    const handleLanguageChange = () => {
-      // Small delay to ensure state updates, then reload
-      setTimeout(() => {
-        window.location.reload();
-      }, 100);
-    };
-
-    // Listen to i18n languageChanged event
-    i18n.on('languageChanged', handleLanguageChange);
-
-    // Cleanup listener on unmount
-    return () => {
-      i18n.off('languageChanged', handleLanguageChange);
-    };
-  }, []);
+  // Language changes are handled reactively - no need to reload the page
+  // The component will re-render when i18n.language changes, updating all content automatically
 
   // Intersection Observer for scroll animations
   useEffect(() => {
