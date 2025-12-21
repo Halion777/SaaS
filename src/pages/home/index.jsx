@@ -319,16 +319,18 @@ const HomePage = () => {
                     
                     {/* Main Dashboard Image - Language-specific */}
                     <div className="relative bg-white rounded-2xl shadow-2xl p-2 sm:p-4 transform rotate-3 hover:rotate-0 transition-transform duration-500">
-                      {/* Dashboard Image - Responsive sizing */}
+                      {/* Dashboard Image - Fixed aspect ratio for consistent sizing across languages */}
+                      <div className="w-[87%] sm:w-full aspect-[16/10] mx-auto">
                       <img 
                         key={`desktop-${i18n.language}`}
                         src={mediaSettings.home?.desktopImage?.[i18n.language] || mediaSettings.home?.heroImage?.[i18n.language] || '/assets/images/dashboard 1.png'}
                         alt="Haliqo Dashboard"
-                        className="w-[85%] sm:w-full h-auto max-h-[300px] sm:max-h-[400px] md:max-h-[500px] lg:max-h-none rounded-xl object-contain mx-auto"
+                          className="w-full h-full rounded-xl object-contain"
                         onError={(e) => {
                           e.target.src = '/assets/images/dashboard 1.png';
                         }}
                       />
+                      </div>
                       
                       {/* Floating Elements - Hidden on mobile, shown on larger screens */}
                       <div className="hidden sm:block absolute -top-4 -right-4 bg-white rounded-xl shadow-lg p-3 sm:p-4 transform -rotate-6">
@@ -718,15 +720,17 @@ const HomePage = () => {
                   
                   {/* Dashboard Content */}
                   <div className="p-4">
+                    <div className="w-full aspect-[16/10]">
                     <img 
                       key={`dashboard-preview-${i18n.language}`}
                       src={mediaSettings.home?.desktopImage?.[i18n.language] || mediaSettings.home?.heroImage?.[i18n.language] || '/assets/images/dashboard 2.png'}
                       alt="Haliqo Dashboard" 
-                      className="w-full h-auto rounded-2xl shadow-lg"
+                        className="w-full h-full rounded-2xl shadow-lg object-contain"
                       onError={(e) => {
                         e.target.src = '/assets/images/dashboard 2.png';
                       }}
                     />
+                    </div>
                   </div>
                   
                   {/* Bottom Accent */}

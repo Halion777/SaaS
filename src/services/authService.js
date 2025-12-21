@@ -414,11 +414,11 @@ export async function updateProfile(profileData) {
       
       // Only update auth metadata if there are auth metadata fields
       if (Object.keys(authMetadata).length > 0) {
-        const { error: metadataError } = await supabase.auth.updateUser({
+    const { error: metadataError } = await supabase.auth.updateUser({
           data: authMetadata
-        });
-        
-        if (metadataError) return { error: metadataError };
+    });
+    
+    if (metadataError) return { error: metadataError };
       }
     }
     

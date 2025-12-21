@@ -31,7 +31,7 @@ const LanguageToggle = () => {
       document.documentElement.setAttribute('lang', languageCode);
       
       // Update local state
-      setCurrentLanguage(languageCode);
+    setCurrentLanguage(languageCode);
       
       // If user is logged in, update their language_preference in database
       if (user) {
