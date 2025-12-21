@@ -1996,6 +1996,11 @@
         "removeFilter": "Remove {{filter}} filter"
       }
     },
+
+    "errors": {
+      "loadError": "Error Loading Quotes"
+    },
+    "retry": "Retry",
     "table": {
       "loading": "Loading quotes...",
       "error": "Error loading quotes",
@@ -2081,6 +2086,10 @@
     "subtitle": "Track and manage your quote and invoice follow-ups",
     "refresh": "Refresh",
     "refreshing": "Refreshing...",
+    "loadingFollowUp": "Loading follow up...",
+    "errors": {
+      "loadError": "Error Loading Follow-ups"
+    },
     "filter": {
       "title": "Filters",
       "resultsFound": "{{count}} follow-up(s) found",
@@ -2203,6 +2212,10 @@
   "invoiceFollowUp": {
     "title": "Invoice Follow-ups",
     "subtitle": "Follow up on your unpaid invoices",
+    "loadingFollowUp": "Loading follow up...",
+    "errors": {
+      "loadError": "Error Loading Invoice Follow-ups"
+    },
     "kpi": {
       "invoices": "Invoices"
     },
@@ -4266,8 +4279,10 @@
         "updateStatusError": "Error updating status",
         "updateInvoicesError": "Error updating invoices",
         "error": "Error",
-        "selectAtLeastOneInvoice": "Please select at least one invoice"
+        "selectAtLeastOneInvoice": "Please select at least one invoice",
+        "loadError": "Error Loading Invoices"
       },
+      "retry": "Retry",
       "modal": {
         "title": "Invoice Details",
         "close": "Close",

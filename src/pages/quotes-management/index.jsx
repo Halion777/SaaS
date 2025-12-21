@@ -5,6 +5,7 @@ import PermissionGuard, { usePermissionCheck } from '../../components/Permission
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import TableLoader, { TableSkeletonLoader } from '../../components/ui/TableLoader';
+import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import QuotesTable from './components/QuotesTable';
 import FilterBar from './components/FilterBar';
 import BulkActionsToolbar from './components/BulkActionsToolbar';
@@ -174,8 +175,7 @@ const QuotesManagement = () => {
   };
 
   // Fetch quotes data from backend
-  useEffect(() => {
-    const loadQuotes = async () => {
+  const loadQuotes = async () => {
       if (!user || !currentProfile) return;
       
       // Reset follow-ups loaded ref when quotes are reloaded
@@ -495,8 +495,10 @@ const QuotesManagement = () => {
       } finally {
         setLoading(false);
       }
-    };
-    
+  };
+
+  // Fetch quotes when component mounts
+  useEffect(() => {
     loadQuotes();
   }, [user, currentProfile]);
 
@@ -1534,12 +1536,12 @@ const QuotesManagement = () => {
                 <TableLoader message={t('quotesManagement.table.loading')} />
               </div>
             ) : error ? (
-              <div className="p-8 text-center">
-                <Icon name="AlertCircle" size={24} className="text-destructive mx-auto mb-4" />
-                <p className="text-destructive mb-4">{error || t('quotesManagement.table.error')}</p>
-                <Button onClick={() => window.location.reload()} variant="outline">
-                  {t('quotesManagement.table.retry')}
-                </Button>
+              <div className="p-4 sm:p-6">
+                <ErrorDisplay 
+                  error={error} 
+                  onRetry={loadQuotes}
+                  title={t('quotesManagement.errors.loadError', 'Error Loading Quotes')}
+                />
               </div>
             ) : filteredQuotes.length === 0 ? (
               <div className="p-8 text-center">

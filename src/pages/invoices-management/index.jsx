@@ -5,6 +5,7 @@ import PermissionGuard, { usePermissionCheck } from '../../components/Permission
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import TableLoader from '../../components/ui/TableLoader';
+import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import InvoicesSummaryBar from './components/InvoicesSummaryBar';
 import InvoicesFilterToolbar from './components/InvoicesFilterToolbar';
 import InvoicesDataTable from './components/InvoicesDataTable';
@@ -768,12 +769,12 @@ const InvoicesManagement = () => {
               <TableLoader message={t('invoicesManagement.loading')} />
             </div>
           ) : error ? (
-            <div className="bg-card border border-border rounded-lg p-4 sm:p-6 text-center">
-              <Icon name="AlertCircle" size={48} className="text-error mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">{t('invoicesManagement.errors.loadError', 'Error Loading Invoices')}</h3>
-              <Button onClick={fetchInvoices} variant="outline" className="mt-4">
-                {t('invoicesManagement.retry', 'Retry')}
-              </Button>
+            <div className="p-4 sm:p-6">
+              <ErrorDisplay 
+                error={error} 
+                onRetry={fetchInvoices}
+                title={t('invoicesManagement.errors.loadError', 'Error Loading Invoices')}
+              />
             </div>
           ) : (
           <InvoicesDataTable

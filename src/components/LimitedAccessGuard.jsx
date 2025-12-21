@@ -8,6 +8,51 @@ import MainSidebar from './ui/MainSidebar';
 import GlobalProfile from './ui/GlobalProfile';
 
 /**
+ * Check if an error is network-related (unstable internet)
+ * Returns true if the error indicates a network connectivity issue
+ */
+const isNetworkError = (error) => {
+  if (!error) return false;
+  
+  const errorMessage = error.message || error.toString() || '';
+  const errorCode = error.code || '';
+  
+  // Check for common network error patterns
+  const networkErrorPatterns = [
+    'Failed to fetch',
+    'NetworkError',
+    'Network request failed',
+    'NetworkError when attempting to fetch resource',
+    'ERR_NETWORK',
+    'ERR_INTERNET_DISCONNECTED',
+    'ERR_CONNECTION_REFUSED',
+    'ERR_CONNECTION_TIMED_OUT',
+    'ERR_CONNECTION_RESET',
+    'timeout',
+    'ECONNREFUSED',
+    'ENOTFOUND',
+    'ETIMEDOUT',
+    'ECONNRESET'
+  ];
+  
+  // Check if error message contains network error patterns
+  const isNetworkErrorPattern = networkErrorPatterns.some(pattern => 
+    errorMessage.toLowerCase().includes(pattern.toLowerCase())
+  );
+  
+  // Check for Supabase network error codes
+  const isSupabaseNetworkError = errorCode === 'PGRST301' || // Connection error
+                                  errorCode === 'PGRST302' || // Timeout
+                                  errorCode === 'PGRST303';    // Network error
+  
+  // Check for fetch API network errors
+  const isFetchNetworkError = error instanceof TypeError && 
+                               (errorMessage.includes('fetch') || errorMessage.includes('network'));
+  
+  return isNetworkErrorPattern || isSupabaseNetworkError || isFetchNetworkError;
+};
+
+/**
  * LimitedAccessGuard Component
  * 
  * Shows limited access message for Starter plan users with upgrade button.
@@ -136,6 +181,14 @@ const LimitedAccessGuard = ({
   // Don't show separate loader - parent already shows one
   if (loading) {
     return null;
+  }
+
+  // If userProfile is null/undefined and we're not loading, it might be a network error
+  // In that case, allow access to prevent blocking users with unstable internet
+  // Only show guard if we have confirmed userProfile data
+  if (!userProfile && !loading) {
+    // Likely network error - allow access to prevent false positives
+    return children;
   }
 
   // Check if user has required plan

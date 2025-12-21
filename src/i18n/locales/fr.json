@@ -1873,6 +1873,10 @@
         "delete": "Supprimer le devis"
       }
     },
+    "errors": {
+      "loadError": "Erreur lors du chargement des devis"
+    },
+    "retry": "Réessayer",
     "bulkActions": {
       "selected": "{{count}} devis sélectionné(s)",
       "deselect": "Désélectionner",
@@ -1929,6 +1933,10 @@
     "subtitle": "Suivez et gérez vos relances de devis et factures",
     "refresh": "Actualiser",
     "refreshing": "Actualisation...",
+    "loadingFollowUp": "Chargement de la relance...",
+    "errors": {
+      "loadError": "Erreur lors du chargement des relances"
+    },
     "filter": {
       "title": "Filtres",
       "resultsFound": "{{count}} relance(s) trouvée(s)",
@@ -2053,6 +2061,10 @@
   "invoiceFollowUp": {
     "title": "Relances factures",
     "subtitle": "Relancez vos factures non payées",
+    "loadingFollowUp": "Chargement de la relance...",
+    "errors": {
+      "loadError": "Erreur lors du chargement des relances de factures"
+    },
     "kpi": {
       "invoices": "Factures"
     },
@@ -3990,6 +4002,9 @@
         "configured": "Configuré",
         "notConfigured": "Non configuré"
       },
+      "errors": {
+        "loadError": "Erreur lors du chargement des clients"
+      },
       "countries": {
         "AD": "Andorre",
         "AL": "Albanie",
@@ -4315,8 +4330,10 @@
         "updateStatusError": "Erreur lors de la mise à jour du statut",
         "updateInvoicesError": "Erreur lors de la mise à jour des factures",
         "error": "Erreur",
-        "selectAtLeastOneInvoice": "Veuillez sélectionner au moins une facture"
+        "selectAtLeastOneInvoice": "Veuillez sélectionner au moins une facture",
+        "loadError": "Erreur lors du chargement des factures"
       },
+      "retry": "Réessayer",
       "modal": {
         "title": "Détails de la facture",
         "close": "Fermer",
@@ -4630,6 +4647,7 @@
         "markedAsPaid": "Facture marquée comme payée"
       },
       "errors": {
+        "loadError": "Erreur lors du chargement des factures de dépenses",
         "selectAtLeastOne": "Veuillez sélectionner au moins une facture de dépense",
         "bulkActionError": "Erreur lors de l'action en lot",
         "updateStatusError": "Erreur lors de la mise à jour du statut",
@@ -4640,6 +4658,7 @@
         "createError": "Erreur lors de la création de la facture",
         "updateError": "Erreur lors de la mise à jour de la facture"
       },
+      "retry": "Réessayer",
       "export": {
         "invoiceNumber": "Numéro",
         "supplier": "Fournisseur",

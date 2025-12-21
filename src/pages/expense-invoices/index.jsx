@@ -5,6 +5,7 @@ import PermissionGuard, { usePermissionCheck } from '../../components/Permission
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import TableLoader from '../../components/ui/TableLoader';
+import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import ExpenseInvoicesSummaryBar from './components/ExpenseInvoicesSummaryBar';
 import ExpenseInvoicesFilterToolbar from './components/ExpenseInvoicesFilterToolbar';
 import ExpenseInvoicesDataTable from './components/ExpenseInvoicesDataTable';
@@ -815,12 +816,12 @@ const ExpenseInvoicesManagement = () => {
               <TableLoader message={t('expenseInvoices.loading', 'Loading expense invoices...')} />
             </div>
           ) : error ? (
-            <div className="bg-card border border-border rounded-lg p-4 sm:p-6 text-center">
-              <Icon name="AlertCircle" size={48} className="text-error mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">{t('expenseInvoices.errors.loadError', 'Error Loading Expense Invoices')}</h3>
-              <Button onClick={loadData} variant="outline" className="mt-4">
-                {t('expenseInvoices.retry', 'Retry')}
-              </Button>
+            <div className="p-4 sm:p-6">
+              <ErrorDisplay 
+                error={error} 
+                onRetry={loadData}
+                title={t('expenseInvoices.errors.loadError', 'Error Loading Expense Invoices')}
+              />
             </div>
           ) : (
             <ExpenseInvoicesDataTable

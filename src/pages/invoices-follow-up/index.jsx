@@ -4,6 +4,7 @@ import Button from '../../components/ui/Button';
 import MainSidebar from '../../components/ui/MainSidebar';
 import PermissionGuard, { usePermissionCheck } from '../../components/PermissionGuard';
 import TableLoader from '../../components/ui/TableLoader';
+import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import FilterToolbar from '../follow-up-management/components/FilterToolbar';
 import { useScrollPosition } from '../../utils/useScrollPosition';
 import { useAuth } from '../../context/AuthContext';
@@ -107,10 +108,9 @@ const InvoicesFollowUp = () => {
     }
   }, []);
 
-  // Fetch real data from backend
-  useEffect(() => {
-    const loadData = async () => {
-      if (!user || !currentProfile) return;
+  // Fetch real data function (exposed for ErrorDisplay retry)
+  const loadData = async () => {
+    if (!user || !currentProfile) return;
       
       try {
         setLoading(true);
@@ -268,8 +268,10 @@ const InvoicesFollowUp = () => {
       } finally {
         setLoading(false);
       }
-    };
-    
+  };
+
+  // Fetch real data from backend
+  useEffect(() => {
     loadData();
   }, [user, currentProfile]);
 
@@ -902,7 +904,7 @@ const InvoicesFollowUp = () => {
             {loading ? (
               <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
                 <div className="w-full">
-                  <TableLoader message={t('followUpManagement.refreshing')} />
+                  <TableLoader message={t('invoiceFollowUp.loadingFollowUp', 'Loading follow up...')} />
                 </div>
               </div>
             ) : (
@@ -959,12 +961,12 @@ const InvoicesFollowUp = () => {
                   </div>
                   </div>
                   {error ? (
-                    <div className="bg-card border border-border rounded-lg p-8 text-center">
-                      <Icon name="AlertCircle" size={48} className="text-red-500 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-foreground mb-2">{t('followUpManagement.error.title')}</h3>
-                      <p className="text-muted-foreground">
-                        {error}. {t('followUpManagement.error.message')}
-                      </p>
+                    <div className="p-4 sm:p-6">
+                      <ErrorDisplay 
+                        error={error} 
+                        onRetry={loadData}
+                        title={t('invoiceFollowUp.errors.loadError', 'Error Loading Invoice Follow-ups')}
+                      />
                     </div>
                   ) : filteredFollowUps.length === 0 ? (
                     <div className="p-8 text-center">

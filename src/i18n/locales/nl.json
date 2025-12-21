@@ -2068,6 +2068,10 @@
         "delete": "Offerte verwijderen"
       }
     },
+    "errors": {
+      "loadError": "Fout bij het laden van offertes"
+    },
+    "retry": "Opnieuw proberen",
     "bulkActions": {
       "selected": "{{count}} offerte(s) geselecteerd",
       "deselect": "Deselecteren",
@@ -2111,6 +2115,10 @@
     "subtitle": "Volg en beheer uw offerte- en factuurherinneringen",
     "refresh": "Vernieuwen",
     "refreshing": "Vernieuwen...",
+    "loadingFollowUp": "Herinnering laden...",
+    "errors": {
+      "loadError": "Fout bij het laden van herinneringen"
+    },
     "filter": {
       "title": "Filters",
       "resultsFound": "{{count}} herinnering(en) gevonden",
@@ -2234,6 +2242,10 @@
   "invoiceFollowUp": {
     "title": "Factuurherinneringen",
     "subtitle": "Herinner uw onbetaalde facturen",
+    "loadingFollowUp": "Herinnering laden...",
+    "errors": {
+      "loadError": "Fout bij het laden van factuurherinneringen"
+    },
     "kpi": {
       "invoices": "Facturen"
     },
@@ -3978,6 +3990,9 @@
         "configured": "Geconfigureerd",
         "notConfigured": "Niet geconfigureerd"
       },
+      "errors": {
+        "loadError": "Fout bij het laden van klanten"
+      },
       "countries": {
         "AD": "Andorra",
         "AL": "Albanië",
@@ -4612,8 +4627,10 @@
         "noAttachment": "Geen bestand gekoppeld aan deze factuur",
         "actionError": "Fout tijdens factuuractie",
         "createError": "Fout bij aanmaken van factuur",
-        "updateError": "Fout bij bijwerken van factuur"
+        "updateError": "Fout bij bijwerken van factuur",
+        "loadError": "Fout bij het laden van uitgavenfacturen"
       },
+      "retry": "Opnieuw proberen",
       "export": {
         "invoiceNumber": "Factuurnummer",
         "supplier": "Leverancier",
