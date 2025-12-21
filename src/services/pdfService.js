@@ -688,7 +688,7 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
             ${companyInfo?.phone ? `<p style="margin: 0 0 3px 0;">${escapeHtml(companyInfo.phone)}</p>` : ''}
             ${companyInfo?.address ? `<p style="margin: 0 0 3px 0;">${escapeHtml(companyInfo.address)}</p>` : ''}
             ${companyInfo?.postalCode && companyInfo?.city ? `<p style="margin: 0;">${escapeHtml(companyInfo.postalCode)} ${escapeHtml(companyInfo.city)}</p>` : ''}
-            ${companyInfo?.vatNumber ? `<p style="margin: 3px 0 0 0; font-weight: 500;">TVA: ${escapeHtml(companyInfo.vatNumber)}</p>` : ''}
+            ${companyInfo?.vatNumber ? `<p style="margin: 3px 0 0 0; font-weight: 500;">${language === 'en' ? 'VAT:' : language === 'nl' ? 'BTW:' : 'TVA:'} ${escapeHtml(companyInfo.vatNumber)}</p>` : ''}
           </div>
         </div>
       </div>
@@ -814,7 +814,7 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
       </div>
       
       <!-- PDF Warning Notice - Only show for professional clients (companies), not individual clients -->
-      ${(client?.client_type === 'company' || client?.client_type === 'professional' || client?.type === 'company' || client?.type === 'professional') ? `
+      ${((client?.client_type === 'company' || client?.client_type === 'professional' || client?.type === 'company' || client?.type === 'professional') && client?.client_type !== 'individual' && client?.type !== 'individual') ? `
       <div style="margin-top: 40px; padding: 15px; background-color: #fef3c7; border: 2px solid #f59e0b; border-radius: 6px;">
         <div style="display: flex; align-items: flex-start; gap: 10px;">
           <div style="flex-shrink: 0; color: #d97706; font-size: 16px; font-weight: bold;">⚠</div>

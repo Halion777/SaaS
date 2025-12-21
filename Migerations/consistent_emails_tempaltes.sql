@@ -1961,7 +1961,6 @@ INSERT INTO public.email_templates (
     <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #667eea; margin-bottom: 15px;">
       <p style="margin: 0 0 5px 0;"><strong>Numéro de facture:</strong> {invoice_number}</p>
       <p style="margin: 0 0 5px 0;"><strong>Date:</strong> {issue_date}</p>
-      <p style="margin: 0 0 5px 0;"><strong>Date d''échéance:</strong> {due_date}</p>
       <p style="margin: 0; font-weight: bold; color: #333;"><strong>Montant:</strong> {invoice_amount}</p>
     </div>
     <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e0e0e0; margin-bottom: 15px;">
@@ -1982,7 +1981,6 @@ Bonjour {client_name},
 
 Numéro de facture: {invoice_number}
 Date: {issue_date}
-Date d''échéance: {due_date}
 Montant: {invoice_amount}
 
 Le PDF de la facture est joint à cet email.
@@ -2011,7 +2009,6 @@ INSERT INTO public.email_templates (
     <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #667eea; margin-bottom: 15px;">
       <p style="margin: 0 0 5px 0;"><strong>Invoice Number:</strong> {invoice_number}</p>
       <p style="margin: 0 0 5px 0;"><strong>Date:</strong> {issue_date}</p>
-      <p style="margin: 0 0 5px 0;"><strong>Due Date:</strong> {due_date}</p>
       <p style="margin: 0; font-weight: bold; color: #333;"><strong>Amount:</strong> {invoice_amount}</p>
     </div>
     <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e0e0e0; margin-bottom: 15px;">
@@ -2032,7 +2029,6 @@ Hello {client_name},
 
 Invoice Number: {invoice_number}
 Date: {issue_date}
-Due Date: {due_date}
 Amount: {invoice_amount}
 
 The invoice PDF is attached to this email.
@@ -2061,7 +2057,6 @@ INSERT INTO public.email_templates (
     <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #667eea; margin-bottom: 15px;">
       <p style="margin: 0 0 5px 0;"><strong>Factuurnummer:</strong> {invoice_number}</p>
       <p style="margin: 0 0 5px 0;"><strong>Datum:</strong> {issue_date}</p>
-      <p style="margin: 0 0 5px 0;"><strong>Vervaldatum:</strong> {due_date}</p>
       <p style="margin: 0; font-weight: bold; color: #333;"><strong>Bedrag:</strong> {invoice_amount}</p>
     </div>
     <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e0e0e0; margin-bottom: 15px;">
@@ -2082,7 +2077,6 @@ Hallo {client_name},
 
 Factuurnummer: {invoice_number}
 Datum: {issue_date}
-Vervaldatum: {due_date}
 Bedrag: {invoice_amount}
 
 De PDF van de factuur is bijgevoegd aan deze e-mail.
