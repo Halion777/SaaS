@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import Icon from './AppIcon';
@@ -142,6 +142,8 @@ export const checkInternetConnection = async () => {
 export const useInternetConnection = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isChecking, setIsChecking] = useState(false);
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const offlineTimeoutRef = useRef(null);
 
   const checkConnection = async () => {
     setIsChecking(true);
@@ -155,30 +157,62 @@ export const useInternetConnection = () => {
   };
 
   useEffect(() => {
+    // Don't set up connection checking on mobile devices
+    if (isMobile) {
+      setIsOnline(true); // Always assume online on mobile
+      return;
+    }
+
     const handleOnline = () => {
+      // Clear any pending offline timeout
+      if (offlineTimeoutRef.current) {
+        clearTimeout(offlineTimeoutRef.current);
+        offlineTimeoutRef.current = null;
+      }
       setIsOnline(true);
       checkConnection();
     };
 
     const handleOffline = () => {
-      setIsOnline(false);
+      // Clear any existing timeout
+      if (offlineTimeoutRef.current) {
+        clearTimeout(offlineTimeoutRef.current);
+      }
+      // Add a delay before setting offline to avoid false positives
+      offlineTimeoutRef.current = setTimeout(() => {
+        setIsOnline(false);
+        offlineTimeoutRef.current = null;
+      }, 2000); // 2 second delay
+    };
+
+    // Handle visibility change - re-check when tab becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Tab became visible, re-check connection
+        checkConnection();
+      }
     };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Initial check
     checkConnection();
 
-    // Check every 30 seconds
+    // Check every 30 seconds (only on desktop)
     const interval = setInterval(checkConnection, 30000);
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(interval);
+      if (offlineTimeoutRef.current) {
+        clearTimeout(offlineTimeoutRef.current);
+      }
     };
-  }, []);
+  }, [isMobile]);
 
   return { isOnline, isChecking, checkConnection };
 };
@@ -245,7 +279,13 @@ const InternetConnectionCheck = ({ children }) => {
   const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/pricing', '/about', '/contact', '/features', '/terms', '/privacy', '/cookies', '/blog', '/find-artisan'];
   const isPublicRoute = publicRoutes.some(route => location.pathname === route || location.pathname.startsWith(route + '/'));
 
-  // If offline and not on public route, show error
+  // Don't show internet connection guard on mobile devices
+  // Mobile browsers can have unreliable network state detection when switching tabs
+  if (isMobile) {
+    return <>{children}</>;
+  }
+
+  // If offline and not on public route, show error (desktop only)
   if (!isOnline && !isPublicRoute && !isChecking) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-6">
