@@ -6,6 +6,8 @@ import Routes from "./Routes";
 import { AuthProvider } from "./context/AuthContext";
 import { MultiUserProvider } from "./context/MultiUserContext";
 import ProfileSelectionModal from "./components/ui/ProfileSelectionModal";
+import ErrorBoundary from "./components/ErrorBoundary";
+import InternetConnectionCheck from "./components/InternetConnectionCheck";
 import { useAuth } from "./context/AuthContext";
 import './i18n'; // Import i18n configuration
 
@@ -40,6 +42,7 @@ function App() {
     const { showProfileSelection, handleProfileSelect, closeProfileSelection } = useAuth();
 
     return (
+      <InternetConnectionCheck>
       <MultiUserProvider>
         <Routes />
         <ProfileSelectionModal
@@ -48,10 +51,12 @@ function App() {
           onClose={closeProfileSelection}
         />
       </MultiUserProvider>
+      </InternetConnectionCheck>
     );
   }
   
   return (
+    <ErrorBoundary>
     <I18nextProvider i18n={i18n}>
       <Router>
         <AuthProvider>
@@ -59,6 +64,7 @@ function App() {
         </AuthProvider>
       </Router>
     </I18nextProvider>
+    </ErrorBoundary>
   );
 }
 

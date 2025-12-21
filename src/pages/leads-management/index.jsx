@@ -6,6 +6,7 @@ import MainSidebar from '../../components/ui/MainSidebar';
 import PermissionGuard, { usePermissionCheck } from '../../components/PermissionGuard';
 import LimitedAccessGuard from '../../components/LimitedAccessGuard';
 import TableLoader from '../../components/ui/TableLoader';
+import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import LeadsFilterToolbar from './components/LeadsFilterToolbar';
 import { useScrollPosition } from '../../utils/useScrollPosition';
 import { LeadManagementService } from '../../services/leadManagementService';
@@ -397,18 +398,11 @@ const LeadsManagementPage = () => {
       {loading ? (
         <TableLoader message={t('leadsManagement.leadsTab.loading')} />
       ) : error ? (
-        <div className="text-center py-12">
-          <Icon name="AlertCircle" className="w-12 h-12 text-destructive mx-auto mb-4" />
-          <p className="text-destructive">
-            {typeof error === 'string' ? error : error?.message || 'Erreur inconnue'}
-          </p>
-          <button
-            onClick={loadLeads}
-            className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-          >
-            {t('leadsManagement.leadsTab.retry')}
-          </button>
-        </div>
+        <ErrorDisplay 
+          error={typeof error === 'string' ? error : error?.message || t('common.errors.loadError', 'Error Loading Data')}
+          onRetry={loadLeads}
+          title={t('leadsManagement.leadsTab.errorTitle', 'Error Loading Leads')}
+        />
       ) : filteredLeads.length === 0 ? (
         <div className="flex items-center justify-center py-8 sm:py-12">
           <div className="text-center">

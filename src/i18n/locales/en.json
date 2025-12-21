@@ -1939,7 +1939,20 @@
     "more": "more",
     "invoice": "invoice",
     "invoice_plural": "invoices",
-    "done": "Done"
+    "done": "Done",
+    "errors": {
+      "loadError": "Error Loading Data",
+      "somethingWentWrong": "Something went wrong",
+      "unexpectedError": "We're sorry, but something unexpected happened. Please try refreshing the page.",
+      "noInternet": "No Internet Connection",
+      "noInternetMessage": "Please check your internet connection and try again.",
+      "connectionStatus": "Connection Status",
+      "offline": "Offline",
+      "connectionHelp": "Make sure your device is connected to Wi-Fi or mobile data, then click Retry."
+    },
+    "retry": "Retry",
+    "checking": "Checking...",
+    "refresh": "Refresh Page"
   },
 
   "quotesManagement": {
@@ -4596,6 +4609,7 @@
         "markedAsPaid": "Invoice marked as paid"
       },
       "errors": {
+        "loadError": "Error Loading Expense Invoices",
         "selectAtLeastOne": "Please select at least one expense invoice",
         "bulkActionError": "Error during bulk action",
         "updateStatusError": "Error updating status",
@@ -4604,7 +4618,9 @@
         "noAttachment": "No file attached to this invoice",
         "actionError": "Error during invoice action",
         "createError": "Error creating invoice",
-        "updateError": "Error updating invoice"
+        "updateError": "Error updating invoice",
+        "exportError": "Error exporting invoice PDF",
+        "companyInfoNotFound": "Company information not found"
       },
       "export": {
         "invoiceNumber": "Invoice Number",

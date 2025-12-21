@@ -1971,7 +1971,20 @@
     "more": "meer",
     "invoice": "factuur",
     "invoice_plural": "facturen",
-    "done": "Klaar"
+    "done": "Klaar",
+    "errors": {
+      "loadError": "Fout bij het laden van gegevens",
+      "somethingWentWrong": "Er is iets misgegaan",
+      "unexpectedError": "Sorry, er is een onverwachte fout opgetreden. Probeer de pagina te vernieuwen.",
+      "noInternet": "Geen internetverbinding",
+      "noInternetMessage": "Controleer uw internetverbinding en probeer het opnieuw.",
+      "connectionStatus": "Verbindingsstatus",
+      "offline": "Offline",
+      "connectionHelp": "Zorg ervoor dat uw apparaat is verbonden met Wi-Fi of mobiele data, klik dan op Opnieuw proberen."
+    },
+    "retry": "Opnieuw proberen",
+    "checking": "Controleren...",
+    "refresh": "Pagina vernieuwen"
   },
   "quotesManagement": {
     "title": "Offertebeheer",

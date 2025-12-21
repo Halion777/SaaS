@@ -2382,7 +2382,20 @@
     "more": "autres",
     "invoice": "facture",
     "invoice_plural": "factures",
-    "done": "Terminé"
+    "done": "Terminé",
+    "errors": {
+      "loadError": "Erreur lors du chargement des données",
+      "somethingWentWrong": "Une erreur s'est produite",
+      "unexpectedError": "Nous sommes désolés, mais une erreur inattendue s'est produite. Veuillez essayer de rafraîchir la page.",
+      "noInternet": "Pas de connexion Internet",
+      "noInternetMessage": "Veuillez vérifier votre connexion Internet et réessayer.",
+      "connectionStatus": "État de la connexion",
+      "offline": "Hors ligne",
+      "connectionHelp": "Assurez-vous que votre appareil est connecté au Wi-Fi ou aux données mobiles, puis cliquez sur Réessayer."
+    },
+    "retry": "Réessayer",
+    "checking": "Vérification...",
+    "refresh": "Actualiser la page"
   },
 
   "dashboard": {
