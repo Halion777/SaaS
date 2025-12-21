@@ -818,8 +818,7 @@ const ExpenseInvoicesManagement = () => {
             <div className="bg-card border border-border rounded-lg p-4 sm:p-6 text-center">
               <Icon name="AlertCircle" size={48} className="text-error mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground mb-2">{t('expenseInvoices.errors.loadError', 'Error Loading Expense Invoices')}</h3>
-              <p className="text-sm text-muted-foreground mb-4">{error}</p>
-              <Button onClick={loadData} variant="outline">
+              <Button onClick={loadData} variant="outline" className="mt-4">
                 {t('expenseInvoices.retry', 'Retry')}
               </Button>
             </div>

@@ -11,9 +11,54 @@ import Icon from './AppIcon';
 import Header from './Header';
 import Footer from './Footer';
 
-// Cache duration: 1 minutes in milliseconds
-const SUBSCRIPTION_CACHE_DURATION = 1 * 60 * 1000;
+// Cache duration: 5 minutes in milliseconds
+const SUBSCRIPTION_CACHE_DURATION = 5 * 60 * 1000;
 const SUBSCRIPTION_CACHE_KEY = 'haliqo_subscription_cache';
+
+/**
+ * Check if an error is network-related (unstable internet)
+ * Returns true if the error indicates a network connectivity issue
+ */
+const isNetworkError = (error) => {
+  if (!error) return false;
+  
+  const errorMessage = error.message || error.toString() || '';
+  const errorCode = error.code || '';
+  
+  // Check for common network error patterns
+  const networkErrorPatterns = [
+    'Failed to fetch',
+    'NetworkError',
+    'Network request failed',
+    'NetworkError when attempting to fetch resource',
+    'ERR_NETWORK',
+    'ERR_INTERNET_DISCONNECTED',
+    'ERR_CONNECTION_REFUSED',
+    'ERR_CONNECTION_TIMED_OUT',
+    'ERR_CONNECTION_RESET',
+    'timeout',
+    'ECONNREFUSED',
+    'ENOTFOUND',
+    'ETIMEDOUT',
+    'ECONNRESET'
+  ];
+  
+  // Check if error message contains network error patterns
+  const isNetworkErrorPattern = networkErrorPatterns.some(pattern => 
+    errorMessage.toLowerCase().includes(pattern.toLowerCase())
+  );
+  
+  // Check for Supabase network error codes
+  const isSupabaseNetworkError = errorCode === 'PGRST301' || // Connection error
+                                  errorCode === 'PGRST302' || // Timeout
+                                  errorCode === 'PGRST303';    // Network error
+  
+  // Check for fetch API network errors
+  const isFetchNetworkError = error instanceof TypeError && 
+                               (errorMessage.includes('fetch') || errorMessage.includes('network'));
+  
+  return isNetworkErrorPattern || isSupabaseNetworkError || isFetchNetworkError;
+};
 
 /**
  * Get cached subscription data from localStorage
@@ -33,7 +78,7 @@ const getCachedSubscription = (userId) => {
       return null;
     }
     
-    // Check if cache is still valid (within 1 minutes)
+    // Check if cache is still valid (within 5 minutes)
     const now = Date.now();
     const cacheAge = now - data.timestamp;
     
@@ -81,7 +126,7 @@ const getCachedSubscription = (userId) => {
 
 /**
  * Save subscription data to localStorage cache
- * This resets the 1-minute timer every time it's called
+ * This resets the 5-minute timer every time it's called
  */
 const setCachedSubscription = (userId, status, isSuperAdmin = false, subscriptionData = null, hasLifetimeAccess = false) => {
   try {
@@ -91,7 +136,7 @@ const setCachedSubscription = (userId, status, isSuperAdmin = false, subscriptio
       isSuperAdmin,
       hasLifetimeAccess,
       subscriptionData,
-      timestamp: Date.now() // Fresh timestamp on every save = resets 1-min timer
+      timestamp: Date.now() // Fresh timestamp on every save = resets 5-min timer
     };
     localStorage.setItem(SUBSCRIPTION_CACHE_KEY, JSON.stringify(cacheData));
     
@@ -115,7 +160,8 @@ export const clearSubscriptionCache = () => {
 /**
  * Protected route component that redirects to login if user is not authenticated
  * and checks for valid subscription (all in one loading phase)
- * Uses localStorage cache for 1 minutes to handle unstable connections
+ * Uses localStorage cache for 5 minutes to handle unstable connections
+ * Detects network errors and uses cache instead of showing subscription guard
  */
 const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -156,8 +202,34 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
 
         // If network error on user check, use cache as fallback
         if (userError) {
+          // Check if this is a network error (unstable internet)
+          if (isNetworkError(userError)) {
+            // Network error detected - use cache if available, don't show guard
+            if (cachedData) {
+              // Only show guard if subscription actually expired based on dates
+              if (cachedData.subscriptionExpired && !cachedData.hasLifetimeAccess) {
+                setShowExpiredModal(true);
+                setSubscriptionStatus('expired');
+              } else if (cachedData.status === 'active' || cachedData.isSuperAdmin || cachedData.hasLifetimeAccess) {
+                // Use cached active status - don't show guard for network issues
+                setSubscriptionStatus('active');
+                setShowExpiredModal(false);
+              } else {
+                // Only show guard if we're certain subscription is expired (not just network issue)
+                setShowExpiredModal(true);
+                setSubscriptionStatus(cachedData.status);
+              }
+              setSubscriptionLoading(false);
+              return;
+            }
+            // No cache but network error - allow access to prevent locking users out
+            setSubscriptionStatus('active');
+            setShowExpiredModal(false);
+            setSubscriptionLoading(false);
+            return;
+          }
+          // Non-network error - proceed with normal error handling
           if (cachedData) {
-            // Check if subscription expired based on cached dates (even if status was 'active')
             if (cachedData.subscriptionExpired) {
               setShowExpiredModal(true);
               setSubscriptionStatus('expired');
@@ -171,7 +243,7 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
             return;
           }
           // No cache available, throw to catch block
-          throw new Error('Network error and no cache available');
+          throw new Error('Error and no cache available');
         }
 
         // Super admin users are exempt from subscription checks and always have lifetime access
@@ -185,7 +257,7 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
               .eq('id', user.id);
           }
           setSubscriptionStatus('active');
-          // Update cache with fresh timestamp (resets 1-min timer)
+          // Update cache with fresh timestamp (resets 5-min timer)
           setCachedSubscription(user.id, 'active', true);
           setSubscriptionLoading(false);
           return;
@@ -210,7 +282,7 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
         // Check for lifetime access
         if (userData?.has_lifetime_access === true) {
           setSubscriptionStatus('active');
-          // Update cache with fresh timestamp (resets 1-min timer)
+          // Update cache with fresh timestamp (resets 5-min timer)
           setCachedSubscription(user.id, 'active', false, null, true);
           setSubscriptionLoading(false);
           return;
@@ -240,12 +312,38 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
 
         // If network error on subscription fetch, use cache as fallback
         if (error && error.code !== 'PGRST116') {
+          // Check if this is a network error (unstable internet)
+          if (isNetworkError(error)) {
+            // Network error detected - use cache if available, don't show guard
+            if (cachedData) {
+              // Only show guard if subscription actually expired based on dates
+              if (cachedData.subscriptionExpired && !cachedData.hasLifetimeAccess) {
+                setShowExpiredModal(true);
+                setSubscriptionStatus('expired');
+              } else if (cachedData.status === 'active' || cachedData.hasLifetimeAccess) {
+                // Use cached active status - don't show guard for network issues
+                setSubscriptionStatus('active');
+                setShowExpiredModal(false);
+              } else {
+                // Only show guard if we're certain subscription is expired (not just network issue)
+                setShowExpiredModal(true);
+                setSubscriptionStatus(cachedData.status);
+              }
+              setSubscriptionLoading(false);
+              return;
+            }
+            // No cache but network error - allow access to prevent locking users out
+            setSubscriptionStatus('active');
+            setShowExpiredModal(false);
+            setSubscriptionLoading(false);
+            return;
+          }
+          // Non-network error - proceed with normal error handling
           if (cachedData) {
-            // Check if subscription expired based on cached dates
-          if (cachedData.subscriptionExpired && !cachedData.hasLifetimeAccess) {
+            if (cachedData.subscriptionExpired && !cachedData.hasLifetimeAccess) {
               setShowExpiredModal(true);
               setSubscriptionStatus('expired');
-          } else if (cachedData.status === 'active' || cachedData.hasLifetimeAccess) {
+            } else if (cachedData.status === 'active' || cachedData.hasLifetimeAccess) {
               setSubscriptionStatus('active');
             } else {
               setShowExpiredModal(true);
@@ -254,7 +352,7 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
             setSubscriptionLoading(false);
             return;
           }
-          throw new Error('Network error fetching subscription and no cache available');
+          throw new Error('Error fetching subscription and no cache available');
         }
 
         // Step 3: Process subscription data and update cache
@@ -306,16 +404,23 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
               }
             } catch (stripeCheckError) {
               console.error('Error checking Stripe subscription:', stripeCheckError);
-              // On error, use database result
-              setShowExpiredModal(true);
-              setSubscriptionStatus('expired');
-              setCachedSubscription(user.id, 'expired', false, subscriptionData);
+              // Check if this is a network error
+              if (isNetworkError(stripeCheckError) && cachedData && cachedData.status === 'active' && !cachedData.subscriptionExpired) {
+                // Network error but have valid active cache - use cache, don't show guard
+                setSubscriptionStatus('active');
+                setShowExpiredModal(false);
+              } else {
+                // On error, use database result
+                setShowExpiredModal(true);
+                setSubscriptionStatus('expired');
+                setCachedSubscription(user.id, 'expired', false, subscriptionData);
+              }
             }
           } else {
             // Subscription is active - clear any expired cache and set active
             setShowExpiredModal(false); // Ensure modal is hidden
             setSubscriptionStatus('active');
-            // Update cache with fresh timestamp (resets 1-min timer)
+            // Update cache with fresh timestamp (resets 5-min timer)
             setCachedSubscription(user.id, 'active', false, subscriptionData);
           }
         } else {
@@ -352,8 +457,12 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
                 }
               }
             } else {
-              // Stripe check failed - check cache
-              if (cachedData && cachedData.status === 'active' && !cachedData.subscriptionExpired) {
+              // Stripe check failed - check if network error
+              if (isNetworkError(stripeError) && cachedData && cachedData.status === 'active' && !cachedData.subscriptionExpired) {
+                // Network error but have valid active cache - use cache, don't show guard
+                setSubscriptionStatus('active');
+                setShowExpiredModal(false);
+              } else if (cachedData && cachedData.status === 'active' && !cachedData.subscriptionExpired) {
                 setSubscriptionStatus('active');
                 setShowExpiredModal(false);
               } else {
@@ -364,8 +473,12 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
             }
           } catch (stripeCheckError) {
             console.error('Error checking Stripe subscription:', stripeCheckError);
-            // On error, check cache
-            if (cachedData && cachedData.status === 'active' && !cachedData.subscriptionExpired) {
+            // Check if this is a network error
+            if (isNetworkError(stripeCheckError) && cachedData && cachedData.status === 'active' && !cachedData.subscriptionExpired) {
+              // Network error but have valid active cache - use cache, don't show guard
+              setSubscriptionStatus('active');
+              setShowExpiredModal(false);
+            } else if (cachedData && cachedData.status === 'active' && !cachedData.subscriptionExpired) {
               setSubscriptionStatus('active');
               setShowExpiredModal(false);
             } else {
@@ -378,21 +491,45 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
       } catch (error) {
         console.error('Error checking subscription:', error);
         
-        // On any error, use cached data if available and valid
-        if (cachedData) {
-          // Check if subscription expired based on cached dates
-          if (cachedData.subscriptionExpired) {
-            setShowExpiredModal(true);
-            setSubscriptionStatus('expired');
+        // Check if this is a network error (unstable internet)
+        if (isNetworkError(error)) {
+          // Network error detected - prefer cache, don't show guard
+          if (cachedData) {
+            // Only show guard if subscription actually expired based on dates
+            if (cachedData.subscriptionExpired && !cachedData.hasLifetimeAccess) {
+              setShowExpiredModal(true);
+              setSubscriptionStatus('expired');
             } else if (cachedData.status === 'active' || cachedData.isSuperAdmin || cachedData.hasLifetimeAccess) {
-            setSubscriptionStatus('active');
+              // Use cached active status - don't show guard for network issues
+              setSubscriptionStatus('active');
+              setShowExpiredModal(false);
+            } else {
+              // Only show guard if we're certain subscription is expired (not just network issue)
+              setShowExpiredModal(true);
+              setSubscriptionStatus(cachedData.status);
+            }
           } else {
-            setShowExpiredModal(true);
-            setSubscriptionStatus(cachedData.status);
+            // No cache but network error - allow access to prevent locking users out
+            setSubscriptionStatus('active');
+            setShowExpiredModal(false);
           }
         } else {
-          // No cache available, allow access to prevent locking users out
-          setSubscriptionStatus('active');
+          // Non-network error - use cached data if available and valid
+          if (cachedData) {
+            // Check if subscription expired based on cached dates
+            if (cachedData.subscriptionExpired) {
+              setShowExpiredModal(true);
+              setSubscriptionStatus('expired');
+            } else if (cachedData.status === 'active' || cachedData.isSuperAdmin || cachedData.hasLifetimeAccess) {
+              setSubscriptionStatus('active');
+            } else {
+              setShowExpiredModal(true);
+              setSubscriptionStatus(cachedData.status);
+            }
+          } else {
+            // No cache available, allow access to prevent locking users out
+            setSubscriptionStatus('active');
+          }
         }
       } finally {
         setSubscriptionLoading(false);
