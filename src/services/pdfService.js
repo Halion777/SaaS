@@ -676,7 +676,7 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
                 const cleanVAT = formattedVAT.replace(/^[A-Z]+/i, '');
                 formattedVAT = `${countryPrefix}${cleanVAT}`;
               }
-              return `<p style="margin: 3px 0 0 0; font-weight: 500;">${language === 'en' ? 'VAT:' : language === 'nl' ? 'BTW:' : 'TVA:'} ${escapeHtml(formattedVAT)}</p>`;
+              return `<p style="margin: 3px 0 0 0;">${language === 'en' ? 'VAT:' : language === 'nl' ? 'BTW:' : 'TVA:'} ${escapeHtml(formattedVAT)}</p>`;
             })() : ''}
           </div>
         </div>
@@ -688,7 +688,20 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
             ${companyInfo?.phone ? `<p style="margin: 0 0 3px 0;">${escapeHtml(companyInfo.phone)}</p>` : ''}
             ${companyInfo?.address ? `<p style="margin: 0 0 3px 0;">${escapeHtml(companyInfo.address)}</p>` : ''}
             ${companyInfo?.postalCode && companyInfo?.city ? `<p style="margin: 0;">${escapeHtml(companyInfo.postalCode)} ${escapeHtml(companyInfo.city)}</p>` : ''}
-            ${companyInfo?.vatNumber ? `<p style="margin: 3px 0 0 0; font-weight: 500;">${language === 'en' ? 'VAT:' : language === 'nl' ? 'BTW:' : 'TVA:'} ${escapeHtml(companyInfo.vatNumber)}</p>` : ''}
+            ${companyInfo?.vatNumber ? (() => {
+              // Format VAT number with country prefix if not already present
+              let formattedVAT = companyInfo.vatNumber;
+              if (formattedVAT && !formattedVAT.match(/^[A-Z]{2}\d+/i)) {
+                // VAT number doesn't have correct country prefix format (2 letters + digits)
+                // Remove all leading letters to get to the numeric part, handling malformed VATs correctly
+                const countryCode = (companyInfo?.country || 'BE').toUpperCase();
+                const countryPrefix = countryCode === 'GR' ? 'EL' : countryCode;
+                // Remove all leading letters (not just 2) to handle malformed VAT numbers
+                const cleanVAT = formattedVAT.replace(/^[A-Z]+/i, '');
+                formattedVAT = `${countryPrefix}${cleanVAT}`;
+              }
+              return `<p style="margin: 3px 0 0 0;">${language === 'en' ? 'VAT:' : language === 'nl' ? 'BTW:' : 'TVA:'} ${escapeHtml(formattedVAT)}</p>`;
+            })() : ''}
           </div>
         </div>
       </div>

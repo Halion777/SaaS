@@ -226,6 +226,8 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
           }));
         }
         
+        // IMPORTANT: OCR only populates the form - it does NOT automatically create the invoice
+        // User must review the extracted data and click "Create Invoice" button to actually create it
         // Auto-fill form with extracted data (only fill fields that are empty or have extracted data)
         setFormData(prev => ({
           ...prev,

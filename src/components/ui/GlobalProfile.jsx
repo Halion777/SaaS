@@ -7,7 +7,7 @@ import UserProfile from './UserProfile';
 const GlobalProfile = () => {
   const { t } = useTranslation();
   const location = useLocation();
-  const { logout, user } = useAuth();
+  const { logout, user, loading } = useAuth();
   const [isMobile, setIsMobile] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -111,8 +111,8 @@ const GlobalProfile = () => {
     }
   };
 
-  // Only render on mobile AND on dashboard pages AND when user is loaded
-  if (!isMobile || !shouldShowProfile() || !user) {
+  // Only render on mobile AND on dashboard pages AND when user is loaded AND when page loading is complete
+  if (!isMobile || !shouldShowProfile() || !user || loading) {
     return null;
   }
 
