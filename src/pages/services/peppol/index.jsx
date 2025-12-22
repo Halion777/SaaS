@@ -419,7 +419,20 @@ const PeppolNetworkPage = () => {
         // Get current user
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         if (userError || !user) {
-          navigate('/login');
+          // Check if error is network-related - don't navigate to login if it's a network error
+          const isNetworkError = userError?.message?.includes('ERR_INTERNET_DISCONNECTED') ||
+                                userError?.message?.includes('ERR_NETWORK') ||
+                                userError?.message?.includes('Failed to fetch') ||
+                                userError?.message?.includes('NetworkError') ||
+                                userError?.code === 'PGRST301' ||
+                                userError?.code === 'PGRST302' ||
+                                userError?.code === 'PGRST303';
+          
+          // Only navigate to login if it's not a network error
+          // Network errors will be handled by PermissionGuard's internet connectivity check
+          if (!isNetworkError) {
+            navigate('/login');
+          }
           return;
         }
 

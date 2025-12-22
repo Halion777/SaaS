@@ -1,8 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router-dom';
-import Icon from './AppIcon';
-import Button from './ui/Button';
 
 /**
  * Shared utility function to check internet connectivity
@@ -219,123 +215,14 @@ export const useInternetConnection = () => {
 
 /**
  * Internet Connection Check Component
- * Shows a full-screen error when offline and prevents access to protected routes
+ * Simple wrapper component - internet connectivity checks are handled by individual guards
+ * (PermissionGuard, SubscriptionGuard, LimitedAccessGuard) that wrap specific pages
+ * This component just passes through children and provides the useInternetConnection hook
  */
 const InternetConnectionCheck = ({ children }) => {
-  const { t } = useTranslation();
-  const location = useLocation();
-  const { isOnline, isChecking, checkConnection } = useInternetConnection();
-  const [sidebarOffset, setSidebarOffset] = useState(288);
-  const [isMobile, setIsMobile] = useState(false);
-
-  // Handle sidebar offset for responsive layout
-  useEffect(() => {
-    const handleSidebarToggle = (e) => {
-      const { isCollapsed } = e.detail;
-      const mobile = window.innerWidth < 768;
-      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
-      setIsMobile(mobile);
-
-      if (mobile) {
-        setSidebarOffset(0);
-      } else if (tablet) {
-        setSidebarOffset(80);
-      } else {
-        setSidebarOffset(isCollapsed ? 80 : 288);
-      }
-    };
-
-    const handleResize = () => {
-      const mobile = window.innerWidth < 768;
-      const tablet = window.innerWidth >= 768 && window.innerWidth < 1024;
-      setIsMobile(mobile);
-      
-      if (mobile) {
-        setSidebarOffset(0);
-      } else if (tablet) {
-        setSidebarOffset(80);
-      } else {
-        try {
-          const savedCollapsed = localStorage.getItem('sidebar-collapsed');
-          const isCollapsed = savedCollapsed ? JSON.parse(savedCollapsed) : false;
-          setSidebarOffset(isCollapsed ? 80 : 288);
-        } catch (e) {
-          setSidebarOffset(288);
-        }
-      }
-    };
-
-    handleResize();
-    window.addEventListener('sidebar-toggle', handleSidebarToggle);
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('sidebar-toggle', handleSidebarToggle);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
-
-  // Allow access to public routes when offline
-  const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/pricing', '/about', '/contact', '/features', '/terms', '/privacy', '/cookies', '/blog', '/find-artisan'];
-  const isPublicRoute = publicRoutes.some(route => location.pathname === route || location.pathname.startsWith(route + '/'));
-
-  // Don't show internet connection guard on mobile devices
-  // Mobile browsers can have unreliable network state detection when switching tabs
-  if (isMobile) {
-    return <>{children}</>;
-  }
-
-  // If offline and not on public route, show error (desktop only)
-  if (!isOnline && !isPublicRoute && !isChecking) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-6">
-        <div className="bg-card border border-border rounded-xl shadow-xl max-w-lg w-full p-8 sm:p-10 text-center">
-          {/* WiFi Icon with animated pulse effect */}
-          <div className="w-24 h-24 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-6 relative">
-            <div className="absolute inset-0 bg-error/20 rounded-full animate-ping opacity-75"></div>
-            <div className="absolute inset-0 bg-error/10 rounded-full"></div>
-            <Icon name="WifiOff" size={48} className="text-error relative z-10" />
-          </div>
-          
-          <h2 className="text-3xl font-bold text-foreground mb-3">
-            {t('common.errors.noInternet', 'No Internet Connection')}
-          </h2>
-          
-          <p className="text-muted-foreground mb-8 text-base">
-            {t('common.errors.noInternetMessage', 'Please check your internet connection and try again.')}
-          </p>
-
-          {/* Connection status info */}
-          <div className="bg-gradient-to-r from-muted/50 to-muted/30 rounded-lg p-5 mb-8 border border-border/50">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold text-foreground">
-                {t('common.errors.connectionStatus', 'Connection Status')}:
-              </span>
-              <span className="text-sm text-error font-bold px-3 py-1 bg-error/10 rounded-full">
-                {t('common.errors.offline', 'Offline')}
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-              {t('common.errors.connectionHelp', 'Make sure your device is connected to Wi-Fi or mobile data, then click the button below.')}
-            </p>
-          </div>
-          
-          <Button
-            onClick={checkConnection}
-            variant="default"
-            iconName="Wifi"
-            iconPosition="left"
-            disabled={isChecking}
-            className="w-full sm:w-auto min-w-[200px] text-base py-6 px-8 font-semibold"
-            size="lg"
-          >
-            {isChecking ? t('common.checking', 'Checking...') : t('common.connectMeNow', 'Connect Me Now')}
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
+  // Simple wrapper - let individual guards handle internet connectivity checks
+  // Guards like PermissionGuard, SubscriptionGuard, and LimitedAccessGuard
+  // already have internet connectivity checks built in
   return <>{children}</>;
 };
 

@@ -332,7 +332,7 @@ const InvoicesManagement = () => {
           
           // If deposit invoice exists, only show final invoice if deposit is paid
           if (depositInvoice) {
-            return depositInvoice.status === 'paid';
+          return depositInvoice.status === 'paid';
           }
           
           // If no deposit invoice exists, show final invoice (backward compatibility)
