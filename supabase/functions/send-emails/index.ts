@@ -441,12 +441,12 @@ serve(async (req) => {
             balanceSectionHtml = `
               <div style="background: white; padding: 12px; border-radius: 6px; margin-top: 12px; border-left: 4px solid #059669;">
                 <div style="display: flex; justify-content: space-between;">
-                  <span style="color: #333; font-weight: bold;">${isFrench ? 'Montant total à payer après travaux:' : isDutch ? 'Totaalbedrag te betalen na werk:' : 'Total Amount to Pay after work:'}</span>
+                  <span style="color: #333; font-weight: bold;">${isFrench ? 'À payer après travaux:' : isDutch ? 'Te betalen na werk:' : 'Payment after completion of work:'}</span>
                   <span style="color: #333; font-weight: bold; font-size: 14px;">${balanceAmount}</span>
                 </div>
               </div>`;
             
-            balanceSectionText = `${isFrench ? 'Montant total à payer après travaux:' : isDutch ? 'Totaalbedrag te betalen na werk:' : 'Total Amount to Pay after work:'} ${balanceAmount}\n`;
+            balanceSectionText = `${isFrench ? 'À payer après travaux:' : isDutch ? 'Te betalen na werk:' : 'Payment after completion of work:'} ${balanceAmount}\n`;
           }
           
           // Check if there's any content to show in the financial breakdown section

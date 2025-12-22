@@ -97,12 +97,13 @@ serve(async (req) => {
           try {
             // Get subscription details to check if it's a trial
             let isTrial = false
+            let subscriptionDetails = null
             if (session.subscription) {
               try {
-                const subscriptionDetails = await stripe.subscriptions.retrieve(session.subscription as string)
+                subscriptionDetails = await stripe.subscriptions.retrieve(session.subscription as string)
                 isTrial = subscriptionDetails.status === 'trialing'
               } catch (e) {
-                
+                console.error('Error retrieving subscription details:', e)
               }
             }
 
@@ -115,8 +116,99 @@ serve(async (req) => {
                 has_used_trial: isTrial ? true : undefined // Mark trial as used if starting a trial
               })
               .eq('id', session.metadata.userId)
+
+            // ✅ CRITICAL FIX: Create subscription record immediately
+            if (session.subscription && subscriptionDetails) {
+              const priceId = subscriptionDetails.items.data[0]?.price?.id
+              const priceAmount = subscriptionDetails.items.data[0]?.price?.unit_amount || 0
+              const priceInterval = subscriptionDetails.items.data[0]?.price?.recurring?.interval || 'month'
+              
+              // Determine plan type from price ID
+              let planType = 'starter'
+              const starterMonthly = Deno.env.get('STRIPE_STARTER_MONTHLY_PRICE_ID')
+              const starterYearly = Deno.env.get('STRIPE_STARTER_YEARLY_PRICE_ID')
+              const proMonthly = Deno.env.get('STRIPE_PRO_MONTHLY_PRICE_ID')
+              const proYearly = Deno.env.get('STRIPE_PRO_YEARLY_PRICE_ID')
+              
+              if (priceId === proMonthly || priceId === proYearly) {
+                planType = 'pro'
+              }
+
+              // Check if subscription record already exists
+              const { data: existingSub } = await supabaseClient
+                .from('subscriptions')
+                .select('id')
+                .eq('user_id', session.metadata.userId)
+                .single()
+
+              if (existingSub) {
+                // Update existing subscription record
+                await supabaseClient
+                  .from('subscriptions')
+                  .update({
+                    stripe_subscription_id: subscriptionDetails.id,
+                    stripe_customer_id: session.customer as string,
+                    plan_type: planType,
+                    plan_name: planType === 'pro' ? 'Pro Plan' : 'Starter Plan',
+                    status: subscriptionDetails.status,
+                    interval: priceInterval === 'year' ? 'yearly' : 'monthly',
+                    amount: priceAmount / 100,
+                    current_period_start: new Date(subscriptionDetails.current_period_start * 1000).toISOString(),
+                    current_period_end: new Date(subscriptionDetails.current_period_end * 1000).toISOString(),
+                    trial_start: subscriptionDetails.trial_start ? new Date(subscriptionDetails.trial_start * 1000).toISOString() : null,
+                    trial_end: subscriptionDetails.trial_end ? new Date(subscriptionDetails.trial_end * 1000).toISOString() : null,
+                    cancel_at_period_end: subscriptionDetails.cancel_at_period_end || false,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', existingSub.id)
+              } else {
+                // Create new subscription record
+                await supabaseClient
+                  .from('subscriptions')
+                  .insert({
+                    user_id: session.metadata.userId,
+                    stripe_subscription_id: subscriptionDetails.id,
+                    stripe_customer_id: session.customer as string,
+                    plan_type: planType,
+                    plan_name: planType === 'pro' ? 'Pro Plan' : 'Starter Plan',
+                    status: subscriptionDetails.status,
+                    interval: priceInterval === 'year' ? 'yearly' : 'monthly',
+                    amount: priceAmount / 100,
+                    current_period_start: new Date(subscriptionDetails.current_period_start * 1000).toISOString(),
+                    current_period_end: new Date(subscriptionDetails.current_period_end * 1000).toISOString(),
+                    trial_start: subscriptionDetails.trial_start ? new Date(subscriptionDetails.trial_start * 1000).toISOString() : null,
+                    trial_end: subscriptionDetails.trial_end ? new Date(subscriptionDetails.trial_end * 1000).toISOString() : null,
+                    cancel_at_period_end: subscriptionDetails.cancel_at_period_end || false
+                  })
+              }
+
+              // Create payment record if there was an immediate charge (no trial)
+              if (session.amount_total > 0) {
+                const { data: subRecord } = await supabaseClient
+                  .from('subscriptions')
+                  .select('id')
+                  .eq('stripe_subscription_id', subscriptionDetails.id)
+                  .single()
+
+                await supabaseClient
+                  .from('payment_records')
+                  .insert({
+                    subscription_id: subRecord?.id || null,
+                    user_id: session.metadata.userId,
+                    stripe_payment_intent_id: session.payment_intent as string || null,
+                    stripe_invoice_id: null,
+                    amount: (session.amount_total / 100).toFixed(2),
+                    currency: session.currency?.toUpperCase() || 'EUR',
+                    status: 'succeeded',
+                    payment_method: 'card',
+                    description: `Initial subscription - ${planType === 'pro' ? 'Pro' : 'Starter'} Plan`,
+                    paid_at: new Date().toISOString(),
+                    created_at: new Date().toISOString()
+                  })
+              }
+            }
           } catch (error) {
-            console.error('Error updating user record:', error)
+            console.error('Error processing checkout completion:', error)
           }
         }
         break
@@ -159,16 +251,27 @@ serve(async (req) => {
               })
               .eq('stripe_subscription_id', invoice.subscription as string)
 
-            // Create payment record
+            //  CRITICAL FIX: Get subscription record with user_id
+            const { data: subRecord } = await supabaseClient
+              .from('subscriptions')
+              .select('id, user_id')
+              .eq('stripe_subscription_id', invoice.subscription as string)
+              .single()
+
+            // Create payment record with user_id
             await supabaseClient
               .from('payment_records')
               .insert({
+                subscription_id: subRecord?.id || null,
+                user_id: subRecord?.user_id, //  Add user_id
                 stripe_payment_intent_id: invoice.payment_intent as string,
                 stripe_invoice_id: invoice.id,
                 amount: (invoice.amount_paid / 100).toFixed(2),
                 currency: invoice.currency.toUpperCase(),
                 status: 'succeeded',
-                description: 'Subscription payment after trial',
+                payment_method: 'card',
+                description: 'Subscription payment',
+                paid_at: new Date(invoice.created * 1000).toISOString(), //  Add paid_at timestamp
                 created_at: new Date().toISOString()
               })
           } catch (error) {
@@ -254,6 +357,9 @@ serve(async (req) => {
               plan_name: planName,
               interval: interval,
               amount: amount,
+              current_period_start: new Date(updatedSubscription.current_period_start * 1000).toISOString(), //  Update period start
+              current_period_end: new Date(updatedSubscription.current_period_end * 1000).toISOString(), //  Update period end (fixes "Next Billing" display)
+              trial_end: updatedSubscription.trial_end ? new Date(updatedSubscription.trial_end * 1000).toISOString() : null, //  Update trial end
               cancel_at_period_end: updatedSubscription.cancel_at_period_end || false,
               updated_at: new Date().toISOString()
             })
@@ -434,6 +540,7 @@ serve(async (req) => {
             .from('subscriptions')
             .update({
               status: 'cancelled',
+              cancelled_at: deletedSubscription.canceled_at ? new Date(deletedSubscription.canceled_at * 1000).toISOString() : new Date().toISOString(), //  Set cancelled_at timestamp
               updated_at: new Date().toISOString()
             })
             .eq('stripe_subscription_id', deletedSubscription.id)
