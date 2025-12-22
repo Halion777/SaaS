@@ -10,6 +10,7 @@ import UserProfile from './UserProfile';
 import ProfileSwitcher from './ProfileSwitcher';
 import MultiUserProfile from './MultiUserProfile';
 import { useScrollPosition } from '../../utils/useScrollPosition';
+import { useSwipeNavigation } from '../../hooks/useSwipeNavigation';
 
 // Map navigation item IDs to permission modules
 const NAVIGATION_PERMISSION_MAP = {
@@ -400,6 +401,9 @@ const MainSidebar = () => {
 
   // Flatten navigation items for mobile view (using filtered categories)
   const flatNavigationItems = filteredNavigationCategories.flatMap(category => category.items);
+
+  // Enable swipe navigation on mobile
+  useSwipeNavigation(flatNavigationItems, isMobile && flatNavigationItems.length > 0);
 
   if (isMobile) {
     return (

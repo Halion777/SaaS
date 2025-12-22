@@ -5,6 +5,7 @@ import { supabase } from '../../services/supabaseClient';
 import Icon from '../AppIcon';
 import NavigationItem from './NavigationItem';
 import { useScrollPosition } from '../../utils/useScrollPosition';
+import { useSwipeNavigation } from '../../hooks/useSwipeNavigation';
 
 const SuperAdminSidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -251,6 +252,9 @@ const SuperAdminSidebar = () => {
     ...standaloneItems,
     ...navigationCategories.flatMap(category => category.items)
   ];
+
+  // Enable swipe navigation on mobile
+  useSwipeNavigation(flatNavigationItems, isMobile && flatNavigationItems.length > 0);
 
   if (isMobile) {
     return (
