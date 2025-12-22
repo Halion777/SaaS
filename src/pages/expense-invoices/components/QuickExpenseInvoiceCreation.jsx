@@ -405,7 +405,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
       }, 0);
     } catch (error) {
       console.error('Error creating expense invoice:', error);
-      alert(t('expenseInvoices.createModal.errors.createError', 'Error creating invoice. Please try again.'));
+
       setIsSubmitting(false);
     }
   };
@@ -415,8 +415,7 @@ const QuickExpenseInvoiceCreation = ({ isOpen, onClose, onCreateExpenseInvoice, 
       // Clean up: Remove all files from storage before closing
       if (Object.keys(fileStoragePaths).length > 0) {
         const storagePaths = Object.values(fileStoragePaths);
-        console.log('Removing files from storage on modal close:', storagePaths);
-        
+
         for (const storagePath of storagePaths) {
           try {
             const result = await OCRService.removeFileFromStorage(storagePath, 'expense-invoice-attachments');

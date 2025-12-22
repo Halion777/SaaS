@@ -204,6 +204,7 @@ const FileUpload = ({
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => handleFileRemove(index)}
                 className="text-red-500 hover:text-red-700 transition-colors"
               >

@@ -54,9 +54,50 @@ serve(async (req) => {
     
     console.log(`File size: ${fileBuffer.byteLength} bytes`);
     
-    // Convert to base64 for Gemini
+    // Check file size limit (Gemini has limits, typically 20MB for images, 2MB for PDFs)
+    const maxFileSize = 20 * 1024 * 1024; // 20MB
+    if (fileBuffer.byteLength > maxFileSize) {
+      throw new Error(`File size (${(fileBuffer.byteLength / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size (20MB)`);
+    }
+    
+    // Convert to base64 for Gemini - use proper base64 encoding that handles large files
     // @ts-ignore
-    const base64Data = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)));
+    const uint8Array = new Uint8Array(fileBuffer);
+    
+    // Use chunk-based base64 encoding to avoid stack overflow with large files
+    // Process in smaller chunks and build binary string character by character
+    let base64Data = '';
+    const chunkSize = 0x6000; // 24KB chunks - optimal for base64 encoding
+    
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunkEnd = Math.min(i + chunkSize, uint8Array.length);
+      // Build binary string character by character (no spread operator to avoid stack overflow)
+      let binaryString = '';
+      const chunkLength = chunkEnd - i;
+      
+      // Pre-allocate string if possible, otherwise build incrementally
+      for (let j = 0; j < chunkLength; j++) {
+        binaryString += String.fromCharCode(uint8Array[i + j]);
+      }
+      
+      // Encode chunk to base64
+      // @ts-ignore
+      const chunkBase64 = btoa(binaryString);
+      base64Data += chunkBase64;
+    }
+    
+    // Validate base64 string
+    if (!base64Data || base64Data.length === 0) {
+      throw new Error('Failed to encode file to base64');
+    }
+    
+    // Basic validation: base64 should be ~4/3 the size of original (with padding)
+    const expectedMinLength = Math.floor(fileBuffer.byteLength * 4 / 3);
+    if (base64Data.length < expectedMinLength * 0.9) {
+      throw new Error(`Base64 encoding seems incomplete. Expected ~${expectedMinLength} chars, got ${base64Data.length}`);
+    }
+    
+    console.log(`Base64 encoded: ${base64Data.length} chars (original: ${fileBuffer.byteLength} bytes)`);
     
     // Create enhanced prompt for expense invoice extraction with better PDF handling
     const prompt = `
@@ -137,10 +178,17 @@ serve(async (req) => {
        - If only TTC shown: try to find VAT rate and calculate net_amount = TTC / (1 + VAT_rate/100)
        - Verify: net_amount + tax_amount should equal amount (within rounding)
     
-    8. LANGUAGE HANDLING:
-       - Handle French invoices: "Facture", "TVA", "HT", "TTC", "Date d'échéance", "Fournisseur"
-       - Handle English invoices: "Invoice", "VAT", "Excl. VAT", "Incl. VAT", "Due Date", "Supplier"
-       - Handle Dutch invoices: "Factuur", "BTW", "Excl. BTW", "Incl. BTW", "Vervaldatum", "Leverancier"
+    8. LANGUAGE HANDLING (CRITICAL - MULTILINGUAL SUPPORT):
+       - This invoice may be in French, English, Dutch, or a MIXTURE of these languages
+       - The document can contain text in multiple languages simultaneously (e.g., French header with English line items, or Dutch supplier info with French amounts)
+       - Extract data regardless of language - look for keywords in ALL languages:
+         * French: "Facture", "TVA", "HT", "TTC", "Date d'échéance", "Fournisseur", "Montant", "Total", "Sous-total", "Date de facturation"
+         * English: "Invoice", "VAT", "Excl. VAT", "Incl. VAT", "Due Date", "Supplier", "Amount", "Total", "Subtotal", "Invoice Date"
+         * Dutch: "Factuur", "BTW", "Excl. BTW", "Incl. BTW", "Vervaldatum", "Leverancier", "Bedrag", "Totaal", "Subtotaal", "Factuurdatum"
+       - When encountering mixed languages, extract data from whichever language section contains the information
+       - For amounts and numbers: Extract regardless of language - numbers are universal
+       - For dates: Recognize date formats in all languages (e.g., "15 janvier 2025", "15 January 2025", "15 januari 2025")
+       - For VAT numbers: Extract regardless of label language (TVA/VAT/BTW all refer to the same field)
     
     9. CATEGORY INFERENCE:
        - "Électricité", "Electricity", "Energie" → energy
@@ -203,15 +251,62 @@ serve(async (req) => {
       }
     ]);
 
-    const response_text = result.response.text();
+    // Safely extract text response - avoid logging the entire result object which may have circular references
+    let response_text: string;
+    try {
+      response_text = result.response.text();
+    } catch (error) {
+      console.error('Error extracting text from Gemini response:', error.message);
+      throw new Error('Failed to extract text from OCR response');
+    }
     
     // Extract JSON from response
     const jsonMatch = response_text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
+      console.error('No JSON found in response. Response length:', response_text.length);
+      console.error('Response preview:', response_text.substring(0, 500));
       throw new Error('Failed to extract structured data from OCR response');
     }
 
-    const extractedData = JSON.parse(jsonMatch[0]);
+    // Safely parse JSON - handle potential circular references
+    let extractedData: any;
+    try {
+      extractedData = JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError.message);
+      console.error('JSON string length:', jsonMatch[0].length);
+      console.error('JSON preview:', jsonMatch[0].substring(0, 1000));
+      throw new Error('Failed to parse extracted data from OCR response');
+    }
+    
+    // Validate that extractedData is a plain object (not circular)
+    if (typeof extractedData !== 'object' || extractedData === null || Array.isArray(extractedData)) {
+      throw new Error('Invalid data structure extracted from OCR response');
+    }
+
+    // Helper function to safely extract primitive values from objects (prevents circular reference issues)
+    const safeExtract = (value: any, maxDepth: number = 3, currentDepth: number = 0): any => {
+      if (currentDepth >= maxDepth) return null;
+      if (value === null || value === undefined) return null;
+      if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
+      if (Array.isArray(value)) {
+        return value.slice(0, 10).map(item => safeExtract(item, maxDepth, currentDepth + 1)); // Limit array size
+      }
+      if (typeof value === 'object') {
+        const result: any = {};
+        const keys = Object.keys(value).slice(0, 20); // Limit object keys
+        for (const key of keys) {
+          try {
+            result[key] = safeExtract(value[key], maxDepth, currentDepth + 1);
+          } catch (e) {
+            // Skip circular references
+            result[key] = null;
+          }
+        }
+        return result;
+      }
+      return String(value);
+    };
 
     // Helper function to clean amount strings (remove currency symbols, spaces, commas)
     const cleanAmount = (value: any): number | null => {
@@ -236,37 +331,53 @@ serve(async (req) => {
       return date.toISOString().split('T')[0];
     };
 
+    // Safely extract primitive values to avoid circular references
+    const safeData = safeExtract(extractedData);
+    
     // Validate and clean data
-    const cleanedAmount = cleanAmount(extractedData.amount);
-    const cleanedTaxAmount = cleanAmount(extractedData.tax_amount) || 0;
-    const cleanedNetAmount = cleanAmount(extractedData.net_amount) || 
+    const cleanedAmount = cleanAmount(safeData?.amount);
+    const cleanedTaxAmount = cleanAmount(safeData?.tax_amount) || 0;
+    const cleanedNetAmount = cleanAmount(safeData?.net_amount) || 
       (cleanedAmount && cleanedTaxAmount ? cleanedAmount - cleanedTaxAmount : cleanedAmount);
 
+    // Safely extract string values
+    const safeString = (value: any): string | null => {
+      if (!value) return null;
+      if (typeof value === 'string') return value.substring(0, 1000); // Limit string length
+      if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+      return null;
+    };
+
     const cleanedData = {
-      invoice_number: extractedData.invoice_number || null,
+      invoice_number: safeString(safeData?.invoice_number),
       amount: cleanedAmount,
       net_amount: cleanedNetAmount,
       tax_amount: cleanedTaxAmount,
-      issue_date: formatDate(extractedData.issue_date),
-      due_date: formatDate(extractedData.due_date),
-      supplier_name: extractedData.supplier_name || null,
-      supplier_email: extractedData.supplier_email || null,
-      supplier_vat_number: extractedData.supplier_vat_number || null,
-      supplier_address: extractedData.supplier_address || null,
-      supplier_phone: extractedData.supplier_phone || null,
-      category: extractedData.category || null,
-      description: extractedData.description || (extractedData.line_items && Array.isArray(extractedData.line_items) 
-        ? extractedData.line_items.map((item: any) => 
-            `${item.description || ''} ${item.quantity || ''}x ${item.unit_price || ''} = ${item.total || ''}`
-          ).join('; ') 
+      issue_date: formatDate(safeData?.issue_date),
+      due_date: formatDate(safeData?.due_date),
+      supplier_name: safeString(safeData?.supplier_name),
+      supplier_email: safeString(safeData?.supplier_email),
+      supplier_vat_number: safeString(safeData?.supplier_vat_number),
+      supplier_address: safeString(safeData?.supplier_address),
+      supplier_phone: safeString(safeData?.supplier_phone),
+      category: safeString(safeData?.category),
+      description: safeString(safeData?.description) || (safeData?.line_items && Array.isArray(safeData.line_items) 
+        ? safeData.line_items.slice(0, 50).map((item: any) => {
+            // Safely extract values to avoid circular references
+            const desc = item && typeof item === 'object' ? safeString(item.description) || '' : '';
+            const qty = item && typeof item === 'object' ? safeString(item.quantity) || '' : '';
+            const price = item && typeof item === 'object' ? safeString(item.unit_price) || '' : '';
+            const total = item && typeof item === 'object' ? safeString(item.total) || '' : '';
+            return `${desc} ${qty}x ${price} = ${total}`;
+          }).join('; ') 
         : null),
-      payment_terms: extractedData.payment_terms || null,
-      payment_method: extractedData.payment_method || null,
-      iban: extractedData.iban || null,
-      bank_name: extractedData.bank_name || null,
-      currency: extractedData.currency || null,
-      vat_rate: extractedData.vat_rate ? parseFloat(String(extractedData.vat_rate).replace(/[^\d.,]/g, '').replace(',', '.')) : null,
-      notes: extractedData.notes || null
+      payment_terms: safeString(safeData?.payment_terms),
+      payment_method: safeString(safeData?.payment_method),
+      iban: safeString(safeData?.iban),
+      bank_name: safeString(safeData?.bank_name),
+      currency: safeString(safeData?.currency),
+      vat_rate: safeData?.vat_rate ? parseFloat(String(safeData.vat_rate).replace(/[^\d.,]/g, '').replace(',', '.')) : null,
+      notes: safeString(safeData?.notes)
     };
 
     return new Response(
@@ -282,18 +393,56 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('OCR processing error:', error);
+    // Safely log error without causing circular reference issues
+    const errorName = error?.name || 'UnknownError';
+    const errorMessage = error?.message || 'Unknown error occurred during OCR processing';
+    const errorStack = error?.stack ? String(error.stack).substring(0, 500) : 'No stack trace';
     
-    return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message,
-        data: null
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
-      }
-    );
+    console.error('OCR processing error:', errorName);
+    console.error('Error message:', errorMessage);
+    console.error('Error stack (truncated):', errorStack);
+    
+    // Provide more helpful error messages
+    let userFriendlyMessage = errorMessage;
+    let statusCode = 500;
+    
+    if (errorName === 'RangeError' && errorMessage.includes('Maximum call stack size exceeded')) {
+      userFriendlyMessage = 'File is too large or contains complex data. Please try with a smaller file or check the file format.';
+      statusCode = 413; // Payload Too Large
+    } else if (errorMessage.includes('exceeds maximum allowed size')) {
+      statusCode = 413; // Payload Too Large
+    } else if (errorMessage.includes('Failed to download file')) {
+      statusCode = 502; // Bad Gateway
+    } else if (errorMessage.includes('Unsupported file type')) {
+      statusCode = 400; // Bad Request
+    } else if (errorMessage.includes('circular') || errorMessage.includes('Maximum call stack')) {
+      userFriendlyMessage = 'Document contains complex data structure. Please try with a simpler invoice format.';
+      statusCode = 422; // Unprocessable Entity
+    }
+    
+    // Safely stringify error response
+    try {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: userFriendlyMessage,
+          data: null,
+          errorType: errorName
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: statusCode
+        }
+      );
+    } catch (stringifyError) {
+      // Fallback if even stringify fails (shouldn't happen, but safety net)
+      return new Response(
+        '{"success":false,"error":"An error occurred during OCR processing","data":null}',
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500
+        }
+      );
+    }
   }
 });
