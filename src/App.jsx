@@ -5,6 +5,7 @@ import i18n from './i18n';
 import Routes from "./Routes";
 import { AuthProvider } from "./context/AuthContext";
 import { MultiUserProvider } from "./context/MultiUserContext";
+import { NavigationProvider } from "./context/NavigationContext";
 import ProfileSelectionModal from "./components/ui/ProfileSelectionModal";
 import ErrorBoundary from "./components/ErrorBoundary";
 import InternetConnectionCheck from "./components/InternetConnectionCheck";
@@ -44,12 +45,14 @@ function App() {
     return (
       <InternetConnectionCheck>
       <MultiUserProvider>
-        <Routes />
-        <ProfileSelectionModal
-          isOpen={showProfileSelection}
-          onProfileSelect={handleProfileSelect}
-          onClose={closeProfileSelection}
-        />
+        <NavigationProvider>
+          <Routes />
+          <ProfileSelectionModal
+            isOpen={showProfileSelection}
+            onProfileSelect={handleProfileSelect}
+            onClose={closeProfileSelection}
+          />
+        </NavigationProvider>
       </MultiUserProvider>
       </InternetConnectionCheck>
     );

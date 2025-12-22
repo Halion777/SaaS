@@ -7,12 +7,14 @@ const NavigationContext = createContext(null);
 export const useNavigation = () => {
   const context = useContext(NavigationContext);
   if (!context) {
-    throw new Error('useNavigation must be used within NavigationProvider');
+    // Return default values if not within provider (for backwards compatibility)
+    return { navigationItems: [], isMobile: false, setNavigationItems: () => {} };
   }
   return context;
 };
 
-export const NavigationProvider = ({ children, navigationItems = [] }) => {
+export const NavigationProvider = ({ children }) => {
+  const [navigationItems, setNavigationItems] = useState([]);
   const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
 
@@ -29,7 +31,7 @@ export const NavigationProvider = ({ children, navigationItems = [] }) => {
   useSwipeNavigation(navigationItems, isMobile && navigationItems.length > 0);
 
   return (
-    <NavigationContext.Provider value={{ navigationItems, isMobile }}>
+    <NavigationContext.Provider value={{ navigationItems, setNavigationItems, isMobile }}>
       {children}
     </NavigationContext.Provider>
   );

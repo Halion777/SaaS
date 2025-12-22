@@ -49,11 +49,25 @@ export const useSwipeNavigation = (navigationItems = [], enabled = true) => {
                            target.closest('button') ||
                            target.closest('a') ||
                            target.closest('[role="button"]') ||
-                           target.closest('.overflow-x-auto') || // Don't interfere with horizontal scrollbars
-                           target.closest('.overflow-y-auto'); // Don't interfere with scrollable areas
+                           target.closest('.overflow-x-auto'); // Don't interfere with horizontal scrollbars
       
       if (isInteractive) {
         return;
+      }
+      
+      // Check if touch is on a scrollable area (but not the main page container)
+      // Only block swipe if the scrollable element is small (not full page height)
+      const scrollableParent = target.closest('.overflow-y-auto');
+      if (scrollableParent) {
+        // Check if this is a content scrollable area (has limited height) vs main container (full height)
+        const rect = scrollableParent.getBoundingClientRect();
+        const isContentArea = rect.height < window.innerHeight * 0.9; // Less than 90% of viewport
+        
+        if (isContentArea && scrollableParent.scrollHeight > scrollableParent.clientHeight) {
+          // This is a genuine scrollable content area, don't interfere
+          return;
+        }
+        // Otherwise, it's a main container - allow swipe navigation
       }
       
       touchStartX.current = e.touches[0].clientX;

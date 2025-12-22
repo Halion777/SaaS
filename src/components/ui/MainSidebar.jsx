@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
@@ -10,7 +10,7 @@ import UserProfile from './UserProfile';
 import ProfileSwitcher from './ProfileSwitcher';
 import MultiUserProfile from './MultiUserProfile';
 import { useScrollPosition } from '../../utils/useScrollPosition';
-import { useSwipeNavigation } from '../../hooks/useSwipeNavigation';
+import { useNavigation } from '../../context/NavigationContext';
 
 // Map navigation item IDs to permission modules
 const NAVIGATION_PERMISSION_MAP = {
@@ -61,6 +61,7 @@ const MainSidebar = () => {
   const { logout, user } = useAuth();
   const { hasPermission } = useMultiUser();
   const { t } = useTranslation();
+  const { setNavigationItems } = useNavigation();
   const mobileNavRef = useScrollPosition('mobile-nav-scroll', isMobile);
 
   // Helper function to check if user can access a navigation item
@@ -400,10 +401,25 @@ const MainSidebar = () => {
   };
 
   // Flatten navigation items for mobile view (using filtered categories)
-  const flatNavigationItems = filteredNavigationCategories.flatMap(category => category.items);
+  // Memoize to prevent infinite loop
+  const flatNavigationItems = useMemo(() => {
+    return filteredNavigationCategories.flatMap(category => category.items);
+  }, [filteredNavigationCategories]);
 
-  // Enable swipe navigation on mobile
-  useSwipeNavigation(flatNavigationItems, isMobile && flatNavigationItems.length > 0);
+  // Register navigation items with global context for swipe navigation
+  // Use a ref to track previous items and only update when they actually change
+  const prevItemsRef = useRef([]);
+  
+  useEffect(() => {
+    // Compare items by their paths to see if they actually changed
+    const currentPaths = flatNavigationItems.map(item => item.path).join(',');
+    const prevPaths = prevItemsRef.current.map(item => item.path).join(',');
+    
+    if (flatNavigationItems.length > 0 && currentPaths !== prevPaths) {
+      setNavigationItems(flatNavigationItems);
+      prevItemsRef.current = flatNavigationItems;
+    }
+  }, [flatNavigationItems, setNavigationItems]);
 
   if (isMobile) {
     return (

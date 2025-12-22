@@ -78,7 +78,7 @@ export class LeadManagementService {
           email: leadData.email,
           language_preference: clientLanguage
         }, null, null); // No userId needed for non-authenticated clients
-        console.log('Welcome email sent successfully to:', leadData.email);
+        
       } catch (emailError) {
         console.error('Failed to send welcome email:', emailError);
         // Don't fail the lead creation if email fails
@@ -138,7 +138,7 @@ export class LeadManagementService {
       }
 
       if (!assignments || assignments.length === 0) {
-        console.log('No artisans assigned to lead, skipping email notifications');
+      
         return { success: true, message: 'No artisans to notify' };
       }
 
@@ -180,7 +180,7 @@ export class LeadManagementService {
         // Check if artisan has email notifications enabled
         const prefs = profileMap[assignment.artisan_user_id];
         if (prefs && prefs.email_notifications === false) {
-          console.log(`Skipping email for user ${user.email} - notifications disabled`);
+         
           continue;
         }
 
@@ -209,14 +209,13 @@ export class LeadManagementService {
           user_id: assignment.artisan_user_id
         };
 
-        console.log(`Sending lead notification email to ${user.email} for lead ${leadData.id}`);
-        
+       
         // Use the existing email service function
         emailPromises.push(
           EmailService.sendNewLeadNotificationEmail(emailLeadData, artisanData, language)
             .then(result => {
               if (result.success) {
-                console.log(`✅ Lead notification email sent successfully to ${user.email}`);
+               
               } else {
                 console.error(`❌ Failed to send lead email to ${user.email}:`, result.error);
               }
@@ -234,8 +233,7 @@ export class LeadManagementService {
       const successCount = results.filter(r => r.success).length;
       const failCount = results.length - successCount;
 
-      console.log(`Lead notification emails: ${successCount} sent, ${failCount} failed`);
-
+    
       return { 
         success: true, 
         sent: successCount, 

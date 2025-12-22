@@ -154,8 +154,32 @@ const LimitedAccessGuard = ({
       <div className="min-h-screen bg-background">
         <MainSidebar />
         <GlobalProfile />
+        
+        {/* Mobile horizontal connectivity bar */}
+        {isMobile && (
+          <div className="fixed top-0 left-0 right-0 bg-error text-white z-150">
+            <div className="flex items-center justify-between px-4 py-2">
+              <div className="flex items-center space-x-2">
+                <Icon name="WifiOff" size={18} className="text-white animate-pulse" />
+                <span className="text-sm font-medium">
+                  {t('common.errors.noInternet', 'No Internet Connection')}
+                </span>
+              </div>
+              <Button
+                onClick={checkConnection}
+                variant="outline"
+                size="sm"
+                disabled={isChecking}
+                className="text-white border-white hover:bg-white/10 text-xs"
+              >
+                {isChecking ? t('common.checking', 'Checking...') : t('common.retry', 'Retry')}
+              </Button>
+            </div>
+          </div>
+        )}
+        
         <main 
-          className={`transition-all duration-300 ease-out ${isMobile ? 'pb-16 pt-4' : ''}`}
+          className={`transition-all duration-300 ease-out ${isMobile ? 'pb-16 pt-14' : ''}`}
           style={{ marginLeft: isMobile ? 0 : `${sidebarOffset}px` }}
         >
           <div className="flex items-center justify-center min-h-[calc(100vh-100px)] p-4 sm:p-6">
