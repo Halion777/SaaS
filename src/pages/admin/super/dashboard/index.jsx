@@ -497,12 +497,13 @@ const SuperAdminDashboard = () => {
         const convertedLeads = convertedLeadsResult.count || 0;
 
         // Filter out superadmin payments and invoices
+        // Keep payments without user_id (old records) since they're likely customer payments
         const filteredPayments = paymentDataResult.data?.filter(payment => 
-          !superadminUserIds.includes(payment.user_id)
+          !payment.user_id || !superadminUserIds.includes(payment.user_id)
         ) || [];
         
         const filteredInvoices = invoiceDataResult.data?.filter(invoice => 
-          !superadminUserIds.includes(invoice.user_id)
+          !invoice.user_id || !superadminUserIds.includes(invoice.user_id)
         ) || [];
 
         // Calculate revenues (excluding superadmin)
@@ -864,25 +865,6 @@ const SuperAdminDashboard = () => {
                </div>
              </div>
 
-             <div className="bg-card border border-border rounded-lg p-6">
-               <div className="flex items-center justify-between">
-                 <div>
-                   <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
-                   <p className="text-2xl font-bold text-foreground">
-                     {loading ? '...' : `€${systemStats.totalRevenue.toLocaleString()}`}
-                   </p>
-                 </div>
-                 <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                   <Icon name="DollarSign" size={24} className="text-purple-600" />
-                 </div>
-               </div>
-               <div className="mt-4">
-                 <div className="flex items-center text-sm text-muted-foreground">
-                   <Icon name="TrendingUp" size={16} className="text-green-500 mr-1" />
-                   <span>Combined revenue</span>
-                 </div>
-               </div>
-             </div>
            </div>
 
           {/* Revenue Charts */}

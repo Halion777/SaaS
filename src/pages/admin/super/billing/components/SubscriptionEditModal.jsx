@@ -139,10 +139,20 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
 
             if (stripeError) {
               console.error('Stripe update error:', stripeError);
+              // Check if subscription doesn't exist in Stripe
+              if (stripeError.message?.includes('No such subscription')) {
+                setStripeError(`Subscription not found in Stripe. It may have been deleted. Database will be updated locally only.`);
+              } else {
               setStripeError(`Stripe sync failed: ${stripeError.message}. Database will still be updated.`);
+              }
             } else if (!stripeResult?.success) {
               console.error('Stripe update failed:', stripeResult?.error);
+              // Check if subscription doesn't exist in Stripe
+              if (stripeResult?.error?.includes('No such subscription')) {
+                setStripeError(`Subscription not found in Stripe. It may have been deleted. Database will be updated locally only.`);
+              } else {
               setStripeError(`Stripe sync failed: ${stripeResult?.error || 'Unknown error'}. Database will still be updated.`);
+              }
             } else {
               console.log('Stripe updated successfully:', stripeResult);
             }
@@ -165,6 +175,22 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
         cancel_at_period_end: formData.cancel_at_period_end,
         updated_at: new Date().toISOString()
       };
+
+      // If cancelling immediately (not at period end), set cancelled_at timestamp
+      if (isCancellation && !formData.cancel_at_period_end) {
+        updateData.cancelled_at = new Date().toISOString();
+      }
+
+      // If cancelling at period end, clear cancelled_at (it will be set when period ends)
+      if (isCancellation && formData.cancel_at_period_end) {
+        updateData.cancelled_at = null;
+      }
+
+      // If reactivating, clear both cancellation fields
+      if (isReactivation) {
+        updateData.cancel_at_period_end = false;
+        updateData.cancelled_at = null;
+      }
 
       const { error } = await supabase
         .from('subscriptions')
@@ -316,6 +342,11 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
                     Plan Type
+                    {subscription?.plan_type && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        (Current: <span className="font-semibold capitalize">{subscription.plan_type}</span>)
+                      </span>
+                    )}
                   </label>
                   <Select
                     value={formData.plan_type}
@@ -329,6 +360,11 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
                     Status
+                    {subscription?.status && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        (Current: <span className="font-semibold capitalize">{subscription.status === 'trial' ? 'trialing' : subscription.status}</span>)
+                      </span>
+                    )}
                   </label>
                   <Select
                     value={formData.status}
@@ -342,6 +378,11 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
                     Billing Interval
+                    {subscription?.interval && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        (Current: <span className="font-semibold capitalize">{subscription.interval}</span>)
+                      </span>
+                    )}
                   </label>
                   <Select
                     value={formData.interval}

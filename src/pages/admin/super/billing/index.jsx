@@ -31,8 +31,8 @@ const SuperAdminBilling = () => {
   const [billingStats, setBillingStats] = useState({
     totalRevenue: 0,
     monthlyRevenue: 0,
-    activeSubscriptions: 0,
-    cancelledSubscriptions: 0
+    previousMonthRevenue: 0,
+    activeSubscriptions: 0
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -300,19 +300,27 @@ const SuperAdminBilling = () => {
         new Date(record.paid_at) >= currentMonth
       ).reduce((sum, record) => sum + (record.amount || 0), 0) || 0;
 
+      // Calculate previous month revenue
+      const previousMonth = new Date();
+      previousMonth.setMonth(previousMonth.getMonth() - 1);
+      previousMonth.setDate(1);
+      const previousMonthEnd = new Date(currentMonth);
+      previousMonthEnd.setDate(0); // Last day of previous month
+      const previousMonthRevenue = filteredPaymentRecords?.filter(record => {
+        const recordDate = new Date(record.paid_at);
+        return recordDate >= previousMonth && recordDate <= previousMonthEnd;
+      }).reduce((sum, record) => sum + (record.amount || 0), 0) || 0;
+
       // Calculate subscription counts (excluding superadmin)
       const activeSubscriptions = subscriptionsWithUsage?.filter(sub => 
         sub.status === 'active' || sub.status === 'trialing' || sub.status === 'trial'
-      ).length || 0;
-      const cancelledSubscriptions = subscriptionsWithUsage?.filter(sub => 
-        sub.status === 'cancelled' || sub.status === 'inactive'
       ).length || 0;
 
       setBillingStats({
         totalRevenue,
         monthlyRevenue,
-        activeSubscriptions,
-        cancelledSubscriptions
+        previousMonthRevenue,
+        activeSubscriptions
       });
 
       // Process chart data (excluding superadmin)
@@ -576,12 +584,12 @@ const SuperAdminBilling = () => {
             <div className="bg-card border border-border rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Cancelled</p>
+                  <p className="text-sm font-medium text-muted-foreground">Previous Month</p>
                   <p className="text-2xl font-bold text-foreground">
-                    {loading ? '...' : billingStats.cancelledSubscriptions}
+                    {loading ? '...' : formatCurrency(billingStats.previousMonthRevenue)}
                   </p>
                 </div>
-                <Icon name="UserX" size={24} className="text-red-600" />
+                <Icon name="TrendingUp" size={24} className="text-purple-600" />
               </div>
             </div>
           </div>

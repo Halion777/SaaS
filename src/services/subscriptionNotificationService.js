@@ -583,6 +583,18 @@ export class SubscriptionNotificationService {
    */
   static async logSubscriptionNotificationEvent(userId, notificationType, subscriptionData, emailResult) {
     try {
+      // Check if subscription_notifications table exists
+      const { error: tableCheckError } = await supabase
+        .from('subscription_notifications')
+        .select('id')
+        .limit(1);
+      
+      // If table doesn't exist (404 error), skip logging
+      if (tableCheckError && tableCheckError.code === 'PGRST116') {
+        console.log('subscription_notifications table not found, skipping notification log');
+        return;
+      }
+
       const { error } = await supabase
         .from('subscription_notifications')
         .insert({
