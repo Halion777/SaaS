@@ -499,13 +499,13 @@ const PublicQuoteShareViewer = () => {
                 </div>
                 <div className="min-w-0 flex-1">
                   <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">
-                    {quote?.client?.client_type === 'company' 
-                      ? (quote?.client?.name || t('quoteShare.client.client'))
-                      : quote?.client?.client_type === 'individual'
-                      ? t('quoteShare.client.individual', 'Individual')
-                      : (quote?.client?.name || t('quoteShare.client.client'))}
+                    {quote?.client?.name || t('quoteShare.client.client')}
                   </h3>
-                <p className="text-green-600 font-medium text-xs sm:text-sm">{t('quoteShare.client.recipient')}</p>
+                <p className="text-green-600 font-medium text-xs sm:text-sm">
+                  {quote?.client?.client_type === 'company' 
+                    ? t('quoteShare.client.recipient')
+                    : t('quoteShare.client.individual', 'Individual')}
+                </p>
               </div>
                 </div>
               <div className="space-y-2">

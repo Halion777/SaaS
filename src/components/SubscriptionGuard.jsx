@@ -173,30 +173,7 @@ const SubscriptionGuard = ({ children }) => {
   if (!isOnline && !isPublicRoute && !isChecking) {
     return (
       <div className="min-h-screen bg-background">
-        {/* Mobile horizontal connectivity bar */}
-        {isMobile && (
-          <div className="fixed top-0 left-0 right-0 bg-error text-white z-150">
-            <div className="flex items-center justify-between px-4 py-2">
-              <div className="flex items-center space-x-2">
-                <Icon name="WifiOff" size={18} className="text-white animate-pulse" />
-                <span className="text-sm font-medium">
-                  {t('common.errors.noInternet', 'No Internet Connection')}
-                </span>
-              </div>
-              <Button
-                onClick={checkConnection}
-                variant="outline"
-                size="sm"
-                disabled={isChecking}
-                className="text-white border-white hover:bg-white/10 text-xs"
-              >
-                {isChecking ? t('common.checking', 'Checking...') : t('common.retry', 'Retry')}
-              </Button>
-            </div>
-          </div>
-        )}
-        
-        <div className={`flex items-center justify-center p-4 sm:p-6 ${isMobile ? 'min-h-screen pt-14' : 'min-h-screen'}`}>
+        <div className="flex items-center justify-center p-4 sm:p-6 min-h-screen">
           <div className="bg-card border border-border rounded-xl shadow-xl max-w-lg w-full p-8 sm:p-10 text-center">
           {/* WiFi Icon with animated pulse effect */}
           <div className="w-24 h-24 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-6 relative">
