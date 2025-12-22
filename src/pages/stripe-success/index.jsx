@@ -17,7 +17,6 @@ const StripeSuccessPage = () => {
       try {
         // Get session ID from URL
         const sessionId = searchParams.get('session_id');
-        console.log('Session ID from URL:', sessionId);
         
         if (!sessionId) {
           console.error('No session ID found in URL');
@@ -27,7 +26,6 @@ const StripeSuccessPage = () => {
         }
 
         // Fetch real Stripe session data first to determine if this is a new registration or resubscription
-        
         const { data: stripeSessionData, error: stripeError } = await getStripeSession(sessionId);
         
         if (stripeError) {
@@ -36,8 +34,6 @@ const StripeSuccessPage = () => {
           setStatus('error');
           return;
         }
-
-        console.log('Real Stripe session data retrieved:', stripeSessionData);
         
         // Check if this is a resubscription (user already exists) or new registration
         const userId = stripeSessionData.metadata?.userId;
@@ -51,8 +47,6 @@ const StripeSuccessPage = () => {
         
         // If no registration data but we have userId from metadata, this is likely a resubscription
         if (!pendingRegistration && userId && (isResubscription || stripeSessionData.subscription)) {
-          console.log('Resubscription detected - user already exists, subscription will be handled by webhook');
-          
           // For resubscriptions, the webhook already handles subscription creation
           // We just need to verify and redirect
           setStatus('success');
@@ -75,11 +69,6 @@ const StripeSuccessPage = () => {
 
         try {
           const registrationData = JSON.parse(pendingRegistration);
-          console.log('Parsed registration data:', { 
-            userId: registrationData.userId,
-            email: registrationData.email,
-            plan: registrationData.selectedPlan
-          });
           
           // Create session data object with REAL Stripe IDs
           const sessionData = {
@@ -97,22 +86,9 @@ const StripeSuccessPage = () => {
             current_period_end: stripeSessionData.subscription_details?.current_period_end,
             subscription_items: stripeSessionData.subscription_details?.items
           };
-
-          console.log('Session data with real Stripe IDs:', {
-            subscription: sessionData.subscription,
-            customer: sessionData.customer,
-            payment_intent: sessionData.payment_intent,
-            amount_total: sessionData.amount_total,
-            plan_amount: stripeSessionData.plan_amount,
-            is_trial: sessionData.subscription_status === 'trialing'
-          });
-
-          console.log('Starting registration completion...');
           
           // Use RegistrationService to complete registration
           await RegistrationService.completeRegistration(sessionData, registrationData);
-          
-          console.log('Registration completed successfully');
           
           // Clear all registration data (both possible keys)
           sessionStorage.removeItem('pendingRegistration');

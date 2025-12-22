@@ -7,8 +7,6 @@ import { supabase } from './supabaseClient';
  */
 export async function getStripeSession(sessionId) {
   try {
-    console.log('Fetching Stripe session data for:', sessionId);
-
     const { data, error } = await supabase.functions.invoke('get-stripe-session', {
       body: { sessionId }
     });
@@ -18,7 +16,6 @@ export async function getStripeSession(sessionId) {
       return { data: null, error };
     }
 
-    console.log('Stripe session data retrieved:', data);
     return { data, error: null };
   } catch (error) {
     console.error('Unexpected error fetching Stripe session:', error);

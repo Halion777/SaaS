@@ -190,21 +190,24 @@ serve(async (req) => {
                   .eq('stripe_subscription_id', subscriptionDetails.id)
                   .single()
 
-                await supabaseClient
-                  .from('payment_records')
-                  .insert({
-                    subscription_id: subRecord?.id || null,
-                    user_id: session.metadata.userId,
-                    stripe_payment_intent_id: session.payment_intent as string || null,
-                    stripe_invoice_id: null,
-                    amount: (session.amount_total / 100).toFixed(2),
-                    currency: session.currency?.toUpperCase() || 'EUR',
-                    status: 'succeeded',
-                    payment_method: 'card',
-                    description: `Initial subscription - ${planType === 'pro' ? 'Pro' : 'Starter'} Plan`,
-                    paid_at: new Date().toISOString(),
-                    created_at: new Date().toISOString()
-                  })
+                // Only create payment record if amount > 0 (skip for trials, as invoice.payment_succeeded will handle it)
+                if (session.amount_total > 0) {
+                  await supabaseClient
+                    .from('payment_records')
+                    .insert({
+                      subscription_id: subRecord?.id || null,
+                      user_id: session.metadata.userId,
+                      stripe_payment_intent_id: session.payment_intent as string || null,
+                      stripe_invoice_id: null,
+                      amount: (session.amount_total / 100).toFixed(2),
+                      currency: session.currency?.toUpperCase() || 'EUR',
+                      status: 'succeeded',
+                      payment_method: 'card',
+                      description: `Initial subscription - ${planType === 'pro' ? 'Pro' : 'Starter'} Plan`,
+                      paid_at: new Date().toISOString(),
+                      created_at: new Date().toISOString()
+                    })
+                }
               }
             }
           } catch (error) {
@@ -258,22 +261,31 @@ serve(async (req) => {
               .eq('stripe_subscription_id', invoice.subscription as string)
               .single()
 
-            // Create payment record with user_id
-            await supabaseClient
+            // Check if payment record already exists (prevent duplicates)
+            const { data: existingPayment } = await supabaseClient
               .from('payment_records')
-              .insert({
-                subscription_id: subRecord?.id || null,
-                user_id: subRecord?.user_id, //  Add user_id
-                stripe_payment_intent_id: invoice.payment_intent as string,
-                stripe_invoice_id: invoice.id,
-                amount: (invoice.amount_paid / 100).toFixed(2),
-                currency: invoice.currency.toUpperCase(),
-                status: 'succeeded',
-                payment_method: 'card',
-                description: 'Subscription payment',
-                paid_at: new Date(invoice.created * 1000).toISOString(), //  Add paid_at timestamp
-                created_at: new Date().toISOString()
-              })
+              .select('id')
+              .eq('stripe_invoice_id', invoice.id)
+              .single()
+
+            // Only create payment record if it doesn't exist
+            if (!existingPayment) {
+              await supabaseClient
+                .from('payment_records')
+                .insert({
+                  subscription_id: subRecord?.id || null,
+                  user_id: subRecord?.user_id, //  Add user_id
+                  stripe_payment_intent_id: invoice.payment_intent as string,
+                  stripe_invoice_id: invoice.id,
+                  amount: (invoice.amount_paid / 100).toFixed(2),
+                  currency: invoice.currency.toUpperCase(),
+                  status: 'succeeded',
+                  payment_method: 'card',
+                  description: 'Subscription payment',
+                  paid_at: new Date(invoice.created * 1000).toISOString(), //  Add paid_at timestamp
+                  created_at: new Date().toISOString()
+                })
+            }
           } catch (error) {
             console.error('Error updating subscription after payment:', error)
           }
