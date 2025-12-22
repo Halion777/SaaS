@@ -170,9 +170,55 @@ const SuperAdminBilling = () => {
         record.subscriptions?.users && record.subscriptions.users.role !== 'superadmin'
       );
 
+      // ✅ PRIORITY: Sync each subscription with live Stripe data first
+      const subscriptionsWithStripeData = await Promise.all(
+        filteredSubscriptions.map(async (subscription) => {
+          const userId = subscription.user_id;
+          if (!userId) return subscription;
+
+          try {
+            // Get live data from Stripe
+            const { data: stripeData, error: stripeError } = await supabase.functions.invoke('get-subscription', {
+              body: { userId: userId }
+            });
+
+            // If we got Stripe data successfully, merge it with database data (Stripe takes priority)
+            if (!stripeError && stripeData?.success && stripeData?.subscription) {
+              const stripeSubscription = stripeData.subscription;
+              
+              // Merge: Use Stripe data for amounts, dates, status; keep database data for other fields
+              return {
+                ...subscription,
+                // Prioritize Stripe data for critical fields
+                status: stripeSubscription.status || subscription.status,
+                plan_type: stripeSubscription.plan_type || subscription.plan_type,
+                plan_name: stripeSubscription.plan_name || subscription.plan_name,
+                amount: stripeSubscription.amount || subscription.amount,
+                interval: stripeSubscription.interval || subscription.interval,
+                current_period_start: stripeSubscription.current_period_start || subscription.current_period_start,
+                current_period_end: stripeSubscription.current_period_end || subscription.current_period_end,
+                trial_end: stripeSubscription.trial_end || subscription.trial_end,
+                cancel_at_period_end: stripeSubscription.cancel_at_period_end !== undefined 
+                  ? stripeSubscription.cancel_at_period_end 
+                  : subscription.cancel_at_period_end,
+                cancelled_at: stripeSubscription.cancelled_at || subscription.cancelled_at,
+                // Keep database user info
+                users: subscription.users
+              };
+            }
+            
+            // If Stripe fetch failed, use database data as fallback
+            return subscription;
+          } catch (error) {
+            console.error(`Error fetching Stripe data for subscription ${subscription.id}:`, error);
+            return subscription; // Fallback to database data
+          }
+        })
+      );
+
       // Fetch usage statistics for each subscription
       const subscriptionsWithUsage = await Promise.all(
-        filteredSubscriptions.map(async (subscription) => {
+        subscriptionsWithStripeData.map(async (subscription) => {
           const userId = subscription.user_id;
           if (!userId) return subscription;
 
@@ -377,7 +423,7 @@ const SuperAdminBilling = () => {
     const planCounts = {};
     
     subscriptions?.forEach(sub => {
-      if (sub.status === 'active' || sub.status === 'trial') {
+      if (sub.status === 'active' || sub.status === 'trial' || sub.status === 'trialing') {
         const planName = sub.plan_name || 'Unknown Plan';
         planCounts[planName] = (planCounts[planName] || 0) + 1;
       }
@@ -887,6 +933,12 @@ const SuperAdminBilling = () => {
             <div className="p-4 border-b border-border">
               <h3 className="text-lg font-semibold text-foreground">Recent Payments</h3>
             </div>
+            {loading ? (
+              <div className="p-8">
+                <TableLoader message="Loading payment records..." />
+              </div>
+            ) : (
+              <>
             {viewMode === 'table' && (
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -927,7 +979,11 @@ const SuperAdminBilling = () => {
                           {payment.stripe_invoice_id || `#${payment.id.slice(-8)}`}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {payment.subscriptions?.plan_name || 'Subscription'} - {payment.subscriptions?.interval || 'monthly'}
+                          {payment.subscriptions?.plan_name && payment.subscriptions?.interval 
+                            ? `${payment.subscriptions.plan_name} - ${payment.subscriptions.interval}`
+                            : payment.description 
+                              ? payment.description.replace('pro plan subscription - Trial period', 'Pro Plan').replace('starter plan subscription - Trial period', 'Starter Plan')
+                              : 'Subscription payment'}
                         </p>
                       </td>
                       <td className="px-4 py-3">
@@ -980,7 +1036,13 @@ const SuperAdminBilling = () => {
                         <span className="text-xs text-muted-foreground">Invoice:</span>
                         <div className="text-right">
                           <p className="text-sm font-medium text-foreground">{payment.stripe_invoice_id || `#${payment.id.slice(-8)}`}</p>
-                          <p className="text-xs text-muted-foreground">{payment.subscriptions?.plan_name || 'Subscription'} - {payment.subscriptions?.interval || 'monthly'}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {payment.subscriptions?.plan_name && payment.subscriptions?.interval 
+                              ? `${payment.subscriptions.plan_name} - ${payment.subscriptions.interval}`
+                              : payment.description 
+                                ? payment.description.replace('pro plan subscription - Trial period', 'Pro Plan').replace('starter plan subscription - Trial period', 'Starter Plan')
+                                : 'Subscription payment'}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
@@ -1001,6 +1063,8 @@ const SuperAdminBilling = () => {
                   </div>
                 )}
               </div>
+            )}
+            </>
             )}
           </div>
       </main>

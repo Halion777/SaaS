@@ -166,18 +166,20 @@ const SubscriptionViewModal = ({ isOpen, onClose, subscription }) => {
                     {subscription.cancel_at_period_end ? 'Yes' : 'No'}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">
-                    {subscription.cancel_at_period_end ? 'Cancelled On' : 'Cancelled At'}
-                  </p>
-                  <p className="text-sm font-medium text-foreground">
-                    {subscription.cancel_at_period_end && subscription.current_period_end 
-                      ? formatDate(subscription.current_period_end)
-                      : subscription.cancelled_at 
-                        ? formatDate(subscription.cancelled_at) 
-                        : 'N/A'}
-                  </p>
-                </div>
+                {(subscription.cancel_at_period_end || subscription.cancelled_at) && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      {subscription.cancel_at_period_end ? 'Cancel On' : 'Cancelled At'}
+                    </p>
+                    <p className="text-sm font-medium text-foreground">
+                      {subscription.cancel_at_period_end && subscription.current_period_end 
+                        ? formatDate(subscription.current_period_end)
+                        : subscription.cancelled_at 
+                          ? formatDate(subscription.cancelled_at) 
+                          : 'N/A'}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
