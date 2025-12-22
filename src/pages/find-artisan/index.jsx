@@ -453,8 +453,15 @@ const FindArtisanPage = () => {
       // Verify reCAPTCHA token with backend (skip if disabled)
       const captchaDisabled = import.meta.env.VITE_DISABLE_CAPTCHA === 'true' || import.meta.env.VITE_DISABLE_CAPTCHA === '1';
       
+      console.log('CAPTCHA verification check:', {
+        captchaDisabled,
+        captchaToken: captchaToken ? 'exists' : 'null',
+        willVerify: !captchaDisabled && !!captchaToken
+      });
+      
       if (!captchaDisabled && captchaToken) {
         try {
+          console.log('Sending CAPTCHA token to backend for verification...');
           const verifyResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-recaptcha`, {
             method: 'POST',
             headers: {

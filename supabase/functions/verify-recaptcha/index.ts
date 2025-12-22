@@ -15,7 +15,26 @@ serve(async (req) => {
   }
 
   try {
-    const { token } = await req.json();
+    // Get the request body text first
+    const bodyText = await req.text();
+    console.log('Received request body:', bodyText);
+    
+    // Parse JSON
+    let requestData;
+    try {
+      requestData = bodyText ? JSON.parse(bodyText) : {};
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid JSON in request body' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
+    const { token } = requestData;
 
     if (!token) {
       return new Response(
@@ -42,7 +61,8 @@ serve(async (req) => {
       );
     }
 
-    // Verify the token with Google reCAPTCHA API (works for both v2 and Enterprise)
+    // Verify the token with Google reCAPTCHA v2 API
+
     const verifyUrl = 'https://www.google.com/recaptcha/api/siteverify';
     
     const formData = new URLSearchParams();
