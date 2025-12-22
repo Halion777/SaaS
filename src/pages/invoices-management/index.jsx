@@ -24,7 +24,7 @@ const InvoicesManagement = () => {
   const [invoices, setInvoices] = useState([]);
   const [filteredInvoices, setFilteredInvoices] = useState([]);
   const [selectedInvoices, setSelectedInvoices] = useState([]);
-  const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [downloadingInvoiceId, setDownloadingInvoiceId] = useState(null);
   const [filters, setFilters] = useState({
     search: '',
     status: '',
@@ -361,9 +361,9 @@ const InvoicesManagement = () => {
   };
 
   const handleExportInvoicePDF = async (invoice) => {
-    if (isExportingPDF) return;
+    if (downloadingInvoiceId) return;
     
-    setIsExportingPDF(true);
+    setDownloadingInvoiceId(invoice.id);
     try {
       // Load company info
       const companyInfo = await loadCompanyInfo(user?.id);
@@ -436,7 +436,7 @@ const InvoicesManagement = () => {
       console.error('Error exporting invoice PDF:', error);
       alert(t('invoicesManagement.errors.exportError', 'Error exporting invoice PDF'));
     } finally {
-      setIsExportingPDF(false);
+      setDownloadingInvoiceId(null);
     }
   };
 
@@ -595,18 +595,26 @@ const InvoicesManagement = () => {
         [
           t('invoicesManagement.export.invoiceNumber', 'Invoice Number'),
           t('invoicesManagement.export.quoteNumber', 'Quote Number'),
+          t('invoicesManagement.export.invoiceType', 'Invoice Type'),
           t('invoicesManagement.export.clientName', 'Client Name'),
           t('invoicesManagement.export.clientEmail', 'Client Email'),
+          t('invoicesManagement.export.clientPhone', 'Client Phone'),
+          t('invoicesManagement.export.clientAddress', 'Client Address'),
+          t('invoicesManagement.export.clientCity', 'Client City'),
+          t('invoicesManagement.export.clientPostalCode', 'Client Postal Code'),
+          t('invoicesManagement.export.clientCountry', 'Client Country'),
+          t('invoicesManagement.export.clientVat', 'Client VAT'),
+          t('invoicesManagement.export.clientType', 'Client Type'),
           t('invoicesManagement.export.amount', 'Total Amount'),
           t('invoicesManagement.export.netAmount', 'Net Amount'),
           t('invoicesManagement.export.taxAmount', 'Tax Amount'),
-          t('invoicesManagement.export.discountAmount', 'Discount Amount'),
           t('invoicesManagement.export.status', 'Status'),
           t('invoicesManagement.export.issueDate', 'Issue Date'),
           t('invoicesManagement.export.dueDate', 'Due Date'),
-          t('invoicesManagement.export.paymentMethod', 'Payment Method'),
           t('invoicesManagement.export.title', 'Title'),
-          t('invoicesManagement.export.peppolStatus', 'Peppol Status')
+          t('invoicesManagement.export.peppolStatus', 'Peppol Status'),
+          t('invoicesManagement.export.peppolSentDate', 'Peppol Sent Date'),
+          t('invoicesManagement.export.receiverPeppolId', 'Receiver Peppol ID')
         ]
       ];
 
@@ -614,18 +622,26 @@ const InvoicesManagement = () => {
         const row = [
           invoice.number || '',
           invoice.quoteNumber || '',
+          invoice.invoiceType || invoice.invoice_type || 'final',
           invoice.clientName || '',
           invoice.clientEmail || '',
+          invoice.client?.phone || '',
+          invoice.client?.address || '',
+          invoice.client?.city || '',
+          invoice.client?.postal_code || '',
+          invoice.client?.country || '',
+          invoice.client?.vat_number || '',
+          invoice.client?.client_type || '',
           invoice.amount || 0,
           invoice.netAmount || 0,
           invoice.taxAmount || 0,
-          invoice.discountAmount || 0,
           invoice.status || '',
           invoice.issueDate || '',
           invoice.dueDate || '',
-          invoice.paymentMethod || '',
           invoice.title || '',
-          invoice.peppolStatus || ''
+          invoice.peppolStatus || '',
+          invoice.peppolSentAt ? new Date(invoice.peppolSentAt).toLocaleDateString() : '',
+          invoice.receiverPeppolId || ''
         ];
         csvData.push(row);
       });
@@ -658,12 +674,12 @@ const InvoicesManagement = () => {
           break;
           
       case 'export':
-          if (!isExportingPDF) {
-            setIsExportingPDF(true);
+          if (!downloadingInvoiceId) {
+            setDownloadingInvoiceId('bulk'); // Use 'bulk' as identifier for bulk export
             try {
               await exportClientInvoices(selectedInvoices);
             } finally {
-              setIsExportingPDF(false);
+              setDownloadingInvoiceId(null);
             }
           }
         break;
@@ -797,7 +813,8 @@ const InvoicesManagement = () => {
                   onClick={() => handleBulkAction('export')}
                   iconName="Download"
                   iconPosition="left"
-                  disabled={isExportingPDF}
+                  loading={downloadingInvoiceId === 'bulk'}
+                  disabled={downloadingInvoiceId === 'bulk'}
                 >
                   {t('invoicesManagement.bulkActions.export')}
                 </Button>
@@ -842,6 +859,7 @@ const InvoicesManagement = () => {
             onFiltersChange={handleFiltersChange}
             onStatusUpdate={handleStatusUpdate}
             groupByQuote={groupByQuote}
+            downloadingInvoiceId={downloadingInvoiceId}
           />
           )}
 

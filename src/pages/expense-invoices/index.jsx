@@ -23,7 +23,7 @@ const ExpenseInvoicesManagement = () => {
   const [expenseInvoices, setExpenseInvoices] = useState([]);
   const [filteredExpenseInvoices, setFilteredExpenseInvoices] = useState([]);
   const [selectedExpenseInvoices, setSelectedExpenseInvoices] = useState([]);
-  const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [downloadingInvoiceId, setDownloadingInvoiceId] = useState(null);
   const [filters, setFilters] = useState({
     search: '',
     status: '',
@@ -298,9 +298,9 @@ const ExpenseInvoicesManagement = () => {
   };
 
   const handleExportExpenseInvoicePDF = async (invoice) => {
-    if (isExportingPDF) return;
+    if (downloadingInvoiceId) return;
     
-    setIsExportingPDF(true);
+    setDownloadingInvoiceId(invoice.id);
     try {
       // Load company info
       const companyInfo = await loadCompanyInfo(user?.id);
@@ -407,7 +407,7 @@ const ExpenseInvoicesManagement = () => {
       console.error('Error exporting expense invoice PDF:', error);
       alert(t('expenseInvoices.errors.exportError', 'Error exporting invoice PDF'));
     } finally {
-      setIsExportingPDF(false);
+      setDownloadingInvoiceId(null);
     }
   };
 
@@ -426,12 +426,12 @@ const ExpenseInvoicesManagement = () => {
           break;
           
         case 'export':
-          if (!isExportingPDF) {
-            setIsExportingPDF(true);
+          if (!downloadingInvoiceId) {
+            setDownloadingInvoiceId('bulk'); // Use 'bulk' as identifier for bulk export
             try {
               await exportExpenseInvoices(selectedExpenseInvoices);
             } finally {
-              setIsExportingPDF(false);
+              setDownloadingInvoiceId(null);
             }
           }
           break;
@@ -553,7 +553,7 @@ const ExpenseInvoicesManagement = () => {
           t('expenseInvoices.export.invoiceNumber', 'Invoice Number'),
           t('expenseInvoices.export.supplier', 'Supplier'),
           t('expenseInvoices.export.email', 'Email'),
-          t('expenseInvoices.export.vat', 'VAT'),
+          t('expenseInvoices.export.supplierVat', 'Supplier VAT'),
           t('expenseInvoices.export.totalAmount', 'Total Amount'),
           t('expenseInvoices.export.netAmount', 'Net Amount'),
           t('expenseInvoices.export.vatAmount', 'VAT Amount'),
@@ -563,7 +563,7 @@ const ExpenseInvoicesManagement = () => {
           t('expenseInvoices.export.issueDate', 'Issue Date'),
           t('expenseInvoices.export.dueDate', 'Due Date'),
           t('expenseInvoices.export.paymentMethod', 'Payment Method'),
-          t('expenseInvoices.export.peppolId', 'Peppol ID'),
+          t('expenseInvoices.export.senderPeppolId', 'Sender Peppol ID'),
           t('expenseInvoices.export.documentType', 'Document Type')
         ]
       ];
@@ -792,7 +792,8 @@ const ExpenseInvoicesManagement = () => {
                   onClick={() => handleBulkAction('export')}
                   iconName="Download"
                   iconPosition="left"
-                  disabled={isExportingPDF}
+                  loading={downloadingInvoiceId === 'bulk'}
+                  disabled={downloadingInvoiceId === 'bulk'}
                 >
                   {t('expenseInvoices.bulkActions.export', 'Export')}
                 </Button>
@@ -834,7 +835,7 @@ const ExpenseInvoicesManagement = () => {
               filters={filters}
               onFiltersChange={handleFiltersChange}
               onStatusUpdate={handleStatusUpdate}
-              isExportingPDF={isExportingPDF}
+              downloadingInvoiceId={downloadingInvoiceId}
               canEdit={canEdit}
               canDelete={canDelete}
             />

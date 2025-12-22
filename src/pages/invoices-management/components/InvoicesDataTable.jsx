@@ -6,7 +6,7 @@ import Input from '../../../components/ui/Input';
 import { Checkbox } from '../../../components/ui/Checkbox';
 import Select from '../../../components/ui/Select';
 
-const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSelectionChange, filters, onFiltersChange, onStatusUpdate, isExportingPDF = false, canEdit = true, canDelete = true, groupByQuote = false }) => {
+const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSelectionChange, filters, onFiltersChange, onStatusUpdate, downloadingInvoiceId = null, canEdit = true, canDelete = true, groupByQuote = false }) => {
   const { t, i18n } = useTranslation();
   const [sortConfig, setSortConfig] = useState({ key: 'issueDate', direction: 'desc' });
   const [viewMode, setViewMode] = useState(() => {
@@ -392,7 +392,8 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                         onClick={() => onInvoiceAction('export', invoice)}
                         className="text-xs text-primary hover:text-primary/80"
                         title={t('invoicesManagement.table.actions.exportPDF', 'Export PDF')}
-                        disabled={isExportingPDF}
+                        loading={downloadingInvoiceId === invoice.id}
+                        disabled={downloadingInvoiceId === invoice.id}
                       />
                       <Button
                         variant="ghost"
@@ -526,7 +527,8 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                 onClick={() => onInvoiceAction('export', invoice)}
                 className="text-xs text-primary hover:text-primary/80"
                 title={t('invoicesManagement.table.actions.exportPDF', 'Export PDF')}
-                disabled={isExportingPDF}
+                loading={downloadingInvoiceId === invoice.id}
+                disabled={downloadingInvoiceId === invoice.id}
               />
               <Button
                 variant="ghost"
@@ -750,7 +752,8 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                               onClick={() => onInvoiceAction('export', invoice)}
                               title={t('invoicesManagement.table.actions.exportPDF', 'Export PDF')}
                               className="text-primary hover:text-primary/80"
-                              disabled={isExportingPDF}
+                              loading={downloadingInvoiceId === invoice.id}
+                              disabled={downloadingInvoiceId === invoice.id}
                             />
                             <Button
                               variant="ghost"
@@ -861,7 +864,8 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                         onClick={() => onInvoiceAction('export', invoice)}
                         title={t('invoicesManagement.table.actions.exportPDF', 'Export PDF')}
                         className="text-primary hover:text-primary/80"
-                        disabled={isExportingPDF}
+                        loading={downloadingInvoiceId === invoice.id}
+                        disabled={downloadingInvoiceId === invoice.id}
                       />
                       <Button
                         variant="ghost"

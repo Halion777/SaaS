@@ -6,7 +6,7 @@ import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import { Checkbox } from '../../../components/ui/Checkbox';
 
-const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, selectedExpenseInvoices, onSelectionChange, filters, onFiltersChange, onStatusUpdate, isExportingPDF = false, canEdit = true, canDelete = true }) => {
+const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, selectedExpenseInvoices, onSelectionChange, filters, onFiltersChange, onStatusUpdate, downloadingInvoiceId = null, canEdit = true, canDelete = true }) => {
   const { t, i18n } = useTranslation();
   const [sortConfig, setSortConfig] = useState({ key: 'issueDate', direction: 'desc' });
   const [viewMode, setViewMode] = useState(() => {
@@ -350,7 +350,8 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                   onClick={() => onExpenseInvoiceAction('export', invoice)}
                   title={t('expenseInvoices.table.actions.exportPDF', 'Export PDF')}
                   className="text-primary hover:text-primary/80"
-                  disabled={isExportingPDF}
+                  loading={downloadingInvoiceId === invoice.id}
+                  disabled={downloadingInvoiceId === invoice.id}
                 />
                 <Button
                   variant="ghost"
@@ -617,7 +618,8 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                         onClick={() => onExpenseInvoiceAction('export', invoice)}
                         title={t('expenseInvoices.table.actions.exportPDF', 'Export PDF')}
                         className="text-primary hover:text-primary/80"
-                        disabled={isExportingPDF}
+                        loading={downloadingInvoiceId === invoice.id}
+                        disabled={downloadingInvoiceId === invoice.id}
                       />
                       <Button
                         variant="ghost"
