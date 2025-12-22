@@ -34,14 +34,16 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
     { value: 'pro', label: 'Pro Plan' }
   ];
 
+  // ✅ ONLY Stripe's official subscription statuses
+  // Ref: https://stripe.com/docs/api/subscriptions/object#subscription_object-status
   const statusOptions = [
-    { value: 'active', label: 'Active' },
     { value: 'trialing', label: 'Trialing' },
-    { value: 'cancelled', label: 'Cancelled' },
-    { value: 'inactive', label: 'Inactive' },
+    { value: 'active', label: 'Active' },
     { value: 'past_due', label: 'Past Due' },
-    { value: 'expired', label: 'Expired' },
-    { value: 'payment_failed', label: 'Payment Failed' }
+    { value: 'unpaid', label: 'Unpaid' },
+    { value: 'canceled', label: 'Cancelled' }, // Note: Stripe uses 'canceled' not 'cancelled'
+    { value: 'incomplete', label: 'Incomplete' },
+    { value: 'incomplete_expired', label: 'Incomplete Expired' }
   ];
 
   const intervalOptions = [
@@ -98,6 +100,8 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
                                     !subscription.stripe_subscription_id.includes('placeholder') &&
                                     !subscription.stripe_subscription_id.includes('temp_');
       
+      let stripeUpdateSuccess = false;
+      
       if (hasStripeSubscription) {
         try {
           let stripeAction = null;
@@ -141,31 +145,50 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
               console.error('Stripe update error:', stripeError);
               // Check if subscription doesn't exist in Stripe
               if (stripeError.message?.includes('No such subscription')) {
-                setStripeError(`Subscription not found in Stripe. It may have been deleted. Database will be updated locally only.`);
+                alert('Subscription not found in Stripe. It may have been deleted. Please update the database manually or delete this subscription record.');
+                setIsLoading(false);
+                return; // Stop here - don't update database
               } else {
-              setStripeError(`Stripe sync failed: ${stripeError.message}. Database will still be updated.`);
+                alert(`Stripe update failed: ${stripeError.message}\n\nPlease try again or contact support.`);
+                setIsLoading(false);
+                return; // Stop here - don't update database
               }
             } else if (!stripeResult?.success) {
               console.error('Stripe update failed:', stripeResult?.error);
               // Check if subscription doesn't exist in Stripe
               if (stripeResult?.error?.includes('No such subscription')) {
-                setStripeError(`Subscription not found in Stripe. It may have been deleted. Database will be updated locally only.`);
+                alert('Subscription not found in Stripe. It may have been deleted. Please update the database manually or delete this subscription record.');
+                setIsLoading(false);
+                return; // Stop here - don't update database
               } else {
-              setStripeError(`Stripe sync failed: ${stripeResult?.error || 'Unknown error'}. Database will still be updated.`);
+                alert(`Stripe update failed: ${stripeResult?.error || 'Unknown error'}\n\nPlease try again or contact support.`);
+                setIsLoading(false);
+                return; // Stop here - don't update database
               }
             } else {
               console.log('Stripe updated successfully:', stripeResult);
+              stripeUpdateSuccess = true;
             }
           }
         } catch (stripeCallError) {
           console.error('Error calling Stripe edge function:', stripeCallError);
-          setStripeError(`Stripe sync error: ${stripeCallError.message}. Database will still be updated.`);
+          alert(`Stripe update error: ${stripeCallError.message}\n\nPlease try again or contact support.`);
+          setIsLoading(false);
+          return; // Stop here - don't update database
         }
+      } else {
+        // No Stripe subscription - allow local database update only
+        stripeUpdateSuccess = true;
       }
 
       // ============================================
-      // STEP 2: Update Supabase database
+      // STEP 2: Update Supabase database (ONLY if Stripe update succeeded)
       // ============================================
+      if (!stripeUpdateSuccess) {
+        console.log('Skipping database update - Stripe update failed');
+        return;
+      }
+
       const updateData = {
         plan_name: plan_name,
         plan_type: formData.plan_type,
@@ -246,17 +269,32 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
           };
 
           // Send appropriate notification
-          if (isUpgrade) {
+          const isPlanChange = formData.plan_type !== originalSubscription.plan_type;
+          const isIntervalChange = formData.interval !== originalSubscription.interval;
+          const isCancellation = formData.status === 'canceled' || formData.status === 'cancelled';
+          
+          // ⚠️ IMPORTANT: Check cancellation FIRST before checking amount changes
+          // because cancelling should always send cancellation email, not upgrade/downgrade
+          if (isCancellation) {
+            // Status changed to cancelled - send cancellation email
+            await SubscriptionNotificationService.sendSubscriptionCancellationNotification(notificationData, userData, 'Admin action');
+          } else if (isUpgrade) {
+            // Amount increased - send upgrade email
             await SubscriptionNotificationService.sendSubscriptionUpgradeNotification(notificationData, userData);
           } else if (isDowngrade) {
+            // Amount decreased - send downgrade email
             await SubscriptionNotificationService.sendSubscriptionDowngradeNotification(notificationData, userData);
           } else if (isStatusChange) {
-            // For status changes, determine if it's an upgrade or downgrade based on status
+            // Other status changes
             if (formData.status === 'active' && originalSubscription.status === 'trialing') {
               await SubscriptionNotificationService.sendSubscriptionUpgradeNotification(notificationData, userData);
-            } else if (formData.status === 'cancelled') {
-              await SubscriptionNotificationService.sendSubscriptionCancellationNotification(notificationData, userData, 'Admin action');
             }
+            // Note: Other status changes (past_due, unpaid, etc.) are typically handled by Stripe webhooks
+            // and don't need manual email notifications from admin panel
+          } else if (isPlanChange || isIntervalChange) {
+            // Plan or interval changed without amount change - send "modified" email
+            // Using downgrade template which is labeled as "subscription modified" in French
+            await SubscriptionNotificationService.sendSubscriptionDowngradeNotification(notificationData, userData);
           }
 
           // Log the notification event
@@ -287,6 +325,41 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
   };
 
   if (!isOpen || !subscription) return null;
+
+  // Prevent editing cancelled subscriptions (Stripe restriction)
+  if (subscription.status === 'cancelled') {
+    return (
+      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-card border border-border rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-foreground flex items-center">
+              <Icon name="AlertTriangle" size={24} className="mr-2 text-red-600" />
+              Cannot Edit Cancelled Subscription
+            </h2>
+            <button
+              onClick={onClose}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Icon name="X" size={20} />
+            </button>
+          </div>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Stripe does not allow editing cancelled subscriptions. Once a subscription is cancelled, you can only update its metadata and cancellation details.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              If you need to reactivate this subscription, please create a new subscription for the user.
+            </p>
+            <div className="flex justify-end pt-4">
+              <Button onClick={onClose} variant="outline">
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">

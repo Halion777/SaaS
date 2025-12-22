@@ -22,12 +22,20 @@ export const PLANS = {
   PRO: 'pro'
 };
 
+// ✅ Stripe's official subscription statuses
+// Ref: https://stripe.com/docs/api/subscriptions/object#subscription_object-status
 export const SUBSCRIPTION_STATUS = {
-  TRIAL: 'trial',
-  TRIALING: 'trialing',
-  ACTIVE: 'active',
-  PAST_DUE: 'past_due',
-  CANCELLED: 'cancelled'
+  INCOMPLETE: 'incomplete',           // Payment pending
+  INCOMPLETE_EXPIRED: 'incomplete_expired', // Payment not completed within 23 hours
+  TRIALING: 'trialing',              // In trial period
+  ACTIVE: 'active',                  // Paid and active
+  PAST_DUE: 'past_due',             // Payment failed but still active
+  CANCELED: 'canceled',              // Cancelled (Stripe uses 'canceled' not 'cancelled')
+  UNPAID: 'unpaid',                  // Payment failed, no longer active
+  
+  // Legacy aliases for backward compatibility
+  TRIAL: 'trialing',                 // Alias for TRIALING
+  CANCELLED: 'canceled'              // Alias (we normalize 'cancelled' to 'canceled')
 };
 
 // ============================================

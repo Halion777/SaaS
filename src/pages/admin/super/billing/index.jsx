@@ -788,12 +788,14 @@ const SuperAdminBilling = () => {
                               <Icon name="Eye" size={14} />
                             </Button>
                             
-                            {/* Edit Button */}
+                            {/* Edit Button - Disabled for cancelled subscriptions */}
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleEditSubscription(subscription)}
-                              title="Edit subscription"
+                              title={subscription.status === 'cancelled' ? 'Cannot edit cancelled subscriptions (Stripe restriction)' : 'Edit subscription'}
+                              disabled={subscription.status === 'cancelled'}
+                              className={subscription.status === 'cancelled' ? 'opacity-50 cursor-not-allowed' : ''}
                             >
                               <Icon name="Edit" size={14} />
                             </Button>
@@ -901,7 +903,8 @@ const SuperAdminBilling = () => {
                           size="sm"
                           onClick={() => handleEditSubscription(subscription)}
                           className="h-8 px-2"
-                          title="Edit"
+                          title={subscription.status === 'cancelled' ? 'Cannot edit cancelled subscriptions (Stripe restriction)' : 'Edit'}
+                          disabled={subscription.status === 'cancelled'}
                         >
                           <Icon name="Edit" size={14} />
                         </Button>
