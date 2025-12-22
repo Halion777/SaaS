@@ -786,7 +786,9 @@
       },
       "submit": "Mijn aanvraag versturen",
       "submitting": "Aanvraag versturen...",
-      "captchaError": "Voltooi de CAPTCHA-verificatie"
+      "captchaError": "Voltooi de CAPTCHA-verificatie",
+      "captchaVerificationFailed": "CAPTCHA-verificatie mislukt. Probeer het opnieuw.",
+      "captchaExpired": "CAPTCHA verlopen. Verifieer opnieuw."
     }
   },    
   "blog": {

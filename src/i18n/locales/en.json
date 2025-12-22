@@ -786,7 +786,9 @@
       },
       "submit": "Send my request",
       "submitting": "Sending request...",
-      "captchaError": "Please complete the CAPTCHA verification"
+      "captchaError": "Please complete the CAPTCHA verification",
+      "captchaVerificationFailed": "CAPTCHA verification failed. Please try again.",
+      "captchaExpired": "CAPTCHA expired. Please verify again."
     }
   },
   "blog": {

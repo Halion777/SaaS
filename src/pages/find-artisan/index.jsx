@@ -450,6 +450,52 @@ const FindArtisanPage = () => {
     setSubmitSuccess(false); // Reset success state
     
     try {
+      // Verify reCAPTCHA token with backend (skip if disabled)
+      const captchaDisabled = import.meta.env.VITE_DISABLE_CAPTCHA === 'true' || import.meta.env.VITE_DISABLE_CAPTCHA === '1';
+      
+      if (!captchaDisabled && captchaToken) {
+        try {
+          const verifyResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-recaptcha`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+            },
+            body: JSON.stringify({ token: captchaToken })
+          });
+
+          const verifyResult = await verifyResponse.json();
+
+          if (!verifyResult.success) {
+            setErrors(prev => ({
+              ...prev,
+              captcha: t('findArtisan.form.captchaVerificationFailed') || 'CAPTCHA verification failed. Please try again.'
+            }));
+            setIsSubmitting(false);
+            
+            // Reset CAPTCHA to allow user to try again
+            if (window.grecaptcha && captchaRef.current) {
+              const widgetId = captchaRef.current.getAttribute('data-widget-id');
+              if (widgetId) {
+                window.grecaptcha.reset(widgetId);
+              }
+            }
+            setCaptchaToken(null);
+            return;
+          }
+
+          console.log('reCAPTCHA verification successful');
+        } catch (captchaError) {
+          console.error('Error verifying reCAPTCHA:', captchaError);
+          setErrors(prev => ({
+            ...prev,
+            captcha: t('findArtisan.form.captchaError') || 'Failed to verify CAPTCHA. Please try again.'
+          }));
+          setIsSubmitting(false);
+          return;
+        }
+      }
+      
       // Prepare data for submission (use uploaded file URLs instead of File objects)
       // Only include files that are still in the uploadedFilePaths array
       // Combine firstName and lastName into fullName for backend
@@ -457,7 +503,6 @@ const FindArtisanPage = () => {
         ...formData,
         fullName: [formData.firstName, formData.lastName].filter(Boolean).join(' ').trim(),
         projectImages: formData.uploadedFilePaths // Use uploaded URLs for submission
-        // Note: CAPTCHA is validated frontend-only (no backend verification needed)
       };
       
       // Create the lead request using our service

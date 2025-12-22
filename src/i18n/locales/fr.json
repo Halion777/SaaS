@@ -787,7 +787,9 @@
       },
       "submit": "Envoyer ma demande",
       "submitting": "Envoi de la demande...",
-      "captchaError": "Veuillez compléter la vérification CAPTCHA"
+      "captchaError": "Veuillez compléter la vérification CAPTCHA",
+      "captchaVerificationFailed": "La vérification CAPTCHA a échoué. Veuillez réessayer.",
+      "captchaExpired": "CAPTCHA expiré. Veuillez vérifier à nouveau."
     }
   },
   "blog": {
