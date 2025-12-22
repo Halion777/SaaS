@@ -513,8 +513,41 @@ const SuperAdminBilling = () => {
     setIsCancelModalOpen(false);
   };
 
-  const handleSubscriptionUpdate = () => {
-    loadBillingData(); // Refresh data after update
+  const handleSubscriptionUpdate = async () => {
+    await loadBillingData(); // Refresh data after update
+    
+    // If a subscription is currently selected (view modal open), update it with fresh data
+    if (selectedSubscription) {
+      try {
+        const { data: stripeData, error: stripeError } = await supabase.functions.invoke('get-subscription', {
+          body: { userId: selectedSubscription.user_id }
+        });
+
+        if (!stripeError && stripeData?.success && stripeData?.subscription) {
+          const stripeSubscription = stripeData.subscription;
+          
+          // Update the selected subscription with fresh Stripe data
+          setSelectedSubscription({
+            ...selectedSubscription,
+            status: stripeSubscription.status || selectedSubscription.status,
+            plan_type: stripeSubscription.plan_type || selectedSubscription.plan_type,
+            plan_name: stripeSubscription.plan_name || selectedSubscription.plan_name,
+            amount: stripeSubscription.amount || selectedSubscription.amount,
+            interval: stripeSubscription.interval || selectedSubscription.interval,
+            current_period_start: stripeSubscription.current_period_start || selectedSubscription.current_period_start,
+            current_period_end: stripeSubscription.current_period_end || selectedSubscription.current_period_end,
+            trial_end: stripeSubscription.trial_end || selectedSubscription.trial_end,
+            cancel_at_period_end: stripeSubscription.cancel_at_period_end !== undefined 
+              ? stripeSubscription.cancel_at_period_end 
+              : selectedSubscription.cancel_at_period_end,
+            cancelled_at: stripeSubscription.cancelled_at || selectedSubscription.cancelled_at,
+            scheduled_change: stripeSubscription.scheduled_change || null, // ✅ This will be null after immediate change
+          });
+        }
+      } catch (error) {
+        console.error('Error refreshing selected subscription:', error);
+      }
+    }
   };
 
   return (

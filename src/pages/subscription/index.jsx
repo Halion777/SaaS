@@ -187,6 +187,20 @@ const SubscriptionManagement = () => {
     }
   }, [user]);
 
+  // Handle URL parameters (canceled checkout)
+  useEffect(() => {
+    if (!user) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const canceled = urlParams.get('canceled');
+
+    if (canceled === 'true') {
+      // Clear the URL parameter
+      window.history.replaceState({}, '', '/subscription');
+      // User cancelled checkout, just stay on subscription page
+    }
+  }, [user]);
+
   const loadSubscriptionData = async () => {
     try {
       setLoading(true);
@@ -319,8 +333,9 @@ const SubscriptionManagement = () => {
           planType: newPlanId,
           billingCycle: billingCycle,
           userId: user.id,
-          successUrl: `${window.location.origin}/subscription?success=true`,
-          cancelUrl: `${window.location.origin}/subscription?canceled=true`
+          successUrl: `${window.location.origin}/stripe-success`,
+          cancelUrl: `${window.location.origin}/subscription?canceled=true`,
+          isResubscription: true // Mark this as a resubscription
         });
 
         if (checkoutError || !checkoutData?.url) {

@@ -386,7 +386,22 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
       setLoadingSubscription(true);
       const { supabase } = await import('../../services/supabaseClient');
       
+      // PRIORITY: Fetch live data from Stripe first
+      try {
+        const { data: stripeData, error: stripeError } = await supabase.functions.invoke('get-subscription', {
+          body: { userId: actualUser.id }
+        });
+
+        if (!stripeError && stripeData?.success && stripeData?.subscription) {
+          // Use Stripe data (most accurate and up-to-date)
+          setSubscription(stripeData.subscription);
+          return;
+        }
+      } catch (stripeError) {
+        console.error('Error fetching from Stripe, falling back to database:', stripeError);
+      }
       
+      // FALLBACK: If Stripe fetch fails, use database data
       const { data: subscriptionData, error } = await supabase
         .from('subscriptions')
         .select('*')
@@ -698,7 +713,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                     size="sm"
                   >
                     <Icon name="CreditCard" size={14} />
-                    <span className="text-xs">{t('profile.settings.subscription.manageSubscription', 'Manage Subscription')}</span>
+                    <span className="text-xs">{t('subscription.actions.manageSubscription', 'Manage Subscription')}</span>
                   </Button>
                 </div>
               )}
