@@ -927,7 +927,7 @@ const SuperAdminBilling = () => {
                           {payment.stripe_invoice_id || `#${payment.id.slice(-8)}`}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {payment.description || 'Subscription Payment'}
+                          {payment.subscriptions?.plan_name || 'Subscription'} - {payment.subscriptions?.interval || 'monthly'}
                         </p>
                       </td>
                       <td className="px-4 py-3">
@@ -980,7 +980,7 @@ const SuperAdminBilling = () => {
                         <span className="text-xs text-muted-foreground">Invoice:</span>
                         <div className="text-right">
                           <p className="text-sm font-medium text-foreground">{payment.stripe_invoice_id || `#${payment.id.slice(-8)}`}</p>
-                          <p className="text-xs text-muted-foreground">{payment.description || 'Subscription Payment'}</p>
+                          <p className="text-xs text-muted-foreground">{payment.subscriptions?.plan_name || 'Subscription'} - {payment.subscriptions?.interval || 'monthly'}</p>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
