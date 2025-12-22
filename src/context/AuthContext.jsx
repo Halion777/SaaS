@@ -344,13 +344,11 @@ export const AuthProvider = ({ children }) => {
 
       if (error || !userData) {
         // User doesn't exist in public.users - registration incomplete
-        console.log('Registration incomplete, staying on current page');
         return;
       }
 
       if (!userData.registration_completed) {
         // Registration not completed - stay on current page
-        console.log('Registration not completed, staying on current page');
         return;
       }
 
@@ -522,8 +520,6 @@ export const AuthProvider = ({ children }) => {
   // Handle profile selection
   const handleProfileSelect = async (profile) => {
     try {
-      console.log('Profile selected in AuthContext:', profile);
-      
       // The profile switching is now handled by the ProfileSelectionModal
       // which calls switchToProfile from MultiUserContext
       

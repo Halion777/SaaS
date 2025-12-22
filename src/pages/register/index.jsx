@@ -91,20 +91,6 @@ const Register = () => {
   // Save Step 2 fields to company_profiles table before payment
   const saveCompanyProfileBeforePayment = async (userId, formData) => {
     try {
-      console.log('=== Saving company profile before payment ===');
-      console.log('User ID:', userId);
-      console.log('Form data for company profile:', {
-        companyName: formData.companyName,
-        companyAddress: formData.companyAddress,
-        companyCity: formData.companyCity,
-        companyPostalCode: formData.companyPostalCode,
-        companyState: formData.companyState,
-        companyWebsite: formData.companyWebsite,
-        companyIban: formData.companyIban,
-        companyAccountName: formData.companyAccountName,
-        companyBankName: formData.companyBankName
-      });
-
       // Check if company profile already exists
       const { data: existingCompany, error: checkError } = await supabase
         .from('company_profiles')
@@ -115,7 +101,6 @@ const Register = () => {
       if (checkError) {
         console.error('Error checking existing company profile:', checkError);
       }
-      console.log('Existing company profile:', existingCompany);
 
       const companyProfile = {
         user_id: userId,
@@ -165,27 +150,20 @@ const Register = () => {
   // Fetch and auto-fill user data when resuming registration
   const fetchUserDataForResume = async (email) => {
     try {
-      console.log('=== Auto-detecting incomplete registration ===');
-      console.log('Email:', email);
-      
       // First, use checkUserRegistration to get userId
       const checkResult = await checkUserRegistration(email.toLowerCase().trim());
-      console.log('Check result:', checkResult);
       
       if (!checkResult.data?.userExists || !checkResult.data?.userId) {
-        console.log('User does not exist or userId not found');
         return;
       }
 
       // Check if registration is incomplete
       if (checkResult.data.registrationComplete) {
-        console.log('Registration is complete, not resuming');
         return;
       }
 
       // Set resuming flag
       setIsResumingRegistration(true);
-      console.log('Incomplete registration detected, setting resume flag');
 
       const userId = checkResult.data.userId;
 
@@ -270,7 +248,6 @@ const Register = () => {
           filledCount++;
         }
       });
-      console.log(`Filled ${filledCount} fields with data`);
 
       // Check if email is already verified
       if (userData?.email_verified) {
@@ -454,8 +431,6 @@ const Register = () => {
       // Step 0: Check if user can register with this email
       const { data: checkData, error: checkError } = await checkUserRegistration(formData.email.toLowerCase().trim());
       
-      console.log('Check user registration result:', checkData);
-      
       if (checkError) {
         setErrors({ general: t('errors.registrationFailed') });
         setIsLoading(false);
@@ -473,7 +448,6 @@ const Register = () => {
       // Check if this is resuming an incomplete registration
       if (checkData.userExists && !checkData.registrationComplete) {
         // Resume incomplete registration
-        console.log('Resuming incomplete registration for user:', checkData.userId);
         setIsResumingRegistration(true);
         
         // Set registration pending flag BEFORE signing in to prevent dashboard redirect

@@ -888,6 +888,8 @@
       "sent": "Verzonden",
       "verificationSentMessage": "Verificatiecode verzonden! Controleer je e-mail en voer de 6-cijferige code hieronder in.",
       "verificationError": "Fout bij het verzenden van de verificatie-e-mail. Probeer het opnieuw.",
+      "invalidEmail": "Voer een geldig e-mailadres in (bijv. naam@voorbeeld.com)",
+      "invalidEmailFormat": "Ongeldig e-mailformaat. Controleer uw e-mailadres en probeer het opnieuw.",
       "failed": "Mislukt",
       "otpLabel": "Verificatiecode",
       "confirm": "Bevestigen",

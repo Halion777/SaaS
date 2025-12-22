@@ -888,6 +888,8 @@
       "sent": "Sent",
       "verificationSentMessage": "Verification code sent! Please check your email and enter the 6-digit code below.",
       "verificationError": "Error sending verification email. Please try again.",
+      "invalidEmail": "Please enter a valid email address (e.g., name@example.com)",
+      "invalidEmailFormat": "Invalid email format. Please check your email address and try again.",
       "failed": "Failed",
       "otpLabel": "Verification Code",
       "confirm": "Confirm",

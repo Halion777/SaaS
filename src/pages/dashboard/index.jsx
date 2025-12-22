@@ -402,9 +402,14 @@ const Dashboard = () => {
           expenseInvoices: expenseInvoicesStats,
           loading: false
         });
+        
+        // Dispatch event to signal page loading is complete
+        window.dispatchEvent(new CustomEvent('page-loaded'));
       } catch (error) {
         console.error('Error loading dashboard data:', error);
         setDashboardData(prev => ({ ...prev, loading: false }));
+        // Dispatch event even on error so profile can show
+        window.dispatchEvent(new CustomEvent('page-loaded'));
       }
     };
 

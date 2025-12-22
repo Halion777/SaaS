@@ -136,6 +136,8 @@ const AnalyticsDashboard = () => {
         console.error('Error loading analytics data:', error);
       } finally {
         setIsLoading(false);
+        // Dispatch event to signal page loading is complete
+        window.dispatchEvent(new CustomEvent('page-loaded'));
       }
     };
 

@@ -267,6 +267,8 @@ const InvoicesFollowUp = () => {
         setError('Erreur lors du chargement des données');
       } finally {
         setLoading(false);
+        // Dispatch event to signal page loading is complete
+        window.dispatchEvent(new CustomEvent('page-loaded'));
       }
   };
 
@@ -444,6 +446,8 @@ const InvoicesFollowUp = () => {
       setError('Erreur lors de l\'actualisation des données');
     } finally {
       setLoading(false);
+      // Dispatch event to signal page loading is complete
+      window.dispatchEvent(new CustomEvent('page-loaded'));
     }
   };
 

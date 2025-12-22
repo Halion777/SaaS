@@ -44,7 +44,6 @@ const ProfileSelectionModal = ({ isOpen, onProfileSelect, onClose }) => {
   const selectProfile = async (profile) => {
     try {
       setIsLoading(true);
-      console.log('Selecting profile:', profile);
       
       // Use the switchProfile function from context
       await switchProfile(profile.id);

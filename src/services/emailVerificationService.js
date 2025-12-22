@@ -28,9 +28,17 @@ class EmailVerificationService {
       }
 
       if (data?.error) {
+        // Extract error message - handle both string and object formats
+        let errorMessage = data.error;
+        if (typeof data.error === 'object' && data.error.message) {
+          errorMessage = data.error.message;
+        } else if (typeof data.error === 'string') {
+          errorMessage = data.error;
+        }
+        
         return {
           success: false,
-          error: data.error
+          error: errorMessage || 'Failed to send verification email'
         };
       }
 

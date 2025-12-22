@@ -200,6 +200,8 @@ const LeadsManagementPage = () => {
       console.error('Error loading leads:', error);
     } finally {
       setLoading(false);
+      // Dispatch event to signal page loading is complete
+      window.dispatchEvent(new CustomEvent('page-loaded'));
     }
   };
 

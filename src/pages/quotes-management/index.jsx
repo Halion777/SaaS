@@ -494,6 +494,8 @@ const QuotesManagement = () => {
         }
       } finally {
         setLoading(false);
+        // Dispatch event to signal page loading is complete
+        window.dispatchEvent(new CustomEvent('page-loaded'));
       }
   };
 

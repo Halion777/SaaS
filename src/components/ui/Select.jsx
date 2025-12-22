@@ -31,9 +31,11 @@ const Select = React.forwardRef(({
 }, ref) => {
     const [isOpen, setIsOpen] = useState(false);
     const [keyboardFilter, setKeyboardFilter] = useState("");
+    const [searchQuery, setSearchQuery] = useState(""); // For visible search input
     const keyboardFilterTimeoutRef = useRef(null);
     const selectRef = useRef(null);
     const dropdownRef = useRef(null);
+    const searchInputRef = useRef(null);
     const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
     const [openUpward, setOpenUpward] = useState(false);
 
@@ -206,13 +208,22 @@ const Select = React.forwardRef(({
             const newIsOpen = !isOpen;
             setIsOpen(newIsOpen);
             setKeyboardFilter(""); // Reset filter when toggling
+            setSearchQuery(""); // Reset search query when toggling
             onOpenChange?.(newIsOpen);
+            // Focus search input when opening if searchable
+            if (newIsOpen && searchable && searchInputRef.current) {
+                setTimeout(() => {
+                    searchInputRef.current?.focus();
+                }, 100);
+            }
         }
     };
 
-    // Filter options based on keyboard input (country code filtering)
+    // Filter options based on keyboard input or search query
     const filteredOptions = React.useMemo(() => {
-        if (!keyboardFilter) {
+        const filter = searchable ? searchQuery.toLowerCase() : keyboardFilter.toLowerCase();
+        
+        if (!filter) {
             return options;
         }
         
@@ -228,23 +239,35 @@ const Select = React.forwardRef(({
             if (labelLower.includes(' - ')) {
                 const parts = option.label.split(' - ');
                 const countryCode = parts[0] || ''; // e.g., "BE"
-                return countryCode.toLowerCase().startsWith(keyboardFilter);
+                if (countryCode.toLowerCase().includes(filter)) {
+                    return true;
+                }
+                // Also check country name
+                const countryName = parts[1] || '';
+                if (countryName.toLowerCase().includes(filter)) {
+                    return true;
+                }
             }
             
             // Check if label contains space (phone code + country code format)
             const labelParts = option.label.split(' ');
             if (labelParts.length >= 2) {
-                // Try second part as country code (format: "+92 PK")
+                // Try phone code (format: "+92 PK")
+                const phoneCode = labelParts[0] || '';
+                if (phoneCode.toLowerCase().includes(filter)) {
+                    return true;
+                }
+                // Try country code
                 const countryCode = labelParts[1] || '';
-                if (countryCode.length === 2 && countryCode.toLowerCase().startsWith(keyboardFilter)) {
+                if (countryCode.toLowerCase().includes(filter)) {
                     return true;
                 }
             }
             
             // Fallback: match against entire label
-            return labelLower.includes(keyboardFilter);
+            return labelLower.includes(filter);
         });
-    }, [keyboardFilter, options]);
+    }, [keyboardFilter, searchQuery, searchable, options]);
 
     const handleOptionSelect = (option) => {
         if (multiple) {
@@ -282,6 +305,7 @@ const Select = React.forwardRef(({
             }
             setIsOpen(false);
             setKeyboardFilter(""); // Reset filter when option is selected
+            setSearchQuery(""); // Reset search query when option is selected
             onOpenChange?.(false);
         }
     };
@@ -459,7 +483,7 @@ const Select = React.forwardRef(({
                         <div 
                             ref={dropdownRef}
                             className={cn(
-                                "bg-popover text-popover-foreground border border-border rounded-md shadow-lg overflow-auto",
+                                "bg-popover text-popover-foreground border border-border rounded-md shadow-lg overflow-hidden",
                                 !maxHeight && "max-h-[200px]",
                                 usePortal ? "fixed" : "absolute w-full"
                             )}
@@ -483,10 +507,31 @@ const Select = React.forwardRef(({
                                 })
                             }}
                         >
+                            {/* Search input for searchable selects */}
+                            {searchable && (
+                                <div className="p-2 border-b border-border sticky top-0 bg-popover z-10">
+                                    <input
+                                        ref={searchInputRef}
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        placeholder="Search country code..."
+                                        className="w-full h-9 px-3 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0"
+                                        onClick={(e) => e.stopPropagation()}
+                                        onKeyDown={(e) => {
+                                            // Prevent closing dropdown on Enter
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            )}
                             <div className={cn("py-1 overflow-y-auto overflow-x-hidden scrollbar-hide", !maxHeight && "max-h-60")} style={maxHeight && maxHeight !== 'none' ? { maxHeight: typeof maxHeight === 'string' ? maxHeight : `${maxHeight}px` } : undefined}>
                                 {filteredOptions.length === 0 ? (
                                     <div className="px-3 py-2 text-sm text-muted-foreground">
-                                        {keyboardFilter ? `No country codes starting with "${keyboardFilter.toUpperCase()}"` : 'No options available'}
+                                        {searchable && searchQuery ? `No results for "${searchQuery}"` : keyboardFilter ? `No country codes starting with "${keyboardFilter.toUpperCase()}"` : 'No options available'}
                                     </div>
                                 ) : (
                                     filteredOptions.map((option) => (

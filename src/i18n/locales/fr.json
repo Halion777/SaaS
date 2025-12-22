@@ -889,6 +889,8 @@
       "sent": "Envoyé",
       "verificationSentMessage": "Code de vérification envoyé ! Veuillez vérifier votre email et entrer le code à 6 chiffres ci-dessous.",
       "verificationError": "Erreur lors de l'envoi de l'email de vérification. Veuillez réessayer.",
+      "invalidEmail": "Veuillez entrer une adresse email valide (ex: nom@exemple.com)",
+      "invalidEmailFormat": "Format d'email invalide. Veuillez vérifier votre adresse email et réessayer.",
       "failed": "Échoué",
       "otpLabel": "Code de vérification",
       "confirm": "Confirmer",

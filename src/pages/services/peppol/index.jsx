@@ -529,10 +529,14 @@ const PeppolNetworkPage = () => {
         // Set loading to false only after we've determined the user type
         setLoading(false);
         setIsInitialized(true);
+        // Dispatch event to signal page loading is complete
+        window.dispatchEvent(new CustomEvent('page-loaded'));
       } catch (error) {
         // Error checking business user
         setLoading(false);
         setIsInitialized(true);
+        // Dispatch event to signal page loading is complete
+        window.dispatchEvent(new CustomEvent('page-loaded'));
       }
     };
 

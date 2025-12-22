@@ -170,6 +170,8 @@ const InvoicesManagement = () => {
       setFilteredInvoices([]);
     } finally {
       setIsLoading(false);
+      // Dispatch event to signal page loading is complete
+      window.dispatchEvent(new CustomEvent('page-loaded'));
     }
   };
 
@@ -179,6 +181,8 @@ const InvoicesManagement = () => {
       fetchInvoices();
     } else {
       setIsLoading(false);
+      // Dispatch event to signal page loading is complete
+      window.dispatchEvent(new CustomEvent('page-loaded'));
     }
   }, [user]);
 

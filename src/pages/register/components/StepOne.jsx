@@ -24,6 +24,83 @@ const StepOne = ({ formData, updateFormData, errors, onIncompleteRegistrationDet
   const [otp, setOtp] = useState('');
   const [isVerifyingOTP, setIsVerifyingOTP] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [emailFormatError, setEmailFormatError] = useState('');
+
+  // Email validation function - checks for proper email format
+  const isValidEmail = (email) => {
+    if (!email || typeof email !== 'string') return false;
+    
+    // Trim and lowercase
+    const trimmedEmail = email.trim().toLowerCase();
+    
+    // Check if email starts with dot (invalid)
+    if (trimmedEmail.startsWith('.')) return false;
+    
+    // RFC 5322 compliant regex (simplified but more strict than basic)
+    const emailRegex = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
+    
+    // Check basic format
+    if (!emailRegex.test(trimmedEmail)) {
+      return false;
+    }
+    
+    // Additional checks
+    // - Must not start or end with dot
+    // - Must not have consecutive dots
+    // - Domain must have at least one dot
+    // - Must not have invalid characters at the end
+    const parts = trimmedEmail.split('@');
+    if (parts.length !== 2) return false;
+    
+    const [localPart, domain] = parts;
+    
+    // Local part checks
+    if (localPart.length === 0 || localPart.length > 64) return false;
+    if (localPart.startsWith('.') || localPart.endsWith('.')) return false;
+    if (localPart.includes('..')) return false;
+    
+    // Domain checks
+    if (domain.length === 0 || domain.length > 253) return false;
+    if (domain.startsWith('.') || domain.endsWith('.')) return false;
+    if (domain.includes('..')) return false;
+    if (!domain.includes('.')) return false;
+    
+    // Domain must have valid TLD (at least 2 characters after last dot)
+    const domainParts = domain.split('.');
+    const tld = domainParts[domainParts.length - 1];
+    if (!tld || tld.length < 2) return false;
+    
+    // Check TLD - must be only letters (no numbers or invalid characters)
+    // This catches cases like "email@gmail.com7" or "email@gmail.com89"
+    if (!/^[a-z]+$/i.test(tld)) return false;
+    
+    // Check if domain has any invalid characters after TLD
+    // Look for patterns like ".com89" or ".com" followed by numbers/invalid chars
+    // Split domain by dots and check each part
+    for (let i = 0; i < domainParts.length; i++) {
+      const part = domainParts[i];
+      // Each part should only contain letters, numbers, and hyphens (but not start/end with hyphen)
+      if (!/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i.test(part)) return false;
+      
+      // For TLD (last part), it should only be letters
+      if (i === domainParts.length - 1 && !/^[a-z]+$/i.test(part)) return false;
+    }
+    
+    // Additional check: Look for numbers or invalid characters immediately after TLD in the full domain
+    // This catches cases where someone might have "gmail.com89" as the domain
+    const domainWithoutTLD = domainParts.slice(0, -1).join('.');
+    const fullDomainPattern = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*\.[a-z]+$/i;
+    if (!fullDomainPattern.test(domain)) return false;
+    
+    // Final check: Ensure the domain doesn't end with numbers or invalid characters
+    // Extract everything after the last dot (TLD) and ensure it's only letters
+    const lastDotIndex = domain.lastIndexOf('.');
+    if (lastDotIndex === -1) return false;
+    const tldPart = domain.substring(lastDotIndex + 1);
+    if (!/^[a-z]+$/i.test(tldPart)) return false;
+    
+    return true;
+  };
 
   const calculatePasswordStrength = (password) => {
     let strength = 0;
@@ -168,7 +245,9 @@ const StepOne = ({ formData, updateFormData, errors, onIncompleteRegistrationDet
 
   // Handle send OTP verification email
   const handleSendVerification = async () => {
-    if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
+    // Validate email format before sending
+    if (!formData.email || !isValidEmail(formData.email)) {
+      setVerificationError(t('registerForm.step1.invalidEmail') || 'Please enter a valid email address (e.g., name@example.com)');
       return;
     }
 
@@ -204,12 +283,29 @@ const StepOne = ({ formData, updateFormData, errors, onIncompleteRegistrationDet
         // Start 30-second cooldown
         setResendCooldown(30);
       } else {
-        setVerificationError(result.error || 'Failed to send verification code. Please try again.');
+        // Handle error from edge function
+        let errorMessage = result.error || 'Failed to send verification code. Please try again.';
+        
+        // Check for specific error messages from Resend API
+        if (errorMessage.includes('Invalid `to` field') || errorMessage.includes('validation_error')) {
+          errorMessage = t('registerForm.step1.invalidEmailFormat') || 'Invalid email format. Please check your email address and try again.';
+        } else if (errorMessage.includes('Failed to send verification email')) {
+          errorMessage = t('registerForm.step1.verificationError') || 'Failed to send verification email. Please check your email address and try again.';
+        }
+        
+        setVerificationError(errorMessage);
         setVerificationSuccess(false);
       }
     } catch (error) {
       console.error('Error sending verification email:', error);
-      setVerificationError(t('registerForm.step1.verificationError') || 'Error sending verification email. Please try again.');
+      let errorMessage = t('registerForm.step1.verificationError') || 'Error sending verification email. Please try again.';
+      
+      // Check for specific error patterns
+      if (error?.message?.includes('Invalid `to` field') || error?.message?.includes('validation_error')) {
+        errorMessage = t('registerForm.step1.invalidEmailFormat') || 'Invalid email format. Please check your email address and try again.';
+      }
+      
+      setVerificationError(errorMessage);
       setVerificationSuccess(false);
     } finally {
       setIsVerifying(false);
@@ -420,7 +516,7 @@ const StepOne = ({ formData, updateFormData, errors, onIncompleteRegistrationDet
 
         <div className="space-y-2">
           <div className="space-y-2">
-            <div className="flex items-start gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-2">
               <div className="flex-1">
         <Input
           label={t('registerForm.step1.email')}
@@ -428,30 +524,39 @@ const StepOne = ({ formData, updateFormData, errors, onIncompleteRegistrationDet
           placeholder={t('registerForm.step1.emailPlaceholder')}
           value={formData.email}
                   onChange={(e) => {
-                    updateFormData('email', e.target.value);
+                    const emailValue = e.target.value;
+                    updateFormData('email', emailValue);
                     setEmailVerified(false);
                     setVerificationSent(false);
                     setVerificationError('');
                     setVerificationSuccess(false);
                     updateFormData('emailVerified', false);
+                    
+                    // Validate email format in real-time
+                    if (emailValue && !isValidEmail(emailValue)) {
+                      setEmailFormatError(t('registerForm.step1.invalidEmail') || 'Please enter a valid email address (e.g., name@example.com)');
+                    } else {
+                      setEmailFormatError('');
+                    }
                   }}
-          error={errors.email}
+          error={errors.email || (emailFormatError ? emailFormatError : null)}
           required
         />
               </div>
-              {formData.email && /\S+@\S+\.\S+/.test(formData.email) && (
+              {formData.email && (
                 <Button
                   type="button"
                   onClick={handleSendVerification}
-                  disabled={isVerifying || emailVerified || verificationSent}
+                  disabled={isVerifying || emailVerified || verificationSent || !isValidEmail(formData.email) || !!emailFormatError}
                   variant={
                     emailVerified ? "success" : 
                     verificationSuccess ? "success" : 
                     verificationError ? "destructive" : 
+                    emailFormatError ? "destructive" :
                     "outline"
                   }
                   size="sm"
-                  className="mt-[22px] h-10 flex-shrink-0"
+                  className="w-full sm:w-auto sm:flex-shrink-0 h-10 sm:mb-0"
                 >
                 {isVerifying ? (
                   <>
@@ -545,8 +650,8 @@ const StepOne = ({ formData, updateFormData, errors, onIncompleteRegistrationDet
             </div>
           )}
 
-          {/* Status Messages */}
-          {formData.email && /\S+@\S+\.\S+/.test(formData.email) && !verificationSent && (
+          {/* Status Messages - Only show verification status, not format errors (format errors shown in input field) */}
+          {formData.email && !verificationSent && !emailFormatError && (
             <div className="flex items-start gap-2 text-sm mt-2">
               {emailVerified ? (
                 <>
@@ -646,6 +751,9 @@ const StepOne = ({ formData, updateFormData, errors, onIncompleteRegistrationDet
               <Select
                 label=""
                 placeholder="Code"
+                searchable={true}
+                usePortal={true}
+                maxHeight="300px"
                 options={useMemo(() => 
                   Object.entries(COUNTRY_PHONE_CODES)
                     .map(([countryCode, phoneCode]) => {

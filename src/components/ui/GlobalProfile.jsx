@@ -11,6 +11,7 @@ const GlobalProfile = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [pageLoaded, setPageLoaded] = useState(false);
 
   // Check if current page should show the global profile
   const shouldShowProfile = () => {
@@ -26,6 +27,69 @@ const GlobalProfile = () => {
     // Check if current path starts with any dashboard page
     return dashboardPages.some(page => location.pathname.startsWith(page));
   };
+
+  // Listen for page loading completion on all dashboard pages
+  useEffect(() => {
+    const handlePageLoaded = () => {
+      setPageLoaded(true);
+    };
+
+    // Reset page loaded state when route changes
+    setPageLoaded(false);
+    
+    // Listen for generic page-loaded event (dispatched by pages when loading completes)
+    window.addEventListener('page-loaded', handlePageLoaded);
+    
+    // Also check for visible loaders and wait until they disappear
+    const checkForLoaders = () => {
+      // Check for common loader patterns
+      const loaders = document.querySelectorAll(
+        '[class*="Loader"]:not([style*="display: none"]), ' +
+        '[class*="loader"]:not([style*="display: none"]), ' +
+        '[class*="spinner"]:not([style*="display: none"]), ' +
+        '[class*="loading"]:not([style*="display: none"]), ' +
+        '.animate-spin:not([style*="display: none"])'
+      );
+      
+      // Check if any loader is visible (not hidden)
+      const visibleLoaders = Array.from(loaders).filter(loader => {
+        const style = window.getComputedStyle(loader);
+        return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+      });
+      
+      // If no visible loaders found, page is loaded
+      if (visibleLoaders.length === 0) {
+        setPageLoaded(true);
+        return true;
+      }
+      return false;
+    };
+    
+    // Initial check after a short delay
+    const initialCheck = setTimeout(() => {
+      if (checkForLoaders()) {
+        return; // Page already loaded
+      }
+      
+      // If loaders are still visible, poll until they disappear
+      const pollInterval = setInterval(() => {
+        if (checkForLoaders()) {
+          clearInterval(pollInterval);
+        }
+      }, 200); // Check every 200ms
+      
+      // Stop polling after 10 seconds (fallback)
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        setPageLoaded(true); // Show profile even if loaders are still there (fallback)
+      }, 10000);
+    }, 300);
+    
+    return () => {
+      window.removeEventListener('page-loaded', handlePageLoaded);
+      clearTimeout(initialCheck);
+    };
+  }, [location.pathname]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -112,7 +176,7 @@ const GlobalProfile = () => {
   };
 
   // Only render on mobile AND on dashboard pages AND when user is loaded AND when page loading is complete
-  if (!isMobile || !shouldShowProfile() || !user || loading) {
+  if (!isMobile || !shouldShowProfile() || !user || loading || !pageLoaded) {
     return null;
   }
 
