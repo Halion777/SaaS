@@ -91,13 +91,14 @@ const SubscriptionCancelModal = ({ isOpen, onClose, subscription, onUpdate }) =>
         return;
       }
 
-      // Update user's subscription status
+      // Update user's subscription status (LIFETIME ACCESS PROTECTION)
       const { error: userError } = await supabase
         .from('users')
         .update({ 
           subscription_status: 'cancelled'
         })
-        .eq('id', subscription.user_id);
+        .eq('id', subscription.user_id)
+        .eq('has_lifetime_access', false); // Only update users WITHOUT lifetime access
 
       if (userError) {
         console.error('Error updating user subscription status:', userError);
@@ -160,6 +161,51 @@ const SubscriptionCancelModal = ({ isOpen, onClose, subscription, onUpdate }) =>
   };
 
   if (!isOpen || !subscription) return null;
+
+  // LIFETIME ACCESS PROTECTION: Prevent cancelling subscriptions for lifetime access users
+  if (subscription.users?.has_lifetime_access) {
+    return (
+      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-card border border-border rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-foreground flex items-center">
+              <Icon name="Shield" size={24} className="text-yellow-500 mr-2" />
+              Protected User
+            </h2>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-muted rounded-lg transition-colors duration-150"
+            >
+              <Icon name="X" size={20} color="var(--color-muted-foreground)" />
+            </button>
+          </div>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+            <div className="flex items-start space-x-3">
+              <Icon name="AlertTriangle" size={20} className="text-yellow-600 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-medium text-yellow-800 mb-1">Cannot Cancel Subscription</h4>
+                <p className="text-sm text-yellow-700">
+                  This user has <strong>LIFETIME ACCESS</strong> and their subscription cannot be cancelled through this interface.
+                </p>
+                <p className="text-sm text-yellow-700 mt-2">
+                  To revoke access, please use the <strong>User Management</strong> page to revoke their lifetime access first.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+            >
+              Close
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -261,20 +307,6 @@ const SubscriptionCancelModal = ({ isOpen, onClose, subscription, onUpdate }) =>
                 placeholder="Select a reason"
                 required
               />
-            </div>
-
-            {/* Cancellation Type Explanation */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start space-x-3">
-                <Icon name="Info" size={16} className="text-blue-600 mt-0.5" />
-                <div>
-                  <h4 className="text-sm font-medium text-blue-800">Cancellation Types</h4>
-                  <ul className="text-sm text-blue-700 mt-1 space-y-1">
-                    <li>• <strong>Cancel Immediately:</strong> Subscription ends now, user loses access immediately</li>
-                    <li>• <strong>Cancel at End of Period:</strong> Subscription continues until {subscription.current_period_end ? formatDate(subscription.current_period_end) : 'next billing date'}</li>
-                  </ul>
-                </div>
-              </div>
             </div>
           </div>
 

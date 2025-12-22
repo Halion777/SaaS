@@ -29,7 +29,8 @@ serve(async (req) => {
       action, // 'update_plan', 'cancel' (admin only), 'reactivate' (admin only), 'update_status'
       planType,
       billingInterval,
-      cancelAtPeriodEnd
+      cancelAtPeriodEnd,
+      prorationBehavior // 'always_invoice' for immediate, 'none' for scheduled
     } = await req.json()
 
     // Create Supabase client
@@ -175,7 +176,10 @@ serve(async (req) => {
 
         console.log(`Plan change: ${currentPlanType} -> ${planType}, isUpgrade: ${isUpgrade}, isDowngrade: ${isDowngrade}`)
 
-        if (isDowngrade) {
+        // Check if immediate change is requested
+        const applyImmediately = prorationBehavior === 'always_invoice'
+
+        if (isDowngrade && !applyImmediately) {
           // DOWNGRADE: Wait until end of billing period (as per Stripe portal settings)
           // BUT: If in trial, schedule for after trial ends (no charge during trial)
           // Use subscription schedule to schedule the change
@@ -189,23 +193,24 @@ serve(async (req) => {
           let schedule = currentSub.schedule
           
           if (schedule) {
-            // Update existing schedule
-            result = await stripe.subscriptionSchedules.update(schedule as string, {
-              end_behavior: 'release', // Release schedule at end (subscription continues with new plan)
-              phases: [
-                {
-                  items: [{ price: currentPriceId, quantity: 1 }],
-                  start_date: currentSub.current_period_start,
-                  end_date: effectiveDate
-                },
-                {
-                  items: [{ price: newPriceId, quantity: 1 }],
-                  start_date: effectiveDate
-                  // Last phase has no end_date - will continue indefinitely
-                }
-              ]
-            })
-          } else {
+            // Release the existing schedule first (can't update phases that have ended)
+            try {
+              await stripe.subscriptionSchedules.release(schedule as string)
+            } catch (releaseError) {
+              
+              // If release fails, try to cancel it
+              try {
+                await stripe.subscriptionSchedules.cancel(schedule as string)
+              } catch (cancelError) {
+                console.error('Error canceling schedule:', cancelError)
+              }
+            }
+            
+            // Re-fetch subscription to get updated state
+            currentSub = await stripe.subscriptions.retrieve(subscriptionId)
+          }
+          
+          {
             // Create new schedule from subscription
             const newSchedule = await stripe.subscriptionSchedules.create({
               from_subscription: subscriptionId
@@ -316,36 +321,38 @@ serve(async (req) => {
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         } else {
-          // UPGRADE: Check if subscription is in trial period
+          // UPGRADE OR IMMEDIATE CHANGE: Check if subscription is in trial period
           // Check both status and trial_end date to handle reactivated subscriptions that are still in trial
           const now = Math.floor(Date.now() / 1000)
           const isInTrial = (currentSub.status === 'trialing' || (currentSub.trial_end && currentSub.trial_end > now)) && currentSub.trial_end
           const effectiveDate = isInTrial ? currentSub.trial_end : currentSub.current_period_end
           
-          if (isInTrial) {
+          if (isInTrial && !applyImmediately) {
             // If in trial, schedule upgrade for after trial ends (no charge during trial)
             
             // Check if there's already a schedule
             let schedule = currentSub.schedule
             
             if (schedule) {
-              // Update existing schedule
-              result = await stripe.subscriptionSchedules.update(schedule as string, {
-                end_behavior: 'release', // Release schedule at end (subscription continues with new plan)
-                phases: [
-                  {
-                    items: [{ price: currentPriceId, quantity: 1 }],
-                    start_date: currentSub.current_period_start,
-                    end_date: effectiveDate
-                  },
-                  {
-                    items: [{ price: newPriceId, quantity: 1 }],
-                    start_date: effectiveDate
-                    // Last phase has no end_date - will continue indefinitely
-                  }
-                ]
-              })
-            } else {
+              // Release the existing schedule first (can't update phases that have ended)
+              try {
+                await stripe.subscriptionSchedules.release(schedule as string)
+                
+              } catch (releaseError) {
+                console.error('Error releasing schedule:', releaseError)
+                // If release fails, try to cancel it
+                try {
+                  await stripe.subscriptionSchedules.cancel(schedule as string)
+                } catch (cancelError) {
+                  console.error('Error canceling schedule:', cancelError)
+                }
+              }
+              
+              // Re-fetch subscription to get updated state
+              currentSub = await stripe.subscriptions.retrieve(subscriptionId)
+            }
+            
+            {
               // Create new schedule from subscription
               const newSchedule = await stripe.subscriptionSchedules.create({
                 from_subscription: subscriptionId

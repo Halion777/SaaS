@@ -8,11 +8,11 @@ import SubscriptionNotificationService from 'services/subscriptionNotificationSe
 const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [stripeError, setStripeError] = useState(null);
+  const [applyImmediately, setApplyImmediately] = useState(true);
   const [formData, setFormData] = useState({
     plan_type: '',
     status: '',
-    interval: '',
-    cancel_at_period_end: false
+    interval: ''
   });
 
   React.useEffect(() => {
@@ -23,8 +23,7 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
       setFormData({
         plan_type: subscription.plan_type || '',
         status: normalizedStatus || '',
-        interval: subscription.interval || '',
-        cancel_at_period_end: subscription.cancel_at_period_end || false
+        interval: subscription.interval || ''
       });
     }
   }, [subscription]);
@@ -34,14 +33,13 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
     { value: 'pro', label: 'Pro Plan' }
   ];
 
-  // ✅ ONLY Stripe's official subscription statuses
+  // ONLY Stripe's official subscription statuses (excluding 'canceled' - use cancel button instead)
   // Ref: https://stripe.com/docs/api/subscriptions/object#subscription_object-status
   const statusOptions = [
     { value: 'trialing', label: 'Trialing' },
     { value: 'active', label: 'Active' },
     { value: 'past_due', label: 'Past Due' },
     { value: 'unpaid', label: 'Unpaid' },
-    { value: 'canceled', label: 'Cancelled' }, // Note: Stripe uses 'canceled' not 'cancelled'
     { value: 'incomplete', label: 'Incomplete' },
     { value: 'incomplete_expired', label: 'Incomplete Expired' }
   ];
@@ -100,7 +98,7 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
                                     !subscription.stripe_subscription_id.includes('placeholder') &&
                                     !subscription.stripe_subscription_id.includes('temp_');
       
-      let stripeUpdateSuccess = false;
+      let stripeError = null;
       
       if (hasStripeSubscription) {
         try {
@@ -116,14 +114,8 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
               ...stripePayload,
               action: stripeAction,
               planType: formData.plan_type,
-              billingInterval: formData.interval
-            };
-          } else if (isCancellation) {
-            stripeAction = 'cancel';
-            stripePayload = {
-              ...stripePayload,
-              action: stripeAction,
-              cancelAtPeriodEnd: formData.cancel_at_period_end
+              billingInterval: formData.interval,
+              prorationBehavior: applyImmediately ? 'always_invoice' : 'none'
             };
           } else if (isReactivation) {
             stripeAction = 'reactivate';
@@ -134,60 +126,29 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
           }
 
           if (stripeAction) {
-            console.log('Calling Stripe update with:', stripePayload);
-            
-            const { data: stripeResult, error: stripeError } = await supabase.functions.invoke(
+          
+            const { data: stripeResult, error: stripeErr } = await supabase.functions.invoke(
               'admin-update-subscription',
               { body: stripePayload }
             );
 
-            if (stripeError) {
-              console.error('Stripe update error:', stripeError);
-              // Check if subscription doesn't exist in Stripe
-              if (stripeError.message?.includes('No such subscription')) {
-                alert('Subscription not found in Stripe. It may have been deleted. Please update the database manually or delete this subscription record.');
-                setIsLoading(false);
-                return; // Stop here - don't update database
-              } else {
-                alert(`Stripe update failed: ${stripeError.message}\n\nPlease try again or contact support.`);
-                setIsLoading(false);
-                return; // Stop here - don't update database
-              }
+            if (stripeErr) {
+              console.error('Stripe update error:', stripeErr);
+              stripeError = `Stripe sync failed: ${stripeErr.message}. Database will still be updated.`;
             } else if (!stripeResult?.success) {
               console.error('Stripe update failed:', stripeResult?.error);
-              // Check if subscription doesn't exist in Stripe
-              if (stripeResult?.error?.includes('No such subscription')) {
-                alert('Subscription not found in Stripe. It may have been deleted. Please update the database manually or delete this subscription record.');
-                setIsLoading(false);
-                return; // Stop here - don't update database
-              } else {
-                alert(`Stripe update failed: ${stripeResult?.error || 'Unknown error'}\n\nPlease try again or contact support.`);
-                setIsLoading(false);
-                return; // Stop here - don't update database
-              }
-            } else {
-              console.log('Stripe updated successfully:', stripeResult);
-              stripeUpdateSuccess = true;
-            }
+              stripeError = `Stripe sync failed: ${stripeResult?.error || 'Unknown error'}. Database will still be updated.`;
+            } 
           }
         } catch (stripeCallError) {
           console.error('Error calling Stripe edge function:', stripeCallError);
-          alert(`Stripe update error: ${stripeCallError.message}\n\nPlease try again or contact support.`);
-          setIsLoading(false);
-          return; // Stop here - don't update database
+          stripeError = `Stripe sync error: ${stripeCallError.message}. Database will still be updated.`;
         }
-      } else {
-        // No Stripe subscription - allow local database update only
-        stripeUpdateSuccess = true;
       }
 
       // ============================================
-      // STEP 2: Update Supabase database (ONLY if Stripe update succeeded)
+      // STEP 2: Update Supabase database (always update, even if Stripe fails)
       // ============================================
-      if (!stripeUpdateSuccess) {
-        console.log('Skipping database update - Stripe update failed');
-        return;
-      }
 
       const updateData = {
         plan_name: plan_name,
@@ -195,25 +156,8 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
         status: formData.status,
         interval: formData.interval,
         amount: amount,
-        cancel_at_period_end: formData.cancel_at_period_end,
         updated_at: new Date().toISOString()
       };
-
-      // If cancelling immediately (not at period end), set cancelled_at timestamp
-      if (isCancellation && !formData.cancel_at_period_end) {
-        updateData.cancelled_at = new Date().toISOString();
-      }
-
-      // If cancelling at period end, clear cancelled_at (it will be set when period ends)
-      if (isCancellation && formData.cancel_at_period_end) {
-        updateData.cancelled_at = null;
-      }
-
-      // If reactivating, clear both cancellation fields
-      if (isReactivation) {
-        updateData.cancel_at_period_end = false;
-        updateData.cancelled_at = null;
-      }
 
       const { error } = await supabase
         .from('subscriptions')
@@ -310,10 +254,11 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
         // Don't fail the main operation if notification fails
       }
 
-      alert(stripeError 
-        ? `Subscription updated in database. Warning: ${stripeError}`
-        : 'Subscription updated successfully (both Stripe and database)!'
-      );
+      if (stripeError) {
+        alert(`Subscription updated in database.\n\nWarning: ${stripeError}`);
+      } else {
+        alert('Subscription updated successfully (both Stripe and database)!');
+      }
       onUpdate();
       onClose();
     } catch (error) {
@@ -325,6 +270,51 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
   };
 
   if (!isOpen || !subscription) return null;
+
+  // LIFETIME ACCESS PROTECTION: Prevent editing subscriptions for lifetime access users
+  if (subscription.users?.has_lifetime_access) {
+    return (
+      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-card border border-border rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-foreground flex items-center">
+              <Icon name="Shield" size={24} className="text-yellow-500 mr-2" />
+              Protected User
+            </h2>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-muted rounded-lg transition-colors duration-150"
+            >
+              <Icon name="X" size={20} color="var(--color-muted-foreground)" />
+            </button>
+          </div>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+            <div className="flex items-start space-x-3">
+              <Icon name="AlertTriangle" size={20} className="text-yellow-600 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-medium text-yellow-800 mb-1">Cannot Edit Subscription</h4>
+                <p className="text-sm text-yellow-700">
+                  This user has <strong>LIFETIME ACCESS</strong> and their subscription cannot be edited through this interface.
+                </p>
+                <p className="text-sm text-yellow-700 mt-2">
+                  Lifetime access users maintain full access regardless of subscription status. To manage their access, please use the <strong>User Management</strong> page.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+            >
+              Close
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Prevent editing cancelled subscriptions (Stripe restriction)
   if (subscription.status === 'cancelled') {
@@ -465,21 +455,60 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
                     required
                   />
                 </div>
-
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="cancel_at_period_end"
-                    checked={formData.cancel_at_period_end}
-                    onChange={(e) => handleInputChange('cancel_at_period_end', e.target.checked)}
-                    className="rounded border-border"
-                  />
-                  <label htmlFor="cancel_at_period_end" className="text-sm font-medium text-foreground">
-                    Cancel at period end
-                  </label>
-                </div>
               </div>
             </div>
+
+            {/* Apply Immediately Option */}
+            {(formData.plan_type !== subscription.plan_type || formData.interval !== subscription.interval) && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <Icon name="Zap" size={16} className="text-yellow-600 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium text-yellow-800 mb-3">Plan Change Timing</h4>
+                    <div className="flex items-center space-x-2 mb-3">
+                      <input
+                        type="checkbox"
+                        id="apply_immediately"
+                        checked={applyImmediately}
+                        onChange={(e) => setApplyImmediately(e.target.checked)}
+                        className="rounded border-yellow-300"
+                      />
+                      <label htmlFor="apply_immediately" className="text-sm font-semibold text-yellow-800 cursor-pointer">
+                        Apply changes immediately and prorate
+                      </label>
+                    </div>
+                    
+                    {applyImmediately ? (
+                      <div className="bg-green-50 border border-green-200 rounded p-3 space-y-2">
+                        <p className="text-xs font-semibold text-green-800 flex items-center">
+                          <Icon name="Check" size={14} className="mr-1" />
+                          Immediate Change
+                        </p>
+                        <ul className="text-xs text-green-700 space-y-1 ml-5 list-disc">
+                          <li>Changes take effect <strong>right now</strong></li>
+                          <li>Prorated charges/credits will be calculated</li>
+                          <li>User will see the new plan immediately</li>
+                          <li>Invoice generated for any amount due</li>
+                        </ul>
+                      </div>
+                    ) : (
+                      <div className="bg-blue-50 border border-blue-200 rounded p-3 space-y-2">
+                        <p className="text-xs font-semibold text-blue-800 flex items-center">
+                          <Icon name="Calendar" size={14} className="mr-1" />
+                          Scheduled Change
+                        </p>
+                        <ul className="text-xs text-blue-700 space-y-1 ml-5 list-disc">
+                          <li>Changes scheduled for <strong>next billing cycle</strong></li>
+                          <li>Current plan continues until {subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'period end'}</li>
+                          <li>No immediate charges</li>
+                          <li>User keeps current plan access</li>
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Stripe Sync Info */}
             {subscription.stripe_subscription_id && !subscription.stripe_subscription_id.includes('placeholder') && (

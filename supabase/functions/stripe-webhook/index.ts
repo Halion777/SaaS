@@ -117,7 +117,7 @@ serve(async (req) => {
               })
               .eq('id', session.metadata.userId)
 
-            // ✅ CRITICAL FIX: Create subscription record immediately
+            // CRITICAL FIX: Create subscription record immediately
             if (session.subscription && subscriptionDetails) {
               const priceId = subscriptionDetails.items.data[0]?.price?.id
               const priceAmount = subscriptionDetails.items.data[0]?.price?.unit_amount || 0
@@ -365,6 +365,7 @@ serve(async (req) => {
             })
             .eq('stripe_subscription_id', updatedSubscription.id)
 
+          // LIFETIME ACCESS PROTECTION: Don't update subscription_status for lifetime access users
           await supabaseClient
             .from('users')
             .update({
@@ -372,6 +373,7 @@ serve(async (req) => {
               selected_plan: planType
             })
             .eq('stripe_subscription_id', updatedSubscription.id)
+            .eq('has_lifetime_access', false) // Only update users WITHOUT lifetime access
 
           // Send email notification if plan changed, status changed, or reactivated
           if (oldSubData && oldSubData.users) {
@@ -545,17 +547,41 @@ serve(async (req) => {
             })
             .eq('stripe_subscription_id', deletedSubscription.id)
 
+          // LIFETIME ACCESS PROTECTION: Don't update subscription_status for lifetime access users
+          // They should always maintain access regardless of Stripe subscription status
           await supabaseClient
             .from('users')
             .update({
               subscription_status: 'cancelled'
             })
             .eq('stripe_subscription_id', deletedSubscription.id)
+            .eq('has_lifetime_access', false) // Only update users WITHOUT lifetime access
 
-          // Send cancellation email notification
+          // Send cancellation email notification (CONSISTENT WITH subscription.updated)
           if (cancelledSubData && cancelledSubData.users) {
             const userData = cancelledSubData.users
             try {
+              // Prepare email data in the same format as subscription.updated
+              const emailData: any = {
+                user_email: userData.email,
+                user_id: userData.id,
+                user_name: userData.full_name || userData.first_name || 'User',
+                language: userData.language_preference || 'fr',
+                variables: {
+                  user_name: userData.full_name || userData.first_name || 'User',
+                  user_email: userData.email,
+                  old_plan_name: cancelledSubData.plan_name || 'Plan',
+                  plan_name: cancelledSubData.plan_name || 'Plan',
+                  effective_date: deletedSubscription.canceled_at 
+                    ? new Date(deletedSubscription.canceled_at * 1000).toLocaleDateString('fr-FR')
+                    : new Date().toLocaleDateString('fr-FR'),
+                  cancellation_reason: 'User request',
+                  company_name: 'Haliqo',
+                  support_email: 'support@haliqo.com'
+                }
+              }
+
+              // Invoke the send-emails function
               const response = await fetch(
                 `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-emails`,
                 {
@@ -565,12 +591,8 @@ serve(async (req) => {
                     'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
                   },
                   body: JSON.stringify({
-                    type: 'subscription_cancelled',
-                    data: {
-                      user_email: userData.email,
-                      user_name: userData.full_name || userData.first_name || 'User',
-                      language: userData.language_preference || 'fr'
-                    }
+                    emailType: 'subscription_cancelled',
+                    emailData: emailData
                   })
                 }
               )
@@ -578,10 +600,11 @@ serve(async (req) => {
               if (!response.ok) {
                 console.error('Failed to send cancellation email:', await response.text())
               } else {
-                
+                console.log(`Subscription email sent: subscription_cancelled for user ${userData.id}`)
               }
             } catch (emailError) {
               console.error('Error sending cancellation email:', emailError)
+              // Don't fail the webhook for email errors
             }
           }
         } catch (error) {

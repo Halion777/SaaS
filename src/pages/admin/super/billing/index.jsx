@@ -116,7 +116,7 @@ const SuperAdminBilling = () => {
         .from('subscriptions')
         .select(`
           *,
-          users!subscriptions_user_id_fkey(first_name, last_name, email, company_name, role, selected_plan)
+          users!subscriptions_user_id_fkey(first_name, last_name, email, company_name, role, selected_plan, has_lifetime_access)
         `)
         .order('created_at', { ascending: false });
 
@@ -170,7 +170,7 @@ const SuperAdminBilling = () => {
         record.subscriptions?.users && record.subscriptions.users.role !== 'superadmin'
       );
 
-      // ✅ PRIORITY: Sync each subscription with live Stripe data first
+      // PRIORITY: Sync each subscription with live Stripe data first
       const subscriptionsWithStripeData = await Promise.all(
         filteredSubscriptions.map(async (subscription) => {
           const userId = subscription.user_id;
@@ -202,6 +202,8 @@ const SuperAdminBilling = () => {
                   ? stripeSubscription.cancel_at_period_end 
                   : subscription.cancel_at_period_end,
                 cancelled_at: stripeSubscription.cancelled_at || subscription.cancelled_at,
+                // Include scheduled change info
+                scheduled_change: stripeSubscription.scheduled_change || null,
                 // Keep database user info
                 users: subscription.users
               };
@@ -745,9 +747,17 @@ const SuperAdminBilling = () => {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(subscription.status)}`}>
-                            {normalizeStatus(subscription.status)}
-                          </span>
+                          <div className="flex flex-col gap-1">
+                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(subscription.status)}`}>
+                              {normalizeStatus(subscription.status)}
+                            </span>
+                            {subscription.users?.has_lifetime_access && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                <Icon name="Gift" size={12} />
+                                Lifetime
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-3">
                           <p className="text-sm font-medium text-foreground">
@@ -788,7 +798,7 @@ const SuperAdminBilling = () => {
                               <Icon name="Eye" size={14} />
                             </Button>
                             
-                            {/* Edit Button - Disabled for cancelled subscriptions */}
+                            {/* Edit Button - Disabled for cancelled subscriptions, shows modal protection for lifetime users */}
                             <Button
                               variant="outline"
                               size="sm"
@@ -800,8 +810,8 @@ const SuperAdminBilling = () => {
                               <Icon name="Edit" size={14} />
                             </Button>
                             
-                            {/* Cancel Button */}
-                            {(subscription.status === 'active' || subscription.status === 'trialing' || subscription.status === 'trial') && (
+                            {/* Cancel Button - Hidden for lifetime access users */}
+                            {!subscription.users?.has_lifetime_access && (subscription.status === 'active' || subscription.status === 'trialing' || subscription.status === 'trial') && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -809,7 +819,7 @@ const SuperAdminBilling = () => {
                                 className="text-red-600 border-red-200 hover:bg-red-50"
                                 title="Cancel subscription"
                               >
-                                <Icon name="Trash2" size={14} />
+                                <Icon name="XCircle" size={14} />
                               </Button>
                             )}
                           </div>
@@ -840,9 +850,17 @@ const SuperAdminBilling = () => {
                           </h3>
                           <p className="text-xs text-muted-foreground truncate">{subscription.users?.email || 'No email'}</p>
                         </div>
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(subscription.status)}`}>
-                          {normalizeStatus(subscription.status)}
-                        </span>
+                        <div className="flex flex-col gap-1 items-end">
+                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(subscription.status)}`}>
+                            {normalizeStatus(subscription.status)}
+                          </span>
+                          {subscription.users?.has_lifetime_access && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 whitespace-nowrap">
+                              <Icon name="Gift" size={12} />
+                              Lifetime
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Subscription Details */}
@@ -898,6 +916,8 @@ const SuperAdminBilling = () => {
                         >
                           <Icon name="Eye" size={14} />
                         </Button>
+                        
+                        {/* Edit Button - Shows modal protection for lifetime users */}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -908,7 +928,9 @@ const SuperAdminBilling = () => {
                         >
                           <Icon name="Edit" size={14} />
                         </Button>
-                        {(subscription.status === 'active' || subscription.status === 'trialing' || subscription.status === 'trial') && (
+                        
+                        {/* Cancel Button - Hidden for lifetime access users */}
+                        {!subscription.users?.has_lifetime_access && (subscription.status === 'active' || subscription.status === 'trialing' || subscription.status === 'trial') && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -916,7 +938,7 @@ const SuperAdminBilling = () => {
                             className="h-8 px-2 text-red-600 hover:text-red-700"
                             title="Cancel"
                           >
-                            <Icon name="Trash2" size={14} />
+                            <Icon name="XCircle" size={14} />
                           </Button>
                         )}
                       </div>

@@ -85,7 +85,7 @@ serve(async (req) => {
 
     // Fetch subscription from Stripe
     const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId, {
-      expand: ['default_payment_method', 'latest_invoice']
+      expand: ['default_payment_method', 'latest_invoice', 'schedule']
     })
 
     // Get price details
@@ -113,6 +113,37 @@ serve(async (req) => {
       normalizedStatus = 'cancelled'
     }
 
+    // Check for scheduled plan changes
+    let scheduledChange = null
+    if (stripeSubscription.schedule && typeof stripeSubscription.schedule === 'object') {
+      const schedule = stripeSubscription.schedule as any
+      if (schedule.phases && schedule.phases.length > 1) {
+        // Get the next phase (future phase)
+        const currentPhase = schedule.current_phase
+        const nextPhase = schedule.phases.find((phase: any) => 
+          phase.start_date > (currentPhase?.start_date || 0)
+        )
+        
+        if (nextPhase && nextPhase.items && nextPhase.items.length > 0) {
+          const nextPriceId = nextPhase.items[0].price
+          const nextPrice = nextPhase.items[0].plan || nextPhase.items[0].price_data
+          
+          // Determine new plan type
+          let newPlanType = 'starter'
+          if (nextPriceId === proMonthlyPriceId || nextPriceId === proYearlyPriceId) {
+            newPlanType = 'pro'
+          }
+          
+          scheduledChange = {
+            new_plan_type: newPlanType,
+            new_plan_name: newPlanType === 'pro' ? 'Pro Plan' : 'Starter Plan',
+            new_amount: nextPrice?.unit_amount ? nextPrice.unit_amount / 100 : null,
+            effective_date: nextPhase.start_date * 1000
+          }
+        }
+      }
+    }
+
     // Format subscription data
     const formattedSubscription = {
       id: stripeSubscription.id,
@@ -137,7 +168,9 @@ serve(async (req) => {
         last4: (stripeSubscription.default_payment_method as any)?.card?.last4,
         exp_month: (stripeSubscription.default_payment_method as any)?.card?.exp_month,
         exp_year: (stripeSubscription.default_payment_method as any)?.card?.exp_year
-      } : null
+      } : null,
+      // Scheduled plan change info
+      scheduled_change: scheduledChange
     }
 
     // Also sync to local database

@@ -28,9 +28,9 @@ const SubscriptionsFilterToolbar = ({ searchTerm, onSearchChange, statusFilter, 
     { value: 'active', label: 'Active' },
     { value: 'trialing', label: 'Trialing' },
     { value: 'cancelled', label: 'Cancelled' },
-    { value: 'inactive', label: 'Inactive' },
-    { value: 'expired', label: 'Expired' },
-    { value: 'payment_failed', label: 'Payment Failed' }
+    { value: 'past_due', label: 'Past Due' },
+    { value: 'unpaid', label: 'Unpaid' },
+    { value: 'incomplete', label: 'Incomplete' }
   ];
 
   return (

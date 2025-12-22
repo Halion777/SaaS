@@ -64,6 +64,47 @@ const SubscriptionViewModal = ({ isOpen, onClose, subscription }) => {
 
           {/* Subscription Information */}
           <div className="space-y-6">
+            {/* Scheduled Plan Changes - Show at top if exists */}
+            {subscription.scheduled_change && (
+              <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4 shadow-sm">
+                <div className="flex items-start space-x-3">
+                  <Icon name="Calendar" size={20} className="text-purple-600 mt-0.5" />
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-purple-900 mb-2 flex items-center">
+                     
+                      Scheduled Plan Change
+                    </h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-purple-700">New Plan:</p>
+                        <p className="text-sm font-medium text-purple-900">
+                          {subscription.scheduled_change.new_plan_name || 'Unknown Plan'}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-purple-700">Effective Date:</p>
+                        <p className="text-sm font-medium text-purple-900">
+                          {subscription.scheduled_change.effective_date ? formatDate(subscription.scheduled_change.effective_date) : 'N/A'}
+                        </p>
+                      </div>
+                      {subscription.scheduled_change.new_amount && (
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-purple-700">New Amount:</p>
+                          <p className="text-sm font-medium text-purple-900">
+                            {formatCurrency(subscription.scheduled_change.new_amount)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-purple-600 mt-3 flex items-center bg-purple-100 rounded p-2">
+                      <Icon name="Info" size={12} className="mr-1" />
+                      This change will be applied automatically on the effective date.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* User Information */}
             <div className="bg-muted/30 rounded-lg p-4">
               <h3 className="text-sm font-medium text-foreground mb-3">User Information</h3>
