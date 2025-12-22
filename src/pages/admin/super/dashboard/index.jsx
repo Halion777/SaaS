@@ -326,11 +326,25 @@ const SuperAdminDashboard = () => {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
 
       // Single optimized query for all payment data (last 12 months)
-      const { data: paymentData } = await supabase
+      // Exclude superadmin payment records
+      const { data: allPaymentData } = await supabase
         .from('payment_records')
-        .select('amount, paid_at')
+        .select('amount, paid_at, user_id')
         .eq('status', 'succeeded')
         .gte('paid_at', twelveMonthsAgo.toISOString());
+      
+      // Get superadmin user IDs to exclude
+      const { data: superadminUsers } = await supabase
+        .from('users')
+        .select('id')
+        .eq('role', 'superadmin');
+      
+      const superadminUserIds = superadminUsers?.map(u => u.id) || [];
+      
+      // Filter out payments from superadmin users
+      const paymentData = allPaymentData?.filter(payment => 
+        !superadminUserIds.includes(payment.user_id)
+      ) || [];
 
       // Single optimized query for all invoice data (last 12 months)
       const { data: invoiceData } = await supabase
@@ -347,14 +361,6 @@ const SuperAdminDashboard = () => {
         .neq('role', 'superadmin')
         .gte('created_at', twelveMonthsAgo.toISOString());
 
-      // Get superadmin user IDs to exclude from quotes
-      const { data: superadminUsers } = await supabase
-        .from('users')
-        .select('id')
-        .eq('role', 'superadmin');
-      
-      const superadminUserIds = superadminUsers?.map(u => u.id) || [];
-
       // Single optimized query for all quote data (last 30 days)
       // Exclude quotes from superadmin users
       const { data: allQuoteData } = await supabase
@@ -367,7 +373,7 @@ const SuperAdminDashboard = () => {
         !superadminUserIds.includes(quote.user_id)
       ) || [];
 
-      // Process monthly revenue data
+      // Process monthly revenue data (SUBSCRIPTION REVENUE ONLY)
       const monthlyRevenue = [];
       for (let i = 11; i >= 0; i--) {
         const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
@@ -376,23 +382,17 @@ const SuperAdminDashboard = () => {
         const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
         const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
         
-        // Filter data in JavaScript instead of making separate queries
+        // Filter subscription payments only (payment_records)
         const monthPayments = paymentData?.filter(payment => {
           const paymentDate = new Date(payment.paid_at);
           return paymentDate >= monthStart && paymentDate <= monthEnd;
         }) || [];
         
-        const monthInvoices = invoiceData?.filter(invoice => {
-          const invoiceDate = new Date(invoice.created_at);
-          return invoiceDate >= monthStart && invoiceDate <= monthEnd;
-        }) || [];
-        
         const paymentRevenue = monthPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
-        const invoiceRevenue = monthInvoices.reduce((sum, invoice) => sum + (invoice.final_amount || 0), 0);
         
         monthlyRevenue.push({
           name: monthName,
-          revenue: paymentRevenue + invoiceRevenue
+          revenue: paymentRevenue // Only subscription payments, no invoices
         });
       }
 
@@ -457,6 +457,14 @@ const SuperAdminDashboard = () => {
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
         // Execute all basic stats queries in parallel
+        // Get superadmin user IDs for filtering
+        const { data: superadminUsers } = await supabase
+          .from('users')
+          .select('id')
+          .eq('role', 'superadmin');
+        
+        const superadminUserIds = superadminUsers?.map(u => u.id) || [];
+
         const [
           totalUsersResult,
           activeUsersResult,
@@ -465,7 +473,6 @@ const SuperAdminDashboard = () => {
           totalLeadsResult,
           activeLeadsResult,
           convertedLeadsResult,
-          subscriptionDataResult,
           paymentDataResult,
           invoiceDataResult
         ] = await Promise.all([
@@ -476,9 +483,8 @@ const SuperAdminDashboard = () => {
           supabase.from('lead_requests').select('*', { count: 'exact', head: true }),
           supabase.from('lead_requests').select('*', { count: 'exact', head: true }).eq('status', 'active'),
           supabase.from('lead_requests').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
-          supabase.from('subscriptions').select('amount').eq('status', 'active'),
-          supabase.from('payment_records').select('amount').eq('status', 'succeeded'),
-          supabase.from('invoices').select('final_amount').eq('status', 'paid')
+          supabase.from('payment_records').select('amount, user_id').eq('status', 'succeeded'),
+          supabase.from('invoices').select('final_amount, user_id').eq('status', 'paid')
         ]);
 
         // Process results
@@ -490,10 +496,19 @@ const SuperAdminDashboard = () => {
         const activeLeads = activeLeadsResult.count || 0;
         const convertedLeads = convertedLeadsResult.count || 0;
 
-        const subscriptionRevenue = subscriptionDataResult.data?.reduce((sum, sub) => sum + (sub.amount || 0), 0) || 0;
-        const paymentRevenue = paymentDataResult.data?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
-        const invoiceRevenue = invoiceDataResult.data?.reduce((sum, invoice) => sum + (invoice.final_amount || 0), 0) || 0;
-        const totalRevenue = paymentRevenue + invoiceRevenue;
+        // Filter out superadmin payments and invoices
+        const filteredPayments = paymentDataResult.data?.filter(payment => 
+          !superadminUserIds.includes(payment.user_id)
+        ) || [];
+        
+        const filteredInvoices = invoiceDataResult.data?.filter(invoice => 
+          !superadminUserIds.includes(invoice.user_id)
+        ) || [];
+
+        // Calculate revenues (excluding superadmin)
+        const subscriptionRevenue = filteredPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+        const invoiceRevenue = filteredInvoices.reduce((sum, invoice) => sum + (invoice.final_amount || 0), 0);
+        const totalRevenue = subscriptionRevenue + invoiceRevenue;
 
         setSystemStats({
           totalUsers,
@@ -501,7 +516,7 @@ const SuperAdminDashboard = () => {
           totalQuotes,
           totalInvoices,
           totalLeads,
-          subscriptionRevenue: paymentRevenue,
+          subscriptionRevenue,
           invoiceRevenue,
           totalRevenue,
           systemUptime: '99.8%',
@@ -872,10 +887,10 @@ const SuperAdminDashboard = () => {
 
           {/* Revenue Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Monthly Revenue Chart */}
+            {/* Monthly Subscription Revenue Chart */}
             <div className="bg-card border border-border rounded-lg p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-foreground">Monthly Revenue</h3>
+                <h3 className="text-lg font-semibold text-foreground">Subscription Revenue</h3>
                 <Icon name="TrendingUp" size={20} className="text-blue-600" />
               </div>
               <RevenueChart

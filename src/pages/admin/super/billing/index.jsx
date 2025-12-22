@@ -301,7 +301,9 @@ const SuperAdminBilling = () => {
       ).reduce((sum, record) => sum + (record.amount || 0), 0) || 0;
 
       // Calculate subscription counts (excluding superadmin)
-      const activeSubscriptions = subscriptionsWithUsage?.filter(sub => sub.status === 'active').length || 0;
+      const activeSubscriptions = subscriptionsWithUsage?.filter(sub => 
+        sub.status === 'active' || sub.status === 'trialing' || sub.status === 'trial'
+      ).length || 0;
       const cancelledSubscriptions = subscriptionsWithUsage?.filter(sub => 
         sub.status === 'cancelled' || sub.status === 'inactive'
       ).length || 0;
