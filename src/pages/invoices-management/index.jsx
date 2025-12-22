@@ -155,7 +155,6 @@ const InvoicesManagement = () => {
         }));
         
         setInvoices(transformedInvoices);
-        setFilteredInvoices(transformedInvoices);
         setError(null);
       } else {
         console.error('Failed to fetch invoices:', result.error);
@@ -185,6 +184,14 @@ const InvoicesManagement = () => {
       window.dispatchEvent(new CustomEvent('page-loaded'));
     }
   }, [user]);
+
+  // Apply filters whenever invoices change (to hide final invoices if deposit is not paid)
+  useEffect(() => {
+    if (invoices.length > 0 || filters.search || filters.status || filters.client || filters.invoiceType || filters.dateRange.start || filters.dateRange.end) {
+      handleFiltersChange(filters);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invoices]);
 
   // Load data function for compatibility
   const loadData = () => {
@@ -264,33 +271,72 @@ const InvoicesManagement = () => {
       }
     }
 
-    // Filter: Hide final invoices if deposit invoice is not paid
+    // Filter: Hide final invoices until deposit invoice is paid
+    // Hide invoices from quotes that have both deposit and final invoices until deposit is paid
     // Only apply this logic if invoice type filter is NOT active (to allow users to see all invoices when filtering by type)
     if (!newFilters.invoiceType) {
-      // For each final invoice, check if there's a deposit invoice with the same quote_id
-      // If deposit invoice exists and is not paid, hide the final invoice
-      // Note: Check against all invoices (not filtered) to ensure we find deposit invoices even if they're filtered out
       filtered = filtered.filter(invoice => {
-        // If it's a deposit invoice, always show it
-        if (invoice.invoiceType === 'deposit') {
+        // Get invoice type (default to 'final' if not set)
+        const invoiceType = invoice.invoiceType || invoice.invoice_type || 'final';
+        
+        // Always show deposit invoices
+        if (invoiceType === 'deposit') {
           return true;
         }
         
-        // If it's a final invoice, check if deposit invoice is paid
-        if (invoice.invoiceType === 'final' && invoice.quoteId) {
-          // Find deposit invoice with same quote_id from all invoices (not filtered)
-          const depositInvoice = invoices.find(inv => 
-            inv.invoiceType === 'deposit' && 
-            inv.quoteId === invoice.quoteId
-          );
+        // For invoices from quotes (with quoteId)
+        if (invoice.quoteId) {
+          // Find all invoices from the same quote
+          const quoteInvoices = invoices.filter(inv => inv.quoteId === invoice.quoteId);
           
-          // If no deposit invoice exists, show final invoice (backward compatibility)
-          if (!depositInvoice) {
+          // Check invoice types properly (handle both invoiceType and invoice_type)
+          const hasDepositInvoice = quoteInvoices.some(inv => {
+            const invType = inv.invoiceType || inv.invoice_type || 'final';
+            return invType === 'deposit';
+          });
+          
+          const hasFinalInvoice = quoteInvoices.some(inv => {
+            const invType = inv.invoiceType || inv.invoice_type || 'final';
+            return invType === 'final';
+          });
+          
+          // If quote has both deposit and final invoices
+          if (hasDepositInvoice && hasFinalInvoice) {
+            // Find the deposit invoice for this quote
+            const depositInvoice = quoteInvoices.find(inv => {
+              const invType = inv.invoiceType || inv.invoice_type || 'final';
+              return invType === 'deposit';
+            });
+            
+            // If deposit invoice exists and is not paid, hide final invoices
+            if (depositInvoice && depositInvoice.status !== 'paid') {
+              // Hide final invoices until deposit is paid
+              if (invoiceType === 'final') {
+                return false;
+              }
+              // For other invoice types from quotes with both deposit and final, hide them too
+              return false;
+            }
+            
+            // If deposit is paid, show all invoices from this quote
             return true;
           }
+        }
+        
+        // For final invoices, check if there's a deposit invoice with the same quote_id
+        if (invoiceType === 'final' && invoice.quoteId) {
+          const depositInvoice = invoices.find(inv => {
+            const invType = inv.invoiceType || inv.invoice_type || 'final';
+            return invType === 'deposit' && inv.quoteId === invoice.quoteId;
+          });
           
           // If deposit invoice exists, only show final invoice if deposit is paid
-          return depositInvoice.status === 'paid';
+          if (depositInvoice) {
+            return depositInvoice.status === 'paid';
+          }
+          
+          // If no deposit invoice exists, show final invoice (backward compatibility)
+          return true;
         }
         
         // For invoices without invoice_type or quote_id, show them (backward compatibility)
@@ -467,12 +513,13 @@ const InvoicesManagement = () => {
       
       if (result.success) {
         // Update local state
-        setInvoices(prev => 
-          prev.map(inv => inv.id === invoiceId ? { ...inv, status: newStatus } : inv)
+        const updatedInvoices = invoices.map(inv => 
+          inv.id === invoiceId ? { ...inv, status: newStatus } : inv
         );
-        setFilteredInvoices(prev => 
-          prev.map(inv => inv.id === invoiceId ? { ...inv, status: newStatus } : inv)
-        );
+        setInvoices(updatedInvoices);
+        
+        // Re-apply filters to refresh the filtered list (this will hide/show final invoices based on deposit status)
+        handleFiltersChange(filters);
       } else {
         alert(t('invoicesManagement.errors.updateStatusError') + ': ' + result.error);
       }
@@ -488,12 +535,13 @@ const InvoicesManagement = () => {
       
       if (result.success) {
         // Update local state
-        setInvoices(prev => prev.map(inv => 
+        const updatedInvoices = invoices.map(inv => 
           inv.id === invoice.id ? { ...inv, status: 'paid' } : inv
-        ));
-        setFilteredInvoices(prev => prev.map(inv => 
-          inv.id === invoice.id ? { ...inv, status: 'paid' } : inv
-        ));
+        );
+        setInvoices(updatedInvoices);
+        
+        // Re-apply filters to refresh the filtered list (this will hide/show final invoices based on deposit status)
+        handleFiltersChange(filters);
         
         alert(t('invoicesManagement.messages.markedAsPaidSuccess'));
       } else {
@@ -523,8 +571,10 @@ const InvoicesManagement = () => {
       );
       
       setInvoices(updatedInvoices);
-      setFilteredInvoices(updatedInvoices);
       setSelectedInvoices([]);
+      
+      // Re-apply filters to refresh the filtered list (this will hide/show final invoices based on deposit status)
+      handleFiltersChange(filters);
       
       alert(t('invoicesManagement.messages.bulkMarkedAsPaidSuccess', { count: selectedInvoices.length }));
     } catch (error) {
