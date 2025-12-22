@@ -209,35 +209,51 @@ export class InvoiceService {
     const headers = [
       'Invoice Number',
       'Quote Number',
+      'Invoice Type',
       'Client Name',
       'Client Email',
+      'Client Phone',
+      'Client Address',
+      'Client City',
+      'Client Postal Code',
+      'Client Country',
+      'Client VAT',
+      'Client Type',
       'Total Amount',
       'Net Amount',
       'Tax Amount',
-      'Discount Amount',
       'Status',
       'Issue Date',
       'Due Date',
-      'Payment Method',
       'Title',
-      'Peppol Status'
+      'Peppol Status',
+      'Peppol Sent Date',
+      'Receiver Peppol ID'
     ];
 
     const rows = invoices.map(invoice => [
       invoice.number || invoice.invoice_number || '',
       invoice.quoteNumber || invoice.quote?.quote_number || '',
+      invoice.invoiceType || invoice.invoice_type || 'final',
       invoice.clientName || invoice.client?.name || '',
       invoice.clientEmail || invoice.client?.email || '',
+      invoice.client?.phone || '',
+      invoice.client?.address || '',
+      invoice.client?.city || '',
+      invoice.client?.postal_code || '',
+      invoice.client?.country || '',
+      invoice.client?.vat_number || '',
+      invoice.client?.client_type || '',
       invoice.amount || invoice.final_amount || 0,
       invoice.netAmount || invoice.net_amount || 0,
       invoice.taxAmount || invoice.tax_amount || 0,
-      invoice.discountAmount || invoice.discount_amount || 0,
       invoice.status || '',
       invoice.issueDate || invoice.issue_date || '',
       invoice.dueDate || invoice.due_date || '',
-      invoice.paymentMethod || invoice.payment_method || '',
       invoice.title || '',
-      invoice.peppolStatus || invoice.peppol_status || ''
+      invoice.peppolStatus || invoice.peppol_status || '',
+      invoice.peppolSentAt ? new Date(invoice.peppolSentAt).toLocaleDateString() : '',
+      invoice.receiverPeppolId || ''
     ]);
 
     const csvContent = [
@@ -266,7 +282,7 @@ export class InvoiceService {
         .from('invoices')
         .select(`
           *,
-          client:clients(id, name, email, phone, address, city, postal_code, country, vat_number),
+          client:clients(id, name, email, phone, address, city, postal_code, country, vat_number, client_type),
           quote:quotes(quote_number, title)
         `)
         .in('id', invoiceIds);
@@ -281,18 +297,21 @@ export class InvoiceService {
         number: invoice.invoice_number,
         invoice_number: invoice.invoice_number,
         quoteNumber: invoice.quote?.quote_number,
+        invoiceType: invoice.invoice_type || 'final',
+        invoice_type: invoice.invoice_type || 'final',
         clientName: invoice.client?.name,
         clientEmail: invoice.client?.email,
+        client: invoice.client, // Keep full client object for CSV generation
         amount: parseFloat(invoice.final_amount || 0),
         netAmount: parseFloat(invoice.net_amount || 0),
         taxAmount: parseFloat(invoice.tax_amount || 0),
-        discountAmount: parseFloat(invoice.discount_amount || 0),
         status: invoice.status,
         issueDate: invoice.issue_date,
         dueDate: invoice.due_date,
-        paymentMethod: invoice.payment_method,
         title: invoice.title,
-        peppolStatus: invoice.peppol_status
+        peppolStatus: invoice.peppol_status || 'not_sent',
+        peppolSentAt: invoice.peppol_sent_at,
+        receiverPeppolId: invoice.receiver_peppol_id
       }));
 
       // Generate CSV content
