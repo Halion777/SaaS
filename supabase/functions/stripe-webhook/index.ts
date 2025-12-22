@@ -183,21 +183,29 @@ serve(async (req) => {
               }
 
               // Create payment record if there was an immediate charge (no trial)
-              if (session.amount_total > 0) {
+              // Skip for $0 amounts as invoice.payment_succeeded will handle it
+              if (session.amount_total > 0 && session.payment_intent) {
                 const { data: subRecord } = await supabaseClient
                   .from('subscriptions')
                   .select('id')
                   .eq('stripe_subscription_id', subscriptionDetails.id)
                   .single()
 
-                // Only create payment record if amount > 0 (skip for trials, as invoice.payment_succeeded will handle it)
-                if (session.amount_total > 0) {
+                // Check if payment record already exists (prevent duplicates)
+                const { data: existingPayment } = await supabaseClient
+                  .from('payment_records')
+                  .select('id')
+                  .eq('stripe_payment_intent_id', session.payment_intent as string)
+                  .single()
+
+                // Only create if it doesn't exist
+                if (!existingPayment) {
                   await supabaseClient
                     .from('payment_records')
                     .insert({
                       subscription_id: subRecord?.id || null,
                       user_id: session.metadata.userId,
-                      stripe_payment_intent_id: session.payment_intent as string || null,
+                      stripe_payment_intent_id: session.payment_intent as string,
                       stripe_invoice_id: null,
                       amount: (session.amount_total / 100).toFixed(2),
                       currency: session.currency?.toUpperCase() || 'EUR',
