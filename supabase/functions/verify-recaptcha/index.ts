@@ -17,8 +17,7 @@ serve(async (req) => {
   try {
     // Get the request body text first
     const bodyText = await req.text();
-    console.log('Received request body:', bodyText);
-    
+   
     // Parse JSON
     let requestData;
     try {
@@ -79,7 +78,6 @@ serve(async (req) => {
 
     const verifyData = await verifyResponse.json();
 
-    console.log('reCAPTCHA verification response:', verifyData);
 
     if (!verifyResponse.ok) {
       console.error('reCAPTCHA verification request failed:', verifyResponse.status);
