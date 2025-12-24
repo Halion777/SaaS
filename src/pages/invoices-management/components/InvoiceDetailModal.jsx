@@ -40,7 +40,7 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
   const getStatusBadge = (status) => {
     const statusConfig = {
       paid: { label: t('invoicesManagement.status.paid'), color: 'bg-success text-success-foreground' },
-      unpaid: { label: t('invoicesManagement.status.unpaid'), color: 'bg-warning text-warning-foreground' },
+      unpaid: { label: t('invoicesManagement.status.unpaid'), color: 'bg-error text-error-foreground' },
       overdue: { label: t('invoicesManagement.status.overdue'), color: 'bg-error text-error-foreground' },
       cancelled: { label: t('invoicesManagement.status.cancelled'), color: 'bg-purple-500 text-white' }
     };

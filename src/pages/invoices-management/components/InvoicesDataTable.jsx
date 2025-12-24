@@ -40,10 +40,10 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
     return new Intl.DateTimeFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US').format(new Date(date));
   };
 
+  // Status options for manual update - EXCLUDES 'overdue' because it's auto-calculated based on due_date
   const statusOptions = [
     { value: 'paid', label: t('invoicesManagement.status.paid') },
     { value: 'unpaid', label: t('invoicesManagement.status.unpaid') },
-    { value: 'overdue', label: t('invoicesManagement.status.overdue') },
     { value: 'cancelled', label: t('invoicesManagement.status.cancelled') }
   ];
 
@@ -57,9 +57,9 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
       },
       unpaid: { 
         label: t('invoicesManagement.status.unpaid'), 
-        color: 'bg-gradient-to-r from-amber-400 to-orange-500 text-white',
-        border: 'border border-amber-300/30',
-        shadow: 'shadow-sm shadow-amber-500/20'
+        color: 'bg-gradient-to-r from-red-500 to-rose-600 text-white',
+        border: 'border border-red-400/30',
+        shadow: 'shadow-sm shadow-red-500/20'
       },
       overdue: { 
         label: t('invoicesManagement.status.overdue'), 

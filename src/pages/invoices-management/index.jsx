@@ -120,8 +120,27 @@ const InvoicesManagement = () => {
       const result = await InvoiceService.fetchInvoices(user.id);
       
       if (result.success) {
+        // Auto-update overdue status based on due_date
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const updatedInvoices = await Promise.all(result.data.map(async (invoice) => {
+          // If invoice is not paid and due_date has passed, mark as overdue
+          if (invoice.status !== 'paid' && invoice.status !== 'cancelled' && invoice.due_date) {
+            const dueDate = new Date(invoice.due_date);
+            dueDate.setHours(0, 0, 0, 0);
+            
+            if (dueDate < today && invoice.status !== 'overdue') {
+              // Auto-update status to overdue
+              await InvoiceService.updateInvoiceStatus(invoice.id, 'overdue', 'Statut mis à jour automatiquement (échéance dépassée)');
+              return { ...invoice, status: 'overdue' };
+            }
+          }
+          return invoice;
+        }));
+        
         // Transform the data to match the expected format
-        const transformedInvoices = result.data.map(invoice => ({
+        const transformedInvoices = updatedInvoices.map(invoice => ({
           id: invoice.id,
           number: invoice.invoice_number,
           quoteNumber: invoice.quote_number,

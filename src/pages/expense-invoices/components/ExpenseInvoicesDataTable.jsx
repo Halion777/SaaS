@@ -125,10 +125,12 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
     return null;
   };
 
+  // Status options for manual update - EXCLUDES 'overdue' because it's auto-calculated based on due_date
+  // No badgeColor to prevent dots from showing in dropdown
   const statusOptions = [
-    { value: 'paid', label: t('expenseInvoices.status.paid', 'Paid'), badgeColor: 'bg-success' },
-    { value: 'pending', label: t('expenseInvoices.status.pending', 'Pending'), badgeColor: 'bg-warning' },
-    { value: 'overdue', label: t('expenseInvoices.status.overdue', 'Overdue'), badgeColor: 'bg-error' }
+    { value: 'paid', label: t('expenseInvoices.status.paid', 'Paid') },
+    { value: 'pending', label: t('expenseInvoices.status.pending', 'Pending') },
+    { value: 'cancelled', label: t('expenseInvoices.status.cancelled', 'Cancelled') }
   ];
 
   const getInvoiceTypeBadge = (invoiceType) => {
@@ -166,15 +168,21 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
       },
       pending: { 
         label: t('expenseInvoices.status.pending', 'Pending'), 
-        color: 'bg-gradient-to-r from-amber-400 to-orange-500 text-white',
-        border: 'border border-amber-300/30',
-        shadow: 'shadow-sm shadow-amber-500/20'
+        color: 'bg-gradient-to-r from-red-500 to-rose-600 text-white',
+        border: 'border border-red-400/30',
+        shadow: 'shadow-sm shadow-red-500/20'
       },
       overdue: { 
         label: t('expenseInvoices.status.overdue', 'Overdue'), 
         color: 'bg-gradient-to-r from-red-500 to-rose-600 text-white',
         border: 'border border-red-400/30',
         shadow: 'shadow-sm shadow-red-500/20'
+      },
+      cancelled: { 
+        label: t('expenseInvoices.status.cancelled', 'Cancelled'), 
+        color: 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white',
+        border: 'border border-purple-400/30',
+        shadow: 'shadow-sm shadow-purple-500/20'
       }
     };
 
@@ -188,7 +196,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
             value={status}
             onValueChange={(newStatus) => onStatusUpdate(invoiceId, newStatus)}
             options={statusOptions}
-            className={`w-auto min-w-[100px] ${config.color} ${config.border} ${config.shadow} rounded-lg`}
+            className={`w-auto min-w-[100px] max-w-[100px] ${config.color} ${config.border} ${config.shadow} rounded-lg`}
             usePortal={true}
           />
         </div>
@@ -836,7 +844,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                             <div className="text-sm font-medium text-foreground">{formatCurrency(invoice.amount)}</div>
                             {renderAmountInfo(invoice)}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap" style={{ position: 'relative' }}>
+                          <td className="px-6 py-4" style={{ position: 'relative', minWidth: '120px' }}>
                             <div className="flex flex-col space-y-1">
                               {getStatusBadge(invoice.status, invoice.id)}
                               {daysOverdue && (
@@ -959,7 +967,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                     <div className="text-sm font-medium text-foreground">{formatCurrency(invoice.amount)}</div>
                     {renderAmountInfo(invoice)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap" style={{ position: 'relative' }}>
+                  <td className="px-6 py-4" style={{ position: 'relative', minWidth: '120px' }}>
                     <div className="flex flex-col space-y-1">
                       {getStatusBadge(invoice.status, invoice.id)}
                       {daysOverdue && (

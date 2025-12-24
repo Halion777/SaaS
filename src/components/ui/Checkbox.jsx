@@ -13,10 +13,22 @@ const Checkbox = React.forwardRef(({
     description,
     error,
     size = "default",
+    onChange,
+    onCheckedChange,
     ...props
 }, ref) => {
     // Generate unique ID if not provided
     const checkboxId = id || `checkbox-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Handle change event - support both onChange and onCheckedChange
+    const handleChange = (e) => {
+        if (onChange) {
+            onChange(e);
+        }
+        if (onCheckedChange) {
+            onCheckedChange(e.target.checked);
+        }
+    };
 
     // Size variants
     const sizeClasses = {
@@ -35,6 +47,7 @@ const Checkbox = React.forwardRef(({
                     checked={checked}
                     disabled={disabled}
                     required={required}
+                    onChange={handleChange}
                     className="sr-only"
                     {...props}
                 />
