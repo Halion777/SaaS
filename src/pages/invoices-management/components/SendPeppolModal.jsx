@@ -335,6 +335,9 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
         ...invoice,
         invoice_number: invoiceNumber, // Ensure invoice_number is set
         invoice_type: invoice.invoiceType || invoice.invoice_type || 'final', // Include invoice_type for Peppol
+        // Extract deposit/balance amounts from peppol_metadata or quote data
+        deposit_amount: invoice.peppol_metadata?.deposit_amount || invoice.quote?.deposit_amount || 0,
+        balance_amount: invoice.peppol_metadata?.balance_amount || invoice.quote?.balance_amount || 0,
         items: invoiceLines
       };
 

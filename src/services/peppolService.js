@@ -642,11 +642,19 @@ const generatePaymentMeansAndTerms = (invoiceConfig) => {
   const cleanedIBAN = invoiceConfig.sender.iban ? invoiceConfig.sender.iban.replace(/\s+/g, '') : '';
   const hasIBAN = cleanedIBAN && cleanedIBAN.trim() !== '';
   
-  // Build Note field: include payment terms and invoice_type if provided
-  // Format: "Net within X days | INVOICE_TYPE:deposit" or "Net within X days | INVOICE_TYPE:final"
+  // Build Note field: include payment terms, invoice_type, and deposit/balance amounts if provided
+  // Format: "Net within X days | INVOICE_TYPE:deposit | DEPOSIT_AMOUNT:500 | BALANCE_AMOUNT:1500"
   let noteText = `Net within ${invoiceConfig.paymentDelay} days`;
-  if (invoiceConfig.invoiceType && invoiceConfig.invoiceType !== 'final') {
+  if (invoiceConfig.invoiceType) {
     noteText += ` | INVOICE_TYPE:${invoiceConfig.invoiceType}`;
+  }
+  // Include deposit amount if present (for both deposit and final invoices)
+  if (invoiceConfig.depositAmount && invoiceConfig.depositAmount > 0) {
+    noteText += ` | DEPOSIT_AMOUNT:${invoiceConfig.depositAmount.toFixed(2)}`;
+  }
+  // Include balance amount if present (for both deposit and final invoices)
+  if (invoiceConfig.balanceAmount && invoiceConfig.balanceAmount > 0) {
+    noteText += ` | BALANCE_AMOUNT:${invoiceConfig.balanceAmount.toFixed(2)}`;
   }
   
   return `
@@ -1557,6 +1565,9 @@ export class PeppolService {
       paymentMeans: 31, // Debit transfer (code 31 = Credit transfer)
       // Include invoice_type (deposit or final) to be included in Note field
       invoiceType: haliqoInvoice.invoice_type || 'final',
+      // Include deposit and balance amounts for deposit/final invoices
+      depositAmount: parseFloat(haliqoInvoice.deposit_amount || 0),
+      balanceAmount: parseFloat(haliqoInvoice.balance_amount || 0),
       sender: {
         vatNumber: cleanVATNumber(senderInfo.vat_number), // Clean VAT number (remove Peppol scheme prefixes)
         name: senderInfo.company_name || senderInfo.full_name || 'Company Name Required',

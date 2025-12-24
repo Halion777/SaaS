@@ -85,7 +85,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
             value={status}
             onValueChange={(newStatus) => onStatusUpdate(invoice.id, newStatus)}
             options={statusOptions}
-            className={`w-auto min-w-[140px] ${config.color} ${config.border} ${config.shadow} rounded-lg`}
+            className={`w-auto min-w-[100px] ${config.color} ${config.border} ${config.shadow} rounded-lg`}
             usePortal={true}
           />
         </div>
@@ -172,25 +172,22 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
   };
 
   const getInvoiceTypeBadge = (invoiceType) => {
-    if (!invoiceType || invoiceType === 'final') {
-      return null; // Don't show badge for final invoices (default)
-    }
-    
     const typeConfig = {
       deposit: { 
-        label: t('invoicesManagement.invoiceType.deposit', 'Deposit Invoice'), 
+        label: t('invoicesManagement.invoiceType.deposit', 'Deposit'), 
         color: 'bg-blue-100 text-blue-700 border border-blue-300',
         icon: 'CreditCard'
       },
       final: { 
-        label: t('invoicesManagement.invoiceType.final', 'Final Invoice'), 
-        color: 'bg-green-100 text-green-700 border border-green-300',
-        icon: 'FileCheck'
+        label: t('invoicesManagement.invoiceType.final', 'Final'), 
+        color: 'bg-purple-100 text-purple-700 border border-purple-300',
+        icon: 'CheckCircle'
       }
     };
     
-    const config = typeConfig[invoiceType];
-    if (!config) return null;
+    // Default to 'final' if no type specified
+    const type = invoiceType === 'deposit' ? 'deposit' : 'final';
+    const config = typeConfig[type];
     
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${config.color}`}>
@@ -313,10 +310,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                           onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
                         />
                         <div>
-                          <div className="flex items-center space-x-2">
-                            <div className="text-sm font-medium text-foreground">{invoice.number}</div>
-                            {getInvoiceTypeBadge(invoice.invoiceType)}
-                          </div>
+                          <div className="text-sm font-medium text-foreground">{invoice.number}</div>
                         </div>
                       </div>
                     </div>
@@ -644,6 +638,9 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                 />
               </th>
               <SortableHeader label={t('invoicesManagement.table.headers.invoiceNumber')} sortKey="number" />
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                {t('invoicesManagement.table.headers.type', 'Type')}
+              </th>
               <SortableHeader label={t('invoicesManagement.table.headers.client')} sortKey="clientName" />
               <SortableHeader label={t('invoicesManagement.table.headers.amount')} sortKey="amount" />
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -690,13 +687,13 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                           />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-2">
-                            <div className="text-sm font-medium text-foreground">{invoice.number}</div>
-                            {getInvoiceTypeBadge(invoice.invoiceType)}
-                          </div>
+                          <div className="text-sm font-medium text-foreground">{invoice.number}</div>
                           {invoice.quoteNumber && !groupByQuote && (
                             <div className="text-xs text-muted-foreground">{t('invoicesManagement.table.quote')}: {invoice.quoteNumber}</div>
                           )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {getInvoiceTypeBadge(invoice.invoiceType)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-foreground">{invoice.clientName}</div>
@@ -799,13 +796,13 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                     />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-2">
                     <div className="text-sm font-medium text-foreground">{invoice.number}</div>
-                        {getInvoiceTypeBadge(invoice.invoiceType)}
-                      </div>
                     {invoice.quoteNumber && (
                       <div className="text-xs text-muted-foreground">{t('invoicesManagement.table.quote')}: {invoice.quoteNumber}</div>
                     )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {getInvoiceTypeBadge(invoice.invoiceType)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-foreground">{invoice.clientName}</div>

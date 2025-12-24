@@ -409,6 +409,8 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
   const labels = {
     fr: {
       invoice: 'FACTURE CLIENT',
+      depositInvoice: 'FACTURE D\'ACOMPTE',
+      finalInvoice: 'FACTURE FINALE',
       client: 'CLIENT',
       company: 'ENTREPRISE',
       paymentInfo: 'INFORMATIONS DE PAIEMENT',
@@ -431,6 +433,8 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
     },
     en: {
       invoice: 'CLIENT INVOICE',
+      depositInvoice: 'DEPOSIT INVOICE',
+      finalInvoice: 'FINAL INVOICE',
       client: 'CLIENT',
       company: 'COMPANY',
       paymentInfo: 'PAYMENT INFORMATION',
@@ -453,6 +457,8 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
     },
     nl: {
       invoice: 'KLANTENFACTUUR',
+      depositInvoice: 'AANBETALINGSFACTUUR',
+      finalInvoice: 'EINDFACTUUR',
       client: 'KLANT',
       company: 'BEDRIJF',
       paymentInfo: 'BETALINGSINFORMATIE',
@@ -632,22 +638,8 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
           </div>
         </div>
         <div style="text-align: right; flex: 1;">
-          <h2 style="margin: 0 0 10px 0; font-size: 18px; color: ${primaryColor}; font-weight: bold; letter-spacing: 1px;">${t.invoice}</h2>
+          <h2 style="margin: 0 0 10px 0; font-size: 18px; color: ${primaryColor}; font-weight: bold; letter-spacing: 1px;">${isDepositInvoice ? t.depositInvoice : (isFinalInvoice && depositEnabled ? t.finalInvoice : t.invoice)}</h2>
           <p style="margin: 5px 0; font-size: 16px; color: ${primaryColor}; font-weight: bold;">${escapeHtml(invoiceNumber || 'N/A')}</p>
-          ${(() => {
-            // Simple badge logic - show based on invoice type only, no extra conditions
-            if (isDepositInvoice) {
-              return `<div style="margin: 8px 0; padding: 6px 12px; background-color: #dbeafe; border: 2px solid #3b82f6; border-radius: 6px; display: inline-block; min-width: 120px;">
-                <p style="margin: 0; font-size: 11px; font-weight: bold; color: #000000; text-transform: uppercase; line-height: 1.2;">${language === 'fr' ? 'FACTURE D\'ACOMPTE' : language === 'en' ? 'DEPOSIT INVOICE' : 'AANBETALINGSFACTUUR'}</p>
-              </div>`;
-            } 
-            if (isFinalInvoice && depositEnabled) {
-              return `<div style="margin: 8px 0; padding: 6px 12px; background-color: #d1fae5; border: 2px solid #10b981; border-radius: 6px; display: inline-block; min-width: 120px;">
-                <p style="margin: 0; font-size: 11px; font-weight: bold; color: #000000; text-transform: uppercase; line-height: 1.2;">${language === 'fr' ? 'FACTURE FINALE' : language === 'en' ? 'FINAL INVOICE' : 'EINDFACTUUR'}</p>
-              </div>`;
-            }
-            return '';
-          })()}
           <p style="margin: 3px 0; color: ${secondaryColor}; font-size: 11px;">${t.date} ${currentDate}</p>
           ${dueDate ? `<p style="margin: 3px 0; color: ${secondaryColor}; font-size: 11px;">${t.due} ${dueDate}</p>` : ''}
         </div>
@@ -970,6 +962,8 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
   const labels = {
     fr: {
       invoice: 'FACTURE FOURNISSEUR',
+      depositInvoice: 'FACTURE D\'ACOMPTE FOURNISSEUR',
+      finalInvoice: 'FACTURE FINALE FOURNISSEUR',
       supplier: 'FOURNISSEUR',
       company: 'ENTREPRISE',
       invoiceDetails: 'DÉTAILS DE LA FACTURE',
@@ -997,6 +991,8 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
     },
     en: {
       invoice: 'SUPPLIER INVOICE',
+      depositInvoice: 'SUPPLIER DEPOSIT INVOICE',
+      finalInvoice: 'SUPPLIER FINAL INVOICE',
       supplier: 'SUPPLIER',
       company: 'COMPANY',
       invoiceDetails: 'INVOICE DETAILS',
@@ -1024,6 +1020,8 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
     },
     nl: {
       invoice: 'LEVERANCIERSFACTUUR',
+      depositInvoice: 'AANBETALING LEVERANCIERSFACTUUR',
+      finalInvoice: 'EIND LEVERANCIERSFACTUUR',
       supplier: 'LEVERANCIER',
       company: 'BEDRIJF',
       invoiceDetails: 'FACTUURDETAILS',
@@ -1240,22 +1238,8 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
           </div>
         </div>
         <div style="text-align: right; flex: 1;">
-          <h2 style="margin: 0 0 10px 0; font-size: 18px; color: ${primaryColor}; font-weight: bold; letter-spacing: 1px;">${t.invoice}</h2>
+          <h2 style="margin: 0 0 10px 0; font-size: 18px; color: ${primaryColor}; font-weight: bold; letter-spacing: 1px;">${isDepositInvoice ? t.depositInvoice : (isFinalInvoice && depositEnabled ? t.finalInvoice : t.invoice)}</h2>
           <p style="margin: 5px 0; font-size: 16px; color: ${primaryColor}; font-weight: bold;">${escapeHtml(invoiceNumber || 'N/A')}</p>
-          ${(() => {
-            // Simple badge logic - show based on invoice type only, no extra conditions
-            if (isDepositInvoice) {
-              return `<div style="margin: 8px 0; padding: 6px 12px; background-color: #dbeafe; border: 2px solid #3b82f6; border-radius: 6px; display: inline-block; min-width: 120px;">
-                <p style="margin: 0; font-size: 11px; font-weight: bold; color: #000000; text-transform: uppercase; line-height: 1.2;">${language === 'fr' ? 'FACTURE D\'ACOMPTE' : language === 'en' ? 'DEPOSIT INVOICE' : 'AANBETALINGSFACTUUR'}</p>
-              </div>`;
-            } 
-            if (isFinalInvoice && depositEnabled) {
-              return `<div style="margin: 8px 0; padding: 6px 12px; background-color: #d1fae5; border: 2px solid #10b981; border-radius: 6px; display: inline-block; min-width: 120px;">
-                <p style="margin: 0; font-size: 11px; font-weight: bold; color: #000000; text-transform: uppercase; line-height: 1.2;">${language === 'fr' ? 'FACTURE FINALE' : language === 'en' ? 'FINAL INVOICE' : 'EINDFACTUUR'}</p>
-              </div>`;
-            }
-            return '';
-          })()}
           <p style="margin: 3px 0; color: ${secondaryColor}; font-size: 11px;">${t.date} ${currentDate}</p>
           ${dueDate ? `<p style="margin: 3px 0; color: ${secondaryColor}; font-size: 11px;">${t.due} ${dueDate}</p>` : ''}
         </div>
@@ -1271,7 +1255,7 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
             ${supplier?.phone ? `<p style="margin: 0 0 3px 0;">${escapeHtml(supplier.phone)}</p>` : ''}
             ${supplier?.address ? `<p style="margin: 0 0 3px 0;">${escapeHtml(supplier.address)}</p>` : ''}
             ${supplier?.postal_code && supplier?.city ? `<p style="margin: 0;">${escapeHtml(supplier.postal_code)} ${escapeHtml(supplier.city)}</p>` : ''}
-            ${supplier?.vat_number ? `<p style="margin: 3px 0 0 0; font-weight: 500;">TVA: ${escapeHtml(supplier.vat_number)}</p>` : ''}
+            ${supplier?.vat_number ? `<p style="margin: 3px 0 0 0; font-weight: 500;">${t.vat} ${escapeHtml(supplier.vat_number)}</p>` : ''}
           </div>
         </div>
         <div style="text-align: right;">
@@ -1282,7 +1266,7 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
             ${companyInfo?.phone ? `<p style="margin: 0 0 3px 0;">${escapeHtml(companyInfo.phone)}</p>` : ''}
             ${companyInfo?.address ? `<p style="margin: 0 0 3px 0;">${escapeHtml(companyInfo.address)}</p>` : ''}
             ${companyInfo?.postalCode && companyInfo?.city ? `<p style="margin: 0;">${escapeHtml(companyInfo.postalCode)} ${escapeHtml(companyInfo.city)}</p>` : ''}
-            ${companyInfo?.vatNumber ? `<p style="margin: 3px 0 0 0; font-weight: 500;">TVA: ${escapeHtml(companyInfo.vatNumber)}</p>` : ''}
+            ${companyInfo?.vatNumber ? `<p style="margin: 3px 0 0 0; font-weight: 500;">${t.vat} ${escapeHtml(companyInfo.vatNumber)}</p>` : ''}
           </div>
         </div>
       </div>

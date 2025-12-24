@@ -45,6 +45,7 @@ const ExpenseInvoicesManagement = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+  const [groupBySupplier, setGroupBySupplier] = useState(false);
 
   // Handle sidebar offset for responsive layout
   useEffect(() => {
@@ -292,6 +293,49 @@ const ExpenseInvoicesManagement = () => {
           parseFloat(invoice.amount) <= parseFloat(newFilters.amountRange.max)
         );
       }
+    }
+
+    // Filter: Hide final invoices until deposit invoice is paid
+    // Only apply this logic if invoice type filter is NOT active (to allow users to see all invoices when filtering by type)
+    if (!newFilters.invoiceType) {
+      filtered = filtered.filter(invoice => {
+        // Get invoice type (default to 'final' if not set)
+        const invoiceType = invoice.invoice_type || 'final';
+        
+        // Always show deposit invoices
+        if (invoiceType === 'deposit') {
+          return true;
+        }
+        
+        // For final invoices, check if there's a related deposit invoice from the same supplier
+        // Use peppol_metadata to check for original invoice number (buyerReference)
+        if (invoiceType === 'final') {
+          const buyerReference = invoice.peppol_metadata?.buyerReference || null;
+          
+          // If no buyerReference, show the invoice (it's not part of a deposit/final pair)
+          if (!buyerReference) {
+            return true;
+          }
+          
+          // Find deposit invoice with the same buyerReference
+          const depositInvoice = expenseInvoices.find(inv => {
+            const invType = inv.invoice_type || 'final';
+            const invBuyerRef = inv.peppol_metadata?.buyerReference || null;
+            return invType === 'deposit' && invBuyerRef === buyerReference;
+          });
+          
+          // If deposit invoice exists, only show final invoice if deposit is paid
+          if (depositInvoice) {
+            return depositInvoice.status === 'paid';
+          }
+          
+          // If no deposit invoice exists, show final invoice (standalone invoice)
+          return true;
+        }
+        
+        // For other invoice types or invoices without invoice_type, show them (backward compatibility)
+        return true;
+      });
     }
 
     setFilteredExpenseInvoices(filtered);
@@ -551,12 +595,20 @@ const ExpenseInvoicesManagement = () => {
       const csvData = [
         [
           t('expenseInvoices.export.invoiceNumber', 'Invoice Number'),
+          t('expenseInvoices.export.invoiceType', 'Invoice Type'),
           t('expenseInvoices.export.supplier', 'Supplier'),
           t('expenseInvoices.export.email', 'Email'),
           t('expenseInvoices.export.supplierVat', 'Supplier VAT'),
+          t('expenseInvoices.export.supplierPhone', 'Supplier Phone'),
+          t('expenseInvoices.export.supplierAddress', 'Supplier Address'),
+          t('expenseInvoices.export.supplierCity', 'Supplier City'),
+          t('expenseInvoices.export.supplierPostalCode', 'Supplier Postal Code'),
+          t('expenseInvoices.export.supplierCountry', 'Supplier Country'),
           t('expenseInvoices.export.totalAmount', 'Total Amount'),
           t('expenseInvoices.export.netAmount', 'Net Amount'),
           t('expenseInvoices.export.vatAmount', 'VAT Amount'),
+          t('expenseInvoices.export.depositAmount', 'Deposit Amount'),
+          t('expenseInvoices.export.balanceAmount', 'Balance Amount'),
           t('expenseInvoices.export.status', 'Status'),
           t('expenseInvoices.export.category', 'Category'),
           t('expenseInvoices.export.source', 'Source'),
@@ -564,19 +616,36 @@ const ExpenseInvoicesManagement = () => {
           t('expenseInvoices.export.dueDate', 'Due Date'),
           t('expenseInvoices.export.paymentMethod', 'Payment Method'),
           t('expenseInvoices.export.senderPeppolId', 'Sender Peppol ID'),
-          t('expenseInvoices.export.documentType', 'Document Type')
+          t('expenseInvoices.export.documentType', 'Document Type'),
+          t('expenseInvoices.export.buyerReference', 'Buyer Reference')
         ]
       ];
 
       invoicesToExport.forEach(invoice => {
+        // Extract supplier info from peppol_metadata
+        const supplierContact = invoice.peppol_metadata?.supplier || {};
+        const supplierAddress = invoice.peppol_metadata?.supplierAddress || {};
+        
+        // Get deposit and balance amounts from metadata
+        const depositAmount = invoice.peppol_metadata?.deposit_amount || '';
+        const balanceAmount = invoice.peppol_metadata?.balance_amount || '';
+        
         const row = [
           invoice.invoice_number,
+          invoice.invoice_type || 'final',
           invoice.supplier_name,
-          invoice.supplier_email || '',
+          invoice.supplier_email || supplierContact.email || '',
           invoice.supplier_vat_number || '',
+          supplierContact.contactPhone || supplierContact.phone || supplierContact.telephone || '',
+          supplierAddress.street || '',
+          supplierAddress.city || '',
+          supplierAddress.postalCode || supplierAddress.zip_code || '',
+          supplierAddress.country || '',
           invoice.amount,
           invoice.net_amount || '',
           invoice.vat_amount || '',
+          depositAmount,
+          balanceAmount,
           invoice.status,
           invoice.category || '',
           invoice.source,
@@ -584,7 +653,8 @@ const ExpenseInvoicesManagement = () => {
           invoice.due_date,
           invoice.payment_method || '',
           invoice.sender_peppol_id || '',
-          invoice.peppol_metadata?.documentTypeLabel || ''
+          invoice.peppol_metadata?.documentTypeLabel || '',
+          invoice.peppol_metadata?.buyerReference || ''
         ];
         csvData.push(row);
       });
@@ -746,6 +816,27 @@ const ExpenseInvoicesManagement = () => {
             filteredCount={filteredExpenseInvoices.length}
           />
 
+          {/* Group by Supplier Toggle */}
+          <div className="flex items-center justify-between bg-card border border-border rounded-lg p-3">
+            <div className="flex items-center space-x-2">
+              <Icon name="Layers" size={18} className="text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">
+                {t('expenseInvoices.groupBySupplier.label', 'Group invoices by supplier')}
+              </span>
+            </div>
+            <Button
+              variant={groupBySupplier ? "default" : "outline"}
+              size="sm"
+              onClick={() => setGroupBySupplier(!groupBySupplier)}
+              iconName={groupBySupplier ? "Check" : "X"}
+              iconPosition="left"
+            >
+              {groupBySupplier 
+                ? t('expenseInvoices.groupBySupplier.enabled', 'Grouped') 
+                : t('expenseInvoices.groupBySupplier.disabled', 'Ungrouped')}
+            </Button>
+          </div>
+
           {/* Bulk Actions */}
           {selectedExpenseInvoices.length > 0 && (
             <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-6">
@@ -838,6 +929,7 @@ const ExpenseInvoicesManagement = () => {
               downloadingInvoiceId={downloadingInvoiceId}
               canEdit={canEdit}
               canDelete={canDelete}
+              groupBySupplier={groupBySupplier}
             />
           )}
 

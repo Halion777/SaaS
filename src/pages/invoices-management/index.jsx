@@ -151,7 +151,10 @@ const InvoicesManagement = () => {
           peppolDeliveredAt: invoice.peppol_delivered_at,
           receiverPeppolId: invoice.receiver_peppol_id,
           peppolErrorMessage: invoice.peppol_error_message,
-          peppol_metadata: invoice.peppol_metadata || null
+          peppol_metadata: invoice.peppol_metadata || null,
+          // Extract deposit/balance amounts from peppol_metadata or quote for Peppol sending
+          deposit_amount: invoice.peppol_metadata?.deposit_amount || invoice.quote?.deposit_amount || 0,
+          balance_amount: invoice.peppol_metadata?.balance_amount || invoice.quote?.balance_amount || 0
         }));
         
         setInvoices(transformedInvoices);

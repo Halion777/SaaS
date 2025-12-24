@@ -325,39 +325,67 @@ export class ExpenseInvoicesService {
   generateExpenseInvoiceCSV(invoices) {
     const headers = [
       'Invoice Number',
+      'Invoice Type',
       'Supplier',
       'Email',
-      'VAT',
+      'Supplier VAT',
+      'Supplier Phone',
+      'Supplier Address',
+      'Supplier City',
+      'Supplier Postal Code',
+      'Supplier Country',
       'Total Amount',
       'Net Amount',
       'VAT Amount',
+      'Deposit Amount',
+      'Balance Amount',
       'Status',
       'Category',
       'Source',
       'Issue Date',
       'Due Date',
       'Payment Method',
-      'Peppol ID',
-      'Document Type'
+      'Sender Peppol ID',
+      'Document Type',
+      'Buyer Reference'
     ];
 
-    const rows = invoices.map(invoice => [
-      invoice.invoice_number || '',
-      invoice.supplier_name || '',
-      invoice.supplier_email || '',
-      invoice.supplier_vat_number || '',
-      invoice.amount || 0,
-      invoice.net_amount || 0,
-      invoice.vat_amount || 0,
-      invoice.status || '',
-      invoice.category || '',
-      invoice.source || '',
-      invoice.issue_date || '',
-      invoice.due_date || '',
-      invoice.payment_method || '',
-      invoice.sender_peppol_id || '',
-      invoice.peppol_metadata?.documentTypeLabel || ''
-    ]);
+    const rows = invoices.map(invoice => {
+      // Extract supplier info from peppol_metadata
+      const supplierContact = invoice.peppol_metadata?.supplier || {};
+      const supplierAddress = invoice.peppol_metadata?.supplierAddress || {};
+      
+      // Get deposit and balance amounts from metadata
+      const depositAmount = invoice.peppol_metadata?.deposit_amount || '';
+      const balanceAmount = invoice.peppol_metadata?.balance_amount || '';
+      
+      return [
+        invoice.invoice_number || '',
+        invoice.invoice_type || 'final',
+        invoice.supplier_name || '',
+        invoice.supplier_email || supplierContact.email || '',
+        invoice.supplier_vat_number || '',
+        supplierContact.contactPhone || supplierContact.phone || supplierContact.telephone || '',
+        supplierAddress.street || '',
+        supplierAddress.city || '',
+        supplierAddress.postalCode || supplierAddress.zip_code || '',
+        supplierAddress.country || '',
+        invoice.amount || 0,
+        invoice.net_amount || 0,
+        invoice.vat_amount || 0,
+        depositAmount,
+        balanceAmount,
+        invoice.status || '',
+        invoice.category || '',
+        invoice.source || '',
+        invoice.issue_date || '',
+        invoice.due_date || '',
+        invoice.payment_method || '',
+        invoice.sender_peppol_id || '',
+        invoice.peppol_metadata?.documentTypeLabel || '',
+        invoice.peppol_metadata?.buyerReference || ''
+      ];
+    });
 
     const csvContent = [
       headers.map(h => `"${h}"`).join(','),

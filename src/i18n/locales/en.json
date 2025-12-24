@@ -4490,6 +4490,41 @@
         "pending": "Pending",
         "overdue": "Overdue"
       },
+      "invoiceType": {
+        "deposit": "Deposit",
+        "final": "Final"
+      },
+      "table": {
+        "headers": {
+          "invoiceType": "Type",
+          "status": "Status",
+          "supplier": "Supplier",
+          "source": "Source",
+          "amount": "Amount",
+          "issueDate": "Issue Date",
+          "dueDate": "Due Date"
+        },
+        "days": "days",
+        "net": "Net",
+        "vat": "VAT",
+        "balance": "Balance",
+        "issue": "Issue",
+        "due": "Due",
+        "received": "Received",
+        "reference": "Ref",
+        "view": "View",
+        "export": "Export",
+        "searchPlaceholder": "Search by number, supplier, category or status..."
+      },
+      "groupBySupplier": {
+        "label": "Group invoices by supplier",
+        "enabled": "Grouped",
+        "disabled": "Ungrouped"
+      },
+      "grouping": {
+        "depositAndFinal": "Deposit + Final",
+        "invoices": "invoice(s)"
+      },
       "paymentMethods": {
         "creditTransfer": "Credit transfer",
         "paymentCard": "Payment card",
@@ -4642,12 +4677,20 @@
       },
       "export": {
         "invoiceNumber": "Invoice Number",
+        "invoiceType": "Invoice Type",
         "supplier": "Supplier",
         "email": "Email",
         "supplierVat": "Supplier VAT",
+        "supplierPhone": "Supplier Phone",
+        "supplierAddress": "Supplier Address",
+        "supplierCity": "Supplier City",
+        "supplierPostalCode": "Supplier Postal Code",
+        "supplierCountry": "Supplier Country",
         "totalAmount": "Total Amount",
         "netAmount": "Net Amount",
         "vatAmount": "VAT Amount",
+        "depositAmount": "Deposit Amount",
+        "balanceAmount": "Balance Amount",
         "status": "Status",
         "category": "Category",
         "source": "Source",
@@ -4655,7 +4698,8 @@
         "dueDate": "Due Date",
         "paymentMethod": "Payment Method",
         "senderPeppolId": "Sender Peppol ID",
-        "documentType": "Document Type"
+        "documentType": "Document Type",
+        "buyerReference": "Buyer Reference"
       },
       "modal": {
         "title": "Invoice Details",

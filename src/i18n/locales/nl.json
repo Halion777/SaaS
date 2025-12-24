@@ -4515,6 +4515,41 @@
         "pending": "In behandeling",
         "overdue": "Achterstallig"
       },
+      "invoiceType": {
+        "deposit": "Voorschot",
+        "final": "Restant"
+      },
+      "table": {
+        "headers": {
+          "invoiceType": "Type",
+          "status": "Status",
+          "supplier": "Leverancier",
+          "source": "Bron",
+          "amount": "Bedrag",
+          "issueDate": "Uitgavedatum",
+          "dueDate": "Vervaldatum"
+        },
+        "days": "dagen",
+        "net": "Netto",
+        "vat": "BTW",
+        "balance": "Saldo",
+        "issue": "Uitgave",
+        "due": "Vervaldatum",
+        "received": "Ontvangen",
+        "reference": "Ref",
+        "view": "Bekijken",
+        "export": "Exporteren",
+        "searchPlaceholder": "Zoeken op nummer, leverancier, categorie of status..."
+      },
+      "groupBySupplier": {
+        "label": "Facturen groeperen per leverancier",
+        "enabled": "Gegroepeerd",
+        "disabled": "Niet gegroepeerd"
+      },
+      "grouping": {
+        "depositAndFinal": "Voorschot + Restant",
+        "invoices": "factuur/facturen"
+      },
       "paymentMethods": {
         "creditTransfer": "Overschrijving",
         "paymentCard": "Betaalkaart",
@@ -4666,12 +4701,20 @@
       "retry": "Opnieuw proberen",
       "export": {
         "invoiceNumber": "Factuurnummer",
+        "invoiceType": "Factuurtype",
         "supplier": "Leverancier",
         "email": "E-mail",
         "supplierVat": "Leverancier BTW",
+        "supplierPhone": "Leverancier Telefoon",
+        "supplierAddress": "Leverancier Adres",
+        "supplierCity": "Leverancier Stad",
+        "supplierPostalCode": "Leverancier Postcode",
+        "supplierCountry": "Leverancier Land",
         "totalAmount": "Totaalbedrag",
         "netAmount": "Netto bedrag",
         "vatAmount": "BTW-bedrag",
+        "depositAmount": "Voorschot Bedrag",
+        "balanceAmount": "Restant te betalen",
         "status": "Status",
         "category": "Categorie",
         "source": "Bron",
@@ -4679,6 +4722,7 @@
         "dueDate": "Vervaldatum",
         "paymentMethod": "Betalingsmethode",
         "senderPeppolId": "Verzender Peppol ID",
+        "buyerReference": "Koperreferentie",
         "documentType": "Documenttype"
       },
       "modal": {

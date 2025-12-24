@@ -4540,6 +4540,41 @@
         "pending": "En attente",
         "overdue": "En retard"
       },
+      "invoiceType": {
+        "deposit": "Acompte",
+        "final": "Solde"
+      },
+      "table": {
+        "headers": {
+          "invoiceType": "Type",
+          "status": "Statut",
+          "supplier": "Fournisseur",
+          "source": "Source",
+          "amount": "Montant",
+          "issueDate": "Date émission",
+          "dueDate": "Date échéance"
+        },
+        "days": "jours",
+        "net": "HT",
+        "vat": "TVA",
+        "balance": "Solde",
+        "issue": "Émission",
+        "due": "Échéance",
+        "received": "Reçue",
+        "reference": "Réf",
+        "view": "Voir",
+        "export": "Exporter",
+        "searchPlaceholder": "Rechercher par numéro, fournisseur, catégorie ou statut..."
+      },
+      "groupBySupplier": {
+        "label": "Grouper les factures par fournisseur",
+        "enabled": "Groupé",
+        "disabled": "Non groupé"
+      },
+      "grouping": {
+        "depositAndFinal": "Acompte + Solde",
+        "invoices": "facture(s)"
+      },
       "paymentMethods": {
         "creditTransfer": "Virement bancaire",
         "paymentCard": "Carte de paiement",
@@ -4692,12 +4727,20 @@
       "retry": "Réessayer",
       "export": {
         "invoiceNumber": "Numéro",
+        "invoiceType": "Type de facture",
         "supplier": "Fournisseur",
         "email": "Email",
         "supplierVat": "TVA Fournisseur",
+        "supplierPhone": "Téléphone Fournisseur",
+        "supplierAddress": "Adresse Fournisseur",
+        "supplierCity": "Ville Fournisseur",
+        "supplierPostalCode": "Code Postal Fournisseur",
+        "supplierCountry": "Pays Fournisseur",
         "totalAmount": "Montant Total",
         "netAmount": "Montant HT",
         "vatAmount": "Montant TVA",
+        "depositAmount": "Montant Acompte",
+        "balanceAmount": "Solde à Payer",
         "status": "Statut",
         "category": "Catégorie",
         "source": "Source",
@@ -4705,6 +4748,7 @@
         "dueDate": "Date échéance",
         "paymentMethod": "Méthode paiement",
         "senderPeppolId": "ID Peppol Expéditeur",
+        "buyerReference": "Référence Acheteur",
         "documentType": "Type document"
       },
       "modal": {
