@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { uploadQuoteSignature } from './quoteFilesService';
 
 class ClientQuoteService {
   /**
@@ -58,6 +59,23 @@ class ClientQuoteService {
         clientName = quote.client?.name;
       }
 
+      // Get quote data to fetch user_id (needed for uploadQuoteSignature)
+      let userId = null;
+      if (quoteData?.user_id) {
+        userId = quoteData.user_id;
+      } else {
+        // Fetch user_id from quote if not provided
+        const { data: quoteInfo, error: quoteError } = await supabase
+          .from('quotes')
+          .select('user_id')
+          .eq('id', quoteId)
+          .single();
+        
+        if (!quoteError && quoteInfo) {
+          userId = quoteInfo.user_id;
+        }
+      }
+
       // Check if signature already exists
       const { data: existingSignature, error: signatureCheckError } = await supabase
         .from('quote_signatures')
@@ -79,66 +97,45 @@ class ClientQuoteService {
         signatureRecordId = existingSignature.id;
        
       } else {
-        // No existing signature, create new one
+        // No existing signature, create new one using same process as quote creation step 4
         try {
-          // Generate unique filename
-          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-          const filename = `client-signature-${quoteId}-${timestamp}.png`;
-          
-          // Upload base64 signature directly to storage
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('signatures')
-            .upload(`client-signatures/${filename}`, signatureData.signature, {
-              contentType: 'image/png',
-              cacheControl: '3600'
-            });
-
-          if (uploadError) {
-            console.error('Error uploading signature:', uploadError);
-            throw new Error(`Failed to upload signature: ${uploadError.message}`);
-          }
-
-          const filePath = `client-signatures/${filename}`;
-          
-          // Get public URL for the uploaded signature
-          const { data: publicUrlData } = supabase.storage
-            .from('signatures')
-            .getPublicUrl(filePath);
-          
-          const publicUrl = publicUrlData.publicUrl;
-          
-          // Insert into quote_signatures table with public URL
-          const signatureRecord = {
-            quote_id: quoteId,
-            signer_name: clientName || signatureData.clientName || 'Client',
-            signer_email: clientEmail || signatureData.clientEmail || null,
-            signature_data: publicUrl, // Store the public URL
-            signature_file_path: filePath,
-            signature_filename: filename,
-            signature_size: signatureData.signature.length, // Base64 string length
-            signature_mime_type: 'image/png',
-            signature_mode: signatureData.signatureMode || 'draw',
-            signature_type: 'client',
-            customer_comment: signatureData.clientComment,
-            signed_at: signatureData.signedAt || new Date().toISOString()
-          };
-
-          const { data: newSignatureRecord, error: signatureError } = await supabase
-            .from('quote_signatures')
-            .insert(signatureRecord)
-            .select('id')
-            .single();
-
-          if (signatureError) {
-            // If database insert fails, delete the uploaded file
-            await supabase.storage.from('signatures').remove([filePath]);
-            console.error('Error saving signature to database:', signatureError);
-            throw new Error(`Failed to save signature to database: ${signatureError.message}`);
+          // Convert base64 signature to File object (same as quote creation)
+          let signatureFile;
+          if (signatureData.signature.startsWith('data:')) {
+            // Data URI format: data:image/png;base64,...
+            const response = await fetch(signatureData.signature);
+            const blob = await response.blob();
+            signatureFile = new File([blob], 'client-signature.png', { type: 'image/png' });
+          } else if (signatureData.signature.startsWith('http')) {
+            // Already a URL, download it
+            const response = await fetch(signatureData.signature);
+            const blob = await response.blob();
+            signatureFile = new File([blob], 'client-signature.png', { type: 'image/png' });
+          } else {
+            // Base64 string without data: prefix
+            const response = await fetch(`data:image/png;base64,${signatureData.signature}`);
+            const blob = await response.blob();
+            signatureFile = new File([blob], 'client-signature.png', { type: 'image/png' });
           }
           
-          signaturePath = filePath;
-          signatureRecordId = newSignatureRecord.id;
-         
+          // Use the same uploadQuoteSignature function as quote creation step 4
+          // Path format: ${quoteId}/client (same as quote creation)
+          // Bucket: signatures (same as quote creation)
+          const result = await uploadQuoteSignature(
+            signatureFile,
+            quoteId,
+            userId, // Use quote's user_id (same as quote creation)
+            'client',
+            signatureData.clientComment || null
+          );
+
+          if (!result.success) {
+            throw new Error(result.error || 'Failed to upload signature');
+          }
+          
+          // Use the same path format as quote creation: quoteId/client/filename
+          signaturePath = result.data.signature_file_path;
+          signatureRecordId = result.data.id;
           
         } catch (signatureError) {
           console.error('Error saving signature:', signatureError);

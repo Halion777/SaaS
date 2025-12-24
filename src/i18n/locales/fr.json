@@ -3703,7 +3703,7 @@
       "clientSignature": "Signature du client",
       "signatureNotAvailable": "Signature non disponible",
       "waitingForSignature": "En attente de signature",
-      "quoteAccepted": "Devis déjà signé",
+      "quoteAccepted": "Devis signé",
       "signedOn": "Signé le",
       "recently": "récemment",
       "comment": "Commentaire"

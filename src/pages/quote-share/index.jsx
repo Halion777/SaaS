@@ -122,8 +122,8 @@ const PublicQuoteShareViewer = () => {
             console.error('Error reloading signature:', reloadError);
           }
           
-          // Show success message
-          alert(t('quoteShare.alerts.acceptedSuccess'));
+          // Don't show alert - just update UI
+          // Success is indicated by quoteStatus change and signature display
         } else {
           alert(`${t('quoteShare.alerts.error')}: ${result.error}`);
         }
@@ -173,8 +173,8 @@ const PublicQuoteShareViewer = () => {
           setClientSignature(signatureData);
         }
         
-        // Show success message
-        alert(t('quoteShare.alerts.acceptedSuccess'));
+        // Don't show alert - just update UI
+        // Success is indicated by quoteStatus change and signature display
       } else {
         alert(`Erreur: ${result.error}`);
       }
@@ -343,7 +343,22 @@ const PublicQuoteShareViewer = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative">
+      {/* Processing Loader Overlay */}
+      {(actionLoading || acceptLoading) && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-8 shadow-xl max-w-md mx-4 text-center">
+            <Icon name="Loader" size={64} className="animate-spin text-blue-600 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              {t('quoteShare.processing.title', 'Processing...')}
+            </h3>
+            <p className="text-gray-600">
+              {t('quoteShare.processing.message', 'Please wait while we process your quote acceptance.')}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Enhanced Header with Better Desktop Layout */}
       <div className="bg-white shadow-lg border-b border-gray-200">
         <div className="w-full px-4 sm:px-6 lg:px-12 xl:px-16 py-4 sm:py-6 lg:py-8">

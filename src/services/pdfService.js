@@ -409,8 +409,8 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
   const labels = {
     fr: {
       invoice: 'FACTURE CLIENT',
-      depositInvoice: 'FACTURE D\'ACOMPTE',
-      finalInvoice: 'FACTURE FINALE',
+      depositInvoice: 'FACTURE D\'ACOMPTE CLIENT',
+      finalInvoice: 'FACTURE FINALE CLIENT',
       client: 'CLIENT',
       company: 'ENTREPRISE',
       paymentInfo: 'INFORMATIONS DE PAIEMENT',
@@ -433,8 +433,8 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
     },
     en: {
       invoice: 'CLIENT INVOICE',
-      depositInvoice: 'DEPOSIT INVOICE',
-      finalInvoice: 'FINAL INVOICE',
+      depositInvoice: 'CLIENT DEPOSIT INVOICE',
+      finalInvoice: 'CLIENT FINAL INVOICE',
       client: 'CLIENT',
       company: 'COMPANY',
       paymentInfo: 'PAYMENT INFORMATION',
@@ -457,8 +457,8 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
     },
     nl: {
       invoice: 'KLANTENFACTUUR',
-      depositInvoice: 'AANBETALINGSFACTUUR',
-      finalInvoice: 'EINDFACTUUR',
+      depositInvoice: 'AANBETALING KLANTENFACTUUR',
+      finalInvoice: 'EIND KLANTENFACTUUR',
       client: 'KLANT',
       company: 'BEDRIJF',
       paymentInfo: 'BETALINGSINFORMATIE',

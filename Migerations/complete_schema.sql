@@ -387,7 +387,8 @@ create table public.expense_invoices (
           array[
             'pending'::character varying,
             'paid'::character varying,
-            'overdue'::character varying
+            'overdue'::character varying,
+            'cancelled'::character varying
           ]
         )::text[]
       )

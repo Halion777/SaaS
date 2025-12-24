@@ -192,7 +192,7 @@ CREATE TABLE public.expense_invoices (
   amount numeric NOT NULL,
   net_amount numeric,
   vat_amount numeric,
-  status character varying DEFAULT 'pending'::character varying CHECK (status::text = ANY (ARRAY['pending'::character varying, 'paid'::character varying, 'overdue'::character varying]::text[])),
+  status character varying DEFAULT 'pending'::character varying CHECK (status::text = ANY (ARRAY['pending'::character varying::text, 'paid'::character varying::text, 'overdue'::character varying::text, 'cancelled'::character varying::text])),
   category text,
   source character varying DEFAULT 'manual'::character varying CHECK (source::text = ANY (ARRAY['manual'::character varying, 'peppol'::character varying]::text[])),
   issue_date date NOT NULL,
@@ -208,6 +208,7 @@ CREATE TABLE public.expense_invoices (
   sender_peppol_id character varying,
   peppol_metadata jsonb DEFAULT '{}'::jsonb,
   user_id uuid,
+  invoice_type character varying DEFAULT 'final'::character varying CHECK (invoice_type::text = ANY (ARRAY['deposit'::character varying, 'final'::character varying]::text[])),
   CONSTRAINT expense_invoices_pkey PRIMARY KEY (id),
   CONSTRAINT expense_invoices_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
@@ -284,6 +285,7 @@ CREATE TABLE public.invoices (
   ubl_xml text,
   receiver_peppol_id character varying,
   peppol_metadata jsonb DEFAULT '{}'::jsonb,
+  invoice_type character varying DEFAULT 'final'::character varying CHECK (invoice_type::text = ANY (ARRAY['deposit'::character varying, 'final'::character varying]::text[])),
   CONSTRAINT invoices_pkey PRIMARY KEY (id),
   CONSTRAINT invoices_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
   CONSTRAINT invoices_client_id_fkey FOREIGN KEY (client_id) REFERENCES public.clients(id),
@@ -723,6 +725,18 @@ CREATE TABLE public.quotes (
   CONSTRAINT quotes_profile_id_fkey FOREIGN KEY (profile_id) REFERENCES public.user_profiles(id),
   CONSTRAINT quotes_company_profile_id_fkey FOREIGN KEY (company_profile_id) REFERENCES public.company_profiles(id),
   CONSTRAINT quotes_client_id_fkey FOREIGN KEY (client_id) REFERENCES public.clients(id)
+);
+CREATE TABLE public.subscription_notifications (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  notification_type character varying NOT NULL,
+  subscription_data jsonb,
+  email_sent boolean DEFAULT false,
+  email_error text,
+  sent_at timestamp with time zone DEFAULT now(),
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT subscription_notifications_pkey PRIMARY KEY (id),
+  CONSTRAINT subscription_notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.subscriptions (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

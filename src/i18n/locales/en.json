@@ -3655,7 +3655,7 @@
       "clientSignature": "Client Signature",
       "signatureNotAvailable": "Signature not available",
       "waitingForSignature": "Waiting for signature",
-      "quoteAccepted": "Quote already signed",
+      "quoteAccepted": "Quote signed",
       "signedOn": "Signed on",
       "recently": "recently",
       "comment": "Comment"
