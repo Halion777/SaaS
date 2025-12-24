@@ -1721,9 +1721,48 @@ export async function convertQuoteToInvoice(quote, userId) {
       throw new Error(`Failed to generate invoice number: ${numberError.message}`);
     }
 
-    // Calculate due date (30 days from today by default)
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 30);
+    // Calculate due date from quote's valid_until (expiry date) or payment terms
+    // This ensures deposit and final invoices have the SAME due date (from quote)
+    let dueDate = new Date();
+    
+    // If quote has valid_until (expiry date), add 15 days by default for invoice due date
+    if (quoteData.valid_until) {
+      // Use quote's valid_until (expiry date) + 15 days as the invoice due date
+      // This gives client time to pay after quote expiry
+      const validUntilDate = new Date(quoteData.valid_until);
+      dueDate = new Date(validUntilDate);
+      dueDate.setDate(dueDate.getDate() + 15); // Add 15 days by default
+    } else {
+      // No valid_until, calculate from payment terms or default to 15 days from today
+      const paymentTerms = quoteData.payment_terms || quoteData.quote_financial_configs?.[0]?.paymentTerms || null;
+      
+      // Extract payment delay from payment terms (e.g., "30 jours", "Net 30", "Paiement à 30 jours")
+      let paymentDelayDays = 15; // Default to 15 days
+      if (paymentTerms && typeof paymentTerms === 'string') {
+        const patterns = [
+          /(\d+)\s*(?:days?|jours?|d)/i,
+          /net\s*(\d+)/i,
+          /(\d+)\s*(?:day|jour)/i
+        ];
+        
+        for (const pattern of patterns) {
+          const match = paymentTerms.match(pattern);
+          if (match && match[1]) {
+            const days = parseInt(match[1], 10);
+            if (days > 0 && days <= 365) {
+              paymentDelayDays = days;
+              break;
+            }
+          }
+        }
+      }
+      
+      // Calculate from today using payment delay
+      dueDate.setDate(dueDate.getDate() + paymentDelayDays);
+    }
+    
+    // Store the calculated due date - this will be the SAME for both deposit and final invoices
+    const invoiceDueDate = dueDate.toISOString().split('T')[0];
 
     // Extract description - check both project_description and description fields
     const description = quoteData.project_description || quoteData.description || quote.description || '';
@@ -1795,8 +1834,8 @@ export async function convertQuoteToInvoice(quote, userId) {
         tax_amount: depositTaxAmount,
         discount_amount: 0, // Discount already applied to total
         final_amount: depositAmount, // Deposit amount (TTC)
-        issue_date: new Date().toISOString().split('T')[0],
-        due_date: dueDate.toISOString().split('T')[0],
+        issue_date: new Date().toISOString().split('T')[0], // Issue date can be different (deposit issued when quote accepted)
+        due_date: invoiceDueDate, // Same due date for both deposit and final (from quote)
         payment_method: 'À définir',
         payment_terms: 'Paiement à 30 jours',
         notes: `Facture d'acompte générée automatiquement depuis le devis ${quoteData.quote_number}`,
@@ -1845,8 +1884,8 @@ export async function convertQuoteToInvoice(quote, userId) {
         tax_amount: finalTaxAmount,
         discount_amount: discountAmount, // Full discount applied to final invoice
         final_amount: balanceAmount, // Balance amount (TTC)
-        issue_date: new Date().toISOString().split('T')[0],
-        due_date: dueDate.toISOString().split('T')[0],
+        issue_date: new Date().toISOString().split('T')[0], // Issue date can be different (final issued after deposit)
+        due_date: invoiceDueDate, // Initial due date from quote (can be modified when sending final invoice)
         payment_method: 'À définir',
         payment_terms: 'Paiement à 30 jours',
         notes: `Facture de solde générée automatiquement depuis le devis ${quoteData.quote_number}. À payer après règlement de l'acompte.`,
@@ -1892,8 +1931,8 @@ export async function convertQuoteToInvoice(quote, userId) {
       tax_amount: taxAmount,
       discount_amount: discountAmount,
         final_amount: invoiceFinalAmount,
-      issue_date: new Date().toISOString().split('T')[0],
-      due_date: dueDate.toISOString().split('T')[0],
+      issue_date: new Date().toISOString().split('T')[0], // Issue date can be different
+      due_date: invoiceDueDate, // Same due date (from quote)
       payment_method: 'À définir',
       payment_terms: 'Paiement à 30 jours',
       notes: `Facture générée automatiquement depuis le devis ${quoteData.quote_number}`,

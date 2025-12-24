@@ -25,6 +25,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
     subject: '',
     message: ''
   });
+  const [dueDate, setDueDate] = useState(''); // For all invoice types - allow modification
   const prevInvoiceIdRef = useRef(null);
 
   useEffect(() => {
@@ -93,6 +94,15 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
         message: isSameInvoice ? (prev.message || defaultMessage) : defaultMessage
       }));
       
+      // Initialize due date from invoice (editable for all invoice types)
+      if (invoice.dueDate) {
+        setDueDate(invoice.dueDate);
+      } else if (invoice.due_date) {
+        setDueDate(invoice.due_date);
+      } else {
+        setDueDate('');
+      }
+      
       prevInvoiceIdRef.current = invoice.id;
     } catch (err) {
       // Error loading data
@@ -125,7 +135,19 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
       const invoiceNumber = invoice.number || invoice.invoice_number || '';
       const invoiceAmount = invoice.final_amount || invoice.amount || 0;
       const invoiceDate = invoice.issue_date ? new Date(invoice.issue_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US') : new Date().toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US');
-      const dueDate = invoice.due_date ? new Date(invoice.due_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US') : '';
+      
+      // For all invoice types, use modified due date if provided, otherwise use invoice's due date
+      const invoiceType = invoice.invoice_type || invoice.invoiceType || 'final';
+      const finalDueDate = dueDate || invoice.due_date || invoice.dueDate;
+      const dueDateFormatted = finalDueDate ? new Date(finalDueDate).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US') : '';
+      
+      // Update invoice's due_date in database if due date was modified
+      if (dueDate && dueDate !== invoice.due_date && dueDate !== invoice.dueDate) {
+        await supabase
+          .from('invoices')
+          .update({ due_date: dueDate })
+          .eq('id', invoice.id);
+      }
       const clientName = invoice.client?.name || invoice.clientName || t('invoicesManagement.sendEmailModal.client');
       const companyName = companyInfo?.name || t('invoicesManagement.sendEmailModal.yourCompany');
       
@@ -147,7 +169,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
         },
         invoice: {
           issue_date: invoice.issue_date,
-          due_date: invoice.due_date,
+          due_date: finalDueDate || invoice.due_date, // Use modified due date for final invoices
           amount: invoice.amount,
           net_amount: invoice.net_amount,
           tax_amount: invoice.tax_amount,
@@ -164,7 +186,6 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
 
       // Generate PDF blob (hide bank info for professional clients, but show it if from invalid Peppol ID flow or Peppol failed/not sent)
       const hideBankInfo = isProfessionalClient && !fromInvalidPeppolId && !shouldShowEmailWarning;
-      const invoiceType = invoice.invoice_type || invoice.invoiceType || 'final';
       const pdfBlob = await generateInvoicePDF(invoiceData, invoiceNumber, null, i18n.language, hideBankInfo, invoiceType);
       
       // Convert PDF blob to base64 for email attachment
@@ -239,7 +260,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
         client_name: clientName,
         invoice_amount: formattedAmount,
         issue_date: invoiceDate,
-        due_date: dueDate || '',
+        due_date: dueDateFormatted || '',
         company_name: companyName,
         custom_subject: translatedSubject, // Use translated subject
         custom_message: translatedMessage, // Use translated message
@@ -377,6 +398,23 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
                   className="w-full"
                   disabled={isSending}
                 />
+              </div>
+
+              {/* Due Date Field (editable for all invoice types) */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  {t('invoicesManagement.sendEmailModal.dueDate', 'Due Date')} <span className="text-muted-foreground text-xs">({t('invoicesManagement.sendEmailModal.optional', 'Optional')})</span>
+                </label>
+                <input
+                  type="date"
+                  value={dueDate || ''}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  disabled={isSending}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t('invoicesManagement.sendEmailModal.dueDateHint', 'You can modify the due date for this invoice')}
+                </p>
               </div>
 
               {/* Send Copy Toggle */}

@@ -23,11 +23,20 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
   const [isValidating, setIsValidating] = useState(false);
   const [isValid, setIsValid] = useState(false);
   const [validationError, setValidationError] = useState('');
+  const [dueDate, setDueDate] = useState(''); // For all invoice types - allow modification
 
   useEffect(() => {
     if (isOpen && invoice) {
       loadData();
       setShowDropdown(false); // Reset dropdown state when modal opens
+      // Initialize due date from invoice (editable for all invoice types)
+      if (invoice.dueDate) {
+        setDueDate(invoice.dueDate);
+      } else if (invoice.due_date) {
+        setDueDate(invoice.due_date);
+      } else {
+        setDueDate('');
+      }
     }
 
     // Cleanup timeout on unmount
@@ -331,10 +340,23 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
         return;
       }
 
+      // For all invoice types, use modified due date if provided, otherwise use invoice's due date
+      const invoiceType = invoice.invoiceType || invoice.invoice_type || 'final';
+      const finalDueDate = dueDate || invoice.due_date || invoice.dueDate;
+      
+      // Update invoice's due_date in database if due date was modified
+      if (dueDate && dueDate !== invoice.due_date && dueDate !== invoice.dueDate) {
+        await supabase
+          .from('invoices')
+          .update({ due_date: dueDate })
+          .eq('id', invoice.id);
+      }
+
       const haliqoInvoice = {
         ...invoice,
         invoice_number: invoiceNumber, // Ensure invoice_number is set
-        invoice_type: invoice.invoiceType || invoice.invoice_type || 'final', // Include invoice_type for Peppol
+        invoice_type: invoiceType, // Include invoice_type for Peppol
+        due_date: finalDueDate, // Use modified due date (for all invoice types)
         // Extract deposit/balance amounts from peppol_metadata or quote data
         deposit_amount: invoice.peppol_metadata?.deposit_amount || invoice.quote?.deposit_amount || 0,
         balance_amount: invoice.peppol_metadata?.balance_amount || invoice.quote?.balance_amount || 0,
@@ -695,6 +717,22 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
                     </button>
                   </div>
                 )}
+              </div>
+
+              {/* Due Date Field (editable for all invoice types) */}
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">
+                  {t('invoicesManagement.sendPeppolModal.dueDate', 'Due Date')} <span className="text-muted-foreground text-xs">({t('invoicesManagement.sendPeppolModal.optional', 'Optional')})</span>
+                </label>
+                <input
+                  type="date"
+                  value={dueDate || ''}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t('invoicesManagement.sendPeppolModal.dueDateHint', 'You can modify the due date for this invoice')}
+                </p>
               </div>
 
               {/* Error Message */}
