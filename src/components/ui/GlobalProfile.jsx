@@ -21,7 +21,7 @@ const GlobalProfile = () => {
       '/client-management', '/analytics-dashboard', '/follow-up-management',
       '/quotes-follow-up', '/invoices-follow-up', '/leads-management', 
       '/expense-invoices', '/multi-user-profiles', '/quote-creation', 
-      '/services/peppol'
+      '/services/peppol', '/services/recouvrement', '/services/assurance'
     ];
     
     // Check if current path starts with any dashboard page

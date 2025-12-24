@@ -103,6 +103,25 @@ const PublicQuoteShareViewer = () => {
         
         if (result.success) {
           setQuoteStatus('accepted');
+          
+          // Reload quote to get the saved signature with proper URL if needed
+          try {
+            const res = await getQuoteByShareToken(token);
+            if (res?.success && res.data?.quote_signatures) {
+              const savedClientSignature = res.data.quote_signatures.find(sig => sig.signature_type === 'client');
+              if (savedClientSignature) {
+                setClientSignature({
+                  signature_data: savedClientSignature.signature_data,
+                  signature_file_path: savedClientSignature.signature_file_path,
+                  customerComment: savedClientSignature.customer_comment,
+                  signedAt: savedClientSignature.signed_at
+                });
+              }
+            }
+          } catch (reloadError) {
+            console.error('Error reloading signature:', reloadError);
+          }
+          
           // Show success message
           alert(t('quoteShare.alerts.acceptedSuccess'));
         } else {
@@ -127,13 +146,33 @@ const PublicQuoteShareViewer = () => {
     try {
       setActionLoading(true);
       setAcceptLoading(true);
-      setClientSignature(signatureData);
       
       const result = await ClientQuoteService.acceptQuote(quote.id, token, signatureData, quote);
       
       if (result.success) {
         setQuoteStatus('accepted');
         setShowSignatureModal(false);
+        
+        // Reload quote to get the saved signature with proper URL
+        try {
+          const res = await getQuoteByShareToken(token);
+          if (res?.success && res.data?.quote_signatures) {
+            const savedClientSignature = res.data.quote_signatures.find(sig => sig.signature_type === 'client');
+            if (savedClientSignature) {
+              setClientSignature({
+                signature_data: savedClientSignature.signature_data,
+                signature_file_path: savedClientSignature.signature_file_path,
+                customerComment: savedClientSignature.customer_comment,
+                signedAt: savedClientSignature.signed_at
+              });
+            }
+          }
+        } catch (reloadError) {
+          console.error('Error reloading signature:', reloadError);
+          // Fallback: use the signature data we have
+          setClientSignature(signatureData);
+        }
+        
         // Show success message
         alert(t('quoteShare.alerts.acceptedSuccess'));
       } else {

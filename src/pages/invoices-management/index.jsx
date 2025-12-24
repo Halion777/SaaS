@@ -209,7 +209,15 @@ const InvoicesManagement = () => {
     paidRevenue: invoices.filter(invoice => invoice.status === 'paid').reduce((sum, invoice) => sum + invoice.amount, 0),
     outstandingAmount: invoices.filter(invoice => invoice.status === 'unpaid' || invoice.status === 'overdue').reduce((sum, invoice) => sum + invoice.amount, 0),
     revenueGrowth: 0, // Could be calculated from historical data
-    overdueCount: invoices.filter(invoice => invoice.status === 'overdue').length
+    // Calculate overdue count based on due_date, not status field
+    overdueCount: invoices.filter(invoice => {
+      if (invoice.status === 'paid') return false;
+      const dueDate = new Date(invoice.dueDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      dueDate.setHours(0, 0, 0, 0);
+      return dueDate < today;
+    }).length
   };
 
   const handleFiltersChange = (newFilters) => {

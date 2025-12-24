@@ -83,7 +83,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
   };
 
   // Get actual user data from AuthContext
-  const { user: authUser, updateUserProfile } = useAuth();
+  const { user: authUser, updateUserProfile, loading: authLoading } = useAuth();
   
   // Use actual user data or fallback to props
   const actualUser = authUser || user;
@@ -1282,6 +1282,13 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
           bottom: isGlobal ? 'auto' : '80px'
         }}
         >
+          {/* Loading State */}
+          {authLoading || !actualUser ? (
+            <div className="py-8 flex flex-col items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-2"></div>
+              <p className="text-xs text-muted-foreground">{t('profile.dropdown.loading', 'Loading profile...')}</p>
+            </div>
+          ) : (
           <div className="py-2">
             {isCollapsed && (
               <div className="px-4 py-2 border-b border-border">
@@ -1418,6 +1425,7 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
               <span>{t('profile.dropdown.logout')}</span>
             </button>
           </div>
+          )}
         </div>
       )}
 

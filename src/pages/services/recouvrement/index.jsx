@@ -6,6 +6,7 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import FileUpload from '../../../components/ui/FileUpload';
 import MainSidebar from '../../../components/ui/MainSidebar';
+import GlobalProfile from '../../../components/ui/GlobalProfile';
 import PermissionGuard from '../../../components/PermissionGuard';
 import { supabase } from '../../../services/supabaseClient';
 import { useAuth } from '../../../context/AuthContext';
@@ -189,8 +190,8 @@ const RecouvrementPage = () => {
   };
 
   const handleSubmitCollection = async () => {
-    if (selectedInvoices.length === 0) {
-      alert(t('recovery.form.selectInvoiceError', 'Please select at least one invoice'));
+    if (selectedInvoices.length === 0 && uploadedFiles.length === 0) {
+      alert(t('recovery.form.selectInvoiceOrDocumentError', 'Please select at least one invoice or upload a document'));
       return;
     }
     
@@ -496,7 +497,7 @@ const RecouvrementPage = () => {
           className="w-full"
           iconName={isSubmitting ? "Loader" : "Send"}
           iconPosition="left"
-          disabled={isSubmitting || selectedInvoices.length === 0}
+          disabled={isSubmitting || (selectedInvoices.length === 0 && uploadedFiles.length === 0)}
         >
           {isSubmitting 
             ? t('recovery.form.submitting', 'Submitting...') 
@@ -504,9 +505,9 @@ const RecouvrementPage = () => {
           }
         </Button>
 
-        {selectedInvoices.length === 0 && (
+        {selectedInvoices.length === 0 && uploadedFiles.length === 0 && (
           <p className="text-xs text-muted-foreground text-center mt-2">
-            {t('recovery.form.selectInvoiceHint', 'Select at least one invoice to continue')}
+            {t('recovery.form.selectInvoiceOrDocumentHint', 'Select at least one invoice or upload a document to continue')}
           </p>
         )}
 
@@ -528,6 +529,7 @@ const RecouvrementPage = () => {
     <PermissionGuard module="recovery" requiredPermission="view_only">
     <div className="min-h-screen bg-background">
       <MainSidebar />
+      <GlobalProfile />
       
       <div
         className="flex-1 flex flex-col pb-20 md:pb-6"

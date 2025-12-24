@@ -6,6 +6,7 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import MainSidebar from '../../../components/ui/MainSidebar';
+import GlobalProfile from '../../../components/ui/GlobalProfile';
 import PermissionGuard from '../../../components/PermissionGuard';
 import CreditInsuranceService from '../../../services/creditInsuranceService';
 
@@ -425,6 +426,7 @@ const AssuranceCreditPage = () => {
     <PermissionGuard module="creditInsurance" requiredPermission="view_only">
     <div className="min-h-screen bg-background">
       <MainSidebar />
+      <GlobalProfile />
       
       <div
         className="flex-1 flex flex-col pb-20 md:pb-6"
