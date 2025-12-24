@@ -440,11 +440,6 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
             />
             <div>
               <div className="font-semibold text-foreground">{getDisplayInvoiceNumber(invoice)}</div>
-              {invoice.source === 'peppol' && invoice.invoice_number !== getDisplayInvoiceNumber(invoice) && (
-                <div className="text-xs text-muted-foreground">
-                  {t('expenseInvoices.peppolInfo.messageId', 'Message ID')}: {invoice.invoice_number}
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -559,9 +554,6 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                 <div>
                   <div className="text-sm font-medium text-foreground">{getDisplayInvoiceNumber(invoice)}</div>
                   <div className="text-xs text-muted-foreground">{invoice.category || 'N/A'}</div>
-                  {invoice.source === 'peppol' && getPeppolInvoiceNumber(invoice) !== getDisplayInvoiceNumber(invoice) && (
-                    <div className="text-xs text-muted-foreground">Peppol: {getPeppolInvoiceNumber(invoice)}</div>
-                  )}
                 </div>
               </div>
               <div className="flex items-center space-x-1">
@@ -820,9 +812,6 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-foreground">{getDisplayInvoiceNumber(invoice)}</div>
                             <div className="text-xs text-muted-foreground">{invoice.category || 'N/A'}</div>
-                            {invoice.source === 'peppol' && getPeppolInvoiceNumber(invoice) !== getDisplayInvoiceNumber(invoice) && (
-                              <div className="text-xs text-muted-foreground">Peppol: {getPeppolInvoiceNumber(invoice)}</div>
-                            )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             {getInvoiceTypeBadge(invoice.invoice_type)}
@@ -943,9 +932,6 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-foreground">{getDisplayInvoiceNumber(invoice)}</div>
                     <div className="text-xs text-muted-foreground">{invoice.category || 'N/A'}</div>
-                    {invoice.source === 'peppol' && getPeppolInvoiceNumber(invoice) !== getDisplayInvoiceNumber(invoice) && (
-                      <div className="text-xs text-muted-foreground">Peppol: {getPeppolInvoiceNumber(invoice)}</div>
-                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {getInvoiceTypeBadge(invoice.invoice_type)}
