@@ -643,6 +643,22 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
                         )}
                       </div>
                     )}
+                    {/* Show "Not a Peppol user?" link when Peppol ID is undefined/not available */}
+                    {!clientPeppolId && !isValidating && onOpenEmailModal && (
+                      <div className="space-y-1 mt-1">
+                        {onOpenEmailModal && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onOpenEmailModal(true); // Pass true to indicate it's from undefined Peppol ID
+                            }}
+                            className="text-xs text-primary hover:underline"
+                          >
+                            {t('invoicesManagement.sendPeppolModal.notPeppolUser', 'Not a Peppol user?')}
+                          </button>
+                        )}
+                      </div>
+                    )}
                     {isValid && !validationError && clientPeppolId && (
                       <p className="text-xs text-green-600 mt-1">
                         {t('invoicesManagement.sendPeppolModal.peppolIdValid', 'Peppol ID is valid')}
