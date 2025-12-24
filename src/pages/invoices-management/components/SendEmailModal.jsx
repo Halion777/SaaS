@@ -409,6 +409,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
                   type="date"
                   value={dueDate || ''}
                   onChange={(e) => setDueDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]} // Disable past dates
                   className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   disabled={isSending}
                 />
