@@ -4657,6 +4657,7 @@
           "dueDate": "Vervaldatum",
           "actions": "Acties"
         },
+        "quote": "Offerte",
         "issue": "Uitgave",
         "due": "Verval",
         "days": "dagen",

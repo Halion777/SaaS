@@ -843,6 +843,29 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
  */
 export const generateExpenseInvoicePDF = async (expenseInvoiceData, invoiceNumber, language = 'fr', invoiceType = null) => {
   try {
+    // Validate required data
+    if (!expenseInvoiceData) {
+      throw new Error('Expense invoice data is required');
+    }
+    if (!expenseInvoiceData.companyInfo) {
+      throw new Error('Company info is required');
+    }
+    if (!expenseInvoiceData.supplier) {
+      throw new Error('Supplier info is required');
+    }
+    if (!expenseInvoiceData.invoice) {
+      throw new Error('Invoice data is required');
+    }
+
+    // Generate HTML content
+    let htmlContent;
+    try {
+      htmlContent = generateExpenseInvoiceHTML(expenseInvoiceData, invoiceNumber, language, invoiceType);
+    } catch (htmlError) {
+      console.error('Error generating expense invoice HTML:', htmlError);
+      throw new Error(`Failed to generate HTML: ${htmlError.message}`);
+    }
+
     // Create a temporary element with the expense invoice preview
     const tempDiv = document.createElement('div');
     tempDiv.style.position = 'absolute';
@@ -852,7 +875,7 @@ export const generateExpenseInvoicePDF = async (expenseInvoiceData, invoiceNumbe
     tempDiv.style.backgroundColor = 'white';
     tempDiv.style.padding = '0';
     tempDiv.style.fontFamily = 'Arial, sans-serif';
-      tempDiv.innerHTML = generateExpenseInvoiceHTML(expenseInvoiceData, invoiceNumber, language, invoiceType);
+    tempDiv.innerHTML = htmlContent;
     document.body.appendChild(tempDiv);
     const target = tempDiv;
     
@@ -1105,6 +1128,7 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
   // These values come directly from <cac:LegalMonetaryTotal> in UBL XML
   // For Peppol invoices, use totals from peppol_metadata which are exact UBL XML values
   let total, netAmount, vatAmount, totalWithVAT, depositAmount, balanceAmount, depositEnabled;
+  let isDepositPaid = false; // Check if deposit invoice is paid (for final invoices)
   
   if (invoice.peppol_metadata && typeof invoice.peppol_metadata === 'object') {
     const metadata = invoice.peppol_metadata;

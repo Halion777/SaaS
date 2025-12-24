@@ -149,6 +149,23 @@ const ExpenseInvoicesManagement = () => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
+        // Helper to get client invoice number from buyerReference
+        const getClientInvoiceNumber = (invoice) => {
+          if (invoice.source === 'peppol' && invoice.peppol_metadata?.buyerReference) {
+            const buyerRef = invoice.peppol_metadata.buyerReference;
+            // If buyerReference looks like a client invoice number (INV-* or FACT-*), use it
+            if (buyerRef && (buyerRef.match(/^(INV|FACT)-\d+$/i) || buyerRef.startsWith('INV-') || buyerRef.startsWith('FACT-'))) {
+              return buyerRef;
+            }
+          }
+          // Also check the invoice_number itself
+          if (invoice.source === 'peppol' && invoice.invoice_number && 
+              (invoice.invoice_number.match(/^(INV|FACT)-\d+$/i) || invoice.invoice_number.startsWith('INV-') || invoice.invoice_number.startsWith('FACT-'))) {
+            return invoice.invoice_number;
+          }
+          return null;
+        };
+        
         const updatedInvoices = await Promise.all(result.data.map(async (invoice) => {
           // If invoice is not paid and due_date has passed, mark as overdue
           if (invoice.status !== 'paid' && invoice.due_date) {
@@ -158,9 +175,31 @@ const ExpenseInvoicesManagement = () => {
             if (dueDate < today && invoice.status !== 'overdue') {
               // Auto-update status to overdue
               await expenseService.updateExpenseInvoice(invoice.id, { status: 'overdue' });
-              return { ...invoice, status: 'overdue' };
+              invoice.status = 'overdue';
             }
           }
+          
+          // Fetch quote number from related client invoice
+          const clientInvoiceNumber = getClientInvoiceNumber(invoice);
+          if (clientInvoiceNumber) {
+            try {
+              const { supabase } = await import('../../services/supabaseClient');
+              const { data: clientInvoice } = await supabase
+                .from('invoices')
+                .select('quote_number')
+                .eq('invoice_number', clientInvoiceNumber)
+                .eq('user_id', user?.id)
+                .single();
+              
+              if (clientInvoice?.quote_number) {
+                invoice.quoteNumber = clientInvoice.quote_number;
+              }
+            } catch (err) {
+              // Silently fail if client invoice not found
+              console.debug('Could not find client invoice for quote number:', err);
+            }
+          }
+          
           return invoice;
         }));
         

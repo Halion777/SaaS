@@ -4558,6 +4558,7 @@
         "net": "HT",
         "vat": "TVA",
         "balance": "Solde",
+        "quote": "Devis",
         "issue": "Émission",
         "due": "Échéance",
         "received": "Reçue",

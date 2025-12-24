@@ -4632,6 +4632,7 @@
           "dueDate": "Due Date",
           "actions": "Actions"
         },
+        "quote": "Quote",
         "issue": "Issue",
         "due": "Due",
         "days": "days",
